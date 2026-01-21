@@ -1,45 +1,124 @@
-****Task 0001: Blender→UE import hygiene****
-===========================================
+**Task 0001: Blender→UE import hygiene**
 
-Goal
-----
+**Goal**
 
-* Ensure reliable import of .blend files into Unreal Engine (UE) with correct materials and hierarchy
-* Minimize manual steps for UE artists
-* Automate cleanup/reorganization of .blend file structure
 
-MVP scope (must-haves)
-----------------------
 
-* Add a button to Blender's UI for exporting the current scene as an optimized .fbx file
-	+ Remove unnecessary data, e.g., armatures and shape keys
-	+ Organize collection hierarchy into simple parent/child relationships
-* Implement an import script in UE for:
-	1. Creating a new folder under Content Browser for the imported model
-	2. Importing .fbx with preferred settings (static mesh, combine meshes, generate collision)
-	3. Applying textures and materials based on filenames
-	4. Spawning an instance of the imported asset in the current level at a default position (0, 0, 0)
+Prevent Unreal Engine from re-importing previously processed bridge assets on editor startup
+
+
+
+Ensure the existing Blender→UE bridge behaves idempotently across sessions
+
+
+
+Preserve current watcher behaviour and material workflow
+
+
+
+**MVP scope (must-haves)**
+
+
+
+Add persistent import tracking to ue\_python/bridge\_watcher.py
+
+
+
+Store imported file fingerprints on disk (e.g. JSON manifest)
+
+
+
+Load this state when the watcher starts
+
+
+
+Define a clear “processed” rule, e.g.:
+
+
+
+filename + size + modified time
+
+
+
+Skip import if a file is already marked as processed
+
+
+
+Update \_state\["imported"] to be initialised from disk
+
+
+
+Ensure behaviour is unchanged for new files
+
+
+
+Add/update tests covering persistence behaviour
+
+
 
 Out of scope (not now)
----------------------
 
-* Adding undo/redo functionality for exporting or importing files
-* Advanced texture workflow, e.g., automatically creating Material Instances
-* Exporting complex scene hierarchies with multiple top-level objects
-* Implementing animation support during import
 
-Acceptance criteria
--------------------
 
-* [ ] Button exists in Blender for exporting .fbx files
-* [ ] Import script creates a new folder under Content Browser for imported models
-* [ ] UE artists do not need to manually adjust import settings
-* [ ] Textures and materials are applied automatically during the import process
-* [ ] An instance of the imported asset is spawned at (0, 0, 0) in the current level
+Blender add-on UI changes
 
-Risks / notes
--------------
 
-* Compatibility issues between Blender and UE versions
-* Differences in naming conventions for textures/materials
-* Manually maintaining the mapping of texture names to material properties
+
+New export formats or settings
+
+
+
+Material workflow expansion
+
+
+
+Asset re-import versioning or overrides
+
+
+
+Automatic cleanup/moving of files
+
+
+
+**Acceptance criteria**
+
+
+
+&nbsp;Restarting Unreal does not re-import existing bridge assets
+
+
+
+&nbsp;New FBX files dropped into UE\_Bridge are still imported normally
+
+
+
+&nbsp;Persistent state file is created and updated correctly
+
+
+
+&nbsp;Deleting the state file causes a full re-import (expected behaviour)
+
+
+
+&nbsp;Existing tests still pass
+
+
+
+&nbsp;New test added for persistence logic
+
+
+
+**Risks / notes**
+
+
+
+File fingerprint choice must be robust enough to detect real changes
+
+
+
+Corrupted or manually edited state file should fail safely
+
+
+
+Must not rely on Unreal-only APIs for persistence (tests run without UE)
+
