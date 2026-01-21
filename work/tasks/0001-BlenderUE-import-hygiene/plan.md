@@ -1,33 +1,45 @@
-# Task 0001: Blender→UE import hygiene
+****Task 0001: Blender→UE import hygiene****
+===========================================
 
-## Goal
-- Improve startup time of the UE editor by reducing unnecessary re-importing of assets from Blender bridge folder
-- Ensure each asset is imported only once and marked as processed
-- Maintain a clean and organized structure for processed assets
+Goal
+----
 
-## MVP scope (must-haves)
-- Identify all files in the bridge folder upon UE editor startup
-- Import each file into UE, marking them as processed after successful import
-- Move imported files to a separate 'imported' folder
-- Add an option in the editor settings for developers to enable/disable this feature
-- Display notifications in the editor for any errors during import or processing
-- Implement basic logging and error handling to assist with troubleshooting
+* Ensure reliable import of .blend files into Unreal Engine (UE) with correct materials and hierarchy
+* Minimize manual steps for UE artists
+* Automate cleanup/reorganization of .blend file structure
 
-## Out of scope (not now)
-- Optimizing performance by parallelizing import processes
-- Creating an automated UI for users to review/retry failed imports
-- Providing a detailed report on the results of the import hygiene process
-- Integrating this feature into other platforms or pipelines
+MVP scope (must-haves)
+----------------------
 
-## Acceptance criteria
-- [ ] The UE editor no longer re-imports assets from the bridge folder at startup
-- [ ] Imported assets are moved to an 'imported' folder automatically
-- [ ] Assets marked as processed do not trigger importing during future UE editor startups
-- [ ] An option is available in the editor settings for enabling/disabling this feature
-- [ ] Error messages are displayed when there are problems importing or processing assets
-- [ ] Basic logging and error handling are implemented to assist with troubleshooting
+* Add a button to Blender's UI for exporting the current scene as an optimized .fbx file
+	+ Remove unnecessary data, e.g., armatures and shape keys
+	+ Organize collection hierarchy into simple parent/child relationships
+* Implement an import script in UE for:
+	1. Creating a new folder under Content Browser for the imported model
+	2. Importing .fbx with preferred settings (static mesh, combine meshes, generate collision)
+	3. Applying textures and materials based on filenames
+	4. Spawning an instance of the imported asset in the current level at a default position (0, 0, 0)
 
-## Risks / notes
-- Edge case: Handling file changes during UE editor runtime (recommend developer disable import hygiene before making modifications in Blender)
-- Assumption: Imported files will not be modified during UE editor runtime
-- Gotcha: Files with naming conflicts may require manual intervention
+Out of scope (not now)
+---------------------
+
+* Adding undo/redo functionality for exporting or importing files
+* Advanced texture workflow, e.g., automatically creating Material Instances
+* Exporting complex scene hierarchies with multiple top-level objects
+* Implementing animation support during import
+
+Acceptance criteria
+-------------------
+
+* [ ] Button exists in Blender for exporting .fbx files
+* [ ] Import script creates a new folder under Content Browser for imported models
+* [ ] UE artists do not need to manually adjust import settings
+* [ ] Textures and materials are applied automatically during the import process
+* [ ] An instance of the imported asset is spawned at (0, 0, 0) in the current level
+
+Risks / notes
+-------------
+
+* Compatibility issues between Blender and UE versions
+* Differences in naming conventions for textures/materials
+* Manually maintaining the mapping of texture names to material properties
