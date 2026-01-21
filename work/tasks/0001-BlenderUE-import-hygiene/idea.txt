@@ -1,0 +1,1 @@
+Stop UE re-importing every file in the bridge folder on editor startup. Assets should import once, then be moved or marked as processed.
