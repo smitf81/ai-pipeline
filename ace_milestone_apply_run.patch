@@ -1,0 +1,302 @@
+diff --git a/runner/ai.py b/runner/ai.py
+--- a/runner/ai.py
++++ b/runner/ai.py
+@@ -1,6 +1,8 @@
+ import argparse
+ import json
+ import subprocess
++import time
++import re
+ from datetime import datetime, timezone
+ from pathlib import Path
+ import sys
+@@ -14,6 +16,7 @@
+ ROOT = Path(__file__).resolve().parents[1]
+ TASKS_DIR = ROOT / "work" / "tasks"
+ PROJECTS_FILE = ROOT / "projects.json"
++COMMANDS_FILE = ROOT / "ace_commands.json"
+ 
+ # ===== Ollama config =====
+ OLLAMA_HOST = "http://127.0.0.1:11434"
+@@ -96,6 +99,60 @@
+         return out.decode("utf-8", errors="replace").strip()
+     except Exception:
+         return ""
++
++def is_git_repo(cwd: Path) -> bool:
++    try:
++        out = subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"], cwd=str(cwd), stderr=subprocess.STDOUT)
++        return out.decode("utf-8", errors="replace").strip().lower() == "true"
++    except Exception:
++        return False
++
++
++def get_clean_worktree(cwd: Path):
++    """Return (clean: bool, status_output: str)."""
++    try:
++        out = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(cwd), stderr=subprocess.STDOUT)
++        s = out.decode("utf-8", errors="replace")
++        return (s.strip() == ""), s
++    except Exception as e:
++        return False, str(e)
++
++
++def slugify(s: str, max_len: int = 32) -> str:
++    s = (s or "").strip().lower()
++    s = "".join(c if (c.isalnum() or c in "-_") else "-" for c in s)
++    s = re.sub(r"-{2,}", "-", s).strip("-")
++    return (s[:max_len] or "task")
++
++
++def load_command_presets() -> dict:
++    if not COMMANDS_FILE.exists():
++        return {}
++    try:
++        return json.loads(COMMANDS_FILE.read_text(encoding="utf-8"))
++    except Exception:
++        return {}
++
++
++def run_capture(cmd, cwd: Path, timeout_s: int = 900):
++    """Run a command and capture combined stdout/stderr."""
++    try:
++        proc = subprocess.run(
++            cmd,
++            cwd=str(cwd),
++            stdout=subprocess.PIPE,
++            stderr=subprocess.STDOUT,
++            text=True,
++            encoding="utf-8",
++            errors="replace",
++            timeout=timeout_s,
++        )
++        return proc.returncode, proc.stdout or ""
++    except subprocess.TimeoutExpired as e:
++        out = (e.stdout or "") if isinstance(e.stdout, str) else ""
++        out += f"\n[TIMEOUT] Command exceeded {timeout_s}s.\n"
++        return 124, out
++
+ 
+ 
+ def should_skip_dir(path: Path) -> bool:
+@@ -473,6 +530,138 @@
+     return 0
+ 
+ 
++def cmd_apply(args: argparse.Namespace) -> int:
++    """Apply task patch.diff to the target project on a new git branch."""
++    task_dir = find_task_dir(args.task_id)
++    patch_path = task_dir / "patch.diff"
++    if not patch_path.exists():
++        raise FileNotFoundError("patch.diff missing. Run build first.")
++
++    project_root = resolve_project_path(args.project)
++    if not project_root.exists():
++        raise FileNotFoundError(f"Project path does not exist: {project_root}")
++
++    if not is_git_repo(project_root):
++        raise RuntimeError("Target project is not a git repo. Initialise git first or apply manually.")
++
++    clean, status = get_clean_worktree(project_root)
++    if not clean and not args.force:
++        (task_dir / "apply_report.md").write_text(
++            "# Apply report\n\n"
++            "Refusing to apply: working tree has uncommitted changes.\n\n"
++            "Run again with --force to proceed anyway (not recommended).\n\n"
++            "## git status --porcelain\n"
++            f"```\n{status}```\n",
++            encoding="utf-8",
++        )
++        raise RuntimeError("Working tree not clean. Commit/stash changes or rerun with --force.")
++
++    meta_path = task_dir / "meta.json"
++    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {"id": args.task_id, "title": ""}
++    title = meta.get("title", "")
++    branch = args.branch or f"ace/{meta.get('id')}-{slugify(title)}"
++
++    existing = run_git(["branch", "--list", branch], project_root)
++    if existing.strip():
++        _ = run_git(["checkout", branch], project_root)
++    else:
++        _ = run_git(["checkout", "-b", branch], project_root)
++
++    apply_args = ["apply", "--whitespace=nowarn"]
++    if args.threeway:
++        apply_args.append("--3way")
++
++    try:
++        out = subprocess.check_output(["git", *apply_args, str(patch_path)], cwd=str(project_root), stderr=subprocess.STDOUT)
++        apply_out = out.decode("utf-8", errors="replace")
++        ok = True
++    except subprocess.CalledProcessError as e:
++        apply_out = e.output.decode("utf-8", errors="replace") if e.output else str(e)
++        ok = False
++
++    changed = run_git(["status", "--porcelain"], project_root)
++    report = []
++    report.append("# Apply report")
++    report.append("")
++    report.append(f"- task: {meta.get('id')} - {title}")
++    report.append(f"- project: {project_root.resolve()}")
++    report.append(f"- branch: {branch}")
++    report.append(f"- threeway: {bool(args.threeway)}")
++    report.append("")
++    report.append("## Result")
++    report.append("Applied patch." if ok else "Failed to apply patch.")
++    report.append("")
++    report.append("## git apply output")
++    report.append("```")
++    report.append(apply_out.strip() or "(no output)")
++    report.append("```")
++    report.append("")
++    report.append("## Working tree status")
++    report.append("```")
++    report.append(changed.strip() or "(clean)")
++    report.append("```")
++    (task_dir / "apply_report.md").write_text("\n".join(report).rstrip() + "\n", encoding="utf-8")
++
++    if not ok:
++        raise RuntimeError(f"Patch apply failed. See apply_report.md in {task_dir}")
++
++    print(f"Applied patch on branch: {branch}")
++    print(f"Report: {task_dir / 'apply_report.md'}")
++    return 0
++
++
++def cmd_run(args: argparse.Namespace) -> int:
++    """Run an allowed command preset and capture logs into the task folder."""
++    task_dir = find_task_dir(args.task_id)
++    project_root = resolve_project_path(args.project)
++    if not project_root.exists():
++        raise FileNotFoundError(f"Project path does not exist: {project_root}")
++
++    presets = load_command_presets()
++    if args.preset not in presets:
++        available = ", ".join(sorted(presets.keys())) or "(none configured)"
++        raise RuntimeError(f"Unknown preset '{args.preset}'. Available: {available}")
++
++    spec = presets[args.preset]
++    rel_cwd = (spec.get("cwd") or ".").strip()
++    cmd = spec.get("cmd")
++    if not isinstance(cmd, list) or not cmd:
++        raise RuntimeError(f"Invalid preset '{args.preset}': expected {{'cmd': [..], 'cwd': '...'}}")
++
++    cwd = (project_root / rel_cwd).resolve()
++    if not cwd.exists():
++        raise FileNotFoundError(f"Preset cwd does not exist: {cwd}")
++
++    timeout_s = int(spec.get("timeout_s") or args.timeout_s)
++    started = now_utc_iso()
++    t0 = time.time()
++    code, output = run_capture([str(x) for x in cmd], cwd=cwd, timeout_s=timeout_s)
++    duration_s = round(time.time() - t0, 3)
++    finished = now_utc_iso()
++
++    out_txt = task_dir / f"run_{args.preset}.log"
++    out_txt.write_text(output, encoding="utf-8")
++
++    report = {
++        "task_id": args.task_id,
++        "project": str(project_root.resolve()),
++        "preset": args.preset,
++        "cwd": str(cwd),
++        "cmd": cmd,
++        "started_utc": started,
++        "finished_utc": finished,
++        "duration_s": duration_s,
++        "exit_code": code,
++        "log_file": out_txt.name,
++    }
++    (task_dir / f"run_{args.preset}.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
++
++    print(f"Ran preset '{args.preset}' (exit {code}, {duration_s}s)")
++    print(f"Log: {out_txt}")
++    return 0
++
++
++
+ # ===== CLI =====
+ def main() -> int:
+     parser = argparse.ArgumentParser(prog="ai", description="AI Pipeline Runner")
+@@ -535,6 +724,58 @@
+     )
+     p_build.set_defaults(func=cmd_build)
+ 
++
++    # ---- apply ----
++    p_apply = sub.add_parser(
++        "apply",
++        help="Apply patch.diff to the project on a new git branch (safe by default)"
++    )
++    p_apply.add_argument("task_id")
++    p_apply.add_argument(
++        "--project",
++        required=True,
++        help="Project key from projects.json or direct path"
++    )
++    p_apply.add_argument(
++        "--branch",
++        help="Branch name to create/use (default: ace/<id>-<title>)"
++    )
++    p_apply.add_argument(
++        "--threeway",
++        action="store_true",
++        help="Use git apply --3way (can help when context drifted)"
++    )
++    p_apply.add_argument(
++        "--force",
++        action="store_true",
++        help="Apply even if working tree is dirty (not recommended)"
++    )
++    p_apply.set_defaults(func=cmd_apply)
++
++    # ---- run ----
++    p_run = sub.add_parser(
++        "run",
++        help="Run an allowed command preset and capture logs into the task folder"
++    )
++    p_run.add_argument("task_id")
++    p_run.add_argument(
++        "--project",
++        required=True,
++        help="Project key from projects.json or direct path"
++    )
++    p_run.add_argument(
++        "--preset",
++        required=True,
++        help="Preset name from ace_commands.json (e.g. ui_start)"
++    )
++    p_run.add_argument(
++        "--timeout-s",
++        type=int,
++        default=900,
++        help="Fallback timeout if preset doesn't specify timeout_s (seconds)"
++    )
++    p_run.set_defaults(func=cmd_run)
++
+     args = parser.parse_args()
+     return args.func(args)
+ 
+
+diff --git a/ace_commands.json b/ace_commands.json
+new file mode 100644
+--- /dev/null
++++ b/ace_commands.json
+@@ -0,0 +1,17 @@
++{
++  "ui_start": {
++    "cwd": "ui",
++    "cmd": ["npm", "start"],
++    "timeout_s": 1200
++  },
++  "ui_node": {
++    "cwd": "ui",
++    "cmd": ["node", "server.js"],
++    "timeout_s": 1200
++  },
++  "runner_compile": {
++    "cwd": "runner",
++    "cmd": ["python", "-m", "py_compile", "ai.py"],
++    "timeout_s": 60
++  }
++}

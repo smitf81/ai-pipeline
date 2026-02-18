@@ -1,0 +1,17 @@
+{
+  "ui_start": {
+    "cwd": "ui",
+    "cmd": ["npm", "start"],
+    "timeout_s": 1200
+  },
+  "ui_node": {
+    "cwd": "ui",
+    "cmd": ["node", "server.js"],
+    "timeout_s": 1200
+  },
+  "runner_compile": {
+    "cwd": "runner",
+    "cmd": ["python", "-m", "py_compile", "ai.py"],
+    "timeout_s": 60
+  }
+}
