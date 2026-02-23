@@ -80,11 +80,15 @@
             <label>Task ID</label>
             <input id="taskIdInput" value="0001" placeholder="0001" />
 
-            <div class="button-row">
+            
+            <label>Run preset</label>
+            <select id="presetSelect"></select>
+<div class="button-row">
                 <button onclick="runCommand('scan')">Scan</button>
                 <button onclick="runCommand('manage')">Manage</button>
                 <button onclick="runCommand('build')">Build</button>
                 <button onclick="runCommand('apply')">Apply</button>
+                <button onclick=\"runCommand('run')\">Run</button>
             </div>
 
             <pre id="commandOutput" class="console"></pre>

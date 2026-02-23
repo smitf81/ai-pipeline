@@ -37,12 +37,13 @@ function renderList(id, items) {
 
 async function boot() {
     try {
-        // These endpoints should exist in your server.js already:
+        // Expected endpoints:
         // /api/state, /api/decisions, /api/tasks
         const state = await fetchJSON("/api/state");
-        setText("current_focus", state.current_focus || "�");
-        setText("active_milestone", state.active_milestone || "�");
-        setText("last_updated", state.last_updated || "�");
+
+        setText("current_focus", state.current_focus || "-");
+        setText("active_milestone", state.active_milestone || "-");
+        setText("last_updated", state.last_updated || "-");
 
         renderList("next_actions", state.next_actions);
         renderList("blockers", state.blockers);
@@ -54,28 +55,28 @@ async function boot() {
         setText("tasks_text", tasks.trim() || "No tasks yet.");
 
         setText("status_badge", "LIVE");
-        document.getElementById("status_badge").classList.add("ok");
+        document.getElementById("status_badge")?.classList.add("ok");
     } catch (err) {
         console.error(err);
         setText("status_badge", "ERROR");
-        document.getElementById("status_badge").classList.add("bad");
+        document.getElementById("status_badge")?.classList.add("bad");
         setText("error_box", String(err));
-        document.getElementById("error_wrap").style.display = "block";
+        const wrap = document.getElementById("error_wrap");
+        if (wrap) wrap.style.display = "block";
     }
 }
-
-document.addEventListener("DOMContentLoaded", () => { boot(); loadProjects(); });
 
 async function loadProjects() {
     try {
         const res = await fetch("/api/projects");
         if (!res.ok) throw new Error("Failed to load projects");
         const data = await res.json();
+
         const select = document.getElementById("projectSelect");
         if (!select) return;
 
         select.innerHTML = "";
-        for (const key of Object.keys(data)) {
+        for (const key of Object.keys(data || {})) {
             const opt = document.createElement("option");
             opt.value = key;
             opt.textContent = key;
@@ -88,9 +89,43 @@ async function loadProjects() {
     }
 }
 
+async function loadPresets() {
+    // Optional feature: the UI may contain a preset dropdown.
+    // If the endpoint or element does not exist, fail silently.
+    try {
+        const select = document.getElementById("presetSelect");
+        if (!select) return;
+
+        const res = await fetch("/api/presets");
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const presets = (data && Array.isArray(data.presets)) ? data.presets : [];
+
+        select.innerHTML = "";
+        if (presets.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "(no presets)";
+            select.appendChild(opt);
+            return;
+        }
+
+        for (const p of presets) {
+            const opt = document.createElement("option");
+            opt.value = p;
+            opt.textContent = p;
+            select.appendChild(opt);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
 async function runCommand(cmd) {
     const taskId = (document.getElementById("taskIdInput")?.value || "").trim();
     const project = document.getElementById("projectSelect")?.value;
+    const preset = document.getElementById("presetSelect")?.value || "";
 
     const out = document.getElementById("commandOutput");
     if (out) out.textContent = "Running...";
@@ -100,10 +135,18 @@ async function runCommand(cmd) {
         return;
     }
 
+    if (cmd === "run" && !preset) {
+        if (out) out.textContent = "Please select a run preset.";
+        return;
+    }
+
+    const payload = { cmd, task_id: taskId, project };
+    if (cmd === "run") payload.preset = preset;
+
     const res = await fetch("/api/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cmd, task_id: taskId, project })
+        body: JSON.stringify(payload)
     });
 
     const data = await res.json().catch(() => ({}));
@@ -115,3 +158,9 @@ async function runCommand(cmd) {
 
     if (out) out.textContent = text;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    boot();
+    loadProjects();
+    loadPresets();
+});

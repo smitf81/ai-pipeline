@@ -13,6 +13,8 @@ app.use(express.json());
 // Paths
 const UI_DIR = __dirname;                 // .../ui
 const ROOT = path.join(__dirname, '..');  // repo root (ai-pipeline)
+const COMMANDS_FILE = path.join(ROOT, 'ace_commands.json');
+
 
 // Helper to read a file relative to repo root
 function readFile(relPath, parseJson = false) {
@@ -87,8 +89,25 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
+app.get('/api/presets', async (req, res) => {
+    try {
+        if (!fs.existsSync(COMMANDS_FILE)) return res.json({ presets: [] });
+        const raw = await fs.promises.readFile(COMMANDS_FILE, 'utf8');
+        const data = JSON.parse(raw);
+        const presets = Object.keys(data || {}).sort();
+        res.json({ presets });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to read ace_commands.json', details: String(err) });
+    }
+});
+
 app.post('/api/run', (req, res) => {
-  const { cmd, task_id, project, model } = req.body || {};
+    const {
+        cmd, task_id, project, model,
+        branch, threeway, force,
+        preset, timeout_s
+    } = req.body || {};
+
 
   if (!cmd || !task_id || !project) {
     return res.status(400).json({ error: 'Missing required fields: cmd, task_id, project' });
@@ -97,7 +116,25 @@ app.post('/api/run', (req, res) => {
   const aiPath = path.join(ROOT, 'runner', 'ai.py');
 
   const args = [aiPath, cmd, String(task_id), '--project', String(project)];
-  if (model) args.push('--model', String(model));
+    // manage/build use --model
+    if (model && (cmd === 'manage' || cmd === 'build')) {
+        args.push('--model', String(model));
+    }
+
+    // apply options
+    if (cmd === 'apply') {
+        if (branch) args.push('--branch', String(branch));
+        if (threeway) args.push('--threeway');
+        if (force) args.push('--force');
+    }
+
+    // run options
+    if (cmd === 'run') {
+        if (!preset) return res.status(400).json({ error: 'Missing required field for run: preset' });
+        args.push('--preset', String(preset));
+        if (timeout_s) args.push('--timeout-s', String(timeout_s));
+    }
+
 
   const proc = spawn('python', args, { cwd: ROOT, windowsHide: true });
 
