@@ -59,6 +59,54 @@ def find_task_dir(task_id: str) -> Path:
     return matches[0]
 
 
+def load_task_meta(task_dir: Path) -> dict:
+    meta_path = task_dir / "meta.json"
+    if not meta_path.exists():
+        raise FileNotFoundError(f"Missing meta.json for task: {task_dir.name}")
+    return json.loads(meta_path.read_text(encoding="utf-8"))
+
+
+def normalized_project_key(project_key_or_path: str) -> str:
+    s = (project_key_or_path or "").strip().strip('"')
+    if not s:
+        return "unknown"
+
+    projects = load_projects()
+    if s in projects:
+        return s
+
+    # Allow callers to pass a direct path that maps to a configured project key.
+    try:
+        target = Path(s).expanduser().resolve()
+    except Exception:
+        return s
+
+    for key, configured in projects.items():
+        try:
+            if Path(configured).expanduser().resolve() == target:
+                return key
+        except Exception:
+            continue
+
+    return s
+
+
+def ensure_task_project_matches(task_dir: Path, selected_project: str) -> None:
+    meta = load_task_meta(task_dir)
+    meta_project = (meta.get("project") or "").strip()
+    if meta_project and meta_project != selected_project:
+        raise ValueError(
+            f"Task {meta.get('id', task_dir.name)} is bound to project '{meta_project}', "
+            f"but '{selected_project}' was selected."
+        )
+
+
+def context_path_for_project(task_dir: Path, project_key: str) -> Path:
+    safe_project = "".join(c for c in project_key if c.isalnum() or c in ("-", "_", ".")).strip(".")
+    safe_project = safe_project or "unknown"
+    return task_dir / f"context.{safe_project}.md"
+
+
 def call_ollama(prompt: str, model: str | None = None) -> str:
     import urllib.request
     import urllib.error
@@ -211,6 +259,7 @@ def cmd_idea(args: argparse.Namespace) -> int:
     task_dir.mkdir(parents=True, exist_ok=False)
 
     now = now_utc_iso()
+    project_key = normalized_project_key(args.project)
     (task_dir / "idea.txt").write_text(args.idea.strip() + "\n", encoding="utf-8")
     (task_dir / "plan.md").write_text(
         f"# Task {task_id}: {args.title}\n\n"
@@ -223,7 +272,11 @@ def cmd_idea(args: argparse.Namespace) -> int:
         encoding="utf-8",
     )
     (task_dir / "meta.json").write_text(
-        json.dumps({"id": task_id, "title": args.title, "created_utc": now}, indent=2) + "\n",
+        json.dumps(
+            {"id": task_id, "title": args.title, "project": project_key, "created_utc": now},
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
 
@@ -245,7 +298,10 @@ def cmd_list(_: argparse.Namespace) -> int:
         if meta.exists():
             try:
                 data = json.loads(meta.read_text(encoding="utf-8"))
-                print(f"- {data.get('id')} - {data.get('title')} ({data.get('created_utc')})")
+                print(
+                    f"- {data.get('id')} - {data.get('title')} "
+                    f"[{data.get('project', 'unknown')}] ({data.get('created_utc')})"
+                )
                 continue
             except Exception:
                 pass
@@ -253,9 +309,42 @@ def cmd_list(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_task_list(args: argparse.Namespace) -> int:
+    TASKS_DIR.mkdir(parents=True, exist_ok=True)
+    project_filter = normalized_project_key(args.project) if args.project else None
+    entries = []
+    for task_dir in TASKS_DIR.iterdir():
+        if not task_dir.is_dir() or not task_dir.name[:4].isdigit():
+            continue
+        meta_path = task_dir / "meta.json"
+        if not meta_path.exists():
+            continue
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        project = meta.get("project") or "unknown"
+        if project_filter and project != project_filter:
+            continue
+        entries.append(
+            {
+                "id": str(meta.get("id") or task_dir.name[:4]),
+                "slug": task_dir.name,
+                "title": str(meta.get("title") or task_dir.name),
+                "project": project,
+            }
+        )
+
+    entries.sort(key=lambda item: item.get("id", ""), reverse=True)
+    print(json.dumps(entries, indent=2))
+    return 0
+
+
 def cmd_scan(args: argparse.Namespace) -> int:
     task_dir = find_task_dir(args.task_id)
     project_root = resolve_project_path(args.project)
+    project_key = normalized_project_key(args.project)
+    ensure_task_project_matches(task_dir, project_key)
     if not project_root.exists():
         raise FileNotFoundError(f"Project path does not exist: {project_root}")
 
@@ -288,7 +377,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
             parts.append("```")
             parts.append("")
 
-    out_path = task_dir / "context.md"
+    out_path = context_path_for_project(task_dir, project_key)
     out_path.write_text("\n".join(parts).rstrip() + "\n", encoding="utf-8")
     print(f"✅ Wrote context bundle: {out_path}")
     return 0
@@ -297,11 +386,16 @@ def cmd_scan(args: argparse.Namespace) -> int:
 def cmd_manage(args: argparse.Namespace) -> int:
     task_dir = find_task_dir(args.task_id)
     idea = (task_dir / "idea.txt").read_text(encoding="utf-8").strip()
-    meta = json.loads((task_dir / "meta.json").read_text(encoding="utf-8"))
+    meta = load_task_meta(task_dir)
     title = meta.get("title", task_dir.name)
+    task_project = (meta.get("project") or "unknown").strip() or "unknown"
 
     ctx = ""
-    ctx_path = task_dir / "context.md"
+    ctx_path = context_path_for_project(task_dir, task_project)
+    if not ctx_path.exists():
+        legacy = task_dir / "context.md"
+        if legacy.exists():
+            ctx_path = legacy
     if ctx_path.exists():
         raw = ctx_path.read_text(encoding="utf-8", errors="replace")
         ctx = raw[:45000] + ("\n\n...(context truncated)\n" if len(raw) > 45000 else "")
@@ -360,15 +454,21 @@ def cmd_build(args: argparse.Namespace) -> int:
     DOES NOT apply the patch.
     """
     task_dir = find_task_dir(args.task_id)
+    project_root = resolve_project_path(args.project)
+    project_key = normalized_project_key(args.project)
+    ensure_task_project_matches(task_dir, project_key)
     plan_path = task_dir / "plan.md"
     idea_path = task_dir / "idea.txt"
-    ctx_path = task_dir / "context.md"
+    ctx_path = context_path_for_project(task_dir, project_key)
+    if not ctx_path.exists():
+        legacy = task_dir / "context.md"
+        if legacy.exists():
+            ctx_path = legacy
     if not plan_path.exists():
         raise FileNotFoundError("plan.md missing. Run manage first.")
     if not ctx_path.exists():
-        raise FileNotFoundError("context.md missing. Run scan first.")
+        raise FileNotFoundError(f"{ctx_path.name} missing. Run scan first.")
 
-    project_root = resolve_project_path(args.project)
     if not project_root.exists():
         raise FileNotFoundError(f"Project path does not exist: {project_root}")
 
@@ -450,10 +550,15 @@ def main() -> int:
     p_idea = sub.add_parser("idea", help="Create a new task")
     p_idea.add_argument("title")
     p_idea.add_argument("idea")
+    p_idea.add_argument("--project", default="unknown", help="Project key this task belongs to")
     p_idea.set_defaults(func=cmd_idea)
 
     p_list = sub.add_parser("list", help="List tasks")
     p_list.set_defaults(func=cmd_list)
+
+    p_task_list = sub.add_parser("task_list", help="Print task metadata as JSON, optionally filtered by project")
+    p_task_list.add_argument("--project", help="Filter by project key")
+    p_task_list.set_defaults(func=cmd_task_list)
 
     p_scan = sub.add_parser("scan", help="Scan a project and write context.md into the task folder")
     p_scan.add_argument("task_id")
