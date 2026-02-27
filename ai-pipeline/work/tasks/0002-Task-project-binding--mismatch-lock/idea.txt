@@ -1,0 +1,21 @@
+Add project to each task’s meta file (work/tasks/<id-...>/meta.json).
+
+Add endpoint GET /api/task_list?project=<key> that reads work/tasks/*/meta.json and returns tasks filtered by project.
+
+Update dashboard UI:
+
+Add Task dropdown next to Project dropdown.
+
+When project changes, refresh task list.
+
+Selecting a task autofills Task ID and locks to that project.
+
+Add mismatch prevention:
+
+If task meta declares a project and user selects a different project, refuse to run and show a clear error.
+
+Prevent context overwrite:
+
+Option A: write context.<project>.md (preferred)
+
+Option B: before overwriting context.md, copy to context.prev.md
