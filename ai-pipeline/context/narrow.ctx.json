@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-02-27T09:40:24Z",
+  "active_goal": "Implement executable ContextOps update flow with validation and atomic writes.",
+  "token_budget": {
+    "target_max": 6000,
+    "estimated_used": 307
+  },
+  "provenance": {
+    "broad_context_id": "broad-20260227T094024Z",
+    "full_trace_pointer": "full:evt-2026-02-27-094024"
+  },
+  "items": [
+    {
+      "confidence": 0.97,
+      "id": "nar-obj-0001",
+      "priority": "P0",
+      "source_refs": [
+        "F:README.md",
+        "F:runner/ai.py"
+      ],
+      "summary_compact": "Maintain executable context update pipeline.",
+      "summary_human": "Run the implemented context update command to regenerate tier artifacts with validation and checksums.",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "contextops",
+        "automation",
+        "execution"
+      ],
+      "type": "task",
+      "valid_from": "2026-02-27T09:40:24Z",
+      "valid_to": null
+    },
+    {
+      "confidence": 0.94,
+      "id": "nar-dec-0002",
+      "priority": "P1",
+      "source_refs": [
+        "F:runner/ai.py",
+        "F:context/CONTEXTOPS.md"
+      ],
+      "summary_compact": "Replace pseudo flow with executable CLI.",
+      "summary_human": "The context refresh workflow is now implemented as an executable command instead of pseudocode-only documentation.",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "decision",
+        "implementation"
+      ],
+      "type": "decision",
+      "valid_from": "2026-02-27T09:40:24Z",
+      "valid_to": null
+    }
+  ]
+}
