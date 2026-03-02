@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Core Engine</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">ACE</div>
+                <div>
+                    <div class="brand-title">AI Core Engine</div>
+                    <div class="brand-sub">Local-first project brain</div>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <span class="badge" id="status_badge">BOOTING</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="error_wrap" class="card error" style="display:none;">
+            <div class="card-title">Something went wrong</div>
+            <pre id="error_box"></pre>
+        </section>
+
+        <section class="grid">
+            <div class="card">
+                <div class="card-title">Current Focus</div>
+                <div class="big" id="current_focus">—</div>
+
+                <div class="meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Active milestone</div>
+                        <div class="meta-value" id="active_milestone">—</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Last updated</div>
+                        <div class="meta-value" id="last_updated">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Next Actions</div>
+                <ul class="list" id="next_actions"></ul>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Blockers</div>
+                <ul class="list" id="blockers"></ul>
+            </div>
+        </section>
+
+        <section class="two-col">
+            <div class="card">
+                <div class="card-title">Recent Decisions</div>
+                <pre class="doc" id="decisions_text"></pre>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Tasks</div>
+                <pre class="doc" id="tasks_text"></pre>
+            </div>
+        </section>
+    
+        <!-- Pipeline Control -->
+        <section class="card">
+            <div class="card-title">Pipeline Control</div>
+
+            <label>Project</label>
+            <select id="projectSelect"></select>
+
+            <label>Task ID</label>
+            <input id="taskIdInput" value="0001" placeholder="0001" />
+
+            
+            <label>Run preset</label>
+            <select id="presetSelect"></select>
+<div class="button-row">
+                <button onclick="runCommand('scan')">Scan</button>
+                <button onclick="runCommand('manage')">Manage</button>
+                <button onclick="runCommand('build')">Build</button>
+                <button onclick="runCommand('apply')">Apply</button>
+                <button onclick=\"runCommand('run')\">Run</button>
+            </div>
+
+            <pre id="commandOutput" class="console"></pre>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <div>AI Core Engine • MVP UI</div>
+        <div class="muted">Repo-backed state • No paid APIs</div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

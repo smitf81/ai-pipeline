@@ -1,0 +1,1 @@
+After Unreal imports from bridge folder, delete processed files so nothing reimports on restart.

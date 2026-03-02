@@ -1,0 +1,12 @@
+{
+  "current_focus": "Boot AI Core Engine MVP and stabilise project brain.",
+  "active_milestone": "Milestone 1 – Core Brain + UI",
+  "last_updated": "2026-02-13",
+  "blockers": [],
+  "next_actions": [
+    "Implement Manager v0 to generate state.json",
+    "Wire dashboard to show formatted state instead of raw JSON",
+    "Add DocScribe agent stub",
+    "Commit initial AI Core Engine structure"
+  ]
+}
