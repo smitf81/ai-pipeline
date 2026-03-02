@@ -57,6 +57,14 @@ def find_task_dir(task_id: str) -> Path:
     task_id = task_id.strip()
     if task_id.isdigit():
         prefix = f"{int(task_id):04d}"
+        exact = TASKS_DIR / prefix
+        if exact.exists() and exact.is_dir():
+            return exact
+    elif "-" in task_id and task_id[:4].isdigit():
+        prefix = task_id[:4]
+        exact_name = TASKS_DIR / task_id
+        if exact_name.exists() and exact_name.is_dir():
+            return exact_name
     else:
         raise ValueError("Task id must be numeric (e.g. 0001)")
 
@@ -100,6 +108,21 @@ def run_git(args: list[str], cwd: Path) -> str:
     except Exception:
         return ""
 
+
+def run_git_checked(args: list[str], cwd: Path) -> str:
+    proc = subprocess.run(
+        ["git", *args],
+        cwd=str(cwd),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if proc.returncode != 0:
+        raise RuntimeError((proc.stdout or "").strip() or f"git {' '.join(args)} failed")
+    return (proc.stdout or "").strip()
+
 def is_git_repo(cwd: Path) -> bool:
     try:
         out = subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"], cwd=str(cwd), stderr=subprocess.STDOUT)
@@ -116,6 +139,69 @@ def get_clean_worktree(cwd: Path):
         return (s.strip() == ""), s
     except Exception as e:
         return False, str(e)
+
+
+def get_clean_tracked_worktree(cwd: Path):
+    """Return (clean: bool, status_output: str) for tracked files only."""
+    try:
+        out = subprocess.check_output(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=str(cwd),
+            stderr=subprocess.STDOUT,
+        )
+        s = out.decode("utf-8", errors="replace")
+        return (s.strip() == ""), s
+    except Exception as e:
+        return False, str(e)
+
+
+def validate_patch_paths(patch_text: str) -> tuple[bool, str]:
+    forbidden_prefixes = (".git/", ".hg/", ".svn/")
+    seen_paths: set[str] = set()
+    for line in patch_text.splitlines():
+        if line.startswith("diff --git "):
+            parts = line.split()
+            if len(parts) < 4:
+                return False, "Malformed 'diff --git' header."
+            for raw in (parts[2], parts[3]):
+                if raw in ("a/dev/null", "b/dev/null"):
+                    continue
+                cleaned = raw[2:] if raw[:2] in ("a/", "b/") else raw
+                seen_paths.add(cleaned)
+
+    if not seen_paths:
+        return False, "No file paths found in patch."
+
+    for rel in seen_paths:
+        p = Path(rel)
+        if p.is_absolute() or ".." in p.parts:
+            return False, f"Patch contains unsafe path: {rel}"
+        rel_posix = p.as_posix().lstrip("./")
+        if rel_posix.startswith(forbidden_prefixes):
+            return False, f"Patch touches forbidden path: {rel}"
+    return True, "OK"
+
+
+def ensure_gitignore_has_node_rules(repo_root: Path) -> tuple[bool, list[str]]:
+    gitignore = repo_root / ".gitignore"
+    required = [
+        "ui/node_modules/",
+        "**/node_modules/",
+        "npm-debug.log*",
+    ]
+    existing_text = gitignore.read_text(encoding="utf-8") if gitignore.exists() else ""
+    existing = {line.strip() for line in existing_text.splitlines() if line.strip()}
+    missing = [rule for rule in required if rule not in existing]
+    return len(missing) == 0, missing
+
+
+def next_available_branch_name(repo_root: Path, base: str) -> str:
+    candidate = base
+    idx = 2
+    while run_git(["branch", "--list", candidate], repo_root).strip():
+        candidate = f"{base}-{idx}"
+        idx += 1
+    return candidate
 
 
 def slugify(s: str, max_len: int = 32) -> str:
@@ -532,10 +618,23 @@ Output requirements:
 
 def cmd_apply(args: argparse.Namespace) -> int:
     """Apply task patch.diff to the target project on a new git branch."""
-    task_dir = find_task_dir(args.task_id)
+    raw_task_id = args.task_id or args.task
+    if not raw_task_id:
+        raise ValueError("Task id is required (use positional task_id or --task).")
+    task_dir = find_task_dir(raw_task_id)
     patch_path = task_dir / "patch.diff"
     if not patch_path.exists():
         raise FileNotFoundError("patch.diff missing. Run build first.")
+    if patch_path.stat().st_size == 0:
+        raise RuntimeError("patch.diff is empty. Refusing to apply.")
+
+    patch_text = patch_path.read_text(encoding="utf-8", errors="replace")
+    if not patch_text.strip():
+        raise RuntimeError("patch.diff is empty after trimming whitespace. Refusing to apply.")
+
+    patch_ok, patch_reason = validate_patch_paths(patch_text)
+    if not patch_ok:
+        raise RuntimeError(f"Unsafe patch: {patch_reason}")
 
     project_root = resolve_project_path(args.project)
     if not project_root.exists():
@@ -544,69 +643,58 @@ def cmd_apply(args: argparse.Namespace) -> int:
     if not is_git_repo(project_root):
         raise RuntimeError("Target project is not a git repo. Initialise git first or apply manually.")
 
-    clean, status = get_clean_worktree(project_root)
-    if not clean and not args.force:
-        (task_dir / "apply_report.md").write_text(
-            "# Apply report\n\n"
-            "Refusing to apply: working tree has uncommitted changes.\n\n"
-            "Run again with --force to proceed anyway (not recommended).\n\n"
-            "## git status --porcelain\n"
-            f"```\n{status}```\n",
-            encoding="utf-8",
+    branch_now = run_git_checked(["rev-parse", "--abbrev-ref", "HEAD"], project_root)
+    if not branch_now or branch_now == "HEAD":
+        raise RuntimeError("Cannot determine current branch (detached HEAD is not supported).")
+
+    clean, status = get_clean_tracked_worktree(project_root)
+    if not clean:
+        raise RuntimeError(
+            "Refusing to apply: repository has uncommitted tracked changes.\n"
+            "Commit or stash changes first.\n"
+            f"git status --porcelain --untracked-files=no:\n{status.strip()}"
         )
-        raise RuntimeError("Working tree not clean. Commit/stash changes or rerun with --force.")
 
-    meta_path = task_dir / "meta.json"
-    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {"id": args.task_id, "title": ""}
-    title = meta.get("title", "")
-    branch = args.branch or f"ace/{meta.get('id')}-{slugify(title)}"
+    gitignore_ok, missing_rules = ensure_gitignore_has_node_rules(project_root)
+    if not gitignore_ok:
+        raise RuntimeError(
+            "Refusing to apply: .gitignore is missing required node_modules/npm debug ignore rules:\n"
+            + "\n".join(f"- {r}" for r in missing_rules)
+        )
 
-    existing = run_git(["branch", "--list", branch], project_root)
-    if existing.strip():
-        _ = run_git(["checkout", branch], project_root)
-    else:
-        _ = run_git(["checkout", "-b", branch], project_root)
+    task_id = f"{int(raw_task_id):04d}" if raw_task_id.isdigit() else raw_task_id[:4]
+    branch = next_available_branch_name(project_root, f"ace/task-{task_id}-apply")
 
-    apply_args = ["apply", "--whitespace=nowarn"]
-    if args.threeway:
-        apply_args.append("--3way")
+    if args.dry_run:
+        print("[DRY RUN] Validation passed.")
+        print(f"[DRY RUN] Task folder: {task_dir}")
+        print(f"[DRY RUN] Patch: {patch_path}")
+        print(f"[DRY RUN] Current branch: {branch_now}")
+        print(f"[DRY RUN] Would create branch: {branch}")
+        print("[DRY RUN] Would run: git apply --index <patch>")
+        print(f"[DRY RUN] Would commit: ACE: apply task {task_id}")
+        return 0
 
+    run_git_checked(["checkout", "-b", branch], project_root)
     try:
-        out = subprocess.check_output(["git", *apply_args, str(patch_path)], cwd=str(project_root), stderr=subprocess.STDOUT)
-        apply_out = out.decode("utf-8", errors="replace")
-        ok = True
-    except subprocess.CalledProcessError as e:
-        apply_out = e.output.decode("utf-8", errors="replace") if e.output else str(e)
-        ok = False
+        run_git_checked(["apply", "--index", str(patch_path)], project_root)
+    except RuntimeError as e:
+        run_git(["reset", "--hard", "HEAD"], project_root)
+        run_git(["checkout", branch_now], project_root)
+        run_git(["branch", "-D", branch], project_root)
+        raise RuntimeError(f"Patch apply failed on branch {branch}: {e}")
 
-    changed = run_git(["status", "--porcelain"], project_root)
-    report = []
-    report.append("# Apply report")
-    report.append("")
-    report.append(f"- task: {meta.get('id')} - {title}")
-    report.append(f"- project: {project_root.resolve()}")
-    report.append(f"- branch: {branch}")
-    report.append(f"- threeway: {bool(args.threeway)}")
-    report.append("")
-    report.append("## Result")
-    report.append("Applied patch." if ok else "Failed to apply patch.")
-    report.append("")
-    report.append("## git apply output")
-    report.append("```")
-    report.append(apply_out.strip() or "(no output)")
-    report.append("```")
-    report.append("")
-    report.append("## Working tree status")
-    report.append("```")
-    report.append(changed.strip() or "(clean)")
-    report.append("```")
-    (task_dir / "apply_report.md").write_text("\n".join(report).rstrip() + "\n", encoding="utf-8")
+    commit_subject = f"ACE: apply task {task_id}"
+    commit_body = f"Applied from task folder: {task_dir.relative_to(ROOT).as_posix()}"
+    run_git_checked(["commit", "-m", commit_subject, "-m", commit_body], project_root)
 
-    if not ok:
-        raise RuntimeError(f"Patch apply failed. See apply_report.md in {task_dir}")
+    commit_hash = run_git_checked(["rev-parse", "--short", "HEAD"], project_root)
+    changed_files = run_git_checked(["show", "--name-only", "--pretty=format:", "HEAD"], project_root)
+    changed_count = len([line for line in changed_files.splitlines() if line.strip()])
 
-    print(f"Applied patch on branch: {branch}")
-    print(f"Report: {task_dir / 'apply_report.md'}")
+    print(f"Apply complete on branch: {branch}")
+    print(f"Commit: {commit_hash}")
+    print(f"Changed files: {changed_count}")
     return 0
 
 
@@ -730,25 +818,17 @@ def main() -> int:
         "apply",
         help="Apply patch.diff to the project on a new git branch (safe by default)"
     )
-    p_apply.add_argument("task_id")
+    p_apply.add_argument("task_id", nargs="?")
+    p_apply.add_argument("--task", dest="task", help="Task id (e.g. 0001)")
     p_apply.add_argument(
         "--project",
         required=True,
         help="Project key from projects.json or direct path"
     )
     p_apply.add_argument(
-        "--branch",
-        help="Branch name to create/use (default: ace/<id>-<title>)"
-    )
-    p_apply.add_argument(
-        "--threeway",
+        "--dry-run",
         action="store_true",
-        help="Use git apply --3way (can help when context drifted)"
-    )
-    p_apply.add_argument(
-        "--force",
-        action="store_true",
-        help="Apply even if working tree is dirty (not recommended)"
+        help="Validate safety checks and print planned actions without changing git state"
     )
     p_apply.set_defaults(func=cmd_apply)
 

@@ -143,10 +143,15 @@ async function runCommand(cmd) {
     const payload = { cmd, task_id: taskId, project };
     if (cmd === "run") payload.preset = preset;
 
-    const res = await fetch("/api/run", {
+    const endpoint = cmd === "apply" ? "/api/apply" : "/api/run";
+    const body = cmd === "apply"
+        ? { projectKey: project, taskId }
+        : payload;
+
+    const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(body)
     });
 
     const data = await res.json().catch(() => ({}));
