@@ -1,14 +1,13 @@
 @echo off
 setlocal
 
-set "ROOT=C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline"
+rem Change into the updated ACE UI folder
+cd /d "C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline\ui"
 
-cd /d "%ROOT%\ui"
+rem OPTIONAL: uncomment the next line the first time to install deps
+rem call npm install
 
-echo Starting ACE from:
-echo %ROOT%
-echo.
-
+rem Start the UI server
 node server.js
 
-pause
+endlocal
