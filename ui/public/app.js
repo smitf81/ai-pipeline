@@ -1,171 +1,293 @@
-async function fetchJSON(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
-    return res.json();
-}
+const state = {
+  refreshIntervalMs: 10000,
+  refreshTimer: null,
+  presets: [],
+  currentRunId: null,
+  currentOutput: '',
+  pendingApplyPayload: null,
+};
 
-async function fetchText(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
-    return res.text();
+async function api(url, options = {}) {
+  const res = await fetch(url, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed: ${res.status}`);
+  return data;
 }
 
 function setText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text ?? "";
+  const el = document.getElementById(id);
+  if (el) el.textContent = text ?? '';
 }
 
 function renderList(id, items) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = "";
-
-    if (!items || items.length === 0) {
-        const li = document.createElement("li");
-        li.className = "muted";
-        li.textContent = "None";
-        el.appendChild(li);
-        return;
-    }
-
-    for (const item of items) {
-        const li = document.createElement("li");
-        li.textContent = item;
-        el.appendChild(li);
-    }
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '';
+  (items && items.length ? items : ['None']).forEach((item) => {
+    const li = document.createElement('li');
+    li.textContent = item;
+    el.appendChild(li);
+  });
 }
 
-async function boot() {
-    try {
-        // Expected endpoints:
-        // /api/state, /api/decisions, /api/tasks
-        const state = await fetchJSON("/api/state");
+function dashboardText(files, rel) {
+  return files?.[rel]?.content?.trim() || '(missing)';
+}
 
-        setText("current_focus", state.current_focus || "-");
-        setText("active_milestone", state.active_milestone || "-");
-        setText("last_updated", state.last_updated || "-");
+async function refreshDashboard() {
+  try {
+    const data = await api('/api/dashboard');
+    const s = data.state || {};
+    setText('current_focus', s.current_focus || '-');
+    renderList('next_actions', s.next_actions || []);
+    renderList('blockers', s.blockers || []);
 
-        renderList("next_actions", state.next_actions);
-        renderList("blockers", state.blockers);
+    setText('decisions_text', dashboardText(data.files, 'projects/emergence/decisions.md'));
+    setText('tasks_text', dashboardText(data.files, 'projects/emergence/tasks.md'));
+    setText('roadmap_text', dashboardText(data.files, 'projects/emergence/roadmap.md'));
+    setText('plan_text', dashboardText(data.files, 'projects/emergence/plan.md'));
+    setText('brain_text', dashboardText(data.files, 'projects/emergence/project_brain.md'));
+    setText('changelog_text', dashboardText(data.files, 'projects/emergence/changelog.md'));
 
-        const decisions = await fetchText("/api/decisions");
-        const tasks = await fetchText("/api/tasks");
+    setText('refreshMeta', `Last refreshed: ${new Date(data.refreshedAt).toLocaleString()} (every ${Math.round((data.refreshIntervalMs || 10000) / 1000)}s)`);
+    setText('refreshErrors', data.errors?.length ? `Read errors: ${data.errors.map((e) => `${e.file}: ${e.error}`).join(' | ')}` : '');
 
-        setText("decisions_text", decisions.trim() || "No decisions yet.");
-        setText("tasks_text", tasks.trim() || "No tasks yet.");
-
-        setText("status_badge", "LIVE");
-        document.getElementById("status_badge")?.classList.add("ok");
-    } catch (err) {
-        console.error(err);
-        setText("status_badge", "ERROR");
-        document.getElementById("status_badge")?.classList.add("bad");
-        setText("error_box", String(err));
-        const wrap = document.getElementById("error_wrap");
-        if (wrap) wrap.style.display = "block";
+    const badge = document.getElementById('status_badge');
+    if (badge) {
+      badge.textContent = 'LIVE';
+      badge.classList.remove('bad');
+      badge.classList.add('ok');
     }
+
+    const nextInterval = Number(data.refreshIntervalMs) || 10000;
+    if (nextInterval !== state.refreshIntervalMs) {
+      state.refreshIntervalMs = nextInterval;
+      startAutoRefresh();
+    }
+  } catch (err) {
+    const badge = document.getElementById('status_badge');
+    if (badge) {
+      badge.textContent = 'ERROR';
+      badge.classList.remove('ok');
+      badge.classList.add('bad');
+    }
+    setText('error_box', String(err));
+    document.getElementById('error_wrap').style.display = 'block';
+  }
+}
+
+function startAutoRefresh() {
+  if (state.refreshTimer) clearInterval(state.refreshTimer);
+  state.refreshTimer = setInterval(refreshDashboard, state.refreshIntervalMs);
 }
 
 async function loadProjects() {
-    try {
-        const res = await fetch("/api/projects");
-        if (!res.ok) throw new Error("Failed to load projects");
-        const data = await res.json();
+  const data = await api('/api/projects');
+  const select = document.getElementById('projectSelect');
+  select.innerHTML = '';
+  data.projects.forEach((p) => {
+    const opt = document.createElement('option');
+    opt.value = p.key;
+    opt.textContent = `${p.name} (${p.path})`;
+    select.appendChild(opt);
+  });
+}
 
-        const select = document.getElementById("projectSelect");
-        if (!select) return;
-
-        select.innerHTML = "";
-        for (const key of Object.keys(data || {})) {
-            const opt = document.createElement("option");
-            opt.value = key;
-            opt.textContent = key;
-            select.appendChild(opt);
-        }
-    } catch (err) {
-        console.error(err);
-        const out = document.getElementById("commandOutput");
-        if (out) out.textContent = String(err);
-    }
+async function loadTasks() {
+  const data = await api('/api/tasks');
+  const select = document.getElementById('taskSelect');
+  select.innerHTML = '';
+  data.tasks.forEach((task) => {
+    const opt = document.createElement('option');
+    opt.value = task;
+    opt.textContent = task;
+    select.appendChild(opt);
+  });
+  if (data.tasks[0]) document.getElementById('taskIdInput').value = data.tasks[0];
 }
 
 async function loadPresets() {
-    // Optional feature: the UI may contain a preset dropdown.
-    // If the endpoint or element does not exist, fail silently.
-    try {
-        const select = document.getElementById("presetSelect");
-        if (!select) return;
-
-        const res = await fetch("/api/presets");
-        if (!res.ok) return;
-
-        const data = await res.json();
-        const presets = (data && Array.isArray(data.presets)) ? data.presets : [];
-
-        select.innerHTML = "";
-        if (presets.length === 0) {
-            const opt = document.createElement("option");
-            opt.value = "";
-            opt.textContent = "(no presets)";
-            select.appendChild(opt);
-            return;
-        }
-
-        for (const p of presets) {
-            const opt = document.createElement("option");
-            opt.value = p;
-            opt.textContent = p;
-            select.appendChild(opt);
-        }
-    } catch (err) {
-        console.error(err);
-    }
+  const data = await api('/api/presets');
+  state.presets = data.presets || [];
+  const select = document.getElementById('presetSelect');
+  const help = document.getElementById('presetHelp');
+  select.innerHTML = '';
+  state.presets.forEach((p) => {
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+  });
+  const first = state.presets[0];
+  help.textContent = first ? `${first.name}: ${first.description}` : 'No presets configured.';
+  select.onchange = () => {
+    const preset = state.presets.find((p) => p.name === select.value);
+    help.textContent = preset ? `${preset.name}: ${preset.description}` : '';
+  };
 }
 
-async function runCommand(cmd) {
-    const taskId = (document.getElementById("taskIdInput")?.value || "").trim();
-    const project = document.getElementById("projectSelect")?.value;
-    const preset = document.getElementById("presetSelect")?.value || "";
+function selectedTaskId() {
+  return (document.getElementById('taskIdInput').value || document.getElementById('taskSelect').value || '').trim();
+}
 
-    const out = document.getElementById("commandOutput");
-    if (out) out.textContent = "Running...";
+function setRunHeader({ status = 'idle', exit = '—', duration = '—', artifacts = [] }) {
+  setText('runStatus', status);
+  setText('runExit', exit);
+  setText('runDuration', duration);
+  setText('artifactPath', artifacts.length ? `Logs/artifacts: ${artifacts.join(', ')}` : 'No artifacts yet.');
+}
 
-    if (!taskId || !project) {
-        if (out) out.textContent = "Please select a project and enter a task id (e.g. 0001).";
-        return;
-    }
+function appendOutput(text) {
+  state.currentOutput += text;
+  const out = document.getElementById('commandOutput');
+  out.textContent = state.currentOutput;
+  out.scrollTop = out.scrollHeight;
+}
 
-    if (cmd === "run" && !preset) {
-        if (out) out.textContent = "Please select a run preset.";
-        return;
-    }
+function actionMode() {
+  return document.getElementById('actionSelect').value;
+}
 
-    const payload = { cmd, task_id: taskId, project };
-    if (cmd === "run") payload.preset = preset;
+function syncActionUi() {
+  const isRun = actionMode() === 'run';
+  document.getElementById('presetRow').style.display = isRun ? 'block' : 'none';
+}
 
-    const endpoint = cmd === "apply" ? "/api/apply" : "/api/run";
-    const body = cmd === "apply"
-        ? { projectKey: project, taskId }
-        : payload;
+function openReviewModal(text, onConfirm) {
+  const modal = document.getElementById('reviewModal');
+  setText('reviewBody', text);
+  modal.classList.remove('hidden');
+  const confirm = document.getElementById('confirmReviewBtn');
+  confirm.onclick = () => {
+    modal.classList.add('hidden');
+    onConfirm();
+  };
+}
 
-    const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+function closeReviewModal() {
+  document.getElementById('reviewModal').classList.add('hidden');
+}
+
+async function executeAction(forceApply = false) {
+  const mode = actionMode();
+  const taskId = selectedTaskId();
+  const payload = {
+    action: mode.includes('apply') ? 'apply' : mode,
+    project: document.getElementById('projectSelect').value,
+    taskId,
+    preset: document.getElementById('presetSelect').value,
+    dryRun: mode === 'apply-dry-run',
+  };
+
+  if (payload.action === 'apply' && !forceApply) {
+    const review = await api('/api/execute', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, previewOnly: true }),
     });
+    const reviewText = [
+      `Validation: ${review.ok ? 'PASS' : 'FAIL'}`,
+      `Branch: ${review.review.branchName}`,
+      `Changed files: ${review.review.changedFiles.join(', ') || '(none)'}`,
+      `Refusal reasons: ${review.review.refusalReasons.join(' | ') || '(none)'}`,
+      `Warnings: ${review.review.warnings.join(' | ') || '(none)'}`,
+      payload.dryRun ? 'Dry run will validate without writing git changes.' : 'Apply will create branch + commit.',
+    ].join('\n');
 
-    const data = await res.json().catch(() => ({}));
+    if (payload.dryRun) {
+      openReviewModal(reviewText, () => executeAction(true));
+      return;
+    }
 
-    const text =
-        `EXIT: ${data.exitCode}\n\n` +
-        (data.stdout || "") +
-        (data.stderr ? "\n" + data.stderr : "");
+    if (!review.ok) {
+      openReviewModal(reviewText, () => {});
+      return;
+    }
 
-    if (out) out.textContent = text;
+    openReviewModal(reviewText, () => executeAction(true));
+    return;
+  }
+
+  if (payload.action === 'apply') payload.confirmApply = true;
+
+  state.currentOutput = '';
+  appendOutput('Starting...\n');
+  setRunHeader({ status: 'running' });
+
+  const response = await api('/api/execute', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  });
+  state.currentRunId = response.runId;
+  streamRun(response.runId);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    boot();
-    loadProjects();
-    loadPresets();
+function streamRun(runId) {
+  const es = new EventSource(`/api/stream/${runId}`);
+  es.onmessage = (msg) => {
+    const event = JSON.parse(msg.data);
+    if (event.type === 'stdout' || event.type === 'stderr') appendOutput(event.text || '');
+    if (event.type === 'status') appendOutput(`${event.message}\n`);
+    if (event.type === 'done') {
+      const duration = event.durationMs ? `${(event.durationMs / 1000).toFixed(2)}s` : '—';
+      setRunHeader({ status: event.status, exit: event.exitCode, duration, artifacts: event.artifacts || [] });
+      if (event.meta?.branch || event.meta?.commit) {
+        appendOutput(`\nBranch: ${event.meta.branch || 'n/a'}\nCommit: ${event.meta.commit || 'n/a'}\nNext: ${event.meta.nextAction || ''}\n`);
+      }
+      es.close();
+    }
+  };
+}
+
+async function hydrateRunHistory() {
+  const data = await api('/api/runs');
+  const latest = data.runs?.[0];
+  if (!latest) return;
+  state.currentOutput = '';
+  latest.logs.forEach((l) => {
+    if (l.text) state.currentOutput += l.text;
+    else if (l.message) state.currentOutput += `${l.message}\n`;
+  });
+  document.getElementById('commandOutput').textContent = state.currentOutput;
+  const duration = latest.durationMs ? `${(latest.durationMs / 1000).toFixed(2)}s` : '—';
+  setRunHeader({ status: latest.status, exit: latest.exitCode ?? '—', duration, artifacts: latest.artifacts || [] });
+}
+
+async function postAdd(url, payload) {
+  const res = await api(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  setText('addMessage', `Success: ${JSON.stringify(res)}`);
+  await loadTasks();
+  await loadProjects();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('refreshBtn').onclick = refreshDashboard;
+  document.getElementById('actionSelect').onchange = syncActionUi;
+  document.getElementById('taskSelect').onchange = (e) => { document.getElementById('taskIdInput').value = e.target.value; };
+  document.getElementById('presetHelpBtn').onclick = () => document.getElementById('presetHelp').classList.toggle('show-help');
+  document.getElementById('executeBtn').onclick = () => executeAction().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
+  document.getElementById('cancelReviewBtn').onclick = closeReviewModal;
+  document.getElementById('copyOutputBtn').onclick = () => navigator.clipboard.writeText(state.currentOutput || '');
+  document.getElementById('openTaskFolderBtn').onclick = async () => {
+    try {
+      await postAdd('/api/open-task-folder', { taskId: selectedTaskId() });
+    } catch (e) {
+      appendOutput(`\nERROR: ${e.message}\n`);
+    }
+  };
+
+  document.getElementById('addIdeaBtn').onclick = async () => {
+    const text = window.prompt('Idea text:');
+    if (text) await postAdd('/api/add/idea', { text });
+  };
+  document.getElementById('addTaskBtn').onclick = async () => {
+    const title = window.prompt('Task title:');
+    if (title) await postAdd('/api/add/task', { title });
+  };
+  document.getElementById('addProjectBtn').onclick = async () => {
+    const name = window.prompt('Project key/name:');
+    const projectPath = window.prompt('Project path (must exist):');
+    if (name && projectPath) await postAdd('/api/add/project', { name, path: projectPath });
+  };
+
+  await Promise.all([refreshDashboard(), loadProjects(), loadTasks(), loadPresets(), hydrateRunHistory()]);
+  syncActionUi();
+  startAutoRefresh();
 });
