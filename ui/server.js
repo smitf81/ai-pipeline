@@ -104,8 +104,7 @@ app.get('/api/presets', async (req, res) => {
 app.post('/api/run', (req, res) => {
     const {
         cmd, task_id, project, model,
-        branch, threeway, force,
-        preset, timeout_s
+        preset, timeout_s, dryRun
     } = req.body || {};
 
 
@@ -122,10 +121,8 @@ app.post('/api/run', (req, res) => {
     }
 
     // apply options
-    if (cmd === 'apply') {
-        if (branch) args.push('--branch', String(branch));
-        if (threeway) args.push('--threeway');
-        if (force) args.push('--force');
+    if (cmd === 'apply' && dryRun) {
+        args.push('--dry-run');
     }
 
     // run options
@@ -146,6 +143,39 @@ app.post('/api/run', (req, res) => {
 
   proc.on('close', (code) => {
     res.json({ ok: code === 0, exitCode: code, stdout, stderr });
+  });
+});
+
+
+app.post('/api/apply', (req, res) => {
+  const { projectKey, taskId, preset, dryRun } = req.body || {};
+
+  if (!projectKey || !taskId) {
+    return res.status(400).json({ error: 'Missing required fields: projectKey, taskId' });
+  }
+
+  const aiPath = path.join(ROOT, 'runner', 'ai.py');
+  const args = [aiPath, 'apply', String(taskId), '--project', String(projectKey)];
+  if (dryRun) args.push('--dry-run');
+
+  const proc = spawn('python', args, { cwd: ROOT, windowsHide: true });
+
+  let stdout = '';
+  let stderr = '';
+
+  proc.stdout.on('data', (d) => stdout += d.toString());
+  proc.stderr.on('data', (d) => stderr += d.toString());
+
+  proc.on('close', (code) => {
+    res.json({
+      ok: code === 0,
+      success: code === 0,
+      exitCode: code,
+      preset: preset || null,
+      stdout,
+      stderr,
+      messages: [stdout, stderr].filter(Boolean),
+    });
   });
 });
 
