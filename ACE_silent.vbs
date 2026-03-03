@@ -1,7 +1,5 @@
 Set shell = CreateObject("WScript.Shell")
+repo = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
 
-' Folder containing ACE.cmd
-shell.CurrentDirectory = "C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline"
-
-' Run ACE.cmd hidden (0 = hidden window, False = don’t wait)
-shell.Run "cmd /c ACE.cmd", 0, False
+shell.CurrentDirectory = repo
+shell.Run "cmd /c ""ACE.cmd""", 0, False
