@@ -9,7 +9,6 @@ from youtube_transcript_api import (
     YouTubeTranscriptApi,
     TranscriptsDisabled,
     NoTranscriptFound,
-    TooManyRequests,
 )
 from pytube import YouTube
 
