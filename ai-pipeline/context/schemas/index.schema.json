@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-pipeline.local/context/schemas/index.schema.json",
+  "title": "Context Manifest Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "version",
+    "health",
+    "files",
+    "locking",
+    "conflict_resolution"
+  ],
+  "properties": {
+    "conflict_resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "tie_breaker"],
+      "properties": {
+        "strategy": {"type": "string"},
+        "tie_breaker": {"type": "string"}
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "updated_at", "version"],
+        "properties": {
+          "path": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "updated_at": {"type": "string", "format": "date-time"},
+          "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+        }
+      }
+    },
+    "generated_at": {"type": "string", "format": "date-time"},
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "reasons"],
+      "properties": {
+        "reasons": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "score": {"type": "integer", "minimum": 0, "maximum": 100}
+      }
+    },
+    "locking": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lock_file", "write_mode"],
+      "properties": {
+        "lock_file": {"type": "string"},
+        "write_mode": {"type": "string", "enum": ["atomic_rename"]}
+      }
+    },
+    "schema_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+  }
+}
