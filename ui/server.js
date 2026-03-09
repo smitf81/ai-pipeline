@@ -16,6 +16,8 @@ const TASKS_DIR = path.join(ROOT, 'work', 'tasks');
 const PROJECTS_FILE = path.join(ROOT, 'projects.json');
 const REFRESH_MS_DEFAULT = 10000;
 const MAX_RUN_HISTORY = 20;
+const SPATIAL_WORKSPACE_FILE = path.join(ROOT, 'data', 'spatial', 'workspace.json');
+const SPATIAL_HISTORY_FILE = path.join(ROOT, 'data', 'spatial', 'history.json');
 
 const dashboardFiles = [
   'projects/emergence/roadmap.md',
@@ -29,6 +31,27 @@ const dashboardFiles = [
 
 const runStore = new Map();
 const runOrder = [];
+
+
+function ensureSpatialStorage() {
+  const dir = path.dirname(SPATIAL_WORKSPACE_FILE);
+  fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(SPATIAL_WORKSPACE_FILE)) {
+    fs.writeFileSync(SPATIAL_WORKSPACE_FILE, JSON.stringify({ graph: { nodes: [], edges: [] }, architectureMemory: {} }, null, 2));
+  }
+  if (!fs.existsSync(SPATIAL_HISTORY_FILE)) fs.writeFileSync(SPATIAL_HISTORY_FILE, '[]\n');
+}
+
+function writeJson(file, payload) {
+  fs.writeFileSync(file, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
+function appendArchitectureHistory(entry) {
+  const history = readJsonSafe(SPATIAL_HISTORY_FILE, []) || [];
+  history.push(entry);
+  writeJson(SPATIAL_HISTORY_FILE, history.slice(-80));
+}
+
 
 function nowIso() {
   return new Date().toISOString();
@@ -484,6 +507,61 @@ app.post('/api/add/project', (req, res) => {
   projects[name] = projectPath;
   fs.writeFileSync(PROJECTS_FILE, `${JSON.stringify(projects, null, 2)}\n`, 'utf8');
   res.json({ ok: true, project: { key: name, path: projectPath } });
+});
+
+app.get('/api/spatial/workspace', (req, res) => {
+  ensureSpatialStorage();
+  res.json(readJsonSafe(SPATIAL_WORKSPACE_FILE, { graph: { nodes: [], edges: [] } }));
+});
+
+app.put('/api/spatial/workspace', (req, res) => {
+  ensureSpatialStorage();
+  const body = req.body || {};
+  writeJson(SPATIAL_WORKSPACE_FILE, body);
+  appendArchitectureHistory({
+    at: nowIso(),
+    type: 'workspace-save',
+    summary: {
+      nodes: body.graph?.nodes?.length || 0,
+      edges: body.graph?.edges?.length || 0,
+      versions: body.architectureMemory?.versions?.slice(-1) || [],
+    },
+  });
+  res.json({ ok: true });
+});
+
+app.get('/api/spatial/history', (req, res) => {
+  ensureSpatialStorage();
+  res.json({ history: readJsonSafe(SPATIAL_HISTORY_FILE, []) || [] });
+});
+
+app.post('/api/spatial/intent', (req, res) => {
+  const text = String((req.body || {}).text || '').toLowerCase();
+  const map = [
+    ['backend intent extractor', ['input parser', 'intent classifier', 'entity extraction', 'task router']],
+    ['logging', ['logging subsystem', 'telemetry module', 'audit events']],
+    ['spatial ide', ['canvas renderer', 'graph engine', 'ace connector', 'mutation preview panel']],
+  ];
+  const found = map.find(([k]) => text.includes(k));
+  const tasks = found ? found[1] : text.split(/[,.]/).map((s) => s.trim()).filter(Boolean).slice(0, 4);
+  res.json({ tasks: tasks.length ? tasks : ['analyze requirements', 'decompose tasks', 'build modules'] });
+});
+
+app.post('/api/spatial/mutations/preview', (req, res) => {
+  const mutations = (req.body || {}).mutations || [];
+  const summary = mutations.map((m) => {
+    if (m.type === 'create_node') return `- new ${m.node.type}: ${m.node.content}`;
+    if (m.type === 'modify_node') return `- modify node ${m.id}`;
+    if (m.type === 'create_edge') return `- dependency ${m.edge.source} -> ${m.edge.target}`;
+    return `- ${m.type}`;
+  });
+  res.json({ ok: true, summary });
+});
+
+app.post('/api/spatial/mutations/apply', (req, res) => {
+  const mutations = (req.body || {}).mutations || [];
+  appendArchitectureHistory({ at: nowIso(), type: 'mutation-apply', count: mutations.length });
+  res.json({ ok: true, applied: mutations.length });
 });
 
 app.listen(port, () => {
