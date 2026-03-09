@@ -259,6 +259,16 @@ async function postAdd(url, payload) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('refreshBtn').onclick = refreshDashboard;
+
+  const legacyBtn = document.getElementById('toggleLegacyBtn');
+  const legacyUi = document.getElementById('legacy-ui');
+  if (legacyBtn && legacyUi) {
+    legacyBtn.onclick = () => {
+      legacyUi.classList.toggle('legacy-hidden');
+      legacyBtn.textContent = legacyUi.classList.contains('legacy-hidden') ? 'Show Legacy Controls' : 'Hide Legacy Controls';
+    };
+  }
+
   document.getElementById('actionSelect').onchange = syncActionUi;
   document.getElementById('taskSelect').onchange = (e) => { document.getElementById('taskIdInput').value = e.target.value; };
   document.getElementById('presetHelpBtn').onclick = () => document.getElementById('presetHelp').classList.toggle('show-help');

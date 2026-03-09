@@ -1,0 +1,17 @@
+{
+  "graph": {
+    "nodes": [],
+    "edges": []
+  },
+  "architectureMemory": {
+    "system": "ACE",
+    "subsystems": [],
+    "modules": [],
+    "rules": [
+      "modular architecture",
+      "no circular dependencies",
+      "stateless services"
+    ],
+    "versions": []
+  }
+}
