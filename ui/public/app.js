@@ -145,7 +145,7 @@ function appendOutput(text) {
 }
 
 function actionMode() {
-  return document.getElementById('actionSelect').value;
+  return 'build';
 }
 
 function syncActionUi() {
@@ -177,6 +177,7 @@ async function executeAction(forceApply = false) {
     taskId,
     preset: document.getElementById('presetSelect').value,
     dryRun: mode === 'apply-dry-run',
+    intent: (document.getElementById('intentInput')?.value || '').trim(),
   };
 
   if (payload.action === 'apply' && !forceApply) {

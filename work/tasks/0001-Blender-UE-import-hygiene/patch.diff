@@ -1,62 +1,61 @@
 ```diff
 diff --git a/ue_python/bridge_watcher.py b/ue_python/bridge_watcher.py
-index 4d1e7a2..05f83de 100644
+index 4d47a36..5e96f0d 100644
 --- a/ue_python/bridge_watcher.py
 +++ b/ue_python/bridge_watcher.py
-@@ -1,6 +1,7 @@
- import argparse
- import json
- import logging
-+import os
- import time
- from pathlib import Path
+@@ -28,6 +28,7 @@ POLL_SECONDS = 3.0
+ BRIDGE_DIR = Path.home() / "UE_Bridge"
+ DEST_CONTENT_PATH = "/Game/Imported/Bridge"
 
- try:  # pragma: no cover - Unreal not available during tests
-@@ -49,6 +50,8 @@ class BridgeWatcher:
++import json
+ _state = {"last": 0.0, "imported": set(), "handle": None}
+
+ logger = logging.getLogger("bridge_watcher")
+@@ -47,6 +48,12 @@ TEXTURE_TOKENS = {
+         "normal": {"normal"},
+         "orm": {"orm"},
+         "roughness": {"roughness"},
++        "processed": {},
+     }
+
+ def detect_textures(files):
+     """Return a mapping of texture types from an iterable of Paths."""
++    processed = _state.get("processed", {})
++    if not processed:
++        try:
++            with open('bridge_watcher_state.json', 'r') as f:
++                processed = json.load(f)
++        except FileNotFoundError:
++            pass
+     result = {}
+     for p in files:
+         name = p.stem.lower()
+@@ -168,7 +175,14 @@ def _import(full: Path):
+     asset_path = f"{DEST_CONTENT_PATH}/{name}.{name}"
+     _apply_material(asset_path, full)
+     _spawn(asset_path)
++    processed_path = BRIDGE_DIR / (name + '.json')
++    with processed_path.open('w') as f:
++        json.dump({str(full): True}, f)
++    _state["processed"][str(full)] = True
+     _state["imported"].add(str(full))
+     logger.info("Imported & spawned: %s", name)
+
+@@ -178,6 +192,7 @@ def _import(full: Path):
          except Exception as e:  # pragma: no cover
-             logger.error("Cannot create folder: %s", e)
-             return
+             logger.error("Import failed: %s -> %s", p, e)
++            processed_path = BRIDGE_DIR / (name + '.json')
++            if processed_path.exists():
++                processed_path.unlink()
+     _state["last"] = now
 
-+    def _save_state(self):
-+        with open(STATE_FILE, 'w') as f:
-+            json.dump(self._state, f)
-+
-     def start(self):
-         if self._handle is not None:
-             logger.warning("Already running.")
-@@ -68,6 +71,7 @@ class BridgeWatcher:
-         _state["imported"].add(str(full))
-         logger.info("Imported & spawned: %s", name)
-
-+    def stop(self):
-+        self._save_state()
-         if self._handle is not None:
-             unreal.unregister_slate_post_tick_callback(self._handle)
-             self._handle = None
-@@ -91,3 +95,20 @@ def configure(args):
-     BRIDGE_DIR = Path(args.bridge)
-     DEST_CONTENT_PATH = args.content
-     LOG_FILE = Path(args.log)
-+    STATE_FILE = Path.home() / "bw_state.json"
-
- def main():
-     if unreal is None:
-         raise RuntimeError("Unreal Python API not available")
-+    state = {}
-     args = parse_args()
-     configure(args)
-+    if STATE_FILE.exists():
-+        with open(STATE_FILE, 'r') as f:
-+            state = json.load(f)
-+
-+    bw = BridgeWatcher()
-+    bw._state = state
-     start_watching(bw)
-     try:
-         while True:
-@@ -98,3 +119,5 @@ def main():
-             time.sleep(1)
-     except KeyboardInterrupt:
-         stop_watching()
-+    bw.stop()
+ def stop():
+@@ -193,6 +208,7 @@ def stop():
+         except FileNotFoundError:
+             pass
+     with open('bridge_watcher_state.json', 'w') as f:
++        json.dump(_state["processed"], f)
+         json.dump(_state, f)
+     _state.pop("processed", None)
+     logger.info("Stopped.")
 ```

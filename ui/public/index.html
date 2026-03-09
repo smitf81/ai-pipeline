@@ -57,22 +57,20 @@
         <section class="card">
             <div class="card-title">Pipeline Control</div>
             <div class="form-grid">
-                <label>Project</label>
-                <select id="projectSelect"></select>
+                <label class="hidden-row">Project</label>
+                <select id="projectSelect" class="hidden-row"></select>
 
-                <label>Task</label>
-                <div class="inline">
+                <label class="hidden-row">Task</label>
+                <div class="inline hidden-row">
                     <select id="taskSelect"></select>
                     <input id="taskIdInput" placeholder="Manual task id (e.g. 0001-name)" />
                 </div>
 
-                <label>Action</label>
-                <select id="actionSelect">
+                <label class="hidden-row">Action</label>
+                <select id="actionSelect" class="hidden-row">
+                    <option value="build" selected>Build</option>
                     <option value="scan">Scan</option>
                     <option value="manage">Manage</option>
-                    <option value="build">Build</option>
-                    <option value="run">Run</option>
-                    <option value="apply-dry-run">Apply (Dry Run)</option>
                     <option value="apply">Apply</option>
                 </select>
 
@@ -81,6 +79,9 @@
                     <select id="presetSelect"></select>
                     <div id="presetHelp" class="help muted"></div>
                 </div>
+
+                <label>Intent</label>
+                <textarea id="intentInput" placeholder="Describe what you want the agent to do for this project/task"></textarea>
             </div>
             <div class="button-row"><button id="executeBtn">Execute</button></div>
         </section>
