@@ -7,8 +7,7 @@
 - `ui/public/spatial/mutationEngine.js` – workspace mutation API helper and local mutation applier.
 - `ui/public/spatial/architectureMemory.js` – persistent architecture memory, design rules validation, architecture version snapshots.
 - `ui/public/spatial/persistence.js` – load/save workspace JSON graph.
-- `ui/public/spatial/spatialApp.js` – React notebook-style canvas UI with adaptive node roles and simulation.
-- `ui/public/spatial/spatialApp.js` – React canvas UI with node interactions, simulation, module/code view.
+- `ui/public/spatial/spatialApp.js` – React canvas-first notebook workspace UI.
 - `data/spatial/workspace.json` – persisted workspace graph + architectural model.
 - `data/spatial/history.json` – architecture mutation/save history.
 - `ui/server.js` – REST endpoints for spatial workspace, intent decomposition, mutation preview/apply.
@@ -19,13 +18,13 @@
 - Type is inferred from content and links; user can adopt suggested role.
 - Shift-drag from one node to another sketches directional dependencies.
 - Smooth WASD panning, middle/right mouse panning, and scroll zoom are canvas-priority interactions.
-- Legacy control panel is hidden by default behind a toggle.
+- Legacy control panel is preserved in a right-side drawer and hidden by default.
 
-## Abstraction zoom levels
+## Canvas-first layout
 
-- **Overview**: compact nodes, relationship reading.
-- **Structure**: readable content + role suggestions.
-- **Detail**: inline code panes for module/code nodes.
+- Main viewport is dedicated to the workspace (`.spatial-main`) with full-height canvas and a slim inspector sidebar.
+- A lightweight in-canvas toolbar contains save/simulate controls and long status messaging.
+- Legacy UI lives outside the workspace container to avoid resizing/reflow of the sketchpad when opened.
 
 ## Layering model
 
@@ -52,6 +51,6 @@
 {
   "source": "node_a",
   "target": "node_b",
-  "relationship_type": "depends_on"
+  "relationship_type": "relates_to"
 }
 ```
