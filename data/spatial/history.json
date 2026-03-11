@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "at": "2026-03-09T19:56:57.860Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 5,
+      "edges": 3,
+      "versions": [
+        {
+          "version": "v1",
+          "label": "manual-save",
+          "timestamp": "2026-03-09T19:56:57.852Z",
+          "diff": {
+            "nodes": 5,
+            "edges": 3
+          }
+        }
+      ]
+    }
+  }
+]

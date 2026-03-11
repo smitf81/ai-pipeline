@@ -1,17 +1,116 @@
 {
   "graph": {
-    "nodes": [],
-    "edges": []
+    "nodes": [
+      {
+        "id": "node_1773053009827_873km",
+        "type": "text",
+        "content": "intent extraction",
+        "position": {
+          "x": -32.59260389539931,
+          "y": 140
+        },
+        "connections": [],
+        "metadata": {}
+      },
+      {
+        "id": "node_1773053016562_y84h5",
+        "type": "text",
+        "content": "thought",
+        "position": {
+          "x": -52.59260389539931,
+          "y": -68.88888888888889
+        },
+        "connections": [],
+        "metadata": {}
+      },
+      {
+        "id": "node_1773053122897_v28zs",
+        "type": "task",
+        "content": "agent clarifies intent against task & user profile/context",
+        "position": {
+          "x": -47.03704833984375,
+          "y": 337.77777777777777
+        },
+        "connections": [],
+        "metadata": {}
+      },
+      {
+        "id": "node_1773053187997_lxd3m",
+        "type": "module",
+        "content": "module node",
+        "position": {
+          "x": 270.740729437934,
+          "y": 56.666666666666664
+        },
+        "connections": [],
+        "metadata": {}
+      },
+      {
+        "id": "node_1773053856311_iswxx",
+        "type": "task",
+        "content": "",
+        "position": {
+          "x": -39.58333969116211,
+          "y": 515
+        },
+        "connections": [],
+        "metadata": {}
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_1773053016562_y84h5",
+        "target": "node_1773053009827_873km",
+        "relationship_type": "depends_on"
+      },
+      {
+        "source": "node_1773053009827_873km",
+        "target": "node_1773053122897_v28zs",
+        "relationship_type": "depends_on"
+      },
+      {
+        "source": "node_1773053122897_v28zs",
+        "target": "node_1773053856311_iswxx",
+        "relationship_type": "depends_on"
+      }
+    ]
   },
   "architectureMemory": {
     "system": "ACE",
-    "subsystems": [],
-    "modules": [],
+    "layers": {
+      "interface": [
+        "Spatial IDE Interface Layer"
+      ],
+      "intelligence": [
+        "Intent Engine",
+        "Task Planner"
+      ],
+      "execution": [
+        "Code Generator",
+        "Test Generator"
+      ]
+    },
+    "subsystems": [
+      "module node"
+    ],
+    "modules": [
+      "module node"
+    ],
     "rules": [
       "modular architecture",
       "no circular dependencies",
       "stateless services"
     ],
-    "versions": []
+    "versions": [
+      {
+        "version": "v1",
+        "label": "manual-save",
+        "timestamp": "2026-03-09T19:56:57.852Z",
+        "diff": {
+          "nodes": 5,
+          "edges": 3
+        }
+      }
+    ]
   }
 }
