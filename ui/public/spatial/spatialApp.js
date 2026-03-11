@@ -30,6 +30,12 @@ function SpatialNotebook() {
   const [pointerWorld, setPointerWorld] = useState(null);
   const [simulating, setSimulating] = useState(false);
   const [simStep, setSimStep] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [sketchMode, setSketchMode] = useState(false);
+  const [sketches, setSketches] = useState([]);
+  const [annotations, setAnnotations] = useState([]);
+  const [selectedSketchId, setSelectedSketchId] = useState(null);
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
 
   const canvasRef = useRef(null);
   const draggingNode = useRef(null);
@@ -37,6 +43,7 @@ function SpatialNotebook() {
   const connectState = useRef(null);
   const keys = useRef(new Set());
   const raf = useRef(null);
+  const activeSketch = useRef(null);
 
   const selected = graph.nodes.find((n) => n.id === selectedId) || null;
 
@@ -46,13 +53,19 @@ function SpatialNotebook() {
         graphEngine.setState(ws.graph);
         setGraph({ ...graphEngine.getState() });
       }
+      setSketches(Array.isArray(ws.sketches) ? ws.sketches : []);
+      setAnnotations(Array.isArray(ws.annotations) ? ws.annotations : []);
     }).catch(() => {});
   }, [graphEngine]);
 
   useEffect(() => {
     memory.syncFromGraph(graph);
-    draw(canvasRef.current, graph, viewport, connectState.current, pointerWorld, simulating ? simStep : -1);
-  }, [graph, viewport, memory, pointerWorld, simulating, simStep]);
+    draw(canvasRef.current, graph, viewport, connectState.current, pointerWorld, simulating && !paused ? simStep : -1, sketches, annotations, selectedSketchId, selectedAnnotationId);
+  }, [graph, viewport, memory, pointerWorld, simulating, simStep, paused, sketches, annotations, selectedSketchId, selectedAnnotationId]);
+
+  useEffect(() => {
+    setPaused(sketchMode);
+  }, [sketchMode]);
 
   useEffect(() => {
     const tick = () => {
@@ -74,6 +87,16 @@ function SpatialNotebook() {
         keys.current.add(key);
         if (document.activeElement?.tagName !== 'TEXTAREA') e.preventDefault();
       }
+      if (document.activeElement?.tagName === 'TEXTAREA') return;
+      if (key === 'k') {
+        e.preventDefault();
+        setSketchMode((v) => !v);
+      }
+      if (key === 'escape') {
+        setSketchMode(false);
+        setSelectedSketchId(null);
+        setSelectedAnnotationId(null);
+      }
     };
     const up = (e) => keys.current.delete(e.key.toLowerCase());
     window.addEventListener('keydown', down);
@@ -87,12 +110,12 @@ function SpatialNotebook() {
   }, []);
 
   useEffect(() => {
-    if (!simulating) return undefined;
+    if (!simulating || paused) return undefined;
     const timer = setInterval(() => {
       setSimStep((s) => (s + 1) % Math.max(1, graph.edges.length));
     }, 650);
     return () => clearInterval(timer);
-  }, [simulating, graph.edges.length]);
+  }, [simulating, graph.edges.length, paused]);
 
   const toWorld = (clientX, clientY) => {
     const r = canvasRef.current.getBoundingClientRect();
@@ -109,6 +132,7 @@ function SpatialNotebook() {
   const onCanvasDblClick = (e) => addNodeAt(toWorld(e.clientX, e.clientY));
 
   const onNodeMouseDown = (e, node) => {
+    if (sketchMode) return;
     e.stopPropagation();
     setSelectedId(node.id);
     if (e.shiftKey) {
@@ -131,6 +155,13 @@ function SpatialNotebook() {
       }
     }
 
+    if (activeSketch.current) {
+      activeSketch.current.path.push(world);
+      setSketches((prev) => prev.map((stroke) => (
+        stroke.id === activeSketch.current.id ? { ...stroke, path: [...activeSketch.current.path] } : stroke
+      )));
+    }
+
     if (isPanning.current) {
       setViewport((v) => ({ ...v, x: v.x + e.movementX, y: v.y + e.movementY }));
     }
@@ -139,17 +170,84 @@ function SpatialNotebook() {
   const onMouseUp = () => {
     draggingNode.current = null;
     isPanning.current = false;
+    activeSketch.current = null;
     document.body.classList.remove('canvas-dragging');
+  };
+
+  const hitTestStroke = (world) => {
+    const threshold = 10 / viewport.zoom;
+    for (let i = sketches.length - 1; i >= 0; i -= 1) {
+      const stroke = sketches[i];
+      for (const point of stroke.path || []) {
+        const dx = point.x - world.x;
+        const dy = point.y - world.y;
+        if (Math.hypot(dx, dy) <= threshold) return stroke.id;
+      }
+    }
+    return null;
+  };
+
+  const hitTestAnnotation = (world) => {
+    const width = 170;
+    const height = 90;
+    for (let i = annotations.length - 1; i >= 0; i -= 1) {
+      const note = annotations[i];
+      const x = note.position?.x || 0;
+      const y = note.position?.y || 0;
+      if (world.x >= x && world.x <= x + width && world.y >= y && world.y <= y + height) return note.id;
+    }
+    return null;
   };
 
   const onCanvasMouseDown = (e) => {
     if (e.target !== canvasRef.current) return;
+    const world = toWorld(e.clientX, e.clientY);
+    if (sketchMode && e.button === 0) {
+      const annotationId = hitTestAnnotation(world);
+      const strokeId = annotationId ? null : hitTestStroke(world);
+      setSelectedAnnotationId(annotationId);
+      setSelectedSketchId(strokeId);
+      if (annotationId || strokeId) return;
+      const stroke = {
+        id: `sketch_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        path: [world],
+        metadata: { tag: null, meaning: null },
+      };
+      activeSketch.current = stroke;
+      setSelectedSketchId(stroke.id);
+      setSelectedAnnotationId(null);
+      setSketches((prev) => [...prev, stroke]);
+      return;
+    }
     if (e.button === 1 || e.button === 2 || e.shiftKey) {
       e.preventDefault();
       isPanning.current = true;
       canvasRef.current.focus();
       document.body.classList.add('canvas-dragging');
     }
+  };
+
+  const onSketchDoubleClick = (e) => {
+    if (!sketchMode) {
+      onCanvasDblClick(e);
+      return;
+    }
+    const position = toWorld(e.clientX, e.clientY);
+    const content = window.prompt('New annotation', 'Intent note') || '';
+    if (!content.trim()) return;
+    const annotation = {
+      id: `annotation_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      content: content.trim(),
+      position,
+      metadata: { tag: null, meaning: null },
+    };
+    setAnnotations((prev) => [...prev, annotation]);
+    setSelectedAnnotationId(annotation.id);
+    setSelectedSketchId(null);
+  };
+
+  const updateAnnotationContent = (id, content) => {
+    setAnnotations((prev) => prev.map((note) => (note.id === id ? { ...note, content } : note)));
   };
 
   const onWheel = (e) => {
@@ -165,8 +263,26 @@ function SpatialNotebook() {
 
   const save = async () => {
     memory.snapshot('manual-save', { nodes: graph.nodes.length, edges: graph.edges.length });
-    await saveWorkspace({ graph, architectureMemory: memory.model });
+    await saveWorkspace({ graph, sketches, annotations, architectureMemory: memory.model });
     setStatus('workspace saved');
+  };
+
+  const clearSketchLayer = () => {
+    setSketches([]);
+    setAnnotations([]);
+    setSelectedSketchId(null);
+    setSelectedAnnotationId(null);
+  };
+
+  const deleteSelection = () => {
+    if (selectedSketchId) {
+      setSketches((prev) => prev.filter((stroke) => stroke.id !== selectedSketchId));
+      setSelectedSketchId(null);
+    }
+    if (selectedAnnotationId) {
+      setAnnotations((prev) => prev.filter((note) => note.id !== selectedAnnotationId));
+      setSelectedAnnotationId(null);
+    }
   };
 
   const runAiProcess = async (node) => {
@@ -197,9 +313,12 @@ function SpatialNotebook() {
         React.createElement('div', { className: 'workspace-title' }, 'Sketchpad Workspace'),
         React.createElement('div', { className: 'toolbar-actions' },
           React.createElement('button', { className: 'mini', onClick: save }, '💾 Save'),
+          React.createElement('button', { className: `mini ${sketchMode ? 'active' : ''}`, onClick: () => setSketchMode((v) => !v), title: 'Toggle sketch mode (K)' }, sketchMode ? '✏️ Sketch On' : '✏️ Sketch'),
+          React.createElement('button', { className: 'mini', onClick: clearSketchLayer, title: 'Clear all sketches and annotations' }, '🧹 Clear'),
+          (selectedSketchId || selectedAnnotationId) && React.createElement('button', { className: 'mini', onClick: deleteSelection }, '🗑 Delete'),
           React.createElement('button', { className: 'mini', onClick: () => setSimulating((v) => !v) }, simulating ? '⏹ Stop' : '▶ Simulate'),
           selected && React.createElement('button', { className: 'mini', onClick: () => runAiProcess(selected).catch((err) => setStatus(err.message)) }, '✨ Ask ACE'),
-          React.createElement('span', { className: 'toolbar-status' }, `Double-click add note • Shift-link • Zoom ${Math.round(viewport.zoom * 100)}% • ${status}`),
+          React.createElement('span', { className: 'toolbar-status' }, `${sketchMode ? 'Sketch mode active – simulation paused • ' : ''}Double-click ${sketchMode ? 'add annotation' : 'add note'} • Shift-link • Zoom ${Math.round(viewport.zoom * 100)}% • ${status}`),
         ),
       ),
       React.createElement('div', {
@@ -213,10 +332,31 @@ function SpatialNotebook() {
         width: 1600,
         height: 920,
         tabIndex: 0,
-        onDoubleClick: onCanvasDblClick,
+        onDoubleClick: onSketchDoubleClick,
         onWheel,
         onMouseDown: onCanvasMouseDown,
         onContextMenu: (e) => e.preventDefault(),
+      }),
+      annotations.map((note) => {
+        const x = note.position.x * viewport.zoom + viewport.x;
+        const y = note.position.y * viewport.zoom + viewport.y;
+        return React.createElement('div', {
+          key: note.id,
+          className: `annotation ${selectedAnnotationId === note.id ? 'selected' : ''}`,
+          style: { left: `${x}px`, top: `${y}px`, transform: `scale(${viewport.zoom})`, transformOrigin: 'top left' },
+          onMouseDown: () => {
+            if (!sketchMode) return;
+            setSelectedAnnotationId(note.id);
+            setSelectedSketchId(null);
+          },
+        },
+        React.createElement('div', { className: 'annotation-header' }, 'Annotation'),
+        React.createElement('textarea', {
+          value: note.content,
+          onChange: (e) => updateAnnotationContent(note.id, e.target.value),
+          onMouseDown: (e) => e.stopPropagation(),
+          disabled: !sketchMode,
+        }));
       }),
       graph.nodes.map((node) => {
         const x = node.position.x * viewport.zoom + viewport.x;
@@ -225,7 +365,7 @@ function SpatialNotebook() {
         return React.createElement('div', {
           key: node.id,
           className: `node ${suggested} ${selectedId === node.id ? 'selected' : ''}`,
-          style: { left: `${x}px`, top: `${y}px`, transform: `scale(${viewport.zoom})`, transformOrigin: 'top left' },
+          style: { left: `${x}px`, top: `${y}px`, transform: `scale(${viewport.zoom})`, transformOrigin: 'top left', pointerEvents: sketchMode ? 'none' : 'auto', opacity: sketchMode ? 0.82 : 1 },
           onMouseDown: (e) => onNodeMouseDown(e, node),
           onMouseUp: () => {
             if (connectState.current?.source && connectState.current.source !== node.id) {
@@ -295,7 +435,7 @@ function SpatialNotebook() {
   );
 }
 
-function draw(canvas, graph, viewport, connecting, pointerWorld, simIndex) {
+function draw(canvas, graph, viewport, connecting, pointerWorld, simIndex, sketches, annotations, selectedSketchId, selectedAnnotationId) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -309,6 +449,34 @@ function draw(canvas, graph, viewport, connecting, pointerWorld, simIndex) {
   for (let y = viewport.y % 48; y < canvas.height; y += 48) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
   }
+
+  sketches.forEach((stroke) => {
+    if (!Array.isArray(stroke.path) || stroke.path.length < 2) return;
+    ctx.strokeStyle = stroke.id === selectedSketchId ? 'rgba(255, 209, 103, 0.95)' : 'rgba(132, 185, 255, 0.7)';
+    ctx.lineWidth = stroke.id === selectedSketchId ? 3 : 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    stroke.path.forEach((p, idx) => {
+      const x = p.x * viewport.zoom + viewport.x;
+      const y = p.y * viewport.zoom + viewport.y;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+
+  annotations.forEach((note) => {
+    const x = note.position.x * viewport.zoom + viewport.x;
+    const y = note.position.y * viewport.zoom + viewport.y;
+    const w = 170 * viewport.zoom;
+    const h = 90 * viewport.zoom;
+    ctx.fillStyle = note.id === selectedAnnotationId ? 'rgba(255, 209, 103, 0.22)' : 'rgba(255, 241, 184, 0.14)';
+    ctx.strokeStyle = note.id === selectedAnnotationId ? 'rgba(255, 209, 103, 0.9)' : 'rgba(255, 241, 184, 0.46)';
+    ctx.lineWidth = 1.2;
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeRect(x, y, w, h);
+  });
 
   graph.edges.forEach((e, idx) => {
     const s = graph.nodes.find((n) => n.id === e.source);

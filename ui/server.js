@@ -37,7 +37,7 @@ function ensureSpatialStorage() {
   const dir = path.dirname(SPATIAL_WORKSPACE_FILE);
   fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(SPATIAL_WORKSPACE_FILE)) {
-    fs.writeFileSync(SPATIAL_WORKSPACE_FILE, JSON.stringify({ graph: { nodes: [], edges: [] }, architectureMemory: {} }, null, 2));
+    fs.writeFileSync(SPATIAL_WORKSPACE_FILE, JSON.stringify({ graph: { nodes: [], edges: [] }, sketches: [], annotations: [], architectureMemory: {} }, null, 2));
   }
   if (!fs.existsSync(SPATIAL_HISTORY_FILE)) fs.writeFileSync(SPATIAL_HISTORY_FILE, '[]\n');
 }
@@ -511,7 +511,11 @@ app.post('/api/add/project', (req, res) => {
 
 app.get('/api/spatial/workspace', (req, res) => {
   ensureSpatialStorage();
-  res.json(readJsonSafe(SPATIAL_WORKSPACE_FILE, { graph: { nodes: [], edges: [] } }));
+  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, { graph: { nodes: [], edges: [] }, sketches: [], annotations: [] }) || {};
+  workspace.graph = workspace.graph || { nodes: [], edges: [] };
+  workspace.sketches = Array.isArray(workspace.sketches) ? workspace.sketches : [];
+  workspace.annotations = Array.isArray(workspace.annotations) ? workspace.annotations : [];
+  res.json(workspace);
 });
 
 app.put('/api/spatial/workspace', (req, res) => {
@@ -525,6 +529,8 @@ app.put('/api/spatial/workspace', (req, res) => {
       nodes: body.graph?.nodes?.length || 0,
       edges: body.graph?.edges?.length || 0,
       versions: body.architectureMemory?.versions?.slice(-1) || [],
+      sketches: body.sketches?.length || 0,
+      annotations: body.annotations?.length || 0,
     },
   });
   res.json({ ok: true });
