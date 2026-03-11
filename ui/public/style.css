@@ -50,6 +50,14 @@ body { margin: 0; font-family: Inter, ui-sans-serif, system-ui; color: var(--tex
 .node.module { border-color: #ffd167; }
 
 button, input, select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.06); color: var(--text); }
+
+.mini.active { border-color: rgba(255, 209, 103, 0.85); color: #ffd167; }
+
+.annotation { position: absolute; width: 170px; min-height: 90px; padding: 7px; border-radius: 8px; border: 1px solid rgba(255, 241, 184, 0.45); background: rgba(255, 241, 184, 0.15); z-index: 1; box-shadow: 0 6px 16px rgba(0,0,0,.2); }
+.annotation.selected { border-color: rgba(255, 209, 103, 0.95); box-shadow: 0 0 0 1px rgba(255, 209, 103, 0.5), 0 6px 16px rgba(0,0,0,.2); }
+.annotation-header { font-size: 10px; color: rgba(255, 236, 170, 0.95); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .06em; }
+.annotation textarea { width: 100%; min-height: 58px; resize: vertical; background: rgba(15, 17, 24, 0.35); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; color: var(--text); padding: 6px; }
+.annotation textarea:disabled { opacity: .7; }
 button { cursor: pointer; }
 .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .mini { padding: 6px 10px; font-size: 12px; }
