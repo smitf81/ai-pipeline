@@ -1,4 +1,4 @@
-import { GraphEngine, createNode, createEdge, buildStarterGraph } from './graphEngine.js';
+import { GraphEngine, createNode, createEdge, buildStarterGraph, NODE_TYPES } from './graphEngine.js';
 import { AceConnector } from './aceConnector.js';
 import { MutationEngine } from './mutationEngine.js';
 import { ArchitectureMemory } from './architectureMemory.js';
@@ -31,6 +31,7 @@ function SpatialIDE() {
   const [graph, setGraph] = useState(graphEngine.getState());
   const [selectedId, setSelectedId] = useState(null);
   const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 });
+  const [connecting, setConnecting] = useState(null);
   const [preview, setPreview] = useState(null);
   const [simulating, setSimulating] = useState(false);
   const [simStep, setSimStep] = useState(0);
@@ -169,7 +170,6 @@ function SpatialIDE() {
         setGraph({ ...graphEngine.getState() });
       }
     }
-
     if (panning.current) {
       setViewport((v) => ({ ...v, x: v.x + e.movementX, y: v.y + e.movementY }));
     }
@@ -252,6 +252,8 @@ function SpatialIDE() {
           },
         }),
         !compact && React.createElement('div', { className: 'button-row' },
+        React.createElement('div', { className: 'button-row' },
+          React.createElement('button', { className: 'mini', onClick: (e) => { e.stopPropagation(); setConnecting({ source: node.id }); } }, '↗ connect'),
           React.createElement('button', { className: 'mini', onClick: (e) => { e.stopPropagation(); runAiProcess(node).catch((err) => setStatus(err.message)); } }, 'AI Process'),
           React.createElement('button', { className: 'mini', onClick: (e) => {
             e.stopPropagation();
@@ -264,6 +266,8 @@ function SpatialIDE() {
           React.createElement('button', { className: 'mini', onClick: (e) => { e.stopPropagation(); updateNode(node.id, { type: suggested === 'thought' ? 'text' : suggested, metadata: { ...node.metadata, role: suggested } }); } }, `Adopt ${suggested}`),
         ),
         level === 'detail' && ['module', 'code'].includes(node.type) && React.createElement('div', { className: 'inline-code' },
+        ),
+        ['module', 'code'].includes(node.type) && React.createElement('div', { className: 'inline-code' },
           React.createElement('textarea', {
             value: node.metadata.code || '',
             onChange: (e) => updateNode(node.id, { metadata: { ...node.metadata, code: e.target.value } }),
@@ -275,6 +279,15 @@ function SpatialIDE() {
         React.createElement('div', { className: 'card-title' }, 'Architecture Memory'),
         React.createElement('pre', { className: 'doc' }, JSON.stringify(architectureDiff, null, 2)),
         selected && React.createElement('div', { className: 'muted' }, `Selected: ${selected.id}`),
+        React.createElement('div', { className: 'card-title' }, 'Create Node'),
+        React.createElement('div', { className: 'button-row' }, NODE_TYPES.map((t) => React.createElement('button', {
+          key: t,
+          className: 'mini',
+          onClick: () => {
+            graphEngine.addNode(createNode({ type: t, content: `${t} node`, position: { x: 180, y: 180 } }));
+            setGraph({ ...graphEngine.getState() });
+          },
+        }, t))),
       ),
     ),
     preview && React.createElement('div', { className: 'modal' },
@@ -333,6 +346,9 @@ function draw(canvas, graph, viewport, connecting, pointerWorld, simIndex) {
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
+      ctx.strokeStyle = '#ffd167';
+      ctx.beginPath();
+      ctx.arc(x1, y1, 8, 0, Math.PI * 2);
       ctx.stroke();
     }
   }
