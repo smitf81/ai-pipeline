@@ -1,4 +1,4 @@
-export const NODE_TYPES = ['text', 'task', 'module', 'code', 'file'];
+export const NODE_TYPES = ['text', 'task', 'module', 'file', 'constraint'];
 
 export function createNode({ type = 'text', content = '', position = { x: 0, y: 0 }, metadata = {} } = {}) {
   return {
@@ -11,19 +11,21 @@ export function createNode({ type = 'text', content = '', position = { x: 0, y: 
   };
 }
 
-export function createEdge({ source, target, relationship_type = 'depends_on' }) {
+export function createEdge({ source, target, relationship_type = 'relates_to' }) {
   return { source, target, relationship_type };
 }
 
 export function buildStarterGraph() {
-  const root = createNode({ type: 'task', content: 'Make backend intent extractor', position: { x: 120, y: 120 } });
-  const module = createNode({ type: 'module', content: 'intent_engine', position: { x: 420, y: 220 }, metadata: { subcomponents: ['parser', 'classifier'], expanded: false, code: '// intent engine module' } });
-  const file = createNode({ type: 'file', content: 'src/intent_classifier.py', position: { x: 760, y: 220 } });
+  const prompt = createNode({ type: 'text', content: 'What are we building?', position: { x: 160, y: 120 } });
+  const task = createNode({ type: 'task', content: 'Sketch first architecture pass', position: { x: 480, y: 220 } });
+  const module = createNode({ type: 'module', content: 'workspace canvas layer', position: { x: 820, y: 180 } });
+  const rule = createNode({ type: 'constraint', content: 'Keep UI minimal and direct', position: { x: 520, y: 420 } });
   const edges = [
-    createEdge({ source: root.id, target: module.id }),
-    createEdge({ source: module.id, target: file.id, relationship_type: 'implements' }),
+    createEdge({ source: prompt.id, target: task.id }),
+    createEdge({ source: task.id, target: module.id, relationship_type: 'drives' }),
+    createEdge({ source: rule.id, target: module.id, relationship_type: 'constrains' }),
   ];
-  return { nodes: [root, module, file], edges };
+  return { nodes: [prompt, task, module, rule], edges };
 }
 
 export class GraphEngine {

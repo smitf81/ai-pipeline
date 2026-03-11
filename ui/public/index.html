@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Core Engine</title>
+    <title>ACE Sketchpad</title>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -12,106 +12,105 @@
             <div class="brand">
                 <div class="brand-mark">ACE</div>
                 <div>
-                    <div class="brand-title">AI Core Engine</div>
-                    <div class="brand-sub">Local-first project brain</div>
+                    <div class="brand-title">ACE Sketchpad</div>
+                    <div class="brand-sub">Canvas-first notebook workspace</div>
                 </div>
             </div>
             <div class="topbar-right">
+                <button id="toggleLegacyBtn" class="mini" type="button">Show Legacy Controls</button>
                 <span class="badge" id="status_badge">BOOTING</span>
             </div>
         </div>
     </header>
 
-    <main class="container">
-        <div class="button-row">
-            <button id="toggleLegacyBtn" type="button">Show Legacy Controls</button>
-        </div>
-        <div id="legacy-ui" class="legacy-hidden">
-        <section id="error_wrap" class="card error" style="display:none;">
-            <div class="card-title">Something went wrong</div>
-            <pre id="error_box"></pre>
-        </section>
-
-        <section class="card refresh-row">
-            <div>
-                <div class="card-title">Dashboard Refresh</div>
-                <div class="muted" id="refreshMeta">Last refreshed: never</div>
-                <div class="muted" id="refreshErrors"></div>
-            </div>
-            <div class="button-row">
-                <button id="refreshBtn">Refresh now</button>
-            </div>
-        </section>
-
-        <section class="grid">
-            <div class="card"><div class="card-title">Current Focus</div><div class="big" id="current_focus">—</div></div>
-            <div class="card"><div class="card-title">Next Actions</div><ul class="list" id="next_actions"></ul></div>
-            <div class="card"><div class="card-title">Blockers</div><ul class="list" id="blockers"></ul></div>
-        </section>
-
-        <section class="two-col">
-            <div class="card"><div class="card-title">Decisions</div><pre class="doc" id="decisions_text"></pre></div>
-            <div class="card"><div class="card-title">Tasks</div><pre class="doc" id="tasks_text"></pre></div>
-            <div class="card"><div class="card-title">Roadmap</div><pre class="doc" id="roadmap_text"></pre></div>
-            <div class="card"><div class="card-title">Plan</div><pre class="doc" id="plan_text"></pre></div>
-            <div class="card"><div class="card-title">Project Brain</div><pre class="doc" id="brain_text"></pre></div>
-            <div class="card"><div class="card-title">Changelog</div><pre class="doc" id="changelog_text"></pre></div>
-        </section>
-
-        <section class="card">
-            <div class="card-title">Pipeline Control</div>
-            <div class="form-grid">
-                <label>Project</label>
-                <select id="projectSelect"></select>
-
-                <label>Task</label>
-                <div class="inline">
-                    <select id="taskSelect"></select>
-                    <input id="taskIdInput" placeholder="Manual task id (e.g. 0001-name)" />
-                </div>
-
-                <label>Action</label>
-                <select id="actionSelect">
-                    <option value="scan">Scan</option>
-                    <option value="manage">Manage</option>
-                    <option value="build">Build</option>
-                    <option value="run">Run</option>
-                    <option value="apply-dry-run">Apply (Dry Run)</option>
-                    <option value="apply">Apply</option>
-                </select>
-
-                <div id="presetRow" class="hidden-row">
-                    <label>Run preset <button class="mini" id="presetHelpBtn" type="button">?</button></label>
-                    <select id="presetSelect"></select>
-                    <div id="presetHelp" class="help muted"></div>
-                </div>
-            </div>
-            <div class="button-row"><button id="executeBtn">Execute</button></div>
-        </section>
-
-        <section class="card">
-            <div class="card-title">Add</div>
-            <div class="button-row">
-                <button id="addIdeaBtn">Add Idea</button>
-                <button id="addTaskBtn">Add Task</button>
-                <button id="addProjectBtn">Add Project</button>
-            </div>
-            <div id="addMessage" class="muted"></div>
-        </section>
-
-        <section class="card">
-            <div class="card-title">Output</div>
-            <div class="meta"><div class="meta-item"><div class="meta-label">Status</div><div class="meta-value" id="runStatus">idle</div></div><div class="meta-item"><div class="meta-label">Exit code</div><div class="meta-value" id="runExit">—</div></div><div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value" id="runDuration">—</div></div></div>
-            <div class="muted" id="artifactPath">No artifacts yet.</div>
-            <div class="button-row">
-                <button id="copyOutputBtn">Copy output</button>
-                <button id="openTaskFolderBtn">Open task folder</button>
-            </div>
-            <pre id="commandOutput" class="console"></pre>
-        </section>
-
+    <main class="workspace-shell" aria-label="Sketchpad Workspace">
         <div id="spatial-root"></div>
     </main>
+
+    <aside id="legacy-ui" class="legacy-hidden legacy-drawer" aria-label="Legacy Controls Drawer">
+        <div class="legacy-drawer-inner">
+            <section id="error_wrap" class="card error" style="display:none;">
+                <div class="card-title">Something went wrong</div>
+                <pre id="error_box"></pre>
+            </section>
+
+            <section class="card refresh-row">
+                <div>
+                    <div class="card-title">Legacy Dashboard Refresh</div>
+                    <div class="muted" id="refreshMeta">Last refreshed: never</div>
+                    <div class="muted" id="refreshErrors"></div>
+                </div>
+                <div class="button-row"><button id="refreshBtn">Refresh now</button></div>
+            </section>
+
+            <section class="grid">
+                <div class="card"><div class="card-title">Current Focus</div><div class="big" id="current_focus">—</div></div>
+                <div class="card"><div class="card-title">Next Actions</div><ul class="list" id="next_actions"></ul></div>
+                <div class="card"><div class="card-title">Blockers</div><ul class="list" id="blockers"></ul></div>
+            </section>
+
+            <section class="two-col">
+                <div class="card"><div class="card-title">Decisions</div><pre class="doc" id="decisions_text"></pre></div>
+                <div class="card"><div class="card-title">Tasks</div><pre class="doc" id="tasks_text"></pre></div>
+                <div class="card"><div class="card-title">Roadmap</div><pre class="doc" id="roadmap_text"></pre></div>
+                <div class="card"><div class="card-title">Plan</div><pre class="doc" id="plan_text"></pre></div>
+                <div class="card"><div class="card-title">Project Brain</div><pre class="doc" id="brain_text"></pre></div>
+                <div class="card"><div class="card-title">Changelog</div><pre class="doc" id="changelog_text"></pre></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Pipeline Control</div>
+                <div class="form-grid">
+                    <label>Project</label>
+                    <select id="projectSelect"></select>
+
+                    <label>Task</label>
+                    <div class="inline">
+                        <select id="taskSelect"></select>
+                        <input id="taskIdInput" placeholder="Manual task id (e.g. 0001-name)" />
+                    </div>
+
+                    <label>Action</label>
+                    <select id="actionSelect">
+                        <option value="scan">Scan</option>
+                        <option value="manage">Manage</option>
+                        <option value="build">Build</option>
+                        <option value="run">Run</option>
+                        <option value="apply-dry-run">Apply (Dry Run)</option>
+                        <option value="apply">Apply</option>
+                    </select>
+
+                    <div id="presetRow" class="hidden-row">
+                        <label>Run preset <button class="mini" id="presetHelpBtn" type="button">?</button></label>
+                        <select id="presetSelect"></select>
+                        <div id="presetHelp" class="help muted"></div>
+                    </div>
+                </div>
+                <div class="button-row"><button id="executeBtn">Execute</button></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Add</div>
+                <div class="button-row">
+                    <button id="addIdeaBtn">Add Idea</button>
+                    <button id="addTaskBtn">Add Task</button>
+                    <button id="addProjectBtn">Add Project</button>
+                </div>
+                <div id="addMessage" class="muted"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Output</div>
+                <div class="meta"><div class="meta-item"><div class="meta-label">Status</div><div class="meta-value" id="runStatus">idle</div></div><div class="meta-item"><div class="meta-label">Exit code</div><div class="meta-value" id="runExit">—</div></div><div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value" id="runDuration">—</div></div></div>
+                <div class="muted" id="artifactPath">No artifacts yet.</div>
+                <div class="button-row">
+                    <button id="copyOutputBtn">Copy output</button>
+                    <button id="openTaskFolderBtn">Open task folder</button>
+                </div>
+                <pre id="commandOutput" class="console"></pre>
+            </section>
+        </div>
+    </aside>
 
     <div id="reviewModal" class="modal hidden">
         <div class="modal-content card">
