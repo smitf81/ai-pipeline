@@ -157,15 +157,19 @@ function openReviewModal(text, onConfirm) {
   const modal = document.getElementById('reviewModal');
   setText('reviewBody', text);
   modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden', 'false');
   const confirm = document.getElementById('confirmReviewBtn');
   confirm.onclick = () => {
-    modal.classList.add('hidden');
+    closeReviewModal();
     onConfirm();
   };
 }
 
 function closeReviewModal() {
-  document.getElementById('reviewModal').classList.add('hidden');
+  const modal = document.getElementById('reviewModal');
+  modal.classList.add('hidden');
+  modal.setAttribute('aria-hidden', 'true');
+  document.getElementById('confirmReviewBtn').onclick = null;
 }
 
 async function executeAction(forceApply = false) {
@@ -274,6 +278,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('presetHelpBtn').onclick = () => document.getElementById('presetHelp').classList.toggle('show-help');
   document.getElementById('executeBtn').onclick = () => executeAction().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
   document.getElementById('cancelReviewBtn').onclick = closeReviewModal;
+  document.getElementById('reviewModal').onclick = (e) => { if (e.target.id === 'reviewModal') closeReviewModal(); };
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReviewModal(); });
   document.getElementById('copyOutputBtn').onclick = () => navigator.clipboard.writeText(state.currentOutput || '');
   document.getElementById('openTaskFolderBtn').onclick = async () => {
     try {
@@ -301,3 +307,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   syncActionUi();
   startAutoRefresh();
 });
+

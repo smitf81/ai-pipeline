@@ -37,7 +37,7 @@ function ensureSpatialStorage() {
   const dir = path.dirname(SPATIAL_WORKSPACE_FILE);
   fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(SPATIAL_WORKSPACE_FILE)) {
-    fs.writeFileSync(SPATIAL_WORKSPACE_FILE, JSON.stringify({ graph: { nodes: [], edges: [] }, sketches: [], annotations: [], architectureMemory: {} }, null, 2));
+    fs.writeFileSync(SPATIAL_WORKSPACE_FILE, JSON.stringify({ graph: { nodes: [], edges: [] }, sketches: [], annotations: [], architectureMemory: {}, agentComments: {}, studio: {} }, null, 2));
   }
   if (!fs.existsSync(SPATIAL_HISTORY_FILE)) fs.writeFileSync(SPATIAL_HISTORY_FILE, '[]\n');
 }
@@ -511,10 +511,13 @@ app.post('/api/add/project', (req, res) => {
 
 app.get('/api/spatial/workspace', (req, res) => {
   ensureSpatialStorage();
-  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, { graph: { nodes: [], edges: [] }, sketches: [], annotations: [] }) || {};
+  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, { graph: { nodes: [], edges: [] }, sketches: [], annotations: [], architectureMemory: {}, agentComments: {}, studio: {} }) || {};
   workspace.graph = workspace.graph || { nodes: [], edges: [] };
   workspace.sketches = Array.isArray(workspace.sketches) ? workspace.sketches : [];
   workspace.annotations = Array.isArray(workspace.annotations) ? workspace.annotations : [];
+  workspace.architectureMemory = workspace.architectureMemory || {};
+  workspace.agentComments = workspace.agentComments || {};
+  workspace.studio = workspace.studio || {};
   res.json(workspace);
 });
 
@@ -541,16 +544,151 @@ app.get('/api/spatial/history', (req, res) => {
   res.json({ history: readJsonSafe(SPATIAL_HISTORY_FILE, []) || [] });
 });
 
-app.post('/api/spatial/intent', (req, res) => {
-  const text = String((req.body || {}).text || '').toLowerCase();
-  const map = [
-    ['backend intent extractor', ['input parser', 'intent classifier', 'entity extraction', 'task router']],
-    ['logging', ['logging subsystem', 'telemetry module', 'audit events']],
-    ['spatial ide', ['canvas renderer', 'graph engine', 'ace connector', 'mutation preview panel']],
+const INTENT_STOPWORDS = new Set(['the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'your', 'have', 'will', 'about', 'would', 'should', 'could', 'there', 'their', 'them', 'then', 'than', 'when', 'what', 'where', 'while', 'were', 'been', 'being', 'also', 'just', 'over', 'under', 'onto', 'need', 'needs', 'want', 'wants', 'able', 'make', 'lets']);
+
+function tokenizeIntentText(text) {
+  return [...new Set((String(text || '').toLowerCase().match(/[a-z][a-z0-9_-]{2,}/g) || []).filter((token) => !INTENT_STOPWORDS.has(token)))];
+}
+
+function topKeywords(text, limit = 24) {
+  const counts = new Map();
+  for (const token of tokenizeIntentText(text)) counts.set(token, (counts.get(token) || 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([token]) => token);
+}
+
+function inferIntentLabels(text) {
+  const value = String(text || '').toLowerCase();
+  const labels = [];
+  if (/context|brief|constraint|intent|memory/.test(value)) labels.push('context');
+  if (/plan|task|roadmap|sequence|todo|queue/.test(value)) labels.push('plan');
+  if (/build|fix|implement|patch|wire|connect|ship|code|module|service/.test(value)) labels.push('execution');
+  if (/ui|ux|canvas|studio|node|overlay|panel/.test(value)) labels.push('ux');
+  if (/review|guardrail|architect|rule|boundary|ace/.test(value)) labels.push('governance');
+  return labels.length ? labels : ['general'];
+}
+
+function inferIntentRole(text, labels) {
+  const value = String(text || '').toLowerCase();
+  if (/rule|constraint|must|never|guardrail/.test(value)) return 'constraint';
+  if (/api|service|module|architecture|system/.test(value)) return 'module';
+  if (/file|patch|fix|implement|build|wire/.test(value) || labels.includes('execution')) return 'task';
+  if (/ui|ux|canvas|studio|overlay/.test(value) || labels.includes('ux')) return 'ux';
+  return 'thought';
+}
+
+function buildIntentProjectContext() {
+  ensureSpatialStorage();
+  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, { graph: { nodes: [], edges: [] }, architectureMemory: {} }) || {};
+  const state = readDashboardFile('projects/emergence/state.json').parsed || {};
+  const plan = readDashboardFile('projects/emergence/plan.md').content || '';
+  const brain = readDashboardFile('projects/emergence/project_brain.md').content || '';
+  const roadmap = readDashboardFile('projects/emergence/roadmap.md').content || '';
+  const contextNode = (workspace.graph?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
+  const contextText = [state.current_focus || '', ...(state.next_actions || []), ...(state.blockers || []), plan, brain, roadmap, contextNode?.content || ''].join(' ');
+  return {
+    currentFocus: state.current_focus || '',
+    blockers: state.blockers || [],
+    keywords: topKeywords(contextText, 28),
+  };
+}
+
+function buildIntentTasks(text) {
+  const fragments = String(text || '')
+    .split(/[\n,.!?;:]+/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  const actionFirst = fragments.filter((entry) => /\b(build|fix|create|implement|wire|connect|review|scan|plan|design|update|remove|delete|disable)\b/i.test(entry));
+  const chosen = [...actionFirst, ...fragments].slice(0, 4);
+  return chosen.length ? chosen : ['analyze requirements', 'decompose tasks', 'prepare implementation plan'];
+}
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function analyzeSpatialIntent(text) {
+  const source = String(text || '').trim();
+  const project = buildIntentProjectContext();
+  const labels = inferIntentLabels(source);
+  const role = inferIntentRole(source, labels);
+  const tokens = tokenizeIntentText(source);
+  const projectTerms = new Set(project.keywords);
+  const matchedTerms = tokens.filter((token) => projectTerms.has(token));
+  const actionMatches = (source.match(/\b(build|fix|create|implement|wire|connect|review|scan|plan|design|update|remove|delete|disable|support)\b/gi) || []).length;
+  const constraintMatches = (source.match(/\b(must|should|avoid|blocker|needs|review|constraint|guardrail|boundary)\b/gi) || []).length;
+  const architectureMatches = (source.match(/\b(agent|context|planner|executor|memory|studio|canvas|node|backend|frontend|api|service|module|architecture|overlay)\b/gi) || []).length;
+  const sentences = source.split(/[.!?\n]+/).map((entry) => entry.trim()).filter(Boolean);
+  const criteria = [
+    {
+      id: 'project-alignment',
+      label: 'Project alignment',
+      score: clamp01((matchedTerms.length + ((project.currentFocus && source.toLowerCase().includes(String(project.currentFocus).toLowerCase())) ? 2 : 0)) / 6),
+      reason: matchedTerms.length ? `Matched project terms: ${matchedTerms.slice(0, 5).join(', ')}` : 'Few direct overlaps with current project context.',
+    },
+    {
+      id: 'actionability',
+      label: 'Actionability',
+      score: clamp01((actionMatches + buildIntentTasks(source).length) / 6),
+      reason: actionMatches ? `Detected ${actionMatches} implementation/planning verb signals.` : 'Input reads more like a note than a concrete action.',
+    },
+    {
+      id: 'architecture-fit',
+      label: 'Architecture fit',
+      score: clamp01((architectureMatches + labels.length) / 7),
+      reason: architectureMatches ? 'References ACE system structure, agents, or implementation surfaces.' : 'Little direct architecture language found.',
+    },
+    {
+      id: 'constraint-coverage',
+      label: 'Constraint coverage',
+      score: clamp01((constraintMatches + (project.blockers.length ? 1 : 0)) / 5),
+      reason: constraintMatches ? 'Includes guardrails, blockers, or review-oriented language.' : 'No clear constraints or review gates were stated.',
+    },
+    {
+      id: 'clarity',
+      label: 'Clarity',
+      score: clamp01((Math.min(tokens.length, 14) / 14 + Math.min(sentences.length, 3) / 3) / 2),
+      reason: tokens.length >= 6 ? 'Input includes enough detail to classify intent reliably.' : 'Short input limits confidence.',
+    },
   ];
-  const found = map.find(([k]) => text.includes(k));
-  const tasks = found ? found[1] : text.split(/[,.]/).map((s) => s.trim()).filter(Boolean).slice(0, 4);
-  res.json({ tasks: tasks.length ? tasks : ['analyze requirements', 'decompose tasks', 'build modules'] });
+  const confidence = Number((criteria.reduce((sum, item) => sum + item.score, 0) / criteria.length).toFixed(2));
+  const tasks = buildIntentTasks(source);
+  const summary = source.length > 140 ? `${source.slice(0, 137).trim()}...` : (source || 'Intent capture is empty.');
+  return {
+    agent: {
+      id: 'context-manager',
+      name: 'Context Manager',
+      criteriaVersion: 'ace-intent-v1',
+      remit: 'Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend.',
+    },
+    summary,
+    confidence,
+    criteria,
+    tasks,
+    classification: {
+      role,
+      labels,
+    },
+    metrics: {
+      tokenCount: tokens.length,
+      sentenceCount: sentences.length,
+      matchedProjectTerms: matchedTerms,
+      actionSignals: actionMatches,
+      architectureSignals: architectureMatches,
+      constraintSignals: constraintMatches,
+    },
+    projectContext: {
+      currentFocus: project.currentFocus,
+      blockers: project.blockers.slice(0, 3),
+      matchedTerms: matchedTerms.slice(0, 8),
+      referenceKeywords: project.keywords.slice(0, 8),
+    },
+    judgedAt: nowIso(),
+  };
+}
+
+app.post('/api/spatial/intent', (req, res) => {
+  const report = analyzeSpatialIntent((req.body || {}).text || '');
+  res.json(report);
 });
 
 app.post('/api/spatial/mutations/preview', (req, res) => {
@@ -573,3 +711,4 @@ app.post('/api/spatial/mutations/apply', (req, res) => {
 app.listen(port, () => {
   console.log(`AI Core Engine UI running at http://localhost:${port}`);
 });
+

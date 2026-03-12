@@ -2,80 +2,66 @@
 
 ## Folder architecture
 
-- `ui/public/spatial/graphEngine.js` – task graph structure, node/edge factories, starter graph.
-- `ui/public/spatial/aceConnector.js` – ACE API client (intent parsing, decomposition, mutation preview/apply, code/test generation hooks).
-- `ui/public/spatial/mutationEngine.js` – workspace mutation API helper and local mutation applier.
-- `ui/public/spatial/architectureMemory.js` – persistent architecture memory, design rules validation, architecture version snapshots.
-- `ui/public/spatial/persistence.js` – load/save workspace JSON graph + sketch/annotation layers.
-- `ui/public/spatial/spatialApp.js` – React canvas-first notebook workspace UI.
-- `data/spatial/workspace.json` – persisted workspace graph, sketches, annotations, and architectural model.
-- `data/spatial/history.json` – architecture mutation/save history.
-- `ui/server.js` – REST endpoints for spatial workspace, intent decomposition, mutation preview/apply.
+- `ui/public/spatial/sceneState.js` - scene constants, thresholds, and viewport helpers.
+- `ui/public/spatial/studioData.js` - ACE Studio agent catalog plus status/throughput derivation.
+- `ui/public/spatial/graphEngine.js` - task graph structure, node/edge factories, starter graph.
+- `ui/public/spatial/aceConnector.js` - ACE API client hooks for intent parsing and mutation preview/apply.
+- `ui/public/spatial/mutationEngine.js` - workspace mutation helper and local mutation applier.
+- `ui/public/spatial/architectureMemory.js` - persistent architecture memory, validation rules, version snapshots.
+- `ui/public/spatial/persistence.js` - load/save workspace JSON graph, sketches, annotations, comments, and studio state.
+- `ui/public/spatial/spatialApp.js` - React scene shell for the canvas and ACE Studio views.
+- `data/spatial/workspace.json` - persisted workspace graph, sketches, annotations, architecture memory, agent comments, and studio viewport state.
+- `data/spatial/history.json` - architecture mutation/save history.
+- `ui/server.js` - REST endpoints for workspace persistence, dashboard feeds, and mutation helpers.
 
-## Interaction model (notebook first)
+## Scene model
 
-- Default node creation is **double-click → thought/text node** when sketch mode is off.
-- Type is inferred from content and links; user can adopt suggested role.
-- Shift-drag from one node to another sketches directional dependencies.
-- Sketch mode (`✏️` button or `K`) turns the canvas into a freehand intent layer; left-drag on empty canvas creates a stroke.
-- In sketch mode, graph node interactions are disabled and simulation enters paused state with an inline hint.
-- Double-click in sketch mode creates an annotation sticky note; annotations are independent from graph linking/inference.
-- `🧹 Clear` removes all sketches/annotations and `🗑 Delete` removes the selected sketch or annotation.
-- Smooth WASD panning, middle/right mouse panning, and scroll zoom are canvas-priority interactions.
-- Legacy control panel is preserved in a right-side drawer and hidden by default.
+### Canvas
 
-## Canvas-first layout
+- Primary work surface for planning, notes, links, and freehand sketches.
+- Double-click adds a note in standard mode.
+- Sketch mode (`K`) switches the canvas into annotation/stroke editing.
+- Scroll zoom keeps the canvas primary until it crosses the studio threshold.
 
-- Main viewport is dedicated to the workspace (`.spatial-main`) with full-height canvas and a slim inspector sidebar.
-- A lightweight in-canvas toolbar contains save/simulate controls and long status messaging.
-- Legacy UI lives outside the workspace container to avoid resizing/reflow of the sketchpad when opened.
+### ACE Studio
+
+- Secondary architecture visualization layer triggered by zooming out or pressing `Tab`.
+- Pixel-art inspired top-down office showing ACE agents as symbolic worker stations.
+- Drag to pan, scroll to zoom, click a station or minimap dot to focus an agent.
+- Side panel shows role, status, throughput, recent actions, and feedback thread.
 
 ## Layering model
 
-- **Layer 3 – Interface Layer**: React canvas interaction and visualization.
-- **Layer 2 – Intelligence Layer**: ACE connector + architecture memory + decomposition/mutation planning.
-- **Layer 1 – Execution Layer**: mutation apply endpoints and persistence writes.
+- Layer 3 - Interface Layer: scene transitions, panel UI, canvas rendering, studio rendering.
+- Layer 2 - Intelligence Layer: ACE connector, architecture memory, and agent snapshot derivation.
+- Layer 1 - Execution Layer: persistence writes, dashboard/run feeds, mutation preview/apply.
 
-## Workspace node schema
-
-```json
-{
-  "id": "node_...",
-  "type": "task",
-  "content": "Build parser",
-  "position": { "x": 100, "y": 200 },
-  "connections": [],
-  "metadata": {}
-}
-```
-
-## Edge schema
+## Workspace schema additions
 
 ```json
 {
-  "source": "node_a",
-  "target": "node_b",
-  "relationship_type": "relates_to"
+  "graph": { "nodes": [], "edges": [] },
+  "sketches": [],
+  "annotations": [],
+  "architectureMemory": {},
+  "agentComments": {
+    "planner": [
+      { "id": "comment_...", "text": "Tighten task scope", "createdAt": "2026-03-12T12:00:00.000Z" }
+    ]
+  },
+  "studio": {
+    "scene": "studio",
+    "selectedAgentId": "planner",
+    "canvasViewport": { "x": 0, "y": 0, "zoom": 1 },
+    "studioViewport": { "x": 0, "y": 0, "zoom": 1.2 }
+  }
 }
 ```
 
-## Sketch layer schema
+## Extension points
 
-```json
-{
-  "id": "sketch_...",
-  "path": [{ "x": 120, "y": 220 }, { "x": 126, "y": 228 }],
-  "metadata": { "tag": null, "meaning": null }
-}
-```
-
-## Annotation schema
-
-```json
-{
-  "id": "annotation_...",
-  "content": "Investigate this flow",
-  "position": { "x": 260, "y": 180 },
-  "metadata": { "tag": null, "meaning": null }
-}
-```
+- Replace `buildAgentSnapshots(...)` with real agent telemetry while keeping the same station UI.
+- Feed task queues or logs into the side panel without changing scene navigation.
+- Add richer workstation props or pixel sprites in CSS/DOM without introducing a game loop.
+- Push collaborative comments into a shared store by swapping persistence implementation.
+- Add more scene types later because scene state is isolated from graph engine logic.

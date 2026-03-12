@@ -12,7 +12,7 @@ Dry-run mode (validation only):
 
 `python runner/ai.py apply --project <key> --task 0001 --dry-run`
 
-## `yt_transcript_exporter` – YouTube transcript to Markdown
+## yt_transcript_exporter - YouTube transcript to Markdown
 
 This repository includes a small Python CLI tool, `yt_transcript_exporter.py`, which downloads a YouTube video transcript (when available) and saves it as a clean Markdown file suitable for LLMs.
 
@@ -27,75 +27,96 @@ pip install -r requirements.txt
 
 ### Usage
 
-Basic usage:
-
 ```bash
 python yt_transcript_exporter.py <youtube_url>
-```
-
-Include timestamps at the start of each paragraph:
-
-```bash
 python yt_transcript_exporter.py <youtube_url> --timestamps
-```
-
-Also create a separate summary notes placeholder:
-
-```bash
 python yt_transcript_exporter.py <youtube_url> --summary
-```
-
-You can combine flags:
-
-```bash
 python yt_transcript_exporter.py <youtube_url> --timestamps --summary
 ```
 
 ### Output
 
 - The transcript is written to `transcripts/<video_title_sanitised>.md`.
-- The Markdown format is:
+- If `--summary` is used, a `<video_title_sanitised>_summary.txt` file is also created next to the transcript.
 
-  - `# <Video Title>`
-  - `Source: <YouTube URL>`
-  - `## Transcript`
-  - `Well‑formed paragraphs containing the transcript (optionally prefixed with timestamps).`
+## UI updates (ACE Studio MVP)
 
-If `--summary` is used, a `<video_title_sanitised>_summary.txt` file is also created next to the transcript as a placeholder for your own LLM notes.
+The spatial UI is now a two-scene local-first overlay for ACE:
 
-## UI updates (MVP)
+- `Canvas` remains the primary working surface for notes, cards, links, and sketches.
+- `ACE Studio` is a secondary pixel-art management scene for agent and architecture inspection.
+- Transition paths:
+  - zoom the canvas out below the studio threshold
+  - press `Tab` to toggle scenes directly
+  - click scene controls in the in-canvas toolbar
 
-The dashboard now auto-refreshes every 10 seconds (configurable via `DASHBOARD_REFRESH_MS`) and can be manually refreshed. It reads the latest project files and surfaces read errors inline.
+### ACE Studio capabilities
 
-Pipeline controls were simplified into one flow:
-- pick project
-- pick task (or manual override)
-- pick action
-- optionally choose run preset for `Run`
-- click one **Execute** button
+- Clickable agent stations for:
+  - Context Manager
+  - Planner
+  - Executor
+  - Memory Archivist
+  - CTO / Architect
+- Agent detail panel with:
+  - role and workstation summary
+  - live status badge
+  - recent actions
+  - throughput bars
+  - feedback thread and comment box
+- Studio camera controls:
+  - drag to pan
+  - scroll to zoom
+  - click a station or minimap dot to focus that agent
 
-Output is now live and structured via SSE streaming, with status, exit code, duration, artifacts/log locations, and persisted run history (last 20 runs in-memory).
+### Architecture and extension points
 
-Apply actions now go through a review modal:
-- dry-run: preview validation, changed files, branch, refusal reasons
-- apply: requires confirmation before execution
-- success: surfaces branch, commit, changed files, and suggested next step
+The studio overlay is intentionally split so future feeds can replace the current heuristics without rewriting the UI shell:
 
-Add menu supports lightweight creation flows from UI:
-- Add Idea (`idea.txt` append with timestamp)
-- Add Task (creates scaffold in `work/tasks/<id>-<slug>/`)
-- Add Project (updates `projects.json` after path validation)
+- `ui/public/spatial/sceneState.js`
+  - scene constants, zoom thresholds, and viewport helpers
+- `ui/public/spatial/studioData.js`
+  - agent definitions plus current status / throughput derivation from workspace and run history
+- `ui/public/spatial/spatialApp.js`
+  - scene composition, interaction wiring, rendering, autosave, and side-panel UI
+- `ui/public/spatial/persistence.js`
+  - workspace load/save
+- `data/spatial/workspace.json`
+  - persisted graph, sketches, annotations, studio state, and agent comments
 
-## API endpoints
+Current data is sourced from existing project state only:
 
-- `GET /api/dashboard` – returns live dashboard file contents, parsed state, timestamps, refresh interval, errors
-- `GET /api/projects` – project list with friendly key + path
-- `GET /api/tasks` – task folders from `work/tasks`
-- `GET /api/presets` – available run presets with descriptions
-- `GET /api/runs` – in-memory run history (last 20)
-- `POST /api/execute` – unified action endpoint for scan/manage/build/run/apply/dry-run-preview
-- `GET /api/stream/:runId` – SSE log/event stream for a run
-- `POST /api/open-task-folder` – opens task folder in OS file explorer (Windows supported)
-- `POST /api/add/idea` – append to `idea.txt`
-- `POST /api/add/task` – create task scaffold
-- `POST /api/add/project` – register project in `projects.json`
+- workspace graph and annotations
+- architecture memory snapshots
+- dashboard state from `/api/dashboard`
+- run history from `/api/runs`
+
+That means the MVP stays local-first and lightweight, but the following can be swapped in later with minimal UI churn:
+
+- real agent status feeds
+- task queues and throughput metrics
+- context synchronization streams
+- comment backends / collaboration storage
+- system logs and review events
+
+## Legacy UI and API endpoints
+
+The legacy dashboard remains available from the right-side drawer and still exposes:
+
+- `GET /api/dashboard`
+- `GET /api/projects`
+- `GET /api/tasks`
+- `GET /api/presets`
+- `GET /api/runs`
+- `POST /api/execute`
+- `GET /api/stream/:runId`
+- `POST /api/open-task-folder`
+- `POST /api/add/idea`
+- `POST /api/add/task`
+- `POST /api/add/project`
+- `GET /api/spatial/workspace`
+- `PUT /api/spatial/workspace`
+- `GET /api/spatial/history`
+- `POST /api/spatial/intent`
+- `POST /api/spatial/mutations/preview`
+- `POST /api/spatial/mutations/apply`

@@ -16,16 +16,7 @@ export function createEdge({ source, target, relationship_type = 'relates_to' })
 }
 
 export function buildStarterGraph() {
-  const prompt = createNode({ type: 'text', content: 'What are we building?', position: { x: 160, y: 120 } });
-  const task = createNode({ type: 'task', content: 'Sketch first architecture pass', position: { x: 480, y: 220 } });
-  const module = createNode({ type: 'module', content: 'workspace canvas layer', position: { x: 820, y: 180 } });
-  const rule = createNode({ type: 'constraint', content: 'Keep UI minimal and direct', position: { x: 520, y: 420 } });
-  const edges = [
-    createEdge({ source: prompt.id, target: task.id }),
-    createEdge({ source: task.id, target: module.id, relationship_type: 'drives' }),
-    createEdge({ source: rule.id, target: module.id, relationship_type: 'constrains' }),
-  ];
-  return { nodes: [prompt, task, module, rule], edges };
+  return { nodes: [], edges: [] };
 }
 
 export class GraphEngine {
@@ -47,6 +38,10 @@ export class GraphEngine {
     };
   }
 
+  clear() {
+    this.graph = buildStarterGraph();
+  }
+
   addNode(node) {
     this.graph.nodes.push(node);
     return node;
@@ -59,9 +54,19 @@ export class GraphEngine {
     return node;
   }
 
+  removeNode(id) {
+    this.graph.nodes = this.graph.nodes.filter((node) => node.id !== id);
+    this.graph.edges = this.graph.edges.filter((edge) => edge.source !== id && edge.target !== id);
+  }
+
   addEdge(edge) {
+    if (edge.source === edge.target) return edge;
     if (this.graph.edges.some((e) => e.source === edge.source && e.target === edge.target)) return edge;
     this.graph.edges.push(edge);
     return edge;
+  }
+
+  removeEdge(source, target) {
+    this.graph.edges = this.graph.edges.filter((edge) => !(edge.source === source && edge.target === target));
   }
 }
