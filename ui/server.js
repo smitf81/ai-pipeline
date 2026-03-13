@@ -5,6 +5,10 @@ const os = require('os');
 const { spawn } = require('child_process');
 const { advanceOrchestratorWorkspace, buildRuntimePayload } = require('./orchestratorState');
 const {
+  analyzeSpatialIntent: analyzeSpatialIntentReport,
+  buildIntentProjectContext: buildIntentProjectContextData,
+} = require('./intentAnalysis');
+const {
   SELF_TARGET_KEY,
   createDefaultSelfUpgradeState,
   normalizeSelfUpgradeState,
@@ -14,6 +18,14 @@ const {
   summarizeCommandOutput,
   getSelfUpgradePreflightSpecs,
 } = require('./selfUpgrade');
+const {
+  createPlannerHandoff,
+  listThroughputSessions,
+  readThroughputSession,
+  summarizeSession,
+  runThroughputSession,
+  reconcilePendingThroughputSessions,
+} = require('./throughputDebug');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -67,6 +79,14 @@ function appendArchitectureHistory(entry) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 40) || 'task';
 }
 
 function readJsonSafe(filePath, fallback = null) {
@@ -151,6 +171,73 @@ function updateSelfUpgradeState(mutator) {
       selfUpgrade: mutator(getSelfUpgradeState(workspace), workspace),
     },
   }));
+}
+
+function persistSpatialWorkspace(nextWorkspace) {
+  ensureSpatialStorage();
+  const advancedWorkspace = advanceOrchestratorWorkspace(nextWorkspace, {
+    dashboardState: getDashboardStateSnapshot(),
+    runs: getRunsSnapshot(),
+  });
+  writeJson(SPATIAL_WORKSPACE_FILE, advancedWorkspace);
+  return advancedWorkspace;
+}
+
+function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = null }) {
+  fs.mkdirSync(TASKS_DIR, { recursive: true });
+  const safeTitle = slugify(title || prompt);
+  const lastId = getTaskFolders().reduce((highest, folder) => {
+    const value = Number.parseInt(String(folder || '').slice(0, 4), 10);
+    return Number.isFinite(value) ? Math.max(highest, value) : highest;
+  }, 0);
+  const taskId = String(lastId + 1).padStart(4, '0');
+  const folderName = `${taskId}-${safeTitle}`;
+  const taskDir = path.join(TASKS_DIR, folderName);
+  const createdAt = nowIso();
+  fs.mkdirSync(taskDir, { recursive: true });
+  fs.writeFileSync(path.join(taskDir, 'idea.txt'), `${prompt.trim()}\n`, 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'plan.md'), [
+    `# Task ${taskId}: ${title || prompt.slice(0, 60)}`,
+    '',
+    `Created: ${createdAt}`,
+    '',
+    '## Goal',
+    handoff?.summary ? `- ${handoff.summary}` : '-',
+    '',
+    '## MVP scope (must-haves)',
+    ...((handoff?.tasks || []).length ? handoff.tasks.map((task) => `- ${task}`) : ['-']),
+    '',
+    '## Out of scope (not now)',
+    '-',
+    '',
+    '## Acceptance criteria',
+    '- [ ]',
+    '',
+    '## Risks / notes',
+    sessionId ? `- Throughput debug session: ${sessionId}` : '-',
+    '',
+  ].join('\n'), 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'meta.json'), `${JSON.stringify({
+    id: taskId,
+    title: title || prompt.slice(0, 60),
+    created_utc: createdAt,
+    source: 'throughput-debug',
+    sessionId,
+    handoffId: handoff?.id || null,
+  }, null, 2)}\n`, 'utf8');
+  return {
+    taskId,
+    folderName,
+    taskDir,
+  };
+}
+
+function analyzeIntentWithProjectContext(text, workspace) {
+  const project = buildIntentProjectContextData({
+    workspace,
+    readDashboardFile,
+  });
+  return analyzeSpatialIntentReport(text, project);
 }
 
 function resolveProjectTarget(projectKeyOrPath) {
@@ -247,7 +334,13 @@ function refreshSpatialOrchestrator({ persist = true } = {}) {
 
 function refreshSpatialRuntime({ persist = true } = {}) {
   const workspace = refreshSpatialOrchestrator({ persist });
-  return buildRuntimePayload(workspace);
+  return {
+    ...buildRuntimePayload(workspace),
+    throughputDebug: {
+      latestSession: summarizeSession(listThroughputSessions(ROOT)[0] || null),
+      sessions: listThroughputSessions(ROOT).slice(0, 8).map((session) => summarizeSession(session)),
+    },
+  };
 }
 
 function readDashboardFile(relPath) {
@@ -462,6 +555,135 @@ function extractApplySummary(stdout) {
   return { branch: branch ? branch.trim() : null, commit: commit ? commit.trim() : null };
 }
 
+function executeActionSync(action, body) {
+  const taskId = String(body.taskId || '').trim();
+  const project = String(body.project || '').trim();
+  const { projectKey, projectPath } = resolveProjectTarget(project);
+
+  if (!['scan', 'manage', 'build', 'run', 'apply'].includes(action)) {
+    throw new Error('Invalid action.');
+  }
+  if (!project || !taskId) {
+    throw new Error('project and taskId are required.');
+  }
+
+  if (action === 'apply') {
+    const taskFolder = getTaskFolders().find((folder) => folder.startsWith(taskId.slice(0, 4)));
+    if (!taskFolder) throw new Error('Task folder not found for apply.');
+    const review = validateApply(projectPath, taskFolder);
+    const patchText = fs.existsSync(review.patchPath) ? fs.readFileSync(review.patchPath, 'utf8') : '';
+    const selfPatchReview = reviewSelfUpgradePatch({
+      patchText,
+      taskId,
+      projectKey,
+      projectPath,
+      rootPath: ROOT,
+    });
+    if (!body.confirmApply) {
+      throw new Error('Apply requires confirmation.');
+    }
+    if ((!review.ok || !selfPatchReview.ok) && !body.dryRun) {
+      throw new Error('Apply validation failed.');
+    }
+    if (isSelfTarget(projectKey, projectPath, ROOT) && !body.dryRun) {
+      const selfUpgrade = getSelfUpgradeState(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+      const preflightMatchesTask = selfUpgrade.preflight?.taskId === taskId;
+      if ((!selfUpgrade.preflight?.ok || !preflightMatchesTask) && !body.confirmOverride) {
+        throw new Error('Self-upgrade apply requires a passing preflight for this task.');
+      }
+      updateSelfUpgradeState((state) => ({
+        ...state,
+        status: 'apply-review',
+        taskId,
+        targetProjectKey: SELF_TARGET_KEY,
+        patchReview: selfPatchReview,
+        requiresPermission: 'user-confirmation',
+      }));
+    }
+  }
+
+  const command = runCommandForAction(action, body);
+  const run = createRun(action, body);
+  run.meta.command = [command.cmd, ...command.args].join(' ');
+  pushRunEvent(run, { type: 'status', message: `Started ${action}...`, timestamp: nowIso() });
+  const result = spawnSyncSafe(command.cmd, command.args, ROOT);
+  if (result.stdout) pushRunEvent(run, { type: 'stdout', text: result.stdout, timestamp: nowIso() });
+  if (result.stderr) pushRunEvent(run, { type: 'stderr', text: result.stderr, timestamp: nowIso() });
+  if (action === 'run') {
+    const taskFolder = getTaskFolders().find((folder) => folder.startsWith(taskId.slice(0, 4)));
+    if (taskFolder && body.preset) {
+      run.artifacts.push(path.join('work', 'tasks', taskFolder, `run_${body.preset}.log`));
+      run.artifacts.push(path.join('work', 'tasks', taskFolder, `run_${body.preset}.json`));
+    }
+  }
+  if (action === 'apply' && result.code === 0) {
+    const combined = run.logs.map((entry) => entry.text || '').join('');
+    const summary = extractApplySummary(combined);
+    run.meta = {
+      ...run.meta,
+      ...summary,
+      nextAction: 'Create PR from the generated apply branch.',
+    };
+    if (isSelfTarget(projectKey, projectPath, ROOT)) {
+      updateSelfUpgradeState((state) => ({
+        ...state,
+        status: 'ready-to-deploy',
+        taskId,
+        targetProjectKey: SELF_TARGET_KEY,
+        apply: {
+          status: 'applied',
+          ok: true,
+          appliedAt: nowIso(),
+          branch: summary.branch,
+          commit: summary.commit,
+          taskId,
+        },
+        requiresPermission: 'user-confirmation',
+      }));
+    }
+  } else if (action === 'apply' && isSelfTarget(projectKey, projectPath, ROOT)) {
+    updateSelfUpgradeState((state) => ({
+      ...state,
+      status: 'blocked',
+      taskId,
+      apply: {
+        ...state.apply,
+        status: 'failed',
+        ok: false,
+        appliedAt: nowIso(),
+        taskId,
+      },
+      requiresPermission: 'none',
+    }));
+  }
+  finishRun(run, result.code || 0);
+  const combinedOutput = [result.stdout || '', result.stderr || ''].filter(Boolean).join('\n').trim();
+  return {
+    ok: (result.code || 0) === 0,
+    runId: run.runId,
+    exitCode: result.code || 0,
+    status: run.status,
+    meta: run.meta,
+    artifacts: run.artifacts,
+    summary: summarizeCommandOutput(combinedOutput || run.logs.map((entry) => entry.message || entry.text || '').join('\n')),
+    error: (result.code || 0) === 0 ? null : summarizeCommandOutput(combinedOutput || 'Command failed.'),
+  };
+}
+
+function getHealthSnapshot() {
+  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
+  const selfUpgrade = getSelfUpgradeState(workspace);
+  return {
+    ok: true,
+    pid: process.pid,
+    startedAt: SERVER_STARTED_AT,
+    selfUpgrade: {
+      status: selfUpgrade.status,
+      deploy: selfUpgrade.deploy,
+    },
+  };
+}
+
 app.get('/api/dashboard', (req, res) => {
   const files = {};
   const errors = [];
@@ -512,17 +734,7 @@ app.get('/api/runs', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
-  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
-  const selfUpgrade = getSelfUpgradeState(workspace);
-  res.json({
-    ok: true,
-    pid: process.pid,
-    startedAt: SERVER_STARTED_AT,
-    selfUpgrade: {
-      status: selfUpgrade.status,
-      deploy: selfUpgrade.deploy,
-    },
-  });
+  res.json(getHealthSnapshot());
 });
 
 app.post('/api/spatial/self-upgrade/preflight', (req, res) => {
@@ -890,6 +1102,135 @@ app.get('/api/spatial/history', (req, res) => {
   res.json({ history: readJsonSafe(SPATIAL_HISTORY_FILE, []) || [] });
 });
 
+app.get('/api/spatial/debug/throughput', (req, res) => {
+  const sessions = listThroughputSessions(ROOT);
+  res.json({
+    sessions: sessions.slice(0, 12).map((session) => summarizeSession(session)),
+    latestSession: sessions[0] || null,
+  });
+});
+
+app.get('/api/spatial/debug/throughput/:sessionId', (req, res) => {
+  const session = readThroughputSession(ROOT, req.params.sessionId);
+  if (!session) return res.status(404).json({ error: 'Throughput session not found.' });
+  res.json({ session });
+});
+
+app.post('/api/spatial/debug/throughput', async (req, res) => {
+  const body = req.body || {};
+  const prompt = String(body.prompt || 'I think we should add a desk to the studio for a QA agent').trim();
+  const mode = String(body.mode || 'live').toLowerCase() === 'fixture' ? 'fixture' : 'live';
+  const targetProjectKey = String(body.project || SELF_TARGET_KEY).trim() || SELF_TARGET_KEY;
+  const simulateDeploy = body.simulate === true || mode === 'fixture' || process.env.ACE_DISABLE_SELF_RESTART === '1' || process.env.NODE_ENV === 'test';
+  let shouldRestartAfterResponse = false;
+  try {
+    const session = await runThroughputSession({
+      rootPath: ROOT,
+      prompt,
+      targetProjectKey,
+      mode,
+      confirmDeploy: body.confirmDeploy !== false,
+      simulateDeploy,
+      loadWorkspace: () => readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
+      persistWorkspace: (workspace) => persistSpatialWorkspace(workspace),
+      appendHistory: appendArchitectureHistory,
+      readHistory: () => readJsonSafe(SPATIAL_HISTORY_FILE, []) || [],
+      analyzeIntent: (text, workspace) => analyzeIntentWithProjectContext(text, workspace),
+      getDashboardState: () => getDashboardStateSnapshot(),
+      createRunnerTask: ({ title, prompt: nextPrompt, handoff, session }) => createRunnerTaskFolder({
+        title,
+        prompt: nextPrompt,
+        handoff,
+        sessionId: session.id,
+      }),
+      executeActionSync: (action, payload) => executeActionSync(action, payload),
+      runSelfUpgradePreflight: ({ taskId, project }) => {
+        const requestedProject = String(project || SELF_TARGET_KEY).trim() || SELF_TARGET_KEY;
+        const { projectKey, projectPath } = resolveProjectTarget(requestedProject);
+        const taskFolder = getTaskFolders().find((folder) => folder.startsWith(taskId.slice(0, 4)));
+        if (!taskFolder) {
+          return { ok: false, error: 'Task folder not found for self-upgrade preflight.' };
+        }
+        const validation = validateApply(projectPath, taskFolder);
+        const patchText = fs.existsSync(validation.patchPath) ? fs.readFileSync(validation.patchPath, 'utf8') : '';
+        const patchReview = reviewSelfUpgradePatch({
+          patchText,
+          taskId,
+          projectKey,
+          projectPath,
+          rootPath: ROOT,
+        });
+        const preflight = runSelfUpgradePreflight({
+          taskId,
+          projectKey,
+          projectPath,
+          validation,
+          patchReview,
+        });
+        const workspace = updateSelfUpgradeState((state) => ({
+          ...state,
+          status: preflight.ok ? 'ready-to-apply' : 'blocked',
+          taskId,
+          targetProjectKey: SELF_TARGET_KEY,
+          patchReview,
+          preflight,
+          deploy: preflight.ok ? state.deploy : createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }).deploy,
+          requiresPermission: preflight.ok ? 'user-confirmation' : 'none',
+        }));
+        return {
+          ok: preflight.ok,
+          selfUpgrade: getSelfUpgradeState(workspace),
+        };
+      },
+      deploySelfUpgrade: ({ confirmRestart, simulate }) => {
+        const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
+        const selfUpgrade = getSelfUpgradeState(workspace);
+        if (!confirmRestart) {
+          return { ok: false, error: 'Deploy requires explicit restart confirmation.', selfUpgrade };
+        }
+        if (!selfUpgrade.preflight?.ok) {
+          return { ok: false, error: 'Deploy requires a passing self-upgrade preflight.', selfUpgrade };
+        }
+        if (!selfUpgrade.apply?.ok) {
+          return { ok: false, error: 'Deploy requires a successful self-upgrade apply.', selfUpgrade };
+        }
+        const restartingWorkspace = updateSelfUpgradeState((state) => ({
+          ...state,
+          status: 'deploying',
+          deploy: {
+            ...state.deploy,
+            status: simulate ? 'healthy' : 'restarting',
+            requestedAt: nowIso(),
+            restartedAt: simulate ? nowIso() : state.deploy?.restartedAt || null,
+            health: {
+              status: simulate ? 'healthy' : 'restarting',
+              pid: process.pid,
+              startedAt: SERVER_STARTED_AT,
+            },
+          },
+          requiresPermission: 'none',
+        }));
+        shouldRestartAfterResponse = !simulate;
+        return {
+          ok: true,
+          restarting: !simulate,
+          deferredRestart: !simulate,
+          selfUpgrade: getSelfUpgradeState(restartingWorkspace),
+          healthUrl: '/api/health',
+        };
+      },
+      getRunsSnapshot: () => getRunsSnapshot(),
+      getHealthSnapshot: () => getHealthSnapshot(),
+    });
+    res.json({ ok: true, session });
+    if (shouldRestartAfterResponse && session?.stages?.find((stage) => stage.id === 'deploy')?.verdict === 'pass') {
+      setTimeout(scheduleSelfRestart, 120);
+    }
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
 const INTENT_STOPWORDS = new Set(['the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'your', 'have', 'will', 'about', 'would', 'should', 'could', 'there', 'their', 'them', 'then', 'than', 'when', 'what', 'where', 'while', 'were', 'been', 'being', 'also', 'just', 'over', 'under', 'onto', 'need', 'needs', 'want', 'wants', 'able', 'make', 'lets']);
 
 function tokenizeIntentText(text) {
@@ -1033,7 +1374,8 @@ function analyzeSpatialIntent(text) {
 }
 
 app.post('/api/spatial/intent', (req, res) => {
-  const report = analyzeSpatialIntent((req.body || {}).text || '');
+  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
+  const report = analyzeIntentWithProjectContext((req.body || {}).text || '', workspace);
   res.json(report);
 });
 
@@ -1063,6 +1405,15 @@ setInterval(() => {
 }, 4000);
 
 markServerHealthyOnBoot();
+reconcilePendingThroughputSessions({
+  rootPath: ROOT,
+  loadWorkspace: () => readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
+  persistWorkspace: (workspace) => persistSpatialWorkspace(workspace),
+  getRunsSnapshot: () => getRunsSnapshot(),
+  getHealthSnapshot: () => getHealthSnapshot(),
+}).catch((error) => {
+  console.warn(`[${nowIso()}] throughput session reconcile failed: ${error.message}`);
+});
 
 app.listen(port, () => {
   console.log(`AI Core Engine UI running at http://localhost:${port}`);

@@ -2,6 +2,8 @@ const testEntries = [
   { name: 'studioData', path: './studioData.test.mjs' },
   { name: 'orchestratorState', path: './orchestratorState.test.mjs' },
   { name: 'selfUpgrade', path: './selfUpgrade.test.mjs' },
+  { name: 'intentAnalysis', path: './intentAnalysis.test.mjs' },
+  { name: 'throughputDebug', path: './throughputDebug.test.mjs' },
   { name: 'spatialApp smoke', path: './spatialApp.smoke.test.mjs' },
 ];
 

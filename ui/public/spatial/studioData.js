@@ -188,6 +188,11 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, titl
     desk: 'Planner',
     state: 'Ready',
     phaseTicks: 0,
+    runnerTaskId: null,
+    runIds: [],
+    artifactRefs: [],
+    deployStatus: 'idle',
+    auditSessionId: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -203,6 +208,11 @@ export function normalizeTeamBoardState(workspace = {}) {
     desk: card.desk || deskLabelForCard(normalizeBoardStatus(card.status)),
     state: card.state || stateLabelForCard(normalizeBoardStatus(card.status)),
     phaseTicks: Number(card.phaseTicks || 0),
+    runnerTaskId: card.runnerTaskId || null,
+    runIds: Array.isArray(card.runIds) ? card.runIds.filter(Boolean) : [],
+    artifactRefs: Array.isArray(card.artifactRefs) ? card.artifactRefs.filter(Boolean) : [],
+    deployStatus: card.deployStatus || 'idle',
+    auditSessionId: card.auditSessionId || null,
   })) : [];
   const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
   const workingCards = [...existingCards];
@@ -378,7 +388,7 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
         }
       } else if (status === 'complete') {
         phaseTicks += 1;
-        if (reviewGate && phaseTicks >= 1) {
+        if (phaseTicks >= 1) {
           status = 'review';
           phaseTicks = 0;
         }
@@ -480,7 +490,7 @@ function buildDeskWorkItems(agentId, workspace, notebook, handoff, selectedExecu
         status: 'ready',
         dependsOn: selectedExecutionCard.sourceHandoffId ? [selectedExecutionCard.sourceHandoffId] : [],
         conflictTags: ['execute', selectedExecutionCard.id],
-        artifactRefs: [],
+        artifactRefs: selectedExecutionCard.artifactRefs || [],
         title: `Execute approved card: ${selectedExecutionCard.title}`,
       }];
     }
@@ -896,7 +906,9 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
         label: 'Execution Selection',
         kind: 'summary',
         value: selectedExecutionCard ? selectedExecutionCard.title : 'No review-ready board card is queued for execution.',
-        detail: selectedExecutionCard ? `Selected from review queue on page ${selectedExecutionCard.pageId}` : 'Review-ready tasks get a Send action on the Team Kanban board.',
+        detail: selectedExecutionCard
+          ? `Selected from review queue on page ${selectedExecutionCard.pageId} | task ${selectedExecutionCard.runnerTaskId || 'unbound'} | deploy ${selectedExecutionCard.deployStatus || 'idle'}`
+          : 'Review-ready tasks get a Send action on the Team Kanban board.',
       }] : []),
       ...selfUpgradeSections,
     ],

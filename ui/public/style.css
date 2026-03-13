@@ -997,6 +997,29 @@ textarea {
   background: rgba(255, 211, 110, 0.05);
 }
 
+.throughput-debug-input {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.throughput-stage-list {
+  max-height: 260px;
+  overflow: auto;
+}
+
+.throughput-sink-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.throughput-sink {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(13, 25, 48, 0.56);
+  border: 1px solid rgba(128, 170, 255, 0.16);
+}
+
 .review-header {
   justify-content: space-between;
   align-items: flex-start;

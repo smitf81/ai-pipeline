@@ -1787,7 +1787,7 @@
       "sourceNodeId": "node_1773403593232_kvs26",
       "summary": "context reports need updating by agent beyond text taken from 1 node",
       "createdAt": "2026-03-13T13:22:29.866Z",
-      "updatedAt": "2026-03-13T14:16:24.470Z"
+      "updatedAt": "2026-03-13T17:03:41.029Z"
     }
   ],
   "activePageId": "page_1773408149866_813p",
@@ -1924,13 +1924,18 @@
           "sourceHandoffId": "handoff_1773403588495_hxww",
           "sourceNodeId": "node_1773396757687_h18df",
           "title": "Finance Department",
-          "status": "active",
+          "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T13:22:29.857Z",
+          "updatedAt": "2026-03-13T17:03:41.029Z",
           "sourceKey": "page_1773403588491_034z:finance-department",
-          "desk": "Planner",
-          "state": "In progress",
-          "phaseTicks": 0
+          "desk": "CTO",
+          "state": "Task requires approval",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null
         },
         {
           "id": "card_page_1773403588491_034z_calculates-cost-tokens-usage-etc",
@@ -1938,13 +1943,18 @@
           "sourceHandoffId": "handoff_1773403588495_hxww",
           "sourceNodeId": "node_1773396757687_h18df",
           "title": "- calculates cost/tokens usage etc",
-          "status": "plan",
+          "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-13T17:03:41.029Z",
           "sourceKey": "page_1773403588491_034z:calculates-cost-tokens-usage-etc",
-          "desk": "Planner",
-          "state": "Ready",
-          "phaseTicks": 0
+          "desk": "CTO",
+          "state": "Task requires approval",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null
         },
         {
           "id": "card_page_1773403588491_034z_allocates-resources-allowed-to-each-agen",
@@ -1952,13 +1962,18 @@
           "sourceHandoffId": "handoff_1773403588495_hxww",
           "sourceNodeId": "node_1773396757687_h18df",
           "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
-          "status": "plan",
+          "status": "complete",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-13T17:03:41.029Z",
           "sourceKey": "page_1773403588491_034z:allocates-resources-allowed-to-each-agen",
-          "desk": "Planner",
-          "state": "Ready",
-          "phaseTicks": 0
+          "desk": "Archivist",
+          "state": "Pending review",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null
         },
         {
           "id": "card_page_1773408149866_813p_finance-department",
@@ -1966,13 +1981,18 @@
           "sourceHandoffId": "handoff_1773403588495_hxww",
           "sourceNodeId": "node_1773396757687_h18df",
           "title": "Finance Department",
-          "status": "plan",
+          "status": "active",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-13T17:03:41.029Z",
           "sourceKey": "page_1773408149866_813p:finance-department",
-          "desk": "Planner",
-          "state": "Ready",
-          "phaseTicks": 0
+          "desk": "Context",
+          "state": "Clarifying",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null
         },
         {
           "id": "card_page_1773408149866_813p_calculates-cost-tokens-usage-etc",
@@ -1982,11 +2002,16 @@
           "title": "- calculates cost/tokens usage etc",
           "status": "plan",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-13T17:03:41.029Z",
           "sourceKey": "page_1773408149866_813p:calculates-cost-tokens-usage-etc",
-          "desk": "Planner",
-          "state": "Ready",
-          "phaseTicks": 0
+          "desk": "Context",
+          "state": "Waiting on context",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null
         },
         {
           "id": "card_page_1773408149866_813p_allocates-resources-allowed-to-each-agen",
@@ -1996,11 +2021,16 @@
           "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
           "status": "plan",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-13T17:03:41.029Z",
           "sourceKey": "page_1773408149866_813p:allocates-resources-allowed-to-each-agen",
-          "desk": "Planner",
-          "state": "Ready",
-          "phaseTicks": 0
+          "desk": "Context",
+          "state": "Waiting on context",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null
         },
         {
           "id": "card_page_1773408149866_813p_context-reports-need-updating-by-agent-b",
@@ -2010,26 +2040,31 @@
           "title": "context reports need updating by agent beyond text taken from 1 node",
           "status": "plan",
           "createdAt": "2026-03-13T12:07:46.941Z",
-          "updatedAt": "2026-03-13T12:07:46.941Z",
+          "updatedAt": "2026-03-13T17:03:41.029Z",
           "sourceKey": "page_1773408149866_813p:context-reports-need-updating-by-agent-b",
-          "desk": "Planner",
-          "state": "Ready",
-          "phaseTicks": 0
+          "desk": "Context",
+          "state": "Waiting on context",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null
         }
       ],
       "selectedCardId": null,
-      "updatedAt": "2026-03-13T14:00:58.634Z",
+      "updatedAt": "2026-03-13T17:03:41.029Z",
       "summary": {
-        "plan": 6,
+        "plan": 3,
         "active": 1,
-        "complete": 0,
-        "review": 0,
+        "complete": 1,
+        "review": 2,
         "idleWorkers": 0
       }
     },
     "orchestrator": {
       "status": "needs-attention",
-      "lastTickAt": "2026-03-13T14:16:24.470Z",
+      "lastTickAt": "2026-03-13T17:03:41.029Z",
       "activeDeskIds": [
         "context-manager",
         "planner",
@@ -2110,8 +2145,8 @@
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T14:16:24.470Z",
-          "thoughtBubble": "context reports need updating by agent beyond text taken from 1 node"
+          "freshAt": "2026-03-13T17:03:41.029Z",
+          "thoughtBubble": "🔵 clarifying 3 planned tasks..."
         },
         "planner": {
           "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
@@ -2152,8 +2187,8 @@
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T14:16:24.470Z",
-          "thoughtBubble": "context reports need updating by agent beyond text taken from 1 node"
+          "freshAt": "2026-03-13T17:03:41.029Z",
+          "thoughtBubble": "🟡 3 tasks in backlog. 0 workers idle. Rebalancing workload..."
         },
         "executor": {
           "mission": "Own tangible delivery outputs when plan items are approved and unblocked.",
@@ -2192,8 +2227,8 @@
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T14:16:24.470Z",
-          "thoughtBubble": "Execution is gated by low-confidence context."
+          "freshAt": "2026-03-13T17:03:41.029Z",
+          "thoughtBubble": "🔴 blocked by low-confidence context."
         },
         "memory-archivist": {
           "mission": "Persist useful summaries, artifact references, and history for active work.",
@@ -2231,8 +2266,8 @@
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T14:16:24.470Z",
-          "thoughtBubble": "Capturing summaries, artifacts, and history as the page evolves."
+          "freshAt": "2026-03-13T17:03:41.029Z",
+          "thoughtBubble": "🟣 logging summaries..."
         },
         "cto-architect": {
           "mission": "Monitor guardrails, conflicts, and review readiness across the desk network.",
@@ -2273,8 +2308,8 @@
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T14:16:24.470Z",
-          "thoughtBubble": "Computing 3 governance signals: Planner and Executor are sharing work against a low-confidence context packet."
+          "freshAt": "2026-03-13T17:03:41.029Z",
+          "thoughtBubble": "🟠 2 tasks require approval."
         }
       },
       "activePageId": "page_1773408149866_813p"
@@ -2312,14 +2347,14 @@
       "requiresPermission": "none"
     },
     "canvasViewport": {
-      "zoom": 0.44,
-      "x": -86.03828125000001,
-      "y": 122.94003906250009
+      "x": -217,
+      "y": -198,
+      "zoom": 1.16
     },
     "studioViewport": {
       "zoom": 1.36,
-      "x": -16.620000000000005,
-      "y": 146.15999999999997
+      "x": 332.38,
+      "y": 755.16
     },
     "sidebar": {
       "collapsed": false,

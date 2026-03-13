@@ -118,6 +118,11 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, titl
     desk: 'Planner',
     state: 'Ready',
     phaseTicks: 0,
+    runnerTaskId: null,
+    runIds: [],
+    artifactRefs: [],
+    deployStatus: 'idle',
+    auditSessionId: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -133,6 +138,11 @@ function normalizeTeamBoardState(workspace = {}) {
     desk: card.desk || deskLabelForCard(normalizeBoardStatus(card.status)),
     state: card.state || stateLabelForCard(normalizeBoardStatus(card.status)),
     phaseTicks: Number(card.phaseTicks || 0),
+    runnerTaskId: card.runnerTaskId || null,
+    runIds: Array.isArray(card.runIds) ? card.runIds.filter(Boolean) : [],
+    artifactRefs: Array.isArray(card.artifactRefs) ? card.artifactRefs.filter(Boolean) : [],
+    deployStatus: card.deployStatus || 'idle',
+    auditSessionId: card.auditSessionId || null,
   })) : [];
   const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
   const workingCards = [...existingCards];
@@ -234,7 +244,7 @@ function buildDeskWorkItems(deskId, workspace, notebook, handoff, selectedExecut
         status: 'ready',
         dependsOn: selectedExecutionCard.sourceHandoffId ? [selectedExecutionCard.sourceHandoffId] : [],
         conflictTags: ['execute', selectedExecutionCard.id],
-        artifactRefs: [],
+        artifactRefs: selectedExecutionCard.artifactRefs || [],
         title: `Execute approved card: ${selectedExecutionCard.title}`,
       }];
     }
@@ -335,7 +345,7 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
         }
       } else if (status === 'complete') {
         phaseTicks += 1;
-        if (reviewGate && phaseTicks >= 1) {
+        if (phaseTicks >= 1) {
           status = 'review';
           phaseTicks = 0;
         }

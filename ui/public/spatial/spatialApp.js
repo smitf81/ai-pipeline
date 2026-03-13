@@ -119,6 +119,11 @@ const EMPTY_SERVER_HEALTH = {
   },
 };
 
+const EMPTY_THROUGHPUT_DEBUG = {
+  latestSession: null,
+  sessions: [],
+};
+
 const LABEL_MAP = [
   { label: 'context', match: /context|brief|constraint|intent|memory/i },
   { label: 'plan', match: /plan|task|sequence|milestone|todo|roadmap/i },
@@ -507,6 +512,9 @@ function SpatialNotebook() {
   const [orchestratorState, setOrchestratorState] = useState(EMPTY_ORCHESTRATOR_STATE);
   const [selfUpgrade, setSelfUpgrade] = useState(EMPTY_SELF_UPGRADE);
   const [serverHealth, setServerHealth] = useState(EMPTY_SERVER_HEALTH);
+  const [throughputDebug, setThroughputDebug] = useState(EMPTY_THROUGHPUT_DEBUG);
+  const [throughputPrompt, setThroughputPrompt] = useState('I think we should add a desk to the studio for a QA agent');
+  const [throughputBusy, setThroughputBusy] = useState(false);
   const [selfUpgradeTaskId, setSelfUpgradeTaskId] = useState('');
   const [selfUpgradeBusy, setSelfUpgradeBusy] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -840,12 +848,13 @@ function SpatialNotebook() {
 
   async function refreshFeeds() {
     try {
-      const [dashboardResponse, runsResponse, historyResponse, runtimeResponse, healthResponse] = await Promise.all([
+      const [dashboardResponse, runsResponse, historyResponse, runtimeResponse, healthResponse, throughputResponse] = await Promise.all([
         fetch('/api/dashboard'),
         fetch('/api/runs'),
         fetch('/api/spatial/history'),
         fetch('/api/spatial/runtime'),
         fetch('/api/health'),
+        fetch('/api/spatial/debug/throughput'),
       ]);
       if (dashboardResponse.ok) {
         const dashboard = await dashboardResponse.json();
@@ -885,6 +894,12 @@ function SpatialNotebook() {
           ...EMPTY_SELF_UPGRADE,
           ...(runtime.selfUpgrade || {}),
         });
+        if (runtime.throughputDebug) {
+          setThroughputDebug({
+            ...EMPTY_THROUGHPUT_DEBUG,
+            ...(runtime.throughputDebug || {}),
+          });
+        }
         if (!selfUpgradeTaskId && runtime.selfUpgrade?.taskId) {
           setSelfUpgradeTaskId(runtime.selfUpgrade.taskId);
         }
@@ -894,6 +909,13 @@ function SpatialNotebook() {
         setServerHealth({
           ...EMPTY_SERVER_HEALTH,
           ...(health || {}),
+        });
+      }
+      if (throughputResponse.ok) {
+        const throughput = await throughputResponse.json();
+        setThroughputDebug({
+          ...EMPTY_THROUGHPUT_DEBUG,
+          ...(throughput || {}),
         });
       }
     } catch {
@@ -969,6 +991,65 @@ function SpatialNotebook() {
       setStatus(`self-upgrade deploy failed: ${error.message}`);
     } finally {
       setSelfUpgradeBusy(false);
+    }
+  }
+
+  async function openTaskFolder(taskId) {
+    if (!taskId) return;
+    try {
+      const response = await fetch('/api/open-task-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'unable to open task folder');
+      setStatus(`opened task folder ${taskId}`);
+    } catch (error) {
+      setStatus(`open task folder failed: ${error.message}`);
+    }
+  }
+
+  async function runThroughputDebug(mode = 'live') {
+    if (!throughputPrompt.trim()) {
+      setStatus('enter a throughput prompt before running the debug pass');
+      return;
+    }
+    setThroughputBusy(true);
+    try {
+      const response = await fetch('/api/spatial/debug/throughput', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: throughputPrompt,
+          mode,
+          project: 'ace-self',
+          confirmDeploy: true,
+          simulate: mode === 'fixture',
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'throughput debug failed');
+      setThroughputDebug((current) => ({
+        ...current,
+        latestSession: payload.session || null,
+        sessions: payload.session
+          ? [payload.session, ...(current.sessions || []).filter((entry) => entry.id !== payload.session.id)].slice(0, 12)
+          : current.sessions,
+      }));
+      if (payload.session?.runnerTaskId) {
+        setSelfUpgradeTaskId(payload.session.runnerTaskId);
+      }
+      setSelectedAgentId('cto-architect');
+      setScene(SCENES.STUDIO);
+      setStatus(payload.session?.status === 'completed'
+        ? `throughput debug passed for ${payload.session.runnerTaskId || 'session'}`
+        : `throughput debug ${payload.session?.status || 'completed'} | ${payload.session?.verdict || 'pending'}`);
+      setTimeout(refreshFeeds, mode === 'live' ? 2000 : 250);
+    } catch (error) {
+      setStatus(`throughput debug failed: ${error.message}`);
+    } finally {
+      setThroughputBusy(false);
     }
   }
 
@@ -1654,6 +1735,7 @@ function SpatialNotebook() {
     review: (teamBoard.cards || []).filter((card) => card.status === 'review'),
   }), [teamBoard]);
   const selectedExecutionCard = useMemo(() => (teamBoard.cards || []).find((card) => card.id === teamBoard.selectedCardId) || null, [teamBoard]);
+  const latestThroughputSession = throughputDebug.latestSession || throughputDebug.sessions?.[0] || null;
   const teamBoardColumnMeta = {
     plan: { title: 'Plan', empty: 'Planner tasks land here.' },
     active: { title: 'Active', empty: 'Agents are not advancing anything right now.' },
@@ -1688,9 +1770,15 @@ function SpatialNotebook() {
             h('div', { className: 'team-board-card-title' }, card.title),
             h('div', { className: 'team-board-card-meta muted' }, card.state || 'Ready'),
             h('div', { className: 'team-board-card-meta muted' }, resolvePageTitle(card.pageId)),
+            card.runnerTaskId ? h('div', { className: 'team-board-card-meta muted' }, `Runner task ${card.runnerTaskId}`) : null,
+            card.deployStatus && card.deployStatus !== 'idle' ? h('div', { className: 'team-board-card-meta muted' }, `Deploy ${card.deployStatus}`) : null,
+            card.auditSessionId ? h('div', { className: 'team-board-card-meta muted' }, `Audit ${card.auditSessionId.slice(-8)}`) : null,
             h('div', { className: 'button-row team-board-actions' },
               columnId === 'review'
                 ? h('button', { className: 'mini', type: 'button', onClick: () => sendCardToExecutor(card.id) }, teamBoard.selectedCardId === card.id ? 'Queued' : 'Send')
+                : null,
+              card.runnerTaskId
+                ? h('button', { className: 'mini', type: 'button', onClick: () => openTaskFolder(card.runnerTaskId) }, 'Open task')
                 : null,
             ),
           )))
@@ -1725,6 +1813,45 @@ function SpatialNotebook() {
     h('div', { className: 'team-board-columns' },
       ['plan', 'active', 'complete', 'review'].map(renderTeamBoardColumn),
     ),
+  );
+
+  const renderThroughputDebugPanel = () => h('div', { className: 'inspector-block panel-card review-panel throughput-debug-panel' },
+    h('div', { className: 'inspector-label' }, 'Throughput Debug'),
+    h('div', { className: 'self-upgrade-grid' },
+      h('label', { className: 'muted', htmlFor: 'throughput-debug-prompt' }, 'Seed prompt'),
+      h('textarea', {
+        id: 'throughput-debug-prompt',
+        className: 'comment-box throughput-debug-input',
+        value: throughputPrompt,
+        onChange: (event) => setThroughputPrompt(event.target.value),
+        rows: 3,
+      }),
+    ),
+    h('div', { className: 'button-row' },
+      h('button', { className: 'mini', type: 'button', disabled: throughputBusy, onClick: () => runThroughputDebug('fixture') }, throughputBusy ? 'Running...' : 'Run fixture'),
+      h('button', { className: 'mini', type: 'button', disabled: throughputBusy, onClick: () => runThroughputDebug('live') }, throughputBusy ? 'Running...' : 'Run live ACE pass'),
+      latestThroughputSession?.runnerTaskId ? h('button', { className: 'mini', type: 'button', onClick: () => openTaskFolder(latestThroughputSession.runnerTaskId) }, 'Open runner task') : null,
+    ),
+    latestThroughputSession
+      ? h(React.Fragment, null,
+          h('div', { className: 'signal-summary' }, latestThroughputSession.prompt || 'Throughput debug session'),
+          h('div', { className: 'signal-meta muted' }, `Session ${latestThroughputSession.id} | ${latestThroughputSession.status} | ${latestThroughputSession.verdict}`),
+          h('div', { className: 'signal-meta muted' }, `Task ${latestThroughputSession.runnerTaskId || 'n/a'} | Page ${latestThroughputSession.pageId || 'n/a'} | Node ${latestThroughputSession.nodeId || 'n/a'}`),
+          (latestThroughputSession.stages || latestThroughputSession.stageSummary || []).length
+            ? h('ul', { className: 'signal-list throughput-stage-list' }, (latestThroughputSession.stages || latestThroughputSession.stageSummary || []).map((stage) => h('li', { key: stage.id },
+                h('div', null, `${stage.label || stage.id}: ${stage.verdict || stage.status || 'pending'}`),
+                stage.failureReason ? h('div', { className: 'muted' }, stage.failureReason) : null,
+                stage.output?.summary ? h('div', { className: 'muted' }, stage.output.summary) : null,
+              )))
+            : h('div', { className: 'signal-empty muted' }, 'No throughput stages recorded yet.'),
+          latestThroughputSession.sinks
+            ? h('div', { className: 'throughput-sink-grid' }, Object.entries(latestThroughputSession.sinks).map(([sinkId, sink]) => h('div', { key: sinkId, className: 'throughput-sink' },
+                h('div', { className: 'muted' }, sinkId),
+                h('div', null, `${sink.write ? 'WRITE' : 'READ'} | ${sink.summary || 'No summary.'}`),
+              )))
+            : null,
+        )
+      : h('div', { className: 'signal-empty muted' }, 'No throughput session recorded yet. Run a fixture pass or a live ACE pass to inspect the full pipeline.'),
   );
 
   return h('section', { className: 'spatial-main ace-shell', style: { gridTemplateColumns: `minmax(0, 1fr) ${sidebarColumnWidth}px` } },
@@ -2132,6 +2259,7 @@ function SpatialNotebook() {
             ),
             selfUpgrade.apply?.ok ? h('div', { className: 'signal-meta muted' }, `Applied commit ${selfUpgrade.apply.commit || 'pending'} on ${selfUpgrade.apply.branch || 'apply branch'}`) : null,
           ) : null,
+          selectedAgent.id === 'cto-architect' ? renderThroughputDebugPanel() : null,
           selectedAgent.id === 'context-manager'
             ? h(React.Fragment, null,
                 reviewPanelOpen && contextDeskSnapshot?.handoff ? h('div', { className: 'inspector-block panel-card review-panel' },
