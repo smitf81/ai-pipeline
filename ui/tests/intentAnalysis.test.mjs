@@ -65,6 +65,10 @@ export default async function runIntentAnalysisTests() {
   assert.ok(report.scores.intentConfidence >= 0.45);
   assert.ok(report.scores.plannerUsefulness >= 0.65);
   assert.ok(report.scores.executionReadiness < report.scores.plannerUsefulness);
+  assert.equal(report.truth.intentType, 'ACE architecture / capability request');
+  assert.ok(report.truth.requestedOutcomes.length >= 1);
+  assert.match(report.truth.plannerBrief, /Planner should treat this as/i);
+  assert.ok(Array.isArray(report.truth.evidence));
   assert.ok(report.metrics.featureRequestSignals >= 1);
   assert.equal(report.metrics.executionSignals, 0);
   assert.match(

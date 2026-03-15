@@ -10,6 +10,16 @@ const SELF_ALLOWED_PREFIXES = [
   'projects.json',
   'AGENTS.md',
 ];
+const SELF_AUTO_APPLY_ALLOWED_PREFIXES = [
+  'ui/',
+  'runner/',
+];
+const SELF_AUTO_APPLY_BLOCKED_FILES = [
+  'ui/server.js',
+  'projects.json',
+  'ace_commands.json',
+  'AGENTS.md',
+];
 const SELF_BLOCKED_PREFIXES = [
   '.git/',
   'node_modules/',
@@ -171,6 +181,62 @@ function reviewSelfUpgradePatch({ patchText = '', taskId = '', projectKey = '', 
   };
 }
 
+function matchesPrefix(file, prefixes = []) {
+  return prefixes.some((prefix) => file === prefix.replace(/\/$/, '') || file.startsWith(prefix));
+}
+
+function assessAutoMutationRisk({
+  projectKey = '',
+  projectPath = '',
+  rootPath = '',
+  changedFiles = [],
+  preflight = null,
+  conflicts = [],
+} = {}) {
+  const files = Array.isArray(changedFiles) ? changedFiles.filter(Boolean) : [];
+  const reasons = [];
+  const highSeverityConflict = (conflicts || []).find((conflict) => String(conflict?.severity || '').toLowerCase() === 'high');
+
+  if (highSeverityConflict) {
+    reasons.push(highSeverityConflict.summary || 'High-severity orchestrator conflict is active.');
+  }
+  if (!files.length) {
+    reasons.push('Patch has no detectable changed files.');
+  }
+
+  if (isSelfTarget(projectKey, projectPath, rootPath)) {
+    if (files.length > 2) reasons.push('Self-upgrade patch touches more than 2 files.');
+    if (files.some((file) => !matchesPrefix(file, SELF_AUTO_APPLY_ALLOWED_PREFIXES))) {
+      reasons.push('Self-upgrade auto-apply is limited to ui/** and runner/** paths.');
+    }
+    if (files.some((file) => SELF_AUTO_APPLY_BLOCKED_FILES.includes(file))) {
+      reasons.push('Self-upgrade patch touches a blocked runtime entrypoint.');
+    }
+    if (!preflight?.ok) reasons.push('Self-upgrade preflight did not pass.');
+    return {
+      riskLevel: reasons.length ? 'high' : 'low',
+      requiresReview: reasons.length > 0,
+      autoApply: reasons.length === 0,
+      autoDeploy: reasons.length === 0,
+      targetProjectKey: SELF_TARGET_KEY,
+      changedFiles: files,
+      reasons,
+      scope: 'ui-plus-runtime',
+    };
+  }
+
+  return {
+    riskLevel: reasons.length ? 'high' : 'low',
+    requiresReview: reasons.length > 0,
+    autoApply: reasons.length === 0,
+    autoDeploy: false,
+    targetProjectKey: String(projectKey || ''),
+    changedFiles: files,
+    reasons,
+    scope: 'standard',
+  };
+}
+
 function summarizeCommandOutput(text = '', limit = 420) {
   const cleaned = String(text || '')
     .split(/\r?\n/)
@@ -210,6 +276,7 @@ module.exports = {
   buildSelfUpgradePolicy,
   listPatchChangedFiles,
   reviewSelfUpgradePatch,
+  assessAutoMutationRisk,
   summarizeCommandOutput,
   getSelfUpgradePreflightSpecs,
 };

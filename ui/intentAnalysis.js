@@ -222,6 +222,44 @@ function buildIntentReadinessScores({ confidence, criteria, tasks, source, label
   };
 }
 
+function buildIntentTruth({ source, summary, tasks, criteria, classification, projectContext, scores }) {
+  const requestedOutcomes = (tasks || []).slice(0, 4);
+  const unresolved = (criteria || [])
+    .filter((criterion) => Number(criterion.score || 0) < 0.55)
+    .map((criterion) => `${criterion.label}: ${criterion.reason || 'Needs clarification.'}`);
+  if (!requestedOutcomes.length) unresolved.push('No concrete requested outcomes were extracted yet.');
+  if (!(projectContext?.matchedTerms || []).length) unresolved.push('Project alignment is weak, so the request may still need anchoring to current ACE work.');
+  const evidence = (criteria || [])
+    .slice()
+    .sort((left, right) => Number(right.score || 0) - Number(left.score || 0))
+    .slice(0, 3)
+    .map((criterion) => `${criterion.label}: ${criterion.reason || `${Math.round((criterion.score || 0) * 100)}%`}`);
+  const intentType = classification?.role === 'module'
+    ? 'ACE architecture / capability request'
+    : classification?.role === 'task'
+      ? 'Direct implementation request'
+      : classification?.role === 'constraint'
+        ? 'Constraint / guardrail request'
+        : 'General context signal';
+  return {
+    rawInput: source,
+    statement: summary || source || 'Intent capture is empty.',
+    intentType,
+    requestedOutcomes,
+    unresolved,
+    evidence,
+    plannerBrief: requestedOutcomes.length
+      ? `Planner should treat this as: ${requestedOutcomes.join('; ')}`
+      : 'Planner should clarify the request before expanding execution.',
+    readiness: {
+      intentConfidence: Number(scores?.intentConfidence || 0),
+      plannerUsefulness: Number(scores?.plannerUsefulness || 0),
+      executionReadiness: Number(scores?.executionReadiness || 0),
+      deployReadiness: Number(scores?.deployReadiness || 0),
+    },
+  };
+}
+
 function analyzeSpatialIntent(text, project) {
   const source = String(text || '').trim();
   const safeProject = project || { currentFocus: '', blockers: [], keywords: [], sourcesRead: [] };
@@ -264,6 +302,18 @@ function analyzeSpatialIntent(text, project) {
     },
     classification: { role, labels },
   });
+  const truth = buildIntentTruth({
+    source,
+    summary,
+    tasks,
+    criteria,
+    classification: { role, labels },
+    projectContext: {
+      ...safeProject,
+      matchedTerms,
+    },
+    scores,
+  });
   return {
     agent: {
       id: 'context-manager',
@@ -278,6 +328,7 @@ function analyzeSpatialIntent(text, project) {
     criteria,
     legacyCriteria,
     scores,
+    truth,
     tasks,
     classification: {
       role,
@@ -307,6 +358,7 @@ function analyzeSpatialIntent(text, project) {
 module.exports = {
   buildIntentProjectContext,
   buildIntentTasks,
+  buildIntentTruth,
   inferIntentLabels,
   inferIntentRole,
   tokenizeIntentText,

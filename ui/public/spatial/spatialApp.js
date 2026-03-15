@@ -1,4 +1,13 @@
-import { GraphEngine, createNode, createEdge, buildStarterGraph, NODE_TYPES } from './graphEngine.js';
+import {
+  GraphEngine,
+  createNode,
+  createEdge,
+  buildStarterGraph,
+  GRAPH_LAYERS,
+  getNodeTypesForLayer,
+  normalizeGraphBundle,
+  buildRsgState,
+} from './graphEngine.js';
 import { AceConnector } from './aceConnector.js';
 import { MutationEngine } from './mutationEngine.js';
 import { ArchitectureMemory } from './architectureMemory.js';
@@ -51,6 +60,68 @@ const EMPTY_INTENT_STATE = {
   byNode: {},
   reports: [],
 };
+
+const GRAPH_LAYER_TITLES = {
+  system: 'System Graph',
+  world: 'World Graph',
+};
+
+const STUDIO_ROOM = { x: 72, y: 86, width: 1056, height: 642 };
+const STUDIO_DESK_SIZE = { width: 172, height: 140 };
+const STUDIO_TEAM_BOARD_SIZE = { width: 560, height: 164 };
+const DEFAULT_STUDIO_DESK_LAYOUT = {
+  'context-manager': { x: 182, y: 252 },
+  planner: { x: 970, y: 252 },
+  executor: { x: 182, y: 585 },
+  'memory-archivist': { x: 620, y: 595 },
+  'cto-architect': { x: 930, y: 422 },
+};
+const DEFAULT_STUDIO_WHITEBOARDS = {
+  teamBoard: { x: 320, y: 96 },
+};
+
+function clampDeskPosition(position = {}, room = STUDIO_ROOM, fallbackPosition = DEFAULT_STUDIO_DESK_LAYOUT['context-manager']) {
+  return {
+    x: clamp(Number(position.x) || fallbackPosition.x, room.x + STUDIO_DESK_SIZE.width / 2, room.x + room.width - STUDIO_DESK_SIZE.width / 2),
+    y: clamp(Number(position.y) || fallbackPosition.y, room.y + STUDIO_DESK_SIZE.height / 2, room.y + room.height - STUDIO_DESK_SIZE.height / 2),
+  };
+}
+
+function clampWhiteboardPosition(position = {}, room = STUDIO_ROOM) {
+  return {
+    x: clamp(Number(position.x) || DEFAULT_STUDIO_WHITEBOARDS.teamBoard.x, room.x + 16, room.x + room.width - STUDIO_TEAM_BOARD_SIZE.width - 16),
+    y: clamp(Number(position.y) || DEFAULT_STUDIO_WHITEBOARDS.teamBoard.y, room.y + 16, room.y + room.height - STUDIO_TEAM_BOARD_SIZE.height - 16),
+  };
+}
+
+function createDefaultStudioLayout() {
+  return {
+    room: { ...STUDIO_ROOM },
+    desks: Object.fromEntries(Object.entries(DEFAULT_STUDIO_DESK_LAYOUT).map(([deskId, position]) => [deskId, { ...position }])),
+    whiteboards: {
+      teamBoard: { ...DEFAULT_STUDIO_WHITEBOARDS.teamBoard },
+    },
+  };
+}
+
+function normalizeStudioLayout(layout = {}) {
+  const defaults = createDefaultStudioLayout();
+  const room = {
+    ...defaults.room,
+    ...(layout.room || {}),
+  };
+  const desks = Object.fromEntries(getStudioAgents().map((agent) => [
+    agent.id,
+    clampDeskPosition(layout.desks?.[agent.id] || defaults.desks[agent.id], room, defaults.desks[agent.id]),
+  ]));
+  return {
+    room,
+    desks,
+    whiteboards: {
+      teamBoard: clampWhiteboardPosition(layout.whiteboards?.teamBoard || defaults.whiteboards.teamBoard, room),
+    },
+  };
+}
 
 const EMPTY_HANDOFFS = {
   contextToPlanner: null,
@@ -124,6 +195,11 @@ const EMPTY_THROUGHPUT_DEBUG = {
   sessions: [],
 };
 
+const EMPTY_QA_DEBUG = {
+  latestRun: null,
+  runs: [],
+};
+
 const LABEL_MAP = [
   { label: 'context', match: /context|brief|constraint|intent|memory/i },
   { label: 'plan', match: /plan|task|sequence|milestone|todo|roadmap/i },
@@ -132,9 +208,17 @@ const LABEL_MAP = [
   { label: 'governance', match: /rule|review|guardrail|architect|ace/i },
 ];
 
-function suggestRole(node, graph) {
+function suggestRole(node, graph, layer = 'system') {
   const text = (node.content || '').toLowerCase();
   const outgoing = graph.edges.filter((edge) => edge.source === node.id).length;
+  if (layer === 'world') {
+    if (/bridge|adapter|translate|map|projection|link/.test(text)) return 'adapter';
+    if (/constraint|rule|balance|cap|limit|must|never/.test(text)) return 'world-constraint';
+    if (/quest|mission|objective|campaign/.test(text)) return 'quest';
+    if (/item|inventory|loot|weapon|gear|craft/.test(text)) return 'item';
+    if (/combat|progression|ability|mechanic|loop|system|economy|faction/.test(text) || outgoing > 1) return 'mechanic';
+    return 'gameplay-system';
+  }
   if (/rule|constraint|must|never|always/.test(text)) return 'constraint';
   if (/api|service|module|subsystem|architecture/.test(text)) return 'module';
   if (/file|\.js|\.py|\.ts|src\//.test(text)) return 'file';
@@ -143,23 +227,39 @@ function suggestRole(node, graph) {
   return 'thought';
 }
 
-function deriveLabels(content = '', metadata = {}) {
+function deriveLabels(content = '', metadata = {}, layer = 'system') {
   const base = Array.isArray(metadata.labels) ? metadata.labels : [];
   const inferred = LABEL_MAP.filter((entry) => entry.match.test(content)).map((entry) => entry.label);
+  if (/should|propose|improve|upgrade|add|refactor/i.test(content)) inferred.push('proposal');
+  if (/bridge|adapter|translate|map|link|projection/i.test(content)) inferred.push('adapter');
+  if (layer === 'world') inferred.push('world');
   return [...new Set([...base, ...inferred])];
 }
 
-function classifyNode(node, graph) {
-  const inferredRole = suggestRole(node, graph);
+function inferProposalTarget(node, layer, role, labels = []) {
+  if (node.metadata?.proposalTarget) return node.metadata.proposalTarget;
+  if (role === 'adapter' || labels.includes('adapter')) return 'adapter-translation';
+  if (layer === 'world') return 'world-structure';
+  if (role === 'task' || /build|apply|deploy|patch|execute/i.test(node.content || '')) return 'code-runtime-mutation';
+  return 'system-structure';
+}
+
+function classifyNode(node, graph, layer = 'system') {
+  const inferredRole = suggestRole(node, graph, layer);
   const role = node.metadata?.manualOverride
     ? (node.metadata?.role || node.type || inferredRole)
     : inferredRole;
+  const labels = deriveLabels(node.content, node.metadata, layer);
+  const proposalTarget = inferProposalTarget(node, layer, role, labels);
   return {
     type: node.metadata?.manualOverride ? (node.type || 'text') : (role === 'thought' ? 'text' : role),
     metadata: {
       ...node.metadata,
       role,
-      labels: deriveLabels(node.content, node.metadata),
+      graphLayer: layer,
+      labels,
+      proposalTarget,
+      approvalPolicy: proposalTarget === 'code-runtime-mutation' ? 'risk-gated-review' : 'auto-record',
     },
   };
 }
@@ -246,6 +346,7 @@ function renderDeskSection(section, helpers = {}) {
             h('div', { className: 'signal-meta muted' }, `Source: ${handoff.sourceNodeId || 'context input'}`),
             h('div', { className: 'confidence-pill' }, `${Math.round((handoff.confidence || 0) * 100)}% confidence | ${handoff.status}`),
             h('div', { className: 'muted' }, handoff.constraints?.length ? `Constraints: ${handoff.constraints.join(' | ')}` : 'Constraints: none surfaced from the latest report.'),
+            handoff.truth?.plannerBrief ? h('div', { className: 'truth-inline muted' }, handoff.truth.plannerBrief) : null,
             handoff.tasks?.length
               ? h('ul', { className: 'signal-list' }, handoff.tasks.map((task, index) => h('li', { key: `${handoff.id}-task-${index}` }, task)))
               : h('div', { className: 'signal-empty muted' }, 'No extracted tasks yet.'),
@@ -273,6 +374,46 @@ function renderDeskSection(section, helpers = {}) {
             report.tasks?.length ? h('ul', { className: 'signal-list' }, report.tasks.map((task, index) => h('li', { key: `intent-${index}` }, task))) : null,
           )
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No intent data.'),
+    );
+  }
+  if (section.kind === 'truth') {
+    const truth = section.value;
+    return h('div', { key: section.id, className: 'inspector-block panel-card truth-panel' },
+      h('div', { className: 'inspector-label' }, section.label),
+      truth
+        ? h(React.Fragment, null,
+            h('div', { className: 'signal-summary' }, truth.statement || 'No truth statement recorded.'),
+            h('div', { className: 'signal-meta muted' }, truth.intentType || 'Intent type unavailable.'),
+            h('div', { className: 'truth-grid' },
+              h('div', { className: 'truth-block' },
+                h('div', { className: 'muted truth-block-label' }, 'Planner brief'),
+                h('div', null, truth.plannerBrief || 'Planner brief unavailable.'),
+              ),
+              h('div', { className: 'truth-block' },
+                h('div', { className: 'muted truth-block-label' }, 'Source input'),
+                h('div', null, truth.rawInput || 'No raw input recorded.'),
+              ),
+            ),
+            truth.requestedOutcomes?.length
+              ? h('div', { className: 'truth-block' },
+                  h('div', { className: 'muted truth-block-label' }, 'Requested outcomes'),
+                  h('ul', { className: 'signal-list' }, truth.requestedOutcomes.map((item, index) => h('li', { key: `truth-outcome-${index}` }, item))),
+                )
+              : null,
+            truth.unresolved?.length
+              ? h('div', { className: 'truth-block truth-block-warning' },
+                  h('div', { className: 'muted truth-block-label' }, 'Still unresolved'),
+                  h('ul', { className: 'signal-list' }, truth.unresolved.map((item, index) => h('li', { key: `truth-unresolved-${index}` }, item))),
+                )
+              : h('div', { className: 'signal-meta muted' }, 'No unresolved truth gaps surfaced from the latest report.'),
+            truth.evidence?.length
+              ? h('div', { className: 'truth-block' },
+                  h('div', { className: 'muted truth-block-label' }, 'Why ACE believes this'),
+                  h('ul', { className: 'signal-list' }, truth.evidence.map((item, index) => h('li', { key: `truth-evidence-${index}` }, item))),
+                )
+              : null,
+          )
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No core truth data.'),
     );
   }
   if (section.kind === 'metrics') {
@@ -312,9 +453,10 @@ function DeskThoughtBubble({ text, tone = 'idle' }) {
   }, truncateLabel(text, 74));
 }
 
-function deskStagePoint(agentId) {
+function deskStagePoint(agentId, studioLayout = null) {
   const agent = getStudioAgents().find((entry) => entry.id === agentId);
   if (!agent) return null;
+  if (studioLayout?.desks?.[agentId]) return studioLayout.desks[agentId];
   return {
     x: (agent.position.x / 100) * STUDIO_SIZE.width,
     y: (agent.position.y / 100) * STUDIO_SIZE.height,
@@ -327,11 +469,11 @@ function truncateLabel(text, limit = 26) {
   return value.length > limit ? `${value.slice(0, limit - 1)}…` : value;
 }
 
-function deskBounds(agentId) {
-  const center = deskStagePoint(agentId);
+function deskBounds(agentId, studioLayout = null) {
+  const center = deskStagePoint(agentId, studioLayout);
   if (!center) return null;
-  const width = 172;
-  const height = 140;
+  const width = STUDIO_DESK_SIZE.width;
+  const height = STUDIO_DESK_SIZE.height;
   return {
     center,
     left: center.x - (width / 2),
@@ -343,9 +485,9 @@ function deskBounds(agentId) {
   };
 }
 
-function resolveDeskAnchor(agentId, targetId, kind = 'workflow') {
-  const source = deskBounds(agentId);
-  const target = deskBounds(targetId);
+function resolveDeskAnchor(agentId, targetId, kind = 'workflow', studioLayout = null) {
+  const source = deskBounds(agentId, studioLayout);
+  const target = deskBounds(targetId, studioLayout);
   if (!source || !target) return null;
   const dx = target.center.x - source.center.x;
   const dy = target.center.y - source.center.y;
@@ -479,6 +621,8 @@ function SpatialNotebook() {
   const [memory] = useState(() => new ArchitectureMemory());
   const [mutationEngine] = useState(() => new MutationEngine(graphEngine));
 
+  const [graphLayers, setGraphLayers] = useState(() => normalizeGraphBundle({ graph: buildStarterGraph() }));
+  const [activeGraphLayer, setActiveGraphLayer] = useState('system');
   const [graph, setGraph] = useState(graphEngine.getState());
   const [selectedId, setSelectedId] = useState(null);
   const [canvasViewport, setCanvasViewport] = useState(createDefaultCanvasViewport());
@@ -513,13 +657,20 @@ function SpatialNotebook() {
   const [selfUpgrade, setSelfUpgrade] = useState(EMPTY_SELF_UPGRADE);
   const [serverHealth, setServerHealth] = useState(EMPTY_SERVER_HEALTH);
   const [throughputDebug, setThroughputDebug] = useState(EMPTY_THROUGHPUT_DEBUG);
+  const [qaDebug, setQaDebug] = useState(EMPTY_QA_DEBUG);
+  const [qaRunDetail, setQaRunDetail] = useState(null);
+  const [qaScenario, setQaScenario] = useState('layout-pass');
+  const [qaBusy, setQaBusy] = useState(false);
   const [throughputPrompt, setThroughputPrompt] = useState('I think we should add a desk to the studio for a QA agent');
   const [throughputBusy, setThroughputBusy] = useState(false);
   const [selfUpgradeTaskId, setSelfUpgradeTaskId] = useState('');
   const [selfUpgradeBusy, setSelfUpgradeBusy] = useState(false);
+  const [teamBoardBusy, setTeamBoardBusy] = useState(false);
+  const [studioLayout, setStudioLayout] = useState(() => normalizeStudioLayout());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const [reviewPanelOpen, setReviewPanelOpen] = useState(false);
+  const [expandedReviewCardId, setExpandedReviewCardId] = useState(null);
 
   const canvasRef = useRef(null);
   const studioRef = useRef(null);
@@ -530,6 +681,7 @@ function SpatialNotebook() {
   const raf = useRef(null);
   const activeSketch = useRef(null);
   const studioPanning = useRef(false);
+  const studioElementDrag = useRef(null);
   const hasLoadedWorkspace = useRef(false);
   const autosaveTimer = useRef(null);
   const lastCanvasViewport = useRef(createDefaultCanvasViewport());
@@ -537,15 +689,29 @@ function SpatialNotebook() {
   const lastScene = useRef(SCENES.CANVAS);
   const sidebarResize = useRef(null);
 
+  const graphBundle = useMemo(() => ({
+    ...graphLayers,
+    [activeGraphLayer]: graph,
+  }), [graphLayers, activeGraphLayer, graph]);
+  const systemGraph = graphBundle.system || buildStarterGraph();
   const selected = graph.nodes.find((node) => node.id === selectedId) || null;
-  const contextNode = graph.nodes.find((node) => node.metadata?.agentId === 'context-manager') || null;
+  const contextNode = systemGraph.nodes.find((node) => node.metadata?.agentId === 'context-manager') || null;
   const latestIntentReport = intentState.contextReport || intentState.latest || null;
   const selectedIntent = selected?.metadata?.intentAnalysis || intentState.byNode?.[selected?.id] || null;
-  const notebookState = useMemo(() => normalizeNotebookState({ graph, intentState, pages, activePageId }), [graph, intentState, pages, activePageId]);
+  const notebookState = useMemo(() => normalizeNotebookState({ graph: systemGraph, graphs: graphBundle, intentState, pages, activePageId }), [systemGraph, graphBundle, intentState, pages, activePageId]);
   const activePage = notebookState.activePage;
+  const activeLayerNodeTypes = useMemo(() => getNodeTypesForLayer(activeGraphLayer), [activeGraphLayer]);
+  const rsgState = useMemo(() => buildRsgState({
+    graph: systemGraph,
+    graphs: graphBundle,
+    studio: {
+      teamBoard,
+    },
+  }), [systemGraph, graphBundle, teamBoard]);
 
   const workspacePayload = useMemo(() => ({
-    graph,
+    graph: systemGraph,
+    graphs: graphBundle,
     sketches,
     annotations,
     architectureMemory: memory.model,
@@ -553,13 +719,16 @@ function SpatialNotebook() {
     intentState,
     pages,
     activePageId: notebookState.activePageId,
+    rsg: rsgState,
     studio: {
       scene,
       selectedAgentId,
+      activeGraphLayer,
       handoffs,
       teamBoard,
       orchestrator: orchestratorState,
       selfUpgrade,
+      layout: studioLayout,
       canvasViewport,
       studioViewport,
       sidebar: {
@@ -567,7 +736,7 @@ function SpatialNotebook() {
         width: sidebarWidth,
       },
     },
-  }), [graph, sketches, annotations, agentComments, intentState, pages, notebookState.activePageId, scene, selectedAgentId, handoffs, teamBoard, orchestratorState, selfUpgrade, canvasViewport, studioViewport, sidebarCollapsed, sidebarWidth, memory]);
+  }), [systemGraph, graphBundle, sketches, annotations, agentComments, intentState, pages, notebookState.activePageId, rsgState, scene, selectedAgentId, activeGraphLayer, handoffs, teamBoard, orchestratorState, selfUpgrade, studioLayout, canvasViewport, studioViewport, sidebarCollapsed, sidebarWidth, memory]);
 
   const agentSnapshots = useMemo(() => buildAgentSnapshots({
     workspace: workspacePayload,
@@ -583,15 +752,50 @@ function SpatialNotebook() {
   const architectureMemory = useMemo(() => ({
     subsystems: memory.model.subsystems,
     modules: memory.model.modules,
+    world: memory.model.world,
+    adapters: memory.model.adapters,
+    proposals: memory.model.proposals,
     rules: memory.model.rules,
     layers: memory.model.layers,
-  }), [memory, graph]);
+  }), [memory, graphBundle]);
+  const studioRoom = studioLayout.room || STUDIO_ROOM;
+  const teamBoardFrame = studioLayout.whiteboards?.teamBoard || DEFAULT_STUDIO_WHITEBOARDS.teamBoard;
+
+  function centerStudioOnRoom(nextStatus = null) {
+    const container = studioRef.current;
+    if (!container) return;
+    const zoom = 0.94;
+    setStudioViewport({
+      zoom,
+      x: container.clientWidth / 2 - (studioRoom.x + studioRoom.width / 2) * zoom,
+      y: container.clientHeight / 2 - (studioRoom.y + studioRoom.height / 2) * zoom,
+    });
+    if (nextStatus) setStatus(nextStatus);
+  }
+
+  function centerStudioOnDesk(agentId, nextStatus = null) {
+    const container = studioRef.current;
+    const position = studioLayout.desks?.[agentId] || deskStagePoint(agentId);
+    if (!container || !position) return;
+    const zoom = agentId === 'cto-architect' ? 1.2 : 1.28;
+    setStudioViewport({
+      zoom,
+      x: container.clientWidth / 2 - position.x * zoom,
+      y: container.clientHeight / 2 - position.y * zoom,
+    });
+    if (nextStatus) setStatus(nextStatus);
+  }
 
   useEffect(() => {
     let cancelled = false;
     loadWorkspace().then((workspace) => {
       if (cancelled) return;
-      graphEngine.setState(workspace.graph || buildStarterGraph());
+      const graphs = normalizeGraphBundle(workspace);
+      const storedStudio = workspace.studio || {};
+      const initialLayer = GRAPH_LAYERS.includes(storedStudio.activeGraphLayer) ? storedStudio.activeGraphLayer : 'system';
+      setGraphLayers(graphs);
+      setActiveGraphLayer(initialLayer);
+      graphEngine.setState(graphs[initialLayer] || buildStarterGraph());
       setGraph({ ...graphEngine.getState() });
       setSketches(Array.isArray(workspace.sketches) ? workspace.sketches : []);
       setAnnotations(Array.isArray(workspace.annotations) ? workspace.annotations : []);
@@ -605,13 +809,13 @@ function SpatialNotebook() {
           versions: workspace.architectureMemory.versions || memory.model.versions,
         };
       }
-      const storedStudio = workspace.studio || {};
       setCanvasViewport(storedStudio.canvasViewport || createDefaultCanvasViewport());
       setStudioViewport(storedStudio.studioViewport || createDefaultStudioViewport());
       setScene(storedStudio.scene || SCENES.CANVAS);
       setSelectedAgentId(storedStudio.selectedAgentId || 'context-manager');
       const notebook = normalizeNotebookState({
-        graph: workspace.graph || buildStarterGraph(),
+        graph: graphs.system || buildStarterGraph(),
+        graphs,
         intentState: workspace.intentState || EMPTY_INTENT_STATE,
         pages: workspace.pages,
         activePageId: workspace.activePageId,
@@ -623,13 +827,7 @@ function SpatialNotebook() {
         history: Array.isArray(storedStudio.handoffs?.history) ? storedStudio.handoffs.history : [],
       });
       setTeamBoard(normalizeTeamBoardState({
-        graph: workspace.graph || buildStarterGraph(),
-        intentState: workspace.intentState || EMPTY_INTENT_STATE,
-        pages: notebook.pages,
-        activePageId: notebook.activePageId,
         studio: {
-          ...storedStudio,
-          handoffs: storedStudio.handoffs || EMPTY_HANDOFFS,
           teamBoard: storedStudio.teamBoard || EMPTY_TEAM_BOARD,
         },
       }));
@@ -642,9 +840,10 @@ function SpatialNotebook() {
         ...(storedStudio.selfUpgrade || {}),
       });
       setSelfUpgradeTaskId(storedStudio.selfUpgrade?.taskId || '');
+      setStudioLayout(normalizeStudioLayout(storedStudio.layout));
       setSidebarCollapsed(Boolean(storedStudio.sidebar?.collapsed));
       setSidebarWidth(clamp(Number(storedStudio.sidebar?.width) || 380, 300, 520));
-      const contextNode = (workspace.graph?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
+      const contextNode = (graphs.system?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
       const storedIntentState = workspace.intentState || EMPTY_INTENT_STATE;
       setIntentState({
         latest: storedIntentState.latest || null,
@@ -664,7 +863,7 @@ function SpatialNotebook() {
   }, [graphEngine, memory]);
 
   useEffect(() => {
-    memory.syncFromGraph(graph);
+    memory.syncFromGraph(graphBundle);
     drawCanvasScene(
       canvasRef.current,
       graph,
@@ -677,7 +876,17 @@ function SpatialNotebook() {
       selectedSketchId,
       selectedAnnotationId,
     );
-  }, [graph, canvasViewport, memory, pointerWorld, simulating, simStep, paused, sketches, annotations, selectedSketchId, selectedAnnotationId]);
+  }, [graph, graphBundle, canvasViewport, memory, pointerWorld, simulating, simStep, paused, sketches, annotations, selectedSketchId, selectedAnnotationId]);
+
+  useEffect(() => {
+    setGraphLayers((current) => {
+      if (current[activeGraphLayer] === graph) return current;
+      return {
+        ...current,
+        [activeGraphLayer]: graph,
+      };
+    });
+  }, [graph, activeGraphLayer]);
 
   useEffect(() => {
     setPaused(sketchMode || scene === SCENES.STUDIO);
@@ -697,31 +906,12 @@ function SpatialNotebook() {
     if (scene !== SCENES.STUDIO) return;
     if (!studioRef.current) return;
     if (previousScene !== SCENES.STUDIO) {
-      const fallbackAgent = getStudioAgents().find((agent) => agent.id === (selectedAgentId || 'context-manager')) || getStudioAgents()[0];
-      if (!fallbackAgent) return;
-      const zoom = fallbackAgent.id === 'cto-architect' ? 1.24 : 1.36;
-      const stageX = (fallbackAgent.position.x / 100) * STUDIO_SIZE.width;
-      const stageY = (fallbackAgent.position.y / 100) * STUDIO_SIZE.height;
-      setStudioViewport({
-        zoom,
-        x: studioRef.current.clientWidth / 2 - stageX * zoom,
-        y: studioRef.current.clientHeight / 2 - stageY * zoom,
-      });
+      centerStudioOnRoom();
       return;
     }
     if (!isStudioViewportOutOfRange(studioViewport)) return;
-    const fallbackAgent = getStudioAgents().find((agent) => agent.id === (selectedAgentId || 'context-manager')) || getStudioAgents()[0];
-    if (!fallbackAgent) return;
-    const zoom = fallbackAgent.id === 'cto-architect' ? 1.24 : 1.36;
-    const stageX = (fallbackAgent.position.x / 100) * STUDIO_SIZE.width;
-    const stageY = (fallbackAgent.position.y / 100) * STUDIO_SIZE.height;
-    setStudioViewport({
-      zoom,
-      x: studioRef.current.clientWidth / 2 - stageX * zoom,
-      y: studioRef.current.clientHeight / 2 - stageY * zoom,
-    });
-    setStatus(`studio recentered on ${fallbackAgent.name}`);
-  }, [scene, studioViewport, selectedAgentId]);
+    centerStudioOnRoom('studio recentered on room');
+  }, [scene, studioViewport, selectedAgentId, studioLayout]);
 
   useEffect(() => {
     const move = (event) => {
@@ -826,7 +1016,7 @@ function SpatialNotebook() {
   useEffect(() => {
     if (!hasLoadedWorkspace.current) return;
     if (handoffs.contextToPlanner || !latestIntentReport) return;
-    updatePlannerHandoff(latestIntentReport);
+    updatePlannerHandoff(latestIntentReport).catch(() => {});
   }, [handoffs.contextToPlanner, latestIntentReport, dashboardState]);
 
   useEffect(() => {
@@ -870,39 +1060,7 @@ function SpatialNotebook() {
       }
       if (runtimeResponse.ok) {
         const runtime = await runtimeResponse.json();
-        const notebook = normalizeNotebookState({
-          graph,
-          intentState,
-          pages: runtime.pages,
-          activePageId: runtime.activePageId,
-        });
-        setPages(notebook.pages);
-        setActivePageId(notebook.activePageId);
-        setHandoffs({
-          contextToPlanner: runtime.handoffs?.contextToPlanner || null,
-          history: Array.isArray(runtime.handoffs?.history) ? runtime.handoffs.history : [],
-        });
-        setTeamBoard({
-          ...EMPTY_TEAM_BOARD,
-          ...(runtime.teamBoard || {}),
-        });
-        setOrchestratorState({
-          ...EMPTY_ORCHESTRATOR_STATE,
-          ...(runtime.orchestrator || {}),
-        });
-        setSelfUpgrade({
-          ...EMPTY_SELF_UPGRADE,
-          ...(runtime.selfUpgrade || {}),
-        });
-        if (runtime.throughputDebug) {
-          setThroughputDebug({
-            ...EMPTY_THROUGHPUT_DEBUG,
-            ...(runtime.throughputDebug || {}),
-          });
-        }
-        if (!selfUpgradeTaskId && runtime.selfUpgrade?.taskId) {
-          setSelfUpgradeTaskId(runtime.selfUpgrade.taskId);
-        }
+        applyRuntimePayload(runtime);
       }
       if (healthResponse.ok) {
         const health = await healthResponse.json();
@@ -928,6 +1086,16 @@ function SpatialNotebook() {
   }, []);
 
   useInterval(refreshFeeds, 15000);
+
+  useEffect(() => {
+    const latestRunId = qaDebug.latestRun?.id || qaDebug.runs?.[0]?.id || null;
+    if (!latestRunId) {
+      setQaRunDetail(null);
+      return;
+    }
+    if (qaRunDetail?.id === latestRunId) return;
+    loadQARunDetails(latestRunId);
+  }, [qaDebug.latestRun?.id, qaDebug.runs, qaRunDetail?.id]);
 
   async function runSelfUpgradePreflight() {
     const taskId = String(selfUpgradeTaskId || '').trim();
@@ -1030,6 +1198,9 @@ function SpatialNotebook() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'throughput debug failed');
+      if (payload.runtime) {
+        applyRuntimePayload(payload.runtime);
+      }
       setThroughputDebug((current) => ({
         ...current,
         latestSession: payload.session || null,
@@ -1053,6 +1224,43 @@ function SpatialNotebook() {
     }
   }
 
+  async function loadQARunDetails(runId) {
+    if (!runId) {
+      setQaRunDetail(null);
+      return;
+    }
+    try {
+      const run = await ace.getQARun(runId);
+      setQaRunDetail(run || null);
+    } catch {
+      setQaRunDetail(null);
+    }
+  }
+
+  async function runBrowserPass() {
+    setQaBusy(true);
+    try {
+      const payload = await ace.runBrowserPass({
+        scenario: qaScenario,
+        mode: 'interactive',
+        prompt: throughputPrompt,
+      });
+      if (payload.runtime) {
+        applyRuntimePayload(payload.runtime);
+      }
+      setQaRunDetail(payload.run || null);
+      setSelectedAgentId('cto-architect');
+      setScene(SCENES.STUDIO);
+      setStatus(payload.run?.verdict === 'pass'
+        ? `browser pass ${payload.run.scenario} passed`
+        : `browser pass ${payload.run?.scenario || qaScenario} ${payload.run?.verdict || 'completed'}`);
+    } catch (error) {
+      setStatus(`browser pass failed: ${error.message}`);
+    } finally {
+      setQaBusy(false);
+    }
+  }
+
   const toWorld = (clientX, clientY) => {
     const rect = canvasRef.current.getBoundingClientRect();
     return {
@@ -1061,8 +1269,37 @@ function SpatialNotebook() {
     };
   };
 
+  const snapshotGraphState = (source = graphEngine.getState()) => ({
+    nodes: [...(source?.nodes || [])],
+    edges: [...(source?.edges || [])],
+  });
+
+  const switchGraphLayer = (nextLayer) => {
+    if (!GRAPH_LAYERS.includes(nextLayer) || nextLayer === activeGraphLayer) return;
+    const currentSnapshot = snapshotGraphState();
+    const nextLayers = {
+      ...graphBundle,
+      [activeGraphLayer]: currentSnapshot,
+    };
+    const nextGraph = nextLayers[nextLayer] || buildStarterGraph();
+    graphEngine.setState(nextGraph);
+    setGraphLayers(nextLayers);
+    setGraph({ ...graphEngine.getState() });
+    setActiveGraphLayer(nextLayer);
+    setSelectedId(null);
+    setStatus(`switched to ${GRAPH_LAYER_TITLES[nextLayer] || nextLayer}`);
+  };
+
   const addNodeAt = (position, type = 'text', content = 'new note', metadata = { role: 'thought' }) => {
-    const node = createNode({ type, content, position, metadata });
+    const node = createNode({
+      type,
+      content,
+      position,
+      metadata: {
+        ...metadata,
+        graphLayer: activeGraphLayer,
+      },
+    });
     graphEngine.addNode(node);
     setGraph({ ...graphEngine.getState() });
     setSelectedId(node.id);
@@ -1097,6 +1334,10 @@ function SpatialNotebook() {
   };
 
   const captureContextInput = () => {
+    if (activeGraphLayer !== 'system') {
+      setStatus('context intake currently writes to the system graph');
+      return null;
+    }
     const node = upsertContextNode(contextDraft);
     if (!node) {
       setStatus('add context before sending it to ACE');
@@ -1106,131 +1347,136 @@ function SpatialNotebook() {
     return graphEngine.getState().nodes.find((entry) => entry.id === node.id) || node;
   };
 
-  const updatePlannerHandoff = (report) => {
+  const buildRuntimePayloadFromWorkspace = (workspace, fallbackTeamBoard = EMPTY_TEAM_BOARD) => ({
+    activePageId: workspace.activePageId,
+    pages: workspace.pages,
+    handoffs: workspace.studio?.handoffs || EMPTY_HANDOFFS,
+    teamBoard: workspace.studio?.teamBoard || fallbackTeamBoard,
+    orchestrator: workspace.studio?.orchestrator || EMPTY_ORCHESTRATOR_STATE,
+    selfUpgrade: workspace.studio?.selfUpgrade || EMPTY_SELF_UPGRADE,
+  });
+
+  const updatePlannerHandoff = async (report) => {
     if (!report) return null;
-    let nextHandoff = null;
-    setHandoffs((current) => {
-      nextHandoff = createPlannerHandoff(report, dashboardState, current.contextToPlanner);
-      return {
-        contextToPlanner: nextHandoff,
-        history: [nextHandoff, ...(current.history || []).filter((entry) => entry.id !== nextHandoff.id)].slice(0, 12),
-      };
-    });
-    setTeamBoard((currentBoard) => normalizeTeamBoardState({
-      graph,
-      intentState: {
-        ...intentState,
-        latest: report,
-        contextReport: report,
-      },
+    const nextIntentState = {
+      ...intentState,
+      latest: report,
+      contextReport: report,
+    };
+    const previousHandoff = handoffs.contextToPlanner;
+    const nextHandoff = createPlannerHandoff(report, dashboardState, previousHandoff);
+    const nextHandoffs = {
+      contextToPlanner: nextHandoff,
+      history: [nextHandoff, ...(handoffs.history || []).filter((entry) => entry.id !== nextHandoff.id)].slice(0, 12),
+    };
+    const notebook = normalizeNotebookState({
+      ...workspacePayload,
+      intentState: nextIntentState,
       pages,
       activePageId,
+    });
+    const nextPages = notebook.pages.map((page) => page.id === notebook.activePageId
+      ? {
+          ...page,
+          title: report.summary ? report.summary.slice(0, 48) : page.title,
+          summary: report.summary || page.summary,
+          sourceNodeId: report.nodeId || page.sourceNodeId,
+          updatedAt: new Date().toISOString(),
+          handoffs: [nextHandoff, ...(page.handoffs || []).filter((entry) => entry.id !== nextHandoff.id)].slice(0, 8),
+        }
+      : page);
+    setIntentState(nextIntentState);
+    setHandoffs(nextHandoffs);
+    setPages(nextPages);
+    setActivePageId(notebook.activePageId);
+    const workspace = await saveWorkspace({
+      ...workspacePayload,
+      intentState: nextIntentState,
+      pages: nextPages,
+      activePageId: notebook.activePageId,
       studio: {
-        handoffs: {
-          contextToPlanner: nextHandoff,
-          history: [nextHandoff, ...(handoffs.history || []).filter((entry) => entry.id !== nextHandoff.id)].slice(0, 12),
-        },
-        teamBoard: currentBoard,
+        ...workspacePayload.studio,
+        handoffs: nextHandoffs,
+        teamBoard,
       },
-    }));
+    });
+    applyRuntimePayload(buildRuntimePayloadFromWorkspace(workspace, teamBoard));
     return nextHandoff;
   };
 
-  async function persistTeamBoard(nextBoard, nextStatus) {
-    setTeamBoard(nextBoard);
-    try {
-      const workspace = await saveWorkspace({
-        ...workspacePayload,
-        studio: {
-          ...workspacePayload.studio,
-          teamBoard: nextBoard,
-        },
+  function applyRuntimePayload(runtime) {
+    const notebook = normalizeNotebookState({
+      graph: systemGraph,
+      graphs: graphBundle,
+      intentState,
+      pages: runtime.pages,
+      activePageId: runtime.activePageId,
+    });
+    setPages(notebook.pages);
+    setActivePageId(notebook.activePageId);
+    setHandoffs({
+      contextToPlanner: runtime.handoffs?.contextToPlanner || null,
+      history: Array.isArray(runtime.handoffs?.history) ? runtime.handoffs.history : [],
+    });
+    setTeamBoard(normalizeTeamBoardState({
+      studio: {
+        teamBoard: runtime.teamBoard || EMPTY_TEAM_BOARD,
+      },
+    }));
+    setOrchestratorState({
+      ...EMPTY_ORCHESTRATOR_STATE,
+      ...(runtime.orchestrator || {}),
+    });
+    setSelfUpgrade({
+      ...EMPTY_SELF_UPGRADE,
+      ...(runtime.selfUpgrade || {}),
+    });
+    if (runtime.throughputDebug) {
+      setThroughputDebug({
+        ...EMPTY_THROUGHPUT_DEBUG,
+        ...(runtime.throughputDebug || {}),
       });
-      const notebook = normalizeNotebookState({
-        graph: workspace.graph || graph,
-        intentState: workspace.intentState || intentState,
-        pages: workspace.pages,
-        activePageId: workspace.activePageId,
+    }
+    if (runtime.qaDebug) {
+      setQaDebug({
+        ...EMPTY_QA_DEBUG,
+        ...(runtime.qaDebug || {}),
       });
-      setPages(notebook.pages);
-      setActivePageId(notebook.activePageId);
-      setHandoffs({
-        contextToPlanner: workspace.studio?.handoffs?.contextToPlanner || null,
-        history: Array.isArray(workspace.studio?.handoffs?.history) ? workspace.studio.handoffs.history : [],
-      });
-      setTeamBoard(normalizeTeamBoardState({
-        graph: workspace.graph || graph,
-        intentState: workspace.intentState || intentState,
-        pages: notebook.pages,
-        activePageId: notebook.activePageId,
-        studio: {
-          ...(workspace.studio || {}),
-          teamBoard: workspace.studio?.teamBoard || nextBoard,
-          handoffs: workspace.studio?.handoffs || handoffs,
-        },
-      }));
-      setOrchestratorState({
-        ...EMPTY_ORCHESTRATOR_STATE,
-        ...(workspace.studio?.orchestrator || {}),
-      });
-      setStatus(nextStatus || 'team board updated');
-    } catch (error) {
-      setStatus(`team board save failed: ${error.message}`);
-      refreshFeeds();
+    }
+    if (!selfUpgradeTaskId && runtime.selfUpgrade?.taskId) {
+      setSelfUpgradeTaskId(runtime.selfUpgrade.taskId);
     }
   }
 
-  function updateTeamBoardCard(cardId, updater, statusMessage) {
-    const now = new Date().toISOString();
-    const nextBoard = normalizeTeamBoardState({
-      graph,
-      intentState,
-      pages,
-      activePageId,
-      studio: {
-        handoffs,
-        teamBoard: {
-          ...teamBoard,
-          cards: (teamBoard.cards || []).map((card) => (
-            card.id === cardId ? { ...card, ...updater(card), updatedAt: now } : card
-          )),
-        },
-      },
-    });
-    persistTeamBoard(nextBoard, statusMessage);
-  }
-
-  function moveTeamBoardCard(cardId, nextStatus) {
-    const labelMap = {
-      planned: 'sent back to planning',
-      active: 'moved into active work',
-      complete: 'marked complete',
-      binned: 'binned from the board',
-    };
-    updateTeamBoardCard(cardId, () => ({ status: nextStatus }), labelMap[nextStatus] || 'team board updated');
-  }
-
-  function sendCardToExecutor(cardId) {
-    const nextBoard = normalizeTeamBoardState({
-      graph,
-      intentState,
-      pages,
-      activePageId,
-      studio: {
-        handoffs,
-        teamBoard: {
-          ...teamBoard,
-          selectedCardId: cardId,
-          cards: teamBoard.cards || [],
-        },
-      },
-    });
-    setSelectedAgentId('executor');
-    setScene(SCENES.STUDIO);
-    persistTeamBoard(nextBoard, 'sent review card to worker');
+  async function runTeamBoardAction(action, cardId, statusMessage) {
+    setTeamBoardBusy(true);
+    try {
+      const payload = await ace.teamBoardAction(action, cardId);
+      if (payload.runtime) {
+        applyRuntimePayload(payload.runtime);
+      }
+      if (action === 'approve-apply') {
+        setSelectedAgentId('executor');
+        setScene(SCENES.STUDIO);
+        setExpandedReviewCardId(null);
+      }
+      if (action === 'reject-to-builder') {
+        setSelectedAgentId('planner');
+      }
+      setStatus(statusMessage || 'team board updated');
+    } catch (error) {
+      setStatus(`team board action failed: ${error.message}`);
+      refreshFeeds();
+    } finally {
+      setTeamBoardBusy(false);
+    }
   }
 
   const scanContextIntent = async () => {
+    if (activeGraphLayer !== 'system') {
+      setStatus('switch to the system graph to run context intake');
+      return;
+    }
     if (!contextDraft.trim()) {
       setStatus('context intake is empty');
       return;
@@ -1267,7 +1513,7 @@ function SpatialNotebook() {
         byNode: contextNode?.id ? { ...current.byNode, [contextNode.id]: report } : current.byNode,
         reports: [report, ...(current.reports || []).filter((entry) => entry.nodeId !== contextNode?.id)].slice(0, 24),
       }));
-      const handoff = updatePlannerHandoff(report);
+      const handoff = await updatePlannerHandoff(report);
       setSelectedAgentId('context-manager');
       setStatus(`intent manager confidence ${Math.round((response.confidence || 0) * 100)}% | ${(response.tasks || []).length} intent items | planner brief ${handoff?.status || 'updated'}`);
     } catch (error) {
@@ -1306,7 +1552,7 @@ function SpatialNotebook() {
       },
     });
     let nextNode = graphEngine.getState().nodes.find((node) => node.id === nodeId);
-    const patch = classifyNode(nextNode, graphEngine.getState());
+    const patch = classifyNode(nextNode, graphEngine.getState(), activeGraphLayer);
     graphEngine.updateNode(nodeId, patch);
     setGraph({ ...graphEngine.getState() });
     if (!content) {
@@ -1347,7 +1593,7 @@ function SpatialNotebook() {
       if (current?.metadata?.agentId === 'context-manager') {
         setContextDraft(content);
         setScanPreview(report);
-        updatePlannerHandoff(report);
+        await updatePlannerHandoff(report);
       }
       setSelectedAgentId('context-manager');
       setStatus(`intent manager confidence ${Math.round((response.confidence || 0) * 100)}% | ${(response.tasks || []).length} tasks for ${resolvedRole}`);
@@ -1406,7 +1652,10 @@ function SpatialNotebook() {
   };
 
   const newCanvas = () => {
+    const nextGraphs = normalizeGraphBundle({});
     graphEngine.clear();
+    setGraphLayers(nextGraphs);
+    setActiveGraphLayer('system');
     setGraph({ ...graphEngine.getState() });
     setSketches([]);
     setAnnotations([]);
@@ -1433,40 +1682,26 @@ function SpatialNotebook() {
   };
 
   const focusStudioAgent = (agentId) => {
-    const baseAgent = getStudioAgents().find((agent) => agent.id === agentId);
-    const container = studioRef.current;
-    if (!baseAgent || !container) return;
-    const zoom = agentId === 'cto-architect' ? 1.24 : 1.36;
-    const stageX = (baseAgent.position.x / 100) * STUDIO_SIZE.width;
-    const stageY = (baseAgent.position.y / 100) * STUDIO_SIZE.height;
-    const nextViewport = {
-      zoom,
-      x: container.clientWidth / 2 - stageX * zoom,
-      y: container.clientHeight / 2 - stageY * zoom,
-    };
     setSelectedAgentId(agentId);
-    setStudioViewport(nextViewport);
+    centerStudioOnDesk(agentId);
     setReviewPanelOpen(false);
     setScene(SCENES.STUDIO);
   };
 
-  const resetStudioView = (agentId = selectedAgentId || 'context-manager') => {
-    const baseAgent = getStudioAgents().find((agent) => agent.id === agentId) || getStudioAgents()[0];
-    const container = studioRef.current;
-    if (!baseAgent || !container) return;
-    const zoom = agentId === 'cto-architect' ? 1.24 : 1.36;
-    const stageX = (baseAgent.position.x / 100) * STUDIO_SIZE.width;
-    const stageY = (baseAgent.position.y / 100) * STUDIO_SIZE.height;
-    setStudioViewport({
-      zoom,
-      x: container.clientWidth / 2 - stageX * zoom,
-      y: container.clientHeight / 2 - stageY * zoom,
-    });
-    setStatus(`studio recentered on ${baseAgent.name}`);
+  const resetStudioView = () => {
+    centerStudioOnRoom('studio recentered on room');
   };
 
   const focusCanvasNode = (nodeId) => {
-    const node = graphEngine.getState().nodes.find((entry) => entry.id === nodeId);
+    if (activeGraphLayer !== 'system' && systemGraph.nodes.some((entry) => entry.id === nodeId)) {
+      const nextGraph = graphBundle.system || buildStarterGraph();
+      graphEngine.setState(nextGraph);
+      setGraphLayers(graphBundle);
+      setGraph({ ...graphEngine.getState() });
+      setActiveGraphLayer('system');
+    }
+    const activeGraph = activeGraphLayer === 'system' ? (graphBundle.system || graphEngine.getState()) : graphEngine.getState();
+    const node = (activeGraph.nodes || []).find((entry) => entry.id === nodeId);
     const container = canvasRef.current;
     if (!node || !container) return;
     const rect = container.getBoundingClientRect();
@@ -1631,18 +1866,61 @@ function SpatialNotebook() {
     }
   };
 
+  const startStudioElementDrag = (event, descriptor) => {
+    event.preventDefault();
+    event.stopPropagation();
+    studioElementDrag.current = {
+      ...descriptor,
+      startX: event.clientX,
+      startY: event.clientY,
+      initial: descriptor.type === 'desk'
+        ? { ...(studioLayout.desks?.[descriptor.id] || deskStagePoint(descriptor.id, studioLayout)) }
+        : { ...(studioLayout.whiteboards?.[descriptor.id] || DEFAULT_STUDIO_WHITEBOARDS.teamBoard) },
+    };
+  };
+
   const onStudioMouseDown = (event) => {
-    if (event.target.closest('.agent-station')) return;
+    if (event.target.closest('.agent-station') || event.target.closest('.studio-team-board')) return;
     studioPanning.current = true;
   };
 
   const onStudioMouseMove = (event) => {
+    if (studioElementDrag.current) {
+      const drag = studioElementDrag.current;
+      const deltaX = (event.clientX - drag.startX) / studioViewport.zoom;
+      const deltaY = (event.clientY - drag.startY) / studioViewport.zoom;
+      setStudioLayout((current) => {
+        const nextLayout = {
+          ...current,
+          desks: {
+            ...(current.desks || {}),
+          },
+          whiteboards: {
+            ...(current.whiteboards || {}),
+          },
+        };
+        if (drag.type === 'desk') {
+          nextLayout.desks[drag.id] = clampDeskPosition({
+            x: drag.initial.x + deltaX,
+            y: drag.initial.y + deltaY,
+          }, current.room || STUDIO_ROOM);
+        } else if (drag.type === 'whiteboard') {
+          nextLayout.whiteboards[drag.id] = clampWhiteboardPosition({
+            x: drag.initial.x + deltaX,
+            y: drag.initial.y + deltaY,
+          }, current.room || STUDIO_ROOM);
+        }
+        return nextLayout;
+      });
+      return;
+    }
     if (!studioPanning.current) return;
     setStudioViewport((viewport) => ({ ...viewport, x: viewport.x + event.movementX, y: viewport.y + event.movementY }));
   };
 
   const onStudioMouseUp = () => {
     studioPanning.current = false;
+    studioElementDrag.current = null;
   };
 
   const onStudioWheel = (event) => {
@@ -1694,6 +1972,10 @@ function SpatialNotebook() {
   };
 
   const runAiProcess = async (node) => {
+    if (activeGraphLayer !== 'system') {
+      setStatus('RSG v1 only builds code/runtime mutations from the system graph');
+      return;
+    }
     const decomposition = await ace.decomposeTask(node);
     const mutations = mutationEngine.buildMutationRequestFromIntent(node, decomposition);
     const previewResponse = await ace.previewMutation(mutations);
@@ -1724,6 +2006,7 @@ function SpatialNotebook() {
   };
 
   const sceneLabel = scene === SCENES.CANVAS ? 'Canvas' : 'ACE Studio';
+  const activeGraphLabel = GRAPH_LAYER_TITLES[activeGraphLayer] || activeGraphLayer;
   const canReviewIntent = selectedAgentId === 'context-manager' && !!selectedAgent?.deskSnapshot?.handoff;
   const contextDeskSnapshot = selectedAgent?.deskSnapshot || null;
   const studioLinks = buildStudioLinks(orchestratorState, handoffs);
@@ -1734,14 +2017,29 @@ function SpatialNotebook() {
     complete: (teamBoard.cards || []).filter((card) => card.status === 'complete'),
     review: (teamBoard.cards || []).filter((card) => card.status === 'review'),
   }), [teamBoard]);
-  const selectedExecutionCard = useMemo(() => (teamBoard.cards || []).find((card) => card.id === teamBoard.selectedCardId) || null, [teamBoard]);
+  const selectedExecutionCard = useMemo(() => (
+    (teamBoard.cards || []).find((card) => card.id === teamBoard.selectedCardId)
+    || (teamBoard.cards || []).find((card) => (
+      ['queued', 'applying', 'applied'].includes(card.applyStatus)
+      || ['queued', 'deploying', 'deployed', 'flagged', 'failed'].includes(card.deployStatus)
+      || card.approvalState === 'approved'
+    ))
+    || null
+  ), [teamBoard]);
   const latestThroughputSession = throughputDebug.latestSession || throughputDebug.sessions?.[0] || null;
+  const latestQARun = qaRunDetail || qaDebug.latestRun || qaDebug.runs?.[0] || null;
   const teamBoardColumnMeta = {
     plan: { title: 'Plan', empty: 'Planner tasks land here.' },
     active: { title: 'Active', empty: 'Agents are not advancing anything right now.' },
     complete: { title: 'Complete', empty: 'Completed tasks settle here.' },
-    review: { title: 'Needs Review', empty: 'No task is waiting for approval.' },
+    review: { title: 'Ready to Apply', empty: 'No risky mutation package is waiting for approval.' },
   };
+
+  useEffect(() => {
+    if (expandedReviewCardId && !(teamBoard.cards || []).some((card) => card.id === expandedReviewCardId && card.status === 'review')) {
+      setExpandedReviewCardId(null);
+    }
+  }, [expandedReviewCardId, teamBoard]);
 
   const resolvePageTitle = (pageId) => {
     if (!pageId) return 'Unknown page';
@@ -1750,6 +2048,7 @@ function SpatialNotebook() {
   };
 
   const stopStudioInteraction = (event) => {
+    if (studioElementDrag.current) return;
     event.stopPropagation();
   };
 
@@ -1762,32 +2061,98 @@ function SpatialNotebook() {
         h('span', { className: 'muted' }, String(cards.length)),
       ),
       cards.length
-        ? h('div', { className: 'team-board-card-list' }, cards.map((card) => h('div', {
-            key: card.id,
-            className: `team-board-card ${teamBoard.selectedCardId === card.id ? 'selected' : ''}`,
-          },
-            h('div', { className: 'team-board-card-id muted' }, `#${card.id} • ${card.desk || 'Desk'}`),
-            h('div', { className: 'team-board-card-title' }, card.title),
-            h('div', { className: 'team-board-card-meta muted' }, card.state || 'Ready'),
-            h('div', { className: 'team-board-card-meta muted' }, resolvePageTitle(card.pageId)),
-            card.runnerTaskId ? h('div', { className: 'team-board-card-meta muted' }, `Runner task ${card.runnerTaskId}`) : null,
-            card.deployStatus && card.deployStatus !== 'idle' ? h('div', { className: 'team-board-card-meta muted' }, `Deploy ${card.deployStatus}`) : null,
-            card.auditSessionId ? h('div', { className: 'team-board-card-meta muted' }, `Audit ${card.auditSessionId.slice(-8)}`) : null,
-            h('div', { className: 'button-row team-board-actions' },
-              columnId === 'review'
-                ? h('button', { className: 'mini', type: 'button', onClick: () => sendCardToExecutor(card.id) }, teamBoard.selectedCardId === card.id ? 'Queued' : 'Send')
-                : null,
-              card.runnerTaskId
-                ? h('button', { className: 'mini', type: 'button', onClick: () => openTaskFolder(card.runnerTaskId) }, 'Open task')
-                : null,
-            ),
-          )))
+        ? h('div', { className: 'team-board-card-list' }, cards.map((card) => {
+            const isExpandedReview = columnId === 'review' && expandedReviewCardId === card.id;
+            const taskId = card.runnerTaskId || card.builderTaskId || card.executionPackage?.taskId || null;
+            const changedFiles = card.executionPackage?.changedFiles || [];
+            const actionLabel = card.executionPackage?.expectedAction || (card.targetProjectKey === 'ace-self' ? 'apply + deploy' : 'apply');
+            return h('div', {
+              key: card.id,
+              className: `team-board-card ${selectedExecutionCard?.id === card.id ? 'selected' : ''} ${isExpandedReview ? 'expanded' : ''}`,
+              onClick: columnId === 'review' ? () => setExpandedReviewCardId((value) => value === card.id ? null : card.id) : undefined,
+            },
+              h('div', { className: 'team-board-card-id muted' }, `#${card.id} • ${card.desk || 'Desk'}`),
+              h('div', { className: 'team-board-card-title' }, card.title),
+              h('div', { className: 'team-board-card-meta muted' }, card.state || 'Ready'),
+              h('div', { className: 'team-board-card-meta muted' }, resolvePageTitle(card.pageId)),
+              taskId ? h('div', { className: 'team-board-card-meta muted' }, `Task ${taskId}`) : null,
+              card.riskLevel && card.riskLevel !== 'unknown' ? h('div', { className: 'team-board-card-meta muted' }, `Risk ${card.riskLevel}`) : null,
+              card.applyStatus && card.applyStatus !== 'idle' ? h('div', { className: 'team-board-card-meta muted' }, `Apply ${card.applyStatus}`) : null,
+              card.deployStatus && card.deployStatus !== 'idle' ? h('div', { className: 'team-board-card-meta muted' }, `Deploy ${card.deployStatus}`) : null,
+              card.auditSessionId ? h('div', { className: 'team-board-card-meta muted' }, `Audit ${card.auditSessionId.slice(-8)}`) : null,
+              isExpandedReview ? h('div', { className: 'team-board-card-review' },
+                h('div', { className: 'team-board-card-review-line' }, `Target: ${card.targetProjectKey || 'ace-self'}`),
+                h('div', { className: 'team-board-card-review-line' }, `Mutation: ${actionLabel}`),
+                h('div', { className: 'team-board-card-review-line' }, `Preflight: ${card.executionPackage?.preflightStatus || 'idle'}`),
+                h('div', { className: 'team-board-card-review-line' }, changedFiles.length ? `Scope: ${changedFiles.join(', ')}` : (card.executionPackage?.summary || 'No patch scope recorded yet.')),
+                card.riskReasons?.length ? h('ul', { className: 'team-board-card-risk-list' },
+                  card.riskReasons.map((reason, index) => h('li', { key: `${card.id}-risk-${index}` }, reason)),
+                ) : null,
+              ) : null,
+              h('div', { className: 'button-row team-board-actions' },
+                columnId === 'review'
+                  ? h(React.Fragment, null,
+                      h('button', {
+                        className: 'mini',
+                        type: 'button',
+                        disabled: teamBoardBusy,
+                        onClick: (event) => {
+                          event.stopPropagation();
+                          runTeamBoardAction('approve-apply', card.id, `approved ${card.title} for apply`);
+                        },
+                      }, teamBoardBusy ? 'Working...' : 'Send'),
+                      h('button', {
+                        className: 'mini',
+                        type: 'button',
+                        disabled: teamBoardBusy,
+                        onClick: (event) => {
+                          event.stopPropagation();
+                          runTeamBoardAction('reject-to-builder', card.id, `sent ${card.title} back to Builder`);
+                        },
+                      }, 'Reject'),
+                      h('button', {
+                        className: 'mini',
+                        type: 'button',
+                        disabled: teamBoardBusy,
+                        onClick: (event) => {
+                          event.stopPropagation();
+                          runTeamBoardAction('bin', card.id, `binned ${card.title}`);
+                        },
+                      }, 'Bin'),
+                    )
+                  : null,
+                taskId
+                  ? h('button', {
+                      className: 'mini',
+                      type: 'button',
+                      onClick: (event) => {
+                        event.stopPropagation();
+                        openTaskFolder(taskId);
+                      },
+                    }, 'Open task')
+                  : null,
+              ),
+            );
+          }))
         : h('div', { className: 'signal-empty muted team-board-empty' }, meta.empty),
     );
   };
 
   const renderStudioTeamBoard = () => h('section', {
     className: 'studio-team-board',
+    'data-qa': 'whiteboard-teamBoard',
+    'data-whiteboard-id': 'teamBoard',
+    'data-whiteboard-label': 'Team Board',
+    'data-stage-x': teamBoardFrame.x,
+    'data-stage-y': teamBoardFrame.y,
+    'data-stage-width': STUDIO_TEAM_BOARD_SIZE.width,
+    'data-stage-height': STUDIO_TEAM_BOARD_SIZE.height,
+    style: {
+      left: `${teamBoardFrame.x}px`,
+      top: `${teamBoardFrame.y}px`,
+      width: `${STUDIO_TEAM_BOARD_SIZE.width}px`,
+      minHeight: `${STUDIO_TEAM_BOARD_SIZE.height}px`,
+    },
     onMouseDown: stopStudioInteraction,
     onMouseMove: stopStudioInteraction,
     onMouseUp: stopStudioInteraction,
@@ -1800,19 +2165,77 @@ function SpatialNotebook() {
     h('div', { className: 'studio-team-board-header' },
       h('div', null,
         h('div', { className: 'studio-team-board-title' }, 'Team Board'),
-        h('div', { className: 'studio-team-board-subtitle muted' }, 'Global workflow truth for planner output, completed work, executor selection, and recycle/bin decisions.'),
+        h('div', { className: 'studio-team-board-subtitle muted' }, 'Global workflow truth for planner output, builder packages, executor apply/deploy, and risk-gated approvals.'),
       ),
       h('div', { className: 'studio-team-board-meta' },
         h('span', null, `Page ${activePage?.title || 'Current Page'}`),
         h('span', null, `Plan ${teamBoard.summary?.plan || 0}`),
         h('span', null, `Active ${teamBoard.summary?.active || 0}`),
         h('span', null, `Idle workers ${teamBoard.summary?.idleWorkers || 0}`),
-        h('span', { className: selectedExecutionCard ? 'selected' : '' }, selectedExecutionCard ? `Worker queued: ${selectedExecutionCard.title}` : `Review queue ${teamBoard.summary?.review || 0}`),
+        h('span', { className: selectedExecutionCard ? 'selected' : '' }, selectedExecutionCard ? `Executor ${selectedExecutionCard.state}: ${selectedExecutionCard.title}` : `Ready to Apply ${teamBoard.summary?.review || 0}`),
+        h('button', {
+          className: 'mini studio-edit-handle whiteboard-edit-handle',
+          type: 'button',
+          onMouseDown: (event) => startStudioElementDrag(event, { type: 'whiteboard', id: 'teamBoard' }),
+          onClick: (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          },
+        }, 'Move'),
       ),
     ),
-    h('div', { className: 'team-board-columns' },
+        h('div', { className: 'team-board-columns' },
       ['plan', 'active', 'complete', 'review'].map(renderTeamBoardColumn),
     ),
+  );
+
+  const renderBrowserPassPanel = () => h('div', { className: 'inspector-block panel-card review-panel browser-pass-panel' },
+    h('div', { className: 'inspector-label' }, 'Browser Pass'),
+    h('div', { className: 'self-upgrade-grid' },
+      h('label', { className: 'muted', htmlFor: 'browser-pass-scenario' }, 'Scenario'),
+      h('select', {
+        id: 'browser-pass-scenario',
+        className: 'mini recent-select',
+        value: qaScenario,
+        onChange: (event) => setQaScenario(event.target.value),
+      },
+        h('option', { value: 'layout-pass' }, 'Layout Pass'),
+        h('option', { value: 'studio-smoke' }, 'Studio Smoke'),
+        h('option', { value: 'throughput-visual-pass' }, 'Throughput Visual Pass'),
+        h('option', { value: 'whiteboard-board-pass' }, 'Whiteboard Board Pass'),
+      ),
+    ),
+    h('div', { className: 'button-row' },
+      h('button', { className: 'mini', type: 'button', disabled: qaBusy, onClick: runBrowserPass }, qaBusy ? 'Running...' : 'Run Browser Pass'),
+    ),
+    latestQARun
+      ? h(React.Fragment, null,
+          h('div', { className: 'signal-summary' }, `${latestQARun.scenario || 'layout-pass'} | ${latestQARun.verdict || latestQARun.status || 'pending'}`),
+          h('div', { className: 'signal-meta muted' }, `Trigger: ${latestQARun.trigger || 'manual'} | Findings: ${(latestQARun.findings || []).length || latestQARun.findingCount || 0}`),
+          latestQARun.primaryScreenshot?.url || latestQARun.artifacts?.screenshots?.[0]?.url
+            ? h('img', {
+                className: 'qa-screenshot-preview',
+                alt: 'Latest ACE browser pass screenshot',
+                src: latestQARun.primaryScreenshot?.url || latestQARun.artifacts?.screenshots?.[0]?.url,
+              })
+            : null,
+          (latestQARun.findings || []).length
+            ? h('div', { className: 'qa-findings-list' }, latestQARun.findings.slice(0, 6).map((finding) => h('button', {
+              key: finding.id,
+              className: `qa-finding severity-${finding.severity || 'info'}`,
+              type: 'button',
+              onClick: () => {
+                if (finding.relatedDeskIds?.[0]) setSelectedAgentId(finding.relatedDeskIds[0]);
+                setScene(SCENES.STUDIO);
+              },
+              title: finding.details || finding.summary,
+            }, `${finding.summary}`)))
+            : h('div', { className: 'signal-empty muted' }, 'No browser-pass findings recorded yet.'),
+          (latestQARun.steps || []).length
+            ? h('div', { className: 'qa-step-list' }, latestQARun.steps.map((step) => h('div', { key: step.id, className: 'qa-step-row muted' }, `${step.label}: ${step.verdict || step.status}`)))
+            : null,
+        )
+      : h('div', { className: 'signal-empty muted' }, 'No browser pass has been recorded yet.'),
   );
 
   const renderThroughputDebugPanel = () => h('div', { className: 'inspector-block panel-card review-panel throughput-debug-panel' },
@@ -1854,7 +2277,7 @@ function SpatialNotebook() {
       : h('div', { className: 'signal-empty muted' }, 'No throughput session recorded yet. Run a fixture pass or a live ACE pass to inspect the full pipeline.'),
   );
 
-  return h('section', { className: 'spatial-main ace-shell', style: { gridTemplateColumns: `minmax(0, 1fr) ${sidebarColumnWidth}px` } },
+  return h('section', { className: 'spatial-main ace-shell', 'data-qa': 'spatial-root', style: { gridTemplateColumns: `minmax(0, 1fr) ${sidebarColumnWidth}px` } },
     h('div', { className: 'canvas-column scene-column' },
       h('div', { className: 'canvas-toolbar ace-toolbar' },
         h('div', { className: 'toolbar-primary' },
@@ -1864,11 +2287,21 @@ function SpatialNotebook() {
         h('div', { className: 'toolbar-secondary' },
           h('div', { className: 'toolbar-meta toolbar-meta-top' },
             h('div', { className: 'scene-switcher' },
-              h('button', { className: `mini ${scene === SCENES.CANVAS ? 'active' : ''}`, onClick: () => setScene(SCENES.CANVAS), type: 'button' }, 'Canvas'),
-              h('button', { className: `mini ${scene === SCENES.STUDIO ? 'active' : ''}`, onClick: () => setScene(SCENES.STUDIO), type: 'button' }, 'ACE Studio'),
+              h('button', { className: `mini ${scene === SCENES.CANVAS ? 'active' : ''}`, 'data-qa': 'scene-canvas-button', onClick: () => setScene(SCENES.CANVAS), type: 'button' }, 'Canvas'),
+              h('button', { className: `mini ${scene === SCENES.STUDIO ? 'active' : ''}`, 'data-qa': 'scene-studio-button', onClick: () => setScene(SCENES.STUDIO), type: 'button' }, 'ACE Studio'),
+            ),
+            h('div', { className: 'scene-switcher graph-layer-switcher' },
+              GRAPH_LAYERS.map((layer) => h('button', {
+                key: layer,
+                className: `mini graph-layer-pill ${activeGraphLayer === layer ? 'active' : ''}`,
+                'data-qa': `graph-layer-${layer}`,
+                onClick: () => switchGraphLayer(layer),
+                type: 'button',
+              }, GRAPH_LAYER_TITLES[layer] || layer)),
             ),
             h('select', {
               className: 'mini recent-select',
+              'data-qa': 'page-select',
               value: notebookState.activePageId || '',
               onChange: (event) => setActivePageId(event.target.value),
             },
@@ -1876,6 +2309,7 @@ function SpatialNotebook() {
             ),
             h('select', {
               className: 'mini recent-select',
+              'data-qa': 'recent-saves-select',
               value: '',
               onChange: (event) => {
                 const selectedEntry = recentHistory.find((entry) => entry.at === event.target.value);
@@ -1886,8 +2320,8 @@ function SpatialNotebook() {
               h('option', { value: '' }, 'Recent Saves'),
               recentHistory.map((entry) => h('option', { key: entry.at, value: entry.at }, `${new Date(entry.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${entry.summary?.nodes || 0} nodes`)),
             ),
-            scene === SCENES.STUDIO ? h('button', { className: 'mini', type: 'button', onClick: () => resetStudioView() }, 'Reset View') : null,
-            h('span', { className: 'toolbar-status' }, `${sceneLabel} | Page ${activePage?.title || 'Current Page'} | Canvas ${Math.round(canvasViewport.zoom * 100)}% | Studio ${Math.round(studioViewport.zoom * 100)}% | ${status}`),
+            scene === SCENES.STUDIO ? h('button', { className: 'mini', 'data-qa': 'reset-view-button', type: 'button', onClick: () => resetStudioView() }, 'Reset View') : null,
+            h('span', { className: 'toolbar-status' }, `${sceneLabel} | ${activeGraphLabel} | Page ${activePage?.title || 'Current Page'} | Canvas ${Math.round(canvasViewport.zoom * 100)}% | Studio ${Math.round(studioViewport.zoom * 100)}% | ${status}`),
           ),
           h('div', { className: 'canvas-control-dock toolbar-meta toolbar-meta-bottom' },
             h('div', { className: 'button-row' },
@@ -1895,7 +2329,13 @@ function SpatialNotebook() {
               h('button', { className: `mini ${sketchMode ? 'active' : ''}`, onClick: () => setSketchMode((value) => !value), type: 'button', disabled: scene !== SCENES.CANVAS }, sketchMode ? 'Sketch On' : 'Sketch'),
               h('button', { className: 'mini', onClick: clearSketchLayer, type: 'button', disabled: scene !== SCENES.CANVAS }, 'Clear Marks'),
               h('button', { className: 'mini', onClick: () => setSimulating((value) => !value), type: 'button' }, simulating ? 'Stop Sim' : 'Simulate'),
-              selected && h('button', { className: 'mini', onClick: () => runAiProcess(selected).catch((error) => setStatus(error.message)), type: 'button' }, 'Ask ACE'),
+              selected && h('button', {
+                className: 'mini',
+                onClick: () => runAiProcess(selected).catch((error) => setStatus(error.message)),
+                type: 'button',
+                disabled: activeGraphLayer !== 'system',
+                title: activeGraphLayer === 'system' ? 'Ask ACE' : 'RSG v1 only mutates the system graph.',
+              }, 'Ask ACE'),
             ),
           ),
         ),
@@ -1903,10 +2343,12 @@ function SpatialNotebook() {
       h('div', { className: 'scene-shell' },
         h('div', {
           className: `scene-layer canvas-scene ${scene === SCENES.CANVAS ? 'active' : 'inactive'}`,
+          'data-qa': 'canvas-scene',
           'aria-hidden': scene !== SCENES.CANVAS,
         },
           h('div', {
             className: 'canvas-shell',
+            'data-qa': 'canvas-shell',
             onMouseMove: onCanvasMouseMove,
             onMouseUp: onCanvasMouseUp,
             onMouseLeave: onCanvasMouseUp,
@@ -1946,11 +2388,11 @@ function SpatialNotebook() {
             graph.nodes.map((node) => {
               const x = node.position.x * canvasViewport.zoom + canvasViewport.x;
               const y = node.position.y * canvasViewport.zoom + canvasViewport.y;
-              const classified = classifyNode(node, graph);
+              const classified = classifyNode(node, graph, activeGraphLayer);
               const labels = classified.metadata.labels || [];
               return h('div', {
                 key: node.id,
-                className: `node ${classified.metadata.role} ${selectedId === node.id ? 'selected' : ''}`,
+                className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} ${selectedId === node.id ? 'selected' : ''}`,
                 style: {
                   left: `${x}px`,
                   top: `${y}px`,
@@ -1981,7 +2423,7 @@ function SpatialNotebook() {
                     setStatus('node deleted');
                   },
                 }, 'X'),
-                h('div', { className: 'node-header' }, `${classified.metadata.role.toUpperCase()} | ${node.id.slice(-4)}`),
+                h('div', { className: 'node-header' }, `${activeGraphLayer.toUpperCase()} | ${classified.metadata.proposalTarget || classified.metadata.role}`),
                 h('textarea', {
                   className: 'node-editor',
                   value: node.content,
@@ -1997,6 +2439,7 @@ function SpatialNotebook() {
                 }),
                 h('div', { className: 'node-footer' },
                   h('div', { className: 'node-labels' }, labels.length ? labels.join(' - ') : 'press Enter to classify'),
+                  h('div', { className: 'node-intent-summary muted' }, `${node.id.slice(-4)} | ${classified.metadata.role}`),
                   h('div', { className: 'node-intent-summary' }, summarizeIntentReport(node.metadata?.intentAnalysis)),
                 ),
                 h('button', {
@@ -2015,11 +2458,13 @@ function SpatialNotebook() {
         ),
         h('div', {
           className: `scene-layer studio-scene ${scene === SCENES.STUDIO ? 'active' : 'inactive'}`,
+          'data-qa': 'studio-scene',
           'aria-hidden': scene !== SCENES.STUDIO,
         },
           h('div', {
             ref: studioRef,
             className: 'studio-shell',
+            'data-qa': 'studio-shell',
             onMouseDown: onStudioMouseDown,
             onMouseMove: onStudioMouseMove,
             onMouseUp: onStudioMouseUp,
@@ -2028,6 +2473,7 @@ function SpatialNotebook() {
           },
             h('div', {
               className: 'studio-world',
+              'data-qa': 'studio-world',
               style: {
                 width: `${STUDIO_SIZE.width}px`,
                 height: `${STUDIO_SIZE.height}px`,
@@ -2035,13 +2481,27 @@ function SpatialNotebook() {
             },
           },
               h('div', { className: 'studio-floor' }),
+              h('div', {
+                className: 'studio-room',
+                'data-qa': 'studio-room',
+                'data-stage-x': studioRoom.x,
+                'data-stage-y': studioRoom.y,
+                'data-stage-width': studioRoom.width,
+                'data-stage-height': studioRoom.height,
+                style: {
+                  left: `${studioRoom.x}px`,
+                  top: `${studioRoom.y}px`,
+                  width: `${studioRoom.width}px`,
+                  height: `${studioRoom.height}px`,
+                },
+              }),
               h('div', { className: `studio-lane lane-top ${laneState.top.active ? `active ${laneState.top.tone} level-${laneState.top.strength}` : ''}` }),
               h('div', { className: `studio-lane lane-mid ${laneState.mid.active ? `active ${laneState.mid.tone} level-${laneState.mid.strength}` : ''}` }),
               h('div', { className: `studio-lane lane-side ${laneState.side.active ? `active ${laneState.side.tone} level-${laneState.side.strength}` : ''}` }),
               renderStudioTeamBoard(),
-              h('svg', { className: 'studio-links-layer', viewBox: `0 0 ${STUDIO_SIZE.width} ${STUDIO_SIZE.height}`, 'aria-hidden': true },
+              h('svg', { className: 'studio-links-layer', 'data-qa': 'studio-links-layer', viewBox: `0 0 ${STUDIO_SIZE.width} ${STUDIO_SIZE.height}`, 'aria-hidden': true },
                 studioLinks.map((link) => {
-                  const geometry = resolveDeskAnchor(link.from, link.to, link.kind);
+                  const geometry = resolveDeskAnchor(link.from, link.to, link.kind, studioLayout);
                   if (!geometry) return null;
                   const { from, to, bend, labelOffsetY } = geometry;
                   const horizontal = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y);
@@ -2059,12 +2519,23 @@ function SpatialNotebook() {
                     h('path', {
                       d: `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`,
                       className: 'studio-link-path',
+                      'data-qa': 'studio-link-path',
+                      'data-link-id': link.id,
+                      'data-link-label': link.label,
+                      'data-link-kind': link.kind,
+                      'data-from-desk': link.from,
+                      'data-to-desk': link.to,
+                      'data-start-x': from.x,
+                      'data-start-y': from.y,
+                      'data-end-x': to.x,
+                      'data-end-y': to.y,
                     }),
                     showLabel ? h('text', { x: midX, y: midY, className: 'studio-link-label' }, link.label) : null,
                   );
                 }),
               ),
               agentSnapshots.map((agent) => {
+                const deskPosition = studioLayout.desks?.[agent.id] || deskStagePoint(agent.id, studioLayout);
                 const meta = STATUS_META[agent.status] || STATUS_META.idle;
                 const thoughtBubble = orchestratorState.desks?.[agent.id]?.thoughtBubble || null;
                 const pageBadge = orchestratorState.activeDeskIds?.includes(agent.id)
@@ -2073,9 +2544,14 @@ function SpatialNotebook() {
                 return h('button', {
                   key: agent.id,
                   className: `agent-station ${selectedAgentId === agent.id ? 'selected' : ''} ${agent.isOversight ? 'oversight' : ''}`,
+                  'data-qa': `desk-${agent.id}`,
+                  'data-desk-id': agent.id,
+                  'data-desk-label': agent.name,
+                  'data-stage-x': deskPosition.x,
+                  'data-stage-y': deskPosition.y,
                   style: {
-                    left: `${agent.position.x}%`,
-                    top: `${agent.position.y}%`,
+                    left: `${deskPosition.x}px`,
+                    top: `${deskPosition.y}px`,
                     '--agent-accent': agent.theme.accent,
                     '--agent-shadow': agent.theme.shadow,
                   },
@@ -2084,6 +2560,14 @@ function SpatialNotebook() {
                   title: `${agent.name} | ${orchestratorState.desks?.[agent.id]?.currentGoal || agent.role}`,
                 },
                   h(DeskThoughtBubble, { text: thoughtBubble, tone: meta.tone }),
+                  h('span', {
+                    className: 'studio-edit-handle station-edit-handle',
+                    onMouseDown: (event) => startStudioElementDrag(event, { type: 'desk', id: agent.id }),
+                    onClick: (event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    },
+                  }, 'Move'),
                   pageBadge ? h('div', { className: 'desk-page-badge' }, pageBadge) : null,
                   h('div', { className: 'station-desk' },
                     h('div', { className: `desk-light ${agent.activityPulse ? 'pulse' : ''} ${agent.unresolved ? 'warning' : ''}` }),
@@ -2107,12 +2591,16 @@ function SpatialNotebook() {
                   key: `${agent.id}-dot`,
                   type: 'button',
                   className: `minimap-dot ${selectedAgentId === agent.id ? 'selected' : ''}`,
-                  style: { left: `${agent.position.x}%`, top: `${agent.position.y}%`, background: agent.theme.accent },
+                  style: {
+                    left: `${((studioLayout.desks?.[agent.id]?.x || deskStagePoint(agent.id, studioLayout).x) / STUDIO_SIZE.width) * 100}%`,
+                    top: `${((studioLayout.desks?.[agent.id]?.y || deskStagePoint(agent.id, studioLayout).y) / STUDIO_SIZE.height) * 100}%`,
+                    background: agent.theme.accent,
+                  },
                   onClick: () => focusStudioAgent(agent.id),
                   title: agent.name,
                 })),
               ),
-              h('div', { className: 'muted' }, 'Click a station to inspect scope and leave feedback.'),
+              h('div', { className: 'muted' }, `Click a station to inspect scope. Active layer: ${activeGraphLabel}. World domain: ${rsgState.worldDomain}.`),
             ),
           ),
         ),
@@ -2135,16 +2623,19 @@ function SpatialNotebook() {
           ),
           h('div', { className: 'inspector-block panel-card context-intake' },
             h('div', { className: 'inspector-label' }, 'Context Intake'),
-            h('div', { className: 'muted' }, 'This is the direct input surface for the context agent and intent scanner.'),
+            h('div', { className: 'muted' }, activeGraphLayer === 'system'
+              ? 'This is the direct input surface for the context agent and intent scanner.'
+              : 'Context intake currently writes to the system graph. Switch layers to scan or publish context.'),
             h('textarea', {
               value: contextDraft,
               placeholder: 'Describe the project intent, architecture concerns, and what ACE should understand next.',
               onChange: (event) => setContextDraft(event.target.value),
               onFocus: () => keys.current.clear(),
+              disabled: activeGraphLayer !== 'system',
             }),
             h('div', { className: 'button-row' },
-              h('button', { className: 'mini', type: 'button', onClick: captureContextInput }, 'Save to Context'),
-              h('button', { className: 'mini', type: 'button', onClick: () => scanContextIntent().catch((error) => setStatus(error.message)), disabled: scannerBusy }, scannerBusy ? 'Scanning...' : 'Scan Intent'),
+              h('button', { className: 'mini', type: 'button', onClick: captureContextInput, disabled: activeGraphLayer !== 'system' }, 'Save to Context'),
+              h('button', { className: 'mini', type: 'button', onClick: () => scanContextIntent().catch((error) => setStatus(error.message)), disabled: scannerBusy || activeGraphLayer !== 'system' }, scannerBusy ? 'Scanning...' : 'Scan Intent'),
               scanPreview ? h('button', { className: 'mini', type: 'button', onClick: () => { setSelectedAgentId('context-manager'); setScene(SCENES.STUDIO); setReviewPanelOpen(true); } }, 'Open problem report') : null,
             ),
             scanPreview
@@ -2193,13 +2684,33 @@ function SpatialNotebook() {
             h('div', { className: 'inspector-label' }, 'Canvas Controls'),
             h('div', { className: 'muted' }, 'Double-click to add nodes. Drag from node handles to create arrows. Press Enter inside a node to classify and judge intent. Use Delete or Backspace to remove selections. Use K for sketch mode.'),
           ),
+          h('div', { className: 'inspector-block panel-card' },
+            h('div', { className: 'inspector-label' }, 'RSG Architecture'),
+            h('div', { className: 'signal-summary' }, `${rsgState.mode} | ${activeGraphLabel}`),
+            h('div', { className: 'signal-meta muted' }, `World domain: ${rsgState.worldDomain}`),
+            h('div', { className: 'criteria-list desk-metric-list' },
+              h('div', { className: 'criteria-row' }, h('span', null, 'System structure'), h('span', { className: 'muted' }, String(rsgState.summary?.systemStructure || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'World structure'), h('span', { className: 'muted' }, String(rsgState.summary?.worldStructure || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Adapters'), h('span', { className: 'muted' }, String(rsgState.summary?.adapterTranslation || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Runtime mutations'), h('span', { className: 'muted' }, String(rsgState.summary?.codeRuntimeMutation || 0))),
+            ),
+            h('div', { className: 'signal-meta muted' }, `Policy: system/world/adapter proposals auto-record, code/runtime changes stay risk-gated.`),
+          ),
+          h('div', { className: 'inspector-block panel-card' },
+            h('div', { className: 'inspector-label' }, 'Graph Layer Summary'),
+            h('div', { className: 'criteria-list desk-metric-list' },
+              h('div', { className: 'criteria-row' }, h('span', null, 'System graph'), h('span', { className: 'muted' }, `${systemGraph.nodes.length} nodes / ${systemGraph.edges.length} edges`)),
+              h('div', { className: 'criteria-row' }, h('span', null, 'World graph'), h('span', { className: 'muted' }, `${(graphBundle.world?.nodes || []).length} nodes / ${(graphBundle.world?.edges || []).length} edges`)),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Active layer'), h('span', { className: 'muted' }, activeGraphLabel)),
+            ),
+          ),
           h('div', { className: 'inspector-block' },
             h('div', { className: 'inspector-label' }, 'Architecture Memory'),
             h('pre', { className: 'doc' }, JSON.stringify(architectureMemory, null, 2)),
           ),
           h('div', { className: 'inspector-block' },
-            h('div', { className: 'inspector-label' }, 'Quick Node Types'),
-            h('div', { className: 'button-row' }, NODE_TYPES.map((type) => h('button', {
+            h('div', { className: 'inspector-label' }, `${activeGraphLabel} Node Types`),
+            h('div', { className: 'button-row' }, activeLayerNodeTypes.map((type) => h('button', {
               key: type,
               className: 'mini',
               type: 'button',
@@ -2224,6 +2735,22 @@ function SpatialNotebook() {
             h('div', { className: 'inspector-label' }, 'Orchestrator Thought Bubble'),
             h('div', { className: 'signal-summary' }, orchestratorState.desks['cto-architect'].thoughtBubble),
             h('div', { className: 'signal-meta muted' }, `Last heartbeat: ${formatTimestamp(orchestratorState.lastTickAt)}`),
+          ) : null,
+          selectedAgent.id === 'cto-architect' ? h('div', { className: 'inspector-block panel-card' },
+            h('div', { className: 'inspector-label' }, 'Architecture Layers'),
+            h('div', { className: 'signal-summary' }, `${rsgState.mode} | ${rsgState.worldDomain}`),
+            h('div', { className: 'criteria-list desk-metric-list' },
+              h('div', { className: 'criteria-row' }, h('span', null, 'System proposals'), h('span', { className: 'muted' }, String(rsgState.summary?.systemStructure || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'World proposals'), h('span', { className: 'muted' }, String(rsgState.summary?.worldStructure || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Adapter links'), h('span', { className: 'muted' }, String(rsgState.summary?.adapterTranslation || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Mutation packages'), h('span', { className: 'muted' }, String(rsgState.summary?.codeRuntimeMutation || 0))),
+            ),
+            (rsgState.proposals || []).length
+              ? h('ul', { className: 'signal-list' }, rsgState.proposals.slice(0, 6).map((proposal) => h('li', { key: proposal.id },
+                  h('div', null, proposal.title),
+                  h('div', { className: 'muted' }, `${proposal.target} | ${proposal.approval}`),
+                )))
+              : h('div', { className: 'signal-empty muted' }, 'No explicit RSG proposals recorded yet.'),
           ) : null,
           selectedAgent.id === 'cto-architect' ? h('div', { className: 'inspector-block panel-card review-panel' },
             h('div', { className: 'inspector-label' }, 'ACE Self Upgrade'),
@@ -2257,10 +2784,11 @@ function SpatialNotebook() {
               h('button', { className: 'mini', type: 'button', disabled: selfUpgradeBusy, onClick: runSelfUpgradePreflight }, selfUpgradeBusy ? 'Running...' : 'Run preflight'),
               h('button', { className: 'mini', type: 'button', disabled: selfUpgradeBusy || !selfUpgrade.apply?.ok, onClick: deploySelfUpgrade }, selfUpgrade.deploy?.status === 'restarting' ? 'Restarting...' : 'Deploy & restart'),
             ),
-            selfUpgrade.apply?.ok ? h('div', { className: 'signal-meta muted' }, `Applied commit ${selfUpgrade.apply.commit || 'pending'} on ${selfUpgrade.apply.branch || 'apply branch'}`) : null,
-          ) : null,
-          selectedAgent.id === 'cto-architect' ? renderThroughputDebugPanel() : null,
-          selectedAgent.id === 'context-manager'
+          selfUpgrade.apply?.ok ? h('div', { className: 'signal-meta muted' }, `Applied commit ${selfUpgrade.apply.commit || 'pending'} on ${selfUpgrade.apply.branch || 'apply branch'}`) : null,
+        ) : null,
+        selectedAgent.id === 'cto-architect' ? renderBrowserPassPanel() : null,
+        selectedAgent.id === 'cto-architect' ? renderThroughputDebugPanel() : null,
+        selectedAgent.id === 'context-manager'
             ? h(React.Fragment, null,
                 reviewPanelOpen && contextDeskSnapshot?.handoff ? h('div', { className: 'inspector-block panel-card review-panel' },
                   h('div', { className: 'inline review-header' },
@@ -2271,10 +2799,14 @@ function SpatialNotebook() {
                     h('button', { className: 'mini', type: 'button', onClick: () => setReviewPanelOpen(false) }, 'Close')
                   ),
                   h('pre', { className: 'doc desk-problem-report' }, contextDeskSnapshot.handoff.problemStatement || 'No problem report generated yet.'),
+                  contextDeskSnapshot.handoff.truth?.plannerBrief
+                    ? h('div', { className: 'truth-inline' }, contextDeskSnapshot.handoff.truth.plannerBrief)
+                    : null,
                   h('div', { className: 'button-row' },
                     contextDeskSnapshot.handoff.sourceNodeId ? h('button', { className: 'mini', type: 'button', onClick: () => focusCanvasNode(contextDeskSnapshot.handoff.sourceNodeId) }, 'Open source node') : null,
                   ),
                 ) : null,
+                renderDeskSection(contextDeskSnapshot?.sections?.find((section) => section.id === 'core-truth')),
                 h('div', { className: 'inspector-block panel-card review-panel' },
                   h('div', { className: 'inspector-label' }, 'Problem To Solve'),
                   contextDeskSnapshot?.handoff
@@ -2282,6 +2814,7 @@ function SpatialNotebook() {
                         h('div', { className: 'signal-summary' }, contextDeskSnapshot.handoff.summary || 'Planner brief ready.'),
                         h('div', { className: 'signal-meta muted' }, `Sent to Planner: ${formatTimestamp(contextDeskSnapshot.handoff.createdAt)}`),
                         h('div', { className: 'signal-meta muted' }, `Status: ${contextDeskSnapshot.handoff.status}`),
+                        contextDeskSnapshot.handoff.truth?.plannerBrief ? h('div', { className: 'truth-inline muted' }, contextDeskSnapshot.handoff.truth.plannerBrief) : null,
                         contextDeskSnapshot.handoff.tasks?.length
                           ? h('ul', { className: 'signal-list' }, contextDeskSnapshot.handoff.tasks.map((task, index) => h('li', { key: `handoff-task-${index}` }, task)))
                           : h('div', { className: 'signal-empty muted' }, 'No extracted tasks yet.'),
@@ -2311,6 +2844,9 @@ function SpatialNotebook() {
                         h('div', { className: 'confidence-pill' }, `${Math.round((contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.confidence || 0) * 100)}% confidence`),
                         h('div', { className: 'signal-summary' }, contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.summary || 'Intent captured.'),
                         h('div', { className: 'signal-meta muted' }, `Source: ${contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.nodeId || 'context input'} | Classified as ${contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.classification?.role || 'context'}`),
+                        contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.truth?.plannerBrief
+                          ? h('div', { className: 'truth-inline muted' }, contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.truth.plannerBrief)
+                          : null,
                         h('div', { className: 'criteria-list' }, (contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.criteria || []).map((criterion) => h('div', { key: criterion.id || criterion.label, className: 'criteria-row' },
                           h('span', null, `${criterion.label}: ${Math.round((criterion.score || 0) * 100)}%`),
                           h('span', { className: 'muted' }, criterion.reason || ''),

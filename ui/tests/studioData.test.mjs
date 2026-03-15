@@ -25,6 +25,21 @@ export default async function runStudioDataTests() {
       { id: 'clarity', label: 'Clarity', score: 0.8, reason: 'Intent is understandable.' },
     ],
     classification: { role: 'context', labels: ['ux'] },
+    truth: {
+      rawInput: 'Expose more agent workload in studio.',
+      statement: 'Expose more agent workload in studio.',
+      intentType: 'General context signal',
+      requestedOutcomes: [],
+      unresolved: ['No concrete requested outcomes were extracted yet.'],
+      evidence: ['Clarity: Intent is understandable.'],
+      plannerBrief: 'Planner should clarify the request before expanding execution.',
+      readiness: {
+        intentConfidence: 0.42,
+        plannerUsefulness: 0.38,
+        executionReadiness: 0.21,
+        deployReadiness: 0.16,
+      },
+    },
     projectContext: {
       matchedTerms: [],
       blockers: ['Need clearer user execution path'],
@@ -37,6 +52,7 @@ export default async function runStudioDataTests() {
   assert.equal(handoff.sourceNodeId, 'node_1');
   assert.match(handoff.problemStatement, /Goal: Expose more agent workload in studio\./);
   assert.match(handoff.problemStatement, /Still unclear:/);
+  assert.equal(handoff.truth.plannerBrief, 'Planner should clarify the request before expanding execution.');
   assert.deepEqual(handoff.constraints, [
     'Need clearer user execution path',
     'Studio output is hard to audit',
@@ -44,16 +60,29 @@ export default async function runStudioDataTests() {
   ]);
 
   const workspace = {
-    graph: {
-      nodes: [
-        {
-          id: 'node_ctx',
-          type: 'text',
-          content: 'Improve context handoff',
-          metadata: { agentId: 'context-manager' },
-        },
-      ],
-      edges: [],
+    graphs: {
+      system: {
+        nodes: [
+          {
+            id: 'node_ctx',
+            type: 'text',
+            content: 'Improve context handoff',
+            metadata: { agentId: 'context-manager' },
+          },
+        ],
+        edges: [],
+      },
+      world: {
+        nodes: [
+          {
+            id: 'node_world',
+            type: 'gameplay-system',
+            content: 'Quest progression loop',
+            metadata: { proposalTarget: 'world-structure' },
+          },
+        ],
+        edges: [],
+      },
     },
     sketches: [],
     annotations: [],
@@ -73,6 +102,21 @@ export default async function runStudioDataTests() {
           currentFocus: 'Studio desk output',
           matchedTerms: ['studio', 'planner'],
           blockers: [],
+        },
+        truth: {
+          rawInput: 'Clarify what the planner should solve.',
+          statement: 'Clarify what the planner should solve.',
+          intentType: 'General context signal',
+          requestedOutcomes: ['Generate problem report', 'Show waiting-on-user state'],
+          unresolved: [],
+          evidence: ['Actionability: Context is already structured.'],
+          plannerBrief: 'Planner should treat this as: Generate problem report; Show waiting-on-user state',
+          readiness: {
+            intentConfidence: 0.77,
+            plannerUsefulness: 0.81,
+            executionReadiness: 0.52,
+            deployReadiness: 0.21,
+          },
         },
       },
       byNode: {},
@@ -98,13 +142,34 @@ export default async function runStudioDataTests() {
   const notebook = normalizeNotebookState(workspace);
   assert.equal(notebook.pages.length, 1);
   assert.equal(notebook.activePage.id, notebook.activePageId);
+  assert.equal(notebook.activePage.sourceNodeId, 'node_ctx');
   const seededBoard = normalizeTeamBoardState({
     ...workspace,
     pages: notebook.pages,
     activePageId: notebook.activePageId,
     studio: {
       ...workspace.studio,
-      teamBoard: createDefaultTeamBoard(),
+      teamBoard: {
+        ...createDefaultTeamBoard(),
+        cards: [
+          {
+            id: '0001',
+            title: 'Expose planner payload',
+            pageId: notebook.activePageId,
+            status: 'plan',
+            desk: 'Planner',
+            state: 'Ready',
+          },
+          {
+            id: '0002',
+            title: 'Render executor queue',
+            pageId: notebook.activePageId,
+            status: 'plan',
+            desk: 'Planner',
+            state: 'Ready',
+          },
+        ],
+      },
     },
   });
   assert.equal(seededBoard.cards.length, 2);
@@ -165,9 +230,9 @@ export default async function runStudioDataTests() {
   assert.equal(contextSnapshot.deskSnapshot.handoff.summary, 'Planner brief ready.');
   assert.deepEqual(
     contextSnapshot.deskSnapshot.sections.map((section) => section.label),
-    ['Current Job', 'Problem To Solve', 'Intent Extraction', 'KPIs', 'Recent History', 'Waiting On You'],
+    ['Current Job', 'Core Truth', 'Problem To Solve', 'Intent Extraction', 'KPIs', 'Recent History', 'Waiting On You'],
   );
   assert.equal(plannerSnapshot.deskSnapshot.handoff, null);
   assert.equal(plannerSnapshot.deskSnapshot.sections[0].label, 'Mission');
-  assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'execution-selection').label, 'Execution Selection');
+  assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'execution-selection').label, 'Mutation Queue');
 }

@@ -1,0 +1,161 @@
+{
+  "id": "qa_1773492976341_0d6uhd",
+  "scenario": "studio-smoke",
+  "mode": "interactive",
+  "trigger": "manual",
+  "prompt": "qa smoke",
+  "baseUrl": "http://localhost:3015",
+  "status": "completed",
+  "verdict": "failed",
+  "createdAt": "2026-03-14T12:56:16.341Z",
+  "finishedAt": "2026-03-14T12:56:18.736Z",
+  "linked": {},
+  "browser": {
+    "executablePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "engine": "chromium"
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-14T12:56:16.342Z",
+      "finishedAt": "2026-03-14T12:56:16.375Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-14T12:56:16.375Z",
+      "finishedAt": "2026-03-14T12:56:17.129Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-14T12:56:17.130Z",
+      "finishedAt": "2026-03-14T12:56:17.900Z",
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-14T12:56:17.900Z",
+      "finishedAt": "2026-03-14T12:56:18.222Z",
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-14T12:56:18.223Z",
+      "finishedAt": "2026-03-14T12:56:18.715Z",
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-14T12:56:18.716Z",
+      "finishedAt": "2026-03-14T12:56:18.727Z",
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "weak",
+      "startedAt": "2026-03-14T12:56:18.728Z",
+      "finishedAt": "2026-03-14T12:56:18.736Z",
+      "error": null
+    }
+  ],
+  "findings": [
+    {
+      "id": "console-1",
+      "severity": "error",
+      "kind": "console",
+      "summary": "Console errors were captured during the browser pass.",
+      "details": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ],
+  "artifacts": {
+    "screenshots": [
+      {
+        "name": "01-initial.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773492976341_0d6uhd\\01-initial.png",
+        "url": "/api/spatial/qa/runs/qa_1773492976341_0d6uhd/artifacts/01-initial.png",
+        "label": "Initial ACE render"
+      },
+      {
+        "name": "02-studio-smoke.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773492976341_0d6uhd\\02-studio-smoke.png",
+        "url": "/api/spatial/qa/runs/qa_1773492976341_0d6uhd/artifacts/02-studio-smoke.png",
+        "label": "Scenario studio-smoke"
+      }
+    ],
+    "domSnapshot": {
+      "name": "dom.html",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773492976341_0d6uhd\\dom.html",
+      "url": "/api/spatial/qa/runs/qa_1773492976341_0d6uhd/artifacts/dom.html"
+    },
+    "consoleLog": {
+      "name": "console.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773492976341_0d6uhd\\console.json",
+      "url": "/api/spatial/qa/runs/qa_1773492976341_0d6uhd/artifacts/console.json"
+    },
+    "networkSummary": {
+      "name": "network.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773492976341_0d6uhd\\network.json",
+      "url": "/api/spatial/qa/runs/qa_1773492976341_0d6uhd/artifacts/network.json"
+    },
+    "runtimeSnapshot": {
+      "name": "runtime.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773492976341_0d6uhd\\runtime.json",
+      "url": "/api/spatial/qa/runs/qa_1773492976341_0d6uhd/artifacts/runtime.json"
+    },
+    "layoutFindings": {
+      "name": "layout-findings.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773492976341_0d6uhd\\layout-findings.json",
+      "url": "/api/spatial/qa/runs/qa_1773492976341_0d6uhd/artifacts/layout-findings.json"
+    }
+  },
+  "console": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://localhost:3015/favicon.ico",
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    }
+  ],
+  "network": [],
+  "error": null
+}

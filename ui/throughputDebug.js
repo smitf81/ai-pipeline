@@ -46,6 +46,14 @@ function readThroughputSession(rootPath, sessionId) {
   return readJson(sessionFilePath(rootPath, sessionId), null);
 }
 
+function updateThroughputSession(rootPath, sessionId, updater) {
+  const current = readThroughputSession(rootPath, sessionId);
+  if (!current) return null;
+  const next = updater({ ...current }) || current;
+  writeJson(sessionFilePath(rootPath, sessionId), next);
+  return next;
+}
+
 function listThroughputSessions(rootPath) {
   const dir = ensureThroughputStorage(rootPath);
   return fs.readdirSync(dir, { withFileTypes: true })
@@ -69,6 +77,7 @@ function summarizeSession(session) {
     pageId: session.pageId,
     nodeId: session.nodeId,
     runnerTaskId: session.runnerTaskId,
+    qaRunId: session.qaRunId || null,
     stageSummary: (session.stages || []).map((stage) => ({
       id: stage.id,
       label: stage.label,
@@ -109,6 +118,7 @@ function createSession({ prompt, targetProjectKey, mode, executionProfile = 'liv
     nodeId: null,
     handoffId: null,
     runnerTaskId: null,
+    qaRunId: null,
     runIds: [],
     cardIds: [],
     stages: [
@@ -908,6 +918,7 @@ module.exports = {
   listThroughputSessions,
   readThroughputSession,
   summarizeSession,
+  updateThroughputSession,
   runThroughputSession,
   reconcilePendingThroughputSessions,
 };

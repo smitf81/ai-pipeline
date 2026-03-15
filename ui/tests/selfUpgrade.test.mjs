@@ -12,6 +12,7 @@ export default async function runSelfUpgradeTests() {
     normalizeSelfUpgradeState,
     ensureSelfProject,
     reviewSelfUpgradePatch,
+    assessAutoMutationRisk,
     getSelfUpgradePreflightSpecs,
   } = require(selfUpgradePath);
 
@@ -71,6 +72,30 @@ export default async function runSelfUpgradeTests() {
   });
   assert.equal(blockedReview.ok, false);
   assert.match(blockedReview.refusalReasons[0], /blocked/i);
+
+  const lowRisk = assessAutoMutationRisk({
+    projectKey: SELF_TARGET_KEY,
+    projectPath: 'C:/repo',
+    rootPath: 'C:/repo',
+    changedFiles: ['ui/public/spatial/spatialApp.js', 'runner/ai.py'],
+    preflight: { ok: true },
+    conflicts: [],
+  });
+  assert.equal(lowRisk.riskLevel, 'low');
+  assert.equal(lowRisk.autoApply, true);
+  assert.equal(lowRisk.autoDeploy, true);
+
+  const risky = assessAutoMutationRisk({
+    projectKey: SELF_TARGET_KEY,
+    projectPath: 'C:/repo',
+    rootPath: 'C:/repo',
+    changedFiles: ['ui/server.js'],
+    preflight: { ok: true },
+    conflicts: [],
+  });
+  assert.equal(risky.riskLevel, 'high');
+  assert.equal(risky.requiresReview, true);
+  assert.match(risky.reasons[0], /blocked runtime entrypoint|entrypoint/i);
 
   const preflightSpecs = getSelfUpgradePreflightSpecs('C:/repo');
   assert.deepEqual(preflightSpecs.map((spec) => spec.id), ['ui-tests', 'runner-compile']);

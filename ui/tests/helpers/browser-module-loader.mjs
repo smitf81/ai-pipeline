@@ -24,7 +24,16 @@ export async function smokeLoadSpatialApp(modulePath) {
   const source = await fs.readFile(modulePath, 'utf8');
   const withoutImports = source.replace(/^import[\s\S]*?;\r?\n/gm, '');
   const shimmedSource = `
-import { GraphEngine, createNode, createEdge, buildStarterGraph, NODE_TYPES } from ${JSON.stringify(pathToFileURL(graphEngineFile).href)};
+import {
+  GraphEngine,
+  createNode,
+  createEdge,
+  buildStarterGraph,
+  GRAPH_LAYERS,
+  getNodeTypesForLayer,
+  normalizeGraphBundle,
+  buildRsgState,
+} from ${JSON.stringify(pathToFileURL(graphEngineFile).href)};
 import {
   SCENES,
   STUDIO_ZOOM_THRESHOLD,
@@ -50,8 +59,8 @@ import {
 } from ${JSON.stringify(pathToFileURL(studioDataFile).href)};
 class AceConnector { async parseIntent() { return { confidence: 0.75, tasks: ['stub task'], classification: { role: 'context', labels: [] }, criteria: [], summary: 'stub summary' }; } async previewMutation() { return { summary: [] }; } async applyMutation() { return { ok: true }; } }
 class MutationEngine { constructor() {} buildMutationRequestFromIntent() { return []; } applyMutations() { return undefined; } }
-class ArchitectureMemory { constructor() { this.model = { subsystems: [], modules: [], rules: [], layers: [], versions: [] }; } syncFromGraph() { return undefined; } }
-const loadWorkspace = async () => ({ graph: { nodes: [], edges: [] }, sketches: [], annotations: [], agentComments: {}, intentState: { latest: null, contextReport: null, byNode: {}, reports: [] }, studio: {} });
+class ArchitectureMemory { constructor() { this.model = { subsystems: [], modules: [], world: { systems: [], mechanics: [], quests: [], items: [], constraints: [] }, adapters: [], proposals: [], rules: [], layers: [], versions: [] }; } syncFromGraph() { return undefined; } }
+const loadWorkspace = async () => ({ graph: { nodes: [], edges: [] }, graphs: { system: { nodes: [], edges: [] }, world: { nodes: [], edges: [] } }, sketches: [], annotations: [], agentComments: {}, intentState: { latest: null, contextReport: null, byNode: {}, reports: [] }, studio: {} });
 const saveWorkspace = async () => ({ ok: true });
 const React = {
   createElement: (...args) => ({ args }),

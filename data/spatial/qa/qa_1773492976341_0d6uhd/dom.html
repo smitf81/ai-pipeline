@@ -1,0 +1,165 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACE Studio Overlay</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">ACE</div>
+                <div>
+                    <div class="brand-title">ACE Studio Overlay</div>
+                    <div class="brand-sub">Canvas-first planning with an agent architecture overlay</div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <button id="toggleLegacyBtn" class="mini" type="button">Show Legacy Controls</button>
+                <span class="badge ok" id="status_badge">LIVE</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="workspace-shell" aria-label="Sketchpad Workspace">
+        <div id="spatial-root"><section class="spatial-main ace-shell" data-qa="spatial-root" style="grid-template-columns: minmax(0px, 1fr) 520px;"><div class="canvas-column scene-column"><div class="canvas-toolbar ace-toolbar"><div class="toolbar-primary"><div class="workspace-title">ACE Overlay Workspace</div><div class="toolbar-caption muted">Page: context reports need updating by agent beyond te | Orchestrator: needs-attention | Active desks: 4</div></div><div class="toolbar-secondary"><div class="toolbar-meta toolbar-meta-top"><div class="scene-switcher"><button class="mini " data-qa="scene-canvas-button" type="button">Canvas</button><button class="mini active" data-qa="scene-studio-button" type="button">ACE Studio</button></div><div class="scene-switcher graph-layer-switcher"><button class="mini graph-layer-pill active" data-qa="graph-layer-system" type="button">System Graph</button><button class="mini graph-layer-pill " data-qa="graph-layer-world" type="button">World Graph</button></div><select class="mini recent-select" data-qa="page-select"><option value="page_1773429206094_pgv8">context reports need updating by agent beyond te</option></select><select class="mini recent-select" data-qa="recent-saves-select"><option value="">Recent Saves</option><option value="2026-03-14T11:35:36.665Z">11:35 - 1 nodes</option><option value="2026-03-14T11:35:31.912Z">11:35 - 1 nodes</option><option value="2026-03-14T11:35:30.280Z">11:35 - 1 nodes</option><option value="2026-03-14T11:35:29.435Z">11:35 - 1 nodes</option><option value="2026-03-14T11:27:53.582Z">11:27 - 1 nodes</option><option value="2026-03-14T11:27:50.194Z">11:27 - 1 nodes</option><option value="2026-03-14T11:27:47.929Z">11:27 - 1 nodes</option><option value="2026-03-14T11:27:46.473Z">11:27 - 1 nodes</option></select><button class="mini" data-qa="reset-view-button" type="button">Reset View</button><span class="toolbar-status">ACE Studio | System Graph | Page context reports need updating by agent beyond te | Canvas 100% | Studio 94% | autosaved 12:56</span></div><div class="canvas-control-dock toolbar-meta toolbar-meta-bottom"><div class="button-row"><button class="mini" type="button">New Canvas</button><button class="mini " type="button" disabled="">Sketch</button><button class="mini" type="button" disabled="">Clear Marks</button><button class="mini" type="button">Simulate</button></div></div></div></div><div class="scene-shell"><div class="scene-layer canvas-scene inactive" data-qa="canvas-scene" aria-hidden="true"><div class="canvas-shell" data-qa="canvas-shell"><canvas width="1080" height="1196" tabindex="0"></canvas><div class="node text thought layer-system " style="left: 150px; top: 646px; transform: scale(1); transform-origin: left top; pointer-events: auto; opacity: 1;"><button class="node-handle input" type="button" title="Drop connector here"></button><button class="node-close" type="button" title="Delete node">X</button><div class="node-header">SYSTEM | system-structure</div><textarea class="node-editor" style="">context reports need updating by agent beyond text taken from 1 node</textarea><div class="node-footer"><div class="node-labels">context - ux</div><div class="node-intent-summary muted">vs26 | thought</div><div class="node-intent-summary">context reports need updating by agent beyond text taken from 1 node | 30% confidence</div></div><button class="node-handle output" type="button" title="Drag connection"></button></div><div class="scene-indicator canvas-indicator"><div class="indicator-title">Canvas Layer</div><div class="muted">Zoom below 48% or press Tab to open ACE Studio.</div></div></div></div><div class="scene-layer studio-scene active" data-qa="studio-scene" aria-hidden="false"><div class="studio-shell" data-qa="studio-shell"><div class="studio-world" data-qa="studio-world" style="width: 1200px; height: 800px; transform: translate(-24px, 215.42px) scale(0.94);"><div class="studio-floor"></div><div class="studio-room" data-qa="studio-room" data-stage-x="72" data-stage-y="86" data-stage-width="1056" data-stage-height="642" style="left: 72px; top: 86px; width: 1056px; height: 642px;"></div><div class="studio-lane lane-top active handoff level-2"></div><div class="studio-lane lane-mid active workflow level-2"></div><div class="studio-lane lane-side active conflict level-2"></div><section class="studio-team-board" data-qa="whiteboard-teamBoard" data-whiteboard-id="teamBoard" data-whiteboard-label="Team Board" data-stage-x="320" data-stage-y="102" data-stage-width="560" data-stage-height="164" style="left: 320px; top: 102px; width: 560px; min-height: 164px;"><div class="studio-team-board-hangers" aria-hidden="true"><span></span><span></span></div><div class="studio-team-board-header"><div><div class="studio-team-board-title">Team Board</div><div class="studio-team-board-subtitle muted">Global workflow truth for planner output, builder packages, executor apply/deploy, and risk-gated approvals.</div></div><div class="studio-team-board-meta"><span>Page context reports need updating by agent beyond te</span><span>Plan 0</span><span>Active 0</span><span>Idle workers 0</span><span class="selected">Executor Approval required: Finance Department</span><button class="mini studio-edit-handle whiteboard-edit-handle" type="button">Move</button></div></div><div class="team-board-columns"><div class="team-board-column plan"><div class="team-board-column-header"><span>Plan</span><span class="muted">0</span></div><div class="signal-empty muted team-board-empty">Planner tasks land here.</div></div><div class="team-board-column active"><div class="team-board-column-header"><span>Active</span><span class="muted">0</span></div><div class="signal-empty muted team-board-empty">Agents are not advancing anything right now.</div></div><div class="team-board-column complete"><div class="team-board-column-header"><span>Complete</span><span class="muted">0</span></div><div class="signal-empty muted team-board-empty">Completed tasks settle here.</div></div><div class="team-board-column review"><div class="team-board-column-header"><span>Ready to Apply</span><span class="muted">8</span></div><div class="team-board-card-list"><div class="team-board-card selected "><div class="team-board-card-id muted">#card_page_1773403588491_034z_finance-department • CTO</div><div class="team-board-card-title">Finance Department</div><div class="team-board-card-meta muted">Approval required</div><div class="team-board-card-meta muted">page_1773403588491_034z</div><div class="button-row team-board-actions"><button class="mini" type="button">Send</button><button class="mini" type="button">Reject</button><button class="mini" type="button">Bin</button></div></div><div class="team-board-card  "><div class="team-board-card-id muted">#card_page_1773403588491_034z_calculates-cost-tokens-usage-etc • CTO</div><div class="team-board-card-title">- calculates cost/tokens usage etc</div><div class="team-board-card-meta muted">Approval required</div><div class="team-board-card-meta muted">page_1773403588491_034z</div><div class="button-row team-board-actions"><button class="mini" type="button">Send</button><button class="mini" type="button">Reject</button><button class="mini" type="button">Bin</button></div></div><div class="team-board-card  "><div class="team-board-card-id muted">#card_page_1773403588491_034z_allocates-resources-allowed-to-each-agen • CTO</div><div class="team-board-card-title">- allocates resources allowed to each agent to mitigate scope creep &amp; throttle heavy expenses</div><div class="team-board-card-meta muted">Approval required</div><div class="team-board-card-meta muted">page_1773403588491_034z</div><div class="button-row team-board-actions"><button class="mini" type="button">Send</button><button class="mini" type="button">Reject</button><button class="mini" type="button">Bin</button></div></div><div class="team-board-card  "><div class="team-board-card-id muted">#card_page_1773408149866_813p_finance-department • CTO</div><div class="team-board-card-title">Finance Department</div><div class="team-board-card-meta muted">Approval required</div><div class="team-board-card-meta muted">page_1773408149866_813p</div><div class="button-row team-board-actions"><button class="mini" type="button">Send</button><button class="mini" type="button">Reject</button><button class="mini" type="button">Bin</button></div></div><div class="team-board-card  "><div class="team-board-card-id muted">#card_page_1773408149866_813p_calculates-cost-tokens-usage-etc • CTO</div><div class="team-board-card-title">- calculates cost/tokens usage etc</div><div class="team-board-card-meta muted">Approval required</div><div class="team-board-card-meta muted">page_1773408149866_813p</div><div class="button-row team-board-actions"><button class="mini" type="button">Send</button><button class="mini" type="button">Reject</button><button class="mini" type="button">Bin</button></div></div><div class="team-board-card  "><div class="team-board-card-id muted">#card_page_1773408149866_813p_allocates-resources-allowed-to-each-agen • CTO</div><div class="team-board-card-title">- allocates resources allowed to each agent to mitigate scope creep &amp; throttle heavy expenses</div><div class="team-board-card-meta muted">Approval required</div><div class="team-board-card-meta muted">page_1773408149866_813p</div><div class="button-row team-board-actions"><button class="mini" type="button">Send</button><button class="mini" type="button">Reject</button><button class="mini" type="button">Bin</button></div></div><div class="team-board-card  "><div class="team-board-card-id muted">#card_page_1773408149866_813p_context-reports-need-updating-by-agent-b • CTO</div><div class="team-board-card-title">context reports need updating by agent beyond text taken from 1 node</div><div class="team-board-card-meta muted">Approval required</div><div class="team-board-card-meta muted">page_1773408149866_813p</div><div class="button-row team-board-actions"><button class="mini" type="button">Send</button><button class="mini" type="button">Reject</button><button class="mini" type="button">Bin</button></div></div><div class="team-board-card  "><div class="team-board-card-id muted">#0001 • CTO</div><div class="team-board-card-title">context reports need updating by agent beyond text taken from 1 node</div><div class="team-board-card-meta muted">Approval required</div><div class="team-board-card-meta muted">Current page</div><div class="button-row team-board-actions"><button class="mini" type="button">Send</button><button class="mini" type="button">Reject</button><button class="mini" type="button">Bin</button></div></div></div></div></div></section><svg class="studio-links-layer" data-qa="studio-links-layer" viewBox="0 0 1200 800" aria-hidden="true"><g class="studio-link handoff"><path d="M 256 248 C 416 248, 738 248, 898 248" class="studio-link-path" data-qa="studio-link-path" data-link-id="handoff-handoff_1773429206097_fi0w" data-link-label="Problem brief" data-link-kind="handoff" data-from-desk="context-manager" data-to-desk="planner" data-start-x="256" data-start-y="248" data-end-x="898" data-end-y="248"></path><text x="577" y="230" class="studio-link-label">Problem brief</text></g><g class="studio-link workflow"><path d="M 896 248 C 736 248, 414 581, 254 581" class="studio-link-path" data-qa="studio-link-path" data-link-id="planner-executor" data-link-label="1 plan item" data-link-kind="workflow" data-from-desk="planner" data-to-desk="executor" data-start-x="896" data-start-y="248" data-end-x="254" data-end-y="581"></path><text x="575" y="396.5" class="studio-link-label">1 plan item</text></g><g class="studio-link memory"><path d="M 256 581 C 409.29999999999995 581, 394.70000000000005 591, 548 591" class="studio-link-path" data-qa="studio-link-path" data-link-id="work-to-memory" data-link-label="1 outputs" data-link-kind="memory" data-from-desk="executor" data-to-desk="memory-archivist" data-start-x="256" data-start-y="581" data-end-x="548" data-end-y="591"></path></g><g class="studio-link conflict"><path d="M 862 418 C 702 418, 408 248, 248 248" class="studio-link-path" data-qa="studio-link-path" data-link-id="conflict-0-context-manager" data-link-label="Low confidence" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="context-manager" data-start-x="862" data-start-y="418" data-end-x="248" data-end-y="248"></path></g><g class="studio-link conflict"><path d="M 930 370 C 930 310.5, 970 361.5, 970 302" class="studio-link-path" data-qa="studio-link-path" data-link-id="conflict-0-planner" data-link-label="Low confidence" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="planner" data-start-x="930" data-start-y="370" data-end-x="970" data-end-y="302"></path><text x="950" y="306" class="studio-link-label">Low confidence</text></g><g class="studio-link conflict"><path d="M 862 418 C 702 418, 408 581, 248 581" class="studio-link-path" data-qa="studio-link-path" data-link-id="conflict-0-executor" data-link-label="Low confidence" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="executor" data-start-x="862" data-start-y="418" data-end-x="248" data-end-y="581"></path></g><g class="studio-link conflict"><path d="M 930 370 C 930 310.5, 970 361.5, 970 302" class="studio-link-path" data-qa="studio-link-path" data-link-id="conflict-1-planner" data-link-label="Scope overlap" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="planner" data-start-x="930" data-start-y="370" data-end-x="970" data-end-y="302"></path><text x="950" y="306" class="studio-link-label">Scope overlap</text></g><g class="studio-link conflict"><path d="M 862 418 C 702 418, 408 581, 248 581" class="studio-link-path" data-qa="studio-link-path" data-link-id="conflict-1-executor" data-link-label="Scope overlap" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="executor" data-start-x="862" data-start-y="418" data-end-x="248" data-end-y="581"></path></g><g class="studio-link conflict"><path d="M 862 418 C 702 418, 408 581, 248 581" class="studio-link-path" data-qa="studio-link-path" data-link-id="conflict-2-executor" data-link-label="Needs review" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="executor" data-start-x="862" data-start-y="418" data-end-x="248" data-end-y="581"></path></g></svg><button class="agent-station  " data-qa="desk-context-manager" data-desk-id="context-manager" data-desk-label="Context Manager" data-stage-x="182" data-stage-y="252" type="button" title="Context Manager | context reports need updating by agent beyond text taken from 1 node" style="left: 182px; top: 252px; --agent-accent: #66c7ff; --agent-shadow: rgba(64, 133, 184, 0.38);"><div class="desk-thought-bubble processing" title="🔵 stabilizing context...">🔵 stabilizing context...</div><span class="studio-edit-handle station-edit-handle">Move</span><div class="desk-page-badge">Page focus</div><div class="station-desk"><div class="desk-light pulse "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar processing"><span class="pixel-head" style="background: rgb(102, 199, 255);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip processing">RUN</div><div class="agent-label">Context</div></button><button class="agent-station selected " data-qa="desk-planner" data-desk-id="planner" data-desk-label="Planner" data-stage-x="970" data-stage-y="252" type="button" title="Planner | context reports need updating by agent beyond text taken from 1 node" style="left: 970px; top: 252px; --agent-accent: #ffd36e; --agent-shadow: rgba(180, 132, 54, 0.38);"><div class="desk-thought-bubble processing" title="🟡 shaping the next task...">🟡 shaping the next task...</div><span class="studio-edit-handle station-edit-handle">Move</span><div class="desk-page-badge">Live</div><div class="station-desk"><div class="desk-light pulse "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar processing"><span class="pixel-head" style="background: rgb(255, 211, 110);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip processing">RUN</div><div class="agent-label">Planner</div></button><button class="agent-station  " data-qa="desk-executor" data-desk-id="executor" data-desk-label="Executor" data-stage-x="182" data-stage-y="585" type="button" title="Executor | Awaiting approval: Finance Department" style="left: 182px; top: 585px; --agent-accent: #5ce29f; --agent-shadow: rgba(49, 132, 94, 0.38);"><div class="desk-thought-bubble blocked" title="🔴 blocked by low-confidence context.">🔴 blocked by low-confidence context.</div><span class="studio-edit-handle station-edit-handle">Move</span><div class="station-desk"><div class="desk-light  warning"></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar blocked"><span class="pixel-head" style="background: rgb(92, 226, 159);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip blocked">BLOCK</div><div class="agent-label">Exec</div></button><button class="agent-station  " data-qa="desk-memory-archivist" data-desk-id="memory-archivist" data-desk-label="Memory Archivist" data-stage-x="620" data-stage-y="595" type="button" title="Memory Archivist | Capture notes, handoffs, and artifact history" style="left: 620px; top: 595px; --agent-accent: #d2a3ff; --agent-shadow: rgba(126, 87, 160, 0.38);"><div class="desk-thought-bubble processing" title="🟣 logging summaries...">🟣 logging summaries...</div><span class="studio-edit-handle station-edit-handle">Move</span><div class="desk-page-badge">Live</div><div class="station-desk"><div class="desk-light pulse "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar processing"><span class="pixel-head" style="background: rgb(210, 163, 255);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip processing">RUN</div><div class="agent-label">Archivist</div></button><button class="agent-station  oversight" data-qa="desk-cto-architect" data-desk-id="cto-architect" data-desk-label="CTO / Architect" data-stage-x="930" data-stage-y="422" type="button" title="CTO / Architect | Review desk overlap, approval state, and guardrails" style="left: 930px; top: 422px; --agent-accent: #ff8f7a; --agent-shadow: rgba(166, 86, 72, 0.42);"><div class="desk-thought-bubble processing" title="🟠 reviewing governance signals...">🟠 reviewing governance signals...</div><span class="studio-edit-handle station-edit-handle">Move</span><div class="desk-page-badge">Live</div><div class="station-desk"><div class="desk-light pulse "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar processing"><span class="pixel-head" style="background: rgb(255, 143, 122);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip processing">RUN</div><div class="agent-label">CTO</div></button><div class="studio-plaque"><div class="studio-name">ACE Studio</div><div class="muted">System visualization and control layer</div></div></div><div class="scene-indicator studio-indicator"><div class="indicator-title">Studio Map</div><div class="minimap-dots"><button type="button" class="minimap-dot " title="Context Manager" style="left: 15.1667%; top: 31.5%; background: rgb(102, 199, 255);"></button><button type="button" class="minimap-dot selected" title="Planner" style="left: 80.8333%; top: 31.5%; background: rgb(255, 211, 110);"></button><button type="button" class="minimap-dot " title="Executor" style="left: 15.1667%; top: 73.125%; background: rgb(92, 226, 159);"></button><button type="button" class="minimap-dot " title="Memory Archivist" style="left: 51.6667%; top: 74.375%; background: rgb(210, 163, 255);"></button><button type="button" class="minimap-dot " title="CTO / Architect" style="left: 77.5%; top: 52.75%; background: rgb(255, 143, 122);"></button></div><div class="muted">Click a station to inspect scope. Active layer: System Graph. World domain: gameplay-systems.</div></div></div></div></div></div><aside class="spatial-sidebar ace-sidebar " style="width: 520px;"><button class="sidebar-resize-handle" type="button" tabindex="-1" aria-hidden="true"></button><div class="sidebar-header"><div class="inspector-label">Studio Inspector</div><button class="mini" type="button">Collapse</button></div><div class="sidebar-scroll"><div class="inspector-block"><div class="inspector-label">Agent Scope</div><div class="agent-panel-title">Planner</div><div class="agent-panel-status processing">processing</div><p class="muted">Breaks intent into sequences, milestones, and queued execution steps.</p></div><div class="inspector-block panel-card"><div class="inspector-label">Agent Signal</div><div class="signal-summary">context reports need updating by agent beyond text taken from 1 node</div><div class="signal-meta muted">Run state: running</div><div class="signal-meta muted">context reports need updating by agent beyond text taken from 1 node</div></div><div class="inspector-block panel-card"><div class="inspector-label">Mission</div><div class="signal-summary">Translate active context into concrete plans, work items, and dependency-aware handoffs.</div><div class="signal-meta muted">Active page: context reports need updating by agent beyond te</div></div><div class="inspector-block panel-card"><div class="inspector-label">Current Goal</div><div class="signal-summary">context reports need updating by agent beyond text taken from 1 node</div><div class="signal-meta muted">Desk state: running</div></div><div class="inspector-block panel-card"><div class="inspector-label">Active Work Items</div><ul class="signal-list"><li><div>context reports need updating by agent beyond text taken from 1 node</div><div class="muted">plan-item | running</div></li></ul></div><div class="inspector-block panel-card"><div class="inspector-label">Allowed Actions</div><ul class="signal-list"><li><div>expand-plan</div><div class="muted">unknown time</div></li><li><div>prioritise-work</div><div class="muted">unknown time</div></li><li><div>publish-plan</div><div class="muted">unknown time</div></li></ul></div><div class="inspector-block panel-card"><div class="inspector-label">Throughput</div><div class="throughput-row"><div class="throughput-label muted">Assigned: 1</div><div class="throughput-track"><div class="throughput-fill" style="width: 16.6667%;"></div></div></div><div class="throughput-row"><div class="throughput-label muted">Queue: 0</div><div class="throughput-track"><div class="throughput-fill" style="width: 8%;"></div></div></div><div class="throughput-row"><div class="throughput-label muted">Outputs: 0</div><div class="throughput-track"><div class="throughput-fill" style="width: 8%;"></div></div></div></div><div class="inspector-block panel-card"><div class="inspector-label">Feedback Thread</div><div class="comment-thread"><div class="comment-entry"><div class="comment-meta muted">13/03/2026, 06:52:19</div><div>shows processing at top of side bar but run state: idle and doesn't show us any working or output</div></div></div><textarea class="comment-box" placeholder="Leave feedback for Planner" style=""></textarea><div class="button-row"><button class="mini" type="button">Add comment</button><button class="mini" type="button">Refocus station</button></div></div></div></aside></section></div>
+    </main>
+
+    <aside id="legacy-ui" class="legacy-hidden legacy-drawer" aria-label="Legacy Controls Drawer">
+        <div class="legacy-drawer-inner">
+            <section id="error_wrap" class="card error" style="display:none;">
+                <div class="card-title">Something went wrong</div>
+                <pre id="error_box"></pre>
+            </section>
+
+            <section class="card refresh-row">
+                <div>
+                    <div class="card-title">Legacy Dashboard Refresh</div>
+                    <div class="muted" id="refreshMeta">Last refreshed: 14/03/2026, 12:56:17 (every 10s)</div>
+                    <div class="muted" id="refreshErrors">Read errors: projects/emergence/plan.md: File not found</div>
+                </div>
+                <div class="button-row"><button id="refreshBtn">Refresh now</button></div>
+            </section>
+
+            <section class="grid">
+                <div class="card"><div class="card-title">Current Focus</div><div class="big" id="current_focus">Boot AI Core Engine MVP and stabilise project brain.</div></div>
+                <div class="card"><div class="card-title">Next Actions</div><ul class="list" id="next_actions"><li>Implement Manager v0 to generate state.json</li><li>Wire dashboard to show formatted state instead of raw JSON</li><li>Add DocScribe agent stub</li><li>Commit initial AI Core Engine structure</li></ul></div>
+                <div class="card"><div class="card-title">Blockers</div><ul class="list" id="blockers"><li>None</li></ul></div>
+            </section>
+
+            <section class="two-col">
+                <div class="card"><div class="card-title">Decisions</div><pre class="doc" id="decisions_text"># Decision Log
+
+This file records significant decisions made during the development of Emergence.  
+Each entry should include the date, a brief decision summary, rationale and consequences.</pre></div>
+                <div class="card"><div class="card-title">Tasks</div><pre class="doc" id="tasks_text"># Tasks
+
+This file lists actionable tasks derived from the roadmap and decisions.  
+Tasks are grouped by milestone and should be small and testable.</pre></div>
+                <div class="card"><div class="card-title">Roadmap</div><pre class="doc" id="roadmap_text"># Roadmap
+
+## Now
+- Implement the AI Core Engine MVP: project brain files, manager logic and UI.
+
+## Next
+- Add UE/Blender assist hooks and snippet generators.
+- Integrate local LLM summarisation for logs and decisions.
+
+## Later
+- Explore connectors to external tools (Notion, GitHub) if feasible.
+- Enhance UI with editing capabilities and multi‑project support.</pre></div>
+                <div class="card"><div class="card-title">Plan</div><pre class="doc" id="plan_text">(missing)</pre></div>
+                <div class="card"><div class="card-title">Project Brain</div><pre class="doc" id="brain_text"># Project Brain – Emergence
+
+This document is the canonical snapshot of the current state of Emergence.  
+It defines what we are building, why, and the present focus.  
+Adjustments happen via decisions logged in `decisions.md`.  
+This file should be human‑readable and summarise the high‑level vision.
+
+## Vision
+Emergence is a self‑evolving game development ecosystem powered by AI assistance.  
+It aims to minimise friction between design, code, and content creation.
+
+## Current Focus
+- Establish the AI Core Engine as the central nervous system.  
+- Define clear roles for Manager and worker agents.  
+- Develop a simple UI to visualise the state of the project.</pre></div>
+                <div class="card"><div class="card-title">Changelog</div><pre class="doc" id="changelog_text"># Changelog
+
+This file records progress notes and iteration summaries.  
+It helps track what happened in each session without delving into details.</pre></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Pipeline Control</div>
+                <div class="form-grid">
+                    <label>Project</label>
+                    <select id="projectSelect"><option value="bridge">bridge (C:\Users\felix\Desktop\Blender\send_to_unreal_bridge\send_to_unreal_bridge)</option><option value="ace">ace (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline)</option><option value="yt_transcript_exporter">yt_transcript_exporter (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline)</option><option value="ace-self">ace-self (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline)</option></select>
+
+                    <label>Task</label>
+                    <div class="inline">
+                        <select id="taskSelect"><option value="0001-Blender-UE-import-hygiene">0001-Blender-UE-import-hygiene</option><option value="9999-smoke-test">9999-smoke-test</option></select>
+                        <input id="taskIdInput" placeholder="Manual task id (e.g. 0001-name)" style="">
+                    </div>
+
+                    <label>Action</label>
+                    <select id="actionSelect">
+                        <option value="scan">Scan</option>
+                        <option value="manage">Manage</option>
+                        <option value="build">Build</option>
+                        <option value="run">Run</option>
+                        <option value="apply-dry-run">Apply (Dry Run)</option>
+                        <option value="apply">Apply</option>
+                    </select>
+
+                    <div id="presetRow" class="hidden-row" style="display: none;">
+                        <label>Run preset <button class="mini" id="presetHelpBtn" type="button">?</button></label>
+                        <select id="presetSelect"><option value="ui_start">ui_start</option><option value="ui_node">ui_node</option><option value="runner_compile">runner_compile</option></select>
+                        <div id="presetHelp" class="help muted">ui_start: Starts the UI with npm start (long-running dev server).</div>
+                    </div>
+                </div>
+                <div class="button-row"><button id="executeBtn">Execute</button></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Add</div>
+                <div class="button-row">
+                    <button id="addIdeaBtn">Add Idea</button>
+                    <button id="addTaskBtn">Add Task</button>
+                    <button id="addProjectBtn">Add Project</button>
+                </div>
+                <div id="addMessage" class="muted"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Output</div>
+                <div class="meta"><div class="meta-item"><div class="meta-label">Status</div><div class="meta-value" id="runStatus">idle</div></div><div class="meta-item"><div class="meta-label">Exit code</div><div class="meta-value" id="runExit">—</div></div><div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value" id="runDuration">—</div></div></div>
+                <div class="muted" id="artifactPath">No artifacts yet.</div>
+                <div class="button-row">
+                    <button id="copyOutputBtn">Copy output</button>
+                    <button id="openTaskFolderBtn">Open task folder</button>
+                </div>
+                <pre id="commandOutput" class="console"></pre>
+            </section>
+        </div>
+    </aside>
+
+    <div id="reviewModal" class="modal hidden">
+        <div class="modal-content card">
+            <div class="card-title">Apply Review</div>
+            <div id="reviewBody" class="doc"></div>
+            <div class="button-row">
+                <button id="cancelReviewBtn">Cancel</button>
+                <button id="confirmReviewBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="app.js"></script>
+    <script type="module" src="spatial/spatialApp.js"></script>
+
+
+
+</body></html>

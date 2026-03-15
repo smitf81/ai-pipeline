@@ -6,6 +6,95 @@ function latestIntentReport(workspace) {
   return workspace?.intentState?.contextReport || workspace?.intentState?.latest || workspace?.intentState?.reports?.[0] || null;
 }
 
+function buildEmptyGraph() {
+  return { nodes: [], edges: [] };
+}
+
+function normalizeGraphBundle(workspace = {}) {
+  const graphs = workspace?.graphs || {};
+  const legacyGraph = workspace?.graph || buildEmptyGraph();
+  return {
+    system: {
+      nodes: graphs.system?.nodes || legacyGraph.nodes || [],
+      edges: graphs.system?.edges || legacyGraph.edges || [],
+    },
+    world: {
+      nodes: graphs.world?.nodes || [],
+      edges: graphs.world?.edges || [],
+    },
+  };
+}
+
+function createDefaultRsgState() {
+  return {
+    mode: 'dual-layer',
+    worldDomain: 'gameplay-systems',
+    approvalPolicy: {
+      'system-structure': 'auto-record',
+      'world-structure': 'auto-record',
+      'adapter-translation': 'auto-record',
+      'code-runtime-mutation': 'risk-gated-review',
+    },
+    proposals: [],
+    summary: {
+      systemStructure: 0,
+      worldStructure: 0,
+      adapterTranslation: 0,
+      codeRuntimeMutation: 0,
+    },
+    lastEvaluatedAt: null,
+  };
+}
+
+function inferProposalTarget(node = {}, layer = 'system') {
+  if (node?.metadata?.proposalTarget) return node.metadata.proposalTarget;
+  if (node?.type === 'adapter') return 'adapter-translation';
+  if (layer === 'world') return 'world-structure';
+  return 'system-structure';
+}
+
+function buildRsgState(workspace = {}) {
+  const graphs = normalizeGraphBundle(workspace);
+  const base = createDefaultRsgState();
+  const graphProposals = ['system', 'world'].flatMap((layer) => (graphs[layer]?.nodes || [])
+    .filter((node) => node?.metadata?.proposalTarget || node?.metadata?.labels?.includes('proposal') || node?.type === 'adapter')
+    .map((node) => {
+      const target = inferProposalTarget(node, layer);
+      return {
+        id: node.id,
+        title: node.content || `${target} proposal`,
+        target,
+        sourceLayer: layer,
+        sourceNodeId: node.id,
+        approval: target === 'code-runtime-mutation' ? 'required' : 'auto-record',
+        status: 'proposed',
+      };
+    }));
+  const mutationProposals = (workspace?.studio?.teamBoard?.cards || [])
+    .filter((card) => card?.executionPackage?.status === 'ready' || card?.status === 'review' || card?.applyStatus === 'queued' || card?.deployStatus === 'queued')
+    .map((card) => ({
+      id: `mutation_${card.id}`,
+      title: card.title || 'Mutation package',
+      target: 'code-runtime-mutation',
+      sourceLayer: 'system',
+      sourceNodeId: card.sourceNodeId || null,
+      approval: 'required',
+      status: card.status === 'review' ? 'awaiting-approval' : 'queued',
+    }));
+  const proposals = [...graphProposals, ...mutationProposals];
+  return {
+    ...base,
+    proposals,
+    summary: {
+      systemStructure: proposals.filter((proposal) => proposal.target === 'system-structure').length,
+      worldStructure: proposals.filter((proposal) => proposal.target === 'world-structure').length,
+      adapterTranslation: proposals.filter((proposal) => proposal.target === 'adapter-translation').length,
+      codeRuntimeMutation: proposals.filter((proposal) => proposal.target === 'code-runtime-mutation').length,
+    },
+    lastEvaluatedAt: new Date().toISOString(),
+  };
+}
+
 function createDefaultPage({ id = null, title = 'Current Page', sourceNodeId = null, createdAt = null } = {}) {
   const now = createdAt || new Date().toISOString();
   return {
@@ -24,6 +113,7 @@ function createDefaultPage({ id = null, title = 'Current Page', sourceNodeId = n
 
 function normalizeNotebookState(workspace = {}) {
   const latestIntent = latestIntentReport(workspace);
+  const graphs = normalizeGraphBundle(workspace);
   const savedPages = Array.isArray(workspace.pages) ? workspace.pages.filter(Boolean) : [];
   const fallbackTitle = latestIntent?.summary ? latestIntent.summary.slice(0, 48) : 'Current Page';
   const pages = savedPages.length
@@ -35,7 +125,7 @@ function normalizeNotebookState(workspace = {}) {
       }))
     : [createDefaultPage({
         title: fallbackTitle,
-        sourceNodeId: latestIntent?.nodeId || workspace?.graph?.nodes?.[0]?.id || null,
+        sourceNodeId: latestIntent?.nodeId || graphs.system?.nodes?.[0]?.id || null,
       })];
   const activePageId = pages.some((page) => page.id === workspace.activePageId)
     ? workspace.activePageId
@@ -65,6 +155,7 @@ function createDefaultTeamBoard() {
       active: 0,
       complete: 0,
       review: 0,
+      binned: 0,
       idleWorkers: 0,
     },
   };
@@ -80,29 +171,62 @@ function nextTeamBoardTaskId(cards = []) {
 
 function normalizeBoardStatus(status) {
   if (status === 'planned') return 'plan';
-  if (status === 'binned') return 'plan';
   if (status === 'ready') return 'plan';
-  return ['plan', 'active', 'complete', 'review'].includes(status) ? status : 'plan';
+  return ['plan', 'active', 'complete', 'review', 'binned'].includes(status) ? status : 'plan';
 }
 
 function cardSourceKey(pageId, title) {
   return `${pageId}:${slugify(title)}`;
 }
 
-function deskLabelForCard(status, { selected = false, reviewGate = false } = {}) {
-  if (selected) return 'Worker';
-  if (status === 'review') return 'CTO';
-  if (status === 'complete') return 'Archivist';
-  if (status === 'active') return reviewGate ? 'Context' : 'Planner';
-  return reviewGate ? 'Context' : 'Planner';
+function defaultExecutionPackage(card = {}) {
+  return {
+    status: 'idle',
+    taskId: card.builderTaskId || card.runnerTaskId || null,
+    taskDir: null,
+    patchPath: null,
+    changedFiles: [],
+    targetProjectKey: card.targetProjectKey || 'ace-self',
+    expectedAction: 'apply',
+    summary: '',
+  };
 }
 
-function stateLabelForCard(status, { selected = false, reviewGate = false } = {}) {
-  if (selected) return 'Queued for execution';
-  if (status === 'review') return 'Task requires approval';
-  if (status === 'complete') return reviewGate ? 'Pending review' : 'Complete';
-  if (status === 'active') return reviewGate ? 'Clarifying' : 'In progress';
-  return reviewGate ? 'Waiting on context' : 'Ready';
+function deriveCardDesk(card = {}) {
+  if (card.status === 'binned') return 'Bin';
+  if (card.status === 'plan') return 'Planner';
+  if (card.status === 'active') return 'Builder';
+  if (card.status === 'review') return 'CTO';
+  if (['queued', 'applying', 'applied', 'failed'].includes(card.applyStatus) || ['queued', 'deploying', 'deployed', 'flagged', 'failed'].includes(card.deployStatus)) {
+    return 'Executor';
+  }
+  if (card.executionPackage?.status === 'ready') return 'Builder';
+  return 'Archivist';
+}
+
+function deriveCardState(card = {}) {
+  if (card.status === 'binned') return 'Binned';
+  if (card.status === 'plan') return 'Ready';
+  if (card.status === 'active') {
+    if (card.approvalState === 'rejected') return 'Needs builder revision';
+    if (card.executionPackage?.status === 'failed') return 'Builder failed';
+    return 'Building package';
+  }
+  if (card.status === 'review') {
+    if (card.deployStatus === 'flagged' || card.deployStatus === 'failed' || card.applyStatus === 'failed') return 'Flagged';
+    return 'Approval required';
+  }
+  if (card.status === 'complete') {
+    if (card.deployStatus === 'deploying') return 'Deploying';
+    if (card.deployStatus === 'deployed') return 'Deployed';
+    if (card.deployStatus === 'flagged' || card.deployStatus === 'failed') return 'Flagged';
+    if (card.applyStatus === 'applying') return 'Applying';
+    if (card.applyStatus === 'applied') return card.targetProjectKey === 'ace-self' ? 'Applied, awaiting deploy' : 'Applied';
+    if (card.applyStatus === 'queued') return 'Queued for apply';
+    if (card.executionPackage?.status === 'ready') return 'Package ready';
+    return 'Complete';
+  }
+  return 'Ready';
 }
 
 function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, title, createdAt = null }) {
@@ -118,10 +242,20 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, titl
     desk: 'Planner',
     state: 'Ready',
     phaseTicks: 0,
+    targetProjectKey: 'ace-self',
+    builderTaskId: null,
     runnerTaskId: null,
     runIds: [],
     artifactRefs: [],
+    executionPackage: defaultExecutionPackage(),
+    riskLevel: 'unknown',
+    riskReasons: [],
+    approvalState: 'none',
+    applyStatus: 'idle',
     deployStatus: 'idle',
+    branch: null,
+    commit: null,
+    lastHealth: null,
     auditSessionId: null,
     createdAt: now,
     updatedAt: now,
@@ -135,14 +269,29 @@ function normalizeTeamBoardState(workspace = {}) {
     ...card,
     status: normalizeBoardStatus(card.status),
     sourceKey: card.sourceKey || cardSourceKey(card.pageId || notebook.activePageId, card.title || 'task'),
-    desk: card.desk || deskLabelForCard(normalizeBoardStatus(card.status)),
-    state: card.state || stateLabelForCard(normalizeBoardStatus(card.status)),
     phaseTicks: Number(card.phaseTicks || 0),
+    targetProjectKey: card.targetProjectKey || 'ace-self',
+    builderTaskId: card.builderTaskId || card.runnerTaskId || null,
     runnerTaskId: card.runnerTaskId || null,
     runIds: Array.isArray(card.runIds) ? card.runIds.filter(Boolean) : [],
     artifactRefs: Array.isArray(card.artifactRefs) ? card.artifactRefs.filter(Boolean) : [],
+    executionPackage: {
+      ...defaultExecutionPackage(card),
+      ...(card.executionPackage || {}),
+      changedFiles: Array.isArray(card.executionPackage?.changedFiles) ? card.executionPackage.changedFiles.filter(Boolean) : [],
+      targetProjectKey: card.executionPackage?.targetProjectKey || card.targetProjectKey || 'ace-self',
+    },
+    riskLevel: card.riskLevel || 'unknown',
+    riskReasons: Array.isArray(card.riskReasons) ? card.riskReasons.filter(Boolean) : [],
+    approvalState: card.approvalState || 'none',
+    applyStatus: card.applyStatus || 'idle',
     deployStatus: card.deployStatus || 'idle',
+    branch: card.branch || null,
+    commit: card.commit || null,
+    lastHealth: card.lastHealth || null,
     auditSessionId: card.auditSessionId || null,
+    desk: card.desk || deriveCardDesk(card),
+    state: card.state || deriveCardState(card),
   })) : [];
   const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
   const workingCards = [...existingCards];
@@ -175,32 +324,44 @@ function normalizeTeamBoardState(workspace = {}) {
       active: mergedCards.filter((card) => card.status === 'active').length,
       complete: mergedCards.filter((card) => card.status === 'complete').length,
       review: mergedCards.filter((card) => card.status === 'review').length,
+      binned: mergedCards.filter((card) => card.status === 'binned').length,
       idleWorkers: Number(board.summary?.idleWorkers || 0),
     },
   };
+}
+
+function getActiveMutationCard(boardOrWorkspace = {}) {
+  const board = Array.isArray(boardOrWorkspace?.cards)
+    ? boardOrWorkspace
+    : normalizeTeamBoardState(boardOrWorkspace);
+  return board.cards.find((card) => (
+    ['queued', 'applying', 'applied'].includes(card.applyStatus)
+    || ['queued', 'deploying', 'deployed', 'flagged', 'failed'].includes(card.deployStatus)
+    || card.approvalState === 'approved'
+  )) || null;
 }
 
 function getSelectedExecutionCard(boardOrWorkspace = {}) {
   const board = Array.isArray(boardOrWorkspace?.cards)
     ? boardOrWorkspace
     : normalizeTeamBoardState(boardOrWorkspace);
-  return board.cards.find((card) => card.id === board.selectedCardId) || null;
+  return board.cards.find((card) => card.id === board.selectedCardId) || getActiveMutationCard(board) || null;
 }
 
 const DESK_MISSIONS = {
   'context-manager': 'Maintain active page focus, context confidence, and desk-specific context slices.',
   planner: 'Translate active context into concrete plans, work items, and dependency-aware handoffs.',
-  executor: 'Own tangible delivery outputs when plan items are approved and unblocked.',
+  executor: 'Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.',
   'memory-archivist': 'Persist useful summaries, artifact references, and history for active work.',
-  'cto-architect': 'Monitor guardrails, conflicts, and review readiness across the desk network.',
+  'cto-architect': 'Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.',
 };
 
 const DESK_ALLOWED_ACTIONS = {
   'context-manager': ['set-active-page', 'slice-context', 'publish-handoff', 'flag-ambiguity'],
   planner: ['expand-plan', 'prioritise-work', 'publish-plan'],
-  executor: ['prepare-output', 'draft-patch', 'report-blocker'],
+  executor: ['apply-package', 'run-preflight', 'deploy-runtime', 'report-blocker'],
   'memory-archivist': ['archive-summary', 'record-artifact', 'snapshot-history'],
-  'cto-architect': ['raise-conflict', 'approve-scope', 'request-review'],
+  'cto-architect': ['raise-conflict', 'approve-apply', 'reject-risky-change'],
 };
 
 const DESK_ORDER = ['context-manager', 'planner', 'executor', 'memory-archivist', 'cto-architect'];
@@ -208,6 +369,9 @@ const DESK_ORDER = ['context-manager', 'planner', 'executor', 'memory-archivist'
 function buildDeskWorkItems(deskId, workspace, notebook, handoff, selectedExecutionCard = null) {
   const latestIntent = latestIntentReport(workspace);
   const intentTasks = Array.isArray(latestIntent?.tasks) ? latestIntent.tasks.filter(Boolean) : [];
+  const board = normalizeTeamBoardState(workspace);
+  const activeMutationCard = getActiveMutationCard(board);
+  const pendingReviewCard = board.cards.find((card) => card.status === 'review' && card.approvalState !== 'approved') || null;
   if (deskId === 'context-manager') {
     return [{
       id: `${notebook.activePageId}-context-watch`,
@@ -235,29 +399,44 @@ function buildDeskWorkItems(deskId, workspace, notebook, handoff, selectedExecut
     }));
   }
   if (deskId === 'executor') {
-    if (selectedExecutionCard) {
+    if (activeMutationCard) {
       return [{
-        id: `${selectedExecutionCard.id}-execution`,
-        pageId: selectedExecutionCard.pageId || notebook.activePageId,
+        id: `${activeMutationCard.id}-execution`,
+        pageId: activeMutationCard.pageId || notebook.activePageId,
         deskId,
-        kind: 'approved-execution',
-        status: 'ready',
-        dependsOn: selectedExecutionCard.sourceHandoffId ? [selectedExecutionCard.sourceHandoffId] : [],
-        conflictTags: ['execute', selectedExecutionCard.id],
-        artifactRefs: selectedExecutionCard.artifactRefs || [],
-        title: `Execute approved card: ${selectedExecutionCard.title}`,
+        kind: activeMutationCard.deployStatus === 'deploying' ? 'deploy' : 'apply',
+        status: ['applying', 'deploying'].includes(activeMutationCard.applyStatus) || activeMutationCard.deployStatus === 'deploying' ? 'running' : 'ready',
+        dependsOn: activeMutationCard.sourceHandoffId ? [activeMutationCard.sourceHandoffId] : [],
+        conflictTags: ['execute', activeMutationCard.id],
+        artifactRefs: activeMutationCard.artifactRefs || [],
+        title: activeMutationCard.deployStatus === 'deploying'
+          ? `Deploy approved card: ${activeMutationCard.title}`
+          : `Apply approved card: ${activeMutationCard.title}`,
+      }];
+    }
+    if (pendingReviewCard) {
+      return [{
+        id: `${pendingReviewCard.id}-approval`,
+        pageId: pendingReviewCard.pageId || notebook.activePageId,
+        deskId,
+        kind: 'approval-gated',
+        status: 'waiting',
+        dependsOn: pendingReviewCard.sourceHandoffId ? [pendingReviewCard.sourceHandoffId] : [],
+        conflictTags: ['execute', pendingReviewCard.id],
+        artifactRefs: pendingReviewCard.artifactRefs || [],
+        title: `Awaiting approval: ${pendingReviewCard.title}`,
       }];
     }
     return intentTasks.slice(0, 2).map((task, index) => ({
       id: `${notebook.activePageId}-executor-${index}`,
       pageId: notebook.activePageId,
       deskId,
-      kind: 'execution-item',
-      status: handoff && Number(latestIntent?.confidence || 0) >= 0.55 ? 'ready' : 'waiting',
+      kind: 'build-ready',
+      status: 'waiting',
       dependsOn: handoff ? [handoff.id] : [],
       conflictTags: ['execute', `task-${index}`],
       artifactRefs: [],
-      title: `Prepare output for: ${task}`,
+      title: `Await builder package for: ${task}`,
     }));
   }
   if (deskId === 'memory-archivist') {
@@ -306,59 +485,27 @@ function countIdleWorkers(deskStates = {}) {
 
 function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, conflicts = [], runs = [] }) {
   const now = new Date().toISOString();
-  const latestIntent = latestIntentReport(workspace);
-  const selfUpgrade = workspace?.studio?.selfUpgrade || null;
-  const latestExecutorRun = latestDeskRun('executor', runs);
-  const reviewGate = handoff?.status === 'needs-clarification'
-    || conflicts.some((conflict) => conflict.severity === 'high')
-    || selfUpgrade?.status === 'ready-to-apply'
-    || Number(latestIntent?.confidence || 0) < 0.55;
   let openActiveSlots = Math.max(0, 2 - board.cards.filter((card) => normalizeBoardStatus(card.status) === 'active').length);
   const cards = [...board.cards]
     .sort((left, right) => String(left.createdAt || '').localeCompare(String(right.createdAt || '')))
     .map((card) => {
-      const isSelected = card.id === board.selectedCardId;
       let status = normalizeBoardStatus(card.status);
-      let phaseTicks = Number(card.phaseTicks || 0);
-      if (isSelected) {
-        return {
-          ...card,
-          status: 'review',
-          desk: 'Worker',
-          state: latestExecutorRun?.status === 'running' ? 'Running patch' : 'Queued for execution',
-          updatedAt: now,
-        };
-      }
       if (status === 'plan' && handoff) {
         if (openActiveSlots > 0) {
           status = 'active';
-          phaseTicks = 0;
           openActiveSlots -= 1;
-        } else {
-          phaseTicks = 0;
         }
-      } else if (status === 'active') {
-        phaseTicks += 1;
-        if (phaseTicks >= 1) {
-          status = 'complete';
-          phaseTicks = 0;
-        }
-      } else if (status === 'complete') {
-        phaseTicks += 1;
-        if (phaseTicks >= 1) {
-          status = 'review';
-          phaseTicks = 0;
-        }
-      } else {
-        phaseTicks = 0;
       }
-      return {
+      const nextCard = {
         ...card,
         status,
-        phaseTicks,
-        desk: deskLabelForCard(status, { reviewGate }),
-        state: stateLabelForCard(status, { reviewGate }),
+        phaseTicks: status === 'plan' ? Number(card.phaseTicks || 0) : 0,
         updatedAt: now,
+      };
+      return {
+        ...nextCard,
+        desk: deriveCardDesk(nextCard),
+        state: deriveCardState(nextCard),
       };
     });
   return {
@@ -370,6 +517,7 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
       active: cards.filter((card) => card.status === 'active').length,
       complete: cards.filter((card) => card.status === 'complete').length,
       review: cards.filter((card) => card.status === 'review').length,
+      binned: cards.filter((card) => card.status === 'binned').length,
       idleWorkers: countIdleWorkers(deskStates),
     },
   };
@@ -377,10 +525,19 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
 
 function buildDeskStates({ workspace, notebook, handoff, selectedExecutionCard = null }) {
   const latestIntent = latestIntentReport(workspace);
+  const board = normalizeTeamBoardState(workspace);
+  const activeMutationCard = getActiveMutationCard(board);
+  const pendingReviewCard = board.cards.find((card) => card.status === 'review' && card.approvalState !== 'approved') || null;
   return Object.fromEntries(DESK_ORDER.map((deskId) => {
     const workItems = buildDeskWorkItems(deskId, workspace, notebook, handoff, selectedExecutionCard);
-    const blockedReason = deskId === 'executor' && handoff?.status === 'needs-clarification' && !selectedExecutionCard
-      ? 'Execution is gated until Context Manager clarifies the active page intent.'
+    const blockedReason = deskId === 'executor'
+      ? (
+          pendingReviewCard
+            ? `Waiting for approval on ${pendingReviewCard.title}.`
+            : (handoff?.status === 'needs-clarification' && !activeMutationCard
+              ? 'Execution is gated until Context Manager clarifies the active page intent.'
+              : null)
+        )
       : null;
     const localState = blockedReason
       ? 'blocked'
@@ -397,8 +554,8 @@ function buildDeskStates({ workspace, notebook, handoff, selectedExecutionCard =
       workItems,
       lastOutput: deskId === 'context-manager'
         ? handoff?.summary || latestIntent?.summary || null
-        : deskId === 'executor' && selectedExecutionCard
-          ? `Queued review card: ${selectedExecutionCard.title}`
+        : deskId === 'executor' && activeMutationCard
+          ? `${activeMutationCard.state}: ${activeMutationCard.title}`
           : workItems[0]?.title || null,
       blockedReason,
       contextSlice: {
@@ -416,22 +573,21 @@ function buildDeskStates({ workspace, notebook, handoff, selectedExecutionCard =
 function buildDeskThoughtBubble(deskId, workspace, handoff, conflicts, deskStates, runs = [], teamBoard = null) {
   const latestIntent = latestIntentReport(workspace);
   const selfUpgrade = workspace?.studio?.selfUpgrade || null;
-  const selectedExecutionCard = getSelectedExecutionCard(teamBoard || workspace);
+  const boardState = normalizeTeamBoardState(teamBoard || workspace);
+  const selectedExecutionCard = getActiveMutationCard(boardState);
+  const pendingReviewCard = boardState.cards.find((card) => card.status === 'review' && card.approvalState !== 'approved') || null;
   const deskRun = latestDeskRun(deskId, runs);
   const localState = deskStates?.[deskId]?.localState || 'waiting';
-  const boardSummary = teamBoard?.summary || { plan: 0, active: 0, complete: 0, review: 0, idleWorkers: 0 };
+  const boardSummary = boardState.summary || { plan: 0, active: 0, complete: 0, review: 0, idleWorkers: 0 };
   if (deskId === 'cto-architect') {
     if (selfUpgrade?.deploy?.status === 'restarting') {
       return '🟠 restarting ACE...';
     }
-    if (selfUpgrade?.preflight?.status === 'failed') {
+    if (pendingReviewCard?.deployStatus === 'flagged' || pendingReviewCard?.applyStatus === 'failed' || selfUpgrade?.preflight?.status === 'failed') {
       return '🟠 reviewing preflight failures...';
     }
-    if (selfUpgrade?.status === 'ready-to-deploy') {
-      return '🟠 holding self-upgrade deploy...';
-    }
     if (boardSummary.review) {
-      return `🟠 ${boardSummary.review} task${boardSummary.review === 1 ? '' : 's'} require approval.`;
+      return `🟠 ${boardSummary.review} task${boardSummary.review === 1 ? '' : 's'} ready to apply.`;
     }
     if (conflicts.length) {
       return '🟠 reviewing governance signals...';
@@ -456,10 +612,14 @@ function buildDeskThoughtBubble(deskId, workspace, handoff, conflicts, deskState
     return '🟡 waiting for context handoff...';
   }
   if (deskId === 'executor') {
-    if (deskRun?.status === 'running' && deskRun.action === 'apply') return '🟢 applying patch...';
-    if (deskRun?.status === 'running' && deskRun.action === 'build') return '🟢 running patch...';
+    if (selectedExecutionCard?.deployStatus === 'deploying') return '🟢 deploying ACE...';
+    if (selectedExecutionCard?.deployStatus === 'deployed') return '🟢 deploy complete.';
+    if (selectedExecutionCard?.deployStatus === 'flagged') return '🔴 deploy flagged for review.';
+    if (selectedExecutionCard?.applyStatus === 'applying' || (deskRun?.status === 'running' && deskRun.action === 'apply')) return '🟢 applying patch...';
+    if (selectedExecutionCard?.applyStatus === 'queued') return `🟢 queued ${selectedExecutionCard.title.slice(0, 28)}...`;
+    if (selectedExecutionCard?.applyStatus === 'applied' && selectedExecutionCard.targetProjectKey !== 'ace-self') return '🟢 patch applied.';
     if (deskRun?.status === 'running' && deskRun.action === 'run') return '🟢 verifying output...';
-    if (selectedExecutionCard && (localState === 'ready' || localState === 'running')) return `🟢 queued ${selectedExecutionCard.title.slice(0, 28)}...`;
+    if (pendingReviewCard) return '🔴 waiting for risky apply approval.';
     if (handoff?.status === 'needs-clarification' || localState === 'blocked') return '🔴 blocked by low-confidence context.';
     if (localState === 'ready' || localState === 'running') return '🟢 preparing output...';
     return '🟢 waiting for approved work...';
@@ -472,6 +632,8 @@ function buildDeskThoughtBubble(deskId, workspace, handoff, conflicts, deskState
 function detectConflicts(workspace, handoff, deskStates, selectedExecutionCard = null) {
   const conflicts = [];
   const latestIntent = latestIntentReport(workspace);
+  const board = normalizeTeamBoardState(workspace);
+  const pendingReviewCard = board.cards.find((card) => card.status === 'review' && card.approvalState !== 'approved') || null;
   if (Number(latestIntent?.confidence || 0) < 0.55) {
     conflicts.push({
       id: 'low-confidence-context',
@@ -490,6 +652,24 @@ function detectConflicts(workspace, handoff, deskStates, selectedExecutionCard =
       summary: 'Planner and Executor are active on the same page and must stay within scoped outputs.',
     });
   }
+  if (pendingReviewCard) {
+    conflicts.push({
+      id: `ready-to-apply-${pendingReviewCard.id}`,
+      kind: 'ready-to-apply',
+      severity: 'high',
+      desks: ['executor', 'cto-architect'],
+      summary: `${pendingReviewCard.title} is waiting at the apply gate because ${pendingReviewCard.riskReasons?.[0] || 'risk heuristics require approval'}.`,
+    });
+  }
+  if (selectedExecutionCard?.deployStatus === 'flagged' || selectedExecutionCard?.applyStatus === 'failed') {
+    conflicts.push({
+      id: `mutation-flagged-${selectedExecutionCard.id}`,
+      kind: 'mutation-flagged',
+      severity: 'high',
+      desks: ['executor', 'cto-architect'],
+      summary: `${selectedExecutionCard.title} was flagged during ${selectedExecutionCard.deployStatus === 'flagged' ? 'deploy' : 'apply'} and needs intervention.`,
+    });
+  }
   if (handoff?.status === 'needs-clarification') {
     if (selectedExecutionCard) return conflicts;
     conflicts.push({
@@ -504,20 +684,26 @@ function detectConflicts(workspace, handoff, deskStates, selectedExecutionCard =
 }
 
 function advanceOrchestratorWorkspace(workspace = {}, { dashboardState = {}, runs = [] } = {}) {
-  const notebook = normalizeNotebookState(workspace);
-  const latestIntent = latestIntentReport(workspace);
-  const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
-  const baseBoard = normalizeTeamBoardState(workspace);
+  const graphs = normalizeGraphBundle(workspace);
+  const normalizedWorkspace = {
+    ...workspace,
+    graph: graphs.system,
+    graphs,
+  };
+  const notebook = normalizeNotebookState(normalizedWorkspace);
+  const latestIntent = latestIntentReport(normalizedWorkspace);
+  const handoff = normalizedWorkspace?.studio?.handoffs?.contextToPlanner || null;
+  const baseBoard = normalizeTeamBoardState(normalizedWorkspace);
   const initialSelectedExecutionCard = getSelectedExecutionCard(baseBoard);
   const initialDeskStates = buildDeskStates({
-    workspace,
+    workspace: normalizedWorkspace,
     notebook,
     handoff,
     selectedExecutionCard: initialSelectedExecutionCard,
   });
-  const initialConflicts = detectConflicts(workspace, handoff, initialDeskStates, initialSelectedExecutionCard);
+  const initialConflicts = detectConflicts(normalizedWorkspace, handoff, initialDeskStates, initialSelectedExecutionCard);
   const teamBoard = advanceTeamBoardState({
-    workspace,
+    workspace: normalizedWorkspace,
     handoff,
     board: baseBoard,
     deskStates: initialDeskStates,
@@ -526,12 +712,12 @@ function advanceOrchestratorWorkspace(workspace = {}, { dashboardState = {}, run
   });
   const selectedExecutionCard = getSelectedExecutionCard(teamBoard);
   const deskStates = buildDeskStates({
-    workspace,
+    workspace: normalizedWorkspace,
     notebook,
     handoff,
     selectedExecutionCard,
   });
-  const conflicts = detectConflicts(workspace, handoff, deskStates, selectedExecutionCard);
+  const conflicts = detectConflicts(normalizedWorkspace, handoff, deskStates, selectedExecutionCard);
   DESK_ORDER.forEach((deskId) => {
     if (deskId === 'planner' && teamBoard.summary.plan) {
       deskStates[deskId].thoughtBubble = `🟡 ${teamBoard.summary.plan} tasks in backlog. ${teamBoard.summary.idleWorkers} workers idle. Rebalancing workload...`;
@@ -541,7 +727,7 @@ function advanceOrchestratorWorkspace(workspace = {}, { dashboardState = {}, run
       deskStates[deskId].thoughtBubble = `🔵 clarifying ${teamBoard.summary.plan} planned task${teamBoard.summary.plan === 1 ? '' : 's'}...`;
       return;
     }
-    deskStates[deskId].thoughtBubble = buildDeskThoughtBubble(deskId, workspace, handoff, conflicts, deskStates, runs, teamBoard);
+    deskStates[deskId].thoughtBubble = buildDeskThoughtBubble(deskId, normalizedWorkspace, handoff, conflicts, deskStates, runs, teamBoard);
   });
   const pendingUserActions = [
     ...(Number(latestIntent?.confidence || 0) < 0.55 ? ['Clarify the active page goal before execution advances further.'] : []),
@@ -569,27 +755,39 @@ function advanceOrchestratorWorkspace(workspace = {}, { dashboardState = {}, run
       }
     : page);
 
-  return {
-    ...workspace,
+  const nextWorkspace = {
+    ...normalizedWorkspace,
     pages,
     activePageId: notebook.activePageId,
     studio: {
-      ...(workspace.studio || {}),
+      ...(normalizedWorkspace.studio || {}),
       teamBoard,
       orchestrator,
     },
   };
+  return {
+    ...nextWorkspace,
+    graph: graphs.system,
+    graphs,
+    rsg: buildRsgState(nextWorkspace),
+  };
 }
 
 function buildRuntimePayload(workspace = {}) {
-  const notebook = normalizeNotebookState(workspace);
+  const graphs = normalizeGraphBundle(workspace);
+  const normalizedWorkspace = {
+    ...workspace,
+    graph: graphs.system,
+    graphs,
+  };
+  const notebook = normalizeNotebookState(normalizedWorkspace);
   return {
     activePageId: notebook.activePageId,
     pages: notebook.pages,
-    handoffs: workspace?.studio?.handoffs || {},
-    selfUpgrade: workspace?.studio?.selfUpgrade || null,
-    teamBoard: normalizeTeamBoardState(workspace),
-    orchestrator: workspace?.studio?.orchestrator || {
+    handoffs: normalizedWorkspace?.studio?.handoffs || {},
+    selfUpgrade: normalizedWorkspace?.studio?.selfUpgrade || null,
+    teamBoard: normalizeTeamBoardState(normalizedWorkspace),
+    orchestrator: normalizedWorkspace?.studio?.orchestrator || {
       status: 'idle',
       lastTickAt: null,
       activeDeskIds: [],
@@ -598,12 +796,17 @@ function buildRuntimePayload(workspace = {}) {
       desks: {},
       activePageId: notebook.activePageId,
     },
+    graphs,
+    rsg: workspace?.rsg || buildRsgState(normalizedWorkspace),
   };
 }
 
 module.exports = {
   createDefaultPage,
   createDefaultTeamBoard,
+  normalizeGraphBundle,
+  createDefaultRsgState,
+  buildRsgState,
   normalizeNotebookState,
   normalizeTeamBoardState,
   advanceOrchestratorWorkspace,

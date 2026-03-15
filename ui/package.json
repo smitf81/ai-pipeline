@@ -6,12 +6,15 @@
   "scripts": {
     "test": "node tests/run-ui-tests.mjs",
     "test:watch": "node --watch tests/run-ui-tests.mjs",
-    "start": "node server.js"
+    "start": "node server.js",
+    "mcp:ace": "node aceRuntimeMcp.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.2.1"
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "express": "^5.2.1",
+    "playwright-core": "^1.58.2"
   }
 }

@@ -44,4 +44,39 @@ export class AceConnector {
     if (!res.ok) throw new Error('Mutation apply failed');
     return res.json();
   }
+
+  async teamBoardAction(action, cardId) {
+    const res = await fetch('/api/spatial/team-board/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, cardId }),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Team board action failed');
+    return payload;
+  }
+
+  async runBrowserPass({ scenario = 'layout-pass', mode = 'interactive', prompt = '', actions = [], linked = {} } = {}) {
+    const res = await fetch('/api/spatial/qa/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scenario,
+        mode,
+        prompt,
+        actions,
+        linked,
+      }),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Browser pass failed');
+    return payload;
+  }
+
+  async getQARun(runId) {
+    const res = await fetch(`/api/spatial/qa/runs/${encodeURIComponent(runId)}`);
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load QA run');
+    return payload.run;
+  }
 }

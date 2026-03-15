@@ -1,0 +1,1282 @@
+{
+  "capturedAt": "2026-03-14T12:59:48.837Z",
+  "runtime": {
+    "activePageId": "page_1773429206094_pgv8",
+    "pages": [
+      {
+        "outputs": [],
+        "handoffs": [
+          {
+            "id": "handoff_1773429206097_fi0w",
+            "sourceAgentId": "context-manager",
+            "targetAgentId": "planner",
+            "createdAt": "2026-03-13T12:07:46.941Z",
+            "sourceNodeId": "node_1773403593232_kvs26",
+            "summary": "context reports need updating by agent beyond text taken from 1 node",
+            "problemStatement": "Goal: context reports need updating by agent beyond text taken from 1 node\nRequested outcomes: context reports need updating by agent beyond text taken from 1 node.\nWhy ACE believes this: Project alignment 17%, Actionability 17%, Architecture fit 71%.\nConstraints and review signals: Project alignment: Matched project terms: agent | Actionability: Input reads more like a note than a concrete action. | Constraint coverage: No clear constraints or review gates were stated. | Clarity: Input includes enough detail to classify intent reliably..\nStill unclear: Intent confidence is low and should be checked before execution expands.",
+            "tasks": [
+              "context reports need updating by agent beyond text taken from 1 node"
+            ],
+            "constraints": [
+              "Project alignment: Matched project terms: agent",
+              "Actionability: Input reads more like a note than a concrete action.",
+              "Constraint coverage: No clear constraints or review gates were stated.",
+              "Clarity: Input includes enough detail to classify intent reliably."
+            ],
+            "confidence": 0.3,
+            "criteria": [
+              {
+                "id": "project-alignment",
+                "label": "Project alignment",
+                "score": 0.16666666666666666,
+                "reason": "Matched project terms: agent"
+              },
+              {
+                "id": "actionability",
+                "label": "Actionability",
+                "score": 0.16666666666666666,
+                "reason": "Input reads more like a note than a concrete action."
+              },
+              {
+                "id": "architecture-fit",
+                "label": "Architecture fit",
+                "score": 0.7142857142857143,
+                "reason": "References ACE system structure, agents, or implementation surfaces."
+              },
+              {
+                "id": "constraint-coverage",
+                "label": "Constraint coverage",
+                "score": 0,
+                "reason": "No clear constraints or review gates were stated."
+              },
+              {
+                "id": "clarity",
+                "label": "Clarity",
+                "score": 0.45238095238095233,
+                "reason": "Input includes enough detail to classify intent reliably."
+              }
+            ],
+            "classification": {
+              "role": "ux",
+              "labels": [
+                "context",
+                "ux"
+              ]
+            },
+            "status": "needs-clarification"
+          }
+        ],
+        "artifactRefs": [],
+        "id": "page_1773429206094_pgv8",
+        "title": "context reports need updating by agent beyond te",
+        "status": "active",
+        "sourceNodeId": "node_1773403593232_kvs26",
+        "summary": "context reports need updating by agent beyond text taken from 1 node",
+        "createdAt": "2026-03-13T19:13:26.094Z",
+        "updatedAt": "2026-03-14T12:59:48.831Z"
+      }
+    ],
+    "handoffs": {
+      "contextToPlanner": {
+        "id": "handoff_1773429206097_fi0w",
+        "sourceAgentId": "context-manager",
+        "targetAgentId": "planner",
+        "createdAt": "2026-03-13T12:07:46.941Z",
+        "sourceNodeId": "node_1773403593232_kvs26",
+        "summary": "context reports need updating by agent beyond text taken from 1 node",
+        "problemStatement": "Goal: context reports need updating by agent beyond text taken from 1 node\nRequested outcomes: context reports need updating by agent beyond text taken from 1 node.\nWhy ACE believes this: Project alignment 17%, Actionability 17%, Architecture fit 71%.\nConstraints and review signals: Project alignment: Matched project terms: agent | Actionability: Input reads more like a note than a concrete action. | Constraint coverage: No clear constraints or review gates were stated. | Clarity: Input includes enough detail to classify intent reliably..\nStill unclear: Intent confidence is low and should be checked before execution expands.",
+        "tasks": [
+          "context reports need updating by agent beyond text taken from 1 node"
+        ],
+        "constraints": [
+          "Project alignment: Matched project terms: agent",
+          "Actionability: Input reads more like a note than a concrete action.",
+          "Constraint coverage: No clear constraints or review gates were stated.",
+          "Clarity: Input includes enough detail to classify intent reliably."
+        ],
+        "confidence": 0.3,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.16666666666666666,
+            "reason": "Matched project terms: agent"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.16666666666666666,
+            "reason": "Input reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.7142857142857143,
+            "reason": "References ACE system structure, agents, or implementation surfaces."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.45238095238095233,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "ux",
+          "labels": [
+            "context",
+            "ux"
+          ]
+        },
+        "status": "needs-clarification"
+      },
+      "history": [
+        {
+          "id": "handoff_1773429206097_fi0w",
+          "sourceAgentId": "context-manager",
+          "targetAgentId": "planner",
+          "createdAt": "2026-03-13T12:07:46.941Z",
+          "sourceNodeId": "node_1773403593232_kvs26",
+          "summary": "context reports need updating by agent beyond text taken from 1 node",
+          "problemStatement": "Goal: context reports need updating by agent beyond text taken from 1 node\nRequested outcomes: context reports need updating by agent beyond text taken from 1 node.\nWhy ACE believes this: Project alignment 17%, Actionability 17%, Architecture fit 71%.\nConstraints and review signals: Project alignment: Matched project terms: agent | Actionability: Input reads more like a note than a concrete action. | Constraint coverage: No clear constraints or review gates were stated. | Clarity: Input includes enough detail to classify intent reliably..\nStill unclear: Intent confidence is low and should be checked before execution expands.",
+          "tasks": [
+            "context reports need updating by agent beyond text taken from 1 node"
+          ],
+          "constraints": [
+            "Project alignment: Matched project terms: agent",
+            "Actionability: Input reads more like a note than a concrete action.",
+            "Constraint coverage: No clear constraints or review gates were stated.",
+            "Clarity: Input includes enough detail to classify intent reliably."
+          ],
+          "confidence": 0.3,
+          "criteria": [
+            {
+              "id": "project-alignment",
+              "label": "Project alignment",
+              "score": 0.16666666666666666,
+              "reason": "Matched project terms: agent"
+            },
+            {
+              "id": "actionability",
+              "label": "Actionability",
+              "score": 0.16666666666666666,
+              "reason": "Input reads more like a note than a concrete action."
+            },
+            {
+              "id": "architecture-fit",
+              "label": "Architecture fit",
+              "score": 0.7142857142857143,
+              "reason": "References ACE system structure, agents, or implementation surfaces."
+            },
+            {
+              "id": "constraint-coverage",
+              "label": "Constraint coverage",
+              "score": 0,
+              "reason": "No clear constraints or review gates were stated."
+            },
+            {
+              "id": "clarity",
+              "label": "Clarity",
+              "score": 0.45238095238095233,
+              "reason": "Input includes enough detail to classify intent reliably."
+            }
+          ],
+          "classification": {
+            "role": "ux",
+            "labels": [
+              "context",
+              "ux"
+            ]
+          },
+          "status": "needs-clarification"
+        }
+      ]
+    },
+    "selfUpgrade": {
+      "status": "idle",
+      "targetProjectKey": "ace-self",
+      "taskId": "",
+      "patchReview": null,
+      "preflight": {
+        "status": "idle",
+        "ok": null,
+        "checkedAt": null,
+        "checks": [],
+        "summary": "Run preflight before applying a self patch."
+      },
+      "apply": {
+        "status": "idle",
+        "ok": null,
+        "appliedAt": null,
+        "branch": null,
+        "commit": null,
+        "taskId": ""
+      },
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": null,
+          "startedAt": null
+        }
+      },
+      "requiresPermission": "none"
+    },
+    "teamBoard": {
+      "cards": [
+        {
+          "id": "card_page_1773403588491_034z_finance-department",
+          "pageId": "page_1773403588491_034z",
+          "sourceHandoffId": "handoff_1773403588495_hxww",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "title": "Finance Department",
+          "status": "review",
+          "createdAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-14T12:59:48.831Z",
+          "sourceKey": "page_1773403588491_034z:finance-department",
+          "desk": "CTO",
+          "state": "Approval required",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
+        },
+        {
+          "id": "card_page_1773403588491_034z_calculates-cost-tokens-usage-etc",
+          "pageId": "page_1773403588491_034z",
+          "sourceHandoffId": "handoff_1773403588495_hxww",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "title": "- calculates cost/tokens usage etc",
+          "status": "review",
+          "createdAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-14T12:59:48.831Z",
+          "sourceKey": "page_1773403588491_034z:calculates-cost-tokens-usage-etc",
+          "desk": "CTO",
+          "state": "Approval required",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
+        },
+        {
+          "id": "card_page_1773403588491_034z_allocates-resources-allowed-to-each-agen",
+          "pageId": "page_1773403588491_034z",
+          "sourceHandoffId": "handoff_1773403588495_hxww",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
+          "status": "review",
+          "createdAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-14T12:59:48.831Z",
+          "sourceKey": "page_1773403588491_034z:allocates-resources-allowed-to-each-agen",
+          "desk": "CTO",
+          "state": "Approval required",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
+        },
+        {
+          "id": "card_page_1773408149866_813p_finance-department",
+          "pageId": "page_1773408149866_813p",
+          "sourceHandoffId": "handoff_1773403588495_hxww",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "title": "Finance Department",
+          "status": "review",
+          "createdAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-14T12:59:48.831Z",
+          "sourceKey": "page_1773408149866_813p:finance-department",
+          "desk": "CTO",
+          "state": "Approval required",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
+        },
+        {
+          "id": "card_page_1773408149866_813p_calculates-cost-tokens-usage-etc",
+          "pageId": "page_1773408149866_813p",
+          "sourceHandoffId": "handoff_1773403588495_hxww",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "title": "- calculates cost/tokens usage etc",
+          "status": "review",
+          "createdAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-14T12:59:48.831Z",
+          "sourceKey": "page_1773408149866_813p:calculates-cost-tokens-usage-etc",
+          "desk": "CTO",
+          "state": "Approval required",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
+        },
+        {
+          "id": "card_page_1773408149866_813p_allocates-resources-allowed-to-each-agen",
+          "pageId": "page_1773408149866_813p",
+          "sourceHandoffId": "handoff_1773403588495_hxww",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
+          "status": "review",
+          "createdAt": "2026-03-13T10:14:50.468Z",
+          "updatedAt": "2026-03-14T12:59:48.831Z",
+          "sourceKey": "page_1773408149866_813p:allocates-resources-allowed-to-each-agen",
+          "desk": "CTO",
+          "state": "Approval required",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
+        },
+        {
+          "id": "card_page_1773408149866_813p_context-reports-need-updating-by-agent-b",
+          "pageId": "page_1773408149866_813p",
+          "sourceHandoffId": "handoff_1773408149869_3gzq",
+          "sourceNodeId": "node_1773403593232_kvs26",
+          "title": "context reports need updating by agent beyond text taken from 1 node",
+          "status": "review",
+          "createdAt": "2026-03-13T12:07:46.941Z",
+          "updatedAt": "2026-03-14T12:59:48.831Z",
+          "sourceKey": "page_1773408149866_813p:context-reports-need-updating-by-agent-b",
+          "desk": "CTO",
+          "state": "Approval required",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
+        },
+        {
+          "id": "0001",
+          "sourceKey": "page_1773429206094_pgv8:context-reports-need-updating-by-agent-b",
+          "pageId": "page_1773429206094_pgv8",
+          "sourceHandoffId": "handoff_1773408149869_3gzq",
+          "sourceNodeId": "node_1773403593232_kvs26",
+          "title": "context reports need updating by agent beyond text taken from 1 node",
+          "status": "review",
+          "desk": "CTO",
+          "state": "Approval required",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null,
+          "createdAt": "2026-03-13T12:07:46.941Z",
+          "updatedAt": "2026-03-14T12:59:48.831Z",
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
+        }
+      ],
+      "selectedCardId": "card_page_1773403588491_034z_finance-department",
+      "updatedAt": "2026-03-14T12:59:48.831Z",
+      "summary": {
+        "plan": 0,
+        "active": 0,
+        "complete": 0,
+        "review": 8,
+        "binned": 0,
+        "idleWorkers": 0
+      }
+    },
+    "orchestrator": {
+      "status": "needs-attention",
+      "lastTickAt": "2026-03-14T12:59:48.831Z",
+      "activeDeskIds": [
+        "context-manager",
+        "planner",
+        "memory-archivist",
+        "cto-architect"
+      ],
+      "conflicts": [
+        {
+          "id": "low-confidence-context",
+          "kind": "low-confidence-context",
+          "severity": "medium",
+          "desks": [
+            "context-manager",
+            "planner",
+            "executor"
+          ],
+          "summary": "Planner and Executor are sharing work against a low-confidence context packet."
+        },
+        {
+          "id": "parallel-plan-execution",
+          "kind": "parallel-plan-execution",
+          "severity": "low",
+          "desks": [
+            "planner",
+            "executor"
+          ],
+          "summary": "Planner and Executor are active on the same page and must stay within scoped outputs."
+        },
+        {
+          "id": "ready-to-apply-card_page_1773403588491_034z_finance-department",
+          "kind": "ready-to-apply",
+          "severity": "high",
+          "desks": [
+            "executor",
+            "cto-architect"
+          ],
+          "summary": "Finance Department is waiting at the apply gate because risk heuristics require approval."
+        }
+      ],
+      "pendingUserActions": [
+        "Clarify the active page goal before execution advances further."
+      ],
+      "desks": {
+        "context-manager": {
+          "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
+          "localState": "running",
+          "currentGoal": "context reports need updating by agent beyond text taken from 1 node",
+          "allowedActions": [
+            "set-active-page",
+            "slice-context",
+            "publish-handoff",
+            "flag-ambiguity"
+          ],
+          "workItems": [
+            {
+              "id": "page_1773429206094_pgv8-context-watch",
+              "pageId": "page_1773429206094_pgv8",
+              "deskId": "context-manager",
+              "kind": "context-watch",
+              "status": "running",
+              "dependsOn": [],
+              "conflictTags": [
+                "context"
+              ],
+              "artifactRefs": [
+                "handoff_1773429206097_fi0w"
+              ],
+              "title": "context reports need updating by agent beyond text taken from 1 node"
+            }
+          ],
+          "lastOutput": "context reports need updating by agent beyond text taken from 1 node",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1773429206094_pgv8",
+            "activePageTitle": "context reports need updating by agent beyond te",
+            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
+            "matchedTerms": [
+              "agent"
+            ]
+          },
+          "freshAt": "2026-03-14T12:59:48.831Z",
+          "thoughtBubble": "🔵 stabilizing context..."
+        },
+        "planner": {
+          "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
+          "localState": "running",
+          "currentGoal": "context reports need updating by agent beyond text taken from 1 node",
+          "allowedActions": [
+            "expand-plan",
+            "prioritise-work",
+            "publish-plan"
+          ],
+          "workItems": [
+            {
+              "id": "page_1773429206094_pgv8-planner-0",
+              "pageId": "page_1773429206094_pgv8",
+              "deskId": "planner",
+              "kind": "plan-item",
+              "status": "running",
+              "dependsOn": [
+                "handoff_1773429206097_fi0w"
+              ],
+              "conflictTags": [
+                "plan",
+                "task-0"
+              ],
+              "artifactRefs": [
+                "handoff_1773429206097_fi0w"
+              ],
+              "title": "context reports need updating by agent beyond text taken from 1 node"
+            }
+          ],
+          "lastOutput": "context reports need updating by agent beyond text taken from 1 node",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1773429206094_pgv8",
+            "activePageTitle": "context reports need updating by agent beyond te",
+            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
+            "matchedTerms": [
+              "agent"
+            ]
+          },
+          "freshAt": "2026-03-14T12:59:48.831Z",
+          "thoughtBubble": "🟡 shaping the next task..."
+        },
+        "executor": {
+          "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
+          "localState": "blocked",
+          "currentGoal": "Awaiting approval: Finance Department",
+          "allowedActions": [
+            "apply-package",
+            "run-preflight",
+            "deploy-runtime",
+            "report-blocker"
+          ],
+          "workItems": [
+            {
+              "id": "card_page_1773403588491_034z_finance-department-approval",
+              "pageId": "page_1773403588491_034z",
+              "deskId": "executor",
+              "kind": "approval-gated",
+              "status": "waiting",
+              "dependsOn": [
+                "handoff_1773403588495_hxww"
+              ],
+              "conflictTags": [
+                "execute",
+                "card_page_1773403588491_034z_finance-department"
+              ],
+              "artifactRefs": [],
+              "title": "Awaiting approval: Finance Department"
+            }
+          ],
+          "lastOutput": "Awaiting approval: Finance Department",
+          "blockedReason": "Waiting for approval on Finance Department.",
+          "contextSlice": {
+            "activePageId": "page_1773429206094_pgv8",
+            "activePageTitle": "context reports need updating by agent beyond te",
+            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
+            "matchedTerms": [
+              "agent"
+            ]
+          },
+          "freshAt": "2026-03-14T12:59:48.831Z",
+          "thoughtBubble": "🔴 blocked by low-confidence context."
+        },
+        "memory-archivist": {
+          "mission": "Persist useful summaries, artifact references, and history for active work.",
+          "localState": "running",
+          "currentGoal": "Capture notes, handoffs, and artifact history",
+          "allowedActions": [
+            "archive-summary",
+            "record-artifact",
+            "snapshot-history"
+          ],
+          "workItems": [
+            {
+              "id": "page_1773429206094_pgv8-memory-sync",
+              "pageId": "page_1773429206094_pgv8",
+              "deskId": "memory-archivist",
+              "kind": "memory-sync",
+              "status": "running",
+              "dependsOn": [],
+              "conflictTags": [
+                "memory"
+              ],
+              "artifactRefs": [
+                "handoff_1773429206097_fi0w"
+              ],
+              "title": "Capture notes, handoffs, and artifact history"
+            }
+          ],
+          "lastOutput": "Capture notes, handoffs, and artifact history",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1773429206094_pgv8",
+            "activePageTitle": "context reports need updating by agent beyond te",
+            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
+            "matchedTerms": [
+              "agent"
+            ]
+          },
+          "freshAt": "2026-03-14T12:59:48.831Z",
+          "thoughtBubble": "🟣 logging summaries..."
+        },
+        "cto-architect": {
+          "mission": "Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.",
+          "localState": "running",
+          "currentGoal": "Review desk overlap, approval state, and guardrails",
+          "allowedActions": [
+            "raise-conflict",
+            "approve-apply",
+            "reject-risky-change"
+          ],
+          "workItems": [
+            {
+              "id": "page_1773429206094_pgv8-governance-check",
+              "pageId": "page_1773429206094_pgv8",
+              "deskId": "cto-architect",
+              "kind": "governance-check",
+              "status": "running",
+              "dependsOn": [
+                "handoff_1773429206097_fi0w"
+              ],
+              "conflictTags": [
+                "review",
+                "governance"
+              ],
+              "artifactRefs": [
+                "handoff_1773429206097_fi0w"
+              ],
+              "title": "Review desk overlap, approval state, and guardrails"
+            }
+          ],
+          "lastOutput": "Review desk overlap, approval state, and guardrails",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1773429206094_pgv8",
+            "activePageTitle": "context reports need updating by agent beyond te",
+            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
+            "matchedTerms": [
+              "agent"
+            ]
+          },
+          "freshAt": "2026-03-14T12:59:48.831Z",
+          "thoughtBubble": "🟠 reviewing governance signals..."
+        }
+      },
+      "activePageId": "page_1773429206094_pgv8"
+    },
+    "graphs": {
+      "system": {
+        "nodes": [
+          {
+            "id": "node_1773403593232_kvs26",
+            "type": "ux",
+            "content": "context reports need updating by agent beyond text taken from 1 node",
+            "position": {
+              "x": 538,
+              "y": 323
+            },
+            "connections": [],
+            "metadata": {
+              "role": "ux",
+              "intentStatus": "ready",
+              "labels": [
+                "context",
+                "ux"
+              ],
+              "intentAnalysis": {
+                "agent": {
+                  "id": "context-manager",
+                  "name": "Context Manager",
+                  "criteriaVersion": "ace-intent-v1",
+                  "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+                },
+                "summary": "context reports need updating by agent beyond text taken from 1 node",
+                "confidence": 0.3,
+                "criteria": [
+                  {
+                    "id": "project-alignment",
+                    "label": "Project alignment",
+                    "score": 0.16666666666666666,
+                    "reason": "Matched project terms: agent"
+                  },
+                  {
+                    "id": "actionability",
+                    "label": "Actionability",
+                    "score": 0.16666666666666666,
+                    "reason": "Input reads more like a note than a concrete action."
+                  },
+                  {
+                    "id": "architecture-fit",
+                    "label": "Architecture fit",
+                    "score": 0.7142857142857143,
+                    "reason": "References ACE system structure, agents, or implementation surfaces."
+                  },
+                  {
+                    "id": "constraint-coverage",
+                    "label": "Constraint coverage",
+                    "score": 0,
+                    "reason": "No clear constraints or review gates were stated."
+                  },
+                  {
+                    "id": "clarity",
+                    "label": "Clarity",
+                    "score": 0.45238095238095233,
+                    "reason": "Input includes enough detail to classify intent reliably."
+                  }
+                ],
+                "tasks": [
+                  "context reports need updating by agent beyond text taken from 1 node"
+                ],
+                "classification": {
+                  "role": "ux",
+                  "labels": [
+                    "context",
+                    "ux"
+                  ]
+                },
+                "metrics": {
+                  "tokenCount": 8,
+                  "sentenceCount": 1,
+                  "matchedProjectTerms": [
+                    "agent"
+                  ],
+                  "actionSignals": 0,
+                  "architectureSignals": 3,
+                  "constraintSignals": 0
+                },
+                "projectContext": {
+                  "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+                  "blockers": [],
+                  "matchedTerms": [
+                    "agent"
+                  ],
+                  "referenceKeywords": [
+                    "boot",
+                    "core",
+                    "engine",
+                    "mvp",
+                    "stabilise",
+                    "project",
+                    "brain",
+                    "implement"
+                  ]
+                },
+                "judgedAt": "2026-03-13T12:07:46.939Z",
+                "nodeId": "node_1773403593232_kvs26",
+                "source": "node-enter",
+                "createdAt": "2026-03-13T12:07:46.941Z"
+              }
+            }
+          }
+        ],
+        "edges": []
+      },
+      "world": {
+        "nodes": [],
+        "edges": []
+      }
+    },
+    "rsg": {
+      "mode": "dual-layer",
+      "worldDomain": "gameplay-systems",
+      "approvalPolicy": {
+        "system-structure": "auto-record",
+        "world-structure": "auto-record",
+        "adapter-translation": "auto-record",
+        "code-runtime-mutation": "risk-gated-review"
+      },
+      "proposals": [
+        {
+          "id": "mutation_card_page_1773403588491_034z_finance-department",
+          "title": "Finance Department",
+          "target": "code-runtime-mutation",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "approval": "required",
+          "status": "awaiting-approval"
+        },
+        {
+          "id": "mutation_card_page_1773403588491_034z_calculates-cost-tokens-usage-etc",
+          "title": "- calculates cost/tokens usage etc",
+          "target": "code-runtime-mutation",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "approval": "required",
+          "status": "awaiting-approval"
+        },
+        {
+          "id": "mutation_card_page_1773403588491_034z_allocates-resources-allowed-to-each-agen",
+          "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
+          "target": "code-runtime-mutation",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "approval": "required",
+          "status": "awaiting-approval"
+        },
+        {
+          "id": "mutation_card_page_1773408149866_813p_finance-department",
+          "title": "Finance Department",
+          "target": "code-runtime-mutation",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "approval": "required",
+          "status": "awaiting-approval"
+        },
+        {
+          "id": "mutation_card_page_1773408149866_813p_calculates-cost-tokens-usage-etc",
+          "title": "- calculates cost/tokens usage etc",
+          "target": "code-runtime-mutation",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "approval": "required",
+          "status": "awaiting-approval"
+        },
+        {
+          "id": "mutation_card_page_1773408149866_813p_allocates-resources-allowed-to-each-agen",
+          "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
+          "target": "code-runtime-mutation",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1773396757687_h18df",
+          "approval": "required",
+          "status": "awaiting-approval"
+        },
+        {
+          "id": "mutation_card_page_1773408149866_813p_context-reports-need-updating-by-agent-b",
+          "title": "context reports need updating by agent beyond text taken from 1 node",
+          "target": "code-runtime-mutation",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1773403593232_kvs26",
+          "approval": "required",
+          "status": "awaiting-approval"
+        },
+        {
+          "id": "mutation_0001",
+          "title": "context reports need updating by agent beyond text taken from 1 node",
+          "target": "code-runtime-mutation",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1773403593232_kvs26",
+          "approval": "required",
+          "status": "awaiting-approval"
+        }
+      ],
+      "summary": {
+        "systemStructure": 0,
+        "worldStructure": 0,
+        "adapterTranslation": 0,
+        "codeRuntimeMutation": 8
+      },
+      "lastEvaluatedAt": "2026-03-14T12:59:48.831Z"
+    },
+    "throughputDebug": {
+      "latestSession": null,
+      "sessions": []
+    },
+    "qaDebug": {
+      "latestRun": {
+        "id": "qa_1773493186546_zi9wq0",
+        "scenario": "studio-smoke",
+        "mode": "interactive",
+        "trigger": "manual",
+        "status": "running",
+        "verdict": "pending",
+        "createdAt": "2026-03-14T12:59:46.546Z",
+        "finishedAt": null,
+        "findingCount": 0,
+        "highestSeverity": "info",
+        "primaryScreenshot": {
+          "name": "01-initial.png",
+          "label": "Initial ACE render",
+          "url": "/api/spatial/qa/runs/qa_1773493186546_zi9wq0/artifacts/01-initial.png"
+        },
+        "stepSummary": [
+          {
+            "id": "health",
+            "label": "Wait for ACE runtime",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "launch",
+            "label": "Launch browser",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "open",
+            "label": "Open ACE",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "studio",
+            "label": "Enter ACE Studio",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "scenario",
+            "label": "Run QA scenario actions",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "capture",
+            "label": "Capture artifacts",
+            "status": "pending",
+            "verdict": "pending"
+          },
+          {
+            "id": "analyze",
+            "label": "Analyze layout and runtime",
+            "status": "pending",
+            "verdict": "pending"
+          }
+        ],
+        "linked": {}
+      },
+      "runs": [
+        {
+          "id": "qa_1773493186546_zi9wq0",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "running",
+          "verdict": "pending",
+          "createdAt": "2026-03-14T12:59:46.546Z",
+          "finishedAt": null,
+          "findingCount": 0,
+          "highestSeverity": "info",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773493186546_zi9wq0/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "pending",
+              "verdict": "pending"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "pending",
+              "verdict": "pending"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773493135100_lzbch1",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-14T12:58:55.100Z",
+          "finishedAt": "2026-03-14T12:58:57.549Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773493135100_lzbch1/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773492976341_0d6uhd",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-14T12:56:16.341Z",
+          "finishedAt": "2026-03-14T12:56:18.736Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773492976341_0d6uhd/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        }
+      ]
+    }
+  },
+  "health": {
+    "ok": true,
+    "pid": 36176,
+    "startedAt": "2026-03-14T12:59:46.120Z",
+    "selfUpgrade": {
+      "status": "idle",
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": null,
+          "startedAt": null
+        }
+      }
+    }
+  }
+}

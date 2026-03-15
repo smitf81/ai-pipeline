@@ -6,8 +6,8 @@
         "type": "ux",
         "content": "context reports need updating by agent beyond text taken from 1 node",
         "position": {
-          "x": 538,
-          "y": 323
+          "x": 465.2173913043478,
+          "y": 305.0724527110224
         },
         "connections": [],
         "metadata": {
@@ -101,11 +101,984 @@
             "createdAt": "2026-03-13T12:07:46.941Z"
           }
         }
+      },
+      {
+        "id": "node_1773494168729_819t0",
+        "type": "module",
+        "content": "we want to see if we can have nodes and systems spawn and generate locally",
+        "position": {
+          "x": 488.04347826086956,
+          "y": 551.811583145805
+        },
+        "connections": [],
+        "metadata": {
+          "role": "module",
+          "graphLayer": "system",
+          "intentStatus": "ready",
+          "labels": [
+            "ux"
+          ],
+          "proposalTarget": "system-structure",
+          "approvalPolicy": "auto-record",
+          "intentAnalysis": {
+            "agent": {
+              "id": "context-manager",
+              "name": "Context Manager",
+              "criteriaVersion": "ace-intent-v1",
+              "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+            },
+            "summary": "we want to see if we can have nodes and systems spawn and generate locally",
+            "confidence": 0.18,
+            "criteria": [
+              {
+                "id": "project-alignment",
+                "label": "Project alignment",
+                "score": 0.16666666666666666,
+                "reason": "Matched project terms: generate"
+              },
+              {
+                "id": "actionability",
+                "label": "Actionability",
+                "score": 0.16666666666666666,
+                "reason": "Input reads more like a note than a concrete action."
+              },
+              {
+                "id": "architecture-fit",
+                "label": "Architecture fit",
+                "score": 0.14285714285714285,
+                "reason": "Little direct architecture language found."
+              },
+              {
+                "id": "constraint-coverage",
+                "label": "Constraint coverage",
+                "score": 0,
+                "reason": "No clear constraints or review gates were stated."
+              },
+              {
+                "id": "clarity",
+                "label": "Clarity",
+                "score": 0.41666666666666663,
+                "reason": "Input includes enough detail to classify intent reliably."
+              }
+            ],
+            "tasks": [
+              "we want to see if we can have nodes and systems spawn and generate locally"
+            ],
+            "classification": {
+              "role": "module",
+              "labels": [
+                "ux"
+              ]
+            },
+            "metrics": {
+              "tokenCount": 7,
+              "sentenceCount": 1,
+              "matchedProjectTerms": [
+                "generate"
+              ],
+              "actionSignals": 0,
+              "architectureSignals": 0,
+              "constraintSignals": 0
+            },
+            "projectContext": {
+              "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+              "blockers": [],
+              "matchedTerms": [
+                "generate"
+              ],
+              "referenceKeywords": [
+                "boot",
+                "core",
+                "engine",
+                "mvp",
+                "stabilise",
+                "project",
+                "brain",
+                "implement"
+              ]
+            },
+            "judgedAt": "2026-03-14T14:22:28.100Z",
+            "nodeId": "node_1773494168729_819t0",
+            "source": "node-enter",
+            "createdAt": "2026-03-14T14:22:28.105Z"
+          }
+        }
+      },
+      {
+        "id": "node_1773498206362_0ly8n",
+        "type": "text",
+        "content": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+        "position": {
+          "x": 464.02009695692135,
+          "y": 766.5037953408477
+        },
+        "connections": [],
+        "metadata": {
+          "role": "thought",
+          "graphLayer": "system",
+          "intentStatus": "ready",
+          "labels": [
+            "context"
+          ],
+          "proposalTarget": "system-structure",
+          "approvalPolicy": "auto-record",
+          "intentAnalysis": {
+            "agent": {
+              "id": "context-manager",
+              "name": "Context Manager",
+              "criteriaVersion": "ace-intent-v1",
+              "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+            },
+            "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+            "confidence": 0.23,
+            "criteria": [
+              {
+                "id": "project-alignment",
+                "label": "Project alignment",
+                "score": 0,
+                "reason": "Few direct overlaps with current project context."
+              },
+              {
+                "id": "actionability",
+                "label": "Actionability",
+                "score": 0.3333333333333333,
+                "reason": "Input reads more like a note than a concrete action."
+              },
+              {
+                "id": "architecture-fit",
+                "label": "Architecture fit",
+                "score": 0.2857142857142857,
+                "reason": "References ACE system structure, agents, or implementation surfaces."
+              },
+              {
+                "id": "constraint-coverage",
+                "label": "Constraint coverage",
+                "score": 0,
+                "reason": "No clear constraints or review gates were stated."
+              },
+              {
+                "id": "clarity",
+                "label": "Clarity",
+                "score": 0.5238095238095238,
+                "reason": "Input includes enough detail to classify intent reliably."
+              }
+            ],
+            "tasks": [
+              "we also need more clarity on our context management calculations",
+              "maybe expose more how it's being calculated"
+            ],
+            "classification": {
+              "role": "thought",
+              "labels": [
+                "context"
+              ]
+            },
+            "metrics": {
+              "tokenCount": 10,
+              "sentenceCount": 1,
+              "matchedProjectTerms": [],
+              "actionSignals": 0,
+              "architectureSignals": 1,
+              "constraintSignals": 0
+            },
+            "projectContext": {
+              "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+              "blockers": [],
+              "matchedTerms": [],
+              "referenceKeywords": [
+                "boot",
+                "core",
+                "engine",
+                "mvp",
+                "stabilise",
+                "project",
+                "brain",
+                "implement"
+              ]
+            },
+            "judgedAt": "2026-03-14T14:25:17.098Z",
+            "nodeId": "node_1773498206362_0ly8n",
+            "source": "node-enter",
+            "createdAt": "2026-03-14T14:25:17.103Z"
+          }
+        }
       }
     ],
-    "edges": []
+    "edges": [
+      {
+        "source": "node_1773403593232_kvs26",
+        "target": "node_1773494168729_819t0",
+        "relationship_type": "relates_to"
+      },
+      {
+        "source": "node_1773494168729_819t0",
+        "target": "node_1773498206362_0ly8n",
+        "relationship_type": "relates_to"
+      }
+    ]
   },
-  "sketches": [],
+  "graphs": {
+    "system": {
+      "nodes": [
+        {
+          "id": "node_1773403593232_kvs26",
+          "type": "ux",
+          "content": "context reports need updating by agent beyond text taken from 1 node",
+          "position": {
+            "x": 465.2173913043478,
+            "y": 305.0724527110224
+          },
+          "connections": [],
+          "metadata": {
+            "role": "ux",
+            "intentStatus": "ready",
+            "labels": [
+              "context",
+              "ux"
+            ],
+            "intentAnalysis": {
+              "agent": {
+                "id": "context-manager",
+                "name": "Context Manager",
+                "criteriaVersion": "ace-intent-v1",
+                "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+              },
+              "summary": "context reports need updating by agent beyond text taken from 1 node",
+              "confidence": 0.3,
+              "criteria": [
+                {
+                  "id": "project-alignment",
+                  "label": "Project alignment",
+                  "score": 0.16666666666666666,
+                  "reason": "Matched project terms: agent"
+                },
+                {
+                  "id": "actionability",
+                  "label": "Actionability",
+                  "score": 0.16666666666666666,
+                  "reason": "Input reads more like a note than a concrete action."
+                },
+                {
+                  "id": "architecture-fit",
+                  "label": "Architecture fit",
+                  "score": 0.7142857142857143,
+                  "reason": "References ACE system structure, agents, or implementation surfaces."
+                },
+                {
+                  "id": "constraint-coverage",
+                  "label": "Constraint coverage",
+                  "score": 0,
+                  "reason": "No clear constraints or review gates were stated."
+                },
+                {
+                  "id": "clarity",
+                  "label": "Clarity",
+                  "score": 0.45238095238095233,
+                  "reason": "Input includes enough detail to classify intent reliably."
+                }
+              ],
+              "tasks": [
+                "context reports need updating by agent beyond text taken from 1 node"
+              ],
+              "classification": {
+                "role": "ux",
+                "labels": [
+                  "context",
+                  "ux"
+                ]
+              },
+              "metrics": {
+                "tokenCount": 8,
+                "sentenceCount": 1,
+                "matchedProjectTerms": [
+                  "agent"
+                ],
+                "actionSignals": 0,
+                "architectureSignals": 3,
+                "constraintSignals": 0
+              },
+              "projectContext": {
+                "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+                "blockers": [],
+                "matchedTerms": [
+                  "agent"
+                ],
+                "referenceKeywords": [
+                  "boot",
+                  "core",
+                  "engine",
+                  "mvp",
+                  "stabilise",
+                  "project",
+                  "brain",
+                  "implement"
+                ]
+              },
+              "judgedAt": "2026-03-13T12:07:46.939Z",
+              "nodeId": "node_1773403593232_kvs26",
+              "source": "node-enter",
+              "createdAt": "2026-03-13T12:07:46.941Z"
+            }
+          }
+        },
+        {
+          "id": "node_1773494168729_819t0",
+          "type": "module",
+          "content": "we want to see if we can have nodes and systems spawn and generate locally",
+          "position": {
+            "x": 488.04347826086956,
+            "y": 551.811583145805
+          },
+          "connections": [],
+          "metadata": {
+            "role": "module",
+            "graphLayer": "system",
+            "intentStatus": "ready",
+            "labels": [
+              "ux"
+            ],
+            "proposalTarget": "system-structure",
+            "approvalPolicy": "auto-record",
+            "intentAnalysis": {
+              "agent": {
+                "id": "context-manager",
+                "name": "Context Manager",
+                "criteriaVersion": "ace-intent-v1",
+                "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+              },
+              "summary": "we want to see if we can have nodes and systems spawn and generate locally",
+              "confidence": 0.18,
+              "criteria": [
+                {
+                  "id": "project-alignment",
+                  "label": "Project alignment",
+                  "score": 0.16666666666666666,
+                  "reason": "Matched project terms: generate"
+                },
+                {
+                  "id": "actionability",
+                  "label": "Actionability",
+                  "score": 0.16666666666666666,
+                  "reason": "Input reads more like a note than a concrete action."
+                },
+                {
+                  "id": "architecture-fit",
+                  "label": "Architecture fit",
+                  "score": 0.14285714285714285,
+                  "reason": "Little direct architecture language found."
+                },
+                {
+                  "id": "constraint-coverage",
+                  "label": "Constraint coverage",
+                  "score": 0,
+                  "reason": "No clear constraints or review gates were stated."
+                },
+                {
+                  "id": "clarity",
+                  "label": "Clarity",
+                  "score": 0.41666666666666663,
+                  "reason": "Input includes enough detail to classify intent reliably."
+                }
+              ],
+              "tasks": [
+                "we want to see if we can have nodes and systems spawn and generate locally"
+              ],
+              "classification": {
+                "role": "module",
+                "labels": [
+                  "ux"
+                ]
+              },
+              "metrics": {
+                "tokenCount": 7,
+                "sentenceCount": 1,
+                "matchedProjectTerms": [
+                  "generate"
+                ],
+                "actionSignals": 0,
+                "architectureSignals": 0,
+                "constraintSignals": 0
+              },
+              "projectContext": {
+                "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+                "blockers": [],
+                "matchedTerms": [
+                  "generate"
+                ],
+                "referenceKeywords": [
+                  "boot",
+                  "core",
+                  "engine",
+                  "mvp",
+                  "stabilise",
+                  "project",
+                  "brain",
+                  "implement"
+                ]
+              },
+              "judgedAt": "2026-03-14T14:22:28.100Z",
+              "nodeId": "node_1773494168729_819t0",
+              "source": "node-enter",
+              "createdAt": "2026-03-14T14:22:28.105Z"
+            }
+          }
+        },
+        {
+          "id": "node_1773498206362_0ly8n",
+          "type": "text",
+          "content": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+          "position": {
+            "x": 464.02009695692135,
+            "y": 766.5037953408477
+          },
+          "connections": [],
+          "metadata": {
+            "role": "thought",
+            "graphLayer": "system",
+            "intentStatus": "ready",
+            "labels": [
+              "context"
+            ],
+            "proposalTarget": "system-structure",
+            "approvalPolicy": "auto-record",
+            "intentAnalysis": {
+              "agent": {
+                "id": "context-manager",
+                "name": "Context Manager",
+                "criteriaVersion": "ace-intent-v1",
+                "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+              },
+              "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+              "confidence": 0.23,
+              "criteria": [
+                {
+                  "id": "project-alignment",
+                  "label": "Project alignment",
+                  "score": 0,
+                  "reason": "Few direct overlaps with current project context."
+                },
+                {
+                  "id": "actionability",
+                  "label": "Actionability",
+                  "score": 0.3333333333333333,
+                  "reason": "Input reads more like a note than a concrete action."
+                },
+                {
+                  "id": "architecture-fit",
+                  "label": "Architecture fit",
+                  "score": 0.2857142857142857,
+                  "reason": "References ACE system structure, agents, or implementation surfaces."
+                },
+                {
+                  "id": "constraint-coverage",
+                  "label": "Constraint coverage",
+                  "score": 0,
+                  "reason": "No clear constraints or review gates were stated."
+                },
+                {
+                  "id": "clarity",
+                  "label": "Clarity",
+                  "score": 0.5238095238095238,
+                  "reason": "Input includes enough detail to classify intent reliably."
+                }
+              ],
+              "tasks": [
+                "we also need more clarity on our context management calculations",
+                "maybe expose more how it's being calculated"
+              ],
+              "classification": {
+                "role": "thought",
+                "labels": [
+                  "context"
+                ]
+              },
+              "metrics": {
+                "tokenCount": 10,
+                "sentenceCount": 1,
+                "matchedProjectTerms": [],
+                "actionSignals": 0,
+                "architectureSignals": 1,
+                "constraintSignals": 0
+              },
+              "projectContext": {
+                "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+                "blockers": [],
+                "matchedTerms": [],
+                "referenceKeywords": [
+                  "boot",
+                  "core",
+                  "engine",
+                  "mvp",
+                  "stabilise",
+                  "project",
+                  "brain",
+                  "implement"
+                ]
+              },
+              "judgedAt": "2026-03-14T14:25:17.098Z",
+              "nodeId": "node_1773498206362_0ly8n",
+              "source": "node-enter",
+              "createdAt": "2026-03-14T14:25:17.103Z"
+            }
+          }
+        }
+      ],
+      "edges": [
+        {
+          "source": "node_1773403593232_kvs26",
+          "target": "node_1773494168729_819t0",
+          "relationship_type": "relates_to"
+        },
+        {
+          "source": "node_1773494168729_819t0",
+          "target": "node_1773498206362_0ly8n",
+          "relationship_type": "relates_to"
+        }
+      ]
+    },
+    "world": {
+      "nodes": [],
+      "edges": []
+    }
+  },
+  "sketches": [
+    {
+      "id": "sketch_1773498362138_h2sy",
+      "path": [
+        {
+          "x": 902.3809523809524,
+          "y": 456.74601963588174
+        },
+        {
+          "x": 902.3809523809524,
+          "y": 455.55554344540553
+        },
+        {
+          "x": 902.3809523809524,
+          "y": 456.74601963588174
+        },
+        {
+          "x": 902.3809523809524,
+          "y": 457.9364958263579
+        },
+        {
+          "x": 903.5714285714286,
+          "y": 461.5079243977865
+        },
+        {
+          "x": 903.5714285714286,
+          "y": 462.69840058826264
+        },
+        {
+          "x": 904.7619047619048,
+          "y": 463.88887677873885
+        },
+        {
+          "x": 904.7619047619048,
+          "y": 466.26982915969126
+        },
+        {
+          "x": 905.952380952381,
+          "y": 474.60316249302457
+        },
+        {
+          "x": 905.952380952381,
+          "y": 478.1745910644531
+        },
+        {
+          "x": 905.952380952381,
+          "y": 482.9364958263579
+        },
+        {
+          "x": 907.1428571428572,
+          "y": 487.69840058826264
+        },
+        {
+          "x": 907.1428571428572,
+          "y": 491.26982915969126
+        },
+        {
+          "x": 907.1428571428572,
+          "y": 496.031733921596
+        },
+        {
+          "x": 908.3333333333334,
+          "y": 507.9364958263579
+        },
+        {
+          "x": 910.7142857142858,
+          "y": 511.5079243977865
+        },
+        {
+          "x": 911.9047619047619,
+          "y": 517.4603053501675
+        },
+        {
+          "x": 913.0952380952381,
+          "y": 521.031733921596
+        },
+        {
+          "x": 915.4761904761905,
+          "y": 525.7936386835007
+        },
+        {
+          "x": 916.6666666666667,
+          "y": 530.5555434454055
+        },
+        {
+          "x": 917.8571428571429,
+          "y": 535.3174482073102
+        },
+        {
+          "x": 919.047619047619,
+          "y": 540.079352969215
+        },
+        {
+          "x": 922.6190476190477,
+          "y": 550.7936386835007
+        },
+        {
+          "x": 922.6190476190477,
+          "y": 554.3650672549294
+        },
+        {
+          "x": 922.6190476190477,
+          "y": 556.7460196358817
+        },
+        {
+          "x": 923.8095238095239,
+          "y": 556.7460196358817
+        }
+      ],
+      "metadata": {
+        "tag": null,
+        "meaning": null
+      }
+    },
+    {
+      "id": "sketch_1773498363307_w8q6",
+      "path": [
+        {
+          "x": 936.9047619047619,
+          "y": 460.3174482073103
+        }
+      ],
+      "metadata": {
+        "tag": null,
+        "meaning": null
+      }
+    },
+    {
+      "id": "sketch_1773498364321_8bnz",
+      "path": [
+        {
+          "x": 944.047619047619,
+          "y": 449.60316249302457
+        },
+        {
+          "x": 944.047619047619,
+          "y": 449.60316249302457
+        },
+        {
+          "x": 944.047619047619,
+          "y": 448.41268630254837
+        },
+        {
+          "x": 945.2380952380953,
+          "y": 448.41268630254837
+        },
+        {
+          "x": 946.4285714285714,
+          "y": 448.41268630254837
+        },
+        {
+          "x": 947.6190476190477,
+          "y": 448.41268630254837
+        },
+        {
+          "x": 948.8095238095239,
+          "y": 449.60316249302457
+        },
+        {
+          "x": 948.8095238095239,
+          "y": 449.60316249302457
+        },
+        {
+          "x": 951.1904761904763,
+          "y": 453.1745910644531
+        },
+        {
+          "x": 953.5714285714286,
+          "y": 456.74601963588174
+        },
+        {
+          "x": 954.7619047619048,
+          "y": 461.5079243977865
+        },
+        {
+          "x": 957.1428571428572,
+          "y": 463.88887677873885
+        },
+        {
+          "x": 958.3333333333334,
+          "y": 467.4603053501674
+        },
+        {
+          "x": 961.9047619047619,
+          "y": 471.031733921596
+        },
+        {
+          "x": 964.2857142857143,
+          "y": 476.984114873977
+        },
+        {
+          "x": 967.8571428571429,
+          "y": 480.55554344540553
+        },
+        {
+          "x": 970.2380952380953,
+          "y": 486.5079243977865
+        },
+        {
+          "x": 972.6190476190477,
+          "y": 492.4603053501674
+        },
+        {
+          "x": 972.6190476190477,
+          "y": 498.41268630254837
+        },
+        {
+          "x": 973.8095238095239,
+          "y": 505.55554344540553
+        },
+        {
+          "x": 975,
+          "y": 513.8888767787389
+        },
+        {
+          "x": 976.1904761904763,
+          "y": 522.2222101120722
+        },
+        {
+          "x": 977.3809523809524,
+          "y": 529.3650672549294
+        },
+        {
+          "x": 978.5714285714286,
+          "y": 534.1269720168341
+        },
+        {
+          "x": 979.7619047619048,
+          "y": 537.6984005882626
+        },
+        {
+          "x": 982.1428571428572,
+          "y": 542.4603053501675
+        },
+        {
+          "x": 982.1428571428572,
+          "y": 543.6507815406436
+        },
+        {
+          "x": 982.1428571428572,
+          "y": 544.8412577311199
+        },
+        {
+          "x": 982.1428571428572,
+          "y": 544.8412577311199
+        }
+      ],
+      "metadata": {
+        "tag": null,
+        "meaning": null
+      }
+    },
+    {
+      "id": "sketch_1773498367080_osvc",
+      "path": [
+        {
+          "x": 1010.7142857142858,
+          "y": 491.26982915969126
+        },
+        {
+          "x": 1009.5238095238095,
+          "y": 491.26982915969126
+        },
+        {
+          "x": 1009.5238095238095,
+          "y": 492.4603053501674
+        },
+        {
+          "x": 1008.3333333333334,
+          "y": 492.4603053501674
+        },
+        {
+          "x": 1004.7619047619048,
+          "y": 493.6507815406436
+        },
+        {
+          "x": 991.6666666666667,
+          "y": 497.2222101120722
+        },
+        {
+          "x": 986.9047619047619,
+          "y": 499.60316249302457
+        },
+        {
+          "x": 975,
+          "y": 501.984114873977
+        },
+        {
+          "x": 965.4761904761905,
+          "y": 504.36506725492933
+        },
+        {
+          "x": 955.952380952381,
+          "y": 506.74601963588174
+        },
+        {
+          "x": 948.8095238095239,
+          "y": 509.1269720168341
+        },
+        {
+          "x": 944.047619047619,
+          "y": 509.1269720168341
+        },
+        {
+          "x": 941.6666666666667,
+          "y": 510.3174482073103
+        },
+        {
+          "x": 941.6666666666667,
+          "y": 511.5079243977865
+        },
+        {
+          "x": 939.2857142857143,
+          "y": 511.5079243977865
+        },
+        {
+          "x": 938.0952380952381,
+          "y": 511.5079243977865
+        },
+        {
+          "x": 936.9047619047619,
+          "y": 512.6984005882626
+        },
+        {
+          "x": 934.5238095238095,
+          "y": 513.8888767787389
+        },
+        {
+          "x": 932.1428571428572,
+          "y": 513.8888767787389
+        },
+        {
+          "x": 932.1428571428572,
+          "y": 513.8888767787389
+        },
+        {
+          "x": 926.1904761904763,
+          "y": 513.8888767787389
+        },
+        {
+          "x": 923.8095238095239,
+          "y": 513.8888767787389
+        },
+        {
+          "x": 922.6190476190477,
+          "y": 515.079352969215
+        },
+        {
+          "x": 920.2380952380953,
+          "y": 515.079352969215
+        },
+        {
+          "x": 919.047619047619,
+          "y": 515.079352969215
+        },
+        {
+          "x": 917.8571428571429,
+          "y": 515.079352969215
+        },
+        {
+          "x": 917.8571428571429,
+          "y": 515.079352969215
+        },
+        {
+          "x": 915.4761904761905,
+          "y": 515.079352969215
+        },
+        {
+          "x": 914.2857142857143,
+          "y": 515.079352969215
+        },
+        {
+          "x": 913.0952380952381,
+          "y": 515.079352969215
+        },
+        {
+          "x": 910.7142857142858,
+          "y": 516.2698291596912
+        },
+        {
+          "x": 908.3333333333334,
+          "y": 516.2698291596912
+        },
+        {
+          "x": 905.952380952381,
+          "y": 517.4603053501675
+        },
+        {
+          "x": 903.5714285714286,
+          "y": 517.4603053501675
+        },
+        {
+          "x": 902.3809523809524,
+          "y": 518.6507815406436
+        },
+        {
+          "x": 901.1904761904763,
+          "y": 518.6507815406436
+        },
+        {
+          "x": 901.1904761904763,
+          "y": 518.6507815406436
+        },
+        {
+          "x": 898.8095238095239,
+          "y": 518.6507815406436
+        },
+        {
+          "x": 897.6190476190477,
+          "y": 518.6507815406436
+        },
+        {
+          "x": 896.4285714285714,
+          "y": 518.6507815406436
+        },
+        {
+          "x": 896.4285714285714,
+          "y": 518.6507815406436
+        },
+        {
+          "x": 892.8571428571429,
+          "y": 518.6507815406436
+        },
+        {
+          "x": 890.4761904761905,
+          "y": 518.6507815406436
+        },
+        {
+          "x": 889.2857142857143,
+          "y": 518.6507815406436
+        }
+      ],
+      "metadata": {
+        "tag": null,
+        "meaning": null
+      }
+    }
+  ],
   "annotations": [],
   "architectureMemory": {
     "system": "ACE",
@@ -122,8 +1095,25 @@
         "Test Generator"
       ]
     },
-    "subsystems": [],
-    "modules": [],
+    "subsystems": [
+      "we want to see if we can have nodes and systems spawn and generate locally"
+    ],
+    "modules": [
+      "we want to see if we can have nodes and systems spawn and generate locally"
+    ],
+    "world": {
+      "domain": "gameplay-systems",
+      "systems": [],
+      "mechanics": [],
+      "quests": [],
+      "items": [],
+      "constraints": []
+    },
+    "adapters": [],
+    "proposals": [
+      "system-structure: we want to see if we can have nodes and systems spawn and generate locally",
+      "system-structure: we also need more clarity on our context management calculations, maybe expose more how it's being calculated?"
+    ],
     "rules": [
       "modular architecture",
       "no circular dependencies",
@@ -164,25 +1154,25 @@
         "criteriaVersion": "ace-intent-v1",
         "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
       },
-      "summary": "context reports need updating by agent beyond text taken from 1 node",
-      "confidence": 0.3,
+      "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+      "confidence": 0.23,
       "criteria": [
         {
           "id": "project-alignment",
           "label": "Project alignment",
-          "score": 0.16666666666666666,
-          "reason": "Matched project terms: agent"
+          "score": 0,
+          "reason": "Few direct overlaps with current project context."
         },
         {
           "id": "actionability",
           "label": "Actionability",
-          "score": 0.16666666666666666,
+          "score": 0.3333333333333333,
           "reason": "Input reads more like a note than a concrete action."
         },
         {
           "id": "architecture-fit",
           "label": "Architecture fit",
-          "score": 0.7142857142857143,
+          "score": 0.2857142857142857,
           "reason": "References ACE system structure, agents, or implementation surfaces."
         },
         {
@@ -194,36 +1184,32 @@
         {
           "id": "clarity",
           "label": "Clarity",
-          "score": 0.45238095238095233,
+          "score": 0.5238095238095238,
           "reason": "Input includes enough detail to classify intent reliably."
         }
       ],
       "tasks": [
-        "context reports need updating by agent beyond text taken from 1 node"
+        "we also need more clarity on our context management calculations",
+        "maybe expose more how it's being calculated"
       ],
       "classification": {
-        "role": "ux",
+        "role": "thought",
         "labels": [
-          "context",
-          "ux"
+          "context"
         ]
       },
       "metrics": {
-        "tokenCount": 8,
+        "tokenCount": 10,
         "sentenceCount": 1,
-        "matchedProjectTerms": [
-          "agent"
-        ],
+        "matchedProjectTerms": [],
         "actionSignals": 0,
-        "architectureSignals": 3,
+        "architectureSignals": 1,
         "constraintSignals": 0
       },
       "projectContext": {
         "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
         "blockers": [],
-        "matchedTerms": [
-          "agent"
-        ],
+        "matchedTerms": [],
         "referenceKeywords": [
           "boot",
           "core",
@@ -235,10 +1221,10 @@
           "implement"
         ]
       },
-      "judgedAt": "2026-03-13T12:07:46.939Z",
-      "nodeId": "node_1773403593232_kvs26",
+      "judgedAt": "2026-03-14T14:25:17.098Z",
+      "nodeId": "node_1773498206362_0ly8n",
       "source": "node-enter",
-      "createdAt": "2026-03-13T12:07:46.941Z"
+      "createdAt": "2026-03-14T14:25:17.103Z"
     },
     "contextReport": null,
     "byNode": {
@@ -976,9 +1962,331 @@
         "nodeId": "node_1773403593232_kvs26",
         "source": "node-enter",
         "createdAt": "2026-03-13T12:07:46.941Z"
+      },
+      "node_1773494168729_819t0": {
+        "agent": {
+          "id": "context-manager",
+          "name": "Context Manager",
+          "criteriaVersion": "ace-intent-v1",
+          "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+        },
+        "summary": "we want to see if we can have nodes and systems spawn and generate locally",
+        "confidence": 0.18,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.16666666666666666,
+            "reason": "Matched project terms: generate"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.16666666666666666,
+            "reason": "Input reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.14285714285714285,
+            "reason": "Little direct architecture language found."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.41666666666666663,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "tasks": [
+          "we want to see if we can have nodes and systems spawn and generate locally"
+        ],
+        "classification": {
+          "role": "module",
+          "labels": [
+            "ux"
+          ]
+        },
+        "metrics": {
+          "tokenCount": 7,
+          "sentenceCount": 1,
+          "matchedProjectTerms": [
+            "generate"
+          ],
+          "actionSignals": 0,
+          "architectureSignals": 0,
+          "constraintSignals": 0
+        },
+        "projectContext": {
+          "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+          "blockers": [],
+          "matchedTerms": [
+            "generate"
+          ],
+          "referenceKeywords": [
+            "boot",
+            "core",
+            "engine",
+            "mvp",
+            "stabilise",
+            "project",
+            "brain",
+            "implement"
+          ]
+        },
+        "judgedAt": "2026-03-14T14:22:28.100Z",
+        "nodeId": "node_1773494168729_819t0",
+        "source": "node-enter",
+        "createdAt": "2026-03-14T14:22:28.105Z"
+      },
+      "node_1773498206362_0ly8n": {
+        "agent": {
+          "id": "context-manager",
+          "name": "Context Manager",
+          "criteriaVersion": "ace-intent-v1",
+          "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+        },
+        "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+        "confidence": 0.23,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.3333333333333333,
+            "reason": "Input reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.2857142857142857,
+            "reason": "References ACE system structure, agents, or implementation surfaces."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.5238095238095238,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "tasks": [
+          "we also need more clarity on our context management calculations",
+          "maybe expose more how it's being calculated"
+        ],
+        "classification": {
+          "role": "thought",
+          "labels": [
+            "context"
+          ]
+        },
+        "metrics": {
+          "tokenCount": 10,
+          "sentenceCount": 1,
+          "matchedProjectTerms": [],
+          "actionSignals": 0,
+          "architectureSignals": 1,
+          "constraintSignals": 0
+        },
+        "projectContext": {
+          "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+          "blockers": [],
+          "matchedTerms": [],
+          "referenceKeywords": [
+            "boot",
+            "core",
+            "engine",
+            "mvp",
+            "stabilise",
+            "project",
+            "brain",
+            "implement"
+          ]
+        },
+        "judgedAt": "2026-03-14T14:25:17.098Z",
+        "nodeId": "node_1773498206362_0ly8n",
+        "source": "node-enter",
+        "createdAt": "2026-03-14T14:25:17.103Z"
       }
     },
     "reports": [
+      {
+        "agent": {
+          "id": "context-manager",
+          "name": "Context Manager",
+          "criteriaVersion": "ace-intent-v1",
+          "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+        },
+        "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+        "confidence": 0.23,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.3333333333333333,
+            "reason": "Input reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.2857142857142857,
+            "reason": "References ACE system structure, agents, or implementation surfaces."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.5238095238095238,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "tasks": [
+          "we also need more clarity on our context management calculations",
+          "maybe expose more how it's being calculated"
+        ],
+        "classification": {
+          "role": "thought",
+          "labels": [
+            "context"
+          ]
+        },
+        "metrics": {
+          "tokenCount": 10,
+          "sentenceCount": 1,
+          "matchedProjectTerms": [],
+          "actionSignals": 0,
+          "architectureSignals": 1,
+          "constraintSignals": 0
+        },
+        "projectContext": {
+          "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+          "blockers": [],
+          "matchedTerms": [],
+          "referenceKeywords": [
+            "boot",
+            "core",
+            "engine",
+            "mvp",
+            "stabilise",
+            "project",
+            "brain",
+            "implement"
+          ]
+        },
+        "judgedAt": "2026-03-14T14:25:17.098Z",
+        "nodeId": "node_1773498206362_0ly8n",
+        "source": "node-enter",
+        "createdAt": "2026-03-14T14:25:17.103Z"
+      },
+      {
+        "agent": {
+          "id": "context-manager",
+          "name": "Context Manager",
+          "criteriaVersion": "ace-intent-v1",
+          "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+        },
+        "summary": "we want to see if we can have nodes and systems spawn and generate locally",
+        "confidence": 0.18,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.16666666666666666,
+            "reason": "Matched project terms: generate"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.16666666666666666,
+            "reason": "Input reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.14285714285714285,
+            "reason": "Little direct architecture language found."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.41666666666666663,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "tasks": [
+          "we want to see if we can have nodes and systems spawn and generate locally"
+        ],
+        "classification": {
+          "role": "module",
+          "labels": [
+            "ux"
+          ]
+        },
+        "metrics": {
+          "tokenCount": 7,
+          "sentenceCount": 1,
+          "matchedProjectTerms": [
+            "generate"
+          ],
+          "actionSignals": 0,
+          "architectureSignals": 0,
+          "constraintSignals": 0
+        },
+        "projectContext": {
+          "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+          "blockers": [],
+          "matchedTerms": [
+            "generate"
+          ],
+          "referenceKeywords": [
+            "boot",
+            "core",
+            "engine",
+            "mvp",
+            "stabilise",
+            "project",
+            "brain",
+            "implement"
+          ]
+        },
+        "judgedAt": "2026-03-14T14:22:28.100Z",
+        "nodeId": "node_1773494168729_819t0",
+        "source": "node-enter",
+        "createdAt": "2026-03-14T14:22:28.105Z"
+      },
       {
         "agent": {
           "id": "context-manager",
@@ -1721,7 +3029,7 @@
       "outputs": [],
       "handoffs": [
         {
-          "id": "handoff_1773408149869_3gzq",
+          "id": "handoff_1773429206097_fi0w",
           "sourceAgentId": "context-manager",
           "targetAgentId": "planner",
           "createdAt": "2026-03-13T12:07:46.941Z",
@@ -1781,22 +3089,132 @@
         }
       ],
       "artifactRefs": [],
-      "id": "page_1773408149866_813p",
-      "title": "context reports need updating by agent beyond te",
+      "id": "page_1773429206094_pgv8",
+      "title": "we also need more clarity on our context managem",
       "status": "active",
-      "sourceNodeId": "node_1773403593232_kvs26",
-      "summary": "context reports need updating by agent beyond text taken from 1 node",
-      "createdAt": "2026-03-13T13:22:29.866Z",
-      "updatedAt": "2026-03-13T17:03:41.029Z"
+      "sourceNodeId": "node_1773498206362_0ly8n",
+      "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+      "createdAt": "2026-03-13T19:13:26.094Z",
+      "updatedAt": "2026-03-14T19:08:14.276Z"
     }
   ],
-  "activePageId": "page_1773408149866_813p",
+  "activePageId": "page_1773429206094_pgv8",
+  "rsg": {
+    "mode": "dual-layer",
+    "worldDomain": "gameplay-systems",
+    "approvalPolicy": {
+      "system-structure": "auto-record",
+      "world-structure": "auto-record",
+      "adapter-translation": "auto-record",
+      "code-runtime-mutation": "risk-gated-review"
+    },
+    "proposals": [
+      {
+        "id": "node_1773494168729_819t0",
+        "title": "we want to see if we can have nodes and systems spawn and generate locally",
+        "target": "system-structure",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773494168729_819t0",
+        "approval": "auto-record",
+        "status": "proposed"
+      },
+      {
+        "id": "node_1773498206362_0ly8n",
+        "title": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+        "target": "system-structure",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773498206362_0ly8n",
+        "approval": "auto-record",
+        "status": "proposed"
+      },
+      {
+        "id": "mutation_card_page_1773403588491_034z_finance-department",
+        "title": "Finance Department",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773396757687_h18df",
+        "approval": "required",
+        "status": "awaiting-approval"
+      },
+      {
+        "id": "mutation_card_page_1773403588491_034z_calculates-cost-tokens-usage-etc",
+        "title": "- calculates cost/tokens usage etc",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773396757687_h18df",
+        "approval": "required",
+        "status": "awaiting-approval"
+      },
+      {
+        "id": "mutation_card_page_1773403588491_034z_allocates-resources-allowed-to-each-agen",
+        "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773396757687_h18df",
+        "approval": "required",
+        "status": "awaiting-approval"
+      },
+      {
+        "id": "mutation_card_page_1773408149866_813p_finance-department",
+        "title": "Finance Department",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773396757687_h18df",
+        "approval": "required",
+        "status": "awaiting-approval"
+      },
+      {
+        "id": "mutation_card_page_1773408149866_813p_calculates-cost-tokens-usage-etc",
+        "title": "- calculates cost/tokens usage etc",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773396757687_h18df",
+        "approval": "required",
+        "status": "awaiting-approval"
+      },
+      {
+        "id": "mutation_card_page_1773408149866_813p_allocates-resources-allowed-to-each-agen",
+        "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773396757687_h18df",
+        "approval": "required",
+        "status": "awaiting-approval"
+      },
+      {
+        "id": "mutation_card_page_1773408149866_813p_context-reports-need-updating-by-agent-b",
+        "title": "context reports need updating by agent beyond text taken from 1 node",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773403593232_kvs26",
+        "approval": "required",
+        "status": "awaiting-approval"
+      },
+      {
+        "id": "mutation_0001",
+        "title": "context reports need updating by agent beyond text taken from 1 node",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1773403593232_kvs26",
+        "approval": "required",
+        "status": "awaiting-approval"
+      }
+    ],
+    "summary": {
+      "systemStructure": 2,
+      "worldStructure": 0,
+      "adapterTranslation": 0,
+      "codeRuntimeMutation": 8
+    },
+    "lastEvaluatedAt": "2026-03-14T19:08:14.276Z"
+  },
   "studio": {
-    "scene": "studio",
-    "selectedAgentId": "context-manager",
+    "scene": "canvas",
+    "selectedAgentId": "executor",
+    "activeGraphLayer": "system",
     "handoffs": {
       "contextToPlanner": {
-        "id": "handoff_1773408149869_3gzq",
+        "id": "handoff_1773429206097_fi0w",
         "sourceAgentId": "context-manager",
         "targetAgentId": "planner",
         "createdAt": "2026-03-13T12:07:46.941Z",
@@ -1856,7 +3274,7 @@
       },
       "history": [
         {
-          "id": "handoff_1773408149869_3gzq",
+          "id": "handoff_1773429206097_fi0w",
           "sourceAgentId": "context-manager",
           "targetAgentId": "planner",
           "createdAt": "2026-03-13T12:07:46.941Z",
@@ -1926,16 +3344,35 @@
           "title": "Finance Department",
           "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T17:03:41.029Z",
+          "updatedAt": "2026-03-14T13:30:54.485Z",
           "sourceKey": "page_1773403588491_034z:finance-department",
           "desk": "CTO",
-          "state": "Task requires approval",
+          "state": "Approval required",
           "phaseTicks": 0,
           "runnerTaskId": null,
           "runIds": [],
           "artifactRefs": [],
           "deployStatus": "idle",
-          "auditSessionId": null
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
         },
         {
           "id": "card_page_1773403588491_034z_calculates-cost-tokens-usage-etc",
@@ -1945,16 +3382,35 @@
           "title": "- calculates cost/tokens usage etc",
           "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T17:03:41.029Z",
+          "updatedAt": "2026-03-14T13:30:54.485Z",
           "sourceKey": "page_1773403588491_034z:calculates-cost-tokens-usage-etc",
           "desk": "CTO",
-          "state": "Task requires approval",
+          "state": "Approval required",
           "phaseTicks": 0,
           "runnerTaskId": null,
           "runIds": [],
           "artifactRefs": [],
           "deployStatus": "idle",
-          "auditSessionId": null
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
         },
         {
           "id": "card_page_1773403588491_034z_allocates-resources-allowed-to-each-agen",
@@ -1962,18 +3418,37 @@
           "sourceHandoffId": "handoff_1773403588495_hxww",
           "sourceNodeId": "node_1773396757687_h18df",
           "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
-          "status": "complete",
+          "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T17:03:41.029Z",
+          "updatedAt": "2026-03-14T13:30:54.485Z",
           "sourceKey": "page_1773403588491_034z:allocates-resources-allowed-to-each-agen",
-          "desk": "Archivist",
-          "state": "Pending review",
+          "desk": "CTO",
+          "state": "Approval required",
           "phaseTicks": 0,
           "runnerTaskId": null,
           "runIds": [],
           "artifactRefs": [],
           "deployStatus": "idle",
-          "auditSessionId": null
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
         },
         {
           "id": "card_page_1773408149866_813p_finance-department",
@@ -1981,18 +3456,37 @@
           "sourceHandoffId": "handoff_1773403588495_hxww",
           "sourceNodeId": "node_1773396757687_h18df",
           "title": "Finance Department",
-          "status": "active",
+          "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T17:03:41.029Z",
+          "updatedAt": "2026-03-14T13:30:54.485Z",
           "sourceKey": "page_1773408149866_813p:finance-department",
-          "desk": "Context",
-          "state": "Clarifying",
+          "desk": "CTO",
+          "state": "Approval required",
           "phaseTicks": 0,
           "runnerTaskId": null,
           "runIds": [],
           "artifactRefs": [],
           "deployStatus": "idle",
-          "auditSessionId": null
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
         },
         {
           "id": "card_page_1773408149866_813p_calculates-cost-tokens-usage-etc",
@@ -2000,18 +3494,37 @@
           "sourceHandoffId": "handoff_1773403588495_hxww",
           "sourceNodeId": "node_1773396757687_h18df",
           "title": "- calculates cost/tokens usage etc",
-          "status": "plan",
+          "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T17:03:41.029Z",
+          "updatedAt": "2026-03-14T13:30:54.485Z",
           "sourceKey": "page_1773408149866_813p:calculates-cost-tokens-usage-etc",
-          "desk": "Context",
-          "state": "Waiting on context",
+          "desk": "CTO",
+          "state": "Approval required",
           "phaseTicks": 0,
           "runnerTaskId": null,
           "runIds": [],
           "artifactRefs": [],
           "deployStatus": "idle",
-          "auditSessionId": null
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
         },
         {
           "id": "card_page_1773408149866_813p_allocates-resources-allowed-to-each-agen",
@@ -2019,18 +3532,37 @@
           "sourceHandoffId": "handoff_1773403588495_hxww",
           "sourceNodeId": "node_1773396757687_h18df",
           "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
-          "status": "plan",
+          "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-13T17:03:41.029Z",
+          "updatedAt": "2026-03-14T13:30:54.485Z",
           "sourceKey": "page_1773408149866_813p:allocates-resources-allowed-to-each-agen",
-          "desk": "Context",
-          "state": "Waiting on context",
+          "desk": "CTO",
+          "state": "Approval required",
           "phaseTicks": 0,
           "runnerTaskId": null,
           "runIds": [],
           "artifactRefs": [],
           "deployStatus": "idle",
-          "auditSessionId": null
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
         },
         {
           "id": "card_page_1773408149866_813p_context-reports-need-updating-by-agent-b",
@@ -2038,33 +3570,91 @@
           "sourceHandoffId": "handoff_1773408149869_3gzq",
           "sourceNodeId": "node_1773403593232_kvs26",
           "title": "context reports need updating by agent beyond text taken from 1 node",
-          "status": "plan",
+          "status": "review",
           "createdAt": "2026-03-13T12:07:46.941Z",
-          "updatedAt": "2026-03-13T17:03:41.029Z",
+          "updatedAt": "2026-03-14T13:30:54.485Z",
           "sourceKey": "page_1773408149866_813p:context-reports-need-updating-by-agent-b",
-          "desk": "Context",
-          "state": "Waiting on context",
+          "desk": "CTO",
+          "state": "Approval required",
           "phaseTicks": 0,
           "runnerTaskId": null,
           "runIds": [],
           "artifactRefs": [],
           "deployStatus": "idle",
-          "auditSessionId": null
+          "auditSessionId": null,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
+        },
+        {
+          "id": "0001",
+          "sourceKey": "page_1773429206094_pgv8:context-reports-need-updating-by-agent-b",
+          "pageId": "page_1773429206094_pgv8",
+          "sourceHandoffId": "handoff_1773408149869_3gzq",
+          "sourceNodeId": "node_1773403593232_kvs26",
+          "title": "context reports need updating by agent beyond text taken from 1 node",
+          "status": "review",
+          "desk": "CTO",
+          "state": "Approval required",
+          "phaseTicks": 0,
+          "runnerTaskId": null,
+          "runIds": [],
+          "artifactRefs": [],
+          "deployStatus": "idle",
+          "auditSessionId": null,
+          "createdAt": "2026-03-13T12:07:46.941Z",
+          "updatedAt": "2026-03-14T13:30:54.485Z",
+          "targetProjectKey": "ace-self",
+          "builderTaskId": null,
+          "executionPackage": {
+            "status": "idle",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": ""
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null
         }
       ],
-      "selectedCardId": null,
-      "updatedAt": "2026-03-13T17:03:41.029Z",
+      "selectedCardId": "card_page_1773403588491_034z_finance-department",
+      "updatedAt": "2026-03-14T19:08:14.227Z",
       "summary": {
-        "plan": 3,
-        "active": 1,
-        "complete": 1,
-        "review": 2,
+        "plan": 0,
+        "active": 0,
+        "complete": 0,
+        "review": 8,
+        "binned": 0,
         "idleWorkers": 0
       }
     },
     "orchestrator": {
       "status": "needs-attention",
-      "lastTickAt": "2026-03-13T17:03:41.029Z",
+      "lastTickAt": "2026-03-14T13:30:54.485Z",
       "activeDeskIds": [
         "context-manager",
         "planner",
@@ -2094,14 +3684,14 @@
           "summary": "Planner and Executor are active on the same page and must stay within scoped outputs."
         },
         {
-          "id": "clarification-needed",
-          "kind": "clarification-needed",
+          "id": "ready-to-apply-card_page_1773403588491_034z_finance-department",
+          "kind": "ready-to-apply",
           "severity": "high",
           "desks": [
-            "context-manager",
+            "executor",
             "cto-architect"
           ],
-          "summary": "Current handoff requires clarification before execution should advance."
+          "summary": "Finance Department is waiting at the apply gate because risk heuristics require approval."
         }
       ],
       "pendingUserActions": [
@@ -2120,8 +3710,8 @@
           ],
           "workItems": [
             {
-              "id": "page_1773408149866_813p-context-watch",
-              "pageId": "page_1773408149866_813p",
+              "id": "page_1773429206094_pgv8-context-watch",
+              "pageId": "page_1773429206094_pgv8",
               "deskId": "context-manager",
               "kind": "context-watch",
               "status": "running",
@@ -2130,7 +3720,7 @@
                 "context"
               ],
               "artifactRefs": [
-                "handoff_1773408149869_3gzq"
+                "handoff_1773429206097_fi0w"
               ],
               "title": "context reports need updating by agent beyond text taken from 1 node"
             }
@@ -2138,15 +3728,15 @@
           "lastOutput": "context reports need updating by agent beyond text taken from 1 node",
           "blockedReason": null,
           "contextSlice": {
-            "activePageId": "page_1773408149866_813p",
+            "activePageId": "page_1773429206094_pgv8",
             "activePageTitle": "context reports need updating by agent beyond te",
             "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
             "matchedTerms": [
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T17:03:41.029Z",
-          "thoughtBubble": "🔵 clarifying 3 planned tasks..."
+          "freshAt": "2026-03-14T13:30:54.485Z",
+          "thoughtBubble": "🔵 stabilizing context..."
         },
         "planner": {
           "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
@@ -2159,20 +3749,20 @@
           ],
           "workItems": [
             {
-              "id": "page_1773408149866_813p-planner-0",
-              "pageId": "page_1773408149866_813p",
+              "id": "page_1773429206094_pgv8-planner-0",
+              "pageId": "page_1773429206094_pgv8",
               "deskId": "planner",
               "kind": "plan-item",
               "status": "running",
               "dependsOn": [
-                "handoff_1773408149869_3gzq"
+                "handoff_1773429206097_fi0w"
               ],
               "conflictTags": [
                 "plan",
                 "task-0"
               ],
               "artifactRefs": [
-                "handoff_1773408149869_3gzq"
+                "handoff_1773429206097_fi0w"
               ],
               "title": "context reports need updating by agent beyond text taken from 1 node"
             }
@@ -2180,54 +3770,55 @@
           "lastOutput": "context reports need updating by agent beyond text taken from 1 node",
           "blockedReason": null,
           "contextSlice": {
-            "activePageId": "page_1773408149866_813p",
+            "activePageId": "page_1773429206094_pgv8",
             "activePageTitle": "context reports need updating by agent beyond te",
             "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
             "matchedTerms": [
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T17:03:41.029Z",
-          "thoughtBubble": "🟡 3 tasks in backlog. 0 workers idle. Rebalancing workload..."
+          "freshAt": "2026-03-14T13:30:54.485Z",
+          "thoughtBubble": "🟡 shaping the next task..."
         },
         "executor": {
-          "mission": "Own tangible delivery outputs when plan items are approved and unblocked.",
+          "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
           "localState": "blocked",
-          "currentGoal": "Prepare output for: context reports need updating by agent beyond text taken from 1 node",
+          "currentGoal": "Awaiting approval: Finance Department",
           "allowedActions": [
-            "prepare-output",
-            "draft-patch",
+            "apply-package",
+            "run-preflight",
+            "deploy-runtime",
             "report-blocker"
           ],
           "workItems": [
             {
-              "id": "page_1773408149866_813p-executor-0",
-              "pageId": "page_1773408149866_813p",
+              "id": "card_page_1773403588491_034z_finance-department-approval",
+              "pageId": "page_1773403588491_034z",
               "deskId": "executor",
-              "kind": "execution-item",
+              "kind": "approval-gated",
               "status": "waiting",
               "dependsOn": [
-                "handoff_1773408149869_3gzq"
+                "handoff_1773403588495_hxww"
               ],
               "conflictTags": [
                 "execute",
-                "task-0"
+                "card_page_1773403588491_034z_finance-department"
               ],
               "artifactRefs": [],
-              "title": "Prepare output for: context reports need updating by agent beyond text taken from 1 node"
+              "title": "Awaiting approval: Finance Department"
             }
           ],
-          "lastOutput": "Prepare output for: context reports need updating by agent beyond text taken from 1 node",
-          "blockedReason": "Execution is gated until Context Manager clarifies the active page intent.",
+          "lastOutput": "Awaiting approval: Finance Department",
+          "blockedReason": "Waiting for approval on Finance Department.",
           "contextSlice": {
-            "activePageId": "page_1773408149866_813p",
+            "activePageId": "page_1773429206094_pgv8",
             "activePageTitle": "context reports need updating by agent beyond te",
             "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
             "matchedTerms": [
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T17:03:41.029Z",
+          "freshAt": "2026-03-14T13:30:54.485Z",
           "thoughtBubble": "🔴 blocked by low-confidence context."
         },
         "memory-archivist": {
@@ -2241,8 +3832,8 @@
           ],
           "workItems": [
             {
-              "id": "page_1773408149866_813p-memory-sync",
-              "pageId": "page_1773408149866_813p",
+              "id": "page_1773429206094_pgv8-memory-sync",
+              "pageId": "page_1773429206094_pgv8",
               "deskId": "memory-archivist",
               "kind": "memory-sync",
               "status": "running",
@@ -2251,7 +3842,7 @@
                 "memory"
               ],
               "artifactRefs": [
-                "handoff_1773408149869_3gzq"
+                "handoff_1773429206097_fi0w"
               ],
               "title": "Capture notes, handoffs, and artifact history"
             }
@@ -2259,41 +3850,41 @@
           "lastOutput": "Capture notes, handoffs, and artifact history",
           "blockedReason": null,
           "contextSlice": {
-            "activePageId": "page_1773408149866_813p",
+            "activePageId": "page_1773429206094_pgv8",
             "activePageTitle": "context reports need updating by agent beyond te",
             "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
             "matchedTerms": [
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T17:03:41.029Z",
+          "freshAt": "2026-03-14T13:30:54.485Z",
           "thoughtBubble": "🟣 logging summaries..."
         },
         "cto-architect": {
-          "mission": "Monitor guardrails, conflicts, and review readiness across the desk network.",
+          "mission": "Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.",
           "localState": "running",
           "currentGoal": "Review desk overlap, approval state, and guardrails",
           "allowedActions": [
             "raise-conflict",
-            "approve-scope",
-            "request-review"
+            "approve-apply",
+            "reject-risky-change"
           ],
           "workItems": [
             {
-              "id": "page_1773408149866_813p-governance-check",
-              "pageId": "page_1773408149866_813p",
+              "id": "page_1773429206094_pgv8-governance-check",
+              "pageId": "page_1773429206094_pgv8",
               "deskId": "cto-architect",
               "kind": "governance-check",
               "status": "running",
               "dependsOn": [
-                "handoff_1773408149869_3gzq"
+                "handoff_1773429206097_fi0w"
               ],
               "conflictTags": [
                 "review",
                 "governance"
               ],
               "artifactRefs": [
-                "handoff_1773408149869_3gzq"
+                "handoff_1773429206097_fi0w"
               ],
               "title": "Review desk overlap, approval state, and guardrails"
             }
@@ -2301,18 +3892,18 @@
           "lastOutput": "Review desk overlap, approval state, and guardrails",
           "blockedReason": null,
           "contextSlice": {
-            "activePageId": "page_1773408149866_813p",
+            "activePageId": "page_1773429206094_pgv8",
             "activePageTitle": "context reports need updating by agent beyond te",
             "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
             "matchedTerms": [
               "agent"
             ]
           },
-          "freshAt": "2026-03-13T17:03:41.029Z",
-          "thoughtBubble": "🟠 2 tasks require approval."
+          "freshAt": "2026-03-14T13:30:54.485Z",
+          "thoughtBubble": "🟠 reviewing governance signals..."
         }
       },
-      "activePageId": "page_1773408149866_813p"
+      "activePageId": "page_1773429206094_pgv8"
     },
     "selfUpgrade": {
       "status": "idle",
@@ -2346,19 +3937,55 @@
       },
       "requiresPermission": "none"
     },
+    "layout": {
+      "room": {
+        "x": 72,
+        "y": 86,
+        "width": 1056,
+        "height": 642
+      },
+      "desks": {
+        "context-manager": {
+          "x": 172.45877659574467,
+          "y": 417.4255319148936
+        },
+        "planner": {
+          "x": 965.982776089159,
+          "y": 424.91695892759725
+        },
+        "executor": {
+          "x": 158,
+          "y": 658
+        },
+        "memory-archivist": {
+          "x": 644.7166895604396,
+          "y": 639.8080357142857
+        },
+        "cto-architect": {
+          "x": 971.4394946808511,
+          "y": 623.0970744680851
+        }
+      },
+      "whiteboards": {
+        "teamBoard": {
+          "x": 282.29103343465044,
+          "y": 102
+        }
+      }
+    },
     "canvasViewport": {
-      "x": -217,
-      "y": -198,
-      "zoom": 1.16
+      "x": -241,
+      "y": -623,
+      "zoom": 1.24
     },
     "studioViewport": {
-      "zoom": 1.36,
-      "x": 332.38,
-      "y": 755.16
+      "zoom": 1.54,
+      "x": 12.759999999999991,
+      "y": -212.74
     },
     "sidebar": {
       "collapsed": false,
-      "width": 520
+      "width": 487
     }
   }
 }

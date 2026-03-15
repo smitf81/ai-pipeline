@@ -9,14 +9,23 @@ export default async function runOrchestratorStateTests() {
   const {
     advanceOrchestratorWorkspace,
     buildRuntimePayload,
+    normalizeGraphBundle,
+    createDefaultRsgState,
+    buildRsgState,
     normalizeTeamBoardState,
     normalizeNotebookState,
   } = require(orchestratorStatePath);
 
   const workspace = {
-    graph: {
-      nodes: [{ id: 'node_ctx', type: 'text', content: 'Clarify desk overlap', metadata: { agentId: 'context-manager' } }],
-      edges: [],
+    graphs: {
+      system: {
+        nodes: [{ id: 'node_ctx', type: 'text', content: 'Clarify desk overlap', metadata: { agentId: 'context-manager' } }],
+        edges: [],
+      },
+      world: {
+        nodes: [{ id: 'node_world', type: 'gameplay-system', content: 'Combat loop', metadata: { proposalTarget: 'world-structure' } }],
+        edges: [],
+      },
     },
     annotations: [],
     sketches: [],
@@ -48,6 +57,17 @@ export default async function runOrchestratorStateTests() {
     },
   };
 
+  const graphs = normalizeGraphBundle(workspace);
+  assert.equal(graphs.system.nodes[0].id, 'node_ctx');
+  assert.equal(graphs.world.nodes[0].id, 'node_world');
+  assert.equal(createDefaultRsgState().mode, 'dual-layer');
+  const seededRsg = buildRsgState({
+    ...workspace,
+    graph: graphs.system,
+    graphs,
+  });
+  assert.equal(seededRsg.summary.worldStructure, 1);
+
   const notebook = normalizeNotebookState(workspace);
   assert.equal(notebook.pages.length, 1);
   assert.ok(notebook.activePageId);
@@ -62,9 +82,12 @@ export default async function runOrchestratorStateTests() {
   });
 
   assert.equal(nextWorkspace.activePageId, notebook.activePageId);
+  assert.equal(nextWorkspace.graph.nodes[0].id, 'node_ctx');
+  assert.equal(nextWorkspace.graphs.world.nodes[0].id, 'node_world');
   assert.equal(nextWorkspace.studio.orchestrator.status, 'needs-attention');
   assert.ok(nextWorkspace.studio.orchestrator.activeDeskIds.includes('planner'));
   assert.equal(nextWorkspace.studio.orchestrator.desks.executor.localState, 'blocked');
+  assert.equal(nextWorkspace.rsg.summary.worldStructure, 1);
   assert.ok(nextWorkspace.pages[0].handoffs.length >= 1);
   assert.match(nextWorkspace.studio.orchestrator.desks['cto-architect'].thoughtBubble, /approval|reviewing|guardrails/i);
   assert.match(nextWorkspace.studio.orchestrator.desks.planner.thoughtBubble, /backlog|tasks|waiting|sequencing/i);
@@ -76,6 +99,9 @@ export default async function runOrchestratorStateTests() {
   assert.ok(runtime.orchestrator.desks['cto-architect'].thoughtBubble);
   assert.ok(Array.isArray(runtime.pages));
   assert.equal(runtime.selfUpgrade.status, 'ready-to-apply');
+  assert.equal(runtime.graphs.system.nodes[0].id, 'node_ctx');
+  assert.equal(runtime.graphs.world.nodes[0].id, 'node_world');
+  assert.equal(runtime.rsg.summary.worldStructure, 1);
 
   const board = normalizeTeamBoardState({
     ...workspace,
@@ -94,6 +120,7 @@ export default async function runOrchestratorStateTests() {
         cards: board.cards.map((card, index) => ({
           ...card,
           status: index === 0 ? 'review' : card.status,
+          approvalState: index === 0 ? 'approved' : card.approvalState,
         })),
       },
     },

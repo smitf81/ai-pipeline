@@ -3,7 +3,14 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
-const { advanceOrchestratorWorkspace, buildRuntimePayload } = require('./orchestratorState');
+const {
+  advanceOrchestratorWorkspace,
+  buildRuntimePayload,
+  normalizeGraphBundle,
+  createDefaultRsgState,
+  buildRsgState,
+  normalizeTeamBoardState,
+} = require('./orchestratorState');
 const {
   analyzeSpatialIntent: analyzeSpatialIntentReport,
   buildIntentProjectContext: buildIntentProjectContextData,
@@ -15,6 +22,7 @@ const {
   ensureSelfProject,
   isSelfTarget,
   reviewSelfUpgradePatch,
+  assessAutoMutationRisk,
   summarizeCommandOutput,
   getSelfUpgradePreflightSpecs,
 } = require('./selfUpgrade');
@@ -23,9 +31,17 @@ const {
   listThroughputSessions,
   readThroughputSession,
   summarizeSession,
+  updateThroughputSession,
   runThroughputSession,
   reconcilePendingThroughputSessions,
 } = require('./throughputDebug');
+const {
+  ensureQAStorage,
+  listQARuns,
+  readQARun,
+  runQARun,
+  summarizeQARun,
+} = require('./qaRunner');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -60,8 +76,9 @@ const runOrder = [];
 function ensureSpatialStorage() {
   const dir = path.dirname(SPATIAL_WORKSPACE_FILE);
   fs.mkdirSync(dir, { recursive: true });
+  ensureQAStorage(ROOT);
   if (!fs.existsSync(SPATIAL_WORKSPACE_FILE)) {
-    fs.writeFileSync(SPATIAL_WORKSPACE_FILE, JSON.stringify({ graph: { nodes: [], edges: [] }, sketches: [], annotations: [], architectureMemory: {}, agentComments: {}, studio: {} }, null, 2));
+    writeJson(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace());
   }
   if (!fs.existsSync(SPATIAL_HISTORY_FILE)) fs.writeFileSync(SPATIAL_HISTORY_FILE, '[]\n');
 }
@@ -128,6 +145,10 @@ function getRunsSnapshot() {
 function defaultSpatialWorkspace() {
   return {
     graph: { nodes: [], edges: [] },
+    graphs: {
+      system: { nodes: [], edges: [] },
+      world: { nodes: [], edges: [] },
+    },
     sketches: [],
     annotations: [],
     architectureMemory: {},
@@ -135,6 +156,7 @@ function defaultSpatialWorkspace() {
     intentState: { latest: null, contextReport: null, byNode: {}, reports: [] },
     pages: [],
     activePageId: null,
+    rsg: createDefaultRsgState(),
     studio: {
       selfUpgrade: createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }),
     },
@@ -148,17 +170,31 @@ function getSelfUpgradeState(workspace) {
   });
 }
 
-function updateSpatialWorkspace(mutator) {
-  ensureSpatialStorage();
-  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
+function normalizeSpatialWorkspaceShape(workspace = {}) {
+  const baseWorkspace = {
+    ...defaultSpatialWorkspace(),
+    ...(workspace || {}),
+  };
+  const graphs = normalizeGraphBundle(baseWorkspace);
   const normalizedWorkspace = {
-    ...workspace,
+    ...baseWorkspace,
+    graph: graphs.system,
+    graphs,
     studio: {
-      ...(workspace.studio || {}),
-      selfUpgrade: getSelfUpgradeState(workspace),
+      ...(baseWorkspace.studio || {}),
+      selfUpgrade: getSelfUpgradeState(baseWorkspace),
     },
   };
-  const nextWorkspace = mutator(normalizedWorkspace) || normalizedWorkspace;
+  return {
+    ...normalizedWorkspace,
+    rsg: normalizedWorkspace.rsg || buildRsgState(normalizedWorkspace),
+  };
+}
+
+function updateSpatialWorkspace(mutator) {
+  ensureSpatialStorage();
+  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const nextWorkspace = normalizeSpatialWorkspaceShape(mutator(workspace) || workspace);
   writeJson(SPATIAL_WORKSPACE_FILE, nextWorkspace);
   return nextWorkspace;
 }
@@ -175,7 +211,7 @@ function updateSelfUpgradeState(mutator) {
 
 function persistSpatialWorkspace(nextWorkspace) {
   ensureSpatialStorage();
-  const advancedWorkspace = advanceOrchestratorWorkspace(nextWorkspace, {
+  const advancedWorkspace = advanceOrchestratorWorkspace(normalizeSpatialWorkspaceShape(nextWorkspace), {
     dashboardState: getDashboardStateSnapshot(),
     runs: getRunsSnapshot(),
   });
@@ -196,6 +232,13 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
   const createdAt = nowIso();
   fs.mkdirSync(taskDir, { recursive: true });
   fs.writeFileSync(path.join(taskDir, 'idea.txt'), `${prompt.trim()}\n`, 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'context.md'), [
+    `# Task ${taskId}: ${title || prompt.slice(0, 60)}`,
+    '',
+    '## Context',
+    handoff?.problemStatement || handoff?.summary || prompt.trim(),
+    '',
+  ].join('\n'), 'utf8');
   fs.writeFileSync(path.join(taskDir, 'plan.md'), [
     `# Task ${taskId}: ${title || prompt.slice(0, 60)}`,
     '',
@@ -217,11 +260,12 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
     sessionId ? `- Throughput debug session: ${sessionId}` : '-',
     '',
   ].join('\n'), 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'patch.diff'), '', 'utf8');
   fs.writeFileSync(path.join(taskDir, 'meta.json'), `${JSON.stringify({
     id: taskId,
     title: title || prompt.slice(0, 60),
     created_utc: createdAt,
-    source: 'throughput-debug',
+    source: sessionId ? 'throughput-debug' : 'studio-team-board',
     sessionId,
     handoffId: handoff?.id || null,
   }, null, 2)}\n`, 'utf8');
@@ -319,10 +363,12 @@ function scheduleSelfRestart() {
   setTimeout(() => process.exit(0), 150);
 }
 
-function refreshSpatialOrchestrator({ persist = true } = {}) {
+function refreshSpatialOrchestrator({ persist = true, workspace = null } = {}) {
   ensureSpatialStorage();
-  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
-  const nextWorkspace = advanceOrchestratorWorkspace(workspace, {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(syncTeamBoardWithSelfUpgrade(
+    workspace || readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
+  ));
+  const nextWorkspace = advanceOrchestratorWorkspace(currentWorkspace, {
     dashboardState: getDashboardStateSnapshot(),
     runs: getRunsSnapshot(),
   });
@@ -332,15 +378,63 @@ function refreshSpatialOrchestrator({ persist = true } = {}) {
   return nextWorkspace;
 }
 
-function refreshSpatialRuntime({ persist = true } = {}) {
-  const workspace = refreshSpatialOrchestrator({ persist });
+function buildQADebugPayload() {
+  const runs = listQARuns(ROOT);
+  return {
+    latestRun: summarizeQARun(runs[0] || null),
+    runs: runs.slice(0, 8).map((run) => summarizeQARun(run)),
+  };
+}
+
+function buildSpatialRuntimePayload(workspace) {
   return {
     ...buildRuntimePayload(workspace),
     throughputDebug: {
       latestSession: summarizeSession(listThroughputSessions(ROOT)[0] || null),
       sessions: listThroughputSessions(ROOT).slice(0, 8).map((session) => summarizeSession(session)),
     },
+    qaDebug: buildQADebugPayload(),
   };
+}
+
+function refreshSpatialRuntime({ persist = true } = {}) {
+  const workspace = refreshSpatialOrchestrator({ persist, workspace: pumpAutomatedTeamBoard() });
+  return buildSpatialRuntimePayload(workspace);
+}
+
+function getLocalBaseUrl(req = null) {
+  const host = req?.get?.('host') || req?.headers?.host || `localhost:${port}`;
+  const protocol = req?.protocol || 'http';
+  return `${protocol}://${host}`;
+}
+
+async function startBrowserQARun({
+  baseUrl = null,
+  scenario = 'layout-pass',
+  mode = 'interactive',
+  trigger = 'manual',
+  prompt = '',
+  actions = [],
+  linked = {},
+} = {}) {
+  return runQARun({
+    rootPath: ROOT,
+    baseUrl: baseUrl || getLocalBaseUrl(),
+    scenario,
+    mode,
+    trigger,
+    prompt,
+    actions,
+    linked,
+    getRuntimeSnapshot: () => buildSpatialRuntimePayload(refreshSpatialOrchestrator({ persist: false })),
+    getHealthSnapshot: () => getHealthSnapshot(),
+  });
+}
+
+function queueAutoBrowserQARun(options = {}) {
+  setTimeout(() => {
+    startBrowserQARun(options).catch(() => {});
+  }, 80);
 }
 
 function readDashboardFile(relPath) {
@@ -377,6 +471,426 @@ function getTaskFolders() {
     .filter((d) => d.isDirectory() && /^\d{4}-.+/.test(d.name))
     .map((d) => d.name)
     .sort();
+}
+
+let teamBoardAutomationRunning = false;
+
+function readSpatialWorkspace() {
+  ensureSpatialStorage();
+  return normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+}
+
+function relativeToRoot(targetPath) {
+  if (!targetPath) return null;
+  return path.relative(ROOT, targetPath).replace(/\\/g, '/');
+}
+
+function findTaskFolderByTaskId(taskId) {
+  return getTaskFolders().find((folder) => folder.startsWith(String(taskId || '').slice(0, 4))) || null;
+}
+
+function mutateTeamBoardCard(workspace, cardId, mutator) {
+  const board = normalizeTeamBoardState(workspace);
+  const cards = board.cards.map((card) => (card.id === cardId ? mutator(card) : card));
+  return {
+    ...workspace,
+    studio: {
+      ...(workspace.studio || {}),
+      teamBoard: {
+        ...board,
+        cards,
+        updatedAt: nowIso(),
+      },
+    },
+  };
+}
+
+function findTeamBoardCard(workspace, cardId) {
+  const board = normalizeTeamBoardState(workspace);
+  return board.cards.find((card) => card.id === cardId) || null;
+}
+
+function persistBoardWorkspace(nextWorkspace, historyType, summary = {}) {
+  const persisted = persistSpatialWorkspace(nextWorkspace);
+  appendArchitectureHistory({
+    at: nowIso(),
+    type: historyType,
+    summary,
+  });
+  return persisted;
+}
+
+function buildExecutionPackage({
+  card,
+  taskId,
+  taskDir,
+  patchPath,
+  changedFiles,
+  preflight,
+  risk,
+}) {
+  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  return {
+    status: 'ready',
+    taskId,
+    taskDir: relativeToRoot(taskDir),
+    patchPath: relativeToRoot(patchPath),
+    changedFiles,
+    targetProjectKey,
+    expectedAction: risk.autoDeploy ? 'apply + deploy' : 'apply',
+    summary: `${changedFiles.length} changed file${changedFiles.length === 1 ? '' : 's'} ready for ${targetProjectKey}`,
+    preflightStatus: preflight?.status || 'idle',
+    builtAt: nowIso(),
+  };
+}
+
+function syncTeamBoardWithSelfUpgrade(workspace) {
+  const selfUpgrade = getSelfUpgradeState(workspace);
+  const board = normalizeTeamBoardState(workspace);
+  const taskId = String(selfUpgrade.taskId || '').trim();
+  if (!taskId) return workspace;
+  const healthStatus = selfUpgrade.deploy?.health?.status || selfUpgrade.deploy?.status || 'unknown';
+  const cards = board.cards.map((card) => {
+    if (String(card.builderTaskId || card.runnerTaskId || '') !== taskId) return card;
+    if (card.deployStatus === 'deploying' && ['healthy', 'ready'].includes(String(healthStatus))) {
+      return {
+        ...card,
+        status: 'complete',
+        desk: 'Executor',
+        state: 'Deployed',
+        deployStatus: 'deployed',
+        lastHealth: selfUpgrade.deploy?.health || null,
+        updatedAt: nowIso(),
+      };
+    }
+    if (card.deployStatus === 'deploying' && !['healthy', 'restarting', 'ready'].includes(String(healthStatus))) {
+      return {
+        ...card,
+        status: 'review',
+        desk: 'CTO',
+        state: 'Flagged',
+        deployStatus: 'flagged',
+        approvalState: 'pending',
+        riskLevel: 'high',
+        riskReasons: [...new Set([...(card.riskReasons || []), `Deploy health reported ${healthStatus}.`])],
+        lastHealth: selfUpgrade.deploy?.health || null,
+        updatedAt: nowIso(),
+      };
+    }
+    return card;
+  });
+  return {
+    ...workspace,
+    studio: {
+      ...(workspace.studio || {}),
+      selfUpgrade,
+      teamBoard: {
+        ...board,
+        cards,
+        updatedAt: nowIso(),
+      },
+    },
+  };
+}
+
+function mergeUnique(values = []) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function collectTaskArtifacts(taskDir, existingArtifacts = []) {
+  const artifacts = [...existingArtifacts];
+  if (!taskDir || !fs.existsSync(taskDir)) return mergeUnique(artifacts);
+  for (const name of fs.readdirSync(taskDir)) {
+    if (['idea.txt', 'context.md', 'plan.md', 'patch.diff', 'meta.json'].includes(name) || /^run_.+\.(log|json)$/.test(name)) {
+      artifacts.push(relativeToRoot(path.join(taskDir, name)));
+    }
+  }
+  return mergeUnique(artifacts);
+}
+
+function buildCardPrompt(card, workspace) {
+  const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
+  const promptParts = [
+    card.title,
+    handoff?.problemStatement || handoff?.summary || '',
+  ].filter(Boolean);
+  return promptParts.join('\n\n');
+}
+
+function readTaskPatchReview({ taskId, projectKey, projectPath }) {
+  const taskFolder = findTaskFolderByTaskId(taskId);
+  const validation = taskFolder ? validateApply(projectPath, taskFolder) : {
+    ok: false,
+    taskDir: null,
+    patchPath: null,
+    changedFiles: [],
+    refusalReasons: ['Task folder not found.'],
+  };
+  const patchText = validation.patchPath && fs.existsSync(validation.patchPath)
+    ? fs.readFileSync(validation.patchPath, 'utf8')
+    : '';
+  const patchReview = reviewSelfUpgradePatch({
+    patchText,
+    taskId,
+    projectKey,
+    projectPath,
+    rootPath: ROOT,
+  });
+  return {
+    taskFolder,
+    validation,
+    patchReview,
+  };
+}
+
+function setSelfUpgradeFromBuild({ taskId, patchReview, preflight, validation }) {
+  updateSelfUpgradeState((state) => ({
+    ...state,
+    status: preflight?.ok && patchReview?.ok && validation?.ok ? 'ready-to-apply' : 'blocked',
+    taskId,
+    targetProjectKey: SELF_TARGET_KEY,
+    patchReview,
+    preflight,
+    deploy: preflight?.ok
+      ? state.deploy
+      : createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }).deploy,
+    requiresPermission: preflight?.ok ? 'none' : 'user-confirmation',
+  }));
+}
+
+function runCardBuilderPipeline(cardId) {
+  let workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card || card.status !== 'active') {
+    return { ok: false, error: 'Card is not active for builder work.', workspace };
+  }
+
+  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  const { projectKey, projectPath } = resolveProjectTarget(targetProjectKey);
+  const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
+  let taskId = String(card.builderTaskId || card.runnerTaskId || '').trim();
+  let taskDir = null;
+
+  if (!taskId || !findTaskFolderByTaskId(taskId)) {
+    const task = createRunnerTaskFolder({
+      title: card.title,
+      prompt: buildCardPrompt(card, workspace),
+      handoff,
+    });
+    taskId = task.taskId;
+    taskDir = task.taskDir;
+    workspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      builderTaskId: task.taskId,
+      runnerTaskId: task.taskId,
+      targetProjectKey,
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        status: 'building',
+        taskId: task.taskId,
+        taskDir: relativeToRoot(task.taskDir),
+        patchPath: relativeToRoot(path.join(task.taskDir, 'patch.diff')),
+        targetProjectKey,
+      },
+      approvalState: 'none',
+      applyStatus: 'idle',
+      deployStatus: 'idle',
+      riskLevel: 'unknown',
+      riskReasons: [],
+      updatedAt: nowIso(),
+    }));
+    workspace = persistBoardWorkspace(workspace, 'team-board-builder-start', { cardId, taskId, title: card.title });
+  } else {
+    taskDir = path.join(TASKS_DIR, findTaskFolderByTaskId(taskId));
+  }
+
+  const results = [];
+  let failedResult = null;
+  for (const action of ['scan', 'manage', 'build']) {
+    const result = executeActionSync(action, {
+      taskId,
+      project: targetProjectKey,
+    });
+    results.push(result);
+    if (!result.ok) {
+      failedResult = result;
+      break;
+    }
+  }
+  const runIds = mergeUnique(results.map((result) => result.runId));
+  const runArtifacts = mergeUnique(results.flatMap((result) => result.artifacts || []));
+
+  if (failedResult) {
+    const failedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+      ...currentCard,
+      builderTaskId: taskId,
+      runnerTaskId: taskId,
+      status: 'active',
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        status: 'failed',
+        taskId,
+        taskDir: relativeToRoot(taskDir),
+        targetProjectKey,
+        summary: failedResult.error || failedResult.summary || 'Builder pipeline failed.',
+      },
+      runIds: mergeUnique([...(currentCard.runIds || []), ...runIds]),
+      artifactRefs: collectTaskArtifacts(taskDir, [...(currentCard.artifactRefs || []), ...runArtifacts]),
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: failedResult.error || 'Builder pipeline failed.',
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-builder-failed', { cardId, taskId, runIds }),
+    };
+  }
+
+  const { validation, patchReview } = readTaskPatchReview({ taskId, projectKey, projectPath });
+  const preflight = isSelfTarget(projectKey, projectPath, ROOT)
+    ? runSelfUpgradePreflight({ taskId, projectKey, projectPath, validation, patchReview })
+    : { status: 'not-required', ok: true, checks: [], summary: 'Preflight not required for this target.' };
+  const conflicts = readSpatialWorkspace()?.studio?.orchestrator?.conflicts || [];
+  const risk = assessAutoMutationRisk({
+    projectKey,
+    projectPath,
+    rootPath: ROOT,
+    changedFiles: validation.changedFiles || [],
+    preflight,
+    conflicts,
+  });
+  const riskReasons = mergeUnique([
+    ...(risk.reasons || []),
+    ...(!validation.ok ? (validation.refusalReasons || []) : []),
+    ...(!patchReview.ok ? (patchReview.refusalReasons || []) : []),
+  ]);
+  const requiresReview = Boolean(risk.requiresReview || !validation.ok || !patchReview.ok || !preflight.ok);
+  const nextRiskLevel = requiresReview && risk.riskLevel === 'low' ? 'high' : risk.riskLevel;
+  const nextExecutionPackage = buildExecutionPackage({
+    card,
+    taskId,
+    taskDir: validation.taskDir || taskDir,
+    patchPath: validation.patchPath || path.join(taskDir, 'patch.diff'),
+    changedFiles: validation.changedFiles || [],
+    preflight,
+    risk,
+  });
+
+  if (isSelfTarget(projectKey, projectPath, ROOT)) {
+    setSelfUpgradeFromBuild({
+      taskId,
+      patchReview,
+      preflight,
+      validation,
+    });
+  }
+
+  const completedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+    ...currentCard,
+    builderTaskId: taskId,
+    runnerTaskId: taskId,
+    targetProjectKey,
+    status: requiresReview ? 'review' : 'complete',
+    executionPackage: nextExecutionPackage,
+    runIds: mergeUnique([...(currentCard.runIds || []), ...runIds]),
+    artifactRefs: collectTaskArtifacts(validation.taskDir || taskDir, [...(currentCard.artifactRefs || []), ...runArtifacts]),
+    riskLevel: nextRiskLevel || 'medium',
+    riskReasons,
+    approvalState: requiresReview ? 'pending' : 'auto-approved',
+    applyStatus: requiresReview ? 'idle' : 'queued',
+    deployStatus: 'idle',
+    updatedAt: nowIso(),
+  }));
+
+  return {
+    ok: true,
+    taskId,
+    risk: {
+      ...risk,
+      reasons: riskReasons,
+    },
+    workspace: persistBoardWorkspace(completedWorkspace, 'team-board-build-complete', {
+      cardId,
+      taskId,
+      changedFiles: validation.changedFiles || [],
+      riskLevel: nextRiskLevel || 'medium',
+    }),
+  };
+}
+
+function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
+  const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card) return { ok: false, error: 'Card not found.', workspace };
+
+  const taskId = String(card.builderTaskId || card.runnerTaskId || card.executionPackage?.taskId || '').trim();
+  if (!taskId) return { ok: false, error: 'Card has no build package to apply.', workspace };
+
+  const readyForApply = (card.status === 'complete' && card.applyStatus === 'queued')
+    || (card.status === 'review' && card.approvalState === 'approved')
+    || (card.status === 'complete' && card.approvalState === 'approved');
+  if (!readyForApply) return { ok: false, error: 'Card is not ready for apply.', workspace };
+
+  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  const applyingWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+    ...currentCard,
+    status: 'complete',
+    approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : currentCard.approvalState),
+    applyStatus: 'applying',
+    updatedAt: nowIso(),
+  }));
+  persistBoardWorkspace(applyingWorkspace, 'team-board-apply-start', { cardId, taskId });
+
+  const result = executeActionSync('apply', {
+    taskId,
+    project: targetProjectKey,
+    confirmApply: true,
+    confirmOverride: true,
+    autoApproved: !approvedByUser,
+  });
+
+  if (!result.ok) {
+    const failedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'review',
+      approvalState: 'pending',
+      applyStatus: 'failed',
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), result.error || 'Apply failed.']),
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: result.error || 'Apply failed.',
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-apply-failed', { cardId, taskId, runId: result.runId }),
+    };
+  }
+
+  const nextDeployStatus = card.targetProjectKey === SELF_TARGET_KEY
+    && card.executionPackage?.expectedAction === 'apply + deploy'
+    ? 'queued'
+    : 'idle';
+  const appliedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+    ...currentCard,
+    status: 'complete',
+    approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : 'auto-approved'),
+    applyStatus: 'applied',
+    deployStatus: nextDeployStatus,
+    branch: result.meta?.branch || currentCard.branch || null,
+    commit: result.meta?.commit || currentCard.commit || null,
+    runIds: mergeUnique([...(currentCard.runIds || []), result.runId]),
+    artifactRefs: mergeUnique([...(currentCard.artifactRefs || []), ...(result.artifacts || [])]),
+    updatedAt: nowIso(),
+  }));
+  return {
+    ok: true,
+    result,
+    workspace: persistBoardWorkspace(appliedWorkspace, 'team-board-apply-complete', {
+      cardId,
+      taskId,
+      branch: result.meta?.branch || null,
+      commit: result.meta?.commit || null,
+    }),
+  };
 }
 
 function listChangedFilesFromPatch(patchText) {
@@ -597,7 +1111,7 @@ function executeActionSync(action, body) {
         taskId,
         targetProjectKey: SELF_TARGET_KEY,
         patchReview: selfPatchReview,
-        requiresPermission: 'user-confirmation',
+        requiresPermission: body.autoApproved ? 'none' : 'user-confirmation',
       }));
     }
   }
@@ -638,7 +1152,7 @@ function executeActionSync(action, body) {
           commit: summary.commit,
           taskId,
         },
-        requiresPermission: 'user-confirmation',
+        requiresPermission: body.autoApproved ? 'none' : 'user-confirmation',
       }));
     }
   } else if (action === 'apply' && isSelfTarget(projectKey, projectPath, ROOT)) {
@@ -682,6 +1196,141 @@ function getHealthSnapshot() {
       deploy: selfUpgrade.deploy,
     },
   };
+}
+
+function requestSelfUpgradeDeploy({ confirmRestart, simulate = false } = {}) {
+  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
+  const selfUpgrade = getSelfUpgradeState(workspace);
+
+  if (!confirmRestart) {
+    return { ok: false, error: 'Deploy requires explicit restart confirmation.', selfUpgrade };
+  }
+  if (!selfUpgrade.preflight?.ok) {
+    return { ok: false, error: 'Deploy requires a passing self-upgrade preflight.', selfUpgrade };
+  }
+  if (!selfUpgrade.apply?.ok) {
+    return { ok: false, error: 'Deploy requires a successful self-upgrade apply.', selfUpgrade };
+  }
+
+  const restartingWorkspace = updateSelfUpgradeState((state) => ({
+    ...state,
+    status: 'deploying',
+    deploy: {
+      ...state.deploy,
+      status: simulate ? 'healthy' : 'restarting',
+      requestedAt: nowIso(),
+      restartedAt: simulate ? nowIso() : state.deploy?.restartedAt || null,
+      health: {
+        status: simulate ? 'healthy' : 'restarting',
+        pid: process.pid,
+        startedAt: SERVER_STARTED_AT,
+      },
+    },
+    requiresPermission: 'none',
+  }));
+
+  return {
+    ok: true,
+    restarting: !simulate,
+    deferredRestart: !simulate,
+    scheduleRestart: !simulate,
+    selfUpgrade: getSelfUpgradeState(restartingWorkspace),
+    healthUrl: '/api/health',
+  };
+}
+
+function runCardDeployPipeline(cardId, { approvedByUser = false } = {}) {
+  const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card) return { ok: false, error: 'Card not found.', workspace };
+  if (card.targetProjectKey !== SELF_TARGET_KEY) return { ok: false, error: 'Deploy only runs for ace-self packages.', workspace };
+  if (card.deployStatus !== 'queued') return { ok: false, error: 'Card is not queued for deploy.', workspace };
+
+  const deployingWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+    ...currentCard,
+    status: 'complete',
+    approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : currentCard.approvalState),
+    deployStatus: 'deploying',
+    updatedAt: nowIso(),
+  }));
+  persistBoardWorkspace(deployingWorkspace, 'team-board-deploy-start', { cardId, taskId: card.builderTaskId || card.runnerTaskId || null });
+
+  const result = requestSelfUpgradeDeploy({
+    confirmRestart: true,
+    simulate: process.env.ACE_DISABLE_SELF_RESTART === '1' || process.env.NODE_ENV === 'test',
+  });
+
+  if (!result.ok) {
+    const failedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'review',
+      approvalState: 'pending',
+      deployStatus: 'flagged',
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), result.error || 'Deploy failed.']),
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: result.error || 'Deploy failed.',
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-deploy-failed', { cardId }),
+    };
+  }
+
+  let nextWorkspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  nextWorkspace = mutateTeamBoardCard(nextWorkspace, cardId, (currentCard) => ({
+    ...currentCard,
+    status: 'complete',
+    deployStatus: result.restarting ? 'deploying' : 'deployed',
+    lastHealth: result.selfUpgrade?.deploy?.health || currentCard.lastHealth || null,
+    updatedAt: nowIso(),
+  }));
+  const persistedWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-deploy-complete', {
+    cardId,
+    restarting: result.restarting,
+  });
+  if (result.scheduleRestart) {
+    setTimeout(scheduleSelfRestart, 120);
+  }
+  return {
+    ok: true,
+    result,
+    workspace: persistedWorkspace,
+  };
+}
+
+function pumpAutomatedTeamBoard(workspace = null) {
+  if (teamBoardAutomationRunning) {
+    return readSpatialWorkspace();
+  }
+  teamBoardAutomationRunning = true;
+  try {
+    let nextWorkspace = syncTeamBoardWithSelfUpgrade(workspace || readSpatialWorkspace());
+    const board = normalizeTeamBoardState(nextWorkspace);
+    const reviewApprovedCard = board.cards.find((card) => card.status === 'review' && card.approvalState === 'approved') || null;
+    const activeCard = board.cards.find((card) => card.status === 'active') || null;
+    const queuedApplyCard = board.cards.find((card) => card.status === 'complete' && card.applyStatus === 'queued') || null;
+    const queuedDeployCard = board.cards.find((card) => card.status === 'complete' && card.deployStatus === 'queued') || null;
+
+    if (reviewApprovedCard) {
+      const approvedWorkspace = mutateTeamBoardCard(nextWorkspace, reviewApprovedCard.id, (card) => ({
+        ...card,
+        status: 'complete',
+        applyStatus: 'queued',
+        updatedAt: nowIso(),
+      }));
+      nextWorkspace = persistBoardWorkspace(approvedWorkspace, 'team-board-approval-queued', { cardId: reviewApprovedCard.id });
+    } else if (queuedDeployCard) {
+      nextWorkspace = runCardDeployPipeline(queuedDeployCard.id).workspace || nextWorkspace;
+    } else if (queuedApplyCard) {
+      nextWorkspace = runCardApplyPipeline(queuedApplyCard.id).workspace || nextWorkspace;
+    } else if (activeCard && activeCard.executionPackage?.status !== 'ready') {
+      nextWorkspace = runCardBuilderPipeline(activeCard.id).workspace || nextWorkspace;
+    }
+    return nextWorkspace;
+  } finally {
+    teamBoardAutomationRunning = false;
+  }
 }
 
 app.get('/api/dashboard', (req, res) => {
@@ -789,45 +1438,18 @@ app.post('/api/spatial/self-upgrade/preflight', (req, res) => {
 
 app.post('/api/spatial/self-upgrade/deploy', (req, res) => {
   const body = req.body || {};
-  const confirmRestart = Boolean(body.confirmRestart);
-  const simulateOnly = body.simulate === true || process.env.ACE_DISABLE_SELF_RESTART === '1' || process.env.NODE_ENV === 'test';
-  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
-  const selfUpgrade = getSelfUpgradeState(workspace);
-
-  if (!confirmRestart) {
-    return res.status(400).json({ error: 'Deploy requires explicit restart confirmation.', selfUpgrade });
-  }
-  if (!selfUpgrade.preflight?.ok) {
-    return res.status(400).json({ error: 'Deploy requires a passing self-upgrade preflight.', selfUpgrade });
-  }
-  if (!selfUpgrade.apply?.ok) {
-    return res.status(400).json({ error: 'Deploy requires a successful self-upgrade apply.', selfUpgrade });
-  }
-
-  const restartingWorkspace = updateSelfUpgradeState((state) => ({
-    ...state,
-    status: 'deploying',
-    deploy: {
-      ...state.deploy,
-      status: simulateOnly ? 'healthy' : 'restarting',
-      requestedAt: nowIso(),
-      restartedAt: simulateOnly ? nowIso() : state.deploy?.restartedAt || null,
-      health: {
-        status: simulateOnly ? 'healthy' : 'restarting',
-        pid: process.pid,
-        startedAt: SERVER_STARTED_AT,
-      },
-    },
-    requiresPermission: 'none',
-  }));
-  const nextState = getSelfUpgradeState(restartingWorkspace);
-  res.json({
-    ok: true,
-    restarting: !simulateOnly,
-    selfUpgrade: nextState,
-    healthUrl: '/api/health',
+  const result = requestSelfUpgradeDeploy({
+    confirmRestart: Boolean(body.confirmRestart),
+    simulate: body.simulate === true || process.env.ACE_DISABLE_SELF_RESTART === '1' || process.env.NODE_ENV === 'test',
   });
-  if (!simulateOnly) {
+  if (!result.ok) {
+    return res.status(400).json({
+      error: result.error,
+      selfUpgrade: result.selfUpgrade,
+    });
+  }
+  res.json(result);
+  if (result.scheduleRestart) {
     setTimeout(scheduleSelfRestart, 80);
   }
 });
@@ -1061,40 +1683,127 @@ app.post('/api/add/project', (req, res) => {
 });
 
 app.get('/api/spatial/workspace', (req, res) => {
-  const workspace = refreshSpatialOrchestrator();
+  const workspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({ workspace: pumpAutomatedTeamBoard() }));
   workspace.graph = workspace.graph || { nodes: [], edges: [] };
+  workspace.graphs = workspace.graphs || normalizeGraphBundle(workspace);
   workspace.sketches = Array.isArray(workspace.sketches) ? workspace.sketches : [];
   workspace.annotations = Array.isArray(workspace.annotations) ? workspace.annotations : [];
   workspace.architectureMemory = workspace.architectureMemory || {};
   workspace.agentComments = workspace.agentComments || {};
   workspace.studio = workspace.studio || {};
+  workspace.rsg = workspace.rsg || buildRsgState(workspace);
   res.json(workspace);
 });
 
 app.get('/api/spatial/runtime', (req, res) => {
-  res.json(refreshSpatialRuntime());
+  res.json(refreshSpatialRuntime({ persist: true }));
+});
+
+app.post('/api/spatial/team-board/action', (req, res) => {
+  const body = req.body || {};
+  const action = String(body.action || '').trim();
+  const cardId = String(body.cardId || '').trim();
+  if (!action || !cardId) {
+    return res.status(400).json({ error: 'action and cardId are required.' });
+  }
+
+  const workspace = readSpatialWorkspace();
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card) {
+    return res.status(404).json({ error: 'Team board card not found.' });
+  }
+
+  let nextWorkspace = workspace;
+  if (action === 'approve-apply') {
+    nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'review',
+      approvalState: 'approved',
+      updatedAt: nowIso(),
+    }));
+    nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-approved', { cardId, title: card.title });
+    nextWorkspace = pumpAutomatedTeamBoard(nextWorkspace);
+  } else if (action === 'reject-to-builder') {
+    nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'active',
+      approvalState: 'rejected',
+      applyStatus: 'idle',
+      deployStatus: 'idle',
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        status: 'idle',
+        summary: '',
+      },
+      updatedAt: nowIso(),
+    }));
+    nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-rejected', { cardId, title: card.title });
+  } else if (action === 'bin') {
+    nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'binned',
+      approvalState: 'none',
+      applyStatus: 'idle',
+      deployStatus: 'idle',
+      updatedAt: nowIso(),
+    }));
+    nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-binned', { cardId, title: card.title });
+  } else if (action === 'start-builder') {
+    nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'active',
+      approvalState: 'none',
+      updatedAt: nowIso(),
+    }));
+    nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-builder-manual', { cardId, title: card.title });
+    nextWorkspace = pumpAutomatedTeamBoard(nextWorkspace);
+  } else {
+    return res.status(400).json({ error: 'Unsupported team board action.' });
+  }
+
+  const nextCard = findTeamBoardCard(nextWorkspace, cardId);
+  const touchesStudioUi = (nextCard?.executionPackage?.changedFiles || []).some((file) => String(file || '').startsWith('ui/'));
+  const shouldAutoRunQA = action === 'approve-apply'
+    && nextCard?.targetProjectKey === SELF_TARGET_KEY
+    && touchesStudioUi;
+  if (shouldAutoRunQA) {
+    queueAutoBrowserQARun({
+      baseUrl: getLocalBaseUrl(req),
+      scenario: 'layout-pass',
+      mode: 'interactive',
+      trigger: 'team-board-ui-mutation',
+      prompt: nextCard.title || card.title,
+      linked: { cardId: nextCard.id },
+    });
+  }
+
+  res.json({
+    ok: true,
+    runtime: buildSpatialRuntimePayload(nextWorkspace),
+  });
 });
 
 app.put('/api/spatial/workspace', (req, res) => {
   ensureSpatialStorage();
   const body = req.body || {};
-  const nextWorkspace = advanceOrchestratorWorkspace(body, {
+  const nextWorkspace = advanceOrchestratorWorkspace(normalizeSpatialWorkspaceShape(body), {
     dashboardState: getDashboardStateSnapshot(),
     runs: getRunsSnapshot(),
   });
   writeJson(SPATIAL_WORKSPACE_FILE, nextWorkspace);
+  const automatedWorkspace = pumpAutomatedTeamBoard(nextWorkspace);
   appendArchitectureHistory({
     at: nowIso(),
     type: 'workspace-save',
     summary: {
-      nodes: nextWorkspace.graph?.nodes?.length || 0,
-      edges: nextWorkspace.graph?.edges?.length || 0,
-      versions: nextWorkspace.architectureMemory?.versions?.slice(-1) || [],
-      sketches: nextWorkspace.sketches?.length || 0,
-      annotations: nextWorkspace.annotations?.length || 0,
+      nodes: automatedWorkspace.graph?.nodes?.length || 0,
+      edges: automatedWorkspace.graph?.edges?.length || 0,
+      versions: automatedWorkspace.architectureMemory?.versions?.slice(-1) || [],
+      sketches: automatedWorkspace.sketches?.length || 0,
+      annotations: automatedWorkspace.annotations?.length || 0,
     },
   });
-  res.json({ ok: true, workspace: nextWorkspace });
+  res.json({ ok: true, workspace: automatedWorkspace });
 });
 
 app.get('/api/spatial/history', (req, res) => {
@@ -1116,15 +1825,71 @@ app.get('/api/spatial/debug/throughput/:sessionId', (req, res) => {
   res.json({ session });
 });
 
+app.get('/api/spatial/qa/runs', (req, res) => {
+  const runs = listQARuns(ROOT);
+  res.json({
+    latestRun: summarizeQARun(runs[0] || null),
+    runs: runs.slice(0, 12).map((run) => summarizeQARun(run)),
+  });
+});
+
+app.get('/api/spatial/qa/runs/:runId', (req, res) => {
+  const run = readQARun(ROOT, req.params.runId);
+  if (!run) return res.status(404).json({ error: 'QA run not found.' });
+  res.json({ run });
+});
+
+app.get('/api/spatial/qa/runs/:runId/artifacts/:artifactName', (req, res) => {
+  const run = readQARun(ROOT, req.params.runId);
+  if (!run) return res.status(404).json({ error: 'QA run not found.' });
+  const artifactName = String(req.params.artifactName || '');
+  const artifactEntries = [
+    ...(run.artifacts?.screenshots || []),
+    run.artifacts?.domSnapshot,
+    run.artifacts?.consoleLog,
+    run.artifacts?.networkSummary,
+    run.artifacts?.runtimeSnapshot,
+    run.artifacts?.layoutFindings,
+  ].filter(Boolean);
+  const artifact = artifactEntries.find((entry) => entry.name === artifactName);
+  if (!artifact?.path || !fs.existsSync(artifact.path)) {
+    return res.status(404).json({ error: 'QA artifact not found.' });
+  }
+  res.sendFile(artifact.path);
+});
+
+app.post('/api/spatial/qa/run', async (req, res) => {
+  const body = req.body || {};
+  try {
+    const run = await startBrowserQARun({
+      baseUrl: getLocalBaseUrl(req),
+      scenario: String(body.scenario || 'layout-pass').trim() || 'layout-pass',
+      mode: String(body.mode || 'interactive').trim() || 'interactive',
+      trigger: String(body.trigger || 'manual').trim() || 'manual',
+      prompt: String(body.prompt || '').trim(),
+      actions: Array.isArray(body.actions) ? body.actions : [],
+      linked: typeof body.linked === 'object' && body.linked ? body.linked : {},
+    });
+    res.json({
+      ok: run.verdict !== 'failed',
+      run,
+      runtime: refreshSpatialRuntime({ persist: true }),
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
 app.post('/api/spatial/debug/throughput', async (req, res) => {
   const body = req.body || {};
   const prompt = String(body.prompt || 'I think we should add a desk to the studio for a QA agent').trim();
   const mode = String(body.mode || 'live').toLowerCase() === 'fixture' ? 'fixture' : 'live';
   const targetProjectKey = String(body.project || SELF_TARGET_KEY).trim() || SELF_TARGET_KEY;
+  const shouldRunQA = body.runQa !== false;
   const simulateDeploy = body.simulate === true || mode === 'fixture' || process.env.ACE_DISABLE_SELF_RESTART === '1' || process.env.NODE_ENV === 'test';
   let shouldRestartAfterResponse = false;
   try {
-    const session = await runThroughputSession({
+    let session = await runThroughputSession({
       rootPath: ROOT,
       prompt,
       targetProjectKey,
@@ -1222,7 +1987,29 @@ app.post('/api/spatial/debug/throughput', async (req, res) => {
       getRunsSnapshot: () => getRunsSnapshot(),
       getHealthSnapshot: () => getHealthSnapshot(),
     });
-    res.json({ ok: true, session });
+    let qaRun = null;
+    if (shouldRunQA) {
+      qaRun = await startBrowserQARun({
+        baseUrl: getLocalBaseUrl(req),
+        scenario: 'throughput-visual-pass',
+        mode: 'interactive',
+        trigger: 'throughput-debug',
+        prompt,
+        linked: { throughputSessionId: session.id },
+      });
+      if (qaRun?.id) {
+        session = updateThroughputSession(ROOT, session.id, (current) => ({
+          ...current,
+          qaRunId: qaRun.id,
+        })) || session;
+      }
+    }
+    res.json({
+      ok: true,
+      session,
+      qaRun: qaRun ? summarizeQARun(qaRun) : null,
+      runtime: refreshSpatialRuntime({ persist: true }),
+    });
     if (shouldRestartAfterResponse && session?.stages?.find((stage) => stage.id === 'deploy')?.verdict === 'pass') {
       setTimeout(scheduleSelfRestart, 120);
     }
@@ -1398,7 +2185,8 @@ app.post('/api/spatial/mutations/apply', (req, res) => {
 
 setInterval(() => {
   try {
-    refreshSpatialOrchestrator();
+    const workspace = pumpAutomatedTeamBoard();
+    refreshSpatialOrchestrator({ persist: true, workspace });
   } catch (error) {
     console.warn(`[${nowIso()}] spatial orchestrator refresh failed: ${error.message}`);
   }

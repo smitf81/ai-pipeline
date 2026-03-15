@@ -15,20 +15,63 @@ export class ArchitectureMemory {
       },
       subsystems: [],
       modules: [],
+      world: {
+        domain: 'gameplay-systems',
+        systems: [],
+        mechanics: [],
+        quests: [],
+        items: [],
+        constraints: [],
+      },
+      adapters: [],
+      proposals: [],
       rules: [...DEFAULT_RULES],
       versions: [],
     };
   }
 
-  syncFromGraph(graph) {
-    this.model.subsystems = [...new Set(graph.nodes.filter((n) => n.type === 'module').map((n) => n.content))];
-    this.model.modules = [...new Set(graph.nodes.filter((n) => ['module', 'file', 'code', 'service'].includes(n.type)).map((n) => n.content))];
+  syncFromGraph(graphOrBundle) {
+    const graphBundle = graphOrBundle?.system && graphOrBundle?.world
+      ? graphOrBundle
+      : {
+          system: graphOrBundle || { nodes: [], edges: [] },
+          world: { nodes: [], edges: [] },
+        };
+    const systemGraph = graphBundle.system || { nodes: [], edges: [] };
+    const worldGraph = graphBundle.world || { nodes: [], edges: [] };
+    this.model.subsystems = [...new Set(systemGraph.nodes.filter((n) => n.type === 'module').map((n) => n.content))];
+    this.model.modules = [...new Set(systemGraph.nodes.filter((n) => ['module', 'file', 'code', 'service'].includes(n.type)).map((n) => n.content))];
+    this.model.world = {
+      ...this.model.world,
+      systems: [...new Set(worldGraph.nodes.filter((n) => n.type === 'gameplay-system').map((n) => n.content))],
+      mechanics: [...new Set(worldGraph.nodes.filter((n) => n.type === 'mechanic').map((n) => n.content))],
+      quests: [...new Set(worldGraph.nodes.filter((n) => n.type === 'quest').map((n) => n.content))],
+      items: [...new Set(worldGraph.nodes.filter((n) => n.type === 'item').map((n) => n.content))],
+      constraints: [...new Set(worldGraph.nodes.filter((n) => n.type === 'world-constraint').map((n) => n.content))],
+    };
+    this.model.adapters = [...new Set([
+      ...systemGraph.nodes.filter((n) => n.type === 'adapter').map((n) => n.content),
+      ...worldGraph.nodes.filter((n) => n.type === 'adapter').map((n) => n.content),
+    ])];
+    this.model.proposals = [...new Set([
+      ...systemGraph.nodes.filter((n) => n.metadata?.proposalTarget).map((n) => `${n.metadata.proposalTarget}: ${n.content}`),
+      ...worldGraph.nodes.filter((n) => n.metadata?.proposalTarget).map((n) => `${n.metadata.proposalTarget}: ${n.content}`),
+    ])];
   }
 
-  validate(graph) {
+  validate(graphOrBundle) {
+    const graphBundle = graphOrBundle?.system && graphOrBundle?.world
+      ? graphOrBundle
+      : {
+          system: graphOrBundle || { nodes: [], edges: [] },
+          world: { nodes: [], edges: [] },
+        };
     const errors = [];
-    if (this.model.rules.includes('no circular dependencies') && hasCycle(graph)) {
-      errors.push('Circular dependency detected in task graph.');
+    if (this.model.rules.includes('no circular dependencies') && hasCycle(graphBundle.system || { nodes: [], edges: [] })) {
+      errors.push('Circular dependency detected in system graph.');
+    }
+    if (this.model.rules.includes('no circular dependencies') && hasCycle(graphBundle.world || { nodes: [], edges: [] })) {
+      errors.push('Circular dependency detected in world graph.');
     }
     return { valid: errors.length === 0, errors };
   }

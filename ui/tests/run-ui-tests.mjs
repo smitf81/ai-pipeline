@@ -1,9 +1,12 @@
 const testEntries = [
+  { name: 'aceRuntimeMcp', path: './aceRuntimeMcp.test.mjs' },
+  { name: 'graphEngine', path: './graphEngine.test.mjs' },
   { name: 'studioData', path: './studioData.test.mjs' },
   { name: 'orchestratorState', path: './orchestratorState.test.mjs' },
   { name: 'selfUpgrade', path: './selfUpgrade.test.mjs' },
   { name: 'intentAnalysis', path: './intentAnalysis.test.mjs' },
   { name: 'throughputDebug', path: './throughputDebug.test.mjs' },
+  { name: 'qaRunner', path: './qaRunner.test.mjs' },
   { name: 'spatialApp smoke', path: './spatialApp.smoke.test.mjs' },
 ];
 

@@ -55,17 +55,17 @@ const STATIONS = [
 const DESK_MISSIONS = {
   'context-manager': 'Maintain active page focus, context confidence, and desk-specific context slices.',
   planner: 'Translate active context into concrete plans, work items, and dependency-aware handoffs.',
-  executor: 'Own tangible delivery outputs when plan items are approved and unblocked.',
+  executor: 'Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.',
   'memory-archivist': 'Persist useful summaries, artifact references, and history for active work.',
-  'cto-architect': 'Monitor guardrails, conflicts, and review readiness across the desk network.',
+  'cto-architect': 'Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.',
 };
 
 const DESK_ALLOWED_ACTIONS = {
   'context-manager': ['set-active-page', 'slice-context', 'publish-handoff', 'flag-ambiguity'],
   planner: ['expand-plan', 'prioritise-work', 'publish-plan'],
-  executor: ['prepare-output', 'draft-patch', 'report-blocker'],
+  executor: ['apply-package', 'run-preflight', 'deploy-runtime', 'report-blocker'],
   'memory-archivist': ['archive-summary', 'record-artifact', 'snapshot-history'],
-  'cto-architect': ['raise-conflict', 'approve-scope', 'request-review'],
+  'cto-architect': ['raise-conflict', 'approve-apply', 'reject-risky-change'],
 };
 
 function makeId(prefix) {
@@ -74,6 +74,10 @@ function makeId(prefix) {
 
 function latestIntentReport(workspace) {
   return workspace.intentState?.contextReport || workspace.intentState?.latest || workspace.intentState?.reports?.[0] || null;
+}
+
+function systemGraphOf(workspace = {}) {
+  return workspace.graphs?.system || workspace.graph || { nodes: [], edges: [] };
 }
 
 export function createDefaultPage({ id = null, title = 'Current Page', sourceNodeId = null, createdAt = null } = {}) {
@@ -94,6 +98,7 @@ export function createDefaultPage({ id = null, title = 'Current Page', sourceNod
 
 export function normalizeNotebookState(workspace = {}) {
   const latestIntent = latestIntentReport(workspace);
+  const systemGraph = systemGraphOf(workspace);
   const savedPages = Array.isArray(workspace.pages) ? workspace.pages.filter(Boolean) : [];
   const fallbackTitle = latestIntent?.summary ? latestIntent.summary.slice(0, 48) : 'Current Page';
   const pages = savedPages.length
@@ -105,7 +110,7 @@ export function normalizeNotebookState(workspace = {}) {
       }))
     : [createDefaultPage({
         title: fallbackTitle,
-        sourceNodeId: latestIntent?.nodeId || workspace.graph?.nodes?.[0]?.id || null,
+        sourceNodeId: latestIntent?.nodeId || systemGraph.nodes?.[0]?.id || null,
       })];
   const activePageId = pages.some((page) => page.id === workspace.activePageId)
     ? workspace.activePageId
@@ -135,6 +140,7 @@ export function createDefaultTeamBoard() {
       active: 0,
       complete: 0,
       review: 0,
+      binned: 0,
       idleWorkers: 0,
     },
   };
@@ -150,29 +156,62 @@ function nextTeamBoardTaskId(cards = []) {
 
 function normalizeBoardStatus(status) {
   if (status === 'planned') return 'plan';
-  if (status === 'binned') return 'plan';
   if (status === 'ready') return 'plan';
-  return ['plan', 'active', 'complete', 'review'].includes(status) ? status : 'plan';
+  return ['plan', 'active', 'complete', 'review', 'binned'].includes(status) ? status : 'plan';
 }
 
 function cardSourceKey(pageId, title) {
   return `${pageId}:${slugify(title)}`;
 }
 
-function deskLabelForCard(status, { selected = false, reviewGate = false } = {}) {
-  if (selected) return 'Worker';
-  if (status === 'review') return 'CTO';
-  if (status === 'complete') return 'Archivist';
-  if (status === 'active') return reviewGate ? 'Context' : 'Planner';
-  return reviewGate ? 'Context' : 'Planner';
+function defaultExecutionPackage(card = {}) {
+  return {
+    status: 'idle',
+    taskId: card.builderTaskId || card.runnerTaskId || null,
+    taskDir: null,
+    patchPath: null,
+    changedFiles: [],
+    targetProjectKey: card.targetProjectKey || 'ace-self',
+    expectedAction: 'apply',
+    summary: '',
+  };
 }
 
-function stateLabelForCard(status, { selected = false, reviewGate = false } = {}) {
-  if (selected) return 'Queued for execution';
-  if (status === 'review') return 'Task requires approval';
-  if (status === 'complete') return reviewGate ? 'Pending review' : 'Complete';
-  if (status === 'active') return reviewGate ? 'Clarifying' : 'In progress';
-  return reviewGate ? 'Waiting on context' : 'Ready';
+function deriveCardDesk(card = {}) {
+  if (card.status === 'binned') return 'Bin';
+  if (card.status === 'plan') return 'Planner';
+  if (card.status === 'active') return 'Builder';
+  if (card.status === 'review') return 'CTO';
+  if (['queued', 'applying', 'applied', 'failed'].includes(card.applyStatus) || ['queued', 'deploying', 'deployed', 'flagged', 'failed'].includes(card.deployStatus)) {
+    return 'Executor';
+  }
+  if (card.executionPackage?.status === 'ready') return 'Builder';
+  return 'Archivist';
+}
+
+function deriveCardState(card = {}) {
+  if (card.status === 'binned') return 'Binned';
+  if (card.status === 'plan') return 'Ready';
+  if (card.status === 'active') {
+    if (card.approvalState === 'rejected') return 'Needs builder revision';
+    if (card.executionPackage?.status === 'failed') return 'Builder failed';
+    return 'Building package';
+  }
+  if (card.status === 'review') {
+    if (card.deployStatus === 'flagged' || card.deployStatus === 'failed' || card.applyStatus === 'failed') return 'Flagged';
+    return 'Approval required';
+  }
+  if (card.status === 'complete') {
+    if (card.deployStatus === 'deploying') return 'Deploying';
+    if (card.deployStatus === 'deployed') return 'Deployed';
+    if (card.deployStatus === 'flagged' || card.deployStatus === 'failed') return 'Flagged';
+    if (card.applyStatus === 'applying') return 'Applying';
+    if (card.applyStatus === 'applied') return card.targetProjectKey === 'ace-self' ? 'Applied, awaiting deploy' : 'Applied';
+    if (card.applyStatus === 'queued') return 'Queued for apply';
+    if (card.executionPackage?.status === 'ready') return 'Package ready';
+    return 'Complete';
+  }
+  return 'Ready';
 }
 
 function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, title, createdAt = null }) {
@@ -188,10 +227,20 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, titl
     desk: 'Planner',
     state: 'Ready',
     phaseTicks: 0,
+    targetProjectKey: 'ace-self',
+    builderTaskId: null,
     runnerTaskId: null,
     runIds: [],
     artifactRefs: [],
+    executionPackage: defaultExecutionPackage(),
+    riskLevel: 'unknown',
+    riskReasons: [],
+    approvalState: 'none',
+    applyStatus: 'idle',
     deployStatus: 'idle',
+    branch: null,
+    commit: null,
+    lastHealth: null,
     auditSessionId: null,
     createdAt: now,
     updatedAt: now,
@@ -199,60 +248,66 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, titl
 }
 
 export function normalizeTeamBoardState(workspace = {}) {
-  const notebook = normalizeNotebookState(workspace);
   const board = workspace?.studio?.teamBoard || createDefaultTeamBoard();
-  const existingCards = Array.isArray(board.cards) ? board.cards.filter(Boolean).map((card) => ({
+  const cards = Array.isArray(board.cards) ? board.cards.filter(Boolean).map((card) => {
+    const normalizedCard = {
     ...card,
     status: normalizeBoardStatus(card.status),
-    sourceKey: card.sourceKey || cardSourceKey(card.pageId || notebook.activePageId, card.title || 'task'),
-    desk: card.desk || deskLabelForCard(normalizeBoardStatus(card.status)),
-    state: card.state || stateLabelForCard(normalizeBoardStatus(card.status)),
+    sourceKey: card.sourceKey || cardSourceKey(card.pageId || 'page', card.title || 'task'),
     phaseTicks: Number(card.phaseTicks || 0),
+    targetProjectKey: card.targetProjectKey || 'ace-self',
+    builderTaskId: card.builderTaskId || card.runnerTaskId || null,
     runnerTaskId: card.runnerTaskId || null,
     runIds: Array.isArray(card.runIds) ? card.runIds.filter(Boolean) : [],
     artifactRefs: Array.isArray(card.artifactRefs) ? card.artifactRefs.filter(Boolean) : [],
+    executionPackage: {
+      ...defaultExecutionPackage(card),
+      ...(card.executionPackage || {}),
+      changedFiles: Array.isArray(card.executionPackage?.changedFiles) ? card.executionPackage.changedFiles.filter(Boolean) : [],
+      targetProjectKey: card.executionPackage?.targetProjectKey || card.targetProjectKey || 'ace-self',
+    },
+    riskLevel: card.riskLevel || 'unknown',
+    riskReasons: Array.isArray(card.riskReasons) ? card.riskReasons.filter(Boolean) : [],
+    approvalState: card.approvalState || 'none',
+    applyStatus: card.applyStatus || 'idle',
     deployStatus: card.deployStatus || 'idle',
+    branch: card.branch || null,
+    commit: card.commit || null,
+    lastHealth: card.lastHealth || null,
     auditSessionId: card.auditSessionId || null,
-  })) : [];
-  const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
-  const workingCards = [...existingCards];
-  const seededCards = (handoff?.tasks || []).filter(Boolean).map((task) => {
-    const sourceKey = cardSourceKey(notebook.activePageId, task);
-    const existingCard = workingCards.find((card) => card.sourceKey === sourceKey);
-    if (existingCard) return existingCard;
-    const nextCard = createTeamBoardCard({
-      cards: workingCards,
-      pageId: notebook.activePageId,
-      handoffId: handoff?.id || null,
-      sourceNodeId: handoff?.sourceNodeId || null,
-      title: task,
-      createdAt: handoff?.createdAt || null,
-    });
-    workingCards.push(nextCard);
-    return nextCard;
-  });
-  const mergedCards = [...workingCards];
-  seededCards.forEach((card) => {
-    if (!mergedCards.some((entry) => entry.id === card.id)) mergedCards.push(card);
-  });
-  const selectedCard = mergedCards.find((card) => card.id === board.selectedCardId) || null;
+    desk: card.desk || deriveCardDesk(card),
+    state: card.state || deriveCardState(card),
+    };
+    return normalizedCard;
+  }) : [];
+  const selectedCard = cards.find((card) => card.id === board.selectedCardId) || null;
   return {
-    cards: mergedCards,
+    cards,
     selectedCardId: selectedCard?.id || null,
     updatedAt: new Date().toISOString(),
     summary: {
-      plan: mergedCards.filter((card) => card.status === 'plan').length,
-      active: mergedCards.filter((card) => card.status === 'active').length,
-      complete: mergedCards.filter((card) => card.status === 'complete').length,
-      review: mergedCards.filter((card) => card.status === 'review').length,
+      plan: cards.filter((card) => card.status === 'plan').length,
+      active: cards.filter((card) => card.status === 'active').length,
+      complete: cards.filter((card) => card.status === 'complete').length,
+      review: cards.filter((card) => card.status === 'review').length,
+      binned: cards.filter((card) => card.status === 'binned').length,
       idleWorkers: Number(board.summary?.idleWorkers || 0),
     },
   };
 }
 
+function getActiveMutationCard(boardOrWorkspace = {}) {
+  const board = Array.isArray(boardOrWorkspace?.cards) ? boardOrWorkspace : normalizeTeamBoardState(boardOrWorkspace);
+  return board.cards.find((card) => (
+    ['queued', 'applying', 'applied'].includes(card.applyStatus)
+    || ['queued', 'deploying', 'deployed', 'flagged', 'failed'].includes(card.deployStatus)
+    || card.approvalState === 'approved'
+  )) || null;
+}
+
 function getSelectedExecutionCard(workspace = {}) {
   const board = Array.isArray(workspace?.cards) ? workspace : normalizeTeamBoardState(workspace);
-  return board.cards.find((card) => card.id === board.selectedCardId) || null;
+  return board.cards.find((card) => card.id === board.selectedCardId) || getActiveMutationCard(board) || null;
 }
 
 function collectConstraints(report, dashboardState) {
@@ -296,6 +351,8 @@ export function createPlannerHandoff(report, dashboardState = {}, previousHandof
     constraints,
     confidence: Number(report.confidence || 0),
     criteria: Array.isArray(report.criteria) ? report.criteria : [],
+    truth: report.truth || null,
+    scores: report.scores || null,
     classification: report.classification || { role: 'context', labels: [] },
     status: clarifications.length ? 'needs-clarification' : 'ready',
   };
@@ -399,8 +456,10 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
         ...card,
         status,
         phaseTicks,
-        desk: deskLabelForCard(status, { reviewGate }),
-        state: stateLabelForCard(status, { reviewGate }),
+        desk: deriveCardDesk({ ...card, status }),
+        state: reviewGate && status === 'active'
+          ? 'Clarifying'
+          : deriveCardState({ ...card, status }),
         updatedAt: now,
       };
     });
@@ -597,7 +656,7 @@ export function advanceOrchestratorState({ workspace, dashboardState = {}, runs 
       lastOutput: agent.id === 'context-manager'
         ? handoff?.summary || latestIntent?.summary || null
         : agent.id === 'executor' && initialSelectedExecutionCard
-          ? `Queued review card: ${initialSelectedExecutionCard.title}`
+          ? `Queued mutation package: ${initialSelectedExecutionCard.title}`
           : workItems[0]?.title || null,
       blockedReason,
       contextSlice: {
@@ -640,7 +699,7 @@ export function advanceOrchestratorState({ workspace, dashboardState = {}, runs 
       lastOutput: agent.id === 'context-manager'
         ? handoff?.summary || latestIntent?.summary || null
         : agent.id === 'executor' && selectedExecutionCard
-          ? `Queued review card: ${selectedExecutionCard.title}`
+          ? `Queued mutation package: ${selectedExecutionCard.title}`
           : workItems[0]?.title || null,
       blockedReason,
       contextSlice: {
@@ -773,6 +832,13 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
         detail: `Page: ${notebook.activePage.title} | ${governedDesk?.mission || report?.projectContext?.currentFocus || 'Waiting for context input.'}`,
       },
       {
+        id: 'core-truth',
+        label: 'Core Truth',
+        kind: 'truth',
+        value: report?.truth || null,
+        emptyState: 'Run context intake to expose ACE’s extracted intent truth.',
+      },
+      {
         id: 'problem-to-solve',
         label: 'Problem To Solve',
         kind: 'handoff',
@@ -792,6 +858,9 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
         kind: 'metrics',
         items: [
           { label: 'Confidence', value: `${Math.round((report?.confidence || 0) * 100)}%` },
+          { label: 'Planner usefulness', value: `${Math.round((report?.scores?.plannerUsefulness || 0) * 100)}%` },
+          { label: 'Execution readiness', value: `${Math.round((report?.scores?.executionReadiness || 0) * 100)}%` },
+          { label: 'Deploy readiness', value: `${Math.round((report?.scores?.deployReadiness || 0) * 100)}%` },
           { label: 'Tasks', value: `${(report?.tasks || []).length}` },
           { label: 'Project matches', value: `${matchedTerms.length}` },
           { label: 'Action signals', value: `${actionSignals}` },
@@ -903,12 +972,12 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
     },
       ...(agent.id === 'executor' ? [{
         id: 'execution-selection',
-        label: 'Execution Selection',
+        label: 'Mutation Queue',
         kind: 'summary',
-        value: selectedExecutionCard ? selectedExecutionCard.title : 'No review-ready board card is queued for execution.',
+        value: selectedExecutionCard ? selectedExecutionCard.title : 'No mutation package is currently queued for executor apply/deploy.',
         detail: selectedExecutionCard
-          ? `Selected from review queue on page ${selectedExecutionCard.pageId} | task ${selectedExecutionCard.runnerTaskId || 'unbound'} | deploy ${selectedExecutionCard.deployStatus || 'idle'}`
-          : 'Review-ready tasks get a Send action on the Team Kanban board.',
+          ? `Page ${selectedExecutionCard.pageId} | task ${selectedExecutionCard.runnerTaskId || selectedExecutionCard.builderTaskId || 'unbound'} | risk ${selectedExecutionCard.riskLevel || 'unknown'} | apply ${selectedExecutionCard.applyStatus || 'idle'} | deploy ${selectedExecutionCard.deployStatus || 'idle'}`
+          : 'Low-risk packages auto-apply. Risky packages stop in Ready to Apply on the Team Board.',
       }] : []),
       ...selfUpgradeSections,
     ],
@@ -983,8 +1052,14 @@ export function getStudioAgents() {
 }
 
 export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComments, recentHistory = [] }) {
+  const systemGraph = systemGraphOf(workspace);
+  const runtimeBoard = normalizeTeamBoardState({
+    studio: {
+      teamBoard: workspace.studio?.orchestrator?.teamBoard || workspace.studio?.teamBoard || createDefaultTeamBoard(),
+    },
+  });
   return STATIONS.map((agent) => {
-    const metrics = collectNodeMetrics(agent, workspace.graph || { nodes: [], edges: [] }, workspace);
+    const metrics = collectNodeMetrics(agent, systemGraph, workspace);
     const comments = agentComments?.[agent.id] || [];
     const outputs = recentRunSummary(runs).slice(0, 2);
     const intent = latestIntentReport(workspace);
@@ -1020,7 +1095,9 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
         : `${metrics.count} related items in workspace`,
       throughputLabel: agent.id === 'context-manager' && intent
         ? `${(intent.tasks || []).length} intent tasks / ${Math.round((intent.confidence || 0) * 100)}% confidence`
-        : `${metrics.count} tracked / ${metrics.queue} queued`,
+        : agent.id === 'executor'
+          ? `${runtimeBoard.summary.review} ready to apply / ${runtimeBoard.summary.active} active`
+          : `${metrics.count} tracked / ${metrics.queue} queued`,
       activityPulse: Boolean(runSignal?.status === 'running' || status === 'processing' || status === 'thinking'),
       unresolved: Boolean(runSignal?.status === 'error' || status === 'blocked' || status === 'needs review'),
       latestSignal: runSignal?.summary || governedDesk?.lastOutput || governedDesk?.currentGoal || reviewReport?.summary || null,
