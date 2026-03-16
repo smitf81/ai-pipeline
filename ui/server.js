@@ -10,6 +10,7 @@ const {
   normalizeGraphBundle,
   createDefaultRsgState,
   buildRsgState,
+  getSelectedExecutionCard,
   normalizeNotebookState,
   normalizeTeamBoardState,
 } = require('./orchestratorState');
@@ -44,13 +45,16 @@ const {
   createDefaultAgentWorkersState,
   evaluatePlannerEligibility,
   getAgentWorkerConfig,
+  makeExecutorRunId,
   listPlannerRuns,
   makeContextManagerRunId,
   makePlannerRunId,
   normalizeAgentWorkersState,
+  runExecutorWorker,
   runContextManagerWorker,
   runPlannerWorker,
   summarizeContextManagerRun,
+  summarizeExecutorRun,
   summarizePlannerRun,
 } = require('./agentWorkers');
 const {
@@ -61,6 +65,10 @@ const {
   readAnchorFile,
   resolveTargetsConfig,
 } = require('./anchorResolver');
+const {
+  generateCandidates,
+  validateGap,
+} = require('../ta/generateCandidates');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -101,6 +109,31 @@ function appendArchitectureHistory(entry) {
   const history = readJsonSafe(SPATIAL_HISTORY_FILE, []) || [];
   history.push(entry);
   writeJson(SPATIAL_HISTORY_FILE, history.slice(-80));
+}
+
+function appendNewRsgHistoryEntries(previousWorkspace = {}, nextWorkspace = {}) {
+  const previousIds = new Set(((previousWorkspace?.rsg?.activity || [])).map((entry) => entry?.id).filter(Boolean));
+  (nextWorkspace?.rsg?.activity || [])
+    .filter((entry) => entry?.id && /^rsg-/.test(String(entry.type || '')) && !previousIds.has(entry.id))
+    .reverse()
+    .forEach((entry) => {
+      appendArchitectureHistory({
+        at: entry.at || nowIso(),
+        type: entry.type,
+        summary: {
+          sourceNodeId: entry.sourceNodeId || null,
+          sourceNodeLabel: entry.sourceNodeLabel || '',
+          generatedCount: Number(entry.generatedCount || 0),
+          replacedCount: Number(entry.replacedCount || 0),
+          summary: entry.summary || '',
+          confidence: entry.confidence,
+          usedFallback: Boolean(entry.usedFallback),
+          reason: entry.reason || '',
+          trigger: entry.trigger || 'manual',
+          generationId: entry.generationId || null,
+        },
+      });
+    });
 }
 
 
@@ -209,7 +242,7 @@ function normalizeSpatialWorkspaceShape(workspace = {}) {
   };
   return {
     ...normalizedWorkspace,
-    rsg: normalizedWorkspace.rsg || buildRsgState(normalizedWorkspace),
+    rsg: buildRsgState(normalizedWorkspace),
   };
 }
 
@@ -519,6 +552,7 @@ function getTaskFolders() {
 let teamBoardAutomationRunning = false;
 let contextManagerWorkerAutomationRunning = false;
 let plannerWorkerAutomationRunning = false;
+let executorWorkerAutomationRunning = false;
 
 function readSpatialWorkspace() {
   ensureSpatialStorage();
@@ -571,6 +605,10 @@ function applyPlannerRuntimeState(workspace, { worker = null, handoff = null, pl
   return applyAgentRuntimeState(workspace, 'planner', { worker, handoffsPatch });
 }
 
+function applyExecutorRuntimeState(workspace, { worker = null } = {}) {
+  return applyAgentRuntimeState(workspace, 'executor', { worker });
+}
+
 function applyContextManagerRuntimeState(workspace, { worker = null, handoff = null, plannerToContext, report = null } = {}) {
   const intentState = workspace?.intentState || { latest: null, contextReport: null, byNode: {}, reports: [] };
   const nextIntentState = report ? {
@@ -593,6 +631,10 @@ function applyContextManagerRuntimeState(workspace, { worker = null, handoff = n
     intentState: nextIntentState,
   }, 'context-manager', { worker, handoffsPatch });
   return nextWorkspace;
+}
+
+function executorTaskIdFromCard(card = {}) {
+  return String(card?.runnerTaskId || card?.builderTaskId || card?.executionPackage?.taskId || '').trim() || null;
 }
 
 function markPlannerRunStarted(workspace, handoff, runId, mode) {
@@ -866,6 +908,72 @@ function applyContextManagerRunResult(workspace, result, { runId, mode, previous
   });
 }
 
+function markExecutorRunStarted(workspace, card, runId, mode) {
+  const startedAt = nowIso();
+  const executorConfig = getAgentWorkerConfig(ROOT, 'executor');
+  const taskId = executorTaskIdFromCard(card);
+  return applyExecutorRuntimeState(workspace, {
+    worker: {
+      status: 'running',
+      statusReason: card?.title
+        ? `Assessing execution readiness for: ${card.title}`
+        : 'Assessing executor queue readiness.',
+      mode,
+      backend: executorConfig.backend,
+      model: executorConfig.model,
+      currentRunId: runId,
+      lastCardId: card?.id || null,
+      lastTaskId: taskId,
+      lastDecision: null,
+      lastAssessmentSummary: null,
+      lastAssessmentBlockers: [],
+      lastBlockedReason: null,
+      startedAt,
+      completedAt: null,
+    },
+  });
+}
+
+function applyExecutorRunResult(workspace, card, result, { mode }) {
+  const runRecord = result?.run || null;
+  const completedAt = runRecord?.completedAt || nowIso();
+  const baseWorkspace = normalizeSpatialWorkspaceShape(workspace);
+  const executorConfig = getAgentWorkerConfig(ROOT, 'executor');
+  if (!runRecord || !result?.report) {
+    return applyExecutorRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'idle',
+        statusReason: 'Executor is idle.',
+        currentRunId: null,
+        lastOutcome: null,
+        lastOutcomeAt: completedAt,
+        completedAt,
+      },
+    });
+  }
+
+  return applyExecutorRuntimeState(baseWorkspace, {
+    worker: {
+      status: 'idle',
+      statusReason: result.report.summary || 'Executor assessment complete.',
+      mode,
+      backend: executorConfig.backend,
+      model: executorConfig.model,
+      currentRunId: null,
+      lastRunId: runRecord.id,
+      lastOutcome: 'completed',
+      lastOutcomeAt: completedAt,
+      lastCardId: card?.id || null,
+      lastTaskId: executorTaskIdFromCard(card),
+      lastDecision: result.report.decision || null,
+      lastAssessmentSummary: result.report.summary || null,
+      lastAssessmentBlockers: Array.isArray(result.report.blockers) ? result.report.blockers : [],
+      lastBlockedReason: Array.isArray(result.report.blockers) && result.report.blockers.length ? result.report.blockers[0] : null,
+      completedAt,
+    },
+  });
+}
+
 async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffId = null } = {}) {
   const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
   const handoff = getPlannerHandoff(currentWorkspace, handoffId);
@@ -1042,6 +1150,81 @@ async function maybeRunContextManagerWorker(workspace = null, {
   }
 }
 
+async function maybeRunExecutorWorker(workspace = null, { mode = 'manual', cardId = null } = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  const card = cardId
+    ? findTeamBoardCard(currentWorkspace, cardId)
+    : getSelectedExecutionCard(currentWorkspace);
+  if (!card) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Executor requires a selected execution card.',
+      workspace: currentWorkspace,
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Executor requires a selected execution card.',
+        run: null,
+        report: null,
+      },
+    };
+  }
+  if (executorWorkerAutomationRunning) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Executor worker is already processing another card.',
+      workspace: readSpatialWorkspace(),
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Executor worker is already processing another card.',
+        run: null,
+        report: null,
+      },
+    };
+  }
+
+  executorWorkerAutomationRunning = true;
+  const runId = makeExecutorRunId();
+  try {
+    let runningWorkspace = markExecutorRunStarted(currentWorkspace, card, runId, mode);
+    runningWorkspace = persistSpatialWorkspace(runningWorkspace);
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'executor-worker-start',
+      summary: { cardId: card.id || null, taskId: executorTaskIdFromCard(card), runId, mode },
+    });
+
+    const result = await runExecutorWorker({
+      rootPath: ROOT,
+      card,
+      workspace: runningWorkspace,
+      mode,
+      runId,
+    });
+    const nextWorkspace = persistSpatialWorkspace(applyExecutorRunResult(readSpatialWorkspace(), card, result, { mode }));
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'executor-worker-completed',
+      summary: {
+        cardId: card.id || null,
+        taskId: executorTaskIdFromCard(card),
+        runId,
+        decision: result.report?.decision || null,
+        blockers: result.report?.blockers || [],
+        usedFallback: Boolean(result.usedFallback),
+      },
+    });
+    return { ok: result.ok, skipped: false, reason: result.reason || '', workspace: nextWorkspace, result };
+  } finally {
+    executorWorkerAutomationRunning = false;
+  }
+}
+
 function findTaskFolderByTaskId(taskId) {
   return getTaskFolders().find((folder) => folder.startsWith(String(taskId || '').slice(0, 4))) || null;
 }
@@ -1067,6 +1250,240 @@ function findTeamBoardCard(workspace, cardId) {
   return board.cards.find((card) => card.id === cardId) || null;
 }
 
+function createExecutorBlocker(code, message) {
+  return {
+    code: String(code || 'executor-blocked').trim() || 'executor-blocked',
+    message: String(message || 'Execution is blocked.').trim() || 'Execution is blocked.',
+    updatedAt: nowIso(),
+  };
+}
+
+function clearExecutorBlocker() {
+  return null;
+}
+
+function getCardTaskId(card = {}) {
+  return String(card.builderTaskId || card.runnerTaskId || card.executionPackage?.taskId || '').trim();
+}
+
+function summarizeGateMessage(messages = [], fallback = 'Execution is blocked.') {
+  const first = (messages || []).map((message) => String(message || '').trim()).find(Boolean);
+  return first || fallback;
+}
+
+function loadCommandPresets() {
+  return readJsonSafe(COMMANDS_FILE, {}) || {};
+}
+
+function buildVerificationSignature({ taskId, patchPath, changedFiles = [], targetProjectKey, expectedAction }) {
+  const files = [...new Set((changedFiles || []).map((file) => String(file || '').trim()).filter(Boolean))].sort();
+  return [String(taskId || '').trim(), String(targetProjectKey || '').trim(), String(expectedAction || '').trim(), String(patchPath || '').trim(), ...files].join('|');
+}
+
+function buildVerificationPlan({ taskId, patchPath, changedFiles = [], targetProjectKey, expectedAction = 'apply' }) {
+  const presets = loadCommandPresets();
+  const files = [...new Set((changedFiles || []).map((file) => String(file || '').trim()).filter(Boolean))];
+  const commands = [];
+  const qaScenarios = [];
+
+  if (targetProjectKey === SELF_TARGET_KEY && presets.runner_compile) {
+    commands.push({
+      preset: 'runner_compile',
+      label: 'Runner compile',
+    });
+  }
+
+  if (targetProjectKey === SELF_TARGET_KEY && files.some((file) => file.startsWith('ui/'))) {
+    qaScenarios.push({
+      scenario: 'layout-pass',
+      mode: 'observation',
+      label: 'UI layout pass',
+    });
+  }
+
+  const required = commands.length > 0 || qaScenarios.length > 0;
+  return {
+    required,
+    commands,
+    qaScenarios,
+    signature: required ? buildVerificationSignature({ taskId, patchPath, changedFiles: files, targetProjectKey, expectedAction }) : null,
+    summary: required
+      ? `${commands.length} command check${commands.length === 1 ? '' : 's'} and ${qaScenarios.length} QA scenario${qaScenarios.length === 1 ? '' : 's'} required before apply.`
+      : 'No verification required.',
+    generatedAt: nowIso(),
+  };
+}
+
+function collectVerificationArtifacts({ commandArtifacts = [], qaRuns = [] } = {}) {
+  const artifacts = [...(commandArtifacts || [])];
+  (qaRuns || []).forEach((run) => {
+    if (!run?.id) return;
+    artifacts.push(`/api/spatial/qa/runs/${run.id}`);
+  });
+  return mergeUnique(artifacts);
+}
+
+function evaluateVerifyGate({ card, workspace }) {
+  if (!card) return { ok: false, code: 'missing-card', message: 'Card not found.' };
+  if (!(card.sourceAnchorRefs || []).length) {
+    return { ok: false, code: 'missing-anchor', message: 'Card has no anchor provenance and cannot be verified.', nextStatus: 'review' };
+  }
+  const taskId = getCardTaskId(card);
+  if (!taskId || card.executionPackage?.status !== 'ready') {
+    return { ok: false, code: 'missing-package', message: 'Card has no ready build package to verify.' };
+  }
+  const verificationPlan = card.executionPackage?.verificationPlan || buildVerificationPlan({
+    taskId,
+    patchPath: card.executionPackage?.patchPath,
+    changedFiles: card.executionPackage?.changedFiles || [],
+    targetProjectKey: card.targetProjectKey || SELF_TARGET_KEY,
+    expectedAction: card.executionPackage?.expectedAction || 'apply',
+  });
+  if (!verificationPlan.required) {
+    return { ok: false, noop: true, code: 'verification-not-required', message: 'No verification required.', taskId, verificationPlan };
+  }
+  if (card.verifyStatus === 'running') {
+    return { ok: false, noop: true, code: 'verification-running', message: 'Verification is already running.', taskId, verificationPlan };
+  }
+  if (card.verifyStatus === 'passed' && card.verifiedSignature === verificationPlan.signature) {
+    return { ok: false, noop: true, code: 'verification-complete', message: 'Verification already passed for this package.', taskId, verificationPlan };
+  }
+  return { ok: true, taskId, verificationPlan };
+}
+
+function evaluateApplyGate({ card, workspace }) {
+  if (!card) return { ok: false, code: 'missing-card', message: 'Card not found.' };
+  if (!(card.sourceAnchorRefs || []).length) {
+    return { ok: false, code: 'missing-anchor', message: 'Card has no anchor provenance and cannot be applied.', nextStatus: 'review', nextApprovalState: 'pending' };
+  }
+  const taskId = getCardTaskId(card);
+  if (!taskId || card.executionPackage?.status !== 'ready') {
+    return { ok: false, code: 'missing-package', message: 'Card has no ready build package to apply.' };
+  }
+  const verificationPlan = card.executionPackage?.verificationPlan || buildVerificationPlan({
+    taskId,
+    patchPath: card.executionPackage?.patchPath,
+    changedFiles: card.executionPackage?.changedFiles || [],
+    targetProjectKey: card.targetProjectKey || SELF_TARGET_KEY,
+    expectedAction: card.executionPackage?.expectedAction || 'apply',
+  });
+  if (Boolean(card.verifyRequired || verificationPlan.required)) {
+    if (card.verifyStatus === 'running') {
+      return { ok: false, code: 'verification-running', message: 'Verification is already running for this package.' };
+    }
+    if (['failed', 'blocked'].includes(card.verifyStatus)) {
+      return { ok: false, code: 'verification-failed', message: card.lastVerificationSummary || 'Verification failed and must be rerun.' };
+    }
+    if (card.verifyStatus !== 'passed') {
+      return { ok: false, code: 'verification-required', message: card.lastVerificationSummary || 'Verification must pass before apply can run.' };
+    }
+    if (verificationPlan.signature && card.verifiedSignature !== verificationPlan.signature) {
+      return { ok: false, code: 'verification-stale', message: 'Verification is stale for this package and must be rerun.' };
+    }
+  }
+  if (card.applyStatus === 'applying') {
+    return { ok: false, code: 'apply-running', message: 'Card is already applying.' };
+  }
+  if (card.applyStatus === 'applied') {
+    return { ok: false, code: 'apply-complete', message: 'Card has already been applied.' };
+  }
+  const validReadyState = (card.status === 'complete' && card.applyStatus === 'queued')
+    || (card.status === 'review' && card.approvalState === 'approved' && ['idle', 'failed', 'queued'].includes(card.applyStatus || 'idle'))
+    || (card.status === 'complete' && card.approvalState === 'approved' && ['idle', 'failed', 'queued'].includes(card.applyStatus || 'idle'));
+  if (!validReadyState) {
+    if (card.status === 'review' && card.approvalState !== 'approved') {
+      return { ok: false, code: 'approval-required', message: `Waiting for approval on ${card.title}.`, nextStatus: 'review', nextApprovalState: 'pending' };
+    }
+    return { ok: false, code: 'invalid-apply-state', message: 'Card is not in a valid state for apply.' };
+  }
+  if ((card.targetProjectKey || SELF_TARGET_KEY) === SELF_TARGET_KEY) {
+    const selfUpgrade = getSelfUpgradeState(workspace);
+    if (!selfUpgrade.preflight?.ok) {
+      return {
+        ok: false,
+        code: 'preflight-failed',
+        message: selfUpgrade.preflight?.summary || 'Self-upgrade preflight must pass before apply can run.',
+        nextStatus: 'review',
+        nextApprovalState: 'pending',
+      };
+    }
+    if (selfUpgrade.preflight?.taskId !== taskId) {
+      return {
+        ok: false,
+        code: 'preflight-stale',
+        message: 'Self-upgrade preflight is stale for this task and must be rerun.',
+        nextStatus: 'review',
+        nextApprovalState: 'pending',
+      };
+    }
+  }
+  return { ok: true, taskId };
+}
+
+function evaluateDeployGate({ card, workspace }) {
+  if (!card) return { ok: false, code: 'missing-card', message: 'Card not found.' };
+  if (!(card.sourceAnchorRefs || []).length) {
+    return { ok: false, code: 'missing-anchor', message: 'Card has no anchor provenance and cannot be deployed.', nextStatus: 'review', nextApprovalState: 'pending' };
+  }
+  if ((card.targetProjectKey || SELF_TARGET_KEY) !== SELF_TARGET_KEY) {
+    return { ok: false, code: 'deploy-target-invalid', message: 'Deploy only runs for ace-self packages.' };
+  }
+  const taskId = getCardTaskId(card);
+  if (!taskId) {
+    return { ok: false, code: 'missing-package', message: 'Card has no build package to deploy.' };
+  }
+  if (card.deployStatus === 'deploying') {
+    return { ok: false, code: 'deploy-running', message: 'Card is already deploying.' };
+  }
+  if (card.deployStatus === 'deployed') {
+    return { ok: false, code: 'deploy-complete', message: 'Card has already been deployed.' };
+  }
+  if (card.applyStatus !== 'applied' || card.deployStatus !== 'queued' || card.status !== 'complete') {
+    return { ok: false, code: 'invalid-deploy-state', message: 'Card is not in a valid state for deploy.' };
+  }
+  const selfUpgrade = getSelfUpgradeState(workspace);
+  if (!selfUpgrade.preflight?.ok) {
+    return {
+      ok: false,
+      code: 'preflight-failed',
+      message: selfUpgrade.preflight?.summary || 'Deploy requires a passing self-upgrade preflight.',
+      nextStatus: 'review',
+      nextApprovalState: 'pending',
+    };
+  }
+  if (selfUpgrade.preflight?.taskId !== taskId) {
+    return {
+      ok: false,
+      code: 'preflight-stale',
+      message: 'Self-upgrade preflight is stale for this task and must be rerun.',
+      nextStatus: 'review',
+      nextApprovalState: 'pending',
+    };
+  }
+  if (!selfUpgrade.apply?.ok || selfUpgrade.apply?.taskId !== taskId) {
+    return {
+      ok: false,
+      code: 'apply-stale',
+      message: 'Deploy requires a successful apply for this exact task.',
+      nextStatus: 'review',
+      nextApprovalState: 'pending',
+    };
+  }
+  return { ok: true, taskId };
+}
+
+function applyExecutorGateBlock(card = {}, gate = {}) {
+  return {
+    ...card,
+    status: gate.nextStatus || card.status,
+    approvalState: gate.nextApprovalState || card.approvalState,
+    executorBlocker: createExecutorBlocker(gate.code, gate.message),
+    riskLevel: gate.nextStatus === 'review' ? 'high' : card.riskLevel,
+    riskReasons: mergeUnique([...(card.riskReasons || []), gate.message]),
+    updatedAt: nowIso(),
+  };
+}
+
 function persistBoardWorkspace(nextWorkspace, historyType, summary = {}) {
   const persisted = persistSpatialWorkspace(nextWorkspace);
   appendArchitectureHistory({
@@ -1087,16 +1504,25 @@ function buildExecutionPackage({
   risk,
 }) {
   const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  const relativePatchPath = relativeToRoot(patchPath);
+  const verificationPlan = buildVerificationPlan({
+    taskId,
+    patchPath: relativePatchPath,
+    changedFiles,
+    targetProjectKey,
+    expectedAction: risk.autoDeploy ? 'apply + deploy' : 'apply',
+  });
   return {
     status: 'ready',
     taskId,
     taskDir: relativeToRoot(taskDir),
-    patchPath: relativeToRoot(patchPath),
+    patchPath: relativePatchPath,
     changedFiles,
     targetProjectKey,
     expectedAction: risk.autoDeploy ? 'apply + deploy' : 'apply',
     summary: `${changedFiles.length} changed file${changedFiles.length === 1 ? '' : 's'} ready for ${targetProjectKey}`,
     preflightStatus: preflight?.status || 'idle',
+    verificationPlan,
     builtAt: nowIso(),
   };
 }
@@ -1116,6 +1542,7 @@ function syncTeamBoardWithSelfUpgrade(workspace) {
         desk: 'Executor',
         state: 'Deployed',
         deployStatus: 'deployed',
+        executorBlocker: clearExecutorBlocker(),
         lastHealth: selfUpgrade.deploy?.health || null,
         updatedAt: nowIso(),
       };
@@ -1128,6 +1555,7 @@ function syncTeamBoardWithSelfUpgrade(workspace) {
         state: 'Flagged',
         deployStatus: 'flagged',
         approvalState: 'pending',
+        executorBlocker: createExecutorBlocker('deploy-health-flagged', `Deploy health reported ${healthStatus}.`),
         riskLevel: 'high',
         riskReasons: [...new Set([...(card.riskReasons || []), `Deploy health reported ${healthStatus}.`])],
         lastHealth: selfUpgrade.deploy?.health || null,
@@ -1231,6 +1659,7 @@ function runCardBuilderPipeline(cardId) {
         status: 'failed',
         summary: 'Card has no anchor provenance and cannot enter the builder pipeline.',
       },
+      executorBlocker: createExecutorBlocker('missing-anchor', 'Card has no anchor provenance and cannot enter the builder pipeline.'),
       riskLevel: 'high',
       riskReasons: mergeUnique([...(currentCard.riskReasons || []), 'Missing anchor provenance.']),
       updatedAt: nowIso(),
@@ -1270,9 +1699,16 @@ function runCardBuilderPipeline(cardId) {
         patchPath: relativeToRoot(path.join(task.taskDir, 'patch.diff')),
         targetProjectKey,
       },
+      verifyRequired: false,
+      verifyStatus: 'idle',
+      verifyRunIds: [],
+      verifyArtifacts: [],
+      lastVerificationSummary: '',
+      verifiedSignature: null,
       approvalState: 'none',
       applyStatus: 'idle',
       deployStatus: 'idle',
+      executorBlocker: clearExecutorBlocker(),
       riskLevel: 'unknown',
       riskReasons: [],
       updatedAt: nowIso(),
@@ -1312,6 +1748,13 @@ function runCardBuilderPipeline(cardId) {
         targetProjectKey,
         summary: failedResult.error || failedResult.summary || 'Builder pipeline failed.',
       },
+      verifyRequired: false,
+      verifyStatus: 'idle',
+      verifyRunIds: [],
+      verifyArtifacts: [],
+      lastVerificationSummary: '',
+      verifiedSignature: null,
+      executorBlocker: createExecutorBlocker('builder-failed', failedResult.error || failedResult.summary || 'Builder pipeline failed.'),
       runIds: mergeUnique([...(currentCard.runIds || []), ...runIds]),
       artifactRefs: collectTaskArtifacts(taskDir, [...(currentCard.artifactRefs || []), ...runArtifacts]),
       updatedAt: nowIso(),
@@ -1374,8 +1817,24 @@ function runCardBuilderPipeline(cardId) {
     riskLevel: nextRiskLevel || 'medium',
     riskReasons,
     approvalState: requiresReview ? 'pending' : 'auto-approved',
-    applyStatus: requiresReview ? 'idle' : 'queued',
+    verifyRequired: Boolean(nextExecutionPackage.verificationPlan?.required),
+    verifyStatus: nextExecutionPackage.verificationPlan?.required ? 'queued' : 'not-required',
+    verifyRunIds: [],
+    verifyArtifacts: [],
+    lastVerificationSummary: nextExecutionPackage.verificationPlan?.required
+      ? `Verification queued. ${nextExecutionPackage.verificationPlan.summary}`
+      : 'No verification required.',
+    verifiedSignature: null,
+    applyStatus: requiresReview ? 'idle' : (nextExecutionPackage.verificationPlan?.required ? 'idle' : 'queued'),
     deployStatus: 'idle',
+    executorBlocker: requiresReview
+      ? createExecutorBlocker(
+          !preflight.ok ? 'preflight-failed' : 'approval-required',
+          !preflight.ok
+            ? (preflight.summary || 'Self-upgrade preflight must pass before apply can run.')
+            : summarizeGateMessage(riskReasons, `Waiting for approval on ${currentCard.title}.`),
+        )
+      : clearExecutorBlocker(),
     updatedAt: nowIso(),
   }));
 
@@ -1395,21 +1854,146 @@ function runCardBuilderPipeline(cardId) {
   };
 }
 
+async function runCardVerifyPipeline(cardId, { baseUrl = null } = {}) {
+  const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card) return { ok: false, error: 'Card not found.', workspace };
+
+  const gate = evaluateVerifyGate({ card, workspace });
+  if (gate.noop) {
+    return { ok: true, skipped: true, workspace };
+  }
+  if (!gate.ok) {
+    const blockedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => applyExecutorGateBlock(currentCard, gate)), 'team-board-verify-blocked', {
+      cardId,
+      code: gate.code,
+    });
+    return { ok: false, error: gate.message, workspace: blockedWorkspace };
+  }
+
+  const { taskId, verificationPlan } = gate;
+  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  const startedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+    ...currentCard,
+    verifyRequired: true,
+    verifyStatus: 'running',
+    verifyRunIds: [],
+    verifyArtifacts: [],
+    lastVerificationSummary: `Running verification. ${verificationPlan.summary}`,
+    verifiedSignature: null,
+    executionPackage: {
+      ...(currentCard.executionPackage || {}),
+      verificationPlan,
+    },
+    executorBlocker: clearExecutorBlocker(),
+    updatedAt: nowIso(),
+  })), 'team-board-verify-start', { cardId, taskId });
+
+  const verifyRunIds = [];
+  const commandArtifacts = [];
+  const qaRuns = [];
+  const failures = [];
+
+  for (const command of verificationPlan.commands || []) {
+    const result = executeActionSync('run', {
+      taskId,
+      project: targetProjectKey,
+      preset: command.preset,
+    });
+    verifyRunIds.push(result.runId);
+    commandArtifacts.push(...(result.artifacts || []));
+    if (!result.ok) {
+      failures.push(result.error || result.summary || `${command.label || command.preset} failed.`);
+      break;
+    }
+  }
+
+  if (!failures.length) {
+    for (const scenario of verificationPlan.qaScenarios || []) {
+      const qaRun = await startBrowserQARun({
+        baseUrl,
+        scenario: scenario.scenario,
+        mode: scenario.mode || 'observation',
+        trigger: 'executor-verification',
+        prompt: card.title,
+        linked: { cardId },
+      });
+      qaRuns.push(qaRun);
+      verifyRunIds.push(`qa:${qaRun.id}`);
+      if (qaRun?.verdict === 'failed') {
+        failures.push(`QA scenario ${scenario.scenario} failed.`);
+        break;
+      }
+    }
+  }
+
+  const verifyArtifacts = collectVerificationArtifacts({
+    commandArtifacts,
+    qaRuns,
+  });
+
+  if (failures.length) {
+    const failedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+      ...currentCard,
+      verifyRequired: true,
+      verifyStatus: 'failed',
+      verifyRunIds: mergeUnique([...(currentCard.verifyRunIds || []), ...verifyRunIds]),
+      verifyArtifacts: mergeUnique([...(currentCard.verifyArtifacts || []), ...verifyArtifacts]),
+      lastVerificationSummary: summarizeGateMessage(failures, 'Verification failed.'),
+      verifiedSignature: null,
+      executorBlocker: createExecutorBlocker('verification-failed', summarizeGateMessage(failures, 'Verification failed.')),
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), summarizeGateMessage(failures, 'Verification failed.')]),
+      updatedAt: nowIso(),
+    })), 'team-board-verify-failed', { cardId, taskId });
+    return {
+      ok: false,
+      error: summarizeGateMessage(failures, 'Verification failed.'),
+      workspace: failedWorkspace,
+    };
+  }
+
+  const verifiedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => {
+    const approvalState = currentCard.approvalState || 'none';
+    const canQueueApply = currentCard.status === 'complete'
+      || (currentCard.status === 'review' && approvalState === 'approved');
+    return {
+      ...currentCard,
+      verifyRequired: true,
+      verifyStatus: 'passed',
+      verifyRunIds: mergeUnique([...(currentCard.verifyRunIds || []), ...verifyRunIds]),
+      verifyArtifacts: mergeUnique([...(currentCard.verifyArtifacts || []), ...verifyArtifacts]),
+      lastVerificationSummary: `Verification passed. ${verificationPlan.summary}`,
+      verifiedSignature: verificationPlan.signature,
+      applyStatus: canQueueApply ? 'queued' : currentCard.applyStatus,
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        verificationPlan,
+      },
+      executorBlocker: clearExecutorBlocker(),
+      updatedAt: nowIso(),
+    };
+  }), 'team-board-verify-complete', { cardId, taskId });
+
+  return {
+    ok: true,
+    workspace: verifiedWorkspace,
+  };
+}
+
 function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
   const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
   const card = findTeamBoardCard(workspace, cardId);
   if (!card) return { ok: false, error: 'Card not found.', workspace };
-  if (!(card.sourceAnchorRefs || []).length) {
-    return { ok: false, error: 'Card has no anchor provenance and cannot be applied.', workspace };
+  const gate = evaluateApplyGate({ card, workspace });
+  if (!gate.ok) {
+    const blockedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => applyExecutorGateBlock(currentCard, gate)), 'team-board-apply-blocked', {
+      cardId,
+      code: gate.code,
+    });
+    return { ok: false, error: gate.message, workspace: blockedWorkspace };
   }
-
-  const taskId = String(card.builderTaskId || card.runnerTaskId || card.executionPackage?.taskId || '').trim();
-  if (!taskId) return { ok: false, error: 'Card has no build package to apply.', workspace };
-
-  const readyForApply = (card.status === 'complete' && card.applyStatus === 'queued')
-    || (card.status === 'review' && card.approvalState === 'approved')
-    || (card.status === 'complete' && card.approvalState === 'approved');
-  if (!readyForApply) return { ok: false, error: 'Card is not ready for apply.', workspace };
+  const taskId = gate.taskId;
 
   const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
   const applyingWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
@@ -1417,6 +2001,7 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
     status: 'complete',
     approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : currentCard.approvalState),
     applyStatus: 'applying',
+    executorBlocker: clearExecutorBlocker(),
     updatedAt: nowIso(),
   }));
   persistBoardWorkspace(applyingWorkspace, 'team-board-apply-start', { cardId, taskId });
@@ -1435,6 +2020,7 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
       status: 'review',
       approvalState: 'pending',
       applyStatus: 'failed',
+      executorBlocker: createExecutorBlocker('apply-failed', result.error || 'Apply failed.'),
       riskLevel: 'high',
       riskReasons: mergeUnique([...(currentCard.riskReasons || []), result.error || 'Apply failed.']),
       updatedAt: nowIso(),
@@ -1456,6 +2042,7 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
     approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : 'auto-approved'),
     applyStatus: 'applied',
     deployStatus: nextDeployStatus,
+    executorBlocker: clearExecutorBlocker(),
     branch: result.meta?.branch || currentCard.branch || null,
     commit: result.meta?.commit || currentCard.commit || null,
     runIds: mergeUnique([...(currentCard.runIds || []), result.runId]),
@@ -1678,13 +2265,18 @@ function executeActionSync(action, body) {
       throw new Error('Apply requires confirmation.');
     }
     if ((!review.ok || !selfPatchReview.ok) && !body.dryRun) {
-      throw new Error('Apply validation failed.');
+      throw new Error(summarizeGateMessage([
+        ...(review.refusalReasons || []),
+        ...(selfPatchReview.refusalReasons || []),
+      ], 'Apply validation failed.'));
     }
     if (isSelfTarget(projectKey, projectPath, ROOT) && !body.dryRun) {
       const selfUpgrade = getSelfUpgradeState(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
       const preflightMatchesTask = selfUpgrade.preflight?.taskId === taskId;
       if ((!selfUpgrade.preflight?.ok || !preflightMatchesTask) && !body.confirmOverride) {
-        throw new Error('Self-upgrade apply requires a passing preflight for this task.');
+        throw new Error(preflightMatchesTask
+          ? (selfUpgrade.preflight?.summary || 'Self-upgrade apply requires a passing preflight for this task.')
+          : 'Self-upgrade preflight is stale for this task and must be rerun.');
       }
       updateSelfUpgradeState((state) => ({
         ...state,
@@ -1824,15 +2416,21 @@ function runCardDeployPipeline(cardId, { approvedByUser = false } = {}) {
   const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
   const card = findTeamBoardCard(workspace, cardId);
   if (!card) return { ok: false, error: 'Card not found.', workspace };
-  if (!(card.sourceAnchorRefs || []).length) return { ok: false, error: 'Card has no anchor provenance and cannot be deployed.', workspace };
-  if (card.targetProjectKey !== SELF_TARGET_KEY) return { ok: false, error: 'Deploy only runs for ace-self packages.', workspace };
-  if (card.deployStatus !== 'queued') return { ok: false, error: 'Card is not queued for deploy.', workspace };
+  const gate = evaluateDeployGate({ card, workspace });
+  if (!gate.ok) {
+    const blockedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => applyExecutorGateBlock(currentCard, gate)), 'team-board-deploy-blocked', {
+      cardId,
+      code: gate.code,
+    });
+    return { ok: false, error: gate.message, workspace: blockedWorkspace };
+  }
 
   const deployingWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
     ...currentCard,
     status: 'complete',
     approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : currentCard.approvalState),
     deployStatus: 'deploying',
+    executorBlocker: clearExecutorBlocker(),
     updatedAt: nowIso(),
   }));
   persistBoardWorkspace(deployingWorkspace, 'team-board-deploy-start', { cardId, taskId: card.builderTaskId || card.runnerTaskId || null });
@@ -1848,6 +2446,7 @@ function runCardDeployPipeline(cardId, { approvedByUser = false } = {}) {
       status: 'review',
       approvalState: 'pending',
       deployStatus: 'flagged',
+      executorBlocker: createExecutorBlocker('deploy-failed', result.error || 'Deploy failed.'),
       riskLevel: 'high',
       riskReasons: mergeUnique([...(currentCard.riskReasons || []), result.error || 'Deploy failed.']),
       updatedAt: nowIso(),
@@ -1864,6 +2463,7 @@ function runCardDeployPipeline(cardId, { approvedByUser = false } = {}) {
     ...currentCard,
     status: 'complete',
     deployStatus: result.restarting ? 'deploying' : 'deployed',
+    executorBlocker: clearExecutorBlocker(),
     lastHealth: result.selfUpgrade?.deploy?.health || currentCard.lastHealth || null,
     updatedAt: nowIso(),
   }));
@@ -1881,7 +2481,7 @@ function runCardDeployPipeline(cardId, { approvedByUser = false } = {}) {
   };
 }
 
-function pumpAutomatedTeamBoard(workspace = null) {
+async function pumpAutomatedTeamBoard(workspace = null) {
   if (teamBoardAutomationRunning) {
     return readSpatialWorkspace();
   }
@@ -1891,21 +2491,33 @@ function pumpAutomatedTeamBoard(workspace = null) {
     const board = normalizeTeamBoardState(nextWorkspace);
     const reviewApprovedCard = board.cards.find((card) => card.status === 'review' && card.approvalState === 'approved') || null;
     const activeCard = board.cards.find((card) => card.status === 'active') || null;
-    const queuedApplyCard = board.cards.find((card) => card.status === 'complete' && card.applyStatus === 'queued') || null;
+    const queuedVerifyCard = board.cards.find((card) => (
+      card.executionPackage?.status === 'ready'
+      && card.verifyRequired
+      && ['queued', 'failed', 'blocked'].includes(card.verifyStatus)
+      && !['missing-anchor', 'preflight-failed', 'preflight-stale', 'builder-failed'].includes(card.executorBlocker?.code)
+    )) || null;
+    const queuedApplyCard = board.cards.find((card) => (
+      card.status === 'complete'
+      && card.applyStatus === 'queued'
+      && (!card.verifyRequired || (card.verifyStatus === 'passed' && (!card.executionPackage?.verificationPlan?.signature || card.verifiedSignature === card.executionPackage.verificationPlan.signature)))
+    )) || null;
     const queuedDeployCard = board.cards.find((card) => card.status === 'complete' && card.deployStatus === 'queued') || null;
 
-    if (reviewApprovedCard) {
-      const approvedWorkspace = mutateTeamBoardCard(nextWorkspace, reviewApprovedCard.id, (card) => ({
-        ...card,
-        status: 'complete',
-        applyStatus: 'queued',
-        updatedAt: nowIso(),
-      }));
-      nextWorkspace = persistBoardWorkspace(approvedWorkspace, 'team-board-approval-queued', { cardId: reviewApprovedCard.id });
-    } else if (queuedDeployCard) {
+    if (queuedDeployCard) {
       nextWorkspace = runCardDeployPipeline(queuedDeployCard.id).workspace || nextWorkspace;
     } else if (queuedApplyCard) {
       nextWorkspace = runCardApplyPipeline(queuedApplyCard.id).workspace || nextWorkspace;
+    } else if (queuedVerifyCard) {
+      nextWorkspace = (await runCardVerifyPipeline(queuedVerifyCard.id)).workspace || nextWorkspace;
+    } else if (reviewApprovedCard) {
+      const approvedWorkspace = mutateTeamBoardCard(nextWorkspace, reviewApprovedCard.id, (card) => ({
+        ...card,
+        status: 'complete',
+        applyStatus: card.verifyRequired && card.verifyStatus !== 'passed' ? 'idle' : 'queued',
+        updatedAt: nowIso(),
+      }));
+      nextWorkspace = persistBoardWorkspace(approvedWorkspace, 'team-board-approval-queued', { cardId: reviewApprovedCard.id });
     } else if (activeCard && activeCard.executionPackage?.status !== 'ready') {
       nextWorkspace = runCardBuilderPipeline(activeCard.id).workspace || nextWorkspace;
     }
@@ -1919,7 +2531,7 @@ async function pumpAutomatedTeamBoardAsync(workspace = null) {
   let nextWorkspace = normalizeSpatialWorkspaceShape(syncTeamBoardWithSelfUpgrade(workspace || readSpatialWorkspace()));
   const plannerCycle = await maybeRunPlannerWorker(nextWorkspace, { mode: 'auto' });
   nextWorkspace = plannerCycle.workspace || nextWorkspace;
-  return pumpAutomatedTeamBoard(nextWorkspace);
+  return await pumpAutomatedTeamBoard(nextWorkspace);
 }
 
 app.get('/api/dashboard', (req, res) => {
@@ -2282,6 +2894,20 @@ app.post('/api/add/project', (req, res) => {
   res.json({ ok: true, project: { key: name, path: projectPath } });
 });
 
+app.post('/api/ta/candidates', (req, res) => {
+  const body = req.body || {};
+
+  try {
+    validateGap(body.gap);
+  } catch (error) {
+    return res.status(400).json({ error: String(error.message || error) });
+  }
+
+  return res.json({
+    candidates: generateCandidates(body.gap),
+  });
+});
+
 app.get('/api/spatial/workspace', async (req, res) => {
   const workspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
     workspace: await pumpAutomatedTeamBoardAsync(),
@@ -2363,6 +2989,33 @@ app.post('/api/spatial/agents/planner/run', async (req, res) => {
   });
 });
 
+app.post('/api/spatial/agents/executor/run', async (req, res) => {
+  const body = req.body || {};
+  const mode = String(body.mode || 'manual').toLowerCase() === 'auto' ? 'auto' : 'manual';
+  const cardId = String(body.cardId || '').trim() || null;
+  const cycle = await maybeRunExecutorWorker(readSpatialWorkspace(), { mode, cardId });
+  if (!cycle.skipped && cycle.result?.run) {
+    return res.json({
+      ok: cycle.ok,
+      run: summarizeExecutorRun(cycle.result.run),
+      report: cycle.result.report,
+      runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+        persist: true,
+        workspace: cycle.workspace,
+      })),
+    });
+  }
+  return res.status(mode === 'manual' ? 400 : 200).json({
+    ok: false,
+    skipped: Boolean(cycle.skipped),
+    reason: cycle.reason,
+    runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    })),
+  });
+});
+
 app.post('/api/spatial/team-board/action', async (req, res) => {
   const body = req.body || {};
   const action = String(body.action || '').trim();
@@ -2378,84 +3031,100 @@ app.post('/api/spatial/team-board/action', async (req, res) => {
   }
 
   let nextWorkspace = workspace;
-  if (action === 'approve-apply') {
-    nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
-      ...currentCard,
-      status: 'review',
-      approvalState: 'approved',
-      updatedAt: nowIso(),
-    }));
+    if (action === 'approve-apply') {
+      nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+        ...currentCard,
+        status: 'review',
+        approvalState: 'approved',
+        executorBlocker: clearExecutorBlocker(),
+        updatedAt: nowIso(),
+      }));
     nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-approved', { cardId, title: card.title });
     nextWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
   } else if (action === 'reject-to-builder') {
     nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
-      ...currentCard,
-      status: 'active',
-      approvalState: 'rejected',
-      applyStatus: 'idle',
-      deployStatus: 'idle',
-      executionPackage: {
-        ...(currentCard.executionPackage || {}),
-        status: 'idle',
-        summary: '',
-      },
-      updatedAt: nowIso(),
-    }));
+        ...currentCard,
+          status: 'active',
+          approvalState: 'rejected',
+          applyStatus: 'idle',
+          deployStatus: 'idle',
+          verifyRequired: false,
+          verifyStatus: 'idle',
+          verifyRunIds: [],
+          verifyArtifacts: [],
+          lastVerificationSummary: '',
+          verifiedSignature: null,
+          executorBlocker: clearExecutorBlocker(),
+          executionPackage: {
+            ...(currentCard.executionPackage || {}),
+            status: 'idle',
+            summary: '',
+            verificationPlan: {
+              required: false,
+              commands: [],
+              qaScenarios: [],
+              signature: null,
+              summary: 'No verification required.',
+              generatedAt: null,
+            },
+          },
+        updatedAt: nowIso(),
+      }));
     nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-rejected', { cardId, title: card.title });
   } else if (action === 'bin') {
     nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
-      ...currentCard,
-      status: 'binned',
-      approvalState: 'none',
-      applyStatus: 'idle',
-      deployStatus: 'idle',
-      updatedAt: nowIso(),
-    }));
+        ...currentCard,
+          status: 'binned',
+          approvalState: 'none',
+          applyStatus: 'idle',
+          deployStatus: 'idle',
+          verifyRequired: false,
+          verifyStatus: 'idle',
+          verifyRunIds: [],
+          verifyArtifacts: [],
+          lastVerificationSummary: '',
+          verifiedSignature: null,
+          executorBlocker: clearExecutorBlocker(),
+          updatedAt: nowIso(),
+        }));
     nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-binned', { cardId, title: card.title });
   } else if (action === 'start-builder') {
-    nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
-      ...currentCard,
-      status: 'active',
-      approvalState: 'none',
-      updatedAt: nowIso(),
-    }));
+        nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+          ...currentCard,
+          status: 'active',
+          approvalState: 'none',
+          verifyRequired: false,
+          verifyStatus: 'idle',
+          verifyRunIds: [],
+          verifyArtifacts: [],
+          lastVerificationSummary: '',
+          verifiedSignature: null,
+          executorBlocker: clearExecutorBlocker(),
+          updatedAt: nowIso(),
+        }));
     nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-builder-manual', { cardId, title: card.title });
     nextWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
   } else {
     return res.status(400).json({ error: 'Unsupported team board action.' });
   }
 
-  const nextCard = findTeamBoardCard(nextWorkspace, cardId);
-  const touchesStudioUi = (nextCard?.executionPackage?.changedFiles || []).some((file) => String(file || '').startsWith('ui/'));
-  const shouldAutoRunQA = action === 'approve-apply'
-    && nextCard?.targetProjectKey === SELF_TARGET_KEY
-    && touchesStudioUi;
-  if (shouldAutoRunQA) {
-    queueAutoBrowserQARun({
-      baseUrl: getLocalBaseUrl(req),
-      scenario: 'layout-pass',
-      mode: 'interactive',
-      trigger: 'team-board-ui-mutation',
-      prompt: nextCard.title || card.title,
-      linked: { cardId: nextCard.id },
-    });
-  }
-
-  res.json({
-    ok: true,
-    runtime: buildSpatialRuntimePayload(nextWorkspace),
+    res.json({
+      ok: true,
+      runtime: buildSpatialRuntimePayload(nextWorkspace),
   });
 });
 
 app.put('/api/spatial/workspace', async (req, res) => {
   ensureSpatialStorage();
   const body = req.body || {};
+  const previousWorkspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
   const nextWorkspace = advanceOrchestratorWorkspace(normalizeSpatialWorkspaceShape(body), {
     dashboardState: getDashboardStateSnapshot(),
     runs: getRunsSnapshot(),
   });
   writeJson(SPATIAL_WORKSPACE_FILE, nextWorkspace);
   const automatedWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
+  appendNewRsgHistoryEntries(previousWorkspace, automatedWorkspace);
   appendArchitectureHistory({
     at: nowIso(),
     type: 'workspace-save',
@@ -2711,6 +3380,7 @@ app.post('/api/spatial/intent', async (req, res) => {
     }));
     return res.json({
       ...cycle.result.report,
+      extractedIntent: cycle.result.extractedIntent || cycle.result.report?.extractedIntent || null,
       worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
       report: cycle.result.report,
       handoff: cycle.result.handoff,
@@ -2738,29 +3408,46 @@ app.post('/api/spatial/mutations/apply', (req, res) => {
   res.json({ ok: true, applied: mutations.length });
 });
 
-setInterval(() => {
-  Promise.resolve()
-    .then(async () => {
-      const workspace = await pumpAutomatedTeamBoardAsync();
-      refreshSpatialOrchestrator({ persist: true, workspace });
-    })
-    .catch((error) => {
-      console.warn(`[${nowIso()}] spatial orchestrator refresh failed: ${error.message}`);
-    });
-}, 4000);
+function startServer() {
+  setInterval(() => {
+    Promise.resolve()
+      .then(async () => {
+        const workspace = await pumpAutomatedTeamBoardAsync();
+        refreshSpatialOrchestrator({ persist: true, workspace });
+      })
+      .catch((error) => {
+        console.warn(`[${nowIso()}] spatial orchestrator refresh failed: ${error.message}`);
+      });
+  }, 4000);
 
-markServerHealthyOnBoot();
-reconcilePendingThroughputSessions({
-  rootPath: ROOT,
-  loadWorkspace: () => readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
-  persistWorkspace: (workspace) => persistSpatialWorkspace(workspace),
-  getRunsSnapshot: () => getRunsSnapshot(),
-  getHealthSnapshot: () => getHealthSnapshot(),
-}).catch((error) => {
-  console.warn(`[${nowIso()}] throughput session reconcile failed: ${error.message}`);
-});
+  markServerHealthyOnBoot();
+  reconcilePendingThroughputSessions({
+    rootPath: ROOT,
+    loadWorkspace: () => readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
+    persistWorkspace: (workspace) => persistSpatialWorkspace(workspace),
+    getRunsSnapshot: () => getRunsSnapshot(),
+    getHealthSnapshot: () => getHealthSnapshot(),
+  }).catch((error) => {
+    console.warn(`[${nowIso()}] throughput session reconcile failed: ${error.message}`);
+  });
 
-app.listen(port, () => {
-  console.log(`AI Core Engine UI running at http://localhost:${port}`);
-});
+  return app.listen(port, () => {
+    console.log(`AI Core Engine UI running at http://localhost:${port}`);
+  });
+}
+
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = {
+  app,
+  startServer,
+  evaluateApplyGate,
+  evaluateVerifyGate,
+  evaluateDeployGate,
+  buildVerificationPlan,
+  createExecutorBlocker,
+  generateCandidates,
+};
 

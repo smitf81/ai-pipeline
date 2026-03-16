@@ -14,6 +14,7 @@ export default async function runOrchestratorStateTests() {
     buildRsgState,
     normalizeTeamBoardState,
     normalizeNotebookState,
+    deriveExecutorBlocker,
   } = require(orchestratorStatePath);
 
   const workspace = {
@@ -40,6 +41,28 @@ export default async function runOrchestratorStateTests() {
       contextReport: null,
       byNode: {},
       reports: [],
+    },
+    rsg: {
+      ...createDefaultRsgState(),
+      activity: [
+        {
+          id: 'rsg_activity_1',
+          type: 'rsg-generate',
+          at: '2026-03-16T08:30:00.000Z',
+          sourceNodeId: 'node_ctx',
+          sourceNodeLabel: 'Clarify desk overlap',
+          summary: 'Drafted linked system notes',
+          confidence: 0.58,
+          generatedCount: 2,
+          replacedCount: 0,
+          usedFallback: false,
+          trigger: 'enter',
+          generationId: 'gen_1',
+        },
+      ],
+      lastSourceNodeId: 'node_ctx',
+      lastGenerationAt: '2026-03-16T08:30:00.000Z',
+      lastStatus: 'rsg-generate',
     },
     studio: {
       handoffs: {
@@ -104,6 +127,8 @@ export default async function runOrchestratorStateTests() {
   assert.ok(nextWorkspace.studio.orchestrator.activeDeskIds.includes('context-manager'));
   assert.equal(nextWorkspace.studio.orchestrator.desks.executor.localState, 'blocked');
   assert.equal(nextWorkspace.rsg.summary.worldStructure, 1);
+  assert.equal(nextWorkspace.rsg.activity[0].id, 'rsg_activity_1');
+  assert.equal(nextWorkspace.rsg.lastStatus, 'rsg-generate');
   assert.ok(nextWorkspace.pages[0].handoffs.length >= 1);
   assert.match(nextWorkspace.studio.orchestrator.desks['cto-architect'].thoughtBubble, /approval|reviewing|guardrails/i);
   assert.match(nextWorkspace.studio.orchestrator.desks.planner.thoughtBubble, /retry|waiting|sequencing|tasks/i);
@@ -123,6 +148,8 @@ export default async function runOrchestratorStateTests() {
   assert.equal(runtime.graphs.system.nodes[0].id, 'node_ctx');
   assert.equal(runtime.graphs.world.nodes[0].id, 'node_world');
   assert.equal(runtime.rsg.summary.worldStructure, 1);
+  assert.equal(runtime.rsg.activity[0].id, 'rsg_activity_1');
+  assert.equal(runtime.rsg.lastStatus, 'rsg-generate');
 
   const board = normalizeTeamBoardState({
     ...workspace,
@@ -151,4 +178,47 @@ export default async function runOrchestratorStateTests() {
   });
   assert.equal(approvedWorkspace.studio.orchestrator.desks.executor.localState, 'ready');
   assert.equal(approvedWorkspace.studio.teamBoard.selectedCardId, board.cards[0].id);
+
+  const stalePreflightWorkspace = advanceOrchestratorWorkspace({
+    ...workspace,
+    pages: notebook.pages,
+    activePageId: notebook.activePageId,
+    studio: {
+      ...workspace.studio,
+      selfUpgrade: {
+        status: 'blocked',
+        taskId: '9999',
+        preflight: {
+          ok: true,
+          taskId: '9999',
+          summary: 'stale preflight',
+        },
+      },
+      teamBoard: {
+        ...board,
+        selectedCardId: board.cards[0].id,
+        cards: board.cards.map((card, index) => ({
+          ...card,
+          status: index === 0 ? 'complete' : card.status,
+          approvalState: index === 0 ? 'approved' : card.approvalState,
+          applyStatus: index === 0 ? 'queued' : card.applyStatus,
+          targetProjectKey: 'ace-self',
+          builderTaskId: index === 0 ? '0007' : card.builderTaskId,
+          executionPackage: {
+            ...(card.executionPackage || {}),
+            status: 'ready',
+            taskId: '0007',
+          },
+        })),
+      },
+    },
+  }, {
+    dashboardState: { blockers: [] },
+    runs: [],
+  });
+  const staleCard = stalePreflightWorkspace.studio.teamBoard.cards[0];
+  const blocker = deriveExecutorBlocker(staleCard, stalePreflightWorkspace);
+  assert.equal(blocker.code, 'preflight-stale');
+  assert.match(stalePreflightWorkspace.studio.orchestrator.desks.executor.blockedReason, /stale/i);
+  assert.match(stalePreflightWorkspace.studio.orchestrator.desks['cto-architect'].thoughtBubble, /stale|blocked/i);
 }

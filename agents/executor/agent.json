@@ -1,0 +1,23 @@
+{
+  "autoRun": false,
+  "backend": "ollama",
+  "deskId": "executor",
+  "host": "http://127.0.0.1:11434",
+  "id": "executor",
+  "inputs": [
+    "studio.teamBoard",
+    "brain/emergence/*",
+    "ace_commands.json",
+    "studio.selfUpgrade"
+  ],
+  "model": "mixtral",
+  "name": "Executor",
+  "outputs": [
+    "studio.teamBoard.cards(execution)",
+    "executor-artifacts",
+    "data/spatial/agent-runs/executor/*.json"
+  ],
+  "runtime": "ollama-json",
+  "timeoutMs": 30000,
+  "writesCanonicalBrain": false
+}

@@ -1,4 +1,5 @@
 const { normalizeAgentWorkersState } = require('./agentWorkers');
+const RSG_ACTIVITY_LIMIT = 24;
 
 function makeId(prefix) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -44,8 +45,33 @@ function createDefaultRsgState() {
       adapterTranslation: 0,
       codeRuntimeMutation: 0,
     },
+    activity: [],
+    lastSourceNodeId: null,
+    lastGenerationAt: null,
+    lastStatus: 'idle',
     lastEvaluatedAt: null,
   };
+}
+
+function normalizeRsgActivityEntries(activity = []) {
+  return (Array.isArray(activity) ? activity : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      id: entry.id || null,
+      type: entry.type || 'rsg-skip',
+      at: entry.at || null,
+      sourceNodeId: entry.sourceNodeId || null,
+      sourceNodeLabel: entry.sourceNodeLabel || '',
+      summary: entry.summary || '',
+      confidence: Number.isFinite(Number(entry.confidence)) ? Number(entry.confidence) : null,
+      generatedCount: Number(entry.generatedCount || 0),
+      replacedCount: Number(entry.replacedCount || 0),
+      usedFallback: Boolean(entry.usedFallback),
+      reason: entry.reason || '',
+      trigger: entry.trigger || 'manual',
+      generationId: entry.generationId || null,
+    }))
+    .slice(0, RSG_ACTIVITY_LIMIT);
 }
 
 function inferProposalTarget(node = {}, layer = 'system') {
@@ -57,7 +83,22 @@ function inferProposalTarget(node = {}, layer = 'system') {
 
 function buildRsgState(workspace = {}) {
   const graphs = normalizeGraphBundle(workspace);
-  const base = createDefaultRsgState();
+  const persisted = workspace?.rsg || {};
+  const base = {
+    ...createDefaultRsgState(),
+    ...persisted,
+    approvalPolicy: {
+      'system-structure': 'auto-record',
+      'world-structure': 'auto-record',
+      'adapter-translation': 'auto-record',
+      'code-runtime-mutation': 'risk-gated-review',
+      ...(persisted.approvalPolicy || {}),
+    },
+    activity: normalizeRsgActivityEntries(persisted.activity),
+    lastSourceNodeId: persisted.lastSourceNodeId || null,
+    lastGenerationAt: persisted.lastGenerationAt || null,
+    lastStatus: persisted.lastStatus || 'idle',
+  };
   const graphProposals = ['system', 'world'].flatMap((layer) => (graphs[layer]?.nodes || [])
     .filter((node) => node?.metadata?.proposalTarget || node?.metadata?.labels?.includes('proposal') || node?.type === 'adapter')
     .map((node) => {
@@ -73,7 +114,7 @@ function buildRsgState(workspace = {}) {
       };
     }));
   const mutationProposals = (workspace?.studio?.teamBoard?.cards || [])
-    .filter((card) => card?.executionPackage?.status === 'ready' || card?.status === 'review' || card?.applyStatus === 'queued' || card?.deployStatus === 'queued')
+    .filter((card) => card?.executionPackage?.status === 'ready' || card?.status === 'review' || card?.verifyStatus === 'queued' || card?.verifyStatus === 'running' || card?.applyStatus === 'queued' || card?.deployStatus === 'queued')
     .map((card) => ({
       id: `mutation_${card.id}`,
       title: card.title || 'Mutation package',
@@ -191,7 +232,102 @@ function defaultExecutionPackage(card = {}) {
     targetProjectKey: card.targetProjectKey || 'ace-self',
     expectedAction: 'apply',
     summary: '',
+    verificationPlan: {
+      required: false,
+      commands: [],
+      qaScenarios: [],
+      signature: null,
+      summary: 'No verification required.',
+      generatedAt: null,
+    },
   };
+}
+
+function normalizeExecutorBlocker(blocker = null) {
+  if (!blocker || typeof blocker !== 'object') return null;
+  const code = String(blocker.code || '').trim();
+  const message = String(blocker.message || '').trim();
+  if (!code && !message) return null;
+  return {
+    code: code || 'executor-blocked',
+    message: message || 'Execution is blocked.',
+    updatedAt: blocker.updatedAt || null,
+  };
+}
+
+function getCardTaskId(card = {}) {
+  return String(card.builderTaskId || card.runnerTaskId || card.executionPackage?.taskId || '').trim();
+}
+
+function deriveExecutorBlocker(card = {}, workspace = {}) {
+  const explicit = normalizeExecutorBlocker(card.executorBlocker);
+  if (explicit) return explicit;
+  if (card.verifyRequired) {
+    if (['failed', 'blocked'].includes(card.verifyStatus)) {
+      return {
+        code: 'verification-failed',
+        message: card.lastVerificationSummary || 'Verification failed and must be rerun.',
+        updatedAt: null,
+      };
+    }
+    if (card.verifyStatus === 'passed') {
+      const planSignature = card.executionPackage?.verificationPlan?.signature || null;
+      if (planSignature && card.verifiedSignature && card.verifiedSignature !== planSignature) {
+        return {
+          code: 'verification-stale',
+          message: 'Verification is stale for the current package and must be rerun.',
+          updatedAt: null,
+        };
+      }
+    }
+  }
+  if (!(card.sourceAnchorRefs || []).length) {
+    return {
+      code: 'missing-anchor',
+      message: `${card.title || 'Card'} lacks anchor provenance and cannot advance.`,
+      updatedAt: null,
+    };
+  }
+  if (card.applyStatus === 'failed') {
+    return {
+      code: 'apply-failed',
+      message: card.riskReasons?.[0] || 'Apply failed and needs review.',
+      updatedAt: null,
+    };
+  }
+  if (['flagged', 'failed'].includes(card.deployStatus)) {
+    return {
+      code: 'deploy-flagged',
+      message: card.riskReasons?.[0] || 'Deploy was flagged and needs review.',
+      updatedAt: null,
+    };
+  }
+  const taskId = getCardTaskId(card);
+  const selfUpgrade = workspace?.studio?.selfUpgrade || null;
+  if (card.targetProjectKey === 'ace-self' && taskId && ['review', 'complete'].includes(card.status) && card.applyStatus !== 'applied') {
+    if (!selfUpgrade?.preflight?.ok) {
+      return {
+        code: 'preflight-failed',
+        message: selfUpgrade?.preflight?.summary || 'Self-upgrade preflight must pass before apply can run.',
+        updatedAt: null,
+      };
+    }
+    if (selfUpgrade.preflight?.taskId && selfUpgrade.preflight.taskId !== taskId) {
+      return {
+        code: 'preflight-stale',
+        message: 'Self-upgrade preflight is stale for this task and must be rerun.',
+        updatedAt: null,
+      };
+    }
+  }
+  if (card.status === 'review' && card.approvalState !== 'approved') {
+    return {
+      code: 'approval-required',
+      message: card.riskReasons?.[0] || `Waiting for approval on ${card.title || 'this card'}.`,
+      updatedAt: null,
+    };
+  }
+  return null;
 }
 
 function deriveCardDesk(card = {}) {
@@ -199,6 +335,7 @@ function deriveCardDesk(card = {}) {
   if (card.status === 'plan') return 'Planner';
   if (card.status === 'active') return 'Builder';
   if (card.status === 'review') return 'CTO';
+  if (['queued', 'running', 'failed', 'blocked'].includes(card.verifyStatus)) return 'Executor';
   if (['queued', 'applying', 'applied', 'failed'].includes(card.applyStatus) || ['queued', 'deploying', 'deployed', 'flagged', 'failed'].includes(card.deployStatus)) {
     return 'Executor';
   }
@@ -216,9 +353,13 @@ function deriveCardState(card = {}) {
   }
   if (card.status === 'review') {
     if (card.deployStatus === 'flagged' || card.deployStatus === 'failed' || card.applyStatus === 'failed') return 'Flagged';
+    if (normalizeExecutorBlocker(card.executorBlocker)?.code && normalizeExecutorBlocker(card.executorBlocker)?.code !== 'approval-required') return 'Flagged';
     return 'Approval required';
   }
   if (card.status === 'complete') {
+    if (card.verifyStatus === 'running') return 'Verifying';
+    if (['failed', 'blocked'].includes(card.verifyStatus)) return 'Verification blocked';
+    if (card.verifyStatus === 'queued') return 'Queued for verify';
     if (card.deployStatus === 'deploying') return 'Deploying';
     if (card.deployStatus === 'deployed') return 'Deployed';
     if (card.deployStatus === 'flagged' || card.deployStatus === 'failed') return 'Flagged';
@@ -251,6 +392,13 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, sour
     runIds: [],
     artifactRefs: [],
     executionPackage: defaultExecutionPackage(),
+    executorBlocker: null,
+    verifyRequired: false,
+    verifyStatus: 'idle',
+    verifyRunIds: [],
+    verifyArtifacts: [],
+    lastVerificationSummary: '',
+    verifiedSignature: null,
     riskLevel: 'unknown',
     riskReasons: [],
     approvalState: 'none',
@@ -285,7 +433,20 @@ function normalizeTeamBoardState(workspace = {}) {
       ...(card.executionPackage || {}),
       changedFiles: Array.isArray(card.executionPackage?.changedFiles) ? card.executionPackage.changedFiles.filter(Boolean) : [],
       targetProjectKey: card.executionPackage?.targetProjectKey || card.targetProjectKey || 'ace-self',
+      verificationPlan: {
+        ...defaultExecutionPackage(card).verificationPlan,
+        ...(card.executionPackage?.verificationPlan || {}),
+        commands: Array.isArray(card.executionPackage?.verificationPlan?.commands) ? card.executionPackage.verificationPlan.commands.filter(Boolean) : [],
+        qaScenarios: Array.isArray(card.executionPackage?.verificationPlan?.qaScenarios) ? card.executionPackage.verificationPlan.qaScenarios.filter(Boolean) : [],
+      },
     },
+    executorBlocker: normalizeExecutorBlocker(card.executorBlocker),
+    verifyRequired: Boolean(card.verifyRequired || card.executionPackage?.verificationPlan?.required),
+    verifyStatus: card.verifyStatus || 'idle',
+    verifyRunIds: Array.isArray(card.verifyRunIds) ? card.verifyRunIds.filter(Boolean) : [],
+    verifyArtifacts: Array.isArray(card.verifyArtifacts) ? card.verifyArtifacts.filter(Boolean) : [],
+    lastVerificationSummary: String(card.lastVerificationSummary || '').trim(),
+    verifiedSignature: card.verifiedSignature || null,
     riskLevel: card.riskLevel || 'unknown',
     riskReasons: Array.isArray(card.riskReasons) ? card.riskReasons.filter(Boolean) : [],
     approvalState: card.approvalState || 'none',
@@ -346,7 +507,8 @@ function getActiveMutationCard(boardOrWorkspace = {}) {
     ? boardOrWorkspace
     : normalizeTeamBoardState(boardOrWorkspace);
   return board.cards.find((card) => (
-    ['queued', 'applying', 'applied'].includes(card.applyStatus)
+    ['queued', 'running', 'failed', 'blocked'].includes(card.verifyStatus)
+    || ['queued', 'applying', 'applied'].includes(card.applyStatus)
     || ['queued', 'deploying', 'deployed', 'flagged', 'failed'].includes(card.deployStatus)
     || card.approvalState === 'approved'
   )) || null;
@@ -531,20 +693,31 @@ function buildDeskWorkItems(deskId, workspace, notebook, handoff, selectedExecut
     }];
   }
   if (deskId === 'executor') {
+    const activeMutationBlocker = activeMutationCard ? deriveExecutorBlocker(activeMutationCard, workspace) : null;
+    const pendingReviewBlocker = pendingReviewCard ? deriveExecutorBlocker(pendingReviewCard, workspace) : null;
     if (activeMutationCard) {
+      const isVerificationStage = activeMutationCard.verifyRequired
+        && ['queued', 'running', 'failed', 'blocked'].includes(activeMutationCard.verifyStatus)
+        && !['applying', 'applied'].includes(activeMutationCard.applyStatus)
+        && !['deploying', 'deployed'].includes(activeMutationCard.deployStatus);
       return [{
         id: `${activeMutationCard.id}-execution`,
         pageId: activeMutationCard.pageId || notebook.activePageId,
         deskId,
-        kind: activeMutationCard.deployStatus === 'deploying' ? 'deploy' : 'apply',
-        status: ['applying', 'deploying'].includes(activeMutationCard.applyStatus) || activeMutationCard.deployStatus === 'deploying' ? 'running' : 'ready',
+        kind: isVerificationStage ? 'verify' : (activeMutationCard.deployStatus === 'deploying' ? 'deploy' : 'apply'),
+        status: isVerificationStage
+          ? (activeMutationCard.verifyStatus === 'running' ? 'running' : (['failed', 'blocked'].includes(activeMutationCard.verifyStatus) ? 'blocked' : 'ready'))
+          : ((['applying', 'deploying'].includes(activeMutationCard.applyStatus) || activeMutationCard.deployStatus === 'deploying') ? 'running' : 'ready'),
         dependsOn: activeMutationCard.sourceHandoffId ? [activeMutationCard.sourceHandoffId] : [],
         conflictTags: ['execute', activeMutationCard.id],
-        artifactRefs: activeMutationCard.artifactRefs || [],
+        artifactRefs: [...(activeMutationCard.artifactRefs || []), ...(activeMutationCard.verifyArtifacts || [])],
         anchorRefs: activeMutationCard.sourceAnchorRefs || [],
-        title: activeMutationCard.deployStatus === 'deploying'
-          ? `Deploy approved card: ${activeMutationCard.title}`
-          : `Apply approved card: ${activeMutationCard.title}`,
+        blockerMessage: activeMutationBlocker?.message || null,
+        title: isVerificationStage
+          ? `Verify package: ${activeMutationCard.title}`
+          : (activeMutationCard.deployStatus === 'deploying'
+            ? `Deploy approved card: ${activeMutationCard.title}`
+            : `Apply approved card: ${activeMutationCard.title}`),
       }];
     }
     if (pendingReviewCard) {
@@ -558,6 +731,7 @@ function buildDeskWorkItems(deskId, workspace, notebook, handoff, selectedExecut
         conflictTags: ['execute', pendingReviewCard.id],
         artifactRefs: pendingReviewCard.artifactRefs || [],
         anchorRefs: pendingReviewCard.sourceAnchorRefs || [],
+        blockerMessage: pendingReviewBlocker?.message || null,
         title: `Awaiting approval: ${pendingReviewCard.title}`,
       }];
     }
@@ -608,7 +782,7 @@ function latestDeskRun(deskId, runs = []) {
     const action = String(run?.action || '').toLowerCase();
     if (deskId === 'context-manager') return ['scan', 'manage'].includes(action);
     if (deskId === 'planner') return action === 'manage';
-    if (deskId === 'executor') return ['build', 'run', 'apply'].includes(action);
+    if (deskId === 'executor') return ['build', 'run', 'apply', 'verify'].includes(action);
     if (deskId === 'memory-archivist') return Boolean(run?.artifacts?.length);
     if (deskId === 'cto-architect') return ['apply', 'manage', 'run'].includes(action);
     return false;
@@ -688,7 +862,7 @@ function buildDeskStatusDetail({ deskId, localState, handoff, plannerToContext =
   }
   if (deskId === 'executor') {
     return localState === 'blocked'
-      ? 'Execution cannot advance until review gates or context blockers clear.'
+      ? (workItems[0]?.blockerMessage || 'Execution cannot advance until review gates or context blockers clear.')
       : (localState === 'ready' ? 'A reviewed package is waiting for executor work.' : 'Executor is idle.');
   }
   if (deskId === 'cto-architect') {
@@ -755,6 +929,8 @@ function buildDeskStates({ workspace, notebook, handoff, selectedExecutionCard =
   return Object.fromEntries(DESK_ORDER.map((deskId) => {
     const workItems = buildDeskWorkItems(deskId, workspace, notebook, handoff, selectedExecutionCard);
     const plannerFeedbackActive = isPlannerFeedbackActive(plannerToContext, handoff);
+    const selectedCardBlocker = selectedExecutionCard ? deriveExecutorBlocker(selectedExecutionCard, workspace) : null;
+    const pendingReviewBlocker = pendingReviewCard ? deriveExecutorBlocker(pendingReviewCard, workspace) : null;
     const blockedReason = deskId === 'planner'
       ? (
           ['blocked', 'degraded'].includes(plannerWorker.status)
@@ -767,11 +943,15 @@ function buildDeskStates({ workspace, notebook, handoff, selectedExecutionCard =
         )
       : deskId === 'executor'
         ? (
-            pendingReviewCard
-              ? `Waiting for approval on ${pendingReviewCard.title}.`
-              : (handoff?.status === 'needs-clarification' && !activeMutationCard
-                ? 'Execution is gated until Context Manager clarifies the active page intent.'
-                : null)
+            selectedCardBlocker?.message
+              ? selectedCardBlocker.message
+              : (pendingReviewBlocker?.message
+                ? pendingReviewBlocker.message
+                : (pendingReviewCard
+                  ? `Waiting for approval on ${pendingReviewCard.title}.`
+                  : (handoff?.status === 'needs-clarification' && !activeMutationCard
+                    ? 'Execution is gated until Context Manager clarifies the active page intent.'
+                    : null)))
           )
         : deskId === 'context-manager'
           ? (
@@ -843,12 +1023,17 @@ function buildDeskThoughtBubble(deskId, workspace, handoff, conflicts, deskState
   const boardState = normalizeTeamBoardState(teamBoard || workspace);
   const selectedExecutionCard = getActiveMutationCard(boardState);
   const pendingReviewCard = boardState.cards.find((card) => card.status === 'review' && card.approvalState !== 'approved') || null;
+  const selectedCardBlocker = selectedExecutionCard ? deriveExecutorBlocker(selectedExecutionCard, workspace) : null;
+  const pendingReviewBlocker = pendingReviewCard ? deriveExecutorBlocker(pendingReviewCard, workspace) : null;
   const deskRun = latestDeskRun(deskId, runs);
   const localState = deskStates?.[deskId]?.localState || 'waiting';
   const boardSummary = boardState.summary || { plan: 0, active: 0, complete: 0, review: 0, idleWorkers: 0 };
   if (deskId === 'cto-architect') {
     if (selfUpgrade?.deploy?.status === 'restarting') return 'Governance status: running. Restarting ACE.';
-    if (pendingReviewCard?.deployStatus === 'flagged' || pendingReviewCard?.applyStatus === 'failed' || selfUpgrade?.preflight?.status === 'failed') return 'Governance status: blocked. Reviewing preflight failures.';
+    const governanceBlocker = deskStates?.executor?.blockedReason || selectedCardBlocker?.message || pendingReviewBlocker?.message || null;
+    if (governanceBlocker || pendingReviewCard?.deployStatus === 'flagged' || pendingReviewCard?.applyStatus === 'failed' || selfUpgrade?.preflight?.status === 'failed') {
+      return `Governance status: blocked. Reviewing blocker: ${governanceBlocker || 'executor blockers.'}`;
+    }
     if (boardSummary.review) return `Governance status: queued. ${boardSummary.review} task${boardSummary.review === 1 ? '' : 's'} ready to apply.`;
     if (conflicts.length) return 'Governance status: queued. Reviewing governance signals.';
     if (handoff?.status === 'needs-clarification') return 'Governance status: blocked. Throttling execution until context is clearer.';
@@ -883,6 +1068,12 @@ function buildDeskThoughtBubble(deskId, workspace, handoff, conflicts, deskState
     return 'Planner status: idle. Waiting for context handoff.';
   }
   if (deskId === 'executor') {
+    if (selectedCardBlocker?.message && !['applying', 'deploying'].includes(selectedExecutionCard?.applyStatus) && selectedExecutionCard?.deployStatus !== 'deploying') {
+      return `Executor status: blocked. ${selectedCardBlocker.message}`;
+    }
+    if (selectedExecutionCard?.verifyStatus === 'running') return 'Executor status: running. Verifying package.';
+    if (selectedExecutionCard?.verifyStatus === 'queued') return `Executor status: queued. ${selectedExecutionCard.title.slice(0, 28)} is queued for verification.`;
+    if (['failed', 'blocked'].includes(selectedExecutionCard?.verifyStatus)) return `Executor status: blocked. ${selectedExecutionCard.lastVerificationSummary || 'Verification failed.'}`;
     if (selectedExecutionCard?.deployStatus === 'deploying') return 'Executor status: running. Deploying ACE.';
     if (selectedExecutionCard?.deployStatus === 'deployed') return 'Executor status: idle. Deploy complete.';
     if (selectedExecutionCard?.deployStatus === 'flagged') return 'Executor status: blocked. Deploy flagged for review.';
@@ -907,6 +1098,8 @@ function detectConflicts(workspace, handoff, deskStates, selectedExecutionCard =
   const plannerToContext = workspace?.studio?.handoffs?.plannerToContext || null;
   const board = normalizeTeamBoardState(workspace);
   const pendingReviewCard = board.cards.find((card) => card.status === 'review' && card.approvalState !== 'approved') || null;
+  const pendingReviewBlocker = pendingReviewCard ? deriveExecutorBlocker(pendingReviewCard, workspace) : null;
+  const selectedCardBlocker = selectedExecutionCard ? deriveExecutorBlocker(selectedExecutionCard, workspace) : null;
   if (Number(latestIntent?.confidence || 0) < 0.55) {
     conflicts.push({
       id: 'low-confidence-context',
@@ -931,7 +1124,16 @@ function detectConflicts(workspace, handoff, deskStates, selectedExecutionCard =
       kind: 'ready-to-apply',
       severity: 'high',
       desks: ['executor', 'cto-architect'],
-      summary: `${pendingReviewCard.title} is waiting at the apply gate because ${pendingReviewCard.riskReasons?.[0] || 'risk heuristics require approval'}.`,
+      summary: `${pendingReviewCard.title} is waiting at the apply gate because ${pendingReviewBlocker?.message || pendingReviewCard.riskReasons?.[0] || 'risk heuristics require approval'}.`,
+    });
+  }
+  if (selectedExecutionCard && ['failed', 'blocked'].includes(selectedExecutionCard.verifyStatus)) {
+    conflicts.push({
+      id: `verification-failed-${selectedExecutionCard.id}`,
+      kind: 'verification-failed',
+      severity: 'high',
+      desks: ['executor', 'cto-architect'],
+      summary: `${selectedExecutionCard.title} failed verification: ${selectedCardBlocker?.message || selectedExecutionCard.lastVerificationSummary || 'verification must be rerun'}.`,
     });
   }
   if (selectedExecutionCard?.deployStatus === 'flagged' || selectedExecutionCard?.applyStatus === 'failed') {
@@ -940,7 +1142,7 @@ function detectConflicts(workspace, handoff, deskStates, selectedExecutionCard =
       kind: 'mutation-flagged',
       severity: 'high',
       desks: ['executor', 'cto-architect'],
-      summary: `${selectedExecutionCard.title} was flagged during ${selectedExecutionCard.deployStatus === 'flagged' ? 'deploy' : 'apply'} and needs intervention.`,
+      summary: `${selectedExecutionCard.title} was flagged during ${selectedExecutionCard.deployStatus === 'flagged' ? 'deploy' : 'apply'} and needs intervention: ${selectedCardBlocker?.message || 'review required'}.`,
     });
   }
   if (selectedExecutionCard && !(selectedExecutionCard.sourceAnchorRefs || []).length) {
@@ -1081,7 +1283,7 @@ function buildRuntimePayload(workspace = {}) {
       activePageId: notebook.activePageId,
     },
     graphs,
-    rsg: workspace?.rsg || buildRsgState(normalizedWorkspace),
+    rsg: buildRsgState(normalizedWorkspace),
   };
 }
 
@@ -1092,8 +1294,10 @@ module.exports = {
   normalizeGraphBundle,
   createDefaultRsgState,
   buildRsgState,
+  getSelectedExecutionCard,
   normalizeNotebookState,
   normalizeTeamBoardState,
   advanceOrchestratorWorkspace,
   buildRuntimePayload,
+  deriveExecutorBlocker,
 };

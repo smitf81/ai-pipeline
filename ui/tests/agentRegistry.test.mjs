@@ -37,6 +37,14 @@ export default async function runAgentRegistryTests() {
     timeoutMs: 30000,
   }, null, 2));
   writeFile(rootPath, 'agents/context-manager/prompt.md', 'Context prompt');
+  writeFile(rootPath, 'agents/executor/agent.json', JSON.stringify({
+    id: 'executor',
+    name: 'Executor',
+    backend: 'ollama',
+    model: 'mixtral',
+    timeoutMs: 30000,
+  }, null, 2));
+  writeFile(rootPath, 'agents/executor/prompt.md', 'Executor prompt');
   writeFile(rootPath, 'agents/broken/agent.json', JSON.stringify({
     id: 'wrong-id',
     name: '',
@@ -54,6 +62,10 @@ export default async function runAgentRegistryTests() {
   const contextManager = readAgentDefinition(rootPath, 'context-manager');
   assert.equal(contextManager.valid, true);
   assert.equal(contextManager.prompt, 'Context prompt');
+
+  const executor = readAgentDefinition(rootPath, 'executor');
+  assert.equal(executor.valid, true);
+  assert.equal(executor.prompt, 'Executor prompt');
 
   const broken = readAgentDefinition(rootPath, 'broken');
   assert.equal(broken.valid, false);

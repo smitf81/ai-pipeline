@@ -59,6 +59,19 @@ export class AceConnector {
     return payload;
   }
 
+  async runAgentWorker(agentId, payload = {}) {
+    const id = String(agentId || '').trim();
+    if (!id) throw new Error('Agent id is required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.error || response.reason || 'Agent run failed');
+    return response;
+  }
+
   async runBrowserPass({ scenario = 'layout-pass', mode = 'interactive', prompt = '', actions = [], linked = {} } = {}) {
     const res = await fetch('/api/spatial/qa/run', {
       method: 'POST',

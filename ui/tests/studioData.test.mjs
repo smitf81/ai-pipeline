@@ -156,6 +156,21 @@ export default async function runStudioDataTests() {
           startedAt: '2026-03-13T10:16:00.000Z',
           completedAt: '2026-03-13T10:17:00.000Z',
         },
+        executor: {
+          status: 'idle',
+          mode: 'manual',
+          backend: 'ollama',
+          model: 'mixtral',
+          currentRunId: null,
+          lastRunId: 'executor_1',
+          lastOutcome: 'blocked',
+          lastBlockedReason: 'Awaiting approval for risky package.',
+          lastVerifiedCardId: '0002',
+          lastAppliedCardId: null,
+          lastDeployCardId: null,
+          startedAt: '2026-03-13T10:18:00.000Z',
+          completedAt: '2026-03-13T10:19:00.000Z',
+        },
       },
       handoffs: {
         contextToPlanner: {
@@ -283,4 +298,5 @@ export default async function runStudioDataTests() {
   assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Produced Cards'));
   assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Proposal Artifacts'));
   assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'execution-selection').label, 'Mutation Queue');
+  assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'executor-worker').value, 'Status: idle | backend ollama | model mixtral');
 }

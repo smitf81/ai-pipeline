@@ -1,22 +1,22 @@
 {
-  "id": "planner",
-  "name": "Planner",
-  "deskId": "planner",
-  "runtime": "ollama-json",
-  "backend": "ollama",
-  "model": "mixtral",
-  "host": "http://127.0.0.1:11434",
-  "timeoutMs": 30000,
   "autoRun": true,
+  "backend": "ollama",
+  "deskId": "planner",
+  "host": "http://127.0.0.1:11434",
+  "id": "planner",
   "inputs": [
     "studio.handoffs.contextToPlanner",
     "brain/emergence/*",
     "studio.teamBoard"
   ],
+  "model": "mixtral",
+  "name": "Planner",
   "outputs": [
     "studio.teamBoard.cards(plan)",
     "data/spatial/agent-runs/planner/*.json",
     "proposal-artifacts"
   ],
+  "runtime": "ollama-json",
+  "timeoutMs": 30000,
   "writesCanonicalBrain": false
 }

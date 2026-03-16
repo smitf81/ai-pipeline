@@ -110,9 +110,35 @@ function defaultContextManagerWorkerState() {
   };
 }
 
+function defaultExecutorWorkerState() {
+  return {
+    status: 'idle',
+    statusReason: null,
+    mode: 'manual',
+    backend: 'ollama',
+    model: 'mixtral',
+    currentRunId: null,
+    lastRunId: null,
+    lastOutcome: null,
+    lastOutcomeAt: null,
+    lastBlockedReason: null,
+    lastCardId: null,
+    lastTaskId: null,
+    lastDecision: null,
+    lastAssessmentSummary: null,
+    lastAssessmentBlockers: [],
+    lastVerifiedCardId: null,
+    lastAppliedCardId: null,
+    lastDeployCardId: null,
+    startedAt: null,
+    completedAt: null,
+  };
+}
+
 function normalizeAgentWorkersState(agentWorkers = {}) {
   const defaults = {
     'context-manager': defaultContextManagerWorkerState(),
+    executor: defaultExecutorWorkerState(),
     planner: defaultPlannerWorkerState(),
   };
   return {
@@ -122,6 +148,13 @@ function normalizeAgentWorkersState(agentWorkers = {}) {
       ...defaults['context-manager'],
       ...(agentWorkers?.['context-manager'] || {}),
       lastUsedFallback: Boolean(agentWorkers?.['context-manager']?.lastUsedFallback),
+    },
+    executor: {
+      ...defaults.executor,
+      ...(agentWorkers?.executor || {}),
+      lastAssessmentBlockers: Array.isArray(agentWorkers?.executor?.lastAssessmentBlockers)
+        ? [...new Set(agentWorkers.executor.lastAssessmentBlockers.filter(Boolean))]
+        : [],
     },
     planner: {
       ...defaults.planner,
@@ -1323,6 +1356,7 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
   const selfUpgrade = workspace.studio?.selfUpgrade || null;
   const handoff = workspace.studio?.handoffs?.contextToPlanner || null;
   const plannerToContext = workspace.studio?.handoffs?.plannerToContext || null;
+  const executorWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).executor;
   const plannerWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).planner;
   const board = normalizeTeamBoardState(workspace);
   const plannerProducedCards = board.cards.filter((card) => (plannerWorker.lastProducedCardIds || []).includes(card.id));
@@ -1379,6 +1413,19 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
       detail: plannerToContext?.sourceHandoffId && plannerToContext.sourceHandoffId === handoff?.id
         ? `Action: ${plannerToContext.action || 'retry-handoff'}`
         : 'Planner has not asked Context Manager to retry or bin the current handoff.',
+    },
+  ] : [];
+  const executorSections = agent.id === 'executor' ? [
+    {
+      id: 'executor-worker',
+      label: 'Executor Worker',
+      kind: 'summary',
+      value: `Status: ${executorWorker.status || 'idle'} | backend ${executorWorker.backend || 'ollama'} | model ${executorWorker.model || 'mixtral'}`,
+      detail: executorWorker.currentRunId
+        ? `Running ${executorWorker.currentRunId}`
+        : (executorWorker.lastRunId
+          ? `Last run ${executorWorker.lastRunId} | outcome ${executorWorker.lastOutcome || 'unknown'}${executorWorker.lastDecision ? ` | decision ${executorWorker.lastDecision}` : ''}${executorWorker.lastBlockedReason ? ` | blocker ${executorWorker.lastBlockedReason}` : ''}${executorWorker.statusReason ? ` | ${executorWorker.statusReason}` : ''}`
+          : 'No executor run metadata has been recorded yet.'),
     },
   ] : [];
   const selfUpgradeSections = agent.id === 'cto-architect' ? [
@@ -1475,6 +1522,7 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
           ? `Page ${selectedExecutionCard.pageId} | task ${selectedExecutionCard.runnerTaskId || selectedExecutionCard.builderTaskId || 'unbound'} | risk ${selectedExecutionCard.riskLevel || 'unknown'} | apply ${selectedExecutionCard.applyStatus || 'idle'} | deploy ${selectedExecutionCard.deployStatus || 'idle'}`
           : 'Low-risk packages auto-apply. Risky packages stop in Ready to Apply on the Team Board.',
       }] : []),
+      ...executorSections,
       ...plannerSections,
       ...selfUpgradeSections,
     ],
@@ -1485,6 +1533,7 @@ function defaultRecentActions(agent, workspace, runs) {
   const summaries = recentRunSummary(runs);
   const intent = latestIntentReport(workspace);
   const contextWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers)['context-manager'];
+  const executorWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).executor;
   const plannerWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).planner;
   const plannerToContext = workspace?.studio?.handoffs?.plannerToContext || null;
   if (agent.id === 'context-manager') {
@@ -1509,7 +1558,9 @@ function defaultRecentActions(agent, workspace, runs) {
   }
   if (agent.id === 'executor') {
     return [
-      summaries.find((entry) => entry.includes('build') || entry.includes('run')) || 'No build execution in recent history',
+      executorWorker.status === 'running'
+        ? `Executor worker is running ${executorWorker.currentRunId || 'the active verification/apply cycle'}`
+        : (executorWorker.lastAssessmentSummary || executorWorker.statusReason || summaries.find((entry) => entry.includes('build') || entry.includes('run')) || 'No build execution in recent history'),
       intent?.tasks?.length ? `Execution queue seeded from ${(intent.tasks || []).length} intent tasks` : `Modules/files in workspace: ${(workspace.graph?.nodes || []).filter((node) => ['module', 'file'].includes(node.type)).length}`,
     ];
   }

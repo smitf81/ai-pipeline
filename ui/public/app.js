@@ -5,6 +5,7 @@ const state = {
   currentRunId: null,
   currentOutput: '',
   pendingApplyPayload: null,
+  taLoading: false,
 };
 
 async function api(url, options = {}) {
@@ -153,6 +154,158 @@ function syncActionUi() {
   document.getElementById('presetRow').style.display = isRun ? 'block' : 'none';
 }
 
+function setTalentUiState({ status = '', error = '', loading = false } = {}) {
+  const statusEl = document.getElementById('taCandidateStatus');
+  const errorEl = document.getElementById('taCandidateError');
+  const buttonEl = document.getElementById('generateCandidatesBtn');
+  if (statusEl) statusEl.textContent = status;
+  if (errorEl) {
+    errorEl.textContent = error;
+    errorEl.classList.toggle('hidden', !error);
+  }
+  if (buttonEl) {
+    buttonEl.disabled = loading;
+    buttonEl.textContent = loading ? 'Generating...' : 'Generate Candidates';
+  }
+}
+
+function createSectionList(title, items = [], emptyLabel = 'None') {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ta-candidate-section';
+
+  const heading = document.createElement('div');
+  heading.className = 'card-title';
+  heading.textContent = title;
+  wrapper.appendChild(heading);
+
+  const list = document.createElement('ul');
+  list.className = 'list compact-list';
+  (items.length ? items : [emptyLabel]).forEach((item) => {
+    const li = document.createElement('li');
+    li.textContent = item;
+    list.appendChild(li);
+  });
+  wrapper.appendChild(list);
+
+  return wrapper;
+}
+
+function renderTalentCandidates(candidates = []) {
+  const root = document.getElementById('taCandidateResults');
+  if (!root) return;
+
+  root.innerHTML = '';
+
+  candidates.forEach((candidate) => {
+    const card = document.createElement('article');
+    card.className = 'card ta-candidate-card';
+
+    const header = document.createElement('div');
+    header.className = 'ta-candidate-header';
+
+    const identity = document.createElement('div');
+    const name = document.createElement('div');
+    name.className = 'ta-candidate-name';
+    name.textContent = candidate.name || 'Unnamed Candidate';
+    const role = document.createElement('div');
+    role.className = 'ta-candidate-role';
+    role.textContent = candidate.role || 'Unknown Role';
+    const department = document.createElement('div');
+    department.className = 'ta-candidate-role';
+    department.textContent = `Department: ${candidate.department || 'Unknown Department'}`;
+    identity.appendChild(name);
+    identity.appendChild(role);
+    identity.appendChild(department);
+
+    const confidence = document.createElement('div');
+    confidence.className = 'ta-candidate-confidence';
+    const confidenceValue = Number(candidate.confidence);
+    confidence.textContent = `Confidence ${Number.isFinite(confidenceValue) ? Math.round(confidenceValue * 100) : 0}%`;
+
+    header.appendChild(identity);
+    header.appendChild(confidence);
+    card.appendChild(header);
+
+    const summary = document.createElement('p');
+    summary.className = 'signal-summary';
+    summary.textContent = candidate.summary || 'No summary provided.';
+    card.appendChild(summary);
+
+    const modelPolicy = document.createElement('div');
+    modelPolicy.className = 'ta-candidate-policy';
+    modelPolicy.textContent = `Model policy: ${candidate.model_policy?.preferred || 'n/a'} - ${candidate.model_policy?.reason || 'No reason provided.'}`;
+    card.appendChild(modelPolicy);
+
+    const why = document.createElement('div');
+    why.className = 'ta-candidate-why';
+    why.textContent = candidate.why_this_role || 'No fit rationale provided.';
+    card.appendChild(why);
+
+    const sectionGrid = document.createElement('div');
+    sectionGrid.className = 'ta-candidate-section-grid';
+    sectionGrid.appendChild(createSectionList('Strengths', candidate.strengths || []));
+    sectionGrid.appendChild(createSectionList('Weaknesses', candidate.weaknesses || []));
+    sectionGrid.appendChild(createSectionList('Recommended Tools', candidate.recommended_tools || []));
+    sectionGrid.appendChild(createSectionList('Recommended Skills', candidate.recommended_skills || []));
+    sectionGrid.appendChild(createSectionList('Risk Notes', candidate.risk_notes || []));
+    card.appendChild(sectionGrid);
+
+    root.appendChild(card);
+  });
+}
+
+async function generateTalentCandidates() {
+  const gapInput = document.getElementById('talentGapInput');
+  const description = String(gapInput?.value || '').trim();
+  if (!description) {
+    setTalentUiState({
+      status: 'Enter a gap description to generate candidate profiles.',
+      error: 'Gap description is required.',
+      loading: false,
+    });
+    renderTalentCandidates([]);
+    return;
+  }
+
+  state.taLoading = true;
+  setTalentUiState({
+    status: 'Generating candidate profiles...',
+    error: '',
+    loading: true,
+  });
+
+  try {
+    const response = await api('/api/ta/candidates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gap: {
+          description,
+        },
+      }),
+    });
+
+    const candidates = Array.isArray(response.candidates) ? response.candidates : [];
+    renderTalentCandidates(candidates);
+    setTalentUiState({
+      status: candidates.length
+        ? `Generated ${candidates.length} candidate profile${candidates.length === 1 ? '' : 's'}.`
+        : 'No candidates were returned.',
+      error: candidates.length ? '' : 'The generator returned no candidates.',
+      loading: false,
+    });
+  } catch (error) {
+    renderTalentCandidates([]);
+    setTalentUiState({
+      status: 'Candidate generation failed.',
+      error: String(error.message || error),
+      loading: false,
+    });
+  } finally {
+    state.taLoading = false;
+  }
+}
+
 function openReviewModal(text, onConfirm) {
   const modal = document.getElementById('reviewModal');
   setText('reviewBody', text);
@@ -277,6 +430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('taskSelect').onchange = (e) => { document.getElementById('taskIdInput').value = e.target.value; };
   document.getElementById('presetHelpBtn').onclick = () => document.getElementById('presetHelp').classList.toggle('show-help');
   document.getElementById('executeBtn').onclick = () => executeAction().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
+  document.getElementById('generateCandidatesBtn').onclick = () => generateTalentCandidates();
   document.getElementById('cancelReviewBtn').onclick = closeReviewModal;
   document.getElementById('reviewModal').onclick = (e) => { if (e.target.id === 'reviewModal') closeReviewModal(); };
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReviewModal(); });
@@ -307,4 +461,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   syncActionUi();
   startAutoRefresh();
 });
+
+window.__ACE_APP_TEST__ = {
+  renderTalentCandidates,
+  generateTalentCandidates,
+};
 

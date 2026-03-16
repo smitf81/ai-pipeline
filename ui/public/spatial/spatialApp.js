@@ -5,6 +5,7 @@ import {
   buildStarterGraph,
   GRAPH_LAYERS,
   getNodeTypesForLayer,
+  createDefaultRsgState,
   normalizeGraphBundle,
   buildRsgState,
 } from './graphEngine.js';
@@ -68,6 +69,9 @@ const GRAPH_LAYER_TITLES = {
   system: 'System Graph',
   world: 'World Graph',
 };
+export const RSG_IDLE_DELAY_MS = 1200;
+const RSG_LOW_CONFIDENCE_THRESHOLD = 0.55;
+const RSG_ACTIVITY_LIMIT = 24;
 
 const STUDIO_ROOM = { x: 72, y: 86, width: 1056, height: 642 };
 const STUDIO_DESK_SIZE = { width: 172, height: 140 };
@@ -228,6 +232,127 @@ function suggestRole(node, graph, layer = 'system') {
   if (/todo|build|make|implement|task|ship/.test(text) || outgoing > 1) return 'task';
   if (/ux|ui|screen|flow/.test(text)) return 'ux';
   return 'thought';
+}
+
+function normalizedNodeContent(value = '') {
+  return String(value || '').trim();
+}
+
+export function isLinkedDraftNode(node) {
+  return node?.metadata?.rsg?.state === 'linked-draft';
+}
+
+export function isAdoptedDraftNode(node) {
+  return node?.metadata?.rsg?.state === 'adopted';
+}
+
+export function buildRsgActivityEntry({
+  type = 'rsg-skip',
+  sourceNode = null,
+  report = null,
+  generationId = null,
+  generatedCount = 0,
+  replacedCount = 0,
+  reason = '',
+  trigger = 'manual',
+  at = null,
+} = {}) {
+  const summary = String(report?.summary || reason || '').trim();
+  return {
+    id: `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    type,
+    at: at || new Date().toISOString(),
+    sourceNodeId: sourceNode?.id || report?.nodeId || null,
+    sourceNodeLabel: normalizedNodeContent(sourceNode?.content || '').slice(0, 80),
+    summary,
+    confidence: Number.isFinite(Number(report?.confidence)) ? Number(report.confidence) : null,
+    generatedCount: Number(generatedCount || 0),
+    replacedCount: Number(replacedCount || 0),
+    usedFallback: Boolean(report?.usedFallback),
+    reason: String(reason || '').trim(),
+    trigger,
+    generationId: generationId || null,
+  };
+}
+
+export function pushRsgActivityEntry(rsgState = createDefaultRsgState(), entry = null) {
+  const base = {
+    ...createDefaultRsgState(),
+    ...(rsgState || {}),
+  };
+  if (!entry) return base;
+  return {
+    ...base,
+    activity: [
+      entry,
+      ...((base.activity || []).filter((item) => item?.id && item.id !== entry.id)),
+    ].slice(0, RSG_ACTIVITY_LIMIT),
+    lastSourceNodeId: entry.sourceNodeId || base.lastSourceNodeId || null,
+    lastGenerationAt: entry.at || base.lastGenerationAt || null,
+    lastStatus: entry.type || base.lastStatus || 'idle',
+  };
+}
+
+export function shouldRunFocusedRsgLoop({
+  node = null,
+  trigger = 'enter',
+  activeGraphLayer = 'system',
+  scene = SCENES.CANVAS,
+  selectedId = null,
+  rawContent = null,
+} = {}) {
+  if (!node?.id) return { ok: false, reason: 'missing-node' };
+  if (activeGraphLayer !== 'system') return { ok: false, reason: 'not-system-layer' };
+  if (scene !== SCENES.CANVAS) return { ok: false, reason: 'not-canvas' };
+  if (trigger === 'idle' && selectedId !== node.id) return { ok: false, reason: 'not-selected' };
+  if (normalizedNodeContent(rawContent ?? node.content).length === 0) return { ok: false, reason: 'empty-content' };
+  if (node?.metadata?.intentStatus === 'processing') return { ok: false, reason: 'processing' };
+  if (isLinkedDraftNode(node)) return { ok: false, reason: 'linked-draft' };
+  return { ok: true, reason: '' };
+}
+
+export function getExtractedIntent(report = null) {
+  return report?.extractedIntent && typeof report.extractedIntent === 'object'
+    ? report.extractedIntent
+    : null;
+}
+
+export function resolveGeneratedNodeInspection(node = null, graph = { nodes: [] }) {
+  const intentRef = node?.metadata?.rsg?.intentRef || null;
+  if (!intentRef?.sourceNodeId || !intentRef?.candidateNodeId) return null;
+  const sourceNode = (graph?.nodes || []).find((entry) => entry.id === intentRef.sourceNodeId) || null;
+  const sourceReport = sourceNode?.metadata?.intentAnalysis || null;
+  const extractedIntent = getExtractedIntent(sourceReport);
+  if (!extractedIntent) return null;
+  const candidate = (extractedIntent.candidateNodes || []).find((entry) => entry.id === intentRef.candidateNodeId)
+    || (extractedIntent.candidateNodes || []).find((entry) => String(entry.label || '').trim() === String(node.content || '').trim())
+    || null;
+  const relatedEdges = (extractedIntent.candidateEdges || []).filter((edge) => (
+    edge.sourceCandidateId === intentRef.candidateNodeId || edge.targetCandidateId === intentRef.candidateNodeId
+  ));
+  return {
+    extractedIntent,
+    sourceNode,
+    candidate,
+    relatedEdges,
+    basis: candidate?.basis || intentRef.basis || 'explicit',
+    confidence: Number.isFinite(Number(candidate?.confidence))
+      ? Number(candidate.confidence)
+      : (Number.isFinite(Number(node?.metadata?.rsg?.confidence)) ? Number(node.metadata.rsg.confidence) : null),
+  };
+}
+
+function formatRsgActivity(entry = null) {
+  if (!entry) return 'RSG idle';
+  const label = String(entry.type || 'rsg-skip').replace(/^rsg-/, 'RSG ').replace(/-/g, ' ');
+  if (entry.type === 'rsg-skip') {
+    return `${label} | ${entry.reason || 'no draft updates'}`;
+  }
+  return `${label} | ${entry.generatedCount || 0} drafts${entry.replacedCount ? ` | replaced ${entry.replacedCount}` : ''}`;
+}
+
+function isLowConfidence(value) {
+  return Number.isFinite(Number(value)) && Number(value) < RSG_LOW_CONFIDENCE_THRESHOLD;
 }
 
 function deriveLabels(content = '', metadata = {}, layer = 'system') {
@@ -643,6 +768,7 @@ function SpatialNotebook() {
   const [annotations, setAnnotations] = useState([]);
   const [selectedSketchId, setSelectedSketchId] = useState(null);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
+  const [expandedGeneratedNodeIds, setExpandedGeneratedNodeIds] = useState({});
   const [dashboardState, setDashboardState] = useState({});
   const [recentRuns, setRecentRuns] = useState([]);
   const [recentHistory, setRecentHistory] = useState([]);
@@ -653,6 +779,7 @@ function SpatialNotebook() {
   const [scanPreview, setScanPreview] = useState(null);
   const [scannerBusy, setScannerBusy] = useState(false);
   const [intentState, setIntentState] = useState(EMPTY_INTENT_STATE);
+  const [rsgMeta, setRsgMeta] = useState(() => createDefaultRsgState());
   const [pages, setPages] = useState([createDefaultPage()]);
   const [activePageId, setActivePageId] = useState(null);
   const [handoffs, setHandoffs] = useState(EMPTY_HANDOFFS);
@@ -670,6 +797,7 @@ function SpatialNotebook() {
   const [selfUpgradeTaskId, setSelfUpgradeTaskId] = useState('');
   const [selfUpgradeBusy, setSelfUpgradeBusy] = useState(false);
   const [teamBoardBusy, setTeamBoardBusy] = useState(false);
+  const [agentWorkerBusyId, setAgentWorkerBusyId] = useState(null);
   const [studioLayout, setStudioLayout] = useState(() => normalizeStudioLayout());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(380);
@@ -708,10 +836,12 @@ function SpatialNotebook() {
   const rsgState = useMemo(() => buildRsgState({
     graph: systemGraph,
     graphs: graphBundle,
+    rsg: rsgMeta,
     studio: {
       teamBoard,
     },
-  }), [systemGraph, graphBundle, teamBoard]);
+  }), [systemGraph, graphBundle, teamBoard, rsgMeta]);
+  const latestRsgActivity = rsgState.activity?.[0] || null;
 
   const workspacePayload = useMemo(() => ({
     graph: systemGraph,
@@ -855,6 +985,7 @@ function SpatialNotebook() {
         byNode: storedIntentState.byNode || {},
         reports: Array.isArray(storedIntentState.reports) ? storedIntentState.reports : [],
       });
+      setRsgMeta(workspace.rsg || createDefaultRsgState());
       setContextDraft(contextNode?.content || '');
       setScanPreview(storedIntentState.contextReport || null);
       hasLoadedWorkspace.current = true;
@@ -1005,6 +1136,37 @@ function SpatialNotebook() {
     }, 650);
     return () => clearInterval(timer);
   }, [simulating, paused, graph.edges.length]);
+
+  useEffect(() => {
+    if (!selected) return undefined;
+    if (normalizedNodeContent(selected.content) === normalizedNodeContent(selected.metadata?.lastCommittedContent)) return undefined;
+    const eligibility = shouldRunFocusedRsgLoop({
+      node: selected,
+      trigger: 'idle',
+      activeGraphLayer,
+      scene,
+      selectedId,
+      rawContent: selected.content,
+    });
+    if (!eligibility.ok) return undefined;
+    const timer = setTimeout(() => {
+      commitNodeIntent(selected.id, selected.content, {
+        source: 'node-idle',
+        trigger: 'idle',
+        recordSkip: false,
+      }).catch((error) => setStatus(error.message));
+    }, RSG_IDLE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [
+    selected?.id,
+    selected?.content,
+    selected?.metadata?.intentStatus,
+    selected?.metadata?.lastCommittedContent,
+    selected?.metadata?.rsg?.state,
+    activeGraphLayer,
+    scene,
+    selectedId,
+  ]);
 
   useEffect(() => {
     if (!hasLoadedWorkspace.current) return undefined;
@@ -1358,7 +1520,89 @@ function SpatialNotebook() {
     teamBoard: workspace.studio?.teamBoard || fallbackTeamBoard,
     orchestrator: workspace.studio?.orchestrator || EMPTY_ORCHESTRATOR_STATE,
     selfUpgrade: workspace.studio?.selfUpgrade || EMPTY_SELF_UPGRADE,
+    rsg: workspace.rsg || createDefaultRsgState(),
   });
+
+  const syncGraphState = () => setGraph({ ...graphEngine.getState() });
+
+  const recordRsgActivity = (entry) => {
+    if (!entry) return entry;
+    setRsgMeta((current) => pushRsgActivityEntry(current, entry));
+    return entry;
+  };
+
+  const applyFocusedRsgLoop = (sourceNode, report, { trigger = 'enter', recordSkip = true } = {}) => {
+    const currentSourceNode = graphEngine.getState().nodes.find((node) => node.id === sourceNode?.id) || sourceNode;
+    const eligibility = shouldRunFocusedRsgLoop({
+      node: currentSourceNode,
+      trigger,
+      activeGraphLayer,
+      scene,
+      selectedId,
+      rawContent: currentSourceNode?.content,
+    });
+    if (!eligibility.ok) {
+      if (!recordSkip) return { skipped: true, reason: eligibility.reason, entry: null };
+      return {
+        skipped: true,
+        reason: eligibility.reason,
+        entry: recordRsgActivity(buildRsgActivityEntry({
+          type: 'rsg-skip',
+          sourceNode: currentSourceNode,
+          report,
+          reason: eligibility.reason,
+          trigger,
+        })),
+      };
+    }
+
+    const syncResult = mutationEngine.syncDraftNodesFromReport(currentSourceNode, report, {
+      layer: activeGraphLayer,
+    });
+    syncGraphState();
+    const activityType = syncResult.generatedNodes.length
+      ? (syncResult.replacedNodeIds.length ? 'rsg-replace' : 'rsg-generate')
+      : (syncResult.replacedNodeIds.length ? 'rsg-replace' : 'rsg-skip');
+    const entry = buildRsgActivityEntry({
+      type: activityType,
+      sourceNode: currentSourceNode,
+      report,
+      generationId: syncResult.generationId,
+      generatedCount: syncResult.generatedNodes.length,
+      replacedCount: syncResult.replacedNodeIds.length,
+      reason: syncResult.reason || '',
+      trigger,
+      at: syncResult.createdAt,
+    });
+    return {
+      skipped: activityType === 'rsg-skip',
+      reason: syncResult.reason || '',
+      syncResult,
+      entry: recordRsgActivity(entry),
+    };
+  };
+
+  const handleNodeContentChange = (node, content) => {
+    const patch = { content };
+    if (isLinkedDraftNode(node) && content !== node.content) {
+      patch.metadata = {
+        ...(node.metadata || {}),
+        rsg: {
+          ...(node.metadata?.rsg || {}),
+          state: 'adopted',
+        },
+      };
+    }
+    graphEngine.updateNode(node.id, patch);
+    syncGraphState();
+  };
+
+  const toggleGeneratedNodeExpansion = (nodeId) => {
+    setExpandedGeneratedNodeIds((current) => ({
+      ...current,
+      [nodeId]: !current[nodeId],
+    }));
+  };
 
   const updatePlannerHandoff = async (report) => {
     if (!report) return null;
@@ -1439,6 +1683,9 @@ function SpatialNotebook() {
       ...EMPTY_SELF_UPGRADE,
       ...(runtime.selfUpgrade || {}),
     });
+    if (runtime.rsg) {
+      setRsgMeta(runtime.rsg);
+    }
     if (runtime.throughputDebug) {
       setThroughputDebug({
         ...EMPTY_THROUGHPUT_DEBUG,
@@ -1480,6 +1727,34 @@ function SpatialNotebook() {
     }
   }
 
+  async function runExecutorWorkerAssessment() {
+    if (!selectedExecutionCard?.id) {
+      setStatus('queue or select a mutation package before running executor');
+      return;
+    }
+    setAgentWorkerBusyId('executor');
+    try {
+      const payload = await ace.runAgentWorker('executor', {
+        cardId: selectedExecutionCard.id,
+        mode: 'manual',
+      });
+      if (payload.runtime) {
+        applyRuntimePayload(payload.runtime);
+      }
+      setSelectedAgentId('executor');
+      setScene(SCENES.STUDIO);
+      const decision = payload.report?.decision ? ` ${String(payload.report.decision).replace(/-/g, ' ')}` : '';
+      setStatus(payload.report?.summary
+        ? `executor${decision}: ${payload.report.summary}`
+        : 'executor assessment complete');
+    } catch (error) {
+      setStatus(`executor run failed: ${error.message}`);
+      refreshFeeds();
+    } finally {
+      setAgentWorkerBusyId(null);
+    }
+  }
+
   const scanContextIntent = async () => {
     if (activeGraphLayer !== 'system') {
       setStatus('switch to the system graph to run context intake');
@@ -1514,10 +1789,11 @@ function SpatialNotebook() {
             labels: [...new Set([...(currentNode?.metadata?.labels || []), ...(response.classification?.labels || [])])],
             intentAnalysis: report,
             intentStatus: 'ready',
+            lastCommittedContent: normalizedNodeContent(contextDraft),
             agentId: 'context-manager',
           },
         });
-        setGraph({ ...graphEngine.getState() });
+        syncGraphState();
       }
       const nextIntentState = {
         latest: report,
@@ -1532,8 +1808,13 @@ function SpatialNotebook() {
         setIntentState(nextIntentState);
         handoff = await updatePlannerHandoff(report);
       }
+      const rsgResult = contextNode?.id
+        ? applyFocusedRsgLoop(graphEngine.getState().nodes.find((node) => node.id === contextNode.id), report, {
+            trigger: 'context-intake',
+          })
+        : null;
       setSelectedAgentId('context-manager');
-      setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} intent items | planner brief ${handoff?.status || 'updated'}`);
+      setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} intent items | planner brief ${handoff?.status || 'updated'}${rsgResult?.entry ? ` | ${formatRsgActivity(rsgResult.entry)}` : ''}`);
     } catch (error) {
       setStatus(`scan failed: ${error.message}`);
     } finally {
@@ -1558,7 +1839,7 @@ function SpatialNotebook() {
     setStatus('advanced properties updated');
   };
 
-  const commitNodeIntent = async (nodeId, rawContent) => {
+  const commitNodeIntent = async (nodeId, rawContent, { source = 'node-enter', trigger = 'enter', recordSkip = true } = {}) => {
     const current = graphEngine.getState().nodes.find((node) => node.id === nodeId);
     if (!current) return;
     const content = (rawContent || '').trim();
@@ -1567,13 +1848,29 @@ function SpatialNotebook() {
       metadata: {
         ...(current.metadata || {}),
         intentStatus: content ? 'processing' : 'idle',
+        lastCommittedContent: content,
       },
     });
     let nextNode = graphEngine.getState().nodes.find((node) => node.id === nodeId);
     const patch = classifyNode(nextNode, graphEngine.getState(), activeGraphLayer);
     graphEngine.updateNode(nodeId, patch);
-    setGraph({ ...graphEngine.getState() });
+    syncGraphState();
     if (!content) {
+      if (!isLinkedDraftNode(current)) {
+        const removedDraftIds = mutationEngine.removeLinkedDraftsForSource(nodeId);
+        if (removedDraftIds.length) {
+          syncGraphState();
+          const entry = recordRsgActivity(buildRsgActivityEntry({
+            type: 'rsg-replace',
+            sourceNode: current,
+            reason: 'source-cleared',
+            replacedCount: removedDraftIds.length,
+            trigger,
+          }));
+          setStatus(`node updated | ${formatRsgActivity(entry)}`);
+          return null;
+        }
+      }
       setStatus('node updated');
       return;
     }
@@ -1581,13 +1878,13 @@ function SpatialNotebook() {
       const response = await ace.parseIntent({
         text: content,
         nodeId,
-        source: 'node-enter',
+        source,
       });
       nextNode = graphEngine.getState().nodes.find((node) => node.id === nodeId);
       const report = {
         ...(response.report || response),
         nodeId: (response.report || response).nodeId || nodeId,
-        source: (response.report || response).source || 'node-enter',
+        source: (response.report || response).source || source,
         createdAt: (response.report || response).createdAt || new Date().toISOString(),
       };
       const mergedLabels = [...new Set([...(patch.metadata?.labels || []), ...(report.classification?.labels || [])])];
@@ -1603,9 +1900,10 @@ function SpatialNotebook() {
           labels: mergedLabels,
           intentAnalysis: report,
           intentStatus: 'ready',
+          lastCommittedContent: content,
         },
       });
-      setGraph({ ...graphEngine.getState() });
+      syncGraphState();
       const nextIntentState = {
         latest: report,
         contextReport: current?.metadata?.agentId === 'context-manager' ? report : intentState.contextReport,
@@ -1624,8 +1922,13 @@ function SpatialNotebook() {
           await updatePlannerHandoff(report);
         }
       }
+      const rsgResult = applyFocusedRsgLoop(graphEngine.getState().nodes.find((node) => node.id === nodeId), report, {
+        trigger,
+        recordSkip,
+      });
       setSelectedAgentId('context-manager');
-      setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} tasks for ${resolvedRole}`);
+      setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} tasks for ${resolvedRole}${rsgResult?.entry ? ` | ${formatRsgActivity(rsgResult.entry)}` : ''}`);
+      return report;
     } catch {
       graphEngine.updateNode(nodeId, {
         metadata: {
@@ -1633,14 +1936,34 @@ function SpatialNotebook() {
           intentStatus: 'error',
         },
       });
-      setGraph({ ...graphEngine.getState() });
+      syncGraphState();
       setStatus('intent parsing unavailable');
     }
   };
 
   const removeNode = (id) => {
+    const currentNode = graphEngine.getState().nodes.find((node) => node.id === id) || null;
+    let removedDraftIds = [];
+    if (!isLinkedDraftNode(currentNode)) {
+      removedDraftIds = mutationEngine.removeLinkedDraftsForSource(id);
+    }
     graphEngine.removeNode(id);
-    setGraph({ ...graphEngine.getState() });
+    syncGraphState();
+    if (removedDraftIds.length && currentNode) {
+      recordRsgActivity(buildRsgActivityEntry({
+        type: 'rsg-replace',
+        sourceNode: currentNode,
+        replacedCount: removedDraftIds.length,
+        reason: 'source-deleted',
+        trigger: 'delete',
+      }));
+    }
+    setExpandedGeneratedNodeIds((current) => {
+      if (!current[id]) return current;
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
     if (selectedId === id) setSelectedId(null);
   };
 
@@ -1691,10 +2014,18 @@ function SpatialNotebook() {
     setSelectedId(null);
     setSelectedSketchId(null);
     setSelectedAnnotationId(null);
+    setExpandedGeneratedNodeIds({});
     setCanvasViewport(createDefaultCanvasViewport());
     setScene(SCENES.CANVAS);
     setContextDraft('');
     setScanPreview(null);
+    setIntentState({
+      latest: null,
+      contextReport: null,
+      byNode: {},
+      reports: [],
+    });
+    setRsgMeta(createDefaultRsgState());
     setHandoffs(EMPTY_HANDOFFS);
     setTeamBoard(EMPTY_TEAM_BOARD);
     const newPage = createDefaultPage();
@@ -1973,7 +2304,7 @@ function SpatialNotebook() {
 
   const updateNode = (id, patch) => {
     graphEngine.updateNode(id, patch);
-    setGraph({ ...graphEngine.getState() });
+    syncGraphState();
   };
 
   const saveNow = async () => {
@@ -2002,13 +2333,20 @@ function SpatialNotebook() {
 
   const runAiProcess = async (node) => {
     if (activeGraphLayer !== 'system') {
-      setStatus('RSG v1 only builds code/runtime mutations from the system graph');
+      setStatus('RSG v1 only drafts linked notes from the system graph');
       return;
     }
-    const decomposition = await ace.decomposeTask(node);
-    const mutations = mutationEngine.buildMutationRequestFromIntent(node, decomposition);
-    const previewResponse = await ace.previewMutation(mutations);
-    setPreview({ mutations, summary: previewResponse.summary });
+    if (node.metadata?.intentAnalysis && normalizedNodeContent(node.metadata?.lastCommittedContent) === normalizedNodeContent(node.content)) {
+      const result = applyFocusedRsgLoop(node, node.metadata.intentAnalysis, {
+        trigger: 'manual',
+      });
+      if (result?.entry) setStatus(formatRsgActivity(result.entry));
+      return;
+    }
+    await commitNodeIntent(node.id, node.content, {
+      source: 'ask-ace',
+      trigger: 'manual',
+    });
   };
 
   const approvePreview = async () => {
@@ -2419,9 +2757,26 @@ function SpatialNotebook() {
               const y = node.position.y * canvasViewport.zoom + canvasViewport.y;
               const classified = classifyNode(node, graph, activeGraphLayer);
               const labels = classified.metadata.labels || [];
+              const rsgNodeState = node.metadata?.rsg?.state || null;
+              const draftConfidence = node.metadata?.rsg?.confidence;
+              const lowConfidenceDraft = isLowConfidence(draftConfidence);
+              const generatedInspection = resolveGeneratedNodeInspection(node, graph);
+              const extractedIntent = generatedInspection?.extractedIntent || getExtractedIntent(node.metadata?.intentAnalysis);
+              const expandedGenerated = Boolean(expandedGeneratedNodeIds[node.id]);
+              const relatedEdgeSummaries = (generatedInspection?.relatedEdges || []).map((edge) => {
+                const sourceLabel = (extractedIntent?.candidateNodes || []).find((entry) => entry.id === edge.sourceCandidateId)?.label || edge.sourceCandidateId;
+                const targetLabel = (extractedIntent?.candidateNodes || []).find((entry) => entry.id === edge.targetCandidateId)?.label || edge.targetCandidateId;
+                return `${sourceLabel} -> ${targetLabel} | ${edge.kind}${edge.rationale ? ` | ${edge.rationale}` : ''}`;
+              });
+              const rsgSummary = String(node.metadata?.rsg?.summary || '').trim();
+              const intentFooterText = node.metadata?.intentAnalysis
+                ? summarizeIntentReport(node.metadata.intentAnalysis)
+                : (node.metadata?.rsg
+                    ? (rsgNodeState === 'linked-draft' ? 'Linked draft ready for edit' : 'Adopted draft stays in place on rerun')
+                    : 'press Enter to classify');
               return h('div', {
                 key: node.id,
-                className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} ${selectedId === node.id ? 'selected' : ''}`,
+                className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} ${selectedId === node.id ? 'selected' : ''} ${isLinkedDraftNode(node) ? 'rsg-linked-draft' : ''} ${isAdoptedDraftNode(node) ? 'rsg-adopted' : ''} ${lowConfidenceDraft ? 'rsg-low-confidence' : ''} ${expandedGenerated ? 'expanded' : ''}`,
                 style: {
                   left: `${x}px`,
                   top: `${y}px`,
@@ -2452,16 +2807,26 @@ function SpatialNotebook() {
                     setStatus('node deleted');
                   },
                 }, 'X'),
-                h('div', { className: 'node-header' }, `${activeGraphLayer.toUpperCase()} | ${classified.metadata.proposalTarget || classified.metadata.role}`),
+                h('div', { className: 'node-header-row' },
+                  h('div', { className: 'node-header' }, `${activeGraphLayer.toUpperCase()} | ${classified.metadata.proposalTarget || classified.metadata.role}`),
+                  h('div', { className: 'node-header-tags' },
+                    rsgNodeState ? h('div', { className: `node-rsg-chip ${rsgNodeState}` }, rsgNodeState === 'linked-draft' ? 'RSG draft' : 'Adopted') : null,
+                    generatedInspection?.basis ? h('div', { className: `node-rsg-chip basis-${generatedInspection.basis}` }, generatedInspection.basis) : null,
+                    lowConfidenceDraft ? h('div', { className: 'node-rsg-chip low-confidence' }, 'Low confidence') : null,
+                  ),
+                ),
                 h('textarea', {
                   className: 'node-editor',
                   value: node.content,
-                  onChange: (event) => updateNode(node.id, { content: event.target.value }),
+                  onChange: (event) => handleNodeContentChange(node, event.target.value),
                   onFocus: () => keys.current.clear(),
                   onKeyDown: (event) => {
                     if (event.key === 'Enter' && !event.shiftKey) {
                       event.preventDefault();
-                      commitNodeIntent(node.id, event.target.value).catch((error) => setStatus(error.message));
+                      commitNodeIntent(node.id, event.target.value, {
+                        source: 'node-enter',
+                        trigger: 'enter',
+                      }).catch((error) => setStatus(error.message));
                     }
                   },
                   onMouseDown: (event) => event.stopPropagation(),
@@ -2469,7 +2834,48 @@ function SpatialNotebook() {
                 h('div', { className: 'node-footer' },
                   h('div', { className: 'node-labels' }, labels.length ? labels.join(' - ') : 'press Enter to classify'),
                   h('div', { className: 'node-intent-summary muted' }, `${node.id.slice(-4)} | ${classified.metadata.role}`),
-                  h('div', { className: 'node-intent-summary' }, summarizeIntentReport(node.metadata?.intentAnalysis)),
+                  node.metadata?.rsg ? h('div', { className: 'node-intent-summary muted' }, `${node.metadata.rsg.state === 'linked-draft' ? 'Generated from' : 'Adopted from'} ${String(node.metadata.rsg.sourceNodeId || '').slice(-4) || 'note'}${Number.isFinite(Number(node.metadata.rsg.confidence)) ? ` | ${Math.round(Number(node.metadata.rsg.confidence) * 100)}%` : ''}${node.metadata.rsg.usedFallback ? ' | fallback' : ''}`) : null,
+                  rsgSummary ? h('div', { className: 'node-intent-summary muted' }, rsgSummary) : null,
+                  h('div', { className: 'node-intent-summary' }, intentFooterText),
+                  generatedInspection?.candidate ? h('div', { className: 'node-generated-controls' },
+                    h('button', {
+                      className: 'mini',
+                      type: 'button',
+                      onMouseDown: (event) => event.stopPropagation(),
+                      onClick: (event) => {
+                        event.stopPropagation();
+                        toggleGeneratedNodeExpansion(node.id);
+                      },
+                    }, expandedGenerated ? 'Hide details' : 'Inspect intent'),
+                  ) : null,
+                  generatedInspection?.candidate && expandedGenerated ? h('div', { className: 'generated-intent-panel' },
+                    h('div', { className: 'generated-intent-row' }, h('span', null, 'Basis'), h('span', { className: 'muted' }, generatedInspection.basis)),
+                    generatedInspection.candidate.rationale ? h('div', { className: 'generated-intent-block' },
+                      h('div', { className: 'generated-intent-label' }, 'Rationale'),
+                      h('div', null, generatedInspection.candidate.rationale),
+                    ) : null,
+                    extractedIntent?.summary ? h('div', { className: 'generated-intent-block' },
+                      h('div', { className: 'generated-intent-label' }, 'Source summary'),
+                      h('div', null, extractedIntent.summary),
+                    ) : null,
+                    h('div', { className: 'generated-intent-row' }, h('span', null, 'Confidence'), h('span', { className: 'muted' }, Number.isFinite(Number(generatedInspection.confidence)) ? `${Math.round(Number(generatedInspection.confidence) * 100)}%` : 'n/a')),
+                    h('div', { className: 'generated-intent-row' }, h('span', null, 'Fallback'), h('span', { className: 'muted' }, extractedIntent?.provenance?.usedFallback ? 'Yes' : 'No')),
+                    (generatedInspection.basis === 'explicit' ? extractedIntent?.explicitClaims : extractedIntent?.inferredClaims)?.length
+                      ? h('div', { className: 'generated-intent-block' },
+                        h('div', { className: 'generated-intent-label' }, generatedInspection.basis === 'explicit' ? 'Explicit claims' : 'Inferred claims'),
+                        h('ul', { className: 'signal-list compact' }, (generatedInspection.basis === 'explicit' ? extractedIntent.explicitClaims : extractedIntent.inferredClaims).map((entry, index) => h('li', { key: `${node.id}-claim-${index}` }, entry))),
+                      ) : null,
+                    (extractedIntent?.gaps || []).length
+                      ? h('div', { className: 'generated-intent-block' },
+                        h('div', { className: 'generated-intent-label' }, 'Gaps'),
+                        h('ul', { className: 'signal-list compact' }, extractedIntent.gaps.map((entry, index) => h('li', { key: `${node.id}-gap-${index}` }, entry))),
+                      ) : null,
+                    relatedEdgeSummaries.length
+                      ? h('div', { className: 'generated-intent-block' },
+                        h('div', { className: 'generated-intent-label' }, 'Hidden edge suggestions'),
+                        h('ul', { className: 'signal-list compact' }, relatedEdgeSummaries.map((entry, index) => h('li', { key: `${node.id}-edge-${index}` }, entry))),
+                      ) : null,
+                  ) : null,
                 ),
                 h('button', {
                   className: 'node-handle output',
@@ -2711,7 +3117,7 @@ function SpatialNotebook() {
           ),
           h('div', { className: 'inspector-block panel-card' },
             h('div', { className: 'inspector-label' }, 'Canvas Controls'),
-            h('div', { className: 'muted' }, 'Double-click to add nodes. Drag from node handles to create arrows. Press Enter inside a node to classify and judge intent. Use Delete or Backspace to remove selections. Use K for sketch mode.'),
+            h('div', { className: 'muted' }, 'Double-click to add nodes. Drag from node handles to create arrows. Press Enter in a system node, or pause for 1.2s while editing, to classify intent and let RSG draft up to three linked notes. Edit generated text to adopt it. Use Delete or Backspace to remove selections. Use K for sketch mode.'),
           ),
           h('div', { className: 'inspector-block panel-card' },
             h('div', { className: 'inspector-label' }, 'RSG Architecture'),
@@ -2724,6 +3130,26 @@ function SpatialNotebook() {
               h('div', { className: 'criteria-row' }, h('span', null, 'Runtime mutations'), h('span', { className: 'muted' }, String(rsgState.summary?.codeRuntimeMutation || 0))),
             ),
             h('div', { className: 'signal-meta muted' }, `Policy: system/world/adapter proposals auto-record, code/runtime changes stay risk-gated.`),
+          ),
+          h('div', { className: 'inspector-block panel-card' },
+            h('div', { className: 'inspector-label' }, 'RSG Activity'),
+            latestRsgActivity
+              ? h(React.Fragment, null,
+                h('div', { className: 'signal-summary' }, formatRsgActivity(latestRsgActivity)),
+                h('div', { className: 'signal-meta muted' }, `Source: ${latestRsgActivity.sourceNodeLabel || latestRsgActivity.sourceNodeId || 'unknown node'}`),
+                latestRsgActivity.summary ? h('div', { className: 'signal-meta muted' }, latestRsgActivity.summary) : null,
+                h('div', { className: 'criteria-list desk-metric-list' },
+                  h('div', { className: 'criteria-row' }, h('span', null, 'Status'), h('span', { className: 'muted' }, latestRsgActivity.type || 'rsg-skip')),
+                  h('div', { className: 'criteria-row' }, h('span', null, 'Trigger'), h('span', { className: 'muted' }, latestRsgActivity.trigger || 'manual')),
+                  h('div', { className: 'criteria-row' }, h('span', null, 'Generated'), h('span', { className: 'muted' }, String(latestRsgActivity.generatedCount || 0))),
+                  h('div', { className: 'criteria-row' }, h('span', null, 'Replaced'), h('span', { className: 'muted' }, String(latestRsgActivity.replacedCount || 0))),
+                  h('div', { className: 'criteria-row' }, h('span', null, 'Confidence'), h('span', { className: 'muted' }, Number.isFinite(Number(latestRsgActivity.confidence)) ? `${Math.round(Number(latestRsgActivity.confidence) * 100)}%` : 'n/a')),
+                ),
+                latestRsgActivity.usedFallback || latestRsgActivity.reason
+                  ? h('div', { className: 'signal-meta muted' }, `${latestRsgActivity.usedFallback ? 'Fallback used' : 'Reason'}${latestRsgActivity.reason ? ` | ${latestRsgActivity.reason}` : ''}`)
+                  : null,
+              )
+              : h('div', { className: 'signal-empty muted' }, 'RSG runs appear here after Enter or idle-triggered intent capture on the system canvas.'),
           ),
           h('div', { className: 'inspector-block panel-card' },
             h('div', { className: 'inspector-label' }, 'Graph Layer Summary'),
@@ -2901,6 +3327,26 @@ function SpatialNotebook() {
               )
             : h(React.Fragment, null,
                 (selectedAgent.deskSnapshot?.sections || []).map((section) => renderDeskSection(section)),
+                selectedAgent.id === 'executor' ? h('div', { className: 'inspector-block panel-card' },
+                  h('div', { className: 'inspector-label' }, 'Worker Controls'),
+                  selectedExecutionCard
+                    ? h(React.Fragment, null,
+                        h('div', { className: 'signal-summary' }, selectedExecutionCard.title || 'Selected mutation package'),
+                        h('div', { className: 'signal-meta muted' }, `Task ${selectedExecutionCard.runnerTaskId || selectedExecutionCard.builderTaskId || selectedExecutionCard.executionPackage?.taskId || 'unbound'} | Verify ${selectedExecutionCard.verifyStatus || 'idle'} | Apply ${selectedExecutionCard.applyStatus || 'idle'} | Deploy ${selectedExecutionCard.deployStatus || 'idle'}`),
+                        h('div', { className: 'signal-meta muted' }, `Action: ${selectedExecutionCard.executionPackage?.expectedAction || 'apply'} | Risk: ${selectedExecutionCard.riskLevel || 'unknown'}`),
+                        selectedExecutionCard.executorBlocker?.message ? h('div', { className: 'signal-meta muted' }, `Blocker: ${selectedExecutionCard.executorBlocker.message}`) : null,
+                      )
+                    : h('div', { className: 'signal-empty muted' }, 'No execution card is selected or queued for executor review.'),
+                  h('div', { className: 'button-row' },
+                    h('button', {
+                      className: 'mini',
+                      type: 'button',
+                      'data-qa': 'executor-run-button',
+                      disabled: agentWorkerBusyId === 'executor' || !selectedExecutionCard,
+                      onClick: () => runExecutorWorkerAssessment().catch((error) => setStatus(error.message)),
+                    }, agentWorkerBusyId === 'executor' ? 'Running...' : 'Run executor check'),
+                  ),
+                ) : null,
                 h('div', { className: 'inspector-block panel-card' },
                   h('div', { className: 'inspector-label' }, 'Throughput'),
                   h(ThroughputBar, { label: 'Assigned', value: selectedAgent.workload.assignedTasks, max: 6 }),

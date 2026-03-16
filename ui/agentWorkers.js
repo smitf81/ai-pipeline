@@ -19,10 +19,15 @@ const DEFAULT_PLANNER_TIMEOUT_MS = 30000;
 const DEFAULT_CONTEXT_MANAGER_BACKEND = 'ollama';
 const DEFAULT_CONTEXT_MANAGER_MODEL = 'mixtral';
 const DEFAULT_CONTEXT_MANAGER_TIMEOUT_MS = 30000;
+const DEFAULT_EXECUTOR_BACKEND = 'ollama';
+const DEFAULT_EXECUTOR_MODEL = 'mixtral';
+const DEFAULT_EXECUTOR_TIMEOUT_MS = 30000;
 const MAX_PLANNER_CARDS = 3;
 const MAX_CONTEXT_TASKS = 4;
+const MAX_EXTRACTED_INTENT_CANDIDATES = 6;
 const PLANNER_RUNS_RELATIVE_DIR = path.join('data', 'spatial', 'agent-runs', 'planner');
 const CONTEXT_MANAGER_RUNS_RELATIVE_DIR = path.join('data', 'spatial', 'agent-runs', 'context-manager');
+const EXECUTOR_RUNS_RELATIVE_DIR = path.join('data', 'spatial', 'agent-runs', 'executor');
 const ALLOWED_PROPOSAL_TARGETS = Object.freeze(new Set([
   'brain/emergence/plan.md',
   'brain/emergence/tasks.md',
@@ -74,6 +79,57 @@ const FALLBACK_CONTEXT_MANAGER_PROMPT = [
   '  "clarifications": ["what still needs clarification"],',
   '  "focusTerms": ["token", "token"],',
   '  "suggestedAnchorRefs": ["brain/emergence/plan.md"]',
+  '}',
+].join('\n');
+
+const FALLBACK_EXTRACTED_INTENT_PROMPT = [
+  'You are the ACE Extracted Intent generator.',
+  '',
+  'Turn one upstream context packet into a compact system-graph brief for canvas generation.',
+  '',
+  'Rules:',
+  '- Output JSON only. No markdown fences. No prose outside JSON.',
+  '- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deployment actions.',
+  '- Produce a small inferred leap only. Prefer explicit structure first; add at most 2 inferred claims or candidate nodes.',
+  `- Return at most ${MAX_EXTRACTED_INTENT_CANDIDATES} candidateNodes.`,
+  '- candidateNodes must use basis "explicit" or "inferred".',
+  '- candidateEdges describe hidden relationships only; they will not be auto-rendered yet.',
+  '- Prefer concise labels that can become node text directly.',
+  '',
+  'Return exactly this shape:',
+  '{',
+  '  "summary": "short summary",',
+  '  "explicitClaims": ["explicit claim"],',
+  '  "inferredClaims": ["small inferred claim"],',
+  '  "candidateNodes": [{"id": "candidate_id", "label": "node label", "kind": "module", "basis": "explicit", "rationale": "why this node exists", "confidence": 0.72}],',
+  '  "candidateEdges": [{"sourceCandidateId": "candidate_id", "targetCandidateId": "candidate_2", "kind": "relates_to", "basis": "explicit", "rationale": "why this relationship matters"}],',
+  '  "gaps": ["what is still unclear"]',
+  '}',
+].join('\n');
+
+const FALLBACK_EXECUTOR_PROMPT = [
+  'You are the ACE Executor worker.',
+  '',
+  'Assess one ready execution package and return a bounded execution-readiness payload.',
+  '',
+  'Rules:',
+  '- Output JSON only. No markdown fences. No prose outside JSON.',
+  '- Stay in the execution lane. Do not create plans, architecture proposals, or new code patches.',
+  '- Use only the provided package, anchor refs, verification inputs, and gate state.',
+  '- If required package data, approval, anchor provenance, or self-upgrade preflight is missing, block instead of guessing.',
+  '- Keep verification explicit and deterministic: prefer command presets and QA scenarios already named in the inputs.',
+  '- Never widen scope beyond the current card.',
+  '',
+  'Return exactly this shape:',
+  '{',
+  '  "summary": "short execution summary",',
+  '  "decision": "blocked",',
+  '  "blockers": ["missing package or gate detail"],',
+  '  "verifyRequired": true,',
+  '  "verificationPlan": {"commandPresets": ["preset-id"], "qaScenarios": ["scenario-id"]},',
+  '  "applyReady": false,',
+  '  "deployReady": false,',
+  '  "notes": ["short bounded note"]',
   '}',
 ].join('\n');
 
@@ -153,6 +209,20 @@ function agentFallbackConfigFor(agentId) {
       writesCanonicalBrain: false,
     };
   }
+  if (agentId === 'executor') {
+    return {
+      name: 'Executor',
+      deskId: 'executor',
+      backend: DEFAULT_EXECUTOR_BACKEND,
+      model: DEFAULT_EXECUTOR_MODEL,
+      host: DEFAULT_OLLAMA_HOST,
+      timeoutMs: DEFAULT_EXECUTOR_TIMEOUT_MS,
+      autoRun: false,
+      inputs: ['studio.teamBoard', 'brain/emergence/*', 'ace_commands.json', 'studio.selfUpgrade'],
+      outputs: ['studio.teamBoard.cards(execution)', 'executor-artifacts'],
+      writesCanonicalBrain: false,
+    };
+  }
   return {
     name: 'Context Manager',
     deskId: 'context-manager',
@@ -168,7 +238,9 @@ function agentFallbackConfigFor(agentId) {
 }
 
 function agentPromptFallbackFor(agentId) {
-  return agentId === 'planner' ? FALLBACK_PLANNER_PROMPT : FALLBACK_CONTEXT_MANAGER_PROMPT;
+  if (agentId === 'planner') return FALLBACK_PLANNER_PROMPT;
+  if (agentId === 'executor') return FALLBACK_EXECUTOR_PROMPT;
+  return FALLBACK_CONTEXT_MANAGER_PROMPT;
 }
 
 function resolveWorkerDefinition(rootPath, agentId) {
@@ -203,6 +275,10 @@ function makePlannerRunId() {
 
 function makeContextManagerRunId() {
   return `context_manager_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function makeExecutorRunId() {
+  return `executor_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function defaultPlannerWorkerState() {
@@ -247,9 +323,35 @@ function defaultContextManagerWorkerState() {
   };
 }
 
+function defaultExecutorWorkerState() {
+  return {
+    status: 'idle',
+    statusReason: null,
+    mode: 'manual',
+    backend: DEFAULT_EXECUTOR_BACKEND,
+    model: DEFAULT_EXECUTOR_MODEL,
+    currentRunId: null,
+    lastRunId: null,
+    lastOutcome: null,
+    lastOutcomeAt: null,
+    lastBlockedReason: null,
+    lastCardId: null,
+    lastTaskId: null,
+    lastDecision: null,
+    lastAssessmentSummary: null,
+    lastAssessmentBlockers: [],
+    lastVerifiedCardId: null,
+    lastAppliedCardId: null,
+    lastDeployCardId: null,
+    startedAt: null,
+    completedAt: null,
+  };
+}
+
 function createDefaultAgentWorkersState() {
   return {
     'context-manager': defaultContextManagerWorkerState(),
+    executor: defaultExecutorWorkerState(),
     planner: defaultPlannerWorkerState(),
   };
 }
@@ -263,6 +365,13 @@ function normalizeAgentWorkersState(agentWorkers = {}) {
       ...defaults['context-manager'],
       ...(agentWorkers?.['context-manager'] || {}),
       lastUsedFallback: Boolean(agentWorkers?.['context-manager']?.lastUsedFallback),
+    },
+    executor: {
+      ...defaults.executor,
+      ...(agentWorkers?.executor || {}),
+      lastAssessmentBlockers: Array.isArray(agentWorkers?.executor?.lastAssessmentBlockers)
+        ? uniqueStrings(agentWorkers.executor.lastAssessmentBlockers)
+        : [],
     },
     planner: {
       ...defaults.planner,
@@ -299,6 +408,18 @@ function contextManagerRunFilePath(rootPath, runId) {
 
 function ensureContextManagerRunsStorage(rootPath) {
   return contextManagerRunsDir(rootPath);
+}
+
+function executorRunsDir(rootPath) {
+  return runsDirFor(rootPath, EXECUTOR_RUNS_RELATIVE_DIR);
+}
+
+function executorRunFilePath(rootPath, runId) {
+  return runFilePathFor(rootPath, EXECUTOR_RUNS_RELATIVE_DIR, runId);
+}
+
+function ensureExecutorRunsStorage(rootPath) {
+  return executorRunsDir(rootPath);
 }
 
 function readPlannerRun(rootPath, runId) {
@@ -350,6 +471,32 @@ function summarizeContextManagerRun(run) {
   };
 }
 
+function readExecutorRun(rootPath, runId) {
+  return readJson(executorRunFilePath(rootPath, runId), null);
+}
+
+function listExecutorRuns(rootPath) {
+  return listRuns(rootPath, EXECUTOR_RUNS_RELATIVE_DIR);
+}
+
+function summarizeExecutorRun(run) {
+  if (!run) return null;
+  return {
+    id: run.id,
+    outcome: run.outcome,
+    status: run.status,
+    mode: run.mode,
+    cardId: run.cardId || null,
+    taskId: run.taskId || null,
+    summary: run.summary,
+    decision: run.report?.decision || null,
+    reason: run.reason || null,
+    usedFallback: Boolean(run.usedFallback),
+    createdAt: run.createdAt,
+    completedAt: run.completedAt,
+  };
+}
+
 function buildAnchorPromptSections(anchorBundle = {}) {
   return Object.values(anchorBundle.anchors || {})
     .filter((anchor) => anchor?.exists && anchor.authority === 'canonical-anchor')
@@ -368,6 +515,161 @@ function buildBoardPromptSection(board = {}) {
     .slice(0, 12)
     .map((card) => `- ${card.title} | status=${card.status} | handoff=${card.sourceHandoffId || 'none'} | anchors=${(card.sourceAnchorRefs || []).join(', ') || 'none'}`)
     .join('\n');
+}
+
+function executorTaskId(card = {}) {
+  return String(card?.runnerTaskId || card?.builderTaskId || card?.executionPackage?.taskId || '').trim() || null;
+}
+
+function summarizeExecutorVerificationPlan(card = {}) {
+  const verificationPlan = card?.executionPackage?.verificationPlan || {};
+  return {
+    required: Boolean(card?.verifyRequired || verificationPlan.required),
+    commandPresets: uniqueStrings((verificationPlan.commands || []).map((entry) => entry?.preset || entry?.command || '')),
+    qaScenarios: uniqueStrings((verificationPlan.qaScenarios || []).map((entry) => entry?.scenario || entry?.id || '')),
+    summary: String(verificationPlan.summary || '').trim(),
+    signature: String(verificationPlan.signature || '').trim() || null,
+  };
+}
+
+function deriveExecutorAssessment({ card = {}, workspace = {} } = {}) {
+  const taskId = executorTaskId(card);
+  const verificationPlan = summarizeExecutorVerificationPlan(card);
+  const blockers = [];
+  const notes = [];
+  const selfUpgrade = workspace?.studio?.selfUpgrade || null;
+
+  if (!Array.isArray(card?.sourceAnchorRefs) || !card.sourceAnchorRefs.length) {
+    blockers.push('Card has no anchor provenance.');
+  }
+  if (card?.executionPackage?.status !== 'ready') {
+    blockers.push('Card has no ready build package.');
+  }
+  if (card?.verifyStatus === 'failed' || card?.verifyStatus === 'blocked') {
+    blockers.push(card?.lastVerificationSummary || 'Verification failed and must be rerun.');
+  }
+  if (card?.status === 'review' && card?.approvalState && card.approvalState !== 'approved') {
+    blockers.push('Approval is still required before apply can run.');
+  }
+  if (card?.executorBlocker?.message) {
+    blockers.push(card.executorBlocker.message);
+  }
+  if (card?.targetProjectKey === 'ace-self') {
+    if (!selfUpgrade?.preflight?.ok || selfUpgrade.preflight.taskId !== taskId) {
+      blockers.push('Self-upgrade preflight is missing or stale for this task.');
+    }
+    if (card?.applyStatus === 'applied' && card?.deployStatus === 'queued') {
+      if (!selfUpgrade?.apply?.ok || selfUpgrade.apply.taskId !== taskId) {
+        blockers.push('Deploy requires a successful apply record for this exact task.');
+      }
+    }
+  }
+
+  if (verificationPlan.summary) notes.push(verificationPlan.summary);
+  if (taskId) notes.push(`Task ${taskId} targeting ${card?.targetProjectKey || 'unknown'}.`);
+  if (card?.verifyStatus === 'running') notes.push('Verification is currently running.');
+  if (card?.applyStatus === 'applying') notes.push('Apply is currently running.');
+  if (card?.deployStatus === 'deploying') notes.push('Deploy is currently running.');
+
+  const verifyRequired = Boolean(verificationPlan.required);
+  const verificationSatisfied = !verifyRequired || ['passed', 'not-required'].includes(card?.verifyStatus);
+  const applyReady = !blockers.length
+    && verificationSatisfied
+    && ['queued', 'idle', 'failed'].includes(card?.applyStatus || 'idle')
+    && (
+      card?.status === 'complete'
+      || (card?.status === 'review' && card?.approvalState === 'approved')
+    );
+  const deployReady = !blockers.length
+    && card?.targetProjectKey === 'ace-self'
+    && card?.applyStatus === 'applied'
+    && card?.deployStatus === 'queued'
+    && card?.status === 'complete';
+
+  let decision = 'blocked';
+  if (blockers.length) {
+    decision = 'blocked';
+  } else if (verifyRequired && !verificationSatisfied) {
+    decision = 'verify';
+  } else if (deployReady) {
+    decision = 'ready-deploy';
+  } else if (applyReady) {
+    decision = 'ready-apply';
+  } else if (card?.deployStatus === 'deployed' || (card?.applyStatus === 'applied' && card?.deployStatus !== 'queued')) {
+    decision = 'done';
+  }
+
+  const summaryByDecision = {
+    blocked: blockers[0] || 'Executor is blocked on current gate state.',
+    verify: 'Verification is the next required executor stage.',
+    'ready-apply': 'Package is ready for apply once executor starts.',
+    'ready-deploy': 'Package is ready for deploy.',
+    done: 'Executor flow is already complete for the selected card.',
+  };
+
+  return {
+    summary: summaryByDecision[decision] || 'Executor assessment complete.',
+    decision,
+    blockers: uniqueStrings(blockers),
+    verifyRequired,
+    verificationPlan: {
+      commandPresets: verificationPlan.commandPresets,
+      qaScenarios: verificationPlan.qaScenarios,
+    },
+    applyReady,
+    deployReady,
+    notes: uniqueStrings(notes).slice(0, 6),
+  };
+}
+
+function buildExecutorCardSection(card = {}) {
+  const verificationPlan = summarizeExecutorVerificationPlan(card);
+  return [
+    `ID: ${card?.id || 'unknown'}`,
+    `Title: ${card?.title || 'Untitled card'}`,
+    `Status: ${card?.status || 'unknown'}`,
+    `Approval: ${card?.approvalState || 'unknown'}`,
+    `Risk: ${card?.riskLevel || 'unknown'}`,
+    `Target project: ${card?.targetProjectKey || 'unknown'}`,
+    `Task: ${executorTaskId(card) || 'unbound'}`,
+    `Verify status: ${card?.verifyStatus || 'unknown'}`,
+    `Apply status: ${card?.applyStatus || 'unknown'}`,
+    `Deploy status: ${card?.deployStatus || 'unknown'}`,
+    `Expected action: ${card?.executionPackage?.expectedAction || 'apply'}`,
+    `Patch path: ${card?.executionPackage?.patchPath || 'none'}`,
+    `Changed files: ${(card?.executionPackage?.changedFiles || []).join(', ') || 'none'}`,
+    `Anchors: ${(card?.sourceAnchorRefs || []).join(', ') || 'none'}`,
+    `Verification required: ${verificationPlan.required ? 'yes' : 'no'}`,
+    `Verification commands: ${verificationPlan.commandPresets.join(', ') || 'none'}`,
+    `Verification QA: ${verificationPlan.qaScenarios.join(', ') || 'none'}`,
+    `Executor blocker: ${card?.executorBlocker?.message || 'none'}`,
+  ].join('\n');
+}
+
+function buildExecutorWorkspaceSection(workspace = {}) {
+  const board = workspace?.studio?.teamBoard || {};
+  const summary = board?.summary || {};
+  const selfUpgrade = workspace?.studio?.selfUpgrade || {};
+  return [
+    `Selected card id: ${board?.selectedCardId || 'none'}`,
+    `Board counts: plan=${summary.plan || 0} active=${summary.active || 0} review=${summary.review || 0} complete=${summary.complete || 0}`,
+    `Self-upgrade preflight: ${selfUpgrade?.preflight?.ok ? `pass for task ${selfUpgrade.preflight.taskId || 'unknown'}` : (selfUpgrade?.preflight?.summary || 'none')}`,
+    `Self-upgrade apply: ${selfUpgrade?.apply?.ok ? `pass for task ${selfUpgrade.apply.taskId || 'unknown'}` : (selfUpgrade?.apply?.status || 'none')}`,
+  ].join('\n');
+}
+
+function buildExecutorPrompt({ promptTemplate, card, workspace }) {
+  return [
+    String(promptTemplate || FALLBACK_EXECUTOR_PROMPT).trim(),
+    '## Selected Execution Card',
+    buildExecutorCardSection(card),
+    '',
+    '## Current Workspace Slice',
+    buildExecutorWorkspaceSection(workspace),
+    '',
+    '## Existing Team Board',
+    buildBoardPromptSection(workspace?.studio?.teamBoard || { cards: [] }),
+  ].join('\n').trim();
 }
 
 function buildPlannerPrompt({ promptTemplate, handoff, anchorBundle, board }) {
@@ -694,6 +996,166 @@ async function runPlannerWorker(options = {}) {
   }
 }
 
+function normalizeExecutorAssessment(payload, fallback) {
+  const safePayload = payload && typeof payload === 'object' ? payload : {};
+  return {
+    summary: String(safePayload.summary || fallback.summary || 'Executor assessment complete.').trim(),
+    decision: fallback.decision,
+    blockers: fallback.blockers,
+    verifyRequired: fallback.verifyRequired,
+    verificationPlan: {
+      commandPresets: uniqueStrings([
+        ...(fallback.verificationPlan?.commandPresets || []),
+        ...((Array.isArray(safePayload?.verificationPlan?.commandPresets) ? safePayload.verificationPlan.commandPresets : [])),
+      ]),
+      qaScenarios: uniqueStrings([
+        ...(fallback.verificationPlan?.qaScenarios || []),
+        ...((Array.isArray(safePayload?.verificationPlan?.qaScenarios) ? safePayload.verificationPlan.qaScenarios : [])),
+      ]),
+    },
+    applyReady: fallback.applyReady,
+    deployReady: fallback.deployReady,
+    notes: uniqueStrings([
+      ...(fallback.notes || []),
+      ...((Array.isArray(safePayload.notes) ? safePayload.notes : [])),
+    ]).slice(0, 6),
+  };
+}
+
+function createExecutorRunRecord({
+  runId,
+  card,
+  mode,
+  backend,
+  model,
+  summary,
+  report,
+  usedFallback = false,
+  rawResponse = '',
+}) {
+  return {
+    id: runId,
+    workerId: 'executor',
+    createdAt: nowIso(),
+    completedAt: nowIso(),
+    mode,
+    backend,
+    model,
+    outcome: 'completed',
+    status: 'completed',
+    summary: String(summary || '').trim() || String(report?.summary || card?.title || 'Executor assessment complete.').trim(),
+    reason: Array.isArray(report?.blockers) && report.blockers.length ? report.blockers[0] : null,
+    cardId: card?.id || null,
+    taskId: executorTaskId(card),
+    targetProjectKey: card?.targetProjectKey || null,
+    report,
+    usedFallback: Boolean(usedFallback),
+    rawResponse: rawResponse || null,
+  };
+}
+
+function persistExecutorRun(rootPath, runRecord) {
+  ensureExecutorRunsStorage(rootPath);
+  writeJson(executorRunFilePath(rootPath, runRecord.id), runRecord);
+  return runRecord;
+}
+
+async function runExecutorWorker(options = {}) {
+  const {
+    rootPath,
+    card = null,
+    workspace = {},
+    mode = 'manual',
+    backend = null,
+    model = null,
+    host = null,
+    timeoutMs = null,
+    runId = makeExecutorRunId(),
+    generator = null,
+    fetchImpl = globalThis.fetch,
+  } = options;
+
+  if (!rootPath) throw new Error('rootPath is required for executor worker runs.');
+  if (!card || typeof card !== 'object') {
+    return {
+      ok: false,
+      skipped: true,
+      outcome: 'skipped',
+      reason: 'Executor requires a selected team board card.',
+      run: null,
+      report: null,
+      usedFallback: false,
+    };
+  }
+
+  const definition = resolveWorkerDefinition(rootPath, 'executor');
+  const config = definition.config;
+  const resolvedBackend = backend || config.backend;
+  const resolvedModel = model || config.model;
+  const resolvedHost = host || config.host || DEFAULT_OLLAMA_HOST;
+  const resolvedTimeoutMs = Number(timeoutMs || config.timeoutMs || DEFAULT_EXECUTOR_TIMEOUT_MS);
+  const fallbackReport = deriveExecutorAssessment({ card, workspace });
+
+  let usedFallback = false;
+  let rawResponse = '';
+  let report = fallbackReport;
+
+  try {
+    const generated = generator
+      ? await generator({
+          card,
+          workspace,
+          mode,
+          backend: resolvedBackend,
+          model: resolvedModel,
+          host: resolvedHost,
+          runId,
+          definition,
+          fallbackReport,
+        })
+      : await requestOllamaJson({
+          prompt: buildExecutorPrompt({
+            promptTemplate: config.prompt,
+            card,
+            workspace,
+          }),
+          model: resolvedModel,
+          host: resolvedHost,
+          timeoutMs: resolvedTimeoutMs,
+          fetchImpl,
+        });
+    const rawPayload = generated?.json ?? generated;
+    rawResponse = generated?.text || (typeof generated === 'string' ? generated : JSON.stringify(rawPayload));
+    report = normalizeExecutorAssessment(rawPayload, fallbackReport);
+  } catch (error) {
+    usedFallback = true;
+    rawResponse = String(error.message || error);
+    report = fallbackReport;
+  }
+
+  const runRecord = persistExecutorRun(rootPath, createExecutorRunRecord({
+    runId,
+    card,
+    mode,
+    backend: resolvedBackend,
+    model: resolvedModel,
+    summary: report.summary,
+    report,
+    usedFallback,
+    rawResponse,
+  }));
+
+  return {
+    ok: true,
+    skipped: false,
+    outcome: 'completed',
+    reason: report.blockers[0] || '',
+    run: runRecord,
+    report,
+    usedFallback,
+  };
+}
+
 function buildContextWorkspaceSection(workspace = {}) {
   const latestIntent = workspace?.intentState?.contextReport || workspace?.intentState?.latest || null;
   const boardSummary = workspace?.studio?.teamBoard?.summary || {};
@@ -789,9 +1251,188 @@ function buildContextAnalysisSource(text, packet, plannerFeedback = null) {
   return sections.filter(Boolean).join('\n');
 }
 
+function buildExtractedIntentPrompt({
+  text,
+  packet,
+  report,
+  workspace,
+}) {
+  return [
+    FALLBACK_EXTRACTED_INTENT_PROMPT,
+    '## Raw Context Input',
+    String(text || '').trim() || '(empty)',
+    '',
+    '## Upstream Context Packet',
+    JSON.stringify(packet || {}, null, 2),
+    '',
+    '## Deterministic Audit',
+    JSON.stringify({
+      summary: report?.summary || '',
+      confidence: report?.confidence || 0,
+      classification: report?.classification || { role: 'thought', labels: [] },
+      tasks: report?.tasks || [],
+      matchedTerms: report?.projectContext?.matchedTerms || [],
+      criteria: report?.criteria || [],
+    }, null, 2),
+    '',
+    '## Current Workspace Slice',
+    buildContextWorkspaceSection(workspace),
+  ].join('\n').trim();
+}
+
+function normalizeExtractedIntentNodeKind(kind = '') {
+  const value = String(kind || '').trim().toLowerCase();
+  if (['module', 'task', 'constraint', 'adapter', 'file', 'ux'].includes(value)) return value;
+  return 'thought';
+}
+
+function normalizeExtractedIntentBasis(value = '') {
+  return String(value || '').trim().toLowerCase() === 'inferred' ? 'inferred' : 'explicit';
+}
+
+function literalClaimsFromPacket(packet = {}, report = {}) {
+  return uniqueStrings([
+    packet.summary,
+    packet.statement,
+    ...(packet.tasks || []),
+    ...(packet.constraints || []),
+  ]);
+}
+
+function buildFallbackExtractedIntent({
+  rawText,
+  packet,
+  report,
+  sourceNodeId,
+  backend,
+  model,
+  runId,
+  usedFallback = true,
+  inferenceMode = 'small-inference',
+}) {
+  const explicitClaims = literalClaimsFromPacket(packet, report).slice(0, MAX_CONTEXT_TASKS + 2);
+  const literalCandidates = uniqueStrings([
+    ...(packet.tasks || []),
+    ...(report?.tasks || []),
+    packet.summary,
+  ]).slice(0, MAX_EXTRACTED_INTENT_CANDIDATES);
+  return {
+    id: `extracted_intent_${runId}`,
+    sourceNodeId: sourceNodeId || report?.nodeId || null,
+    sourceText: String(rawText || ''),
+    summary: String(packet?.summary || report?.summary || rawText || '').trim().slice(0, 180),
+    explicitClaims,
+    inferredClaims: [],
+    candidateNodes: literalCandidates.map((label, index) => ({
+      id: `literal_${index + 1}`,
+      label,
+      kind: report?.classification?.role === 'constraint' ? 'constraint' : (report?.classification?.role || 'thought'),
+      basis: 'explicit',
+      rationale: packet?.statement
+        ? `Literal candidate from context packet: ${packet.statement}`
+        : 'Literal candidate derived from the current input and upstream packet.',
+      confidence: Number.isFinite(Number(report?.confidence)) ? Number(report.confidence) : null,
+    })),
+    candidateEdges: [],
+    gaps: uniqueStrings([...(packet?.clarifications || []), ...(report?.truth?.unresolved || [])]).slice(0, 4),
+    provenance: {
+      backend,
+      model,
+      runId,
+      usedFallback: Boolean(usedFallback),
+      inferenceMode,
+    },
+    audit: {
+      confidence: Number.isFinite(Number(report?.confidence)) ? Number(report.confidence) : 0,
+      criteria: Array.isArray(report?.criteria) ? report.criteria : [],
+      classification: report?.classification || { role: 'thought', labels: [] },
+      matchedTerms: Array.isArray(report?.projectContext?.matchedTerms) ? report.projectContext.matchedTerms : [],
+    },
+  };
+}
+
+function normalizeExtractedIntent(rawPayload, {
+  rawText,
+  packet,
+  report,
+  sourceNodeId,
+  backend,
+  model,
+  runId,
+  usedFallback = false,
+  inferenceMode = 'small-inference',
+}) {
+  const safePayload = rawPayload && typeof rawPayload === 'object' ? rawPayload : {};
+  const explicitClaims = uniqueStrings(Array.isArray(safePayload.explicitClaims) ? safePayload.explicitClaims : []).slice(0, 6);
+  const inferredClaims = uniqueStrings(Array.isArray(safePayload.inferredClaims) ? safePayload.inferredClaims : []).slice(0, 2);
+  const candidateNodes = (Array.isArray(safePayload.candidateNodes) ? safePayload.candidateNodes : [])
+    .map((node, index) => ({
+      id: String(node?.id || `candidate_${index + 1}`).trim() || `candidate_${index + 1}`,
+      label: String(node?.label || '').trim(),
+      kind: normalizeExtractedIntentNodeKind(node?.kind),
+      basis: normalizeExtractedIntentBasis(node?.basis),
+      rationale: String(node?.rationale || '').trim(),
+      confidence: Number.isFinite(Number(node?.confidence)) ? Number(node.confidence) : null,
+    }))
+    .filter((node) => node.label)
+    .slice(0, MAX_EXTRACTED_INTENT_CANDIDATES);
+  const candidateIds = new Set(candidateNodes.map((node) => node.id));
+  const candidateEdges = (Array.isArray(safePayload.candidateEdges) ? safePayload.candidateEdges : [])
+    .map((edge) => ({
+      sourceCandidateId: String(edge?.sourceCandidateId || '').trim(),
+      targetCandidateId: String(edge?.targetCandidateId || '').trim(),
+      kind: String(edge?.kind || 'relates_to').trim() || 'relates_to',
+      basis: normalizeExtractedIntentBasis(edge?.basis),
+      rationale: String(edge?.rationale || '').trim(),
+    }))
+    .filter((edge) => edge.sourceCandidateId && edge.targetCandidateId)
+    .filter((edge) => candidateIds.has(edge.sourceCandidateId) && candidateIds.has(edge.targetCandidateId))
+    .slice(0, MAX_EXTRACTED_INTENT_CANDIDATES);
+
+  if (!candidateNodes.length) {
+    return buildFallbackExtractedIntent({
+      rawText,
+      packet,
+      report,
+      sourceNodeId,
+      backend,
+      model,
+      runId,
+      usedFallback: true,
+      inferenceMode,
+    });
+  }
+
+  return {
+    id: String(safePayload.id || `extracted_intent_${runId}`).trim() || `extracted_intent_${runId}`,
+    sourceNodeId: sourceNodeId || report?.nodeId || null,
+    sourceText: String(rawText || ''),
+    summary: String(safePayload.summary || packet?.summary || report?.summary || rawText || '').trim().slice(0, 180),
+    explicitClaims,
+    inferredClaims: usedFallback ? [] : inferredClaims,
+    candidateNodes: usedFallback ? candidateNodes.filter((node) => node.basis === 'explicit') : candidateNodes,
+    candidateEdges: usedFallback ? candidateEdges.filter((edge) => edge.basis === 'explicit') : candidateEdges,
+    gaps: uniqueStrings(Array.isArray(safePayload.gaps) ? safePayload.gaps : []).slice(0, 4),
+    provenance: {
+      backend,
+      model,
+      runId,
+      usedFallback: Boolean(usedFallback),
+      inferenceMode,
+    },
+    audit: {
+      confidence: Number.isFinite(Number(report?.confidence)) ? Number(report.confidence) : 0,
+      criteria: Array.isArray(report?.criteria) ? report.criteria : [],
+      classification: report?.classification || { role: 'thought', labels: [] },
+      matchedTerms: Array.isArray(report?.projectContext?.matchedTerms) ? report.projectContext.matchedTerms : [],
+    },
+  };
+}
+
 function mergeContextPacketIntoReport(report, {
   rawText,
   packet,
+  extractedIntent = null,
   plannerFeedback = null,
   sourceNodeId = null,
   source = 'context-intake',
@@ -823,6 +1464,7 @@ function mergeContextPacketIntoReport(report, {
       ...packet,
       plannerFeedbackAction: plannerFeedback?.action || null,
     },
+    extractedIntent,
     worker: {
       id: 'context-manager',
       backend,
@@ -862,6 +1504,7 @@ function createContextManagerRunRecord({
   sourceNodeId = null,
   plannerFeedback = null,
   packet = null,
+  extractedIntent = null,
   report = null,
   handoff = null,
   usedFallback = false,
@@ -883,6 +1526,7 @@ function createContextManagerRunRecord({
     sourceText: String(sourceText || ''),
     plannerFeedback,
     packet,
+    extractedIntent,
     report,
     handoffId: handoff?.id || null,
     handoff,
@@ -949,10 +1593,12 @@ async function runContextManagerWorker(options = {}) {
     suggestedAnchorRefs: [],
   };
   let rawResponse = '';
+  let generatedExtractedIntentPayload = null;
 
   try {
     const generated = generator
       ? await generator({
+          stage: 'context-packet',
           text: rawText,
           sourceNodeId,
           source,
@@ -983,8 +1629,14 @@ async function runContextManagerWorker(options = {}) {
           fetchImpl,
         });
     const rawPayload = generated?.json ?? generated;
+    const packetPayload = rawPayload && typeof rawPayload === 'object' && !Array.isArray(rawPayload) && rawPayload.packet
+      ? rawPayload.packet
+      : rawPayload;
+    generatedExtractedIntentPayload = rawPayload && typeof rawPayload === 'object' && !Array.isArray(rawPayload)
+      ? (rawPayload.extractedIntent || null)
+      : null;
     rawResponse = generated?.text || (typeof generated === 'string' ? generated : JSON.stringify(rawPayload));
-    packet = normalizeContextPacket(rawPayload, anchorBundle || { truthSources: [] });
+    packet = normalizeContextPacket(packetPayload, anchorBundle || { truthSources: [] });
   } catch (error) {
     usedFallback = true;
     fallbackReason = String(error.message || error);
@@ -993,16 +1645,97 @@ async function runContextManagerWorker(options = {}) {
   try {
     const analysisSource = buildContextAnalysisSource(rawText, packet, activePlannerFeedback);
     const baseReport = analyze(analysisSource, workspace);
+    let extractedIntent = null;
+    let extractedIntentUsedFallback = false;
+    let extractedIntentReason = '';
+    if (generatedExtractedIntentPayload) {
+      extractedIntent = normalizeExtractedIntent(generatedExtractedIntentPayload, {
+        rawText,
+        packet,
+        report: baseReport,
+        sourceNodeId,
+        backend: resolvedBackend,
+        model: resolvedModel,
+        runId,
+        usedFallback: false,
+      });
+    } else if (usedFallback) {
+      extractedIntentUsedFallback = true;
+      extractedIntentReason = fallbackReason;
+      extractedIntent = buildFallbackExtractedIntent({
+        rawText,
+        packet,
+        report: baseReport,
+        sourceNodeId,
+        backend: resolvedBackend,
+        model: resolvedModel,
+        runId,
+        usedFallback: true,
+      });
+    } else if (generator) {
+      extractedIntent = buildFallbackExtractedIntent({
+        rawText,
+        packet,
+        report: baseReport,
+        sourceNodeId,
+        backend: resolvedBackend,
+        model: resolvedModel,
+        runId,
+        usedFallback: false,
+      });
+    } else {
+      try {
+        const extractedResponse = await requestOllamaJson({
+          prompt: buildExtractedIntentPrompt({
+            text: rawText,
+            packet,
+            report: baseReport,
+            workspace,
+          }),
+          model: resolvedModel,
+          host: resolvedHost,
+          timeoutMs: resolvedTimeoutMs,
+          fetchImpl,
+        });
+        const rawExtractedPayload = extractedResponse?.json ?? extractedResponse;
+        extractedIntent = normalizeExtractedIntent(rawExtractedPayload, {
+          rawText,
+          packet,
+          report: baseReport,
+          sourceNodeId,
+          backend: resolvedBackend,
+          model: resolvedModel,
+          runId,
+          usedFallback: false,
+        });
+      } catch (error) {
+        extractedIntentUsedFallback = true;
+        extractedIntentReason = String(error.message || error);
+        extractedIntent = buildFallbackExtractedIntent({
+          rawText,
+          packet,
+          report: baseReport,
+          sourceNodeId,
+          backend: resolvedBackend,
+          model: resolvedModel,
+          runId,
+          usedFallback: true,
+        });
+      }
+    }
+    const combinedFallback = usedFallback || extractedIntentUsedFallback || Boolean(extractedIntent?.provenance?.usedFallback);
+    const combinedFallbackReason = [fallbackReason, extractedIntentReason].filter(Boolean).join(' | ');
     const report = mergeContextPacketIntoReport(baseReport, {
       rawText,
       packet,
+      extractedIntent,
       plannerFeedback: activePlannerFeedback,
       sourceNodeId,
       source,
       runId,
       backend: resolvedBackend,
       model: resolvedModel,
-      usedFallback,
+      usedFallback: combinedFallback,
     });
     const handoff = createPlannerHandoff(report, dashboardState, previousHandoff);
     const runRecord = persistContextManagerRun(rootPath, createContextManagerRunRecord({
@@ -1012,27 +1745,29 @@ async function runContextManagerWorker(options = {}) {
       model: resolvedModel,
       outcome: 'completed',
       summary: report.summary,
-      reason: fallbackReason,
+      reason: combinedFallbackReason,
       sourceText: rawText,
       sourceNodeId,
       plannerFeedback: activePlannerFeedback,
       packet,
+      extractedIntent,
       report,
       handoff,
-      usedFallback,
+      usedFallback: combinedFallback,
       rawResponse,
     }));
     return {
       ok: true,
       skipped: false,
       outcome: 'completed',
-      reason: fallbackReason,
+      reason: combinedFallbackReason,
       run: runRecord,
       report,
+      extractedIntent,
       handoff,
       plannerFeedback: activePlannerFeedback,
       packet,
-      usedFallback,
+      usedFallback: combinedFallback,
     };
   } catch (error) {
     const reason = String(error.message || error);
@@ -1074,31 +1809,44 @@ module.exports = {
   DEFAULT_CONTEXT_MANAGER_BACKEND,
   DEFAULT_CONTEXT_MANAGER_MODEL,
   DEFAULT_CONTEXT_MANAGER_TIMEOUT_MS,
+  DEFAULT_EXECUTOR_BACKEND,
+  DEFAULT_EXECUTOR_MODEL,
+  DEFAULT_EXECUTOR_TIMEOUT_MS,
   DEFAULT_PLANNER_BACKEND,
   DEFAULT_PLANNER_MODEL,
   DEFAULT_PLANNER_TIMEOUT_MS,
+  EXECUTOR_RUNS_RELATIVE_DIR,
   MAX_PLANNER_CARDS,
   PLANNER_RUNS_RELATIVE_DIR,
   contextManagerRunFilePath,
   contextManagerRunsDir,
   createDefaultAgentWorkersState,
   defaultContextManagerWorkerState,
+  defaultExecutorWorkerState,
   defaultPlannerWorkerState,
   ensureContextManagerRunsStorage,
+  ensureExecutorRunsStorage,
   ensurePlannerRunsStorage,
   evaluatePlannerEligibility,
+  executorRunFilePath,
+  executorRunsDir,
   getAgentWorkerConfig,
   listContextManagerRuns,
+  listExecutorRuns,
   listPlannerRuns,
   makeContextManagerRunId,
+  makeExecutorRunId,
   makePlannerRunId,
   normalizeAgentWorkersState,
   plannerRunFilePath,
   plannerRunsDir,
   readContextManagerRun,
+  readExecutorRun,
   readPlannerRun,
   runContextManagerWorker,
+  runExecutorWorker,
   runPlannerWorker,
   summarizeContextManagerRun,
+  summarizeExecutorRun,
   summarizePlannerRun,
 };

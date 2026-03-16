@@ -1,0 +1,5 @@
+{
+  "description": "UI actions appear disconnected from backend execution",
+  "system_context": "ACE studio runtime",
+  "affected_components": ["UI", "server", "task pipeline"]
+}

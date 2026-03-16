@@ -10,17 +10,25 @@ async function writeTempModule(source, label) {
   return file;
 }
 
-export async function loadModuleCopy(modulePath, { label = path.basename(modulePath, '.js'), transform } = {}) {
+export async function materializeModuleCopy(modulePath, { label = path.basename(modulePath, path.extname(modulePath)), transform } = {}) {
   const source = await fs.readFile(modulePath, 'utf8');
   const tempFile = await writeTempModule(transform ? transform(source) : source, label);
-  return import(pathToFileURL(tempFile).href);
+  return {
+    tempFile,
+    url: pathToFileURL(tempFile).href,
+  };
+}
+
+export async function loadModuleCopy(modulePath, options = {}) {
+  const materialized = await materializeModuleCopy(modulePath, options);
+  return import(materialized.url);
 }
 
 export async function smokeLoadSpatialApp(modulePath) {
   const spatialDir = path.dirname(modulePath);
-  const graphEngineFile = await writeTempModule(await fs.readFile(path.join(spatialDir, 'graphEngine.js'), 'utf8'), 'graphEngine');
-  const sceneStateFile = await writeTempModule(await fs.readFile(path.join(spatialDir, 'sceneState.js'), 'utf8'), 'sceneState');
-  const studioDataFile = await writeTempModule(await fs.readFile(path.join(spatialDir, 'studioData.js'), 'utf8'), 'studioData');
+  const graphEngineModule = await materializeModuleCopy(path.join(spatialDir, 'graphEngine.js'), { label: 'graphEngine' });
+  const sceneStateModule = await materializeModuleCopy(path.join(spatialDir, 'sceneState.js'), { label: 'sceneState' });
+  const studioDataModule = await materializeModuleCopy(path.join(spatialDir, 'studioData.js'), { label: 'studioData' });
   const source = await fs.readFile(modulePath, 'utf8');
   const withoutImports = source.replace(/^import[\s\S]*?;\r?\n/gm, '');
   const shimmedSource = `
@@ -31,9 +39,10 @@ import {
   buildStarterGraph,
   GRAPH_LAYERS,
   getNodeTypesForLayer,
+  createDefaultRsgState,
   normalizeGraphBundle,
   buildRsgState,
-} from ${JSON.stringify(pathToFileURL(graphEngineFile).href)};
+} from ${JSON.stringify(graphEngineModule.url)};
 import {
   SCENES,
   STUDIO_ZOOM_THRESHOLD,
@@ -45,7 +54,7 @@ import {
   createDefaultCanvasViewport,
   createDefaultStudioViewport,
   sceneFromCanvasZoom,
-} from ${JSON.stringify(pathToFileURL(sceneStateFile).href)};
+} from ${JSON.stringify(sceneStateModule.url)};
 import {
   advanceOrchestratorState,
   buildAgentSnapshots,
@@ -56,9 +65,24 @@ import {
   getStudioAgents,
   normalizeNotebookState,
   normalizeTeamBoardState,
-} from ${JSON.stringify(pathToFileURL(studioDataFile).href)};
-class AceConnector { async parseIntent() { return { confidence: 0.75, tasks: ['stub task'], classification: { role: 'context', labels: [] }, criteria: [], summary: 'stub summary' }; } async previewMutation() { return { summary: [] }; } async applyMutation() { return { ok: true }; } }
-class MutationEngine { constructor() {} buildMutationRequestFromIntent() { return []; } applyMutations() { return undefined; } }
+} from ${JSON.stringify(studioDataModule.url)};
+  class AceConnector { async parseIntent() { return { confidence: 0.75, tasks: ['stub task'], classification: { role: 'context', labels: [] }, criteria: [], summary: 'stub summary', extractedIntent: { id: 'intent_stub', sourceNodeId: 'node_stub', sourceText: 'stub source', summary: 'stub summary', explicitClaims: ['stub claim'], inferredClaims: [], candidateNodes: [{ id: 'candidate_stub', label: 'stub task', kind: 'task', basis: 'explicit', rationale: 'stub rationale', confidence: 0.75 }], candidateEdges: [], gaps: [], provenance: { backend: 'ollama', model: 'mixtral', runId: 'context_stub', usedFallback: false, inferenceMode: 'small-inference' }, audit: { confidence: 0.75, criteria: [], classification: { role: 'context', labels: [] }, matchedTerms: [] } } }; } async previewMutation() { return { summary: [] }; } async applyMutation() { return { ok: true }; } async runAgentWorker() { return { ok: true, report: { summary: 'stub executor run', decision: 'ready-apply' }, runtime: {} }; } }
+class MutationEngine {
+  constructor() {}
+  buildMutationRequestFromIntent() { return []; }
+  applyMutations() { return undefined; }
+  removeLinkedDraftsForSource() { return []; }
+  syncDraftNodesFromReport() {
+    return {
+      generationId: 'stub-generation',
+      createdAt: new Date().toISOString(),
+      generatedNodes: [],
+      replacedNodeIds: [],
+      usedFallback: false,
+      reason: 'stub',
+    };
+  }
+}
 class ArchitectureMemory { constructor() { this.model = { subsystems: [], modules: [], world: { systems: [], mechanics: [], quests: [], items: [], constraints: [] }, adapters: [], proposals: [], rules: [], layers: [], versions: [] }; } syncFromGraph() { return undefined; } }
 const loadWorkspace = async () => ({ graph: { nodes: [], edges: [] }, graphs: { system: { nodes: [], edges: [] }, world: { nodes: [], edges: [] } }, sketches: [], annotations: [], agentComments: {}, intentState: { latest: null, contextReport: null, byNode: {}, reports: [] }, studio: {} });
 const saveWorkspace = async () => ({ ok: true });

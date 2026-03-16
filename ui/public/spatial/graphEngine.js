@@ -3,6 +3,7 @@ export const PROPOSAL_TARGETS = ['system-structure', 'world-structure', 'adapter
 export const SYSTEM_NODE_TYPES = ['text', 'task', 'module', 'file', 'constraint', 'adapter'];
 export const WORLD_NODE_TYPES = ['gameplay-system', 'mechanic', 'quest', 'item', 'world-constraint', 'adapter'];
 export const NODE_TYPES = [...new Set([...SYSTEM_NODE_TYPES, ...WORLD_NODE_TYPES])];
+const RSG_ACTIVITY_LIMIT = 24;
 
 export function buildStarterGraph() {
   return { nodes: [], edges: [] };
@@ -43,6 +44,27 @@ export function defaultApprovalPolicy() {
   };
 }
 
+function normalizeRsgActivityEntries(activity = []) {
+  return (Array.isArray(activity) ? activity : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      id: entry.id || null,
+      type: entry.type || 'rsg-skip',
+      at: entry.at || null,
+      sourceNodeId: entry.sourceNodeId || null,
+      sourceNodeLabel: entry.sourceNodeLabel || '',
+      summary: entry.summary || '',
+      confidence: Number.isFinite(Number(entry.confidence)) ? Number(entry.confidence) : null,
+      generatedCount: Number(entry.generatedCount || 0),
+      replacedCount: Number(entry.replacedCount || 0),
+      usedFallback: Boolean(entry.usedFallback),
+      reason: entry.reason || '',
+      trigger: entry.trigger || 'manual',
+      generationId: entry.generationId || null,
+    }))
+    .slice(0, RSG_ACTIVITY_LIMIT);
+}
+
 export function createDefaultRsgState() {
   return {
     mode: 'dual-layer',
@@ -55,6 +77,10 @@ export function createDefaultRsgState() {
       adapterTranslation: 0,
       codeRuntimeMutation: 0,
     },
+    activity: [],
+    lastSourceNodeId: null,
+    lastGenerationAt: null,
+    lastStatus: 'idle',
     lastEvaluatedAt: null,
   };
 }
@@ -72,7 +98,19 @@ export function proposalRequiresApproval(target, approvalPolicy = defaultApprova
 
 export function buildRsgState(workspace = {}) {
   const graphs = normalizeGraphBundle(workspace);
-  const base = createDefaultRsgState();
+  const persisted = workspace?.rsg || {};
+  const base = {
+    ...createDefaultRsgState(),
+    ...persisted,
+    approvalPolicy: {
+      ...defaultApprovalPolicy(),
+      ...(persisted.approvalPolicy || {}),
+    },
+    activity: normalizeRsgActivityEntries(persisted.activity),
+    lastSourceNodeId: persisted.lastSourceNodeId || null,
+    lastGenerationAt: persisted.lastGenerationAt || null,
+    lastStatus: persisted.lastStatus || 'idle',
+  };
   const graphProposals = GRAPH_LAYERS.flatMap((layer) => (graphs[layer]?.nodes || [])
     .filter((node) => node?.metadata?.proposalTarget || node?.metadata?.labels?.includes('proposal') || node?.type === 'adapter')
     .map((node) => {

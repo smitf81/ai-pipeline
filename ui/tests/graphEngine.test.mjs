@@ -41,6 +41,27 @@ export default async function runGraphEngineTests() {
         edges: [],
       },
     },
+    rsg: {
+      activity: [
+        {
+          id: 'rsg_activity_1',
+          type: 'rsg-generate',
+          at: '2026-03-16T08:00:00.000Z',
+          sourceNodeId: 'node_sys',
+          sourceNodeLabel: 'Studio runtime',
+          summary: 'Drafted linked runtime notes',
+          confidence: 0.63,
+          generatedCount: 2,
+          replacedCount: 1,
+          usedFallback: true,
+          trigger: 'enter',
+          generationId: 'gen_1',
+        },
+      ],
+      lastSourceNodeId: 'node_sys',
+      lastGenerationAt: '2026-03-16T08:00:00.000Z',
+      lastStatus: 'rsg-generate',
+    },
     studio: {
       teamBoard: {
         cards: [
@@ -59,6 +80,10 @@ export default async function runGraphEngineTests() {
   assert.equal(rsg.summary.adapterTranslation, 1);
   assert.equal(rsg.summary.worldStructure, 1);
   assert.equal(rsg.summary.codeRuntimeMutation, 1);
+  assert.equal(rsg.activity[0].id, 'rsg_activity_1');
+  assert.equal(rsg.lastSourceNodeId, 'node_sys');
+  assert.equal(rsg.lastGenerationAt, '2026-03-16T08:00:00.000Z');
+  assert.equal(rsg.lastStatus, 'rsg-generate');
   assert.equal(proposalRequiresApproval('code-runtime-mutation'), true);
   assert.equal(proposalRequiresApproval('world-structure'), false);
 }
