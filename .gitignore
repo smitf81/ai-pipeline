@@ -3,6 +3,7 @@ __pycache__/
 work/logs/
 .venv/
 Old/
+legacy/Old/
 ui/node_modules/
 **/node_modules/
 npm-debug.log*

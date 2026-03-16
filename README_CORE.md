@@ -164,7 +164,7 @@ A simple UI makes the system visible and reduces friction.
 **Goal:** “The system feels real.”
 
 Deliverables:
-- repo brain files exist under `projects/emergence/`
+- repo brain files exist under `brain/emergence/`
 - Manager can generate `state.json` from docs
 - UI v1 can display `state.json` and read markdown files
 - DocScribe can append a decision entry
@@ -191,12 +191,15 @@ Success looks like:
 ---
 
 ## Immediate Next Step
-Create the canonical files under `projects/emergence/` and populate them minimally:
+Create the canonical files under `brain/emergence/` and populate them minimally:
 - `project_brain.md` (10 lines)
 - `roadmap.md` (Now/Next/Later)
+- `plan.md` (active execution slice)
 - `decisions.md` (start empty)
 - `tasks.md` (start empty)
 - `state.json` (seed fields)
 - `changelog.md` (start empty)
+
+External target repos should live in `targets.json`, with `projects.json` supported only as a compatibility fallback during migration.
 
 Then implement Manager v0 to output `state.json`.

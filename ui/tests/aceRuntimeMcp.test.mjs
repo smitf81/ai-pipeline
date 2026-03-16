@@ -39,7 +39,30 @@ export default async function runAceRuntimeMcpTests() {
     });
     const pathname = new URL(url).pathname;
     if (pathname === '/api/spatial/runtime') {
-      return createJsonResponse({ status: 'ok', teamBoard: { cards: [] } });
+      return createJsonResponse({
+        status: 'ok',
+        manager: {
+          current_focus: 'Canonical anchor rollout',
+          active_milestone: 'Repo anchors',
+          drift_flags: [],
+        },
+        truthSources: [{ relativePath: 'brain/emergence/roadmap.md', source: 'canonical', exists: true }],
+        drift: [],
+        anchorRefs: ['brain/emergence/roadmap.md'],
+        agentWorkers: {
+          'context-manager': {
+            status: 'idle',
+            lastRunId: 'context_1',
+            lastUsedFallback: false,
+          },
+          planner: {
+            status: 'idle',
+            lastRunId: 'planner_1',
+            proposalArtifactRefs: ['data/spatial/agent-runs/planner/planner_1.proposal.01.brain-emergence-plan-md.md'],
+          },
+        },
+        teamBoard: { cards: [] },
+      });
     }
     if (pathname === '/api/spatial/workspace') {
       return createJsonResponse({
@@ -105,6 +128,10 @@ export default async function runAceRuntimeMcpTests() {
 
   const runtimePayload = await readAceResource('ace://runtime', { client });
   assert.equal(runtimePayload.status, 'ok');
+  assert.equal(runtimePayload.manager.current_focus, 'Canonical anchor rollout');
+  assert.ok(runtimePayload.anchorRefs.includes('brain/emergence/roadmap.md'));
+  assert.equal(runtimePayload.agentWorkers['context-manager'].lastRunId, 'context_1');
+  assert.equal(runtimePayload.agentWorkers.planner.lastRunId, 'planner_1');
 
   const boardPayload = await readAceResource('ace://team-board', { client });
   assert.equal(boardPayload.activePageId, 'page_1');

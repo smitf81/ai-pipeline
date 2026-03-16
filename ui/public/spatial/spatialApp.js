@@ -42,9 +42,12 @@ const h = React.createElement;
 const STUDIO_SIZE = { width: 1200, height: 800 };
 const STATUS_META = {
   idle: { badge: 'IDLE', tone: 'idle' },
-  thinking: { badge: 'THINK', tone: 'thinking' },
+  queued: { badge: 'QUEUE', tone: 'thinking' },
   processing: { badge: 'RUN', tone: 'processing' },
   blocked: { badge: 'BLOCK', tone: 'blocked' },
+  degraded: { badge: 'DEGRADED', tone: 'review' },
+  review: { badge: 'REVIEW', tone: 'review' },
+  thinking: { badge: 'THINK', tone: 'thinking' },
   'needs review': { badge: 'REVIEW', tone: 'review' },
 };
 
@@ -525,6 +528,7 @@ function resolveDeskAnchor(agentId, targetId, kind = 'workflow', studioLayout = 
 function buildDeskBadge(agentId, orchestratorState, activePage) {
   const desk = orchestratorState?.desks?.[agentId] || null;
   if (!desk) return null;
+  if (desk.statusLabel) return desk.statusLabel;
   if (agentId === 'context-manager' && activePage?.title) return 'Page focus';
   if (desk.localState === 'blocked') return 'Blocked';
   if (desk.localState === 'running') return 'Live';
@@ -1404,14 +1408,18 @@ function SpatialNotebook() {
     return nextHandoff;
   };
 
-  function applyRuntimePayload(runtime) {
+  function applyRuntimePayload(runtime, intentOverride = null) {
+    const runtimeIntentState = intentOverride || runtime.intentState || intentState;
     const notebook = normalizeNotebookState({
       graph: systemGraph,
       graphs: graphBundle,
-      intentState,
+      intentState: runtimeIntentState,
       pages: runtime.pages,
       activePageId: runtime.activePageId,
     });
+    if (intentOverride) {
+      setIntentState(intentOverride);
+    }
     setPages(notebook.pages);
     setActivePageId(notebook.activePageId);
     setHandoffs({
@@ -1484,12 +1492,16 @@ function SpatialNotebook() {
     setScannerBusy(true);
     try {
       const contextNode = captureContextInput();
-      const response = await ace.parseIntent(contextDraft);
-      const report = {
-        ...response,
+      const response = await ace.parseIntent({
+        text: contextDraft,
         nodeId: contextNode?.id || null,
         source: 'context-intake',
-        createdAt: new Date().toISOString(),
+      });
+      const report = {
+        ...(response.report || response),
+        nodeId: (response.report || response).nodeId || contextNode?.id || null,
+        source: (response.report || response).source || 'context-intake',
+        createdAt: (response.report || response).createdAt || new Date().toISOString(),
       };
       setScanPreview(report);
       if (contextNode?.id) {
@@ -1507,15 +1519,21 @@ function SpatialNotebook() {
         });
         setGraph({ ...graphEngine.getState() });
       }
-      setIntentState((current) => ({
+      const nextIntentState = {
         latest: report,
         contextReport: report,
-        byNode: contextNode?.id ? { ...current.byNode, [contextNode.id]: report } : current.byNode,
-        reports: [report, ...(current.reports || []).filter((entry) => entry.nodeId !== contextNode?.id)].slice(0, 24),
-      }));
-      const handoff = await updatePlannerHandoff(report);
+        byNode: contextNode?.id ? { ...(intentState.byNode || {}), [contextNode.id]: report } : (intentState.byNode || {}),
+        reports: [report, ...((intentState.reports || []).filter((entry) => entry.nodeId !== contextNode?.id))].slice(0, 24),
+      };
+      let handoff = response.handoff || (response.runtime ? response.runtime.handoffs?.contextToPlanner : null) || null;
+      if (response.runtime) {
+        applyRuntimePayload(response.runtime, nextIntentState);
+      } else {
+        setIntentState(nextIntentState);
+        handoff = await updatePlannerHandoff(report);
+      }
       setSelectedAgentId('context-manager');
-      setStatus(`intent manager confidence ${Math.round((response.confidence || 0) * 100)}% | ${(response.tasks || []).length} intent items | planner brief ${handoff?.status || 'updated'}`);
+      setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} intent items | planner brief ${handoff?.status || 'updated'}`);
     } catch (error) {
       setStatus(`scan failed: ${error.message}`);
     } finally {
@@ -1560,18 +1578,22 @@ function SpatialNotebook() {
       return;
     }
     try {
-      const response = await ace.parseIntent(content);
-      nextNode = graphEngine.getState().nodes.find((node) => node.id === nodeId);
-      const report = {
-        ...response,
+      const response = await ace.parseIntent({
+        text: content,
         nodeId,
         source: 'node-enter',
-        createdAt: new Date().toISOString(),
+      });
+      nextNode = graphEngine.getState().nodes.find((node) => node.id === nodeId);
+      const report = {
+        ...(response.report || response),
+        nodeId: (response.report || response).nodeId || nodeId,
+        source: (response.report || response).source || 'node-enter',
+        createdAt: (response.report || response).createdAt || new Date().toISOString(),
       };
-      const mergedLabels = [...new Set([...(patch.metadata?.labels || []), ...(response.classification?.labels || [])])];
+      const mergedLabels = [...new Set([...(patch.metadata?.labels || []), ...(report.classification?.labels || [])])];
       const resolvedRole = nextNode?.metadata?.manualOverride
         ? (nextNode.metadata.role || patch.metadata.role)
-        : (response.classification?.role || patch.metadata.role || 'thought');
+        : (report.classification?.role || patch.metadata.role || 'thought');
       graphEngine.updateNode(nodeId, {
         type: nextNode?.metadata?.manualOverride ? (nextNode.type || patch.type) : (resolvedRole === 'thought' ? 'text' : resolvedRole),
         metadata: {
@@ -1584,19 +1606,26 @@ function SpatialNotebook() {
         },
       });
       setGraph({ ...graphEngine.getState() });
-      setIntentState((currentState) => ({
+      const nextIntentState = {
         latest: report,
-        contextReport: current?.metadata?.agentId === 'context-manager' ? report : currentState.contextReport,
-        byNode: { ...currentState.byNode, [nodeId]: report },
-        reports: [report, ...(currentState.reports || []).filter((entry) => entry.nodeId !== nodeId)].slice(0, 24),
-      }));
+        contextReport: current?.metadata?.agentId === 'context-manager' ? report : intentState.contextReport,
+        byNode: { ...(intentState.byNode || {}), [nodeId]: report },
+        reports: [report, ...((intentState.reports || []).filter((entry) => entry.nodeId !== nodeId))].slice(0, 24),
+      };
+      if (response.runtime && current?.metadata?.agentId === 'context-manager') {
+        applyRuntimePayload(response.runtime, nextIntentState);
+      } else {
+        setIntentState(nextIntentState);
+      }
       if (current?.metadata?.agentId === 'context-manager') {
         setContextDraft(content);
         setScanPreview(report);
-        await updatePlannerHandoff(report);
+        if (!response.runtime) {
+          await updatePlannerHandoff(report);
+        }
       }
       setSelectedAgentId('context-manager');
-      setStatus(`intent manager confidence ${Math.round((response.confidence || 0) * 100)}% | ${(response.tasks || []).length} tasks for ${resolvedRole}`);
+      setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} tasks for ${resolvedRole}`);
     } catch {
       graphEngine.updateNode(nodeId, {
         metadata: {

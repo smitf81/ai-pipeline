@@ -88,10 +88,21 @@ export default async function runThroughputDebugTests() {
       blockers: [],
       keywords: ['ace', 'studio', 'desk', 'qa', 'agent', 'planner', 'executor', 'kanban', 'board'],
       sourcesRead: [
-        'projects/emergence/state.json',
-        'projects/emergence/plan.md',
-        'projects/emergence/project_brain.md',
+        'brain/emergence/state.json',
+        'brain/emergence/plan.md',
+        'brain/emergence/project_brain.md',
       ],
+      anchorRefs: [
+        'brain/emergence/roadmap.md',
+        'brain/emergence/plan.md',
+        'brain/emergence/tasks.md',
+      ],
+      managerSummary: {
+        current_focus: 'ACE Studio desks',
+        active_milestone: 'Repo anchors',
+      },
+      truthSources: [],
+      drift: [],
     };
     return analyzeSpatialIntent(prompt, project);
   }
@@ -261,11 +272,14 @@ export default async function runThroughputDebugTests() {
   assert.equal(persisted.stages.find((stage) => stage.id === 'intent')?.verdict, 'pass');
   assert.equal(persisted.stages.find((stage) => stage.id === 'deploy')?.verdict, 'pass');
   assert.equal(persisted.stages.find((stage) => stage.id === 'final')?.verdict, 'pass');
+  assert.ok(persisted.anchorRefs.includes('brain/emergence/roadmap.md'));
   assert.equal(persisted.sinks['workspace.intentState']?.write, true);
   assert.equal(persisted.sinks['workspace.studio.handoffs.contextToPlanner']?.write, true);
   assert.equal(persisted.sinks['workspace.studio.teamBoard']?.write, true);
   assert.equal(persisted.sinks['data/spatial/history.json']?.write, true);
   assert.equal(persisted.sinks['runner.taskArtifacts']?.write, true);
+  assert.equal(persisted.sinks['brain/emergence/*']?.read, true);
+  assert.equal(persisted.sinks['manager.anchorBundle']?.read, true);
   assert.match(persisted.sinks['runner.taskArtifacts']?.summary || '', /idea\.txt/i);
   assert.equal(persisted.snapshots.after?.health?.selfUpgrade?.deploy?.health?.status, 'healthy');
   assert.ok(fs.existsSync(path.join(rootPath, 'data', 'spatial', 'throughput', `${session.id}.json`)));

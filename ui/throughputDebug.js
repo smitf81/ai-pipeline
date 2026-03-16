@@ -78,6 +78,7 @@ function summarizeSession(session) {
     nodeId: session.nodeId,
     runnerTaskId: session.runnerTaskId,
     qaRunId: session.qaRunId || null,
+    anchorRefs: Array.isArray(session.anchorRefs) ? session.anchorRefs : [],
     stageSummary: (session.stages || []).map((stage) => ({
       id: stage.id,
       label: stage.label,
@@ -119,6 +120,7 @@ function createSession({ prompt, targetProjectKey, mode, executionProfile = 'liv
     handoffId: null,
     runnerTaskId: null,
     qaRunId: null,
+    anchorRefs: [],
     runIds: [],
     cardIds: [],
     stages: [
@@ -189,17 +191,20 @@ function markRemainingStagesBlocked(session, fromStageId, reason) {
 function collectConstraints(report, dashboardState) {
   const blockers = Array.isArray(report?.projectContext?.blockers) ? report.projectContext.blockers : [];
   const dashboardBlockers = Array.isArray(dashboardState?.blockers) ? dashboardState.blockers : [];
+  const packetConstraints = Array.isArray(report?.contextPacket?.constraints) ? report.contextPacket.constraints : [];
   const lowCriteria = (report?.criteria || [])
     .filter((criterion) => Number(criterion.score || 0) < 0.55)
     .map((criterion) => `${criterion.label}: ${criterion.reason || 'Needs clarification.'}`);
-  return [...new Set([...blockers, ...dashboardBlockers, ...lowCriteria])].slice(0, 8);
+  return [...new Set([...blockers, ...dashboardBlockers, ...packetConstraints, ...lowCriteria])].slice(0, 8);
 }
 
 function createPlannerHandoff(report, dashboardState = {}, previousHandoff = null) {
   if (!report) return null;
   const tasks = Array.isArray(report.tasks) ? report.tasks.filter(Boolean) : [];
   const constraints = collectConstraints(report, dashboardState);
-  const clarifications = [];
+  const clarifications = Array.isArray(report?.contextPacket?.clarifications)
+    ? report.contextPacket.clarifications.filter(Boolean)
+    : [];
   const plannerUsefulness = Number(report?.scores?.plannerUsefulness || 0);
   const executionReadiness = Number(report?.scores?.executionReadiness || 0);
   if (plannerUsefulness < 0.55) clarifications.push('Planner usefulness is low and needs tighter scope before execution expands.');
@@ -226,6 +231,7 @@ function createPlannerHandoff(report, dashboardState = {}, previousHandoff = nul
     sourceNodeId: report.nodeId || null,
     summary: report.summary || 'Intent ready for planner review.',
     problemStatement,
+    anchorRefs: Array.isArray(report.anchorRefs) ? report.anchorRefs.filter(Boolean) : [],
     tasks,
     constraints,
     confidence: Number(report.confidence || 0),
@@ -254,11 +260,13 @@ function buildRuntimeSnapshot({ workspace, runs = [], health = null }) {
         summary: latestIntent.summary || null,
         confidence: latestIntent.confidence || 0,
         scores: latestIntent.scores || null,
+        anchorRefs: latestIntent.anchorRefs || latestIntent.projectContext?.anchorRefs || [],
       } : null,
       handoff: handoff ? {
         id: handoff.id,
         status: handoff.status,
         taskCount: handoff.tasks?.length || 0,
+        anchorRefs: handoff.anchorRefs || [],
       } : null,
       teamBoard: teamBoard ? {
         selectedCardId: teamBoard.selectedCardId || null,
@@ -328,6 +336,7 @@ function buildSinkVerification({ rootPath, workspace, history = [], session, tas
   const orchestrator = workspace?.studio?.orchestrator || {};
   const selfUpgrade = workspace?.studio?.selfUpgrade || {};
   const artifacts = collectRunnerArtifacts(taskDir);
+  const managerSummary = report?.projectContext?.managerSummary || report?.provenance?.managerSummary || null;
   return {
     'workspace.intentState': {
       read: true,
@@ -364,10 +373,15 @@ function buildSinkVerification({ rootPath, workspace, history = [], session, tas
       write: artifacts.length > 0,
       summary: artifacts.length ? summarizeArtifacts(rootPath, artifacts).join(', ') : 'No runner artifacts found.',
     },
-    'projects/emergence/*': {
+    'brain/emergence/*': {
       read: Boolean(report?.projectContext?.sourcesRead?.length),
       write: false,
-      summary: `Read-only references: ${(report?.projectContext?.sourcesRead || []).join(', ') || 'none recorded'}`,
+      summary: `Canonical anchor refs: ${(report?.anchorRefs || report?.projectContext?.anchorRefs || []).join(', ') || 'none recorded'}`,
+    },
+    'manager.anchorBundle': {
+      read: Boolean(managerSummary),
+      write: false,
+      summary: managerSummary?.current_focus || 'No manager summary recorded.',
     },
     health: {
       read: Boolean(health),
@@ -511,6 +525,7 @@ async function runThroughputSession(options = {}) {
       source: 'throughput-debug',
       createdAt: nowIso(),
     };
+    session.anchorRefs = Array.isArray(report.anchorRefs) ? report.anchorRefs : [];
     workspace = upsertSessionPointer({
       ...workspace,
       graph: {
@@ -553,6 +568,7 @@ async function runThroughputSession(options = {}) {
         scores: report.scores,
         classification: report.classification,
         tasks: report.tasks,
+        anchorRefs: report.anchorRefs,
       },
     });
     recordHistory('throughput-intent', {

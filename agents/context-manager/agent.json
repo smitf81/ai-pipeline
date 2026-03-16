@@ -1,0 +1,23 @@
+{
+  "id": "context-manager",
+  "name": "Context Manager",
+  "deskId": "context-manager",
+  "runtime": "ollama-json",
+  "backend": "ollama",
+  "model": "mixtral",
+  "host": "http://127.0.0.1:11434",
+  "timeoutMs": 30000,
+  "autoRun": false,
+  "inputs": [
+    "raw-context-text",
+    "brain/emergence/*",
+    "workspace.active-page",
+    "studio.handoffs.plannerToContext"
+  ],
+  "outputs": [
+    "intent-report",
+    "studio.handoffs.contextToPlanner",
+    "data/spatial/agent-runs/context-manager/*.json"
+  ],
+  "writesCanonicalBrain": false
+}

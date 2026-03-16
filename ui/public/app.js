@@ -42,12 +42,12 @@ async function refreshDashboard() {
     renderList('next_actions', s.next_actions || []);
     renderList('blockers', s.blockers || []);
 
-    setText('decisions_text', dashboardText(data.files, 'projects/emergence/decisions.md'));
-    setText('tasks_text', dashboardText(data.files, 'projects/emergence/tasks.md'));
-    setText('roadmap_text', dashboardText(data.files, 'projects/emergence/roadmap.md'));
-    setText('plan_text', dashboardText(data.files, 'projects/emergence/plan.md'));
-    setText('brain_text', dashboardText(data.files, 'projects/emergence/project_brain.md'));
-    setText('changelog_text', dashboardText(data.files, 'projects/emergence/changelog.md'));
+    setText('decisions_text', dashboardText(data.files, 'brain/emergence/decisions.md'));
+    setText('tasks_text', dashboardText(data.files, 'brain/emergence/tasks.md'));
+    setText('roadmap_text', dashboardText(data.files, 'brain/emergence/roadmap.md'));
+    setText('plan_text', dashboardText(data.files, 'brain/emergence/plan.md'));
+    setText('brain_text', dashboardText(data.files, 'brain/emergence/project_brain.md'));
+    setText('changelog_text', dashboardText(data.files, 'brain/emergence/changelog.md'));
 
     setText('refreshMeta', `Last refreshed: ${new Date(data.refreshedAt).toLocaleString()} (every ${Math.round((data.refreshIntervalMs || 10000) / 1000)}s)`);
     setText('refreshErrors', data.errors?.length ? `Read errors: ${data.errors.map((e) => `${e.file}: ${e.error}`).join(' | ')}` : '');

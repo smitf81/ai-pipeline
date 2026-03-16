@@ -47,7 +47,23 @@ export default async function runOrchestratorStateTests() {
           id: 'handoff_1',
           summary: 'Planner brief ready.',
           status: 'needs-clarification',
+          anchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
           tasks: ['Clarify desk overlap', 'Show current desk job'],
+        },
+        plannerToContext: {
+          id: 'feedback_1',
+          sourceHandoffId: 'handoff_1',
+          action: 'retry-handoff',
+          detail: 'Need clearer acceptance criteria.',
+          anchorRefs: ['brain/emergence/plan.md'],
+        },
+      },
+      agentWorkers: {
+        'context-manager': {
+          status: 'running',
+          currentRunId: 'context_1',
+          lastRunId: 'context_prev',
+          lastUsedFallback: true,
         },
       },
       selfUpgrade: {
@@ -85,19 +101,24 @@ export default async function runOrchestratorStateTests() {
   assert.equal(nextWorkspace.graph.nodes[0].id, 'node_ctx');
   assert.equal(nextWorkspace.graphs.world.nodes[0].id, 'node_world');
   assert.equal(nextWorkspace.studio.orchestrator.status, 'needs-attention');
-  assert.ok(nextWorkspace.studio.orchestrator.activeDeskIds.includes('planner'));
+  assert.ok(nextWorkspace.studio.orchestrator.activeDeskIds.includes('context-manager'));
   assert.equal(nextWorkspace.studio.orchestrator.desks.executor.localState, 'blocked');
   assert.equal(nextWorkspace.rsg.summary.worldStructure, 1);
   assert.ok(nextWorkspace.pages[0].handoffs.length >= 1);
   assert.match(nextWorkspace.studio.orchestrator.desks['cto-architect'].thoughtBubble, /approval|reviewing|guardrails/i);
-  assert.match(nextWorkspace.studio.orchestrator.desks.planner.thoughtBubble, /backlog|tasks|waiting|sequencing/i);
+  assert.match(nextWorkspace.studio.orchestrator.desks.planner.thoughtBubble, /retry|waiting|sequencing|tasks/i);
   assert.match(nextWorkspace.studio.orchestrator.desks.executor.thoughtBubble, /blocked|queued|waiting/i);
   assert.ok((nextWorkspace.studio.teamBoard.summary.active || 0) >= 1);
+  assert.ok(nextWorkspace.studio.teamBoard.cards[0].sourceAnchorRefs.includes('brain/emergence/plan.md'));
 
   const runtime = buildRuntimePayload(nextWorkspace);
   assert.equal(runtime.activePageId, nextWorkspace.activePageId);
   assert.ok(runtime.orchestrator.desks['cto-architect'].thoughtBubble);
   assert.ok(Array.isArray(runtime.pages));
+  assert.equal(runtime.agentWorkers['context-manager'].status, 'running');
+  assert.equal(runtime.agentWorkers['context-manager'].lastUsedFallback, true);
+  assert.equal(runtime.agentWorkers.planner.status, 'idle');
+  assert.deepEqual(runtime.agentWorkers.planner.proposalArtifactRefs, []);
   assert.equal(runtime.selfUpgrade.status, 'ready-to-apply');
   assert.equal(runtime.graphs.system.nodes[0].id, 'node_ctx');
   assert.equal(runtime.graphs.world.nodes[0].id, 'node_world');

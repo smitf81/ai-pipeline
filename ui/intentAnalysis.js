@@ -4,6 +4,12 @@ const INTENT_STOPWORDS = new Set([
   'what', 'where', 'while', 'were', 'been', 'being', 'also', 'just', 'over', 'under',
   'onto', 'need', 'needs', 'want', 'wants', 'able', 'make', 'lets',
 ]);
+const {
+  DEFAULT_DOMAIN_KEY,
+  buildAnchorBundle,
+  tokenizeKeywordSource,
+  topKeywordsFromCounts,
+} = require('./anchorResolver');
 
 const LEGACY_ACTION_PATTERN = /\b(build|fix|create|implement|wire|connect|review|scan|plan|design|update|remove|delete|disable|support)\b/gi;
 const CURRENT_ACTION_PATTERN = /\b(build|fix|create|implement|wire|connect|review|scan|plan|design|update|remove|delete|disable|support|add|introduce|expose|enable|allow|test|verify|document)\b/gi;
@@ -78,33 +84,79 @@ function buildLegacyIntentTasks(text) {
   return buildIntentTasksFromPattern(text, LEGACY_ACTION_PATTERN);
 }
 
-function buildIntentProjectContext({ workspace = {}, readDashboardFile }) {
-  const state = readDashboardFile('projects/emergence/state.json').parsed || {};
-  const plan = readDashboardFile('projects/emergence/plan.md').content || '';
-  const brain = readDashboardFile('projects/emergence/project_brain.md').content || '';
-  const roadmap = readDashboardFile('projects/emergence/roadmap.md').content || '';
+function buildWeightedKeywordCounts(anchorBundle, contextNode) {
+  const counts = new Map();
+  Object.values(anchorBundle?.anchors || {}).forEach((anchor) => {
+    (anchor?.keywords || []).forEach((token) => {
+      counts.set(token, (counts.get(token) || 0) + Number(anchor.weight || 1));
+    });
+  });
+  tokenizeKeywordSource(contextNode?.content || '').forEach((token) => {
+    counts.set(token, (counts.get(token) || 0) + 4);
+  });
+  return counts;
+}
+
+function buildAnchorCatalog(anchorBundle) {
+  return Object.values(anchorBundle?.anchors || {})
+    .filter((anchor) => anchor?.exists)
+    .map((anchor) => ({
+      id: anchor.id,
+      relativePath: anchor.relativePath,
+      sourceRelativePath: anchor.sourceRelativePath,
+      source: anchor.source,
+      weight: anchor.weight,
+      keywords: (anchor.keywords || []).slice(0, 24),
+    }));
+}
+
+function buildIntentProjectContext({
+  workspace = {},
+  readDashboardFile = null,
+  rootPath = null,
+  domainKey = DEFAULT_DOMAIN_KEY,
+}) {
+  const anchorBundle = buildAnchorBundle({
+    rootPath,
+    domainKey,
+    readEntry: readDashboardFile,
+  });
   const contextNode = (workspace.graph?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
-  const contextText = [
-    state.current_focus || '',
-    ...(state.next_actions || []),
-    ...(state.blockers || []),
-    plan,
-    brain,
-    roadmap,
-    contextNode?.content || '',
-  ].join(' ');
+  const keywordCounts = buildWeightedKeywordCounts(anchorBundle, contextNode);
+  const managerSummary = anchorBundle.managerSummary || {};
   return {
-    currentFocus: state.current_focus || '',
-    blockers: state.blockers || [],
-    keywords: topKeywords(contextText, 28),
+    domainKey,
+    brainRoot: anchorBundle.brainRoot,
+    currentFocus: managerSummary.current_focus || '',
+    activeMilestone: managerSummary.active_milestone || '',
+    blockers: managerSummary.blockers || [],
+    keywords: topKeywordsFromCounts(keywordCounts, 28),
     sourcesRead: [
-      'projects/emergence/state.json',
-      'projects/emergence/plan.md',
-      'projects/emergence/project_brain.md',
-      'projects/emergence/roadmap.md',
+      ...anchorBundle.truthSources.filter((source) => source.exists).map((source) => source.relativePath),
       ...(contextNode ? ['workspace.graph.context-manager-node'] : []),
     ],
+    anchorRefs: anchorBundle.anchorRefs || [],
+    anchorCatalog: buildAnchorCatalog(anchorBundle),
+    truthSources: anchorBundle.truthSources || [],
+    drift: anchorBundle.drift || [],
+    managerSummary,
   };
+}
+
+function buildAnchorMatches(tokens = [], project = {}) {
+  const tokenSet = new Set(tokens || []);
+  const catalog = Array.isArray(project.anchorCatalog) ? project.anchorCatalog : [];
+  const matches = catalog
+    .map((anchor) => ({
+      anchorRef: anchor.relativePath,
+      sourceRef: anchor.sourceRelativePath,
+      source: anchor.source,
+      weight: anchor.weight,
+      matchedTerms: (anchor.keywords || []).filter((token) => tokenSet.has(token)).slice(0, 8),
+    }))
+    .filter((entry) => entry.matchedTerms.length > 0)
+    .sort((left, right) => right.matchedTerms.length - left.matchedTerms.length || right.weight - left.weight);
+  return matches;
 }
 
 function buildLegacyCriteria({ source, project, labels, tokens, sentences, matchedTerms }) {
@@ -224,6 +276,7 @@ function buildIntentReadinessScores({ confidence, criteria, tasks, source, label
 
 function buildIntentTruth({ source, summary, tasks, criteria, classification, projectContext, scores }) {
   const requestedOutcomes = (tasks || []).slice(0, 4);
+  const anchorRefs = Array.isArray(projectContext?.anchorRefs) ? projectContext.anchorRefs.slice(0, 8) : [];
   const unresolved = (criteria || [])
     .filter((criterion) => Number(criterion.score || 0) < 0.55)
     .map((criterion) => `${criterion.label}: ${criterion.reason || 'Needs clarification.'}`);
@@ -248,6 +301,7 @@ function buildIntentTruth({ source, summary, tasks, criteria, classification, pr
     requestedOutcomes,
     unresolved,
     evidence,
+    anchorRefs,
     plannerBrief: requestedOutcomes.length
       ? `Planner should treat this as: ${requestedOutcomes.join('; ')}`
       : 'Planner should clarify the request before expanding execution.',
@@ -262,12 +316,23 @@ function buildIntentTruth({ source, summary, tasks, criteria, classification, pr
 
 function analyzeSpatialIntent(text, project) {
   const source = String(text || '').trim();
-  const safeProject = project || { currentFocus: '', blockers: [], keywords: [], sourcesRead: [] };
+  const safeProject = project || {
+    currentFocus: '',
+    blockers: [],
+    keywords: [],
+    sourcesRead: [],
+    anchorRefs: [],
+    anchorCatalog: [],
+    truthSources: [],
+    drift: [],
+    managerSummary: null,
+  };
   const labels = inferIntentLabels(source);
   const role = inferIntentRole(source, labels);
   const tokens = tokenizeIntentText(source);
   const projectTerms = new Set(safeProject.keywords || []);
   const matchedTerms = tokens.filter((token) => projectTerms.has(token));
+  const anchorMatches = buildAnchorMatches(tokens, safeProject);
   const sentences = source.split(/[.!?\n]+/).map((entry) => entry.trim()).filter(Boolean);
   const tasks = buildIntentTasks(source);
   const legacyCriteria = buildLegacyCriteria({
@@ -314,6 +379,9 @@ function analyzeSpatialIntent(text, project) {
     },
     scores,
   });
+  const anchorRefs = anchorMatches.length
+    ? anchorMatches.map((entry) => entry.anchorRef)
+    : (safeProject.anchorRefs || []).slice(0, 8);
   return {
     agent: {
       id: 'context-manager',
@@ -330,6 +398,11 @@ function analyzeSpatialIntent(text, project) {
     scores,
     truth,
     tasks,
+    anchorRefs,
+    provenance: {
+      anchors: anchorMatches,
+      managerSummary: safeProject.managerSummary || null,
+    },
     classification: {
       role,
       labels,
@@ -345,11 +418,18 @@ function analyzeSpatialIntent(text, project) {
       executionSignals: countMatches(source, EXECUTION_HINT_PATTERN),
     },
     projectContext: {
+      domainKey: safeProject.domainKey || DEFAULT_DOMAIN_KEY,
+      brainRoot: safeProject.brainRoot || '',
       currentFocus: safeProject.currentFocus,
+      activeMilestone: safeProject.activeMilestone || '',
       blockers: safeProject.blockers.slice(0, 3),
       matchedTerms: matchedTerms.slice(0, 8),
       referenceKeywords: (safeProject.keywords || []).slice(0, 8),
       sourcesRead: (safeProject.sourcesRead || []).slice(0, 8),
+      anchorRefs,
+      truthSources: (safeProject.truthSources || []).slice(0, 8),
+      drift: (safeProject.drift || []).slice(0, 8),
+      managerSummary: safeProject.managerSummary || null,
     },
     judgedAt: nowIso(),
   };

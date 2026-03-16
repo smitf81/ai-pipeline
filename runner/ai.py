@@ -15,7 +15,8 @@ if hasattr(sys.stderr, "reconfigure"):
 # ===== Paths =====
 ROOT = Path(__file__).resolve().parents[1]
 TASKS_DIR = ROOT / "work" / "tasks"
-PROJECTS_FILE = ROOT / "projects.json"
+TARGETS_FILE = ROOT / "targets.json"
+LEGACY_PROJECTS_FILE = ROOT / "projects.json"
 COMMANDS_FILE = ROOT / "ace_commands.json"
 
 # ===== Ollama config =====
@@ -29,15 +30,17 @@ def now_utc_iso() -> str:
 
 
 def load_projects() -> dict:
-    if not PROJECTS_FILE.exists():
-        return {}
-    return json.loads(PROJECTS_FILE.read_text(encoding="utf-8"))
+    if TARGETS_FILE.exists():
+        return json.loads(TARGETS_FILE.read_text(encoding="utf-8"))
+    if LEGACY_PROJECTS_FILE.exists():
+        return json.loads(LEGACY_PROJECTS_FILE.read_text(encoding="utf-8"))
+    return {}
 
 
 def resolve_project_path(project_key_or_path: str) -> Path:
     s = (project_key_or_path or "").strip().strip('"')
     if not s:
-        raise ValueError("Project must be provided (key in projects.json or a direct path).")
+        raise ValueError("Project must be provided (key in targets.json or a direct path).")
     projects = load_projects()
     if s in projects:
         return Path(projects[s]).expanduser()
@@ -774,7 +777,7 @@ def main() -> int:
     p_scan.add_argument(
         "--project",
         required=True,
-        help="Project key from projects.json or direct path"
+        help="Project key from targets.json (legacy projects.json) or direct path"
     )
     p_scan.set_defaults(func=cmd_scan)
 
@@ -787,7 +790,7 @@ def main() -> int:
     p_manage.add_argument(
         "--project",
         required=True,
-        help="Project key from projects.json or direct path"
+        help="Project key from targets.json (legacy projects.json) or direct path"
     )
     p_manage.add_argument(
         "--model",
@@ -804,7 +807,7 @@ def main() -> int:
     p_build.add_argument(
         "--project",
         required=True,
-        help="Project key from projects.json or direct path"
+        help="Project key from targets.json (legacy projects.json) or direct path"
     )
     p_build.add_argument(
         "--model",
@@ -823,7 +826,7 @@ def main() -> int:
     p_apply.add_argument(
         "--project",
         required=True,
-        help="Project key from projects.json or direct path"
+        help="Project key from targets.json (legacy projects.json) or direct path"
     )
     p_apply.add_argument(
         "--dry-run",
@@ -841,7 +844,7 @@ def main() -> int:
     p_run.add_argument(
         "--project",
         required=True,
-        help="Project key from projects.json or direct path"
+        help="Project key from targets.json (legacy projects.json) or direct path"
     )
     p_run.add_argument(
         "--preset",

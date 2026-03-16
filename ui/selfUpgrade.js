@@ -7,6 +7,7 @@ const SELF_ALLOWED_PREFIXES = [
   'runner/',
   'README.md',
   'ace_commands.json',
+  'targets.json',
   'projects.json',
   'AGENTS.md',
 ];
@@ -16,6 +17,7 @@ const SELF_AUTO_APPLY_ALLOWED_PREFIXES = [
 ];
 const SELF_AUTO_APPLY_BLOCKED_FILES = [
   'ui/server.js',
+  'targets.json',
   'projects.json',
   'ace_commands.json',
   'AGENTS.md',
@@ -32,6 +34,7 @@ const SELF_BLOCKED_PATTERNS = [
   /secret/i,
   /token/i,
   /credential/i,
+  /^brain\/emergence\//i,
   /^projects\/emergence\//i,
 ];
 

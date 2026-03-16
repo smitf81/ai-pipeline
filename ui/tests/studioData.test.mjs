@@ -19,6 +19,7 @@ export default async function runStudioDataTests() {
     createdAt: '2026-03-13T10:00:00.000Z',
     summary: 'Expose more agent workload in studio.',
     confidence: 0.42,
+    anchorRefs: ['brain/emergence/roadmap.md'],
     tasks: [],
     criteria: [
       { id: 'actionability', label: 'Actionability', score: 0.2, reason: 'Input reads like a note.' },
@@ -50,6 +51,7 @@ export default async function runStudioDataTests() {
   assert.equal(handoff.targetAgentId, 'planner');
   assert.equal(handoff.status, 'needs-clarification');
   assert.equal(handoff.sourceNodeId, 'node_1');
+  assert.ok(handoff.anchorRefs.includes('brain/emergence/roadmap.md'));
   assert.match(handoff.problemStatement, /Goal: Expose more agent workload in studio\./);
   assert.match(handoff.problemStatement, /Still unclear:/);
   assert.equal(handoff.truth.plannerBrief, 'Planner should clarify the request before expanding execution.');
@@ -123,6 +125,38 @@ export default async function runStudioDataTests() {
       reports: [],
     },
     studio: {
+      agentWorkers: {
+        'context-manager': {
+          status: 'running',
+          mode: 'manual',
+          backend: 'ollama',
+          model: 'mixtral',
+          currentRunId: 'context_1',
+          lastRunId: 'context_prev',
+          lastSourceNodeId: 'node_ctx',
+          lastHandoffId: 'handoff_1',
+          lastReportNodeId: 'node_ctx',
+          lastBlockedReason: null,
+          lastUsedFallback: true,
+          lastPlannerFeedbackAction: 'retry-handoff',
+          startedAt: '2026-03-13T10:14:00.000Z',
+          completedAt: '2026-03-13T10:15:00.000Z',
+        },
+        planner: {
+          status: 'idle',
+          mode: 'auto',
+          backend: 'ollama',
+          model: 'mixtral',
+          currentRunId: null,
+          lastRunId: 'planner_1',
+          lastSourceHandoffId: 'handoff_1',
+          lastBlockedReason: null,
+          lastProducedCardIds: ['0001'],
+          proposalArtifactRefs: ['data/spatial/agent-runs/planner/planner_1.proposal.01.brain-emergence-plan-md.md'],
+          startedAt: '2026-03-13T10:16:00.000Z',
+          completedAt: '2026-03-13T10:17:00.000Z',
+        },
+      },
       handoffs: {
         contextToPlanner: {
           id: 'handoff_1',
@@ -130,10 +164,19 @@ export default async function runStudioDataTests() {
           sourceNodeId: 'node_ctx',
           summary: 'Planner brief ready.',
           problemStatement: 'Goal: Clarify what the planner should solve.',
+          anchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
           tasks: ['Generate problem report', 'Show waiting-on-user state'],
           constraints: [],
           confidence: 0.77,
           status: 'ready',
+        },
+        plannerToContext: {
+          id: 'feedback_1',
+          sourceHandoffId: 'handoff_1',
+          action: 'retry-handoff',
+          summary: 'Planner requested a tighter context packet.',
+          detail: 'Need explicit acceptance criteria before planning expands.',
+          anchorRefs: ['brain/emergence/plan.md'],
         },
       },
     },
@@ -230,9 +273,14 @@ export default async function runStudioDataTests() {
   assert.equal(contextSnapshot.deskSnapshot.handoff.summary, 'Planner brief ready.');
   assert.deepEqual(
     contextSnapshot.deskSnapshot.sections.map((section) => section.label),
-    ['Current Job', 'Core Truth', 'Problem To Solve', 'Intent Extraction', 'KPIs', 'Recent History', 'Waiting On You'],
+    ['Current Job', 'Context Worker', 'Core Truth', 'Problem To Solve', 'Intent Extraction', 'KPIs', 'Recent History', 'Waiting On You'],
   );
-  assert.equal(plannerSnapshot.deskSnapshot.handoff, null);
+  assert.equal(contextSnapshot.deskSnapshot.sections.find((section) => section.label === 'Context Worker').value, 'Status: running | backend ollama | model mixtral');
+  assert.equal(plannerSnapshot.deskSnapshot.handoff.id, 'handoff_1');
   assert.equal(plannerSnapshot.deskSnapshot.sections[0].label, 'Mission');
+  assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Planner Worker'));
+  assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Planner Handoff'));
+  assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Produced Cards'));
+  assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Proposal Artifacts'));
   assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'execution-selection').label, 'Mutation Queue');
 }

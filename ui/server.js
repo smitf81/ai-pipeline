@@ -6,15 +6,13 @@ const { spawn } = require('child_process');
 const {
   advanceOrchestratorWorkspace,
   buildRuntimePayload,
+  createTeamBoardCard,
   normalizeGraphBundle,
   createDefaultRsgState,
   buildRsgState,
+  normalizeNotebookState,
   normalizeTeamBoardState,
 } = require('./orchestratorState');
-const {
-  analyzeSpatialIntent: analyzeSpatialIntentReport,
-  buildIntentProjectContext: buildIntentProjectContextData,
-} = require('./intentAnalysis');
 const {
   SELF_TARGET_KEY,
   createDefaultSelfUpgradeState,
@@ -42,6 +40,27 @@ const {
   runQARun,
   summarizeQARun,
 } = require('./qaRunner');
+const {
+  createDefaultAgentWorkersState,
+  evaluatePlannerEligibility,
+  getAgentWorkerConfig,
+  listPlannerRuns,
+  makeContextManagerRunId,
+  makePlannerRunId,
+  normalizeAgentWorkersState,
+  runContextManagerWorker,
+  runPlannerWorker,
+  summarizeContextManagerRun,
+  summarizePlannerRun,
+} = require('./agentWorkers');
+const {
+  CANONICAL_TARGETS_FILE,
+  DEFAULT_DOMAIN_KEY,
+  buildAnchorBundle,
+  listCanonicalAnchorPaths,
+  readAnchorFile,
+  resolveTargetsConfig,
+} = require('./anchorResolver');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -52,22 +71,13 @@ app.use(express.json());
 const ROOT = path.join(__dirname, '..');
 const COMMANDS_FILE = path.join(ROOT, 'ace_commands.json');
 const TASKS_DIR = path.join(ROOT, 'work', 'tasks');
-const PROJECTS_FILE = path.join(ROOT, 'projects.json');
 const REFRESH_MS_DEFAULT = 10000;
 const MAX_RUN_HISTORY = 20;
 const SPATIAL_WORKSPACE_FILE = path.join(ROOT, 'data', 'spatial', 'workspace.json');
 const SPATIAL_HISTORY_FILE = path.join(ROOT, 'data', 'spatial', 'history.json');
 const SERVER_STARTED_AT = nowIso();
-
-const dashboardFiles = [
-  'projects/emergence/roadmap.md',
-  'projects/emergence/tasks.md',
-  'projects/emergence/decisions.md',
-  'projects/emergence/state.json',
-  'projects/emergence/project_brain.md',
-  'projects/emergence/plan.md',
-  'projects/emergence/changelog.md',
-];
+const DOMAIN_KEY = DEFAULT_DOMAIN_KEY;
+const dashboardFiles = listCanonicalAnchorPaths(DOMAIN_KEY);
 
 const runStore = new Map();
 const runOrder = [];
@@ -115,12 +125,20 @@ function readJsonSafe(filePath, fallback = null) {
   }
 }
 
+function getAnchorBundle() {
+  return buildAnchorBundle({
+    rootPath: ROOT,
+    domainKey: DOMAIN_KEY,
+  });
+}
+
 function loadProjectsMap() {
-  return ensureSelfProject(readJsonSafe(PROJECTS_FILE, {}) || {}, ROOT);
+  const config = resolveTargetsConfig(ROOT);
+  return ensureSelfProject(config.targets || {}, ROOT);
 }
 
 function getDashboardStateSnapshot() {
-  return readDashboardFile('projects/emergence/state.json').parsed || {};
+  return getAnchorBundle().managerSummary || {};
 }
 
 function getRunsSnapshot() {
@@ -158,6 +176,8 @@ function defaultSpatialWorkspace() {
     activePageId: null,
     rsg: createDefaultRsgState(),
     studio: {
+      handoffs: {},
+      agentWorkers: createDefaultAgentWorkersState(),
       selfUpgrade: createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }),
     },
   };
@@ -182,6 +202,8 @@ function normalizeSpatialWorkspaceShape(workspace = {}) {
     graphs,
     studio: {
       ...(baseWorkspace.studio || {}),
+      handoffs: { ...((baseWorkspace.studio || {}).handoffs || {}) },
+      agentWorkers: normalizeAgentWorkersState(baseWorkspace?.studio?.agentWorkers),
       selfUpgrade: getSelfUpgradeState(baseWorkspace),
     },
   };
@@ -219,7 +241,7 @@ function persistSpatialWorkspace(nextWorkspace) {
   return advancedWorkspace;
 }
 
-function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = null }) {
+function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = null, anchorRefs = [] }) {
   fs.mkdirSync(TASKS_DIR, { recursive: true });
   const safeTitle = slugify(title || prompt);
   const lastId = getTaskFolders().reduce((highest, folder) => {
@@ -237,6 +259,9 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
     '',
     '## Context',
     handoff?.problemStatement || handoff?.summary || prompt.trim(),
+    '',
+    '## Anchor refs',
+    ...((anchorRefs || []).length ? anchorRefs.map((anchorRef) => `- ${anchorRef}`) : ['- None attached']),
     '',
   ].join('\n'), 'utf8');
   fs.writeFileSync(path.join(taskDir, 'plan.md'), [
@@ -268,6 +293,7 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
     source: sessionId ? 'throughput-debug' : 'studio-team-board',
     sessionId,
     handoffId: handoff?.id || null,
+    anchorRefs: Array.isArray(anchorRefs) ? anchorRefs.filter(Boolean) : [],
   }, null, 2)}\n`, 'utf8');
   return {
     taskId,
@@ -276,12 +302,25 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
   };
 }
 
-function analyzeIntentWithProjectContext(text, workspace) {
-  const project = buildIntentProjectContextData({
-    workspace,
-    readDashboardFile,
+async function analyzeIntentWithContextWorker(text, workspace, options = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  const previousHandoff = currentWorkspace?.studio?.handoffs?.contextToPlanner || null;
+  const result = await runContextManagerWorker({
+    rootPath: ROOT,
+    text,
+    sourceNodeId: options.sourceNodeId || null,
+    source: options.source || 'context-intake',
+    workspace: currentWorkspace,
+    anchorBundle: getAnchorBundle(),
+    dashboardState: getDashboardStateSnapshot(),
+    previousHandoff,
+    plannerFeedback: options.plannerFeedback,
+    mode: options.mode || 'manual',
   });
-  return analyzeSpatialIntentReport(text, project);
+  if (!result.ok || !result.report) {
+    throw new Error(result.reason || 'Context Manager could not produce an intent report.');
+  }
+  return result;
 }
 
 function resolveProjectTarget(projectKeyOrPath) {
@@ -386,9 +425,34 @@ function buildQADebugPayload() {
   };
 }
 
+function buildRuntimeDrift(anchorBundle, workspace) {
+  const drift = [...(anchorBundle?.drift || [])];
+  const board = normalizeTeamBoardState(workspace || {});
+  board.cards
+    .filter((card) => ['active', 'review', 'complete'].includes(card.status) && !(card.sourceAnchorRefs || []).length)
+    .forEach((card) => {
+      drift.push({
+        id: `unanchored-card-${card.id}`,
+        severity: 'high',
+        summary: `${card.title || `Card ${card.id}`} has no anchor provenance and should not advance silently.`,
+        cardId: card.id,
+      });
+    });
+  return drift;
+}
+
 function buildSpatialRuntimePayload(workspace) {
+  const anchorBundle = getAnchorBundle();
+  const drift = buildRuntimeDrift(anchorBundle, workspace);
   return {
     ...buildRuntimePayload(workspace),
+    manager: {
+      ...anchorBundle.managerSummary,
+      drift_flags: drift.map((flag) => flag.id),
+    },
+    truthSources: anchorBundle.truthSources,
+    drift,
+    anchorRefs: anchorBundle.anchorRefs,
     throughputDebug: {
       latestSession: summarizeSession(listThroughputSessions(ROOT)[0] || null),
       sessions: listThroughputSessions(ROOT).slice(0, 8).map((session) => summarizeSession(session)),
@@ -397,8 +461,8 @@ function buildSpatialRuntimePayload(workspace) {
   };
 }
 
-function refreshSpatialRuntime({ persist = true } = {}) {
-  const workspace = refreshSpatialOrchestrator({ persist, workspace: pumpAutomatedTeamBoard() });
+async function refreshSpatialRuntime({ persist = true } = {}) {
+  const workspace = refreshSpatialOrchestrator({ persist, workspace: await pumpAutomatedTeamBoardAsync() });
   return buildSpatialRuntimePayload(workspace);
 }
 
@@ -426,7 +490,10 @@ async function startBrowserQARun({
     prompt,
     actions,
     linked,
-    getRuntimeSnapshot: () => buildSpatialRuntimePayload(refreshSpatialOrchestrator({ persist: false })),
+    getRuntimeSnapshot: async () => buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: false,
+      workspace: await pumpAutomatedTeamBoardAsync(),
+    })),
     getHealthSnapshot: () => getHealthSnapshot(),
   });
 }
@@ -438,31 +505,7 @@ function queueAutoBrowserQARun(options = {}) {
 }
 
 function readDashboardFile(relPath) {
-  const abs = path.join(ROOT, relPath);
-  try {
-    const content = fs.readFileSync(abs, 'utf8');
-    const stat = fs.statSync(abs);
-    const parsed = relPath.endsWith('.json') ? JSON.parse(content) : null;
-    return {
-      exists: true,
-      path: relPath,
-      absPath: abs,
-      mtime: stat.mtime.toISOString(),
-      content,
-      parsed,
-      error: null,
-    };
-  } catch (err) {
-    return {
-      exists: false,
-      path: relPath,
-      absPath: abs,
-      mtime: null,
-      content: '',
-      parsed: null,
-      error: err.code === 'ENOENT' ? 'File not found' : String(err.message || err),
-    };
-  }
+  return readAnchorFile(ROOT, relPath, DOMAIN_KEY);
 }
 
 function getTaskFolders() {
@@ -474,6 +517,8 @@ function getTaskFolders() {
 }
 
 let teamBoardAutomationRunning = false;
+let contextManagerWorkerAutomationRunning = false;
+let plannerWorkerAutomationRunning = false;
 
 function readSpatialWorkspace() {
   ensureSpatialStorage();
@@ -483,6 +528,518 @@ function readSpatialWorkspace() {
 function relativeToRoot(targetPath) {
   if (!targetPath) return null;
   return path.relative(ROOT, targetPath).replace(/\\/g, '/');
+}
+
+function plannerCardSourceKey(pageId, title) {
+  return `${pageId}:${slugify(title)}`;
+}
+
+function writeTargetsConfig(targets = {}) {
+  fs.writeFileSync(path.join(ROOT, CANONICAL_TARGETS_FILE), `${JSON.stringify(targets, null, 2)}\n`, 'utf8');
+}
+
+function getPlannerHandoff(workspace, handoffId = null) {
+  const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
+  if (!handoff) return null;
+  if (handoffId && handoff.id !== handoffId) return null;
+  return handoff;
+}
+
+function applyAgentRuntimeState(workspace, agentId, { worker = null, handoffsPatch = {} } = {}) {
+  const studio = workspace?.studio || {};
+  const workers = normalizeAgentWorkersState(studio.agentWorkers);
+  return normalizeSpatialWorkspaceShape({
+    ...workspace,
+    studio: {
+      ...studio,
+      handoffs: {
+        ...(studio.handoffs || {}),
+        ...(handoffsPatch || {}),
+      },
+      agentWorkers: {
+        ...workers,
+        [agentId]: worker ? { ...workers[agentId], ...worker } : workers[agentId],
+      },
+    },
+  });
+}
+
+function applyPlannerRuntimeState(workspace, { worker = null, handoff = null, plannerToContext } = {}) {
+  const handoffsPatch = {};
+  if (handoff) handoffsPatch.contextToPlanner = handoff;
+  if (plannerToContext !== undefined) handoffsPatch.plannerToContext = plannerToContext;
+  return applyAgentRuntimeState(workspace, 'planner', { worker, handoffsPatch });
+}
+
+function applyContextManagerRuntimeState(workspace, { worker = null, handoff = null, plannerToContext, report = null } = {}) {
+  const intentState = workspace?.intentState || { latest: null, contextReport: null, byNode: {}, reports: [] };
+  const nextIntentState = report ? {
+    ...intentState,
+    latest: report,
+    contextReport: report,
+    byNode: report.nodeId
+      ? {
+          ...(intentState.byNode || {}),
+          [report.nodeId]: report,
+        }
+      : { ...(intentState.byNode || {}) },
+    reports: [report, ...((intentState.reports || []).filter((entry) => entry.createdAt !== report.createdAt || entry.nodeId !== report.nodeId))].slice(0, 24),
+  } : intentState;
+  const handoffsPatch = {};
+  if (handoff !== undefined) handoffsPatch.contextToPlanner = handoff;
+  if (plannerToContext !== undefined) handoffsPatch.plannerToContext = plannerToContext;
+  const nextWorkspace = applyAgentRuntimeState({
+    ...workspace,
+    intentState: nextIntentState,
+  }, 'context-manager', { worker, handoffsPatch });
+  return nextWorkspace;
+}
+
+function markPlannerRunStarted(workspace, handoff, runId, mode) {
+  const startedAt = nowIso();
+  const plannerConfig = getAgentWorkerConfig(ROOT, 'planner');
+  return applyPlannerRuntimeState(workspace, {
+    worker: {
+      status: 'running',
+      statusReason: handoff?.summary
+        ? `Planning anchored work for: ${handoff.summary}`
+        : 'Planning anchored work from the current handoff.',
+      mode,
+      backend: plannerConfig.backend,
+      model: plannerConfig.model,
+      currentRunId: runId,
+      lastSourceHandoffId: handoff?.id || null,
+      lastBlockedReason: null,
+      lastProducedCardIds: [],
+      proposalArtifactRefs: [],
+      startedAt,
+      completedAt: null,
+    },
+    handoff: handoff ? {
+      ...handoff,
+      plannerStatus: 'running',
+      plannerRunId: runId,
+      plannerStartedAt: startedAt,
+      plannerCompletedAt: null,
+      plannerLastBlockedReason: null,
+      plannerProducedCardIds: [],
+    } : handoff,
+      plannerToContext: null,
+  });
+}
+
+function markContextManagerRunStarted(workspace, text, sourceNodeId, runId, mode, plannerFeedback = null) {
+  const startedAt = nowIso();
+  const contextConfig = getAgentWorkerConfig(ROOT, 'context-manager');
+  return applyContextManagerRuntimeState(workspace, {
+    worker: {
+      status: 'running',
+      statusReason: plannerFeedback?.detail
+        ? `Refreshing context after planner feedback: ${plannerFeedback.detail}`
+        : 'Refreshing context packet for planner intake.',
+      mode,
+      backend: contextConfig.backend,
+      model: contextConfig.model,
+      currentRunId: runId,
+      lastSourceNodeId: sourceNodeId || null,
+      lastBlockedReason: null,
+      lastUsedFallback: false,
+      lastPlannerFeedbackAction: plannerFeedback?.action || null,
+      startedAt,
+      completedAt: null,
+    },
+    plannerToContext: plannerFeedback || workspace?.studio?.handoffs?.plannerToContext || null,
+  });
+}
+
+function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
+  const notebook = normalizeNotebookState(workspace);
+  const board = normalizeTeamBoardState(workspace);
+  const cards = [...board.cards];
+  const producedCardIds = [];
+  for (const plannerCard of plannerCards) {
+    const sourceKey = plannerCardSourceKey(notebook.activePageId, plannerCard.title);
+    const existingIndex = cards.findIndex((card) => card.sourceKey === sourceKey && card.sourceHandoffId === handoff?.id);
+    if (existingIndex >= 0) {
+      const existingCard = cards[existingIndex];
+      cards[existingIndex] = {
+        ...existingCard,
+        summary: plannerCard.summary || existingCard.summary || '',
+        targetProjectKey: plannerCard.targetProjectKey || existingCard.targetProjectKey || SELF_TARGET_KEY,
+        sourceAnchorRefs: mergeUnique([...(existingCard.sourceAnchorRefs || []), ...(plannerCard.anchorRefs || [])]),
+        updatedAt: nowIso(),
+      };
+      producedCardIds.push(existingCard.id);
+      continue;
+    }
+    const nextCard = {
+      ...createTeamBoardCard({
+        cards,
+        pageId: notebook.activePageId,
+        handoffId: handoff?.id || null,
+        sourceNodeId: handoff?.sourceNodeId || null,
+        sourceAnchorRefs: plannerCard.anchorRefs || handoff?.anchorRefs || [],
+        title: plannerCard.title,
+        createdAt: handoff?.createdAt || null,
+      }),
+      summary: plannerCard.summary || '',
+      targetProjectKey: plannerCard.targetProjectKey || SELF_TARGET_KEY,
+    };
+    cards.push(nextCard);
+    producedCardIds.push(nextCard.id);
+  }
+  return {
+    workspace: normalizeSpatialWorkspaceShape({
+      ...workspace,
+      studio: {
+        ...(workspace.studio || {}),
+        teamBoard: {
+          ...board,
+          cards,
+          selectedCardId: board.selectedCardId || producedCardIds[0] || null,
+          updatedAt: nowIso(),
+        },
+      },
+    }),
+    producedCardIds,
+  };
+}
+
+function applyPlannerRunResult(workspace, handoff, result, { runId, mode }) {
+  const runRecord = result?.run || null;
+  const completedAt = runRecord?.completedAt || nowIso();
+  const baseWorkspace = normalizeSpatialWorkspaceShape(workspace);
+  const plannerConfig = getAgentWorkerConfig(ROOT, 'planner');
+  if (!runRecord) {
+    return applyPlannerRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'idle',
+        statusReason: 'Planner is idle.',
+        currentRunId: null,
+        lastOutcome: null,
+        lastOutcomeAt: completedAt,
+        completedAt,
+      },
+      handoff: handoff ? {
+        ...handoff,
+        plannerStatus: 'idle',
+        plannerCompletedAt: completedAt,
+      } : handoff,
+    });
+  }
+
+  if (result.ok) {
+    const plannerCards = applyPlannerCardsToWorkspace(baseWorkspace, handoff, result.cards || []);
+    return applyPlannerRuntimeState(plannerCards.workspace, {
+      worker: {
+        status: 'idle',
+        statusReason: plannerCards.producedCardIds.length
+          ? `Completed planner run and produced ${plannerCards.producedCardIds.length} anchored card${plannerCards.producedCardIds.length === 1 ? '' : 's'}.`
+          : 'Completed planner run.',
+        mode,
+        backend: plannerConfig.backend,
+        model: plannerConfig.model,
+        currentRunId: null,
+        lastRunId: runRecord.id,
+        lastOutcome: 'completed',
+        lastOutcomeAt: completedAt,
+        lastSourceHandoffId: handoff?.id || null,
+        lastBlockedReason: null,
+        lastProducedCardIds: plannerCards.producedCardIds,
+        proposalArtifactRefs: result.proposalArtifactRefs || [],
+        completedAt,
+      },
+      handoff: handoff ? {
+        ...handoff,
+        plannerStatus: 'completed',
+        plannerRunId: runId,
+        plannerCompletedAt: completedAt,
+        plannerLastBlockedReason: null,
+        plannerProducedCardIds: plannerCards.producedCardIds,
+        plannerProposalArtifactRefs: result.proposalArtifactRefs || [],
+      } : handoff,
+      plannerToContext: null,
+    });
+  }
+
+  return applyPlannerRuntimeState(baseWorkspace, {
+    worker: {
+      status: result.outcome === 'degraded' ? 'degraded' : 'blocked',
+      statusReason: result.reason || runRecord.reason || 'Planner is blocked on the current handoff.',
+      mode,
+      backend: plannerConfig.backend,
+      model: plannerConfig.model,
+      currentRunId: null,
+      lastRunId: runRecord.id,
+      lastOutcome: result.outcome === 'degraded' ? 'degraded' : 'blocked',
+      lastOutcomeAt: completedAt,
+      lastSourceHandoffId: handoff?.id || null,
+      lastBlockedReason: result.reason || runRecord.reason || null,
+      lastProducedCardIds: [],
+      proposalArtifactRefs: [],
+      completedAt,
+    },
+    handoff: handoff ? {
+      ...handoff,
+      plannerStatus: result.outcome === 'degraded' ? 'degraded' : 'blocked',
+      plannerRunId: runId,
+      plannerCompletedAt: completedAt,
+      plannerLastBlockedReason: result.reason || runRecord.reason || null,
+      plannerProducedCardIds: [],
+      plannerProposalArtifactRefs: [],
+    } : handoff,
+    plannerToContext: result.plannerToContext || null,
+  });
+}
+
+function applyContextManagerRunResult(workspace, result, { runId, mode, previousHandoff = null, plannerFeedback = null }) {
+  const runRecord = result?.run || null;
+  const completedAt = runRecord?.completedAt || nowIso();
+  const baseWorkspace = normalizeSpatialWorkspaceShape(workspace);
+  const contextConfig = getAgentWorkerConfig(ROOT, 'context-manager');
+  if (!runRecord) {
+    return applyContextManagerRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'idle',
+        statusReason: 'Context Manager is idle.',
+        currentRunId: null,
+        lastOutcome: null,
+        lastOutcomeAt: completedAt,
+        completedAt,
+      },
+    });
+  }
+
+  if (result.ok && result.report && result.handoff) {
+    const shouldClearPlannerFeedback = Boolean(
+      plannerFeedback?.sourceHandoffId
+      && previousHandoff?.id
+      && plannerFeedback.sourceHandoffId === previousHandoff.id,
+    );
+    return applyContextManagerRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'idle',
+        statusReason: result.handoff?.status === 'needs-clarification'
+          ? 'Published a planner handoff that still needs clarification.'
+          : 'Published a planner-ready context handoff.',
+        mode,
+        backend: contextConfig.backend,
+        model: contextConfig.model,
+        currentRunId: null,
+        lastRunId: runRecord.id,
+        lastOutcome: 'completed',
+        lastOutcomeAt: completedAt,
+        lastSourceNodeId: result.report.nodeId || previousHandoff?.sourceNodeId || null,
+        lastHandoffId: result.handoff.id || null,
+        lastReportNodeId: result.report.nodeId || null,
+        lastBlockedReason: null,
+        lastUsedFallback: Boolean(result.usedFallback),
+        lastPlannerFeedbackAction: plannerFeedback?.action || null,
+        completedAt,
+      },
+      handoff: result.handoff,
+      plannerToContext: shouldClearPlannerFeedback ? null : plannerFeedback,
+      report: result.report,
+    });
+  }
+
+  return applyContextManagerRuntimeState(baseWorkspace, {
+    worker: {
+      status: 'degraded',
+      statusReason: result.reason || runRecord.reason || 'Context Manager degraded while drafting a handoff.',
+      mode,
+      backend: contextConfig.backend,
+      model: contextConfig.model,
+      currentRunId: null,
+      lastRunId: runRecord.id,
+      lastOutcome: 'degraded',
+      lastOutcomeAt: completedAt,
+      lastSourceNodeId: previousHandoff?.sourceNodeId || null,
+      lastHandoffId: previousHandoff?.id || null,
+      lastReportNodeId: null,
+      lastBlockedReason: result.reason || runRecord.reason || null,
+      lastUsedFallback: Boolean(result.usedFallback),
+      lastPlannerFeedbackAction: plannerFeedback?.action || null,
+      completedAt,
+    },
+    plannerToContext: plannerFeedback,
+  });
+}
+
+async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffId = null } = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  const handoff = getPlannerHandoff(currentWorkspace, handoffId);
+  const runs = listPlannerRuns(ROOT);
+  const eligibility = evaluatePlannerEligibility({
+    workspace: currentWorkspace,
+    handoff,
+    mode,
+    runs,
+  });
+  if (!eligibility.eligible) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: eligibility.reason,
+      workspace: currentWorkspace,
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: eligibility.reason,
+        run: null,
+        cards: [],
+        proposalArtifactRefs: [],
+        plannerToContext: null,
+      },
+    };
+  }
+  if (plannerWorkerAutomationRunning) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Planner worker is already processing another handoff.',
+      workspace: readSpatialWorkspace(),
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Planner worker is already processing another handoff.',
+        run: null,
+        cards: [],
+        proposalArtifactRefs: [],
+        plannerToContext: null,
+      },
+    };
+  }
+
+  plannerWorkerAutomationRunning = true;
+  const runId = makePlannerRunId();
+  try {
+    let runningWorkspace = markPlannerRunStarted(currentWorkspace, handoff, runId, mode);
+    runningWorkspace = persistSpatialWorkspace(runningWorkspace);
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'planner-worker-start',
+      summary: { handoffId: handoff?.id || null, runId, mode },
+    });
+
+    const result = await runPlannerWorker({
+      rootPath: ROOT,
+      handoff,
+      workspace: runningWorkspace,
+      anchorBundle: getAnchorBundle(),
+      mode,
+      runId,
+    });
+    const nextWorkspace = persistSpatialWorkspace(applyPlannerRunResult(readSpatialWorkspace(), handoff, result, { runId, mode }));
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: `planner-worker-${result.outcome || 'completed'}`,
+      summary: {
+        handoffId: handoff?.id || null,
+        runId,
+        reason: result.reason || '',
+        producedCardIds: nextWorkspace?.studio?.agentWorkers?.planner?.lastProducedCardIds || [],
+        proposalArtifactRefs: nextWorkspace?.studio?.agentWorkers?.planner?.proposalArtifactRefs || [],
+      },
+    });
+    return { ok: result.ok, skipped: false, reason: result.reason || '', workspace: nextWorkspace, result };
+  } finally {
+    plannerWorkerAutomationRunning = false;
+  }
+}
+
+async function maybeRunContextManagerWorker(workspace = null, {
+  text,
+  sourceNodeId = null,
+  source = 'context-intake',
+  mode = 'manual',
+  plannerFeedback = null,
+} = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  const rawText = String(text || '').trim();
+  if (!rawText) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Context Manager requires non-empty context text.',
+      workspace: currentWorkspace,
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Context Manager requires non-empty context text.',
+        run: null,
+        report: null,
+        handoff: null,
+      },
+    };
+  }
+  if (contextManagerWorkerAutomationRunning) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Context Manager is already processing another intake.',
+      workspace: readSpatialWorkspace(),
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Context Manager is already processing another intake.',
+        run: null,
+        report: null,
+        handoff: null,
+      },
+    };
+  }
+
+  const previousHandoff = currentWorkspace?.studio?.handoffs?.contextToPlanner || null;
+  const activePlannerFeedback = plannerFeedback || currentWorkspace?.studio?.handoffs?.plannerToContext || null;
+  contextManagerWorkerAutomationRunning = true;
+  const runId = makeContextManagerRunId();
+  try {
+    let runningWorkspace = markContextManagerRunStarted(currentWorkspace, rawText, sourceNodeId, runId, mode, activePlannerFeedback);
+    runningWorkspace = persistSpatialWorkspace(runningWorkspace);
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'context-manager-worker-start',
+      summary: { sourceNodeId, runId, mode, source },
+    });
+
+    const result = await runContextManagerWorker({
+      rootPath: ROOT,
+      text: rawText,
+      sourceNodeId,
+      source,
+      workspace: runningWorkspace,
+      anchorBundle: getAnchorBundle(),
+      dashboardState: getDashboardStateSnapshot(),
+      previousHandoff,
+      plannerFeedback: activePlannerFeedback,
+      mode,
+      runId,
+    });
+    const nextWorkspace = persistSpatialWorkspace(applyContextManagerRunResult(
+      readSpatialWorkspace(),
+      result,
+      { runId, mode, previousHandoff, plannerFeedback: activePlannerFeedback },
+    ));
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: `context-manager-worker-${result.outcome || 'completed'}`,
+      summary: {
+        sourceNodeId,
+        runId,
+        reason: result.reason || '',
+        handoffId: nextWorkspace?.studio?.handoffs?.contextToPlanner?.id || null,
+        usedFallback: Boolean(result.usedFallback),
+      },
+    });
+    return { ok: result.ok, skipped: false, reason: result.reason || '', workspace: nextWorkspace, result };
+  } finally {
+    contextManagerWorkerAutomationRunning = false;
+  }
 }
 
 function findTaskFolderByTaskId(taskId) {
@@ -613,6 +1170,7 @@ function buildCardPrompt(card, workspace) {
   const promptParts = [
     card.title,
     handoff?.problemStatement || handoff?.summary || '',
+    (card.sourceAnchorRefs || []).length ? `Anchor refs:\n${card.sourceAnchorRefs.map((anchorRef) => `- ${anchorRef}`).join('\n')}` : '',
   ].filter(Boolean);
   return promptParts.join('\n\n');
 }
@@ -664,6 +1222,25 @@ function runCardBuilderPipeline(cardId) {
   if (!card || card.status !== 'active') {
     return { ok: false, error: 'Card is not active for builder work.', workspace };
   }
+  if (!(card.sourceAnchorRefs || []).length) {
+    const failedWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'review',
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        status: 'failed',
+        summary: 'Card has no anchor provenance and cannot enter the builder pipeline.',
+      },
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), 'Missing anchor provenance.']),
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: 'Card has no anchor provenance and cannot enter the builder pipeline.',
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-builder-unanchored', { cardId }),
+    };
+  }
 
   const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
   const { projectKey, projectPath } = resolveProjectTarget(targetProjectKey);
@@ -676,6 +1253,7 @@ function runCardBuilderPipeline(cardId) {
       title: card.title,
       prompt: buildCardPrompt(card, workspace),
       handoff,
+      anchorRefs: card.sourceAnchorRefs || [],
     });
     taskId = task.taskId;
     taskDir = task.taskDir;
@@ -821,6 +1399,9 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
   const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
   const card = findTeamBoardCard(workspace, cardId);
   if (!card) return { ok: false, error: 'Card not found.', workspace };
+  if (!(card.sourceAnchorRefs || []).length) {
+    return { ok: false, error: 'Card has no anchor provenance and cannot be applied.', workspace };
+  }
 
   const taskId = String(card.builderTaskId || card.runnerTaskId || card.executionPackage?.taskId || '').trim();
   if (!taskId) return { ok: false, error: 'Card has no build package to apply.', workspace };
@@ -1243,6 +1824,7 @@ function runCardDeployPipeline(cardId, { approvedByUser = false } = {}) {
   const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
   const card = findTeamBoardCard(workspace, cardId);
   if (!card) return { ok: false, error: 'Card not found.', workspace };
+  if (!(card.sourceAnchorRefs || []).length) return { ok: false, error: 'Card has no anchor provenance and cannot be deployed.', workspace };
   if (card.targetProjectKey !== SELF_TARGET_KEY) return { ok: false, error: 'Deploy only runs for ace-self packages.', workspace };
   if (card.deployStatus !== 'queued') return { ok: false, error: 'Card is not queued for deploy.', workspace };
 
@@ -1333,7 +1915,15 @@ function pumpAutomatedTeamBoard(workspace = null) {
   }
 }
 
+async function pumpAutomatedTeamBoardAsync(workspace = null) {
+  let nextWorkspace = normalizeSpatialWorkspaceShape(syncTeamBoardWithSelfUpgrade(workspace || readSpatialWorkspace()));
+  const plannerCycle = await maybeRunPlannerWorker(nextWorkspace, { mode: 'auto' });
+  nextWorkspace = plannerCycle.workspace || nextWorkspace;
+  return pumpAutomatedTeamBoard(nextWorkspace);
+}
+
 app.get('/api/dashboard', (req, res) => {
+  const anchorBundle = getAnchorBundle();
   const files = {};
   const errors = [];
   for (const file of dashboardFiles) {
@@ -1341,11 +1931,18 @@ app.get('/api/dashboard', (req, res) => {
     files[file] = data;
     if (data.error) errors.push({ file, error: data.error });
   }
-  const state = files['projects/emergence/state.json']?.parsed || {};
+  const drift = buildRuntimeDrift(anchorBundle, readSpatialWorkspace());
   res.json({
     refreshedAt: nowIso(),
     refreshIntervalMs: Number(process.env.DASHBOARD_REFRESH_MS || REFRESH_MS_DEFAULT),
-    state,
+    state: {
+      ...anchorBundle.managerSummary,
+      drift_flags: drift.map((flag) => flag.id),
+    },
+    manager: anchorBundle.managerSummary,
+    truthSources: anchorBundle.truthSources,
+    drift,
+    anchorRefs: anchorBundle.anchorRefs,
     files,
     errors,
   });
@@ -1354,7 +1951,10 @@ app.get('/api/dashboard', (req, res) => {
 app.get('/api/projects', (req, res) => {
   const projects = loadProjectsMap();
   const rows = Object.entries(projects).map(([key, projectPath]) => ({ key, name: key, path: projectPath }));
-  res.json({ projects: rows });
+  res.json({
+    projects: rows,
+    config: resolveTargetsConfig(ROOT),
+  });
 });
 
 app.get('/api/tasks', (req, res) => {
@@ -1678,12 +2278,14 @@ app.post('/api/add/project', (req, res) => {
 
   const projects = loadProjectsMap();
   projects[name] = projectPath;
-  fs.writeFileSync(PROJECTS_FILE, `${JSON.stringify(projects, null, 2)}\n`, 'utf8');
+  writeTargetsConfig(projects);
   res.json({ ok: true, project: { key: name, path: projectPath } });
 });
 
-app.get('/api/spatial/workspace', (req, res) => {
-  const workspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({ workspace: pumpAutomatedTeamBoard() }));
+app.get('/api/spatial/workspace', async (req, res) => {
+  const workspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
+    workspace: await pumpAutomatedTeamBoardAsync(),
+  }));
   workspace.graph = workspace.graph || { nodes: [], edges: [] };
   workspace.graphs = workspace.graphs || normalizeGraphBundle(workspace);
   workspace.sketches = Array.isArray(workspace.sketches) ? workspace.sketches : [];
@@ -1695,11 +2297,73 @@ app.get('/api/spatial/workspace', (req, res) => {
   res.json(workspace);
 });
 
-app.get('/api/spatial/runtime', (req, res) => {
-  res.json(refreshSpatialRuntime({ persist: true }));
+app.get('/api/spatial/runtime', async (req, res) => {
+  res.json(await refreshSpatialRuntime({ persist: true }));
 });
 
-app.post('/api/spatial/team-board/action', (req, res) => {
+app.post('/api/spatial/agents/context-manager/run', async (req, res) => {
+  const body = req.body || {};
+  const text = String(body.text || '').trim();
+  if (!text) {
+    return res.status(400).json({ error: 'text is required.' });
+  }
+  const mode = String(body.mode || 'manual').toLowerCase() === 'auto' ? 'auto' : 'manual';
+  const cycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
+    text,
+    sourceNodeId: String(body.nodeId || '').trim() || null,
+    source: String(body.source || 'manual').trim() || 'manual',
+    mode,
+  });
+  if (!cycle.skipped && cycle.result?.run) {
+    return res.json({
+      ok: cycle.ok,
+      worker: summarizeContextManagerRun(cycle.result.run),
+      report: cycle.result.report,
+      handoff: cycle.result.handoff,
+      runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+        persist: true,
+        workspace: cycle.workspace,
+      })),
+    });
+  }
+  return res.status(mode === 'manual' ? 400 : 200).json({
+    ok: false,
+    skipped: Boolean(cycle.skipped),
+    reason: cycle.reason,
+    runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    })),
+  });
+});
+
+app.post('/api/spatial/agents/planner/run', async (req, res) => {
+  const body = req.body || {};
+  const mode = String(body.mode || 'manual').toLowerCase() === 'auto' ? 'auto' : 'manual';
+  const handoffId = String(body.handoffId || '').trim() || null;
+  const cycle = await maybeRunPlannerWorker(readSpatialWorkspace(), { mode, handoffId });
+  if (!cycle.skipped && cycle.result?.run) {
+    return res.json({
+      ok: cycle.ok,
+      run: summarizePlannerRun(cycle.result.run),
+      runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+        persist: true,
+        workspace: cycle.workspace,
+      })),
+    });
+  }
+  return res.status(mode === 'manual' ? 400 : 200).json({
+    ok: false,
+    skipped: Boolean(cycle.skipped),
+    reason: cycle.reason,
+    runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    })),
+  });
+});
+
+app.post('/api/spatial/team-board/action', async (req, res) => {
   const body = req.body || {};
   const action = String(body.action || '').trim();
   const cardId = String(body.cardId || '').trim();
@@ -1722,7 +2386,7 @@ app.post('/api/spatial/team-board/action', (req, res) => {
       updatedAt: nowIso(),
     }));
     nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-approved', { cardId, title: card.title });
-    nextWorkspace = pumpAutomatedTeamBoard(nextWorkspace);
+    nextWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
   } else if (action === 'reject-to-builder') {
     nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
       ...currentCard,
@@ -1756,7 +2420,7 @@ app.post('/api/spatial/team-board/action', (req, res) => {
       updatedAt: nowIso(),
     }));
     nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-builder-manual', { cardId, title: card.title });
-    nextWorkspace = pumpAutomatedTeamBoard(nextWorkspace);
+    nextWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
   } else {
     return res.status(400).json({ error: 'Unsupported team board action.' });
   }
@@ -1783,7 +2447,7 @@ app.post('/api/spatial/team-board/action', (req, res) => {
   });
 });
 
-app.put('/api/spatial/workspace', (req, res) => {
+app.put('/api/spatial/workspace', async (req, res) => {
   ensureSpatialStorage();
   const body = req.body || {};
   const nextWorkspace = advanceOrchestratorWorkspace(normalizeSpatialWorkspaceShape(body), {
@@ -1791,7 +2455,7 @@ app.put('/api/spatial/workspace', (req, res) => {
     runs: getRunsSnapshot(),
   });
   writeJson(SPATIAL_WORKSPACE_FILE, nextWorkspace);
-  const automatedWorkspace = pumpAutomatedTeamBoard(nextWorkspace);
+  const automatedWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
   appendArchitectureHistory({
     at: nowIso(),
     type: 'workspace-save',
@@ -1873,7 +2537,7 @@ app.post('/api/spatial/qa/run', async (req, res) => {
     res.json({
       ok: run.verdict !== 'failed',
       run,
-      runtime: refreshSpatialRuntime({ persist: true }),
+      runtime: await refreshSpatialRuntime({ persist: true }),
     });
   } catch (error) {
     res.status(500).json({ error: String(error.message || error) });
@@ -1900,13 +2564,20 @@ app.post('/api/spatial/debug/throughput', async (req, res) => {
       persistWorkspace: (workspace) => persistSpatialWorkspace(workspace),
       appendHistory: appendArchitectureHistory,
       readHistory: () => readJsonSafe(SPATIAL_HISTORY_FILE, []) || [],
-      analyzeIntent: (text, workspace) => analyzeIntentWithProjectContext(text, workspace),
+      analyzeIntent: async (text, workspace) => {
+        const result = await analyzeIntentWithContextWorker(text, workspace, {
+          source: 'throughput-debug',
+          mode: 'manual',
+        });
+        return result.report;
+      },
       getDashboardState: () => getDashboardStateSnapshot(),
       createRunnerTask: ({ title, prompt: nextPrompt, handoff, session }) => createRunnerTaskFolder({
         title,
         prompt: nextPrompt,
         handoff,
         sessionId: session.id,
+        anchorRefs: handoff?.anchorRefs || [],
       }),
       executeActionSync: (action, payload) => executeActionSync(action, payload),
       runSelfUpgradePreflight: ({ taskId, project }) => {
@@ -2008,7 +2679,7 @@ app.post('/api/spatial/debug/throughput', async (req, res) => {
       ok: true,
       session,
       qaRun: qaRun ? summarizeQARun(qaRun) : null,
-      runtime: refreshSpatialRuntime({ persist: true }),
+      runtime: await refreshSpatialRuntime({ persist: true }),
     });
     if (shouldRestartAfterResponse && session?.stages?.find((stage) => stage.id === 'deploy')?.verdict === 'pass') {
       setTimeout(scheduleSelfRestart, 120);
@@ -2018,152 +2689,36 @@ app.post('/api/spatial/debug/throughput', async (req, res) => {
   }
 });
 
-const INTENT_STOPWORDS = new Set(['the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'your', 'have', 'will', 'about', 'would', 'should', 'could', 'there', 'their', 'them', 'then', 'than', 'when', 'what', 'where', 'while', 'were', 'been', 'being', 'also', 'just', 'over', 'under', 'onto', 'need', 'needs', 'want', 'wants', 'able', 'make', 'lets']);
-
-function tokenizeIntentText(text) {
-  return [...new Set((String(text || '').toLowerCase().match(/[a-z][a-z0-9_-]{2,}/g) || []).filter((token) => !INTENT_STOPWORDS.has(token)))];
-}
-
-function topKeywords(text, limit = 24) {
-  const counts = new Map();
-  for (const token of tokenizeIntentText(text)) counts.set(token, (counts.get(token) || 0) + 1);
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([token]) => token);
-}
-
-function inferIntentLabels(text) {
-  const value = String(text || '').toLowerCase();
-  const labels = [];
-  if (/context|brief|constraint|intent|memory/.test(value)) labels.push('context');
-  if (/plan|task|roadmap|sequence|todo|queue/.test(value)) labels.push('plan');
-  if (/build|fix|implement|patch|wire|connect|ship|code|module|service/.test(value)) labels.push('execution');
-  if (/ui|ux|canvas|studio|node|overlay|panel/.test(value)) labels.push('ux');
-  if (/review|guardrail|architect|rule|boundary|ace/.test(value)) labels.push('governance');
-  return labels.length ? labels : ['general'];
-}
-
-function inferIntentRole(text, labels) {
-  const value = String(text || '').toLowerCase();
-  if (/rule|constraint|must|never|guardrail/.test(value)) return 'constraint';
-  if (/api|service|module|architecture|system/.test(value)) return 'module';
-  if (/file|patch|fix|implement|build|wire/.test(value) || labels.includes('execution')) return 'task';
-  if (/ui|ux|canvas|studio|overlay/.test(value) || labels.includes('ux')) return 'ux';
-  return 'thought';
-}
-
-function buildIntentProjectContext() {
-  ensureSpatialStorage();
-  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, { graph: { nodes: [], edges: [] }, architectureMemory: {} }) || {};
-  const state = readDashboardFile('projects/emergence/state.json').parsed || {};
-  const plan = readDashboardFile('projects/emergence/plan.md').content || '';
-  const brain = readDashboardFile('projects/emergence/project_brain.md').content || '';
-  const roadmap = readDashboardFile('projects/emergence/roadmap.md').content || '';
-  const contextNode = (workspace.graph?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
-  const contextText = [state.current_focus || '', ...(state.next_actions || []), ...(state.blockers || []), plan, brain, roadmap, contextNode?.content || ''].join(' ');
-  return {
-    currentFocus: state.current_focus || '',
-    blockers: state.blockers || [],
-    keywords: topKeywords(contextText, 28),
-  };
-}
-
-function buildIntentTasks(text) {
-  const fragments = String(text || '')
-    .split(/[\n,.!?;:]+/)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  const actionFirst = fragments.filter((entry) => /\b(build|fix|create|implement|wire|connect|review|scan|plan|design|update|remove|delete|disable)\b/i.test(entry));
-  const chosen = [...actionFirst, ...fragments].slice(0, 4);
-  return chosen.length ? chosen : ['analyze requirements', 'decompose tasks', 'prepare implementation plan'];
-}
-
-function clamp01(value) {
-  return Math.max(0, Math.min(1, value));
-}
-
-function analyzeSpatialIntent(text) {
-  const source = String(text || '').trim();
-  const project = buildIntentProjectContext();
-  const labels = inferIntentLabels(source);
-  const role = inferIntentRole(source, labels);
-  const tokens = tokenizeIntentText(source);
-  const projectTerms = new Set(project.keywords);
-  const matchedTerms = tokens.filter((token) => projectTerms.has(token));
-  const actionMatches = (source.match(/\b(build|fix|create|implement|wire|connect|review|scan|plan|design|update|remove|delete|disable|support)\b/gi) || []).length;
-  const constraintMatches = (source.match(/\b(must|should|avoid|blocker|needs|review|constraint|guardrail|boundary)\b/gi) || []).length;
-  const architectureMatches = (source.match(/\b(agent|context|planner|executor|memory|studio|canvas|node|backend|frontend|api|service|module|architecture|overlay)\b/gi) || []).length;
-  const sentences = source.split(/[.!?\n]+/).map((entry) => entry.trim()).filter(Boolean);
-  const criteria = [
-    {
-      id: 'project-alignment',
-      label: 'Project alignment',
-      score: clamp01((matchedTerms.length + ((project.currentFocus && source.toLowerCase().includes(String(project.currentFocus).toLowerCase())) ? 2 : 0)) / 6),
-      reason: matchedTerms.length ? `Matched project terms: ${matchedTerms.slice(0, 5).join(', ')}` : 'Few direct overlaps with current project context.',
-    },
-    {
-      id: 'actionability',
-      label: 'Actionability',
-      score: clamp01((actionMatches + buildIntentTasks(source).length) / 6),
-      reason: actionMatches ? `Detected ${actionMatches} implementation/planning verb signals.` : 'Input reads more like a note than a concrete action.',
-    },
-    {
-      id: 'architecture-fit',
-      label: 'Architecture fit',
-      score: clamp01((architectureMatches + labels.length) / 7),
-      reason: architectureMatches ? 'References ACE system structure, agents, or implementation surfaces.' : 'Little direct architecture language found.',
-    },
-    {
-      id: 'constraint-coverage',
-      label: 'Constraint coverage',
-      score: clamp01((constraintMatches + (project.blockers.length ? 1 : 0)) / 5),
-      reason: constraintMatches ? 'Includes guardrails, blockers, or review-oriented language.' : 'No clear constraints or review gates were stated.',
-    },
-    {
-      id: 'clarity',
-      label: 'Clarity',
-      score: clamp01((Math.min(tokens.length, 14) / 14 + Math.min(sentences.length, 3) / 3) / 2),
-      reason: tokens.length >= 6 ? 'Input includes enough detail to classify intent reliably.' : 'Short input limits confidence.',
-    },
-  ];
-  const confidence = Number((criteria.reduce((sum, item) => sum + item.score, 0) / criteria.length).toFixed(2));
-  const tasks = buildIntentTasks(source);
-  const summary = source.length > 140 ? `${source.slice(0, 137).trim()}...` : (source || 'Intent capture is empty.');
-  return {
-    agent: {
-      id: 'context-manager',
-      name: 'Context Manager',
-      criteriaVersion: 'ace-intent-v1',
-      remit: 'Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend.',
-    },
-    summary,
-    confidence,
-    criteria,
-    tasks,
-    classification: {
-      role,
-      labels,
-    },
-    metrics: {
-      tokenCount: tokens.length,
-      sentenceCount: sentences.length,
-      matchedProjectTerms: matchedTerms,
-      actionSignals: actionMatches,
-      architectureSignals: architectureMatches,
-      constraintSignals: constraintMatches,
-    },
-    projectContext: {
-      currentFocus: project.currentFocus,
-      blockers: project.blockers.slice(0, 3),
-      matchedTerms: matchedTerms.slice(0, 8),
-      referenceKeywords: project.keywords.slice(0, 8),
-    },
-    judgedAt: nowIso(),
-  };
-}
-
-app.post('/api/spatial/intent', (req, res) => {
-  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
-  const report = analyzeIntentWithProjectContext((req.body || {}).text || '', workspace);
-  res.json(report);
+app.post('/api/spatial/intent', async (req, res) => {
+  const body = req.body || {};
+  const text = String(body.text || '').trim();
+  if (!text) {
+    return res.status(400).json({ error: 'text is required.' });
+  }
+  try {
+    const cycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
+      text,
+      sourceNodeId: String(body.nodeId || '').trim() || null,
+      source: String(body.source || 'context-intake').trim() || 'context-intake',
+      mode: 'manual',
+    });
+    if (!cycle.result?.report) {
+      return res.status(500).json({ error: cycle.reason || 'Context Manager could not produce an intent report.' });
+    }
+    const runtime = buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    }));
+    return res.json({
+      ...cycle.result.report,
+      worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
+      report: cycle.result.report,
+      handoff: cycle.result.handoff,
+      runtime,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: String(error.message || error) });
+  }
 });
 
 app.post('/api/spatial/mutations/preview', (req, res) => {
@@ -2184,12 +2739,14 @@ app.post('/api/spatial/mutations/apply', (req, res) => {
 });
 
 setInterval(() => {
-  try {
-    const workspace = pumpAutomatedTeamBoard();
-    refreshSpatialOrchestrator({ persist: true, workspace });
-  } catch (error) {
-    console.warn(`[${nowIso()}] spatial orchestrator refresh failed: ${error.message}`);
-  }
+  Promise.resolve()
+    .then(async () => {
+      const workspace = await pumpAutomatedTeamBoardAsync();
+      refreshSpatialOrchestrator({ persist: true, workspace });
+    })
+    .catch((error) => {
+      console.warn(`[${nowIso()}] spatial orchestrator refresh failed: ${error.message}`);
+    });
 }, 4000);
 
 markServerHealthyOnBoot();

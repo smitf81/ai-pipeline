@@ -25,7 +25,7 @@ export default async function runIntentAnalysisTests() {
       },
     },
     readDashboardFile(relativePath) {
-      if (relativePath === 'projects/emergence/state.json') {
+      if (relativePath === 'brain/emergence/state.json') {
         return {
           parsed: {
             current_focus: 'ACE Studio desks',
@@ -34,14 +34,23 @@ export default async function runIntentAnalysisTests() {
           },
         };
       }
-      if (relativePath === 'projects/emergence/plan.md') {
+      if (relativePath === 'brain/emergence/plan.md') {
         return { content: 'Plan the desk workflow and surface task states on the kanban board.' };
       }
-      if (relativePath === 'projects/emergence/project_brain.md') {
+      if (relativePath === 'brain/emergence/project_brain.md') {
         return { content: 'ACE Studio orchestrates desks, planner handoffs, executor work, and QA review.' };
       }
-      if (relativePath === 'projects/emergence/roadmap.md') {
+      if (relativePath === 'brain/emergence/roadmap.md') {
         return { content: 'Roadmap: add QA desk support and better planner-to-worker task flow.' };
+      }
+      if (relativePath === 'brain/emergence/tasks.md') {
+        return { content: '- Add QA desk support\n- Improve planner handoff context\n' };
+      }
+      if (relativePath === 'brain/emergence/decisions.md') {
+        return { content: '2026-03-15: Keep plan.md as a canonical anchor.' };
+      }
+      if (relativePath === 'brain/emergence/changelog.md') {
+        return { content: '2026-03-15: Runtime now emits anchor refs.' };
       }
       return { parsed: {}, content: '' };
     },
@@ -59,8 +68,11 @@ export default async function runIntentAnalysisTests() {
   assert.match(report.tasks[0], /add a desk to the studio for a QA agent/i);
   assert.ok(report.projectContext.matchedTerms.includes('desk'));
   assert.ok(report.projectContext.matchedTerms.includes('studio'));
-  assert.ok(report.projectContext.sourcesRead.includes('projects/emergence/state.json'));
+  assert.ok(report.projectContext.sourcesRead.includes('brain/emergence/state.json'));
   assert.ok(report.projectContext.sourcesRead.includes('workspace.graph.context-manager-node'));
+  assert.ok(report.projectContext.anchorRefs.includes('brain/emergence/roadmap.md'));
+  assert.ok(report.projectContext.truthSources.some((source) => source.relativePath === 'brain/emergence/state.json' && source.authority === 'derived-state'));
+  assert.ok(report.projectContext.truthSources.some((source) => source.relativePath === 'brain/emergence/roadmap.md' && source.authority === 'canonical-anchor'));
   assert.ok(report.confidence > report.legacyConfidence);
   assert.ok(report.scores.intentConfidence >= 0.45);
   assert.ok(report.scores.plannerUsefulness >= 0.65);
@@ -75,4 +87,6 @@ export default async function runIntentAnalysisTests() {
     report.criteria.find((criterion) => criterion.id === 'actionability')?.reason || '',
     /feature-request phrasing/i,
   );
+  assert.ok(report.anchorRefs.includes('brain/emergence/roadmap.md'));
+  assert.ok(report.provenance.anchors.some((anchor) => anchor.anchorRef === 'brain/emergence/roadmap.md'));
 }

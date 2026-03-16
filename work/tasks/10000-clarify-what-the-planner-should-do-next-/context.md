@@ -1,0 +1,11 @@
+# Task 10000: Clarify what the planner should do next and make the desk state readable in Studio
+
+## Context
+Goal: Clarify what the planner should do next and make the desk state readable in Studio.
+Requested outcomes: Clarify what the planner should do next and make the desk state readable in Studio.
+Why ACE believes this: Project alignment 14%, Actionability 13%, Architecture fit 56%.
+Constraints and review signals: Project alignment: Few direct overlaps with current project context. | Actionability: Input still reads more like a note than a concrete action. | Constraint coverage: Includes guardrails, blockers, or review-oriented language. | Clarity: Input includes enough detail to classify intent reliably..
+Still unclear: Planner usefulness is low and needs tighter scope before execution expands. Execution readiness is low, so a worker should not start blindly. Project alignment is weak, so planner scope may need refinement.
+
+## Anchor refs
+- brain/emergence/project_brain.md

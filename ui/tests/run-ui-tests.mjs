@@ -1,4 +1,7 @@
 const testEntries = [
+  { name: 'anchorResolver', path: './anchorResolver.test.mjs' },
+  { name: 'agentRegistry', path: './agentRegistry.test.mjs' },
+  { name: 'agentWorkers', path: './agentWorkers.test.mjs' },
   { name: 'aceRuntimeMcp', path: './aceRuntimeMcp.test.mjs' },
   { name: 'graphEngine', path: './graphEngine.test.mjs' },
   { name: 'studioData', path: './studioData.test.mjs' },

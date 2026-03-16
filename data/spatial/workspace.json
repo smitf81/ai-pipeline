@@ -1151,12 +1151,46 @@
       "agent": {
         "id": "context-manager",
         "name": "Context Manager",
-        "criteriaVersion": "ace-intent-v1",
+        "criteriaVersion": "ace-intent-v2",
+        "legacyCriteriaVersion": "ace-intent-v1",
         "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
       },
-      "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
-      "confidence": 0.23,
+      "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
+      "confidence": 0.27,
+      "legacyConfidence": 0.3,
       "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0.14285714285714285,
+          "reason": "Few direct overlaps with current project context."
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.125,
+          "reason": "Input still reads more like a note than a concrete action."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.5555555555555556,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0.16666666666666666,
+          "reason": "Includes guardrails, blockers, or review-oriented language."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 0.35185185185185186,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "legacyCriteria": [
         {
           "id": "project-alignment",
           "label": "Project alignment",
@@ -1166,67 +1200,629 @@
         {
           "id": "actionability",
           "label": "Actionability",
-          "score": 0.3333333333333333,
+          "score": 0.16666666666666666,
           "reason": "Input reads more like a note than a concrete action."
         },
         {
           "id": "architecture-fit",
           "label": "Architecture fit",
-          "score": 0.2857142857142857,
+          "score": 0.7142857142857143,
           "reason": "References ACE system structure, agents, or implementation surfaces."
         },
         {
           "id": "constraint-coverage",
           "label": "Constraint coverage",
-          "score": 0,
-          "reason": "No clear constraints or review gates were stated."
+          "score": 0.2,
+          "reason": "Includes guardrails, blockers, or review-oriented language."
         },
         {
           "id": "clarity",
           "label": "Clarity",
-          "score": 0.5238095238095238,
+          "score": 0.41666666666666663,
           "reason": "Input includes enough detail to classify intent reliably."
         }
       ],
+      "scores": {
+        "intentConfidence": 0.27,
+        "executionReadiness": 0.2,
+        "plannerUsefulness": 0.31,
+        "deployReadiness": 0.06
+      },
+      "truth": {
+        "rawInput": "Clarify what the planner should do next and make the desk state readable in Studio.",
+        "statement": "Clarify what the planner should do next and make the desk state readable in Studio.",
+        "intentType": "ACE architecture / capability request",
+        "requestedOutcomes": [
+          "Clarify what the planner should do next and make the desk state readable in Studio"
+        ],
+        "unresolved": [
+          "Project alignment: Few direct overlaps with current project context.",
+          "Actionability: Input still reads more like a note than a concrete action.",
+          "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+          "Clarity: Input includes enough detail to classify intent reliably.",
+          "Project alignment is weak, so the request may still need anchoring to current ACE work."
+        ],
+        "evidence": [
+          "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+          "Clarity: Input includes enough detail to classify intent reliably.",
+          "Constraint coverage: Includes guardrails, blockers, or review-oriented language."
+        ],
+        "anchorRefs": [
+          "brain/emergence/project_brain.md"
+        ],
+        "plannerBrief": "Planner should treat this as: Clarify what the planner should do next and make the desk state readable in Studio",
+        "readiness": {
+          "intentConfidence": 0.27,
+          "plannerUsefulness": 0.31,
+          "executionReadiness": 0.2,
+          "deployReadiness": 0.06
+        }
+      },
       "tasks": [
-        "we also need more clarity on our context management calculations",
-        "maybe expose more how it's being calculated"
+        "Clarify what the planner should do next and make the desk state readable in Studio"
       ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md"
+      ],
+      "provenance": {
+        "anchors": [
+          {
+            "anchorRef": "brain/emergence/project_brain.md",
+            "sourceRef": "brain/emergence/project_brain.md",
+            "source": "canonical",
+            "weight": 3,
+            "matchedTerms": [
+              "state"
+            ]
+          }
+        ],
+        "managerSummary": {
+          "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+          "active_plan_slice": [
+            "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "Add a shared anchor resolver and bundle builder.",
+            "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+            "Rename external target config to `targets.json` with `projects.json` fallback."
+          ],
+          "next_actions": [
+            "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "Add a shared anchor resolver and bundle builder.",
+            "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+            "Rename external target config to `targets.json` with `projects.json` fallback.",
+            "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+            "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+            "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+          ],
+          "blockers": [],
+          "drift_flags": [],
+          "last_manager_sync": "2026-03-15T12:00:00Z"
+        }
+      },
       "classification": {
-        "role": "thought",
+        "role": "module",
         "labels": [
-          "context"
+          "plan",
+          "ux"
         ]
       },
       "metrics": {
-        "tokenCount": 10,
+        "tokenCount": 7,
         "sentenceCount": 1,
         "matchedProjectTerms": [],
         "actionSignals": 0,
-        "architectureSignals": 1,
-        "constraintSignals": 0
+        "featureRequestSignals": 0,
+        "architectureSignals": 3,
+        "constraintSignals": 1,
+        "executionSignals": 0
       },
       "projectContext": {
-        "currentFocus": "Boot AI Core Engine MVP and stabilise project brain.",
+        "domainKey": "emergence",
+        "brainRoot": "brain/emergence",
+        "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
         "blockers": [],
         "matchedTerms": [],
         "referenceKeywords": [
-          "boot",
-          "core",
-          "engine",
-          "mvp",
-          "stabilise",
-          "project",
+          "and",
+          "emergence",
+          "manager",
+          "runtime",
+          "anchor",
+          "projects",
           "brain",
-          "implement"
+          "compatibility"
+        ],
+        "sourcesRead": [
+          "brain/emergence/project_brain.md",
+          "brain/emergence/roadmap.md",
+          "brain/emergence/plan.md",
+          "brain/emergence/tasks.md",
+          "brain/emergence/decisions.md",
+          "brain/emergence/changelog.md",
+          "brain/emergence/state.json"
+        ],
+        "anchorRefs": [
+          "brain/emergence/project_brain.md"
+        ],
+        "truthSources": [
+          {
+            "id": "project_brain",
+            "relativePath": "brain/emergence/project_brain.md",
+            "sourceRelativePath": "brain/emergence/project_brain.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/project_brain.md",
+            "legacyRelativePaths": [
+              "projects/emergence/project_brain.md"
+            ]
+          },
+          {
+            "id": "roadmap",
+            "relativePath": "brain/emergence/roadmap.md",
+            "sourceRelativePath": "brain/emergence/roadmap.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/roadmap.md",
+            "legacyRelativePaths": [
+              "projects/emergence/roadmap.md"
+            ]
+          },
+          {
+            "id": "plan",
+            "relativePath": "brain/emergence/plan.md",
+            "sourceRelativePath": "brain/emergence/plan.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/plan.md",
+            "legacyRelativePaths": [
+              "projects/emergence/plan.md"
+            ]
+          },
+          {
+            "id": "tasks",
+            "relativePath": "brain/emergence/tasks.md",
+            "sourceRelativePath": "brain/emergence/tasks.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/tasks.md",
+            "legacyRelativePaths": [
+              "projects/emergence/tasks.md"
+            ]
+          },
+          {
+            "id": "decisions",
+            "relativePath": "brain/emergence/decisions.md",
+            "sourceRelativePath": "brain/emergence/decisions.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/decisions.md",
+            "legacyRelativePaths": [
+              "projects/emergence/decisions.md"
+            ]
+          },
+          {
+            "id": "changelog",
+            "relativePath": "brain/emergence/changelog.md",
+            "sourceRelativePath": "brain/emergence/changelog.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/changelog.md",
+            "legacyRelativePaths": [
+              "projects/emergence/changelog.md"
+            ]
+          },
+          {
+            "id": "state",
+            "relativePath": "brain/emergence/state.json",
+            "sourceRelativePath": "brain/emergence/state.json",
+            "source": "canonical",
+            "authority": "derived-state",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/state.json",
+            "legacyRelativePaths": [
+              "projects/emergence/state.json"
+            ]
+          }
+        ],
+        "drift": [],
+        "managerSummary": {
+          "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+          "active_plan_slice": [
+            "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "Add a shared anchor resolver and bundle builder.",
+            "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+            "Rename external target config to `targets.json` with `projects.json` fallback."
+          ],
+          "next_actions": [
+            "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "Add a shared anchor resolver and bundle builder.",
+            "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+            "Rename external target config to `targets.json` with `projects.json` fallback.",
+            "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+            "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+            "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+          ],
+          "blockers": [],
+          "drift_flags": [],
+          "last_manager_sync": "2026-03-15T12:00:00Z"
+        },
+        "plannerFeedback": null
+      },
+      "judgedAt": "2026-03-15T18:24:43.957Z",
+      "nodeId": "node_ui_pass_2",
+      "source": "manual-ui-pass",
+      "createdAt": "2026-03-15T18:24:43.957Z",
+      "contextPacket": {
+        "summary": "",
+        "statement": "",
+        "tasks": [],
+        "constraints": [],
+        "clarifications": [],
+        "focusTerms": [],
+        "suggestedAnchorRefs": [],
+        "plannerFeedbackAction": null
+      },
+      "worker": {
+        "id": "context-manager",
+        "backend": "ollama",
+        "model": "mixtral",
+        "runId": "context_manager_1773599083633_uydxwp",
+        "usedFallback": true
+      }
+    },
+    "contextReport": {
+      "agent": {
+        "id": "context-manager",
+        "name": "Context Manager",
+        "criteriaVersion": "ace-intent-v2",
+        "legacyCriteriaVersion": "ace-intent-v1",
+        "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+      },
+      "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
+      "confidence": 0.27,
+      "legacyConfidence": 0.3,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0.14285714285714285,
+          "reason": "Few direct overlaps with current project context."
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.125,
+          "reason": "Input still reads more like a note than a concrete action."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.5555555555555556,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0.16666666666666666,
+          "reason": "Includes guardrails, blockers, or review-oriented language."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 0.35185185185185186,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "legacyCriteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0,
+          "reason": "Few direct overlaps with current project context."
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.16666666666666666,
+          "reason": "Input reads more like a note than a concrete action."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.7142857142857143,
+          "reason": "References ACE system structure, agents, or implementation surfaces."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0.2,
+          "reason": "Includes guardrails, blockers, or review-oriented language."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 0.41666666666666663,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "scores": {
+        "intentConfidence": 0.27,
+        "executionReadiness": 0.2,
+        "plannerUsefulness": 0.31,
+        "deployReadiness": 0.06
+      },
+      "truth": {
+        "rawInput": "Clarify what the planner should do next and make the desk state readable in Studio.",
+        "statement": "Clarify what the planner should do next and make the desk state readable in Studio.",
+        "intentType": "ACE architecture / capability request",
+        "requestedOutcomes": [
+          "Clarify what the planner should do next and make the desk state readable in Studio"
+        ],
+        "unresolved": [
+          "Project alignment: Few direct overlaps with current project context.",
+          "Actionability: Input still reads more like a note than a concrete action.",
+          "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+          "Clarity: Input includes enough detail to classify intent reliably.",
+          "Project alignment is weak, so the request may still need anchoring to current ACE work."
+        ],
+        "evidence": [
+          "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+          "Clarity: Input includes enough detail to classify intent reliably.",
+          "Constraint coverage: Includes guardrails, blockers, or review-oriented language."
+        ],
+        "anchorRefs": [
+          "brain/emergence/project_brain.md"
+        ],
+        "plannerBrief": "Planner should treat this as: Clarify what the planner should do next and make the desk state readable in Studio",
+        "readiness": {
+          "intentConfidence": 0.27,
+          "plannerUsefulness": 0.31,
+          "executionReadiness": 0.2,
+          "deployReadiness": 0.06
+        }
+      },
+      "tasks": [
+        "Clarify what the planner should do next and make the desk state readable in Studio"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md"
+      ],
+      "provenance": {
+        "anchors": [
+          {
+            "anchorRef": "brain/emergence/project_brain.md",
+            "sourceRef": "brain/emergence/project_brain.md",
+            "source": "canonical",
+            "weight": 3,
+            "matchedTerms": [
+              "state"
+            ]
+          }
+        ],
+        "managerSummary": {
+          "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+          "active_plan_slice": [
+            "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "Add a shared anchor resolver and bundle builder.",
+            "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+            "Rename external target config to `targets.json` with `projects.json` fallback."
+          ],
+          "next_actions": [
+            "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "Add a shared anchor resolver and bundle builder.",
+            "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+            "Rename external target config to `targets.json` with `projects.json` fallback.",
+            "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+            "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+            "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+          ],
+          "blockers": [],
+          "drift_flags": [],
+          "last_manager_sync": "2026-03-15T12:00:00Z"
+        }
+      },
+      "classification": {
+        "role": "module",
+        "labels": [
+          "plan",
+          "ux"
         ]
       },
-      "judgedAt": "2026-03-14T14:25:17.098Z",
-      "nodeId": "node_1773498206362_0ly8n",
-      "source": "node-enter",
-      "createdAt": "2026-03-14T14:25:17.103Z"
+      "metrics": {
+        "tokenCount": 7,
+        "sentenceCount": 1,
+        "matchedProjectTerms": [],
+        "actionSignals": 0,
+        "featureRequestSignals": 0,
+        "architectureSignals": 3,
+        "constraintSignals": 1,
+        "executionSignals": 0
+      },
+      "projectContext": {
+        "domainKey": "emergence",
+        "brainRoot": "brain/emergence",
+        "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "blockers": [],
+        "matchedTerms": [],
+        "referenceKeywords": [
+          "and",
+          "emergence",
+          "manager",
+          "runtime",
+          "anchor",
+          "projects",
+          "brain",
+          "compatibility"
+        ],
+        "sourcesRead": [
+          "brain/emergence/project_brain.md",
+          "brain/emergence/roadmap.md",
+          "brain/emergence/plan.md",
+          "brain/emergence/tasks.md",
+          "brain/emergence/decisions.md",
+          "brain/emergence/changelog.md",
+          "brain/emergence/state.json"
+        ],
+        "anchorRefs": [
+          "brain/emergence/project_brain.md"
+        ],
+        "truthSources": [
+          {
+            "id": "project_brain",
+            "relativePath": "brain/emergence/project_brain.md",
+            "sourceRelativePath": "brain/emergence/project_brain.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/project_brain.md",
+            "legacyRelativePaths": [
+              "projects/emergence/project_brain.md"
+            ]
+          },
+          {
+            "id": "roadmap",
+            "relativePath": "brain/emergence/roadmap.md",
+            "sourceRelativePath": "brain/emergence/roadmap.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/roadmap.md",
+            "legacyRelativePaths": [
+              "projects/emergence/roadmap.md"
+            ]
+          },
+          {
+            "id": "plan",
+            "relativePath": "brain/emergence/plan.md",
+            "sourceRelativePath": "brain/emergence/plan.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/plan.md",
+            "legacyRelativePaths": [
+              "projects/emergence/plan.md"
+            ]
+          },
+          {
+            "id": "tasks",
+            "relativePath": "brain/emergence/tasks.md",
+            "sourceRelativePath": "brain/emergence/tasks.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/tasks.md",
+            "legacyRelativePaths": [
+              "projects/emergence/tasks.md"
+            ]
+          },
+          {
+            "id": "decisions",
+            "relativePath": "brain/emergence/decisions.md",
+            "sourceRelativePath": "brain/emergence/decisions.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/decisions.md",
+            "legacyRelativePaths": [
+              "projects/emergence/decisions.md"
+            ]
+          },
+          {
+            "id": "changelog",
+            "relativePath": "brain/emergence/changelog.md",
+            "sourceRelativePath": "brain/emergence/changelog.md",
+            "source": "canonical",
+            "authority": "canonical-anchor",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/changelog.md",
+            "legacyRelativePaths": [
+              "projects/emergence/changelog.md"
+            ]
+          },
+          {
+            "id": "state",
+            "relativePath": "brain/emergence/state.json",
+            "sourceRelativePath": "brain/emergence/state.json",
+            "source": "canonical",
+            "authority": "derived-state",
+            "exists": true,
+            "required": true,
+            "canonicalRelativePath": "brain/emergence/state.json",
+            "legacyRelativePaths": [
+              "projects/emergence/state.json"
+            ]
+          }
+        ],
+        "drift": [],
+        "managerSummary": {
+          "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+          "active_plan_slice": [
+            "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "Add a shared anchor resolver and bundle builder.",
+            "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+            "Rename external target config to `targets.json` with `projects.json` fallback."
+          ],
+          "next_actions": [
+            "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "Add a shared anchor resolver and bundle builder.",
+            "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+            "Rename external target config to `targets.json` with `projects.json` fallback.",
+            "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+            "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+            "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+          ],
+          "blockers": [],
+          "drift_flags": [],
+          "last_manager_sync": "2026-03-15T12:00:00Z"
+        },
+        "plannerFeedback": null
+      },
+      "judgedAt": "2026-03-15T18:24:43.957Z",
+      "nodeId": "node_ui_pass_2",
+      "source": "manual-ui-pass",
+      "createdAt": "2026-03-15T18:24:43.957Z",
+      "contextPacket": {
+        "summary": "",
+        "statement": "",
+        "tasks": [],
+        "constraints": [],
+        "clarifications": [],
+        "focusTerms": [],
+        "suggestedAnchorRefs": [],
+        "plannerFeedbackAction": null
+      },
+      "worker": {
+        "id": "context-manager",
+        "backend": "ollama",
+        "model": "mixtral",
+        "runId": "context_manager_1773599083633_uydxwp",
+        "usedFallback": true
+      }
     },
-    "contextReport": null,
     "byNode": {
       "node_1773330212975_vqt7o": {
         "tasks": [
@@ -2123,9 +2719,1361 @@
         "nodeId": "node_1773498206362_0ly8n",
         "source": "node-enter",
         "createdAt": "2026-03-14T14:25:17.103Z"
+      },
+      "node_ui_pass": {
+        "agent": {
+          "id": "context-manager",
+          "name": "Context Manager",
+          "criteriaVersion": "ace-intent-v2",
+          "legacyCriteriaVersion": "ace-intent-v1",
+          "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+        },
+        "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
+        "confidence": 0.27,
+        "legacyConfidence": 0.3,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.14285714285714285,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.125,
+            "reason": "Input still reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.5555555555555556,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.16666666666666666,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.35185185185185186,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "legacyCriteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.16666666666666666,
+            "reason": "Input reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.7142857142857143,
+            "reason": "References ACE system structure, agents, or implementation surfaces."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.2,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.41666666666666663,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "scores": {
+          "intentConfidence": 0.27,
+          "executionReadiness": 0.2,
+          "plannerUsefulness": 0.31,
+          "deployReadiness": 0.06
+        },
+        "truth": {
+          "rawInput": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "statement": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "intentType": "ACE architecture / capability request",
+          "requestedOutcomes": [
+            "Clarify what the planner should do next and make the desk state readable in Studio"
+          ],
+          "unresolved": [
+            "Project alignment: Few direct overlaps with current project context.",
+            "Actionability: Input still reads more like a note than a concrete action.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Project alignment is weak, so the request may still need anchoring to current ACE work."
+          ],
+          "evidence": [
+            "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language."
+          ],
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "plannerBrief": "Planner should treat this as: Clarify what the planner should do next and make the desk state readable in Studio",
+          "readiness": {
+            "intentConfidence": 0.27,
+            "plannerUsefulness": 0.31,
+            "executionReadiness": 0.2,
+            "deployReadiness": 0.06
+          }
+        },
+        "tasks": [
+          "Clarify what the planner should do next and make the desk state readable in Studio"
+        ],
+        "anchorRefs": [
+          "brain/emergence/project_brain.md"
+        ],
+        "provenance": {
+          "anchors": [
+            {
+              "anchorRef": "brain/emergence/project_brain.md",
+              "sourceRef": "brain/emergence/project_brain.md",
+              "source": "canonical",
+              "weight": 3,
+              "matchedTerms": [
+                "state"
+              ]
+            }
+          ],
+          "managerSummary": {
+            "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+            "active_plan_slice": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback."
+            ],
+            "next_actions": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback.",
+              "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+              "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+              "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+            ],
+            "blockers": [],
+            "drift_flags": [],
+            "last_manager_sync": "2026-03-15T12:00:00Z"
+          }
+        },
+        "classification": {
+          "role": "module",
+          "labels": [
+            "plan",
+            "ux"
+          ]
+        },
+        "metrics": {
+          "tokenCount": 7,
+          "sentenceCount": 1,
+          "matchedProjectTerms": [],
+          "actionSignals": 0,
+          "featureRequestSignals": 0,
+          "architectureSignals": 3,
+          "constraintSignals": 1,
+          "executionSignals": 0
+        },
+        "projectContext": {
+          "domainKey": "emergence",
+          "brainRoot": "brain/emergence",
+          "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+          "blockers": [],
+          "matchedTerms": [],
+          "referenceKeywords": [
+            "and",
+            "emergence",
+            "manager",
+            "runtime",
+            "anchor",
+            "projects",
+            "brain",
+            "compatibility"
+          ],
+          "sourcesRead": [
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md",
+            "brain/emergence/decisions.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/state.json"
+          ],
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "truthSources": [
+            {
+              "id": "project_brain",
+              "relativePath": "brain/emergence/project_brain.md",
+              "sourceRelativePath": "brain/emergence/project_brain.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/project_brain.md",
+              "legacyRelativePaths": [
+                "projects/emergence/project_brain.md"
+              ]
+            },
+            {
+              "id": "roadmap",
+              "relativePath": "brain/emergence/roadmap.md",
+              "sourceRelativePath": "brain/emergence/roadmap.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/roadmap.md",
+              "legacyRelativePaths": [
+                "projects/emergence/roadmap.md"
+              ]
+            },
+            {
+              "id": "plan",
+              "relativePath": "brain/emergence/plan.md",
+              "sourceRelativePath": "brain/emergence/plan.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/plan.md",
+              "legacyRelativePaths": [
+                "projects/emergence/plan.md"
+              ]
+            },
+            {
+              "id": "tasks",
+              "relativePath": "brain/emergence/tasks.md",
+              "sourceRelativePath": "brain/emergence/tasks.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/tasks.md",
+              "legacyRelativePaths": [
+                "projects/emergence/tasks.md"
+              ]
+            },
+            {
+              "id": "decisions",
+              "relativePath": "brain/emergence/decisions.md",
+              "sourceRelativePath": "brain/emergence/decisions.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/decisions.md",
+              "legacyRelativePaths": [
+                "projects/emergence/decisions.md"
+              ]
+            },
+            {
+              "id": "changelog",
+              "relativePath": "brain/emergence/changelog.md",
+              "sourceRelativePath": "brain/emergence/changelog.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/changelog.md",
+              "legacyRelativePaths": [
+                "projects/emergence/changelog.md"
+              ]
+            },
+            {
+              "id": "state",
+              "relativePath": "brain/emergence/state.json",
+              "sourceRelativePath": "brain/emergence/state.json",
+              "source": "canonical",
+              "authority": "derived-state",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/state.json",
+              "legacyRelativePaths": [
+                "projects/emergence/state.json"
+              ]
+            }
+          ],
+          "drift": [],
+          "managerSummary": {
+            "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+            "active_plan_slice": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback."
+            ],
+            "next_actions": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback.",
+              "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+              "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+              "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+            ],
+            "blockers": [],
+            "drift_flags": [],
+            "last_manager_sync": "2026-03-15T12:00:00Z"
+          },
+          "plannerFeedback": null
+        },
+        "judgedAt": "2026-03-15T18:24:18.578Z",
+        "nodeId": "node_ui_pass",
+        "source": "manual-ui-pass",
+        "createdAt": "2026-03-15T18:24:18.578Z",
+        "contextPacket": {
+          "summary": "",
+          "statement": "",
+          "tasks": [],
+          "constraints": [],
+          "clarifications": [],
+          "focusTerms": [],
+          "suggestedAnchorRefs": [],
+          "plannerFeedbackAction": null
+        },
+        "worker": {
+          "id": "context-manager",
+          "backend": "ollama",
+          "model": "mixtral",
+          "runId": "context_manager_1773599056713_h9ad93",
+          "usedFallback": true
+        }
+      },
+      "node_ui_pass_2": {
+        "agent": {
+          "id": "context-manager",
+          "name": "Context Manager",
+          "criteriaVersion": "ace-intent-v2",
+          "legacyCriteriaVersion": "ace-intent-v1",
+          "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+        },
+        "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
+        "confidence": 0.27,
+        "legacyConfidence": 0.3,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.14285714285714285,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.125,
+            "reason": "Input still reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.5555555555555556,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.16666666666666666,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.35185185185185186,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "legacyCriteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.16666666666666666,
+            "reason": "Input reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.7142857142857143,
+            "reason": "References ACE system structure, agents, or implementation surfaces."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.2,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.41666666666666663,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "scores": {
+          "intentConfidence": 0.27,
+          "executionReadiness": 0.2,
+          "plannerUsefulness": 0.31,
+          "deployReadiness": 0.06
+        },
+        "truth": {
+          "rawInput": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "statement": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "intentType": "ACE architecture / capability request",
+          "requestedOutcomes": [
+            "Clarify what the planner should do next and make the desk state readable in Studio"
+          ],
+          "unresolved": [
+            "Project alignment: Few direct overlaps with current project context.",
+            "Actionability: Input still reads more like a note than a concrete action.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Project alignment is weak, so the request may still need anchoring to current ACE work."
+          ],
+          "evidence": [
+            "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language."
+          ],
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "plannerBrief": "Planner should treat this as: Clarify what the planner should do next and make the desk state readable in Studio",
+          "readiness": {
+            "intentConfidence": 0.27,
+            "plannerUsefulness": 0.31,
+            "executionReadiness": 0.2,
+            "deployReadiness": 0.06
+          }
+        },
+        "tasks": [
+          "Clarify what the planner should do next and make the desk state readable in Studio"
+        ],
+        "anchorRefs": [
+          "brain/emergence/project_brain.md"
+        ],
+        "provenance": {
+          "anchors": [
+            {
+              "anchorRef": "brain/emergence/project_brain.md",
+              "sourceRef": "brain/emergence/project_brain.md",
+              "source": "canonical",
+              "weight": 3,
+              "matchedTerms": [
+                "state"
+              ]
+            }
+          ],
+          "managerSummary": {
+            "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+            "active_plan_slice": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback."
+            ],
+            "next_actions": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback.",
+              "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+              "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+              "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+            ],
+            "blockers": [],
+            "drift_flags": [],
+            "last_manager_sync": "2026-03-15T12:00:00Z"
+          }
+        },
+        "classification": {
+          "role": "module",
+          "labels": [
+            "plan",
+            "ux"
+          ]
+        },
+        "metrics": {
+          "tokenCount": 7,
+          "sentenceCount": 1,
+          "matchedProjectTerms": [],
+          "actionSignals": 0,
+          "featureRequestSignals": 0,
+          "architectureSignals": 3,
+          "constraintSignals": 1,
+          "executionSignals": 0
+        },
+        "projectContext": {
+          "domainKey": "emergence",
+          "brainRoot": "brain/emergence",
+          "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+          "blockers": [],
+          "matchedTerms": [],
+          "referenceKeywords": [
+            "and",
+            "emergence",
+            "manager",
+            "runtime",
+            "anchor",
+            "projects",
+            "brain",
+            "compatibility"
+          ],
+          "sourcesRead": [
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md",
+            "brain/emergence/decisions.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/state.json"
+          ],
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "truthSources": [
+            {
+              "id": "project_brain",
+              "relativePath": "brain/emergence/project_brain.md",
+              "sourceRelativePath": "brain/emergence/project_brain.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/project_brain.md",
+              "legacyRelativePaths": [
+                "projects/emergence/project_brain.md"
+              ]
+            },
+            {
+              "id": "roadmap",
+              "relativePath": "brain/emergence/roadmap.md",
+              "sourceRelativePath": "brain/emergence/roadmap.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/roadmap.md",
+              "legacyRelativePaths": [
+                "projects/emergence/roadmap.md"
+              ]
+            },
+            {
+              "id": "plan",
+              "relativePath": "brain/emergence/plan.md",
+              "sourceRelativePath": "brain/emergence/plan.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/plan.md",
+              "legacyRelativePaths": [
+                "projects/emergence/plan.md"
+              ]
+            },
+            {
+              "id": "tasks",
+              "relativePath": "brain/emergence/tasks.md",
+              "sourceRelativePath": "brain/emergence/tasks.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/tasks.md",
+              "legacyRelativePaths": [
+                "projects/emergence/tasks.md"
+              ]
+            },
+            {
+              "id": "decisions",
+              "relativePath": "brain/emergence/decisions.md",
+              "sourceRelativePath": "brain/emergence/decisions.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/decisions.md",
+              "legacyRelativePaths": [
+                "projects/emergence/decisions.md"
+              ]
+            },
+            {
+              "id": "changelog",
+              "relativePath": "brain/emergence/changelog.md",
+              "sourceRelativePath": "brain/emergence/changelog.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/changelog.md",
+              "legacyRelativePaths": [
+                "projects/emergence/changelog.md"
+              ]
+            },
+            {
+              "id": "state",
+              "relativePath": "brain/emergence/state.json",
+              "sourceRelativePath": "brain/emergence/state.json",
+              "source": "canonical",
+              "authority": "derived-state",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/state.json",
+              "legacyRelativePaths": [
+                "projects/emergence/state.json"
+              ]
+            }
+          ],
+          "drift": [],
+          "managerSummary": {
+            "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+            "active_plan_slice": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback."
+            ],
+            "next_actions": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback.",
+              "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+              "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+              "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+            ],
+            "blockers": [],
+            "drift_flags": [],
+            "last_manager_sync": "2026-03-15T12:00:00Z"
+          },
+          "plannerFeedback": null
+        },
+        "judgedAt": "2026-03-15T18:24:43.957Z",
+        "nodeId": "node_ui_pass_2",
+        "source": "manual-ui-pass",
+        "createdAt": "2026-03-15T18:24:43.957Z",
+        "contextPacket": {
+          "summary": "",
+          "statement": "",
+          "tasks": [],
+          "constraints": [],
+          "clarifications": [],
+          "focusTerms": [],
+          "suggestedAnchorRefs": [],
+          "plannerFeedbackAction": null
+        },
+        "worker": {
+          "id": "context-manager",
+          "backend": "ollama",
+          "model": "mixtral",
+          "runId": "context_manager_1773599083633_uydxwp",
+          "usedFallback": true
+        }
       }
     },
     "reports": [
+      {
+        "agent": {
+          "id": "context-manager",
+          "name": "Context Manager",
+          "criteriaVersion": "ace-intent-v2",
+          "legacyCriteriaVersion": "ace-intent-v1",
+          "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+        },
+        "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
+        "confidence": 0.27,
+        "legacyConfidence": 0.3,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.14285714285714285,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.125,
+            "reason": "Input still reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.5555555555555556,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.16666666666666666,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.35185185185185186,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "legacyCriteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.16666666666666666,
+            "reason": "Input reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.7142857142857143,
+            "reason": "References ACE system structure, agents, or implementation surfaces."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.2,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.41666666666666663,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "scores": {
+          "intentConfidence": 0.27,
+          "executionReadiness": 0.2,
+          "plannerUsefulness": 0.31,
+          "deployReadiness": 0.06
+        },
+        "truth": {
+          "rawInput": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "statement": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "intentType": "ACE architecture / capability request",
+          "requestedOutcomes": [
+            "Clarify what the planner should do next and make the desk state readable in Studio"
+          ],
+          "unresolved": [
+            "Project alignment: Few direct overlaps with current project context.",
+            "Actionability: Input still reads more like a note than a concrete action.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Project alignment is weak, so the request may still need anchoring to current ACE work."
+          ],
+          "evidence": [
+            "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language."
+          ],
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "plannerBrief": "Planner should treat this as: Clarify what the planner should do next and make the desk state readable in Studio",
+          "readiness": {
+            "intentConfidence": 0.27,
+            "plannerUsefulness": 0.31,
+            "executionReadiness": 0.2,
+            "deployReadiness": 0.06
+          }
+        },
+        "tasks": [
+          "Clarify what the planner should do next and make the desk state readable in Studio"
+        ],
+        "anchorRefs": [
+          "brain/emergence/project_brain.md"
+        ],
+        "provenance": {
+          "anchors": [
+            {
+              "anchorRef": "brain/emergence/project_brain.md",
+              "sourceRef": "brain/emergence/project_brain.md",
+              "source": "canonical",
+              "weight": 3,
+              "matchedTerms": [
+                "state"
+              ]
+            }
+          ],
+          "managerSummary": {
+            "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+            "active_plan_slice": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback."
+            ],
+            "next_actions": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback.",
+              "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+              "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+              "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+            ],
+            "blockers": [],
+            "drift_flags": [],
+            "last_manager_sync": "2026-03-15T12:00:00Z"
+          }
+        },
+        "classification": {
+          "role": "module",
+          "labels": [
+            "plan",
+            "ux"
+          ]
+        },
+        "metrics": {
+          "tokenCount": 7,
+          "sentenceCount": 1,
+          "matchedProjectTerms": [],
+          "actionSignals": 0,
+          "featureRequestSignals": 0,
+          "architectureSignals": 3,
+          "constraintSignals": 1,
+          "executionSignals": 0
+        },
+        "projectContext": {
+          "domainKey": "emergence",
+          "brainRoot": "brain/emergence",
+          "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+          "blockers": [],
+          "matchedTerms": [],
+          "referenceKeywords": [
+            "and",
+            "emergence",
+            "manager",
+            "runtime",
+            "anchor",
+            "projects",
+            "brain",
+            "compatibility"
+          ],
+          "sourcesRead": [
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md",
+            "brain/emergence/decisions.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/state.json"
+          ],
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "truthSources": [
+            {
+              "id": "project_brain",
+              "relativePath": "brain/emergence/project_brain.md",
+              "sourceRelativePath": "brain/emergence/project_brain.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/project_brain.md",
+              "legacyRelativePaths": [
+                "projects/emergence/project_brain.md"
+              ]
+            },
+            {
+              "id": "roadmap",
+              "relativePath": "brain/emergence/roadmap.md",
+              "sourceRelativePath": "brain/emergence/roadmap.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/roadmap.md",
+              "legacyRelativePaths": [
+                "projects/emergence/roadmap.md"
+              ]
+            },
+            {
+              "id": "plan",
+              "relativePath": "brain/emergence/plan.md",
+              "sourceRelativePath": "brain/emergence/plan.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/plan.md",
+              "legacyRelativePaths": [
+                "projects/emergence/plan.md"
+              ]
+            },
+            {
+              "id": "tasks",
+              "relativePath": "brain/emergence/tasks.md",
+              "sourceRelativePath": "brain/emergence/tasks.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/tasks.md",
+              "legacyRelativePaths": [
+                "projects/emergence/tasks.md"
+              ]
+            },
+            {
+              "id": "decisions",
+              "relativePath": "brain/emergence/decisions.md",
+              "sourceRelativePath": "brain/emergence/decisions.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/decisions.md",
+              "legacyRelativePaths": [
+                "projects/emergence/decisions.md"
+              ]
+            },
+            {
+              "id": "changelog",
+              "relativePath": "brain/emergence/changelog.md",
+              "sourceRelativePath": "brain/emergence/changelog.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/changelog.md",
+              "legacyRelativePaths": [
+                "projects/emergence/changelog.md"
+              ]
+            },
+            {
+              "id": "state",
+              "relativePath": "brain/emergence/state.json",
+              "sourceRelativePath": "brain/emergence/state.json",
+              "source": "canonical",
+              "authority": "derived-state",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/state.json",
+              "legacyRelativePaths": [
+                "projects/emergence/state.json"
+              ]
+            }
+          ],
+          "drift": [],
+          "managerSummary": {
+            "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+            "active_plan_slice": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback."
+            ],
+            "next_actions": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback.",
+              "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+              "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+              "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+            ],
+            "blockers": [],
+            "drift_flags": [],
+            "last_manager_sync": "2026-03-15T12:00:00Z"
+          },
+          "plannerFeedback": null
+        },
+        "judgedAt": "2026-03-15T18:24:43.957Z",
+        "nodeId": "node_ui_pass_2",
+        "source": "manual-ui-pass",
+        "createdAt": "2026-03-15T18:24:43.957Z",
+        "contextPacket": {
+          "summary": "",
+          "statement": "",
+          "tasks": [],
+          "constraints": [],
+          "clarifications": [],
+          "focusTerms": [],
+          "suggestedAnchorRefs": [],
+          "plannerFeedbackAction": null
+        },
+        "worker": {
+          "id": "context-manager",
+          "backend": "ollama",
+          "model": "mixtral",
+          "runId": "context_manager_1773599083633_uydxwp",
+          "usedFallback": true
+        }
+      },
+      {
+        "agent": {
+          "id": "context-manager",
+          "name": "Context Manager",
+          "criteriaVersion": "ace-intent-v2",
+          "legacyCriteriaVersion": "ace-intent-v1",
+          "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+        },
+        "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
+        "confidence": 0.27,
+        "legacyConfidence": 0.3,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.14285714285714285,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.125,
+            "reason": "Input still reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.5555555555555556,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.16666666666666666,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.35185185185185186,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "legacyCriteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.16666666666666666,
+            "reason": "Input reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.7142857142857143,
+            "reason": "References ACE system structure, agents, or implementation surfaces."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.2,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.41666666666666663,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "scores": {
+          "intentConfidence": 0.27,
+          "executionReadiness": 0.2,
+          "plannerUsefulness": 0.31,
+          "deployReadiness": 0.06
+        },
+        "truth": {
+          "rawInput": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "statement": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "intentType": "ACE architecture / capability request",
+          "requestedOutcomes": [
+            "Clarify what the planner should do next and make the desk state readable in Studio"
+          ],
+          "unresolved": [
+            "Project alignment: Few direct overlaps with current project context.",
+            "Actionability: Input still reads more like a note than a concrete action.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Project alignment is weak, so the request may still need anchoring to current ACE work."
+          ],
+          "evidence": [
+            "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language."
+          ],
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "plannerBrief": "Planner should treat this as: Clarify what the planner should do next and make the desk state readable in Studio",
+          "readiness": {
+            "intentConfidence": 0.27,
+            "plannerUsefulness": 0.31,
+            "executionReadiness": 0.2,
+            "deployReadiness": 0.06
+          }
+        },
+        "tasks": [
+          "Clarify what the planner should do next and make the desk state readable in Studio"
+        ],
+        "anchorRefs": [
+          "brain/emergence/project_brain.md"
+        ],
+        "provenance": {
+          "anchors": [
+            {
+              "anchorRef": "brain/emergence/project_brain.md",
+              "sourceRef": "brain/emergence/project_brain.md",
+              "source": "canonical",
+              "weight": 3,
+              "matchedTerms": [
+                "state"
+              ]
+            }
+          ],
+          "managerSummary": {
+            "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+            "active_plan_slice": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback."
+            ],
+            "next_actions": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback.",
+              "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+              "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+              "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+            ],
+            "blockers": [],
+            "drift_flags": [],
+            "last_manager_sync": "2026-03-15T12:00:00Z"
+          }
+        },
+        "classification": {
+          "role": "module",
+          "labels": [
+            "plan",
+            "ux"
+          ]
+        },
+        "metrics": {
+          "tokenCount": 7,
+          "sentenceCount": 1,
+          "matchedProjectTerms": [],
+          "actionSignals": 0,
+          "featureRequestSignals": 0,
+          "architectureSignals": 3,
+          "constraintSignals": 1,
+          "executionSignals": 0
+        },
+        "projectContext": {
+          "domainKey": "emergence",
+          "brainRoot": "brain/emergence",
+          "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+          "blockers": [],
+          "matchedTerms": [],
+          "referenceKeywords": [
+            "and",
+            "emergence",
+            "manager",
+            "runtime",
+            "anchor",
+            "projects",
+            "brain",
+            "compatibility"
+          ],
+          "sourcesRead": [
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md",
+            "brain/emergence/decisions.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/state.json"
+          ],
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "truthSources": [
+            {
+              "id": "project_brain",
+              "relativePath": "brain/emergence/project_brain.md",
+              "sourceRelativePath": "brain/emergence/project_brain.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/project_brain.md",
+              "legacyRelativePaths": [
+                "projects/emergence/project_brain.md"
+              ]
+            },
+            {
+              "id": "roadmap",
+              "relativePath": "brain/emergence/roadmap.md",
+              "sourceRelativePath": "brain/emergence/roadmap.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/roadmap.md",
+              "legacyRelativePaths": [
+                "projects/emergence/roadmap.md"
+              ]
+            },
+            {
+              "id": "plan",
+              "relativePath": "brain/emergence/plan.md",
+              "sourceRelativePath": "brain/emergence/plan.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/plan.md",
+              "legacyRelativePaths": [
+                "projects/emergence/plan.md"
+              ]
+            },
+            {
+              "id": "tasks",
+              "relativePath": "brain/emergence/tasks.md",
+              "sourceRelativePath": "brain/emergence/tasks.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/tasks.md",
+              "legacyRelativePaths": [
+                "projects/emergence/tasks.md"
+              ]
+            },
+            {
+              "id": "decisions",
+              "relativePath": "brain/emergence/decisions.md",
+              "sourceRelativePath": "brain/emergence/decisions.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/decisions.md",
+              "legacyRelativePaths": [
+                "projects/emergence/decisions.md"
+              ]
+            },
+            {
+              "id": "changelog",
+              "relativePath": "brain/emergence/changelog.md",
+              "sourceRelativePath": "brain/emergence/changelog.md",
+              "source": "canonical",
+              "authority": "canonical-anchor",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/changelog.md",
+              "legacyRelativePaths": [
+                "projects/emergence/changelog.md"
+              ]
+            },
+            {
+              "id": "state",
+              "relativePath": "brain/emergence/state.json",
+              "sourceRelativePath": "brain/emergence/state.json",
+              "source": "canonical",
+              "authority": "derived-state",
+              "exists": true,
+              "required": true,
+              "canonicalRelativePath": "brain/emergence/state.json",
+              "legacyRelativePaths": [
+                "projects/emergence/state.json"
+              ]
+            }
+          ],
+          "drift": [],
+          "managerSummary": {
+            "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+            "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+            "active_plan_slice": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback."
+            ],
+            "next_actions": [
+              "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+              "Add a shared anchor resolver and bundle builder.",
+              "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+              "Rename external target config to `targets.json` with `projects.json` fallback.",
+              "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+              "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+              "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+            ],
+            "blockers": [],
+            "drift_flags": [],
+            "last_manager_sync": "2026-03-15T12:00:00Z"
+          },
+          "plannerFeedback": null
+        },
+        "judgedAt": "2026-03-15T18:24:18.578Z",
+        "nodeId": "node_ui_pass",
+        "source": "manual-ui-pass",
+        "createdAt": "2026-03-15T18:24:18.578Z",
+        "contextPacket": {
+          "summary": "",
+          "statement": "",
+          "tasks": [],
+          "constraints": [],
+          "clarifications": [],
+          "focusTerms": [],
+          "suggestedAnchorRefs": [],
+          "plannerFeedbackAction": null
+        },
+        "worker": {
+          "id": "context-manager",
+          "backend": "ollama",
+          "model": "mixtral",
+          "runId": "context_manager_1773599056713_h9ad93",
+          "usedFallback": true
+        }
+      },
       {
         "agent": {
           "id": "context-manager",
@@ -3029,6 +4977,146 @@
       "outputs": [],
       "handoffs": [
         {
+          "id": "handoff_1773599083957_0ojlqt",
+          "sourceAgentId": "context-manager",
+          "targetAgentId": "planner",
+          "createdAt": "2026-03-15T18:24:43.957Z",
+          "sourceNodeId": "node_ui_pass_2",
+          "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "problemStatement": "Goal: Clarify what the planner should do next and make the desk state readable in Studio.\nRequested outcomes: Clarify what the planner should do next and make the desk state readable in Studio.\nWhy ACE believes this: Project alignment 14%, Actionability 13%, Architecture fit 56%.\nConstraints and review signals: Project alignment: Few direct overlaps with current project context. | Actionability: Input still reads more like a note than a concrete action. | Constraint coverage: Includes guardrails, blockers, or review-oriented language. | Clarity: Input includes enough detail to classify intent reliably..\nStill unclear: Planner usefulness is low and needs tighter scope before execution expands. Execution readiness is low, so a worker should not start blindly. Project alignment is weak, so planner scope may need refinement.",
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "tasks": [
+            "Clarify what the planner should do next and make the desk state readable in Studio"
+          ],
+          "constraints": [
+            "Project alignment: Few direct overlaps with current project context.",
+            "Actionability: Input still reads more like a note than a concrete action.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+            "Clarity: Input includes enough detail to classify intent reliably."
+          ],
+          "confidence": 0.27,
+          "legacyConfidence": 0.3,
+          "criteria": [
+            {
+              "id": "project-alignment",
+              "label": "Project alignment",
+              "score": 0.14285714285714285,
+              "reason": "Few direct overlaps with current project context."
+            },
+            {
+              "id": "actionability",
+              "label": "Actionability",
+              "score": 0.125,
+              "reason": "Input still reads more like a note than a concrete action."
+            },
+            {
+              "id": "architecture-fit",
+              "label": "Architecture fit",
+              "score": 0.5555555555555556,
+              "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+            },
+            {
+              "id": "constraint-coverage",
+              "label": "Constraint coverage",
+              "score": 0.16666666666666666,
+              "reason": "Includes guardrails, blockers, or review-oriented language."
+            },
+            {
+              "id": "clarity",
+              "label": "Clarity",
+              "score": 0.35185185185185186,
+              "reason": "Input includes enough detail to classify intent reliably."
+            }
+          ],
+          "scores": {
+            "intentConfidence": 0.27,
+            "executionReadiness": 0.2,
+            "plannerUsefulness": 0.31,
+            "deployReadiness": 0.06
+          },
+          "classification": {
+            "role": "module",
+            "labels": [
+              "plan",
+              "ux"
+            ]
+          },
+          "status": "needs-clarification"
+        },
+        {
+          "id": "handoff_1773599058578_ic7sa6",
+          "sourceAgentId": "context-manager",
+          "targetAgentId": "planner",
+          "createdAt": "2026-03-15T18:24:18.578Z",
+          "sourceNodeId": "node_ui_pass",
+          "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
+          "problemStatement": "Goal: Clarify what the planner should do next and make the desk state readable in Studio.\nRequested outcomes: Clarify what the planner should do next and make the desk state readable in Studio.\nWhy ACE believes this: Project alignment 14%, Actionability 13%, Architecture fit 56%.\nConstraints and review signals: Project alignment: Few direct overlaps with current project context. | Actionability: Input still reads more like a note than a concrete action. | Constraint coverage: Includes guardrails, blockers, or review-oriented language. | Clarity: Input includes enough detail to classify intent reliably..\nStill unclear: Planner usefulness is low and needs tighter scope before execution expands. Execution readiness is low, so a worker should not start blindly. Project alignment is weak, so planner scope may need refinement.",
+          "anchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "tasks": [
+            "Clarify what the planner should do next and make the desk state readable in Studio"
+          ],
+          "constraints": [
+            "Project alignment: Few direct overlaps with current project context.",
+            "Actionability: Input still reads more like a note than a concrete action.",
+            "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+            "Clarity: Input includes enough detail to classify intent reliably."
+          ],
+          "confidence": 0.27,
+          "legacyConfidence": 0.3,
+          "criteria": [
+            {
+              "id": "project-alignment",
+              "label": "Project alignment",
+              "score": 0.14285714285714285,
+              "reason": "Few direct overlaps with current project context."
+            },
+            {
+              "id": "actionability",
+              "label": "Actionability",
+              "score": 0.125,
+              "reason": "Input still reads more like a note than a concrete action."
+            },
+            {
+              "id": "architecture-fit",
+              "label": "Architecture fit",
+              "score": 0.5555555555555556,
+              "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+            },
+            {
+              "id": "constraint-coverage",
+              "label": "Constraint coverage",
+              "score": 0.16666666666666666,
+              "reason": "Includes guardrails, blockers, or review-oriented language."
+            },
+            {
+              "id": "clarity",
+              "label": "Clarity",
+              "score": 0.35185185185185186,
+              "reason": "Input includes enough detail to classify intent reliably."
+            }
+          ],
+          "scores": {
+            "intentConfidence": 0.27,
+            "executionReadiness": 0.2,
+            "plannerUsefulness": 0.31,
+            "deployReadiness": 0.06
+          },
+          "classification": {
+            "role": "module",
+            "labels": [
+              "plan",
+              "ux"
+            ]
+          },
+          "status": "needs-clarification",
+          "plannerStatus": "idle",
+          "plannerCompletedAt": "2026-03-15T18:24:18.665Z"
+        },
+        {
           "id": "handoff_1773429206097_fi0w",
           "sourceAgentId": "context-manager",
           "targetAgentId": "planner",
@@ -3090,12 +5178,12 @@
       ],
       "artifactRefs": [],
       "id": "page_1773429206094_pgv8",
-      "title": "we also need more clarity on our context managem",
+      "title": "Clarify what the planner should do next and make",
       "status": "active",
-      "sourceNodeId": "node_1773498206362_0ly8n",
-      "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+      "sourceNodeId": "node_ui_pass_2",
+      "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
       "createdAt": "2026-03-13T19:13:26.094Z",
-      "updatedAt": "2026-03-14T19:08:14.276Z"
+      "updatedAt": "2026-03-15T18:24:48.016Z"
     }
   ],
   "activePageId": "page_1773429206094_pgv8",
@@ -3206,67 +5294,77 @@
       "adapterTranslation": 0,
       "codeRuntimeMutation": 8
     },
-    "lastEvaluatedAt": "2026-03-14T19:08:14.276Z"
+    "lastEvaluatedAt": "2026-03-15T18:24:48.016Z"
   },
   "studio": {
-    "scene": "canvas",
-    "selectedAgentId": "executor",
+    "scene": "studio",
+    "selectedAgentId": "context-manager",
     "activeGraphLayer": "system",
     "handoffs": {
       "contextToPlanner": {
-        "id": "handoff_1773429206097_fi0w",
+        "id": "handoff_1773599083957_0ojlqt",
         "sourceAgentId": "context-manager",
         "targetAgentId": "planner",
-        "createdAt": "2026-03-13T12:07:46.941Z",
-        "sourceNodeId": "node_1773403593232_kvs26",
-        "summary": "context reports need updating by agent beyond text taken from 1 node",
-        "problemStatement": "Goal: context reports need updating by agent beyond text taken from 1 node\nRequested outcomes: context reports need updating by agent beyond text taken from 1 node.\nWhy ACE believes this: Project alignment 17%, Actionability 17%, Architecture fit 71%.\nConstraints and review signals: Project alignment: Matched project terms: agent | Actionability: Input reads more like a note than a concrete action. | Constraint coverage: No clear constraints or review gates were stated. | Clarity: Input includes enough detail to classify intent reliably..\nStill unclear: Intent confidence is low and should be checked before execution expands.",
+        "createdAt": "2026-03-15T18:24:43.957Z",
+        "sourceNodeId": "node_ui_pass_2",
+        "summary": "Clarify what the planner should do next and make the desk state readable in Studio.",
+        "problemStatement": "Goal: Clarify what the planner should do next and make the desk state readable in Studio.\nRequested outcomes: Clarify what the planner should do next and make the desk state readable in Studio.\nWhy ACE believes this: Project alignment 14%, Actionability 13%, Architecture fit 56%.\nConstraints and review signals: Project alignment: Few direct overlaps with current project context. | Actionability: Input still reads more like a note than a concrete action. | Constraint coverage: Includes guardrails, blockers, or review-oriented language. | Clarity: Input includes enough detail to classify intent reliably..\nStill unclear: Planner usefulness is low and needs tighter scope before execution expands. Execution readiness is low, so a worker should not start blindly. Project alignment is weak, so planner scope may need refinement.",
+        "anchorRefs": [
+          "brain/emergence/project_brain.md"
+        ],
         "tasks": [
-          "context reports need updating by agent beyond text taken from 1 node"
+          "Clarify what the planner should do next and make the desk state readable in Studio"
         ],
         "constraints": [
-          "Project alignment: Matched project terms: agent",
-          "Actionability: Input reads more like a note than a concrete action.",
-          "Constraint coverage: No clear constraints or review gates were stated.",
+          "Project alignment: Few direct overlaps with current project context.",
+          "Actionability: Input still reads more like a note than a concrete action.",
+          "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
           "Clarity: Input includes enough detail to classify intent reliably."
         ],
-        "confidence": 0.3,
+        "confidence": 0.27,
+        "legacyConfidence": 0.3,
         "criteria": [
           {
             "id": "project-alignment",
             "label": "Project alignment",
-            "score": 0.16666666666666666,
-            "reason": "Matched project terms: agent"
+            "score": 0.14285714285714285,
+            "reason": "Few direct overlaps with current project context."
           },
           {
             "id": "actionability",
             "label": "Actionability",
-            "score": 0.16666666666666666,
-            "reason": "Input reads more like a note than a concrete action."
+            "score": 0.125,
+            "reason": "Input still reads more like a note than a concrete action."
           },
           {
             "id": "architecture-fit",
             "label": "Architecture fit",
-            "score": 0.7142857142857143,
-            "reason": "References ACE system structure, agents, or implementation surfaces."
+            "score": 0.5555555555555556,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
           },
           {
             "id": "constraint-coverage",
             "label": "Constraint coverage",
-            "score": 0,
-            "reason": "No clear constraints or review gates were stated."
+            "score": 0.16666666666666666,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
           },
           {
             "id": "clarity",
             "label": "Clarity",
-            "score": 0.45238095238095233,
+            "score": 0.35185185185185186,
             "reason": "Input includes enough detail to classify intent reliably."
           }
         ],
+        "scores": {
+          "intentConfidence": 0.27,
+          "executionReadiness": 0.2,
+          "plannerUsefulness": 0.31,
+          "deployReadiness": 0.06
+        },
         "classification": {
-          "role": "ux",
+          "role": "module",
           "labels": [
-            "context",
+            "plan",
             "ux"
           ]
         },
@@ -3332,7 +5430,8 @@
           },
           "status": "needs-clarification"
         }
-      ]
+      ],
+      "plannerToContext": null
     },
     "teamBoard": {
       "cards": [
@@ -3344,7 +5443,7 @@
           "title": "Finance Department",
           "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-14T13:30:54.485Z",
+          "updatedAt": "2026-03-15T18:24:48.016Z",
           "sourceKey": "page_1773403588491_034z:finance-department",
           "desk": "CTO",
           "state": "Approval required",
@@ -3372,7 +5471,8 @@
           "applyStatus": "idle",
           "branch": null,
           "commit": null,
-          "lastHealth": null
+          "lastHealth": null,
+          "sourceAnchorRefs": []
         },
         {
           "id": "card_page_1773403588491_034z_calculates-cost-tokens-usage-etc",
@@ -3382,7 +5482,7 @@
           "title": "- calculates cost/tokens usage etc",
           "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-14T13:30:54.485Z",
+          "updatedAt": "2026-03-15T18:24:48.016Z",
           "sourceKey": "page_1773403588491_034z:calculates-cost-tokens-usage-etc",
           "desk": "CTO",
           "state": "Approval required",
@@ -3410,7 +5510,8 @@
           "applyStatus": "idle",
           "branch": null,
           "commit": null,
-          "lastHealth": null
+          "lastHealth": null,
+          "sourceAnchorRefs": []
         },
         {
           "id": "card_page_1773403588491_034z_allocates-resources-allowed-to-each-agen",
@@ -3420,7 +5521,7 @@
           "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
           "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-14T13:30:54.485Z",
+          "updatedAt": "2026-03-15T18:24:48.016Z",
           "sourceKey": "page_1773403588491_034z:allocates-resources-allowed-to-each-agen",
           "desk": "CTO",
           "state": "Approval required",
@@ -3448,7 +5549,8 @@
           "applyStatus": "idle",
           "branch": null,
           "commit": null,
-          "lastHealth": null
+          "lastHealth": null,
+          "sourceAnchorRefs": []
         },
         {
           "id": "card_page_1773408149866_813p_finance-department",
@@ -3458,7 +5560,7 @@
           "title": "Finance Department",
           "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-14T13:30:54.485Z",
+          "updatedAt": "2026-03-15T18:24:48.016Z",
           "sourceKey": "page_1773408149866_813p:finance-department",
           "desk": "CTO",
           "state": "Approval required",
@@ -3486,7 +5588,8 @@
           "applyStatus": "idle",
           "branch": null,
           "commit": null,
-          "lastHealth": null
+          "lastHealth": null,
+          "sourceAnchorRefs": []
         },
         {
           "id": "card_page_1773408149866_813p_calculates-cost-tokens-usage-etc",
@@ -3496,7 +5599,7 @@
           "title": "- calculates cost/tokens usage etc",
           "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-14T13:30:54.485Z",
+          "updatedAt": "2026-03-15T18:24:48.016Z",
           "sourceKey": "page_1773408149866_813p:calculates-cost-tokens-usage-etc",
           "desk": "CTO",
           "state": "Approval required",
@@ -3524,7 +5627,8 @@
           "applyStatus": "idle",
           "branch": null,
           "commit": null,
-          "lastHealth": null
+          "lastHealth": null,
+          "sourceAnchorRefs": []
         },
         {
           "id": "card_page_1773408149866_813p_allocates-resources-allowed-to-each-agen",
@@ -3534,7 +5638,7 @@
           "title": "- allocates resources allowed to each agent to mitigate scope creep & throttle heavy expenses",
           "status": "review",
           "createdAt": "2026-03-13T10:14:50.468Z",
-          "updatedAt": "2026-03-14T13:30:54.485Z",
+          "updatedAt": "2026-03-15T18:24:48.016Z",
           "sourceKey": "page_1773408149866_813p:allocates-resources-allowed-to-each-agen",
           "desk": "CTO",
           "state": "Approval required",
@@ -3562,7 +5666,8 @@
           "applyStatus": "idle",
           "branch": null,
           "commit": null,
-          "lastHealth": null
+          "lastHealth": null,
+          "sourceAnchorRefs": []
         },
         {
           "id": "card_page_1773408149866_813p_context-reports-need-updating-by-agent-b",
@@ -3572,7 +5677,7 @@
           "title": "context reports need updating by agent beyond text taken from 1 node",
           "status": "review",
           "createdAt": "2026-03-13T12:07:46.941Z",
-          "updatedAt": "2026-03-14T13:30:54.485Z",
+          "updatedAt": "2026-03-15T18:24:48.016Z",
           "sourceKey": "page_1773408149866_813p:context-reports-need-updating-by-agent-b",
           "desk": "CTO",
           "state": "Approval required",
@@ -3600,7 +5705,8 @@
           "applyStatus": "idle",
           "branch": null,
           "commit": null,
-          "lastHealth": null
+          "lastHealth": null,
+          "sourceAnchorRefs": []
         },
         {
           "id": "0001",
@@ -3619,7 +5725,7 @@
           "deployStatus": "idle",
           "auditSessionId": null,
           "createdAt": "2026-03-13T12:07:46.941Z",
-          "updatedAt": "2026-03-14T13:30:54.485Z",
+          "updatedAt": "2026-03-15T18:24:48.016Z",
           "targetProjectKey": "ace-self",
           "builderTaskId": null,
           "executionPackage": {
@@ -3638,14 +5744,67 @@
           "applyStatus": "idle",
           "branch": null,
           "commit": null,
-          "lastHealth": null
+          "lastHealth": null,
+          "sourceAnchorRefs": []
+        },
+        {
+          "id": "0002",
+          "sourceKey": "page_1773429206094_pgv8:clarify-what-the-planner-should-do-next-",
+          "pageId": "page_1773429206094_pgv8",
+          "sourceHandoffId": "handoff_1773599058578_ic7sa6",
+          "sourceNodeId": "node_ui_pass",
+          "sourceAnchorRefs": [
+            "brain/emergence/project_brain.md"
+          ],
+          "title": "Clarify what the planner should do next and make the desk state readable in Studio",
+          "status": "active",
+          "desk": "Builder",
+          "state": "Builder failed",
+          "phaseTicks": 0,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": "10000",
+          "runnerTaskId": "10000",
+          "runIds": [
+            "1773599061098-lnvt7w",
+            "1773599083999-qetxn4",
+            "1773599084032-7m9ojy",
+            "1773599088002-cwlqzy"
+          ],
+          "artifactRefs": [
+            "work/tasks/10000-clarify-what-the-planner-should-do-next-/context.md",
+            "work/tasks/10000-clarify-what-the-planner-should-do-next-/idea.txt",
+            "work/tasks/10000-clarify-what-the-planner-should-do-next-/meta.json",
+            "work/tasks/10000-clarify-what-the-planner-should-do-next-/patch.diff",
+            "work/tasks/10000-clarify-what-the-planner-should-do-next-/plan.md"
+          ],
+          "executionPackage": {
+            "status": "failed",
+            "taskId": "10000",
+            "taskDir": "work/tasks/10000-clarify-what-the-planner-should-do-next-",
+            "patchPath": "work/tasks/10000-clarify-what-the-planner-should-do-next-/patch.diff",
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": "Command failed."
+          },
+          "riskLevel": "unknown",
+          "riskReasons": [],
+          "approvalState": "none",
+          "applyStatus": "idle",
+          "deployStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "lastHealth": null,
+          "auditSessionId": null,
+          "createdAt": "2026-03-15T18:24:18.578Z",
+          "updatedAt": "2026-03-15T18:24:48.016Z"
         }
       ],
       "selectedCardId": "card_page_1773403588491_034z_finance-department",
-      "updatedAt": "2026-03-14T19:08:14.227Z",
+      "updatedAt": "2026-03-15T18:24:48.016Z",
       "summary": {
         "plan": 0,
-        "active": 0,
+        "active": 1,
         "complete": 0,
         "review": 8,
         "binned": 0,
@@ -3654,7 +5813,7 @@
     },
     "orchestrator": {
       "status": "needs-attention",
-      "lastTickAt": "2026-03-14T13:30:54.485Z",
+      "lastTickAt": "2026-03-15T18:24:48.016Z",
       "activeDeskIds": [
         "context-manager",
         "planner",
@@ -3692,6 +5851,16 @@
             "cto-architect"
           ],
           "summary": "Finance Department is waiting at the apply gate because risk heuristics require approval."
+        },
+        {
+          "id": "unanchored-execution-card_page_1773403588491_034z_finance-department",
+          "kind": "unanchored-execution",
+          "severity": "high",
+          "desks": [
+            "executor",
+            "cto-architect"
+          ],
+          "summary": "Finance Department lacks anchor provenance and should not advance until it is re-anchored."
         }
       ],
       "pendingUserActions": [
@@ -3701,7 +5870,7 @@
         "context-manager": {
           "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
           "localState": "running",
-          "currentGoal": "context reports need updating by agent beyond text taken from 1 node",
+          "currentGoal": "Clarify what the planner should do next and make the desk state readable in Studio.",
           "allowedActions": [
             "set-active-page",
             "slice-context",
@@ -3720,28 +5889,29 @@
                 "context"
               ],
               "artifactRefs": [
-                "handoff_1773429206097_fi0w"
+                "handoff_1773599083957_0ojlqt"
               ],
-              "title": "context reports need updating by agent beyond text taken from 1 node"
+              "anchorRefs": [
+                "brain/emergence/project_brain.md"
+              ],
+              "title": "Clarify what the planner should do next and make the desk state readable in Studio."
             }
           ],
-          "lastOutput": "context reports need updating by agent beyond text taken from 1 node",
+          "lastOutput": "Clarify what the planner should do next and make the desk state readable in Studio.",
           "blockedReason": null,
           "contextSlice": {
             "activePageId": "page_1773429206094_pgv8",
-            "activePageTitle": "context reports need updating by agent beyond te",
-            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
-            "matchedTerms": [
-              "agent"
-            ]
+            "activePageTitle": "Clarify what the planner should do next and make",
+            "pageGoal": "Clarify what the planner should do next and make the desk state readable in Studio.",
+            "matchedTerms": []
           },
-          "freshAt": "2026-03-14T13:30:54.485Z",
-          "thoughtBubble": "🔵 stabilizing context..."
+          "freshAt": "2026-03-15T18:24:48.016Z",
+          "thoughtBubble": "🔵 deterministic fallback is keeping intake alive..."
         },
         "planner": {
           "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
           "localState": "running",
-          "currentGoal": "context reports need updating by agent beyond text taken from 1 node",
+          "currentGoal": "Clarify what the planner should do next and make the desk state readable in Studio",
           "allowedActions": [
             "expand-plan",
             "prioritise-work",
@@ -3755,29 +5925,30 @@
               "kind": "plan-item",
               "status": "running",
               "dependsOn": [
-                "handoff_1773429206097_fi0w"
+                "handoff_1773599083957_0ojlqt"
               ],
               "conflictTags": [
                 "plan",
                 "task-0"
               ],
               "artifactRefs": [
-                "handoff_1773429206097_fi0w"
+                "handoff_1773599083957_0ojlqt"
               ],
-              "title": "context reports need updating by agent beyond text taken from 1 node"
+              "anchorRefs": [
+                "brain/emergence/project_brain.md"
+              ],
+              "title": "Clarify what the planner should do next and make the desk state readable in Studio"
             }
           ],
-          "lastOutput": "context reports need updating by agent beyond text taken from 1 node",
+          "lastOutput": "Clarify what the planner should do next and make the desk state readable in Studio",
           "blockedReason": null,
           "contextSlice": {
             "activePageId": "page_1773429206094_pgv8",
-            "activePageTitle": "context reports need updating by agent beyond te",
-            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
-            "matchedTerms": [
-              "agent"
-            ]
+            "activePageTitle": "Clarify what the planner should do next and make",
+            "pageGoal": "Clarify what the planner should do next and make the desk state readable in Studio.",
+            "matchedTerms": []
           },
-          "freshAt": "2026-03-14T13:30:54.485Z",
+          "freshAt": "2026-03-15T18:24:48.016Z",
           "thoughtBubble": "🟡 shaping the next task..."
         },
         "executor": {
@@ -3805,6 +5976,7 @@
                 "card_page_1773403588491_034z_finance-department"
               ],
               "artifactRefs": [],
+              "anchorRefs": [],
               "title": "Awaiting approval: Finance Department"
             }
           ],
@@ -3812,13 +5984,11 @@
           "blockedReason": "Waiting for approval on Finance Department.",
           "contextSlice": {
             "activePageId": "page_1773429206094_pgv8",
-            "activePageTitle": "context reports need updating by agent beyond te",
-            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
-            "matchedTerms": [
-              "agent"
-            ]
+            "activePageTitle": "Clarify what the planner should do next and make",
+            "pageGoal": "Clarify what the planner should do next and make the desk state readable in Studio.",
+            "matchedTerms": []
           },
-          "freshAt": "2026-03-14T13:30:54.485Z",
+          "freshAt": "2026-03-15T18:24:48.016Z",
           "thoughtBubble": "🔴 blocked by low-confidence context."
         },
         "memory-archivist": {
@@ -3842,7 +6012,10 @@
                 "memory"
               ],
               "artifactRefs": [
-                "handoff_1773429206097_fi0w"
+                "handoff_1773599083957_0ojlqt"
+              ],
+              "anchorRefs": [
+                "brain/emergence/project_brain.md"
               ],
               "title": "Capture notes, handoffs, and artifact history"
             }
@@ -3851,13 +6024,11 @@
           "blockedReason": null,
           "contextSlice": {
             "activePageId": "page_1773429206094_pgv8",
-            "activePageTitle": "context reports need updating by agent beyond te",
-            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
-            "matchedTerms": [
-              "agent"
-            ]
+            "activePageTitle": "Clarify what the planner should do next and make",
+            "pageGoal": "Clarify what the planner should do next and make the desk state readable in Studio.",
+            "matchedTerms": []
           },
-          "freshAt": "2026-03-14T13:30:54.485Z",
+          "freshAt": "2026-03-15T18:24:48.016Z",
           "thoughtBubble": "🟣 logging summaries..."
         },
         "cto-architect": {
@@ -3877,14 +6048,17 @@
               "kind": "governance-check",
               "status": "running",
               "dependsOn": [
-                "handoff_1773429206097_fi0w"
+                "handoff_1773599083957_0ojlqt"
               ],
               "conflictTags": [
                 "review",
                 "governance"
               ],
               "artifactRefs": [
-                "handoff_1773429206097_fi0w"
+                "handoff_1773599083957_0ojlqt"
+              ],
+              "anchorRefs": [
+                "brain/emergence/project_brain.md"
               ],
               "title": "Review desk overlap, approval state, and guardrails"
             }
@@ -3893,13 +6067,11 @@
           "blockedReason": null,
           "contextSlice": {
             "activePageId": "page_1773429206094_pgv8",
-            "activePageTitle": "context reports need updating by agent beyond te",
-            "pageGoal": "context reports need updating by agent beyond text taken from 1 node",
-            "matchedTerms": [
-              "agent"
-            ]
+            "activePageTitle": "Clarify what the planner should do next and make",
+            "pageGoal": "Clarify what the planner should do next and make the desk state readable in Studio.",
+            "matchedTerms": []
           },
-          "freshAt": "2026-03-14T13:30:54.485Z",
+          "freshAt": "2026-03-15T18:24:48.016Z",
           "thoughtBubble": "🟠 reviewing governance signals..."
         }
       },
@@ -3958,8 +6130,8 @@
           "y": 658
         },
         "memory-archivist": {
-          "x": 644.7166895604396,
-          "y": 639.8080357142857
+          "x": 638.4666895604396,
+          "y": 658
         },
         "cto-architect": {
           "x": 971.4394946808511,
@@ -3974,18 +6146,50 @@
       }
     },
     "canvasViewport": {
-      "x": -241,
-      "y": -623,
-      "zoom": 1.24
+      "zoom": 0.76,
+      "x": -18.203231148097814,
+      "y": -135.739109205163
     },
     "studioViewport": {
-      "zoom": 1.54,
-      "x": 12.759999999999991,
-      "y": -212.74
+      "zoom": 0.94,
+      "x": 46,
+      "y": -49.079999999999984
     },
     "sidebar": {
       "collapsed": false,
       "width": 487
+    },
+    "agentWorkers": {
+      "context-manager": {
+        "status": "idle",
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mixtral",
+        "currentRunId": null,
+        "lastRunId": "context_manager_1773599083633_uydxwp",
+        "lastSourceNodeId": "node_ui_pass_2",
+        "lastHandoffId": "handoff_1773599083957_0ojlqt",
+        "lastReportNodeId": "node_ui_pass_2",
+        "lastBlockedReason": null,
+        "lastUsedFallback": true,
+        "lastPlannerFeedbackAction": null,
+        "startedAt": "2026-03-15T18:24:43.633Z",
+        "completedAt": "2026-03-15T18:24:43.957Z"
+      },
+      "planner": {
+        "status": "idle",
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mixtral",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastSourceHandoffId": "handoff_1773599058578_ic7sa6",
+        "lastBlockedReason": null,
+        "lastProducedCardIds": [],
+        "proposalArtifactRefs": [],
+        "startedAt": "2026-03-15T18:24:18.654Z",
+        "completedAt": "2026-03-15T18:24:18.665Z"
+      }
     }
   }
 }

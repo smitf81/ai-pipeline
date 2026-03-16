@@ -1,9 +1,12 @@
 export class AceConnector {
-  async parseIntent(text) {
+  async parseIntent(input, options = {}) {
+    const payload = typeof input === 'string'
+      ? { text: input, ...(options || {}) }
+      : { ...(input || {}) };
     const res = await fetch('/api/spatial/intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error('Intent parsing failed');
     return res.json();
