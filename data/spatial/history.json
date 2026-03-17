@@ -1,6 +1,6 @@
 [
   {
-    "at": "2026-03-16T15:36:05.959Z",
+    "at": "2026-03-16T21:56:15.994Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -9,18 +9,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:06.050Z",
+    "at": "2026-03-16T21:56:16.086Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675365960-zix9tw"
+        "1773698175998-hotbp7"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:07.377Z",
+    "at": "2026-03-16T21:56:20.013Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -29,18 +29,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:07.477Z",
+    "at": "2026-03-16T21:56:20.107Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675367379-uii9di"
+        "1773698180018-7v9tu6"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:11.388Z",
+    "at": "2026-03-16T21:56:24.016Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -49,18 +49,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:11.491Z",
+    "at": "2026-03-16T21:56:24.105Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675371390-229u20"
+        "1773698184019-bsdrgp"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:15.387Z",
+    "at": "2026-03-16T21:56:28.036Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -69,18 +69,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:15.499Z",
+    "at": "2026-03-16T21:56:28.127Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675375388-bt2aq1"
+        "1773698188041-iz9j5a"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:16.840Z",
+    "at": "2026-03-16T21:56:32.039Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -89,18 +89,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:16.931Z",
+    "at": "2026-03-16T21:56:32.129Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675376841-45lxsw"
+        "1773698192042-mij3g9"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:19.395Z",
+    "at": "2026-03-16T21:56:36.051Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -109,18 +109,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:19.500Z",
+    "at": "2026-03-16T21:56:36.139Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675379396-cy1x4e"
+        "1773698196054-3bdnqm"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:21.968Z",
+    "at": "2026-03-16T21:56:40.063Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -129,18 +129,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:22.058Z",
+    "at": "2026-03-16T21:56:40.152Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675381969-gw99d2"
+        "1773698200065-b03xdq"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:23.399Z",
+    "at": "2026-03-16T21:56:44.060Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -149,18 +149,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:23.501Z",
+    "at": "2026-03-16T21:56:44.150Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675383400-0818j1"
+        "1773698204063-n48bq6"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:27.407Z",
+    "at": "2026-03-16T21:56:48.071Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -169,18 +169,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:27.502Z",
+    "at": "2026-03-16T21:56:48.164Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675387408-t7jqsz"
+        "1773698208074-jg3xy4"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:31.417Z",
+    "at": "2026-03-16T21:56:52.071Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -189,18 +189,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:31.516Z",
+    "at": "2026-03-16T21:56:52.162Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675391419-jzmah6"
+        "1773698212074-xby4qy"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:35.421Z",
+    "at": "2026-03-16T21:56:56.074Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -209,18 +209,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:35.527Z",
+    "at": "2026-03-16T21:56:56.164Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675395423-0toqyj"
+        "1773698216077-xzzdd0"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:37.963Z",
+    "at": "2026-03-16T21:57:00.085Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -229,18 +229,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:38.057Z",
+    "at": "2026-03-16T21:57:00.175Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675397963-4os4dg"
+        "1773698220088-lb92jr"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:39.418Z",
+    "at": "2026-03-16T21:57:04.097Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -249,28 +249,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:39.508Z",
+    "at": "2026-03-16T21:57:04.186Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675399420-ap6d3u"
+        "1773698224101-xy6dwc"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:42.718Z",
-    "type": "context-manager-worker-start",
-    "summary": {
-      "sourceNodeId": "node_1773675401499_rlwdi",
-      "runId": "context_manager_1773675402711_h4d1iv",
-      "mode": "manual",
-      "source": "node-idle"
-    }
-  },
-  {
-    "at": "2026-03-16T15:36:43.441Z",
+    "at": "2026-03-16T21:57:08.106Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -279,18 +269,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:43.543Z",
+    "at": "2026-03-16T21:57:08.199Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675403443-o65o42"
+        "1773698228111-40vhj1"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:47.439Z",
+    "at": "2026-03-16T21:57:12.113Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -299,18 +289,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:47.530Z",
+    "at": "2026-03-16T21:57:12.202Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675407440-8c0aq3"
+        "1773698232117-hm8t65"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:51.447Z",
+    "at": "2026-03-16T21:57:16.117Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -319,18 +309,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:51.539Z",
+    "at": "2026-03-16T21:57:16.207Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675411448-kkwcsv"
+        "1773698236122-8bjxlm"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:53.964Z",
+    "at": "2026-03-16T21:57:20.121Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -339,18 +329,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:54.058Z",
+    "at": "2026-03-16T21:57:20.213Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675413965-tjcxzc"
+        "1773698240125-qx959e"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:55.516Z",
+    "at": "2026-03-16T21:57:24.130Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -359,18 +349,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:55.679Z",
+    "at": "2026-03-16T21:57:24.224Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675415518-6crgt4"
+        "1773698244134-ch1i6l"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:36:59.468Z",
+    "at": "2026-03-16T21:57:28.144Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -379,18 +369,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:36:59.577Z",
+    "at": "2026-03-16T21:57:28.236Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675419469-euoo8x"
+        "1773698248148-ss3pfb"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:03.468Z",
+    "at": "2026-03-16T21:57:32.147Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -399,18 +389,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:03.594Z",
+    "at": "2026-03-16T21:57:32.237Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675423470-whr6p4"
+        "1773698252150-ckhohm"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:07.481Z",
+    "at": "2026-03-16T21:57:36.162Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -419,18 +409,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:07.726Z",
+    "at": "2026-03-16T21:57:36.251Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675427482-xl36vo"
+        "1773698256164-pwugn5"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:11.489Z",
+    "at": "2026-03-16T21:57:40.165Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -439,29 +429,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:11.742Z",
+    "at": "2026-03-16T21:57:40.255Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675431491-cflopt"
+        "1773698260168-jjziar"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:12.834Z",
-    "type": "context-manager-worker-completed",
-    "summary": {
-      "sourceNodeId": "node_1773675401499_rlwdi",
-      "runId": "context_manager_1773675402711_h4d1iv",
-      "reason": "Local model request timed out after 30000ms.",
-      "handoffId": "handoff_1773675432813_9uvy51",
-      "usedFallback": true
-    }
-  },
-  {
-    "at": "2026-03-16T15:37:15.483Z",
+    "at": "2026-03-16T21:57:44.175Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -470,18 +449,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:15.637Z",
+    "at": "2026-03-16T21:57:44.263Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675435485-yms408"
+        "1773698264178-gs30e1"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:19.496Z",
+    "at": "2026-03-16T21:57:48.172Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -490,18 +469,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:19.594Z",
+    "at": "2026-03-16T21:57:48.262Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675439497-ts87oy"
+        "1773698268175-zuwkkx"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:23.505Z",
+    "at": "2026-03-16T21:57:52.179Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -510,18 +489,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:23.602Z",
+    "at": "2026-03-16T21:57:52.268Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675443507-yrh6v5"
+        "1773698272181-6cg1u1"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:27.514Z",
+    "at": "2026-03-16T21:57:56.191Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -530,18 +509,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:27.607Z",
+    "at": "2026-03-16T21:57:56.282Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675447516-cc0u4l"
+        "1773698276196-7fxplq"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:31.529Z",
+    "at": "2026-03-16T21:58:00.186Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -550,18 +529,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:31.623Z",
+    "at": "2026-03-16T21:58:00.275Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675451531-1evtht"
+        "1773698280188-8ansy9"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:35.539Z",
+    "at": "2026-03-16T21:58:04.189Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -570,18 +549,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:35.632Z",
+    "at": "2026-03-16T21:58:04.277Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675455540-2fh9he"
+        "1773698284192-o7mrxe"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:39.538Z",
+    "at": "2026-03-16T21:58:08.210Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -590,18 +569,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:39.634Z",
+    "at": "2026-03-16T21:58:08.297Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675459539-jurjn1"
+        "1773698288212-qhz6dq"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:43.543Z",
+    "at": "2026-03-16T21:58:12.211Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -610,18 +589,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:43.637Z",
+    "at": "2026-03-16T21:58:12.301Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675463544-twdrhp"
+        "1773698292213-0w5g7p"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:47.559Z",
+    "at": "2026-03-16T21:58:16.217Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -630,18 +609,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:47.649Z",
+    "at": "2026-03-16T21:58:16.309Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675467560-ead5xa"
+        "1773698296221-ail26r"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:51.574Z",
+    "at": "2026-03-16T21:58:20.226Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -650,18 +629,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:51.665Z",
+    "at": "2026-03-16T21:58:20.312Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675471575-lt0fm6"
+        "1773698300229-en4r4v"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:55.587Z",
+    "at": "2026-03-16T21:58:24.242Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -670,18 +649,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:55.677Z",
+    "at": "2026-03-16T21:58:24.333Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675475588-b8i2dn"
+        "1773698304245-fm9bcg"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:37:59.602Z",
+    "at": "2026-03-16T21:58:28.248Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -690,18 +669,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:37:59.693Z",
+    "at": "2026-03-16T21:58:28.339Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675479603-w6003d"
+        "1773698308252-tkx9g9"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:38:03.597Z",
+    "at": "2026-03-16T21:58:32.258Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -710,18 +689,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:38:03.693Z",
+    "at": "2026-03-16T21:58:32.351Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675483598-cgzcok"
+        "1773698312263-19l5xr"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:38:07.604Z",
+    "at": "2026-03-16T21:58:36.272Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -730,18 +709,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:38:07.700Z",
+    "at": "2026-03-16T21:58:36.359Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675487606-98xego"
+        "1773698316274-mi17ms"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:38:11.617Z",
+    "at": "2026-03-16T21:58:40.280Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -750,18 +729,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:38:11.709Z",
+    "at": "2026-03-16T21:58:40.372Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675491618-i9l6zc"
+        "1773698320284-7lro09"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:38:15.630Z",
+    "at": "2026-03-16T21:58:44.295Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -770,18 +749,18 @@
     }
   },
   {
-    "at": "2026-03-16T15:38:15.718Z",
+    "at": "2026-03-16T21:58:44.378Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675495631-k37lnk"
+        "1773698324298-amn3nl"
       ]
     }
   },
   {
-    "at": "2026-03-16T15:38:19.639Z",
+    "at": "2026-03-16T21:58:48.302Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -790,13 +769,33 @@
     }
   },
   {
-    "at": "2026-03-16T15:38:19.726Z",
+    "at": "2026-03-16T21:58:48.398Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773675499640-fxqieq"
+        "1773698328304-e81qb3"
+      ]
+    }
+  },
+  {
+    "at": "2026-03-16T21:58:52.310Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0002",
+      "taskId": "10000",
+      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+    }
+  },
+  {
+    "at": "2026-03-16T21:58:52.349Z",
+    "type": "team-board-builder-failed",
+    "summary": {
+      "cardId": "0002",
+      "taskId": "10000",
+      "runIds": [
+        "1773698332314-j1xu68"
       ]
     }
   }
