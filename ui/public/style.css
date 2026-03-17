@@ -1349,6 +1349,18 @@ textarea {
 .help { margin-top: 6px; }
 .show-help { display: block; }
 .refresh-row { display: flex; justify-content: space-between; align-items: center; }
+
+.trace-panel .trace-entry {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.trace-json {
+  max-height: 180px;
+  overflow: auto;
+}
+
 .ta-panel {
   display: grid;
   gap: 10px;
