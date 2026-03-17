@@ -1,0 +1,12 @@
+{
+  "id": "10000",
+  "title": "Finance Department",
+  "created_utc": "2026-03-17T16:42:50.995Z",
+  "source": "throughput-debug",
+  "sessionId": "throughput_1773765740802_vjofq8",
+  "handoffId": "handoff_1773765770903_uqxxd5",
+  "anchorRefs": [
+    "brain/emergence/roadmap.md",
+    "brain/emergence/tasks.md"
+  ]
+}

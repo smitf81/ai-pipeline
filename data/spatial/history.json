@@ -1,6 +1,26 @@
 [
   {
-    "at": "2026-03-16T21:56:15.994Z",
+    "at": "2026-03-17T17:27:27.493Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768447482_1dpjc4",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:27.517Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768447482_1dpjc4",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:27.543Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -9,18 +29,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:16.086Z",
+    "at": "2026-03-17T17:27:27.640Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698175998-hotbp7"
+        "1773768447544-8gn098"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:20.013Z",
+    "at": "2026-03-17T17:27:27.834Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768447816_ol7sbl",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:27.861Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768447816_ol7sbl",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:27.891Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -29,18 +69,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:20.107Z",
+    "at": "2026-03-17T17:27:27.987Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698180018-7v9tu6"
+        "1773768447892-aqhchl"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:24.016Z",
+    "at": "2026-03-17T17:27:31.852Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768451833_bxz8cm",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:31.879Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768451833_bxz8cm",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:31.907Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -49,18 +109,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:24.105Z",
+    "at": "2026-03-17T17:27:32.009Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698184019-bsdrgp"
+        "1773768451908-gknd8y"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:28.036Z",
+    "at": "2026-03-17T17:27:35.844Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768455832_y30a2h",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:35.865Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768455832_y30a2h",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:35.890Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -69,18 +149,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:28.127Z",
+    "at": "2026-03-17T17:27:35.981Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698188041-iz9j5a"
+        "1773768455891-p6h0x0"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:32.039Z",
+    "at": "2026-03-17T17:27:39.859Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768459844_gzom8d",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:39.883Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768459844_gzom8d",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:39.909Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -89,18 +189,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:32.129Z",
+    "at": "2026-03-17T17:27:40.012Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698192042-mij3g9"
+        "1773768459911-vz9jrl"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:36.051Z",
+    "at": "2026-03-17T17:27:43.485Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768463474_i069t0",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:43.509Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768463474_i069t0",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:43.536Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -109,18 +229,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:36.139Z",
+    "at": "2026-03-17T17:27:43.634Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698196054-3bdnqm"
+        "1773768463537-4qipd1"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:40.063Z",
+    "at": "2026-03-17T17:27:43.859Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768463850_6mjffh",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:43.880Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768463850_6mjffh",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:43.906Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -129,18 +269,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:40.152Z",
+    "at": "2026-03-17T17:27:43.997Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698200065-b03xdq"
+        "1773768463908-szydjx"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:44.060Z",
+    "at": "2026-03-17T17:27:47.888Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768467874_jv1k8n",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:47.926Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768467874_jv1k8n",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:47.954Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -149,18 +309,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:44.150Z",
+    "at": "2026-03-17T17:27:48.053Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698204063-n48bq6"
+        "1773768467955-r473c4"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:48.071Z",
+    "at": "2026-03-17T17:27:51.875Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768471863_bat785",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:51.892Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768471863_bat785",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:51.915Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -169,18 +349,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:48.164Z",
+    "at": "2026-03-17T17:27:52.016Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698208074-jg3xy4"
+        "1773768471916-r5qwvs"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:52.071Z",
+    "at": "2026-03-17T17:27:55.885Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768475872_1l4eg0",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:55.906Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768475872_1l4eg0",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:55.932Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -189,18 +389,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:52.162Z",
+    "at": "2026-03-17T17:27:56.026Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698212074-xby4qy"
+        "1773768475933-lzu2x6"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:56:56.074Z",
+    "at": "2026-03-17T17:27:59.500Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768479488_e16lg2",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:59.523Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768479488_e16lg2",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:59.550Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -209,18 +429,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:56:56.164Z",
+    "at": "2026-03-17T17:27:59.648Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698216077-xzzdd0"
+        "1773768479551-qmhg4j"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:57:00.085Z",
+    "at": "2026-03-17T17:27:59.883Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768479870_j91y0q",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:59.905Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768479870_j91y0q",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:27:59.932Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -229,18 +469,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:57:00.175Z",
+    "at": "2026-03-17T17:28:00.028Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698220088-lb92jr"
+        "1773768479933-60tiv7"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:57:04.097Z",
+    "at": "2026-03-17T17:28:03.896Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768483881_zh83w4",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:03.914Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768483881_zh83w4",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:03.940Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -249,18 +509,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:57:04.186Z",
+    "at": "2026-03-17T17:28:04.037Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698224101-xy6dwc"
+        "1773768483941-hstkfh"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:57:08.106Z",
+    "at": "2026-03-17T17:28:07.911Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768487898_kdc1c4",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:07.942Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768487898_kdc1c4",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:07.974Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -269,18 +549,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:57:08.199Z",
+    "at": "2026-03-17T17:28:08.067Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698228111-40vhj1"
+        "1773768487975-sci2ny"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:57:12.113Z",
+    "at": "2026-03-17T17:28:11.899Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768491886_qz0fwa",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:11.919Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768491886_qz0fwa",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:11.953Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -289,18 +589,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:57:12.202Z",
+    "at": "2026-03-17T17:28:12.046Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698232117-hm8t65"
+        "1773768491954-bfrr9i"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:57:16.117Z",
+    "at": "2026-03-17T17:28:15.480Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768495470_cu4qre",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:15.505Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768495470_cu4qre",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:15.534Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -309,18 +629,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:57:16.207Z",
+    "at": "2026-03-17T17:28:15.626Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698236122-8bjxlm"
+        "1773768495535-6a2fsj"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:57:20.121Z",
+    "at": "2026-03-17T17:28:15.907Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768495893_9w06qn",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:15.929Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768495893_9w06qn",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:15.954Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -329,18 +669,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:57:20.213Z",
+    "at": "2026-03-17T17:28:16.050Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698240125-qx959e"
+        "1773768495954-c7nd6m"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:57:24.130Z",
+    "at": "2026-03-17T17:28:19.909Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768499898_ijjnfz",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:19.929Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768499898_ijjnfz",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:19.958Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -349,18 +709,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:57:24.224Z",
+    "at": "2026-03-17T17:28:20.059Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698244134-ch1i6l"
+        "1773768499960-ge7haq"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:57:28.144Z",
+    "at": "2026-03-17T17:28:23.919Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768503902_ccxyzn",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:23.949Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768503902_ccxyzn",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:23.973Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -369,18 +749,38 @@
     }
   },
   {
-    "at": "2026-03-16T21:57:28.236Z",
+    "at": "2026-03-17T17:28:24.073Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698248148-ss3pfb"
+        "1773768503974-iok0au"
       ]
     }
   },
   {
-    "at": "2026-03-16T21:57:32.147Z",
+    "at": "2026-03-17T17:28:27.945Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768507930_ym9lfp",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:27.973Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1773765770903_uqxxd5",
+      "runId": "planner_1773768507930_ym9lfp",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-03-17T17:28:28.002Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0002",
@@ -389,413 +789,13 @@
     }
   },
   {
-    "at": "2026-03-16T21:57:32.237Z",
+    "at": "2026-03-17T17:28:28.095Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0002",
       "taskId": "10000",
       "runIds": [
-        "1773698252150-ckhohm"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:36.162Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:36.251Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698256164-pwugn5"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:40.165Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:40.255Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698260168-jjziar"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:44.175Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:44.263Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698264178-gs30e1"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:48.172Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:48.262Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698268175-zuwkkx"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:52.179Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:52.268Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698272181-6cg1u1"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:56.191Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:57:56.282Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698276196-7fxplq"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:00.186Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:00.275Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698280188-8ansy9"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:04.189Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:04.277Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698284192-o7mrxe"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:08.210Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:08.297Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698288212-qhz6dq"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:12.211Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:12.301Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698292213-0w5g7p"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:16.217Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:16.309Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698296221-ail26r"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:20.226Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:20.312Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698300229-en4r4v"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:24.242Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:24.333Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698304245-fm9bcg"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:28.248Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:28.339Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698308252-tkx9g9"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:32.258Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:32.351Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698312263-19l5xr"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:36.272Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:36.359Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698316274-mi17ms"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:40.280Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:40.372Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698320284-7lro09"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:44.295Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:44.378Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698324298-amn3nl"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:48.302Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:48.398Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698328304-e81qb3"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:52.310Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
-    }
-  },
-  {
-    "at": "2026-03-16T21:58:52.349Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773698332314-j1xu68"
+        "1773768508003-sdt2b7"
       ]
     }
   }

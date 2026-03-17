@@ -1,0 +1,604 @@
+{
+  "id": "context_manager_1773762539127_5x4kki",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-17T15:49:29.165Z",
+  "completedAt": "2026-03-17T15:49:29.165Z",
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mixtral",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "I think we should add a desk to the studio for a QA agent",
+  "reason": "Local model request timed out after 30000ms. | Local model request timed out after 30000ms.",
+  "sourceNodeId": null,
+  "sourceText": "I think we should add a desk to the studio for a QA agent",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "",
+    "statement": "",
+    "tasks": [],
+    "constraints": [],
+    "clarifications": [],
+    "focusTerms": [],
+    "suggestedAnchorRefs": []
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1773762539127_5x4kki",
+    "sourceNodeId": null,
+    "sourceText": "I think we should add a desk to the studio for a QA agent",
+    "summary": "I think we should add a desk to the studio for a QA agent",
+    "explicitClaims": [],
+    "inferredClaims": [],
+    "candidateNodes": [
+      {
+        "id": "literal_1",
+        "label": "I think we should add a desk to the studio for a QA agent",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Literal candidate derived from the current input and upstream packet.",
+        "confidence": 0.51
+      }
+    ],
+    "candidateEdges": [],
+    "gaps": [
+      "Project alignment: Matched project terms: add",
+      "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+      "Clarity: Short input limits confidence."
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mixtral",
+      "runId": "context_manager_1773762539127_5x4kki",
+      "usedFallback": true,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.51,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0.2857142857142857,
+          "reason": "Matched project terms: add"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.875,
+          "reason": "Feature-request phrasing reads like actionable planning work."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.7777777777777778,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0.16666666666666666,
+          "reason": "Includes guardrails, blockers, or review-oriented language."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 0.4259259259259259,
+          "reason": "Short input limits confidence."
+        }
+      ],
+      "classification": {
+        "role": "module",
+        "labels": [
+          "plan",
+          "ux"
+        ]
+      },
+      "matchedTerms": [
+        "add"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "I think we should add a desk to the studio for a QA agent",
+    "confidence": 0.51,
+    "legacyConfidence": 0.35,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.2857142857142857,
+        "reason": "Matched project terms: add"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.875,
+        "reason": "Feature-request phrasing reads like actionable planning work."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.7777777777777778,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0.16666666666666666,
+        "reason": "Includes guardrails, blockers, or review-oriented language."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.4259259259259259,
+        "reason": "Short input limits confidence."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.16666666666666666,
+        "reason": "Matched project terms: add"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.16666666666666666,
+        "reason": "Input reads more like a note than a concrete action."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.8571428571428571,
+        "reason": "References ACE system structure, agents, or implementation surfaces."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0.2,
+        "reason": "Includes guardrails, blockers, or review-oriented language."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.34523809523809523,
+        "reason": "Short input limits confidence."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.51,
+      "executionReadiness": 0.49,
+      "plannerUsefulness": 0.62,
+      "deployReadiness": 0.23
+    },
+    "truth": {
+      "rawInput": "I think we should add a desk to the studio for a QA agent",
+      "statement": "I think we should add a desk to the studio for a QA agent",
+      "intentType": "ACE architecture / capability request",
+      "requestedOutcomes": [
+        "I think we should add a desk to the studio for a QA agent",
+        "I think we should add a desk to the studio for a QA agent"
+      ],
+      "unresolved": [
+        "Project alignment: Matched project terms: add",
+        "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+        "Clarity: Short input limits confidence."
+      ],
+      "evidence": [
+        "Actionability: Feature-request phrasing reads like actionable planning work.",
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+        "Clarity: Short input limits confidence."
+      ],
+      "anchorRefs": [
+        "brain/emergence/roadmap.md",
+        "brain/emergence/tasks.md"
+      ],
+      "plannerBrief": "Planner should treat this as: I think we should add a desk to the studio for a QA agent; I think we should add a desk to the studio for a QA agent",
+      "readiness": {
+        "intentConfidence": 0.51,
+        "plannerUsefulness": 0.62,
+        "executionReadiness": 0.49,
+        "deployReadiness": 0.23
+      }
+    },
+    "tasks": [
+      "I think we should add a desk to the studio for a QA agent",
+      "I think we should add a desk to the studio for a QA agent"
+    ],
+    "anchorRefs": [
+      "brain/emergence/roadmap.md",
+      "brain/emergence/tasks.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "matchedTerms": [
+            "add"
+          ]
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 4,
+          "matchedTerms": [
+            "add"
+          ]
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "module",
+      "labels": [
+        "plan",
+        "ux"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 5,
+      "sentenceCount": 1,
+      "matchedProjectTerms": [
+        "add"
+      ],
+      "actionSignals": 1,
+      "featureRequestSignals": 2,
+      "architectureSignals": 4,
+      "constraintSignals": 1,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "add"
+      ],
+      "referenceKeywords": [
+        "and",
+        "emergence",
+        "manager",
+        "runtime",
+        "anchor",
+        "projects",
+        "brain",
+        "compatibility"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/roadmap.md",
+        "brain/emergence/tasks.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-17T15:49:29.163Z",
+    "nodeId": null,
+    "source": "throughput-debug",
+    "createdAt": "2026-03-17T15:49:29.165Z",
+    "contextPacket": {
+      "summary": "",
+      "statement": "",
+      "tasks": [],
+      "constraints": [],
+      "clarifications": [],
+      "focusTerms": [],
+      "suggestedAnchorRefs": [],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1773762539127_5x4kki",
+      "sourceNodeId": null,
+      "sourceText": "I think we should add a desk to the studio for a QA agent",
+      "summary": "I think we should add a desk to the studio for a QA agent",
+      "explicitClaims": [],
+      "inferredClaims": [],
+      "candidateNodes": [
+        {
+          "id": "literal_1",
+          "label": "I think we should add a desk to the studio for a QA agent",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Literal candidate derived from the current input and upstream packet.",
+          "confidence": 0.51
+        }
+      ],
+      "candidateEdges": [],
+      "gaps": [
+        "Project alignment: Matched project terms: add",
+        "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+        "Clarity: Short input limits confidence."
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mixtral",
+        "runId": "context_manager_1773762539127_5x4kki",
+        "usedFallback": true,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.51,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.2857142857142857,
+            "reason": "Matched project terms: add"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.875,
+            "reason": "Feature-request phrasing reads like actionable planning work."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.7777777777777778,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.16666666666666666,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.4259259259259259,
+            "reason": "Short input limits confidence."
+          }
+        ],
+        "classification": {
+          "role": "module",
+          "labels": [
+            "plan",
+            "ux"
+          ]
+        },
+        "matchedTerms": [
+          "add"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mixtral",
+      "runId": "context_manager_1773762539127_5x4kki",
+      "usedFallback": true
+    }
+  },
+  "handoffId": "handoff_1773762569165_ezb6oa",
+  "handoff": {
+    "id": "handoff_1773762569165_ezb6oa",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-17T15:49:29.165Z",
+    "sourceNodeId": null,
+    "summary": "I think we should add a desk to the studio for a QA agent",
+    "problemStatement": "Goal: I think we should add a desk to the studio for a QA agent\nRequested outcomes: I think we should add a desk to the studio for a QA agent; I think we should add a desk to the studio for a QA agent.\nWhy ACE believes this: Project alignment 29%, Actionability 88%, Architecture fit 78%.\nConstraints and review signals: Project alignment: Matched project terms: add | Constraint coverage: Includes guardrails, blockers, or review-oriented language. | Clarity: Short input limits confidence..\nStill unclear: no immediate clarification requested.",
+    "anchorRefs": [
+      "brain/emergence/roadmap.md",
+      "brain/emergence/tasks.md"
+    ],
+    "tasks": [
+      "I think we should add a desk to the studio for a QA agent",
+      "I think we should add a desk to the studio for a QA agent"
+    ],
+    "constraints": [
+      "Project alignment: Matched project terms: add",
+      "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+      "Clarity: Short input limits confidence."
+    ],
+    "confidence": 0.51,
+    "legacyConfidence": 0.35,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.2857142857142857,
+        "reason": "Matched project terms: add"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.875,
+        "reason": "Feature-request phrasing reads like actionable planning work."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.7777777777777778,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0.16666666666666666,
+        "reason": "Includes guardrails, blockers, or review-oriented language."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.4259259259259259,
+        "reason": "Short input limits confidence."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.51,
+      "executionReadiness": 0.49,
+      "plannerUsefulness": 0.62,
+      "deployReadiness": 0.23
+    },
+    "classification": {
+      "role": "module",
+      "labels": [
+        "plan",
+        "ux"
+      ]
+    },
+    "status": "ready"
+  },
+  "usedFallback": true,
+  "rawResponse": null
+}

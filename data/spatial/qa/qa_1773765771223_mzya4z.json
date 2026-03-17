@@ -1,0 +1,188 @@
+{
+  "id": "qa_1773765771223_mzya4z",
+  "scenario": "throughput-visual-pass",
+  "mode": "interactive",
+  "trigger": "throughput-debug",
+  "prompt": "I think we should add a desk to the studio for a QA agent",
+  "baseUrl": "http://localhost:3000",
+  "status": "completed",
+  "verdict": "failed",
+  "createdAt": "2026-03-17T16:42:51.223Z",
+  "finishedAt": "2026-03-17T16:42:55.509Z",
+  "linked": {
+    "throughputSessionId": "throughput_1773765740802_vjofq8"
+  },
+  "browser": {
+    "executablePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "engine": "chromium"
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T16:42:51.225Z",
+      "finishedAt": "2026-03-17T16:42:51.251Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T16:42:51.252Z",
+      "finishedAt": "2026-03-17T16:42:52.242Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T16:42:52.243Z",
+      "finishedAt": "2026-03-17T16:42:53.642Z",
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T16:42:53.643Z",
+      "finishedAt": "2026-03-17T16:42:53.960Z",
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T16:42:53.962Z",
+      "finishedAt": "2026-03-17T16:42:55.244Z",
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T16:42:55.244Z",
+      "finishedAt": "2026-03-17T16:42:55.493Z",
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "weak",
+      "startedAt": "2026-03-17T16:42:55.494Z",
+      "finishedAt": "2026-03-17T16:42:55.509Z",
+      "error": null
+    }
+  ],
+  "findings": [
+    {
+      "id": "camera-off-center",
+      "severity": "warning",
+      "kind": "camera",
+      "summary": "Studio camera is not centered on the room.",
+      "details": "Room center drift is 446px horizontally and 259px vertically."
+    },
+    {
+      "id": "console-2",
+      "severity": "error",
+      "kind": "console",
+      "summary": "Console errors were captured during the browser pass.",
+      "details": "Failed to load resource: the server responded with a status of 413 (Payload Too Large) | Failed to load resource: the server responded with a status of 413 (Payload Too Large)"
+    }
+  ],
+  "artifacts": {
+    "screenshots": [
+      {
+        "name": "01-initial.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773765771223_mzya4z\\01-initial.png",
+        "url": "/api/spatial/qa/runs/qa_1773765771223_mzya4z/artifacts/01-initial.png",
+        "label": "Initial ACE render"
+      },
+      {
+        "name": "02-throughput-visual-pass.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773765771223_mzya4z\\02-throughput-visual-pass.png",
+        "url": "/api/spatial/qa/runs/qa_1773765771223_mzya4z/artifacts/02-throughput-visual-pass.png",
+        "label": "Scenario throughput-visual-pass"
+      }
+    ],
+    "domSnapshot": {
+      "name": "dom.html",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773765771223_mzya4z\\dom.html",
+      "url": "/api/spatial/qa/runs/qa_1773765771223_mzya4z/artifacts/dom.html"
+    },
+    "consoleLog": {
+      "name": "console.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773765771223_mzya4z\\console.json",
+      "url": "/api/spatial/qa/runs/qa_1773765771223_mzya4z/artifacts/console.json"
+    },
+    "networkSummary": {
+      "name": "network.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773765771223_mzya4z\\network.json",
+      "url": "/api/spatial/qa/runs/qa_1773765771223_mzya4z/artifacts/network.json"
+    },
+    "runtimeSnapshot": {
+      "name": "runtime.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773765771223_mzya4z\\runtime.json",
+      "url": "/api/spatial/qa/runs/qa_1773765771223_mzya4z/artifacts/runtime.json"
+    },
+    "layoutFindings": {
+      "name": "layout-findings.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1773765771223_mzya4z\\layout-findings.json",
+      "url": "/api/spatial/qa/runs/qa_1773765771223_mzya4z/artifacts/layout-findings.json"
+    }
+  },
+  "console": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://localhost:3000/favicon.ico",
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 413 (Payload Too Large)",
+      "location": {
+        "url": "http://localhost:3000/api/spatial/workspace",
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 413 (Payload Too Large)",
+      "location": {
+        "url": "http://localhost:3000/api/spatial/workspace",
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    }
+  ],
+  "network": [],
+  "error": null
+}

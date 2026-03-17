@@ -1,0 +1,288 @@
+{
+  "snapshot": {
+    "viewport": {
+      "width": 1600,
+      "height": 1100
+    },
+    "room": {
+      "x": 72,
+      "y": 86,
+      "width": 1056,
+      "height": 642
+    },
+    "roomRect": {
+      "left": -522.827392578125,
+      "top": 23.4835205078125,
+      "width": 1267.2000732421875,
+      "height": 770.4000244140625
+    },
+    "shellRect": {
+      "left": 0,
+      "top": 236,
+      "width": 1113,
+      "height": 864
+    },
+    "desks": [
+      {
+        "id": "context-manager",
+        "label": "Context Manager",
+        "x": 172.45877659574467,
+        "y": 417.4255319148936,
+        "rect": {
+          "left": -505.4836730957031,
+          "top": 337.1897888183594,
+          "width": 206.4000244140625,
+          "height": 167.99996948242188
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "planner",
+        "label": "Planner",
+        "x": 965.982776089159,
+        "y": 424.91695892759725,
+        "rect": {
+          "left": 446.735107421875,
+          "top": 346.1710205078125,
+          "width": 206.4000244140625,
+          "height": 168
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "executor",
+        "label": "Executor",
+        "x": 158,
+        "y": 658,
+        "rect": {
+          "left": -522.827392578125,
+          "top": 625.883544921875,
+          "width": 206.39999389648438,
+          "height": 168
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "memory-archivist",
+        "label": "Memory Archivist",
+        "x": 638.4666895604396,
+        "y": 658,
+        "rect": {
+          "left": 53.71636962890625,
+          "top": 625.883544921875,
+          "width": 206.4000244140625,
+          "height": 168
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "cto-architect",
+        "label": "CTO / Architect",
+        "x": 971.4394946808511,
+        "y": 623.0970744680851,
+        "rect": {
+          "left": 453.297607421875,
+          "top": 583.9960327148438,
+          "width": 206.4000244140625,
+          "height": 168
+        },
+        "width": 172,
+        "height": 140
+      }
+    ],
+    "whiteboards": [
+      {
+        "id": "teamBoard",
+        "label": "Team Board",
+        "x": 282.29103343465044,
+        "y": 102,
+        "width": 560,
+        "height": 164,
+        "rect": {
+          "left": -270.4898986816406,
+          "top": 42.683502197265625,
+          "width": 672,
+          "height": 408.0000305175781
+        }
+      }
+    ],
+    "links": [
+      {
+        "id": "handoff-handoff_1773765770903_uqxxd5",
+        "label": "Problem brief",
+        "kind": "handoff",
+        "fromDeskId": "context-manager",
+        "toDeskId": "planner",
+        "startX": 246.45877659574467,
+        "startY": 413.4255319148936,
+        "endX": 893.982776089159,
+        "endY": 420.91695892759725
+      },
+      {
+        "id": "planner-executor",
+        "label": "1 plan item",
+        "kind": "workflow",
+        "fromDeskId": "planner",
+        "toDeskId": "executor",
+        "startX": 891.982776089159,
+        "startY": 420.91695892759725,
+        "endX": 230,
+        "endY": 654
+      },
+      {
+        "id": "work-to-memory",
+        "label": "1 outputs",
+        "kind": "memory",
+        "fromDeskId": "executor",
+        "toDeskId": "memory-archivist",
+        "startX": 232,
+        "startY": 654,
+        "endX": 566.4666895604396,
+        "endY": 654
+      },
+      {
+        "id": "conflict-0-context-manager",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "context-manager",
+        "startX": 903.4394946808511,
+        "startY": 619.0970744680851,
+        "endX": 238.45877659574467,
+        "endY": 413.4255319148936
+      },
+      {
+        "id": "conflict-0-planner",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "planner",
+        "startX": 971.4394946808511,
+        "startY": 571.0970744680851,
+        "endX": 965.982776089159,
+        "endY": 474.91695892759725
+      },
+      {
+        "id": "conflict-0-executor",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "executor",
+        "startX": 903.4394946808511,
+        "startY": 619.0970744680851,
+        "endX": 224,
+        "endY": 654
+      },
+      {
+        "id": "conflict-1-planner",
+        "label": "Scope overlap",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "planner",
+        "startX": 971.4394946808511,
+        "startY": 571.0970744680851,
+        "endX": 965.982776089159,
+        "endY": 474.91695892759725
+      },
+      {
+        "id": "conflict-1-executor",
+        "label": "Scope overlap",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "executor",
+        "startX": 903.4394946808511,
+        "startY": 619.0970744680851,
+        "endX": 224,
+        "endY": 654
+      },
+      {
+        "id": "conflict-2-executor",
+        "label": "Needs review",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "executor",
+        "startX": 903.4394946808511,
+        "startY": 619.0970744680851,
+        "endX": 224,
+        "endY": 654
+      },
+      {
+        "id": "conflict-3-executor",
+        "label": "Needs review",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "executor",
+        "startX": 903.4394946808511,
+        "startY": 619.0970744680851,
+        "endX": 224,
+        "endY": 654
+      }
+    ],
+    "controls": [
+      {
+        "id": "scene-canvas-button",
+        "label": "Canvas button",
+        "visible": true,
+        "rect": {
+          "left": 405.984375,
+          "top": 86,
+          "width": 59.078125,
+          "height": 30
+        }
+      },
+      {
+        "id": "scene-studio-button",
+        "label": "ACE Studio button",
+        "visible": true,
+        "rect": {
+          "left": 475.0625,
+          "top": 86,
+          "width": 79.9375,
+          "height": 30
+        }
+      },
+      {
+        "id": "recent-saves-select",
+        "label": "Recent Saves",
+        "visible": true,
+        "rect": {
+          "left": 453.453125,
+          "top": 125,
+          "width": 152,
+          "height": 32
+        }
+      },
+      {
+        "id": "reset-view-button",
+        "label": "Reset View",
+        "visible": true,
+        "rect": {
+          "left": 613.453125,
+          "top": 126,
+          "width": 80.546875,
+          "height": 30
+        }
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "camera-off-center",
+      "severity": "warning",
+      "kind": "camera",
+      "summary": "Studio camera is not centered on the room.",
+      "details": "Room center drift is 446px horizontally and 259px vertically."
+    },
+    {
+      "id": "console-2",
+      "severity": "error",
+      "kind": "console",
+      "summary": "Console errors were captured during the browser pass.",
+      "details": "Failed to load resource: the server responded with a status of 413 (Payload Too Large) | Failed to load resource: the server responded with a status of 413 (Payload Too Large)"
+    }
+  ]
+}

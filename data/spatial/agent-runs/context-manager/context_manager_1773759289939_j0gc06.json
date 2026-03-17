@@ -1,0 +1,601 @@
+{
+  "id": "context_manager_1773759289939_j0gc06",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-17T14:55:19.963Z",
+  "completedAt": "2026-03-17T14:55:19.963Z",
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mixtral",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "testing trace de",
+  "reason": "Local model request timed out after 30000ms. | Local model request timed out after 30000ms.",
+  "sourceNodeId": "node_1773759257317_fy5it",
+  "sourceText": "testing trace de",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "",
+    "statement": "",
+    "tasks": [],
+    "constraints": [],
+    "clarifications": [],
+    "focusTerms": [],
+    "suggestedAnchorRefs": []
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1773759289939_j0gc06",
+    "sourceNodeId": "node_1773759257317_fy5it",
+    "sourceText": "testing trace de",
+    "summary": "testing trace de",
+    "explicitClaims": [],
+    "inferredClaims": [],
+    "candidateNodes": [
+      {
+        "id": "literal_1",
+        "label": "testing trace de",
+        "kind": "task",
+        "basis": "explicit",
+        "rationale": "Literal candidate derived from the current input and upstream packet.",
+        "confidence": 0.12
+      }
+    ],
+    "candidateEdges": [],
+    "gaps": [
+      "Project alignment: Few direct overlaps with current project context.",
+      "Actionability: Input still reads more like a note than a concrete action.",
+      "Architecture fit: Little direct architecture language found.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mixtral",
+      "runId": "context_manager_1773759289939_j0gc06",
+      "usedFallback": true,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.12,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0,
+          "reason": "Few direct overlaps with current project context."
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.125,
+          "reason": "Input still reads more like a note than a concrete action."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.2222222222222222,
+          "reason": "Little direct architecture language found."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 0.25925925925925924,
+          "reason": "Short input limits confidence."
+        }
+      ],
+      "classification": {
+        "role": "task",
+        "labels": [
+          "execution",
+          "governance"
+        ]
+      },
+      "matchedTerms": []
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "testing trace de",
+    "confidence": 0.12,
+    "legacyConfidence": 0.14,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0,
+        "reason": "Few direct overlaps with current project context."
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.125,
+        "reason": "Input still reads more like a note than a concrete action."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.2222222222222222,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.25925925925925924,
+        "reason": "Short input limits confidence."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0,
+        "reason": "Few direct overlaps with current project context."
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.16666666666666666,
+        "reason": "Input reads more like a note than a concrete action."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.2857142857142857,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.23809523809523808,
+        "reason": "Short input limits confidence."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.12,
+      "executionReadiness": 0.18,
+      "plannerUsefulness": 0.17,
+      "deployReadiness": 0.08
+    },
+    "truth": {
+      "rawInput": "testing trace de",
+      "statement": "testing trace de",
+      "intentType": "Direct implementation request",
+      "requestedOutcomes": [
+        "testing trace de"
+      ],
+      "unresolved": [
+        "Project alignment: Few direct overlaps with current project context.",
+        "Actionability: Input still reads more like a note than a concrete action.",
+        "Architecture fit: Little direct architecture language found.",
+        "Constraint coverage: No clear constraints or review gates were stated.",
+        "Clarity: Short input limits confidence.",
+        "Project alignment is weak, so the request may still need anchoring to current ACE work."
+      ],
+      "evidence": [
+        "Clarity: Short input limits confidence.",
+        "Architecture fit: Little direct architecture language found.",
+        "Actionability: Input still reads more like a note than a concrete action."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "plannerBrief": "Planner should treat this as: testing trace de",
+      "readiness": {
+        "intentConfidence": 0.12,
+        "plannerUsefulness": 0.17,
+        "executionReadiness": 0.18,
+        "deployReadiness": 0.08
+      }
+    },
+    "tasks": [
+      "testing trace de"
+    ],
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/state.json"
+    ],
+    "provenance": {
+      "anchors": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "task",
+      "labels": [
+        "execution",
+        "governance"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 2,
+      "sentenceCount": 1,
+      "matchedProjectTerms": [],
+      "actionSignals": 0,
+      "featureRequestSignals": 0,
+      "architectureSignals": 0,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [],
+      "referenceKeywords": [
+        "and",
+        "emergence",
+        "manager",
+        "runtime",
+        "anchor",
+        "projects",
+        "brain",
+        "compatibility"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-17T14:55:19.963Z",
+    "nodeId": "node_1773759257317_fy5it",
+    "source": "node-idle",
+    "createdAt": "2026-03-17T14:55:19.963Z",
+    "contextPacket": {
+      "summary": "",
+      "statement": "",
+      "tasks": [],
+      "constraints": [],
+      "clarifications": [],
+      "focusTerms": [],
+      "suggestedAnchorRefs": [],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1773759289939_j0gc06",
+      "sourceNodeId": "node_1773759257317_fy5it",
+      "sourceText": "testing trace de",
+      "summary": "testing trace de",
+      "explicitClaims": [],
+      "inferredClaims": [],
+      "candidateNodes": [
+        {
+          "id": "literal_1",
+          "label": "testing trace de",
+          "kind": "task",
+          "basis": "explicit",
+          "rationale": "Literal candidate derived from the current input and upstream packet.",
+          "confidence": 0.12
+        }
+      ],
+      "candidateEdges": [],
+      "gaps": [
+        "Project alignment: Few direct overlaps with current project context.",
+        "Actionability: Input still reads more like a note than a concrete action.",
+        "Architecture fit: Little direct architecture language found.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mixtral",
+        "runId": "context_manager_1773759289939_j0gc06",
+        "usedFallback": true,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.12,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.125,
+            "reason": "Input still reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.2222222222222222,
+            "reason": "Little direct architecture language found."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.25925925925925924,
+            "reason": "Short input limits confidence."
+          }
+        ],
+        "classification": {
+          "role": "task",
+          "labels": [
+            "execution",
+            "governance"
+          ]
+        },
+        "matchedTerms": []
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mixtral",
+      "runId": "context_manager_1773759289939_j0gc06",
+      "usedFallback": true
+    }
+  },
+  "handoffId": "handoff_1773759288592_ulbtti",
+  "handoff": {
+    "id": "handoff_1773759288592_ulbtti",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-17T14:55:19.963Z",
+    "sourceNodeId": "node_1773759257317_fy5it",
+    "summary": "testing trace de",
+    "problemStatement": "Goal: testing trace de\nRequested outcomes: testing trace de.\nWhy ACE believes this: Project alignment 0%, Actionability 13%, Architecture fit 22%.\nConstraints and review signals: Project alignment: Few direct overlaps with current project context. | Actionability: Input still reads more like a note than a concrete action. | Architecture fit: Little direct architecture language found. | Constraint coverage: No clear constraints or review gates were stated. | Clarity: Short input limits confidence..\nStill unclear: Planner usefulness is low and needs tighter scope before execution expands. Execution readiness is low, so a worker should not start blindly. Project alignment is weak, so planner scope may need refinement.",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/state.json"
+    ],
+    "tasks": [
+      "testing trace de"
+    ],
+    "constraints": [
+      "Project alignment: Few direct overlaps with current project context.",
+      "Actionability: Input still reads more like a note than a concrete action.",
+      "Architecture fit: Little direct architecture language found.",
+      "Constraint coverage: No clear constraints or review gates were stated.",
+      "Clarity: Short input limits confidence."
+    ],
+    "confidence": 0.12,
+    "legacyConfidence": 0.14,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0,
+        "reason": "Few direct overlaps with current project context."
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.125,
+        "reason": "Input still reads more like a note than a concrete action."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.2222222222222222,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.25925925925925924,
+        "reason": "Short input limits confidence."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.12,
+      "executionReadiness": 0.18,
+      "plannerUsefulness": 0.17,
+      "deployReadiness": 0.08
+    },
+    "classification": {
+      "role": "task",
+      "labels": [
+        "execution",
+        "governance"
+      ]
+    },
+    "status": "needs-clarification"
+  },
+  "usedFallback": true,
+  "rawResponse": null
+}

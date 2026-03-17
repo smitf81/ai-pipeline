@@ -1,6 +1,6 @@
-# Task 10000: Clarify what the planner should do next and make the desk state readable in Studio
+# Task 10000: Finance Department
 
-Created: 2026-03-17T17:28:27.982Z
+Created: 2026-03-17T16:42:50.995Z
 
 ## Goal
 - I think we should add a desk to the studio for a QA agent
@@ -16,4 +16,4 @@ Created: 2026-03-17T17:28:27.982Z
 - [ ]
 
 ## Risks / notes
--
+- Throughput debug session: throughput_1773765740802_vjofq8

@@ -1,0 +1,1422 @@
+{
+  "id": "throughput_1773762539013_rk45gm",
+  "prompt": "I think we should add a desk to the studio for a QA agent",
+  "targetProjectKey": "ace-self",
+  "mode": "fixture",
+  "executionProfile": "live-ace-self",
+  "status": "completed",
+  "verdict": "pass",
+  "createdAt": "2026-03-17T15:48:59.013Z",
+  "finishedAt": "2026-03-17T15:49:29.473Z",
+  "pageId": "page_debug_1773762539026_gf289j",
+  "nodeId": "node_debug_1773762539026_xmsfpq",
+  "handoffId": "handoff_1773762569190_aezy0f",
+  "runnerTaskId": "10000",
+  "qaRunId": "qa_1773762569479_ffaa1l",
+  "anchorRefs": [
+    "brain/emergence/roadmap.md",
+    "brain/emergence/tasks.md"
+  ],
+  "runIds": [
+    "1773762569303-i383g5"
+  ],
+  "cardIds": [
+    "card_page_1773403588491_034z_finance-department",
+    "card_page_1773403588491_034z_calculates-cost-tokens-usage-etc",
+    "card_page_1773403588491_034z_allocates-resources-allowed-to-each-agen",
+    "card_page_1773408149866_813p_finance-department",
+    "card_page_1773408149866_813p_calculates-cost-tokens-usage-etc",
+    "card_page_1773408149866_813p_allocates-resources-allowed-to-each-agen",
+    "card_page_1773408149866_813p_context-reports-need-updating-by-agent-b",
+    "0001",
+    "0002",
+    "0003",
+    "0004",
+    "0005",
+    "0006",
+    "0007",
+    "0008",
+    "0009",
+    "0010",
+    "0011",
+    "0012",
+    "0013",
+    "0014",
+    "0015",
+    "0016",
+    "0017",
+    "0018",
+    "0019",
+    "0020",
+    "0021",
+    "0022",
+    "0023",
+    "0024",
+    "0025",
+    "0026",
+    "0027"
+  ],
+  "stages": [
+    {
+      "id": "seed",
+      "label": "Seed Debug Page",
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T15:48:59.026Z",
+      "finishedAt": "2026-03-17T15:48:59.119Z",
+      "input": {
+        "prompt": "I think we should add a desk to the studio for a QA agent",
+        "targetProjectKey": "ace-self"
+      },
+      "output": {
+        "pageId": "page_debug_1773762539026_gf289j",
+        "nodeId": "node_debug_1773762539026_xmsfpq"
+      },
+      "artifacts": [],
+      "failureReason": null
+    },
+    {
+      "id": "intent",
+      "label": "Context Analysis",
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T15:48:59.123Z",
+      "finishedAt": "2026-03-17T15:49:29.188Z",
+      "input": {
+        "nodeId": "node_debug_1773762539026_xmsfpq",
+        "prompt": "I think we should add a desk to the studio for a QA agent"
+      },
+      "output": {
+        "summary": "I think we should add a desk to the studio for a QA agent",
+        "confidence": 0.51,
+        "legacyConfidence": 0.35,
+        "scores": {
+          "intentConfidence": 0.51,
+          "executionReadiness": 0.49,
+          "plannerUsefulness": 0.62,
+          "deployReadiness": 0.23
+        },
+        "classification": {
+          "role": "module",
+          "labels": [
+            "plan",
+            "ux"
+          ]
+        },
+        "tasks": [
+          "I think we should add a desk to the studio for a QA agent",
+          "I think we should add a desk to the studio for a QA agent"
+        ],
+        "anchorRefs": [
+          "brain/emergence/roadmap.md",
+          "brain/emergence/tasks.md"
+        ]
+      },
+      "artifacts": [],
+      "failureReason": null
+    },
+    {
+      "id": "handoff",
+      "label": "Planner Handoff",
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T15:49:29.190Z",
+      "finishedAt": "2026-03-17T15:49:29.210Z",
+      "input": {
+        "nodeId": "node_debug_1773762539026_xmsfpq",
+        "reportSummary": "I think we should add a desk to the studio for a QA agent"
+      },
+      "output": {
+        "id": "handoff_1773762569190_aezy0f",
+        "status": "ready",
+        "tasks": [
+          "I think we should add a desk to the studio for a QA agent",
+          "I think we should add a desk to the studio for a QA agent"
+        ],
+        "constraints": [
+          "Project alignment: Matched project terms: add",
+          "Constraint coverage: Includes guardrails, blockers, or review-oriented language.",
+          "Clarity: Short input limits confidence."
+        ],
+        "problemStatement": "Goal: I think we should add a desk to the studio for a QA agent\nRequested outcomes: I think we should add a desk to the studio for a QA agent; I think we should add a desk to the studio for a QA agent.\nWhy ACE believes this: Project alignment 29%, Actionability 88%, Architecture fit 78%.\nConstraints and review signals: Project alignment: Matched project terms: add | Constraint coverage: Includes guardrails, blockers, or review-oriented language. | Clarity: Short input limits confidence..\nStill unclear: no immediate clarification requested."
+      },
+      "artifacts": [],
+      "failureReason": null
+    },
+    {
+      "id": "team-board",
+      "label": "Team Board Progression",
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T15:49:29.213Z",
+      "finishedAt": "2026-03-17T15:49:29.269Z",
+      "input": {
+        "handoffId": "handoff_1773762569190_aezy0f"
+      },
+      "output": {
+        "selectedCardId": "card_page_1773403588491_034z_finance-department",
+        "boardSummary": {
+          "plan": 24,
+          "active": 2,
+          "complete": 0,
+          "review": 8,
+          "binned": 0,
+          "idleWorkers": 1
+        }
+      },
+      "artifacts": [],
+      "failureReason": null
+    },
+    {
+      "id": "runner-task",
+      "label": "Runner Task Mapping",
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T15:49:29.272Z",
+      "finishedAt": "2026-03-17T15:49:29.301Z",
+      "input": {
+        "cardId": "card_page_1773403588491_034z_finance-department",
+        "title": "Finance Department"
+      },
+      "output": {
+        "taskId": "10000",
+        "taskDir": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\work\\tasks\\10000-finance-department"
+      },
+      "artifacts": [
+        "work/tasks/10000-finance-department/idea.txt",
+        "work/tasks/10000-finance-department/context.md",
+        "work/tasks/10000-finance-department/plan.md",
+        "work/tasks/10000-finance-department/patch.diff"
+      ],
+      "failureReason": null
+    },
+    {
+      "id": "scan",
+      "label": "Runner Scan",
+      "status": "failed",
+      "verdict": "failed",
+      "startedAt": "2026-03-17T15:49:29.303Z",
+      "finishedAt": "2026-03-17T15:49:29.448Z",
+      "input": {
+        "action": "scan",
+        "taskId": "10000",
+        "project": "ace-self"
+      },
+      "output": {
+        "runId": "1773762569303-i383g5",
+        "exitCode": 1,
+        "status": "error",
+        "meta": {
+          "command": "python C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\runner\\ai.py scan 10000 --project ace-self"
+        },
+        "summary": "Traceback (most recent call last):\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\runner\\ai.py\", line 867, in <module>\nraise SystemExit(main())\n~~~~^^\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\runner\\ai.py\", line 863, in main\nreturn args.func(args)\n~~~~~~~~~^^^^^^\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipe..."
+      },
+      "artifacts": [
+        "work/tasks/10000-finance-department/idea.txt",
+        "work/tasks/10000-finance-department/context.md",
+        "work/tasks/10000-finance-department/plan.md",
+        "work/tasks/10000-finance-department/patch.diff"
+      ],
+      "failureReason": "Traceback (most recent call last):\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\runner\\ai.py\", line 867, in <module>\nraise SystemExit(main())\n~~~~^^\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\runner\\ai.py\", line 863, in main\nreturn args.func(args)\n~~~~~~~~~^^^^^^\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipe..."
+    },
+    {
+      "id": "manage",
+      "label": "Runner Manage",
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "input": null,
+      "output": null,
+      "artifacts": [],
+      "failureReason": null
+    },
+    {
+      "id": "build",
+      "label": "Runner Build",
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "input": null,
+      "output": null,
+      "artifacts": [],
+      "failureReason": null
+    },
+    {
+      "id": "apply",
+      "label": "Runner Apply",
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "input": null,
+      "output": null,
+      "artifacts": [],
+      "failureReason": null
+    },
+    {
+      "id": "preflight",
+      "label": "Self-Upgrade Preflight",
+      "status": "blocked",
+      "verdict": "blocked",
+      "startedAt": null,
+      "finishedAt": "2026-03-17T15:49:29.450Z",
+      "input": null,
+      "output": null,
+      "artifacts": [],
+      "failureReason": "scan failed, so self-upgrade verification cannot continue."
+    },
+    {
+      "id": "deploy",
+      "label": "Self-Upgrade Deploy",
+      "status": "blocked",
+      "verdict": "blocked",
+      "startedAt": null,
+      "finishedAt": "2026-03-17T15:49:29.450Z",
+      "input": null,
+      "output": null,
+      "artifacts": [],
+      "failureReason": "scan failed, so self-upgrade verification cannot continue."
+    },
+    {
+      "id": "archives",
+      "label": "Archive Verification",
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T15:49:29.450Z",
+      "finishedAt": "2026-03-17T15:49:29.459Z",
+      "input": {
+        "sessionId": "throughput_1773762539013_rk45gm"
+      },
+      "output": {
+        "workspace.intentState": {
+          "read": true,
+          "write": true,
+          "summary": "I think we should add a desk to the studio for a QA agent"
+        },
+        "workspace.studio.handoffs.contextToPlanner": {
+          "read": true,
+          "write": true,
+          "summary": "ready | 2 tasks"
+        },
+        "workspace.studio.teamBoard": {
+          "read": true,
+          "write": true,
+          "summary": "plan 24 | active 2 | complete 0 | review 8"
+        },
+        "workspace.studio.orchestrator": {
+          "read": true,
+          "write": true,
+          "summary": "needs-attention | active desks 3"
+        },
+        "workspace.studio.selfUpgrade": {
+          "read": true,
+          "write": true,
+          "summary": "idle | deploy idle"
+        },
+        "data/spatial/history.json": {
+          "read": true,
+          "write": true,
+          "summary": "6 session events recorded"
+        },
+        "runner.taskArtifacts": {
+          "read": true,
+          "write": true,
+          "summary": "work/tasks/10000-finance-department/idea.txt, work/tasks/10000-finance-department/context.md, work/tasks/10000-finance-department/plan.md, work/tasks/10000-finance-department/patch.diff"
+        },
+        "brain/emergence/*": {
+          "read": true,
+          "write": false,
+          "summary": "Canonical anchor refs: brain/emergence/roadmap.md, brain/emergence/tasks.md"
+        },
+        "manager.anchorBundle": {
+          "read": true,
+          "write": false,
+          "summary": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior."
+        },
+        "health": {
+          "read": true,
+          "write": false,
+          "summary": "ready"
+        }
+      },
+      "artifacts": [
+        "work/tasks/10000-finance-department/idea.txt",
+        "work/tasks/10000-finance-department/context.md",
+        "work/tasks/10000-finance-department/plan.md",
+        "work/tasks/10000-finance-department/patch.diff"
+      ],
+      "failureReason": null
+    },
+    {
+      "id": "final",
+      "label": "Final Comparison",
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-17T15:49:29.461Z",
+      "finishedAt": "2026-03-17T15:49:29.473Z",
+      "input": {
+        "prompt": "I think we should add a desk to the studio for a QA agent"
+      },
+      "output": {
+        "prompt": "I think we should add a desk to the studio for a QA agent",
+        "reportSummary": "I think we should add a desk to the studio for a QA agent",
+        "taskCount": 2,
+        "runnerTaskId": "10000",
+        "runIds": [
+          "1773762569303-i383g5"
+        ],
+        "finalHealth": {
+          "ok": true,
+          "pid": 3748,
+          "startedAt": "2026-03-17T14:50:44.679Z",
+          "selfUpgrade": {
+            "status": "idle",
+            "deploy": {
+              "status": "idle",
+              "requestedAt": null,
+              "restartedAt": null,
+              "health": {
+                "status": "ready",
+                "pid": null,
+                "startedAt": null
+              }
+            }
+          }
+        }
+      },
+      "artifacts": [],
+      "failureReason": null
+    }
+  ],
+  "sinks": {
+    "workspace.intentState": {
+      "read": true,
+      "write": true,
+      "summary": "I think we should add a desk to the studio for a QA agent"
+    },
+    "workspace.studio.handoffs.contextToPlanner": {
+      "read": true,
+      "write": true,
+      "summary": "ready | 2 tasks"
+    },
+    "workspace.studio.teamBoard": {
+      "read": true,
+      "write": true,
+      "summary": "plan 24 | active 2 | complete 0 | review 8"
+    },
+    "workspace.studio.orchestrator": {
+      "read": true,
+      "write": true,
+      "summary": "needs-attention | active desks 3"
+    },
+    "workspace.studio.selfUpgrade": {
+      "read": true,
+      "write": true,
+      "summary": "idle | deploy idle"
+    },
+    "data/spatial/history.json": {
+      "read": true,
+      "write": true,
+      "summary": "6 session events recorded"
+    },
+    "runner.taskArtifacts": {
+      "read": true,
+      "write": true,
+      "summary": "work/tasks/10000-finance-department/idea.txt, work/tasks/10000-finance-department/context.md, work/tasks/10000-finance-department/plan.md, work/tasks/10000-finance-department/patch.diff"
+    },
+    "brain/emergence/*": {
+      "read": true,
+      "write": false,
+      "summary": "Canonical anchor refs: brain/emergence/roadmap.md, brain/emergence/tasks.md"
+    },
+    "manager.anchorBundle": {
+      "read": true,
+      "write": false,
+      "summary": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior."
+    },
+    "health": {
+      "read": true,
+      "write": false,
+      "summary": "ready"
+    }
+  },
+  "snapshots": {
+    "before": {
+      "capturedAt": "2026-03-17T15:48:59.025Z",
+      "workspace": {
+        "activePageId": "page_1773429206094_pgv8",
+        "nodeCount": 3,
+        "edgeCount": 2,
+        "latestIntent": {
+          "nodeId": "node_1773759863986_ootmz",
+          "summary": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+          "confidence": 0.17,
+          "scores": {
+            "intentConfidence": 0.17,
+            "executionReadiness": 0.35,
+            "plannerUsefulness": 0.25,
+            "deployReadiness": 0.06
+          },
+          "anchorRefs": [
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md",
+            "brain/emergence/decisions.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/state.json"
+          ]
+        },
+        "handoff": {
+          "id": "handoff_1773759895251_r7wtqd",
+          "status": "needs-clarification",
+          "taskCount": 2,
+          "anchorRefs": [
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md",
+            "brain/emergence/decisions.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/state.json"
+          ]
+        },
+        "teamBoard": {
+          "selectedCardId": "card_page_1773403588491_034z_finance-department",
+          "summary": {
+            "plan": 21,
+            "active": 2,
+            "complete": 0,
+            "review": 8,
+            "binned": 0,
+            "idleWorkers": 0
+          }
+        }
+      },
+      "orchestrator": {
+        "status": "needs-attention",
+        "lastTickAt": "2026-03-17T15:48:55.808Z",
+        "activeDeskIds": [
+          "context-manager",
+          "memory-archivist",
+          "cto-architect"
+        ],
+        "conflicts": [
+          {
+            "id": "low-confidence-context",
+            "kind": "low-confidence-context",
+            "severity": "medium",
+            "desks": [
+              "context-manager",
+              "planner",
+              "executor"
+            ],
+            "summary": "Planner and Executor are sharing work against a low-confidence context packet."
+          },
+          {
+            "id": "parallel-plan-execution",
+            "kind": "parallel-plan-execution",
+            "severity": "low",
+            "desks": [
+              "planner",
+              "executor"
+            ],
+            "summary": "Planner and Executor are active on the same page and must stay within scoped outputs."
+          },
+          {
+            "id": "ready-to-apply-card_page_1773403588491_034z_finance-department",
+            "kind": "ready-to-apply",
+            "severity": "high",
+            "desks": [
+              "executor",
+              "cto-architect"
+            ],
+            "summary": "Finance Department is waiting at the apply gate because Finance Department lacks anchor provenance and cannot advance.."
+          },
+          {
+            "id": "unanchored-execution-card_page_1773403588491_034z_finance-department",
+            "kind": "unanchored-execution",
+            "severity": "high",
+            "desks": [
+              "executor",
+              "cto-architect"
+            ],
+            "summary": "Finance Department lacks anchor provenance and should not advance until it is re-anchored."
+          }
+        ],
+        "pendingUserActions": [
+          "Clarify the active page goal before execution advances further."
+        ],
+        "desks": {
+          "context-manager": {
+            "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
+            "localState": "ready",
+            "statusLabel": "Clarification needed",
+            "statusDetail": "The current planner handoff still needs clarification before planning can proceed.",
+            "currentGoal": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+            "allowedActions": [
+              "set-active-page",
+              "slice-context",
+              "publish-handoff",
+              "flag-ambiguity"
+            ],
+            "workItems": [
+              {
+                "id": "handoff_1773759895251_r7wtqd-context-clarification",
+                "pageId": "page_1773429206094_pgv8",
+                "deskId": "context-manager",
+                "kind": "context-clarification",
+                "status": "ready",
+                "dependsOn": [],
+                "conflictTags": [
+                  "context",
+                  "clarification"
+                ],
+                "artifactRefs": [
+                  "handoff_1773759895251_r7wtqd"
+                ],
+                "anchorRefs": [
+                  "brain/emergence/project_brain.md",
+                  "brain/emergence/roadmap.md",
+                  "brain/emergence/plan.md",
+                  "brain/emergence/tasks.md",
+                  "brain/emergence/decisions.md",
+                  "brain/emergence/changelog.md",
+                  "brain/emergence/state.json"
+                ],
+                "title": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\""
+              }
+            ],
+            "lastOutput": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+            "blockedReason": null,
+            "contextSlice": {
+              "activePageId": "page_1773429206094_pgv8",
+              "activePageTitle": "actually there is a stated \"rationale\" but it's ",
+              "pageGoal": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+              "matchedTerms": []
+            },
+            "freshAt": "2026-03-17T15:48:55.807Z",
+            "thoughtBubble": "Context status: queued. Clarification is needed before planner can continue."
+          },
+          "planner": {
+            "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
+            "localState": "blocked",
+            "statusLabel": "Needs clarification",
+            "statusDetail": "Planner cannot decompose work until the current handoff is clarified.",
+            "currentGoal": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+            "allowedActions": [
+              "expand-plan",
+              "prioritise-work",
+              "publish-plan"
+            ],
+            "workItems": [
+              {
+                "id": "handoff_1773759895251_r7wtqd-planner-awaiting-clarification",
+                "pageId": "page_1773429206094_pgv8",
+                "deskId": "planner",
+                "kind": "planner-awaiting-clarification",
+                "status": "blocked",
+                "dependsOn": [
+                  "handoff_1773759895251_r7wtqd"
+                ],
+                "conflictTags": [
+                  "plan",
+                  "clarification"
+                ],
+                "artifactRefs": [
+                  "handoff_1773759895251_r7wtqd"
+                ],
+                "anchorRefs": [
+                  "brain/emergence/project_brain.md",
+                  "brain/emergence/roadmap.md",
+                  "brain/emergence/plan.md",
+                  "brain/emergence/tasks.md",
+                  "brain/emergence/decisions.md",
+                  "brain/emergence/changelog.md",
+                  "brain/emergence/state.json"
+                ],
+                "title": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\""
+              }
+            ],
+            "lastOutput": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+            "blockedReason": "Planner is waiting for Context Manager to clarify the current handoff.",
+            "contextSlice": {
+              "activePageId": "page_1773429206094_pgv8",
+              "activePageTitle": "actually there is a stated \"rationale\" but it's ",
+              "pageGoal": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+              "matchedTerms": []
+            },
+            "freshAt": "2026-03-17T15:48:55.807Z",
+            "thoughtBubble": "Planner status: blocked. Waiting for a clarified handoff."
+          },
+          "executor": {
+            "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
+            "localState": "blocked",
+            "statusLabel": "Execution gated",
+            "statusDetail": "Finance Department lacks anchor provenance and cannot advance.",
+            "currentGoal": "Awaiting approval: Finance Department",
+            "allowedActions": [
+              "apply-package",
+              "run-preflight",
+              "deploy-runtime",
+              "report-blocker"
+            ],
+            "workItems": [
+              {
+                "id": "card_page_1773403588491_034z_finance-department-approval",
+                "pageId": "page_1773403588491_034z",
+                "deskId": "executor",
+                "kind": "approval-gated",
+                "status": "waiting",
+                "dependsOn": [
+                  "handoff_1773403588495_hxww"
+                ],
+                "conflictTags": [
+                  "execute",
+                  "card_page_1773403588491_034z_finance-department"
+                ],
+                "artifactRefs": [],
+                "anchorRefs": [],
+                "blockerMessage": "Finance Department lacks anchor provenance and cannot advance.",
+                "title": "Awaiting approval: Finance Department"
+              }
+            ],
+            "lastOutput": "Awaiting approval: Finance Department",
+            "blockedReason": "Finance Department lacks anchor provenance and cannot advance.",
+            "contextSlice": {
+              "activePageId": "page_1773429206094_pgv8",
+              "activePageTitle": "actually there is a stated \"rationale\" but it's ",
+              "pageGoal": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+              "matchedTerms": []
+            },
+            "freshAt": "2026-03-17T15:48:55.807Z",
+            "thoughtBubble": "Executor status: blocked. Waiting for clearer context."
+          },
+          "memory-archivist": {
+            "mission": "Persist useful summaries, artifact references, and history for active work.",
+            "localState": "running",
+            "statusLabel": "Processing",
+            "statusDetail": "Desk is actively processing work.",
+            "currentGoal": "Capture notes, handoffs, and artifact history",
+            "allowedActions": [
+              "archive-summary",
+              "record-artifact",
+              "snapshot-history"
+            ],
+            "workItems": [
+              {
+                "id": "page_1773429206094_pgv8-memory-sync",
+                "pageId": "page_1773429206094_pgv8",
+                "deskId": "memory-archivist",
+                "kind": "memory-sync",
+                "status": "running",
+                "dependsOn": [],
+                "conflictTags": [
+                  "memory"
+                ],
+                "artifactRefs": [
+                  "handoff_1773759895251_r7wtqd"
+                ],
+                "anchorRefs": [
+                  "brain/emergence/project_brain.md",
+                  "brain/emergence/roadmap.md",
+                  "brain/emergence/plan.md",
+                  "brain/emergence/tasks.md",
+                  "brain/emergence/decisions.md",
+                  "brain/emergence/changelog.md",
+                  "brain/emergence/state.json"
+                ],
+                "title": "Capture notes, handoffs, and artifact history"
+              }
+            ],
+            "lastOutput": "Capture notes, handoffs, and artifact history",
+            "blockedReason": null,
+            "contextSlice": {
+              "activePageId": "page_1773429206094_pgv8",
+              "activePageTitle": "actually there is a stated \"rationale\" but it's ",
+              "pageGoal": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+              "matchedTerms": []
+            },
+            "freshAt": "2026-03-17T15:48:55.807Z",
+            "thoughtBubble": "Archivist status: running. Logging summaries."
+          },
+          "cto-architect": {
+            "mission": "Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.",
+            "localState": "running",
+            "statusLabel": "Governing",
+            "statusDetail": "Governance is monitoring active desks and mutation risk.",
+            "currentGoal": "Review desk overlap, approval state, and guardrails",
+            "allowedActions": [
+              "raise-conflict",
+              "approve-apply",
+              "reject-risky-change"
+            ],
+            "workItems": [
+              {
+                "id": "page_1773429206094_pgv8-governance-check",
+                "pageId": "page_1773429206094_pgv8",
+                "deskId": "cto-architect",
+                "kind": "governance-check",
+                "status": "running",
+                "dependsOn": [
+                  "handoff_1773759895251_r7wtqd"
+                ],
+                "conflictTags": [
+                  "review",
+                  "governance"
+                ],
+                "artifactRefs": [
+                  "handoff_1773759895251_r7wtqd"
+                ],
+                "anchorRefs": [
+                  "brain/emergence/project_brain.md",
+                  "brain/emergence/roadmap.md",
+                  "brain/emergence/plan.md",
+                  "brain/emergence/tasks.md",
+                  "brain/emergence/decisions.md",
+                  "brain/emergence/changelog.md",
+                  "brain/emergence/state.json"
+                ],
+                "title": "Review desk overlap, approval state, and guardrails"
+              }
+            ],
+            "lastOutput": "Review desk overlap, approval state, and guardrails",
+            "blockedReason": null,
+            "contextSlice": {
+              "activePageId": "page_1773429206094_pgv8",
+              "activePageTitle": "actually there is a stated \"rationale\" but it's ",
+              "pageGoal": "actually there is a stated \"rationale\" but it's hard to say if that's actually dynamic or what, if anything is derived from this \"rationale\"",
+              "matchedTerms": []
+            },
+            "freshAt": "2026-03-17T15:48:55.808Z",
+            "thoughtBubble": "Governance status: blocked. Reviewing blocker: Finance Department lacks anchor provenance and cannot advance."
+          }
+        },
+        "activePageId": "page_1773429206094_pgv8"
+      },
+      "selfUpgrade": {
+        "status": "idle",
+        "targetProjectKey": "ace-self",
+        "taskId": "",
+        "patchReview": null,
+        "preflight": {
+          "status": "idle",
+          "ok": null,
+          "checkedAt": null,
+          "checks": [],
+          "summary": "Run preflight before applying a self patch."
+        },
+        "apply": {
+          "status": "idle",
+          "ok": null,
+          "appliedAt": null,
+          "branch": null,
+          "commit": null,
+          "taskId": ""
+        },
+        "deploy": {
+          "status": "idle",
+          "requestedAt": null,
+          "restartedAt": null,
+          "health": {
+            "status": "ready",
+            "pid": null,
+            "startedAt": null
+          }
+        },
+        "requiresPermission": "none"
+      },
+      "health": {
+        "ok": true,
+        "pid": 3748,
+        "startedAt": "2026-03-17T14:50:44.679Z",
+        "selfUpgrade": {
+          "status": "idle",
+          "deploy": {
+            "status": "idle",
+            "requestedAt": null,
+            "restartedAt": null,
+            "health": {
+              "status": "ready",
+              "pid": null,
+              "startedAt": null
+            }
+          }
+        }
+      },
+      "runs": [
+        {
+          "runId": "1773762535686-xy0vcz",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762531688-1pcav9",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762527685-k9b1ff",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762525534-d7yxqp",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762523666-rpx0yq",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762519652-4tb9v4",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762515654-8fguzp",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762511645-cdhcdg",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        }
+      ]
+    },
+    "after": {
+      "capturedAt": "2026-03-17T15:49:29.473Z",
+      "workspace": {
+        "activePageId": "page_debug_1773762539026_gf289j",
+        "nodeCount": 3,
+        "edgeCount": 2,
+        "latestIntent": {
+          "nodeId": "node_debug_1773762539026_xmsfpq",
+          "summary": "I think we should add a desk to the studio for a QA agent",
+          "confidence": 0.51,
+          "scores": {
+            "intentConfidence": 0.51,
+            "executionReadiness": 0.49,
+            "plannerUsefulness": 0.62,
+            "deployReadiness": 0.23
+          },
+          "anchorRefs": [
+            "brain/emergence/roadmap.md",
+            "brain/emergence/tasks.md"
+          ]
+        },
+        "handoff": {
+          "id": "handoff_1773762569190_aezy0f",
+          "status": "ready",
+          "taskCount": 2,
+          "anchorRefs": [
+            "brain/emergence/roadmap.md",
+            "brain/emergence/tasks.md"
+          ]
+        },
+        "teamBoard": {
+          "selectedCardId": "card_page_1773403588491_034z_finance-department",
+          "summary": {
+            "plan": 24,
+            "active": 2,
+            "complete": 0,
+            "review": 8,
+            "binned": 0,
+            "idleWorkers": 1
+          }
+        }
+      },
+      "orchestrator": {
+        "status": "needs-attention",
+        "lastTickAt": "2026-03-17T15:49:29.443Z",
+        "activeDeskIds": [
+          "planner",
+          "memory-archivist",
+          "cto-architect"
+        ],
+        "conflicts": [
+          {
+            "id": "low-confidence-context",
+            "kind": "low-confidence-context",
+            "severity": "medium",
+            "desks": [
+              "context-manager",
+              "planner",
+              "executor"
+            ],
+            "summary": "Planner and Executor are sharing work against a low-confidence context packet."
+          },
+          {
+            "id": "parallel-plan-execution",
+            "kind": "parallel-plan-execution",
+            "severity": "low",
+            "desks": [
+              "planner",
+              "executor"
+            ],
+            "summary": "Planner and Executor are active on the same page and must stay within scoped outputs."
+          },
+          {
+            "id": "ready-to-apply-card_page_1773403588491_034z_finance-department",
+            "kind": "ready-to-apply",
+            "severity": "high",
+            "desks": [
+              "executor",
+              "cto-architect"
+            ],
+            "summary": "Finance Department is waiting at the apply gate because Finance Department lacks anchor provenance and cannot advance.."
+          },
+          {
+            "id": "unanchored-execution-card_page_1773403588491_034z_finance-department",
+            "kind": "unanchored-execution",
+            "severity": "high",
+            "desks": [
+              "executor",
+              "cto-architect"
+            ],
+            "summary": "Finance Department lacks anchor provenance and should not advance until it is re-anchored."
+          }
+        ],
+        "pendingUserActions": [
+          "Clarify the active page goal before execution advances further."
+        ],
+        "desks": {
+          "context-manager": {
+            "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
+            "localState": "waiting",
+            "statusLabel": "Context published",
+            "statusDetail": "The latest context packet has been published and is waiting on downstream use.",
+            "currentGoal": "I think we should add a desk to the studio for a QA agent",
+            "allowedActions": [
+              "set-active-page",
+              "slice-context",
+              "publish-handoff",
+              "flag-ambiguity"
+            ],
+            "workItems": [
+              {
+                "id": "page_debug_1773762539026_gf289j-context-published",
+                "pageId": "page_debug_1773762539026_gf289j",
+                "deskId": "context-manager",
+                "kind": "context-published",
+                "status": "waiting",
+                "dependsOn": [],
+                "conflictTags": [
+                  "context"
+                ],
+                "artifactRefs": [
+                  "handoff_1773762569190_aezy0f"
+                ],
+                "anchorRefs": [
+                  "brain/emergence/roadmap.md",
+                  "brain/emergence/tasks.md"
+                ],
+                "title": "I think we should add a desk to the studio for a QA agent"
+              }
+            ],
+            "lastOutput": "I think we should add a desk to the studio for a QA agent",
+            "blockedReason": null,
+            "contextSlice": {
+              "activePageId": "page_debug_1773762539026_gf289j",
+              "activePageTitle": "I think we should add a desk to the studio for a",
+              "pageGoal": "I think we should add a desk to the studio for a QA agent",
+              "matchedTerms": [
+                "add"
+              ]
+            },
+            "freshAt": "2026-03-17T15:49:29.438Z",
+            "thoughtBubble": "Context status: idle. Deterministic fallback kept intake alive."
+          },
+          "planner": {
+            "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
+            "localState": "ready",
+            "statusLabel": "Handoff ready",
+            "statusDetail": "A planner-ready handoff is queued for decomposition.",
+            "currentGoal": "I think we should add a desk to the studio for a QA agent",
+            "allowedActions": [
+              "expand-plan",
+              "prioritise-work",
+              "publish-plan"
+            ],
+            "workItems": [
+              {
+                "id": "handoff_1773762569190_aezy0f-planner-ready-handoff",
+                "pageId": "page_debug_1773762539026_gf289j",
+                "deskId": "planner",
+                "kind": "planner-ready-handoff",
+                "status": "ready",
+                "dependsOn": [
+                  "handoff_1773762569190_aezy0f"
+                ],
+                "conflictTags": [
+                  "plan",
+                  "handoff-ready"
+                ],
+                "artifactRefs": [
+                  "handoff_1773762569190_aezy0f"
+                ],
+                "anchorRefs": [
+                  "brain/emergence/roadmap.md",
+                  "brain/emergence/tasks.md"
+                ],
+                "title": "I think we should add a desk to the studio for a QA agent"
+              }
+            ],
+            "lastOutput": "I think we should add a desk to the studio for a QA agent",
+            "blockedReason": null,
+            "contextSlice": {
+              "activePageId": "page_debug_1773762539026_gf289j",
+              "activePageTitle": "I think we should add a desk to the studio for a",
+              "pageGoal": "I think we should add a desk to the studio for a QA agent",
+              "matchedTerms": [
+                "add"
+              ]
+            },
+            "freshAt": "2026-03-17T15:49:29.439Z",
+            "thoughtBubble": "Planner status: queued. Ready to decompose the latest handoff."
+          },
+          "executor": {
+            "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
+            "localState": "blocked",
+            "statusLabel": "Execution gated",
+            "statusDetail": "Finance Department lacks anchor provenance and cannot advance.",
+            "currentGoal": "Apply approved card: Finance Department",
+            "allowedActions": [
+              "apply-package",
+              "run-preflight",
+              "deploy-runtime",
+              "report-blocker"
+            ],
+            "workItems": [
+              {
+                "id": "card_page_1773403588491_034z_finance-department-execution",
+                "pageId": "page_1773403588491_034z",
+                "deskId": "executor",
+                "kind": "apply",
+                "status": "ready",
+                "dependsOn": [
+                  "handoff_1773403588495_hxww"
+                ],
+                "conflictTags": [
+                  "execute",
+                  "card_page_1773403588491_034z_finance-department"
+                ],
+                "artifactRefs": [
+                  "work/tasks/10000-finance-department/idea.txt",
+                  "work/tasks/10000-finance-department/context.md",
+                  "work/tasks/10000-finance-department/plan.md",
+                  "work/tasks/10000-finance-department/patch.diff"
+                ],
+                "anchorRefs": [],
+                "blockerMessage": "Finance Department lacks anchor provenance and cannot advance.",
+                "title": "Apply approved card: Finance Department"
+              }
+            ],
+            "lastOutput": "Approval required: Finance Department",
+            "blockedReason": "Finance Department lacks anchor provenance and cannot advance.",
+            "contextSlice": {
+              "activePageId": "page_debug_1773762539026_gf289j",
+              "activePageTitle": "I think we should add a desk to the studio for a",
+              "pageGoal": "I think we should add a desk to the studio for a QA agent",
+              "matchedTerms": [
+                "add"
+              ]
+            },
+            "freshAt": "2026-03-17T15:49:29.439Z",
+            "thoughtBubble": "Executor status: blocked. Waiting for clearer context."
+          },
+          "memory-archivist": {
+            "mission": "Persist useful summaries, artifact references, and history for active work.",
+            "localState": "running",
+            "statusLabel": "Processing",
+            "statusDetail": "Desk is actively processing work.",
+            "currentGoal": "Capture notes, handoffs, and artifact history",
+            "allowedActions": [
+              "archive-summary",
+              "record-artifact",
+              "snapshot-history"
+            ],
+            "workItems": [
+              {
+                "id": "page_debug_1773762539026_gf289j-memory-sync",
+                "pageId": "page_debug_1773762539026_gf289j",
+                "deskId": "memory-archivist",
+                "kind": "memory-sync",
+                "status": "running",
+                "dependsOn": [],
+                "conflictTags": [
+                  "memory"
+                ],
+                "artifactRefs": [
+                  "handoff_1773762569190_aezy0f"
+                ],
+                "anchorRefs": [
+                  "brain/emergence/roadmap.md",
+                  "brain/emergence/tasks.md"
+                ],
+                "title": "Capture notes, handoffs, and artifact history"
+              }
+            ],
+            "lastOutput": "Capture notes, handoffs, and artifact history",
+            "blockedReason": null,
+            "contextSlice": {
+              "activePageId": "page_debug_1773762539026_gf289j",
+              "activePageTitle": "I think we should add a desk to the studio for a",
+              "pageGoal": "I think we should add a desk to the studio for a QA agent",
+              "matchedTerms": [
+                "add"
+              ]
+            },
+            "freshAt": "2026-03-17T15:49:29.442Z",
+            "thoughtBubble": "Archivist status: running. Logging summaries."
+          },
+          "cto-architect": {
+            "mission": "Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.",
+            "localState": "running",
+            "statusLabel": "Governing",
+            "statusDetail": "Governance is monitoring active desks and mutation risk.",
+            "currentGoal": "Review desk overlap, approval state, and guardrails",
+            "allowedActions": [
+              "raise-conflict",
+              "approve-apply",
+              "reject-risky-change"
+            ],
+            "workItems": [
+              {
+                "id": "page_debug_1773762539026_gf289j-governance-check",
+                "pageId": "page_debug_1773762539026_gf289j",
+                "deskId": "cto-architect",
+                "kind": "governance-check",
+                "status": "running",
+                "dependsOn": [
+                  "handoff_1773762569190_aezy0f"
+                ],
+                "conflictTags": [
+                  "review",
+                  "governance"
+                ],
+                "artifactRefs": [
+                  "handoff_1773762569190_aezy0f"
+                ],
+                "anchorRefs": [
+                  "brain/emergence/roadmap.md",
+                  "brain/emergence/tasks.md"
+                ],
+                "title": "Review desk overlap, approval state, and guardrails"
+              }
+            ],
+            "lastOutput": "Review desk overlap, approval state, and guardrails",
+            "blockedReason": null,
+            "contextSlice": {
+              "activePageId": "page_debug_1773762539026_gf289j",
+              "activePageTitle": "I think we should add a desk to the studio for a",
+              "pageGoal": "I think we should add a desk to the studio for a QA agent",
+              "matchedTerms": [
+                "add"
+              ]
+            },
+            "freshAt": "2026-03-17T15:49:29.442Z",
+            "thoughtBubble": "Governance status: blocked. Reviewing blocker: Finance Department lacks anchor provenance and cannot advance."
+          }
+        },
+        "activePageId": "page_debug_1773762539026_gf289j"
+      },
+      "selfUpgrade": {
+        "status": "idle",
+        "targetProjectKey": "ace-self",
+        "taskId": "",
+        "patchReview": null,
+        "preflight": {
+          "status": "idle",
+          "ok": null,
+          "checkedAt": null,
+          "checks": [],
+          "summary": "Run preflight before applying a self patch."
+        },
+        "apply": {
+          "status": "idle",
+          "ok": null,
+          "appliedAt": null,
+          "branch": null,
+          "commit": null,
+          "taskId": ""
+        },
+        "deploy": {
+          "status": "idle",
+          "requestedAt": null,
+          "restartedAt": null,
+          "health": {
+            "status": "ready",
+            "pid": null,
+            "startedAt": null
+          }
+        },
+        "requiresPermission": "none"
+      },
+      "health": {
+        "ok": true,
+        "pid": 3748,
+        "startedAt": "2026-03-17T14:50:44.679Z",
+        "selfUpgrade": {
+          "status": "idle",
+          "deploy": {
+            "status": "idle",
+            "requestedAt": null,
+            "restartedAt": null,
+            "health": {
+              "status": "ready",
+              "pid": null,
+              "startedAt": null
+            }
+          }
+        }
+      },
+      "runs": [
+        {
+          "runId": "1773762569303-i383g5",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "project": "ace-self",
+            "taskId": "10000",
+            "confirmApply": false,
+            "confirmOverride": false
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762567769-y6qkal",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762563761-etj5w2",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762559753-052zjr",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762555746-bzq2es",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762554195-gu01fe",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762551743-0ecli7",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        },
+        {
+          "runId": "1773762547722-q4z1r1",
+          "action": "scan",
+          "status": "error",
+          "exitCode": 1,
+          "payload": {
+            "taskId": "10000",
+            "project": "ace-self"
+          },
+          "artifacts": []
+        }
+      ]
+    }
+  },
+  "notes": []
+}
