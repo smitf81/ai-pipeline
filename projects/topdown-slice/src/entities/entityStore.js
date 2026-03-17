@@ -2,12 +2,27 @@ function makeId(prefix, n) {
   return `${prefix}-${String(n).padStart(3, '0')}`;
 }
 
+export function createTaskActorBase({ id, type, x, y }) {
+  return {
+    id,
+    type,
+    x,
+    y,
+    state: 'idle',
+    currentTask: null,
+    taskQueue: [],
+    failedTasks: [],
+    taskHistory: [],
+    moveCooldownFrames: 0
+  };
+}
+
 export function createEntityStore() {
   return {
-    counters: { unit: 1, building: 1 },
+    counters: { unit: 1, building: 1, task: 1 },
     units: [],
     buildings: [],
-    agent: { id: 'agent-001', type: 'god-agent', x: 3, y: 3, state: 'idle', actionQueue: [] }
+    agent: createTaskActorBase({ id: 'agent-001', type: 'god-agent', x: 3, y: 3 })
   };
 }
 

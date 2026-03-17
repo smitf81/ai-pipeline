@@ -1,5 +1,5 @@
 import { TILE_TYPES, getTileType } from '../world/tilemap.js';
-import { nextEntityId } from '../entities/entityStore.js';
+import { createTaskActorBase, nextEntityId } from '../entities/entityStore.js';
 
 export function spawnUnit(store, map, { type, x, y }) {
   const tile = getTileType(map, x, y);
@@ -10,13 +10,12 @@ export function spawnUnit(store, map, { type, x, y }) {
     return { ok: false, error: `Cannot spawn on ${tile}.` };
   }
 
-  const unit = {
+  const unit = createTaskActorBase({
     id: nextEntityId(store, 'unit'),
     type,
     x,
-    y,
-    state: 'idle'
-  };
+    y
+  });
 
   store.units.push(unit);
   return { ok: true, unit };

@@ -30,6 +30,34 @@
 
       <aside class="side-pane">
         <section class="panel">
+          <h2>God-Agent Queue</h2>
+          <div><strong>Current:</strong> <span id="current-task">Idle</span></div>
+          <div class="actions">
+            <button id="cancel-current-task-btn" type="button">Cancel Current</button>
+            <button id="clear-task-queue-btn" type="button">Clear Queue</button>
+          </div>
+          <div class="subhead">Queued</div>
+          <ul id="queued-tasks"></ul>
+          <div class="subhead">Failed</div>
+          <ul id="failed-tasks"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Workers</h2>
+          <ul id="worker-list"></ul>
+          <div id="worker-details-empty">Select a worker to inspect task state.</div>
+          <div id="worker-details" class="hidden">
+            <div><strong>ID:</strong> <span id="selected-worker-id">-</span></div>
+            <div><strong>State:</strong> <span id="selected-worker-state">idle</span></div>
+            <div><strong>Current:</strong> <span id="selected-worker-current-task">Idle</span></div>
+            <div class="subhead">Queued</div>
+            <ul id="selected-worker-queue"></ul>
+            <div class="subhead">Failed</div>
+            <ul id="selected-worker-failed"></ul>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>Building Inspector</h2>
           <div id="inspector-empty">Select a building.</div>
           <form id="building-form" class="hidden">
@@ -52,6 +80,11 @@
               <label for="building-owner">Owner</label>
               <input id="building-owner" />
             </div>
+            <div class="meta-block">
+              <div><strong>State:</strong> <span id="building-state">-</span></div>
+              <div><strong>Progress:</strong> <span id="building-progress">-</span></div>
+              <div><strong>Builder:</strong> <span id="building-builder">-</span></div>
+            </div>
             <div class="actions">
               <button type="submit">Save</button>
               <button type="button" id="delete-building-btn" class="danger">Delete</button>
@@ -62,10 +95,15 @@
         <section class="panel">
           <h2>Command Console</h2>
           <form id="command-form">
-            <input id="command-input" placeholder="spawn unit worker at 5 5" />
+            <input id="command-input" placeholder="spawn worker at 5 5" />
             <button type="submit">Run</button>
           </form>
           <ul id="command-log"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Event Log</h2>
+          <ul id="event-log"></ul>
         </section>
 
         <section class="panel">

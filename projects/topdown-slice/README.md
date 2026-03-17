@@ -20,24 +20,44 @@ Open `http://localhost:4173`.
 ## Controls
 - Tool dropdown:
   - **Select**: click building to inspect/edit/delete.
-  - **Place Building**: click tile to place `house` or `workshop`.
-  - **Spawn Unit**: click tile to spawn worker unit.
-- Arrow keys: move the embodied god-agent.
+  - **Place Building**: click tile to enqueue a construction task.
+  - **Spawn Unit**: click tile to enqueue worker spawn task.
+- Arrow keys: enqueue one-step move tasks for the embodied god-agent.
+- God-agent panel:
+  - current task + queued task list with IDs/status/reason
+  - remove queued task
+  - move queued task up/down
+  - retry failed task
+  - cancel current / clear queue
+- Worker panel:
+  - view active workers
+  - select worker to inspect current/queued/failed tasks
+  - same queued controls (remove/reorder) and failed retry controls
+- Building inspector now shows:
+  - building state (`under_construction` or `complete`)
+  - build progress and completion percentage
+  - active builder actor ID when available
 - Command input supports:
-  - `spawn unit worker at 5 5`
-  - `place building house at 7 4`
-  - `move agent to 3 8`
-  - `delete building building-001`
+  - `spawn worker at 5 5`
+  - `assign worker unit-001 move to 8 6`
+  - `assign worker unit-001 build house at 10 4`
+  - `assign worker unit-001 paint tile 7 7 as stone`
+  - `set assignment strategy nearest_worker`
+  - `set assignment strategy least_loaded_worker`
+  - `set assignment strategy manual`
+  - `show assignment strategy`
+  - `list workers`
 
 ## Hardcoded shortcuts (intentional for thin slice)
 - Map is hardcoded (25x18 tile grid).
-- Unit type and building types are fixed small sets.
-- Agent movement is immediate tile movement (no pathfinding).
-- Command parser uses simple regex patterns.
+- Worker and building types are fixed small sets.
+- Agent/worker movement is greedy tile-by-tile (no pathfinding).
+- Construction progresses at 1 point per build tick while actor is in range.
+- Assignment strategy is lightweight and local (no planner involvement yet).
 - Debug checks are local synchronous validations only.
 
 ## Next slice ideas
-1. Introduce an explicit agent action queue visualizer + per-tick execution diagnostics.
-2. Add typed command history and a parser adapter layer for conversational intents.
-3. Add map-edit commands (`replace tile x y type`) using same command bus.
-4. Add lightweight persistence (export/import JSON snapshot).
+1. Add multiple-worker assist for one construction site.
+2. Add build speed modifiers by worker/building type.
+3. Add paused/interrupted construction state and resume UX.
+4. Add planner-authored multi-step build bundles.
