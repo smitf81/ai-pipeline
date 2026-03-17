@@ -1,0 +1,90 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #1c1f26;
+  color: #e7e7e7;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  height: 100vh;
+}
+
+.world-pane {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+}
+
+#game-canvas {
+  border: 1px solid #444;
+  background: #111;
+  image-rendering: pixelated;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.side-pane {
+  border-left: 1px solid #333;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.panel {
+  border: 1px solid #3a3d45;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: #20242d;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.hidden {
+  display: none;
+}
+
+.danger {
+  background: #732626;
+  color: #fff;
+}
+
+#command-log,
+#debug-log {
+  margin: 8px 0 0;
+  padding-left: 16px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+li.error {
+  color: #ff8484;
+}
+
+li.warn {
+  color: #ffcf6c;
+}
+
+li.ok {
+  color: #91ff9c;
+}
