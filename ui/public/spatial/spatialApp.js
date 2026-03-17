@@ -207,6 +207,8 @@ const EMPTY_QA_DEBUG = {
   runs: [],
 };
 
+const TRACE_HISTORY_LIMIT = 5;
+
 const LABEL_MAP = [
   { label: 'context', match: /context|brief|constraint|intent|memory/i },
   { label: 'plan', match: /plan|task|sequence|milestone|todo|roadmap/i },
@@ -803,6 +805,8 @@ function SpatialNotebook() {
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const [reviewPanelOpen, setReviewPanelOpen] = useState(false);
   const [expandedReviewCardId, setExpandedReviewCardId] = useState(null);
+  const [traceLog, setTraceLog] = useState([]);
+  const [expandedTraceIds, setExpandedTraceIds] = useState({});
 
   const canvasRef = useRef(null);
   const studioRef = useRef(null);
@@ -894,6 +898,48 @@ function SpatialNotebook() {
   }), [memory, graphBundle]);
   const studioRoom = studioLayout.room || STUDIO_ROOM;
   const teamBoardFrame = studioLayout.whiteboards?.teamBoard || DEFAULT_STUDIO_WHITEBOARDS.teamBoard;
+
+  function createTraceId() {
+    return `trace_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function beginTrace(rawInput) {
+    const trace = { trace_id: createTraceId(), steps: [] };
+    addTraceStep(trace, 'raw_input', { raw_input: String(rawInput || '') });
+    return trace;
+  }
+
+  function addTraceStep(trace, stage, data) {
+    if (!trace?.trace_id) return trace;
+    trace.steps.push({
+      stage,
+      timestamp: Date.now(),
+      data,
+    });
+    setTraceLog((current) => {
+      const withoutCurrent = current.filter((entry) => entry.trace_id !== trace.trace_id);
+      return [
+        {
+          trace_id: trace.trace_id,
+          steps: [...trace.steps],
+        },
+        ...withoutCurrent,
+      ].slice(0, TRACE_HISTORY_LIMIT);
+    });
+    return trace;
+  }
+
+  function buildIntentObject(rawInput, report, traceId) {
+    const extractedIntent = report?.extractedIntent || null;
+    const firstTask = Array.isArray(report?.tasks) && report.tasks.length ? report.tasks[0] : null;
+    return {
+      trace_id: traceId,
+      action: extractedIntent?.action || firstTask || 'unspecified',
+      target: extractedIntent?.target || null,
+      parameters: extractedIntent?.parameters || {},
+      raw_input: String(rawInput || ''),
+    };
+  }
 
   function centerStudioOnRoom(nextStatus = null) {
     const container = studioRef.current;
@@ -1732,12 +1778,24 @@ function SpatialNotebook() {
       setStatus('queue or select a mutation package before running executor');
       return;
     }
+    const trace = beginTrace(`executor_check:${selectedExecutionCard.id}`);
     setAgentWorkerBusyId('executor');
     try {
-      const payload = await ace.runAgentWorker('executor', {
+      addTraceStep(trace, 'planner_output', {
+        card_id: selectedExecutionCard.id,
+        execution_package: selectedExecutionCard.executionPackage || null,
+      });
+      addTraceStep(trace, 'executor_input', {
         cardId: selectedExecutionCard.id,
         mode: 'manual',
       });
+      const payload = await ace.runAgentWorker('executor', {
+        cardId: selectedExecutionCard.id,
+        mode: 'manual',
+        trace_id: trace.trace_id,
+      });
+      addTraceStep(trace, 'executor_output', payload.report || payload);
+      addTraceStep(trace, 'engine_result', payload.runtime?.teamBoard || payload.runtime || { status: 'executor-check-complete' });
       if (payload.runtime) {
         applyRuntimePayload(payload.runtime);
       }
@@ -1748,6 +1806,7 @@ function SpatialNotebook() {
         ? `executor${decision}: ${payload.report.summary}`
         : 'executor assessment complete');
     } catch (error) {
+      addTraceStep(trace, 'ERROR', { stage: 'executor', reason: error.message });
       setStatus(`executor run failed: ${error.message}`);
       refreshFeeds();
     } finally {
@@ -1764,13 +1823,16 @@ function SpatialNotebook() {
       setStatus('context intake is empty');
       return;
     }
+    const trace = beginTrace(contextDraft);
     setScannerBusy(true);
     try {
       const contextNode = captureContextInput();
+      addTraceStep(trace, 'executor_input', { operation: 'intent_parse', nodeId: contextNode?.id || null });
       const response = await ace.parseIntent({
         text: contextDraft,
         nodeId: contextNode?.id || null,
         source: 'context-intake',
+        trace_id: trace.trace_id,
       });
       const report = {
         ...(response.report || response),
@@ -1778,6 +1840,10 @@ function SpatialNotebook() {
         source: (response.report || response).source || 'context-intake',
         createdAt: (response.report || response).createdAt || new Date().toISOString(),
       };
+      const intentObject = buildIntentObject(contextDraft, { ...report, extractedIntent: response.extractedIntent }, trace.trace_id);
+      addTraceStep(trace, 'intent_object', intentObject);
+      addTraceStep(trace, 'planner_output', { tasks: report.tasks || [], handoff: response.handoff || null });
+      addTraceStep(trace, 'executor_output', report);
       setScanPreview(report);
       if (contextNode?.id) {
         const currentNode = graphEngine.getState().nodes.find((node) => node.id === contextNode.id);
@@ -1813,9 +1879,14 @@ function SpatialNotebook() {
             trigger: 'context-intake',
           })
         : null;
+      addTraceStep(trace, 'engine_result', {
+        generated_nodes: rsgResult?.generatedNodes?.map((node) => node.id) || [],
+        reason: rsgResult?.reason || null,
+      });
       setSelectedAgentId('context-manager');
       setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} intent items | planner brief ${handoff?.status || 'updated'}${rsgResult?.entry ? ` | ${formatRsgActivity(rsgResult.entry)}` : ''}`);
     } catch (error) {
+      addTraceStep(trace, 'ERROR', { stage: 'intent_parse', reason: error.message });
       setStatus(`scan failed: ${error.message}`);
     } finally {
       setScannerBusy(false);
@@ -1874,11 +1945,14 @@ function SpatialNotebook() {
       setStatus('node updated');
       return;
     }
+    const trace = beginTrace(content);
     try {
+      addTraceStep(trace, 'executor_input', { operation: 'intent_parse', nodeId, source });
       const response = await ace.parseIntent({
         text: content,
         nodeId,
         source,
+        trace_id: trace.trace_id,
       });
       nextNode = graphEngine.getState().nodes.find((node) => node.id === nodeId);
       const report = {
@@ -1887,6 +1961,10 @@ function SpatialNotebook() {
         source: (response.report || response).source || source,
         createdAt: (response.report || response).createdAt || new Date().toISOString(),
       };
+      const intentObject = buildIntentObject(content, { ...report, extractedIntent: response.extractedIntent }, trace.trace_id);
+      addTraceStep(trace, 'intent_object', intentObject);
+      addTraceStep(trace, 'planner_output', { tasks: report.tasks || [], handoff: response.handoff || null });
+      addTraceStep(trace, 'executor_output', report);
       const mergedLabels = [...new Set([...(patch.metadata?.labels || []), ...(report.classification?.labels || [])])];
       const resolvedRole = nextNode?.metadata?.manualOverride
         ? (nextNode.metadata.role || patch.metadata.role)
@@ -1926,10 +2004,15 @@ function SpatialNotebook() {
         trigger,
         recordSkip,
       });
+      addTraceStep(trace, 'engine_result', {
+        generated_nodes: rsgResult?.generatedNodes?.map((node) => node.id) || [],
+        reason: rsgResult?.reason || null,
+      });
       setSelectedAgentId('context-manager');
       setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} tasks for ${resolvedRole}${rsgResult?.entry ? ` | ${formatRsgActivity(rsgResult.entry)}` : ''}`);
       return report;
-    } catch {
+    } catch (error) {
+      addTraceStep(trace, 'ERROR', { stage: 'intent_parse', reason: error.message });
       graphEngine.updateNode(nodeId, {
         metadata: {
           ...(graphEngine.getState().nodes.find((node) => node.id === nodeId)?.metadata || {}),
@@ -2350,8 +2433,16 @@ function SpatialNotebook() {
   };
 
   const approvePreview = async () => {
+    const trace = beginTrace('apply preview mutations');
+    addTraceStep(trace, 'planner_output', {
+      mutation_count: preview?.mutations?.length || 0,
+      summary: preview?.summary || [],
+    });
+    addTraceStep(trace, 'executor_input', preview?.mutations || []);
     await ace.applyMutation(preview.mutations);
+    addTraceStep(trace, 'executor_output', { ok: true, applied: preview.mutations.length });
     mutationEngine.applyMutations(preview.mutations);
+    addTraceStep(trace, 'engine_result', { nodes: graphEngine.getState().nodes.length, edges: graphEngine.getState().edges.length });
     setGraph({ ...graphEngine.getState() });
     setPreview(null);
     setStatus('ACE suggestions applied');
@@ -3377,6 +3468,24 @@ function SpatialNotebook() {
               canReviewIntent ? h('button', { className: 'mini', type: 'button', onClick: reviewSelectedAgent }, reviewPanelOpen ? 'Report open' : 'Open problem report') : null,
             ),
           ),
+          h('div', { className: 'inspector-block panel-card trace-panel' },
+            h('div', { className: 'inspector-label' }, 'Trace Debug (last 5)'),
+            traceLog.length
+              ? traceLog.map((trace) => {
+                  const latestStage = trace.steps?.[trace.steps.length - 1]?.stage || 'pending';
+                  const expanded = Boolean(expandedTraceIds[trace.trace_id]);
+                  return h('div', { key: trace.trace_id, className: 'trace-entry' },
+                    h('button', {
+                      className: 'mini',
+                      type: 'button',
+                      onClick: () => setExpandedTraceIds((current) => ({ ...current, [trace.trace_id]: !expanded })),
+                    }, `${expanded ? 'Hide' : 'Show'} ${trace.trace_id}`),
+                    h('div', { className: 'muted' }, `${trace.steps.length} steps | latest: ${latestStage}`),
+                    expanded ? h('pre', { className: 'doc trace-json' }, JSON.stringify(trace, null, 2)) : null,
+                  );
+                })
+              : h('div', { className: 'signal-empty muted' }, 'No traces yet. Run context intake or executor actions.'),
+          ),
         ),
       ),
     ),
@@ -3501,7 +3610,6 @@ function drawCanvasScene(canvas, graph, viewport, connecting, pointerWorld, simI
 }
 
 ReactDOM.createRoot(document.getElementById('spatial-root')).render(h(SpatialNotebook));
-
 
 
 
