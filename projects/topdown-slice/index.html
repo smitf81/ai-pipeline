@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Top-Down Thin Slice</title>
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="world-pane">
+        <canvas id="game-canvas" width="800" height="576"></canvas>
+        <div class="toolbar">
+          <label>Tool
+            <select id="tool-select">
+              <option value="select">Select</option>
+              <option value="place-building">Place Building</option>
+              <option value="spawn-unit">Spawn Unit</option>
+            </select>
+          </label>
+          <label>Building
+            <select id="building-type-select">
+              <option value="house">House</option>
+              <option value="workshop">Workshop</option>
+            </select>
+          </label>
+          <button id="clear-selection-btn">Clear Selection</button>
+        </div>
+      </section>
+
+      <aside class="side-pane">
+        <section class="panel">
+          <h2>Building Inspector</h2>
+          <div id="inspector-empty">Select a building.</div>
+          <form id="building-form" class="hidden">
+            <div class="field-row">
+              <label for="building-id">ID</label>
+              <input id="building-id" readonly />
+            </div>
+            <div class="field-row">
+              <label for="building-name">Name</label>
+              <input id="building-name" />
+            </div>
+            <div class="field-row">
+              <label for="building-type">Type</label>
+              <select id="building-type">
+                <option value="house">House</option>
+                <option value="workshop">Workshop</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label for="building-owner">Owner</label>
+              <input id="building-owner" />
+            </div>
+            <div class="actions">
+              <button type="submit">Save</button>
+              <button type="button" id="delete-building-btn" class="danger">Delete</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h2>Command Console</h2>
+          <form id="command-form">
+            <input id="command-input" placeholder="spawn unit worker at 5 5" />
+            <button type="submit">Run</button>
+          </form>
+          <ul id="command-log"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Debug Checks</h2>
+          <button id="run-checks-btn">Run Checks</button>
+          <ul id="debug-log"></ul>
+        </section>
+      </aside>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
