@@ -1,5 +1,5 @@
+import { BUILDING_STATE, BUILDING_TYPES } from '../buildings/buildings.js';
 import { TILE_SIZE, TILE_TYPES } from '../world/tilemap.js';
-import { BUILDING_TYPES } from '../buildings/buildings.js';
 
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
@@ -18,16 +18,45 @@ export function createRenderer(canvas) {
     }
 
     state.store.buildings.forEach((b) => {
-      ctx.fillStyle = BUILDING_TYPES[b.type]?.color ?? '#ffffff';
-      ctx.fillRect(b.x * TILE_SIZE + 4, b.y * TILE_SIZE + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+      const color = BUILDING_TYPES[b.type]?.color ?? '#ffffff';
+      const x = b.x * TILE_SIZE + 4;
+      const y = b.y * TILE_SIZE + 4;
+      const w = TILE_SIZE - 8;
+      const h = TILE_SIZE - 8;
+
+      if (b.state === BUILDING_STATE.UNDER_CONSTRUCTION) {
+        ctx.fillStyle = `${color}99`;
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = '#ffe56b';
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(x, y, w, h);
+        ctx.setLineDash([]);
+
+        const progress = Math.max(0, Math.min(1, (b.buildProgress ?? 0) / (b.buildRequired ?? 1)));
+        ctx.fillStyle = '#00000088';
+        ctx.fillRect(x, y + h + 2, w, 4);
+        ctx.fillStyle = '#64ff7a';
+        ctx.fillRect(x, y + h + 2, w * progress, 4);
+      } else {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, w, h);
+      }
+
       if (state.selectedBuildingId === b.id) {
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
         ctx.strokeRect(b.x * TILE_SIZE + 3, b.y * TILE_SIZE + 3, TILE_SIZE - 6, TILE_SIZE - 6);
+        ctx.lineWidth = 1;
       }
     });
 
     state.store.units.forEach((u) => {
+      if (u.type === 'worker') {
+        ctx.fillStyle = '#5ce1ff';
+        ctx.fillRect(u.x * TILE_SIZE + 8, u.y * TILE_SIZE + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+        return;
+      }
+
       ctx.fillStyle = '#ffe56b';
       ctx.beginPath();
       ctx.arc(u.x * TILE_SIZE + TILE_SIZE / 2, u.y * TILE_SIZE + TILE_SIZE / 2, 8, 0, Math.PI * 2);

@@ -11,7 +11,7 @@ body {
 
 .layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 360px;
   height: 100vh;
 }
 
@@ -47,6 +47,21 @@ body {
   background: #20242d;
 }
 
+.subhead {
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+
+.meta-block {
+  margin: 8px 0;
+  padding: 6px;
+  background: #171a20;
+  border: 1px solid #2e333f;
+  font-size: 12px;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 70px 1fr;
@@ -60,6 +75,16 @@ body {
   gap: 8px;
 }
 
+.mini-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.task-row {
+  margin-bottom: 6px;
+}
+
 .hidden {
   display: none;
 }
@@ -69,8 +94,27 @@ body {
   color: #fff;
 }
 
+.worker-btn {
+  width: 100%;
+  text-align: left;
+  background: #2a2f3a;
+  color: #dce4f5;
+  border: 1px solid #3f4656;
+  margin-bottom: 4px;
+}
+
+.worker-btn.selected {
+  border-color: #5ce1ff;
+}
+
 #command-log,
-#debug-log {
+#event-log,
+#queued-tasks,
+#failed-tasks,
+#debug-log,
+#worker-list,
+#selected-worker-queue,
+#selected-worker-failed {
   margin: 8px 0 0;
   padding-left: 16px;
   max-height: 180px;

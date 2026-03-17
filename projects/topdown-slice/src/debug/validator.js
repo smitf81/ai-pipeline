@@ -32,6 +32,12 @@ export function runValidation(state) {
     if (!tile || !TILE_TYPES[tile].buildable) {
       messages.push({ level: 'error', text: `Building ${building.id} is on invalid tile.` });
     }
+
+    const progress = building.buildProgress ?? 0;
+    const required = building.buildRequired ?? 1;
+    if (progress < 0 || progress > required) {
+      messages.push({ level: 'error', text: `Building ${building.id} has invalid build progress.` });
+    }
   });
 
   if (messages.length === 0) {
