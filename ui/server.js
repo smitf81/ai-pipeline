@@ -3627,21 +3627,6 @@ app.post('/api/spatial/executive/route', async (req, res) => {
 
   if (!forceIntentScan && looksLikeMaterial) {
     const moduleEnvelope = mapEnvelopeToMaterialModule(envelope);
-    let contextCycle = null;
-    try {
-      contextCycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
-        text: promptText,
-        sourceNodeId: envelope.nodes.prompt.node_id,
-        source: 'executive-module-pre-handoff',
-        mode: 'manual',
-      });
-    } catch (error) {
-      contextCycle = {
-        ok: false,
-        skipped: true,
-        reason: String(error.message || error),
-      };
-    }
     const moduleRun = executeModuleAction(moduleEnvelope, {
       logger: (line) => console.log(line),
     });
@@ -3653,33 +3638,8 @@ app.post('/api/spatial/executive/route', async (req, res) => {
         envelope,
         moduleEnvelope,
         moduleRun,
-        report: contextCycle?.result?.report || null,
-        extractedIntent: contextCycle?.result?.extractedIntent || contextCycle?.result?.report?.extractedIntent || null,
-        handoff: contextCycle?.result?.handoff || null,
-        worker: contextCycle?.result?.run ? summarizeContextManagerRun(contextCycle.result.run) : null,
-        runtime: contextCycle?.workspace
-          ? buildSpatialRuntimePayload(refreshSpatialOrchestrator({
-              persist: true,
-              workspace: contextCycle.workspace,
-            }))
-          : null,
-        contextScan: contextCycle && !contextCycle.result?.report
-          ? {
-              ok: false,
-              skipped: Boolean(contextCycle.skipped),
-              reason: contextCycle.reason || 'context-manager did not produce a report',
-            }
-          : {
-              ok: true,
-            },
       });
     }
-    const contextRuntime = contextCycle?.workspace
-      ? buildSpatialRuntimePayload(refreshSpatialOrchestrator({
-          persist: true,
-          workspace: contextCycle.workspace,
-        }))
-      : null;
     return res.json({
       ok: true,
       route: 'module',
@@ -3687,20 +3647,6 @@ app.post('/api/spatial/executive/route', async (req, res) => {
       moduleEnvelope,
       moduleRun,
       preview: buildModulePreview(moduleRun),
-      report: contextCycle?.result?.report || null,
-      extractedIntent: contextCycle?.result?.extractedIntent || contextCycle?.result?.report?.extractedIntent || null,
-      handoff: contextCycle?.result?.handoff || null,
-      worker: contextCycle?.result?.run ? summarizeContextManagerRun(contextCycle.result.run) : null,
-      runtime: contextRuntime,
-      contextScan: contextCycle && !contextCycle.result?.report
-        ? {
-            ok: false,
-            skipped: Boolean(contextCycle.skipped),
-            reason: contextCycle.reason || 'context-manager did not produce a report',
-          }
-        : {
-            ok: true,
-          },
     });
   }
 

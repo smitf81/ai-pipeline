@@ -1924,12 +1924,6 @@ function SpatialNotebook() {
       setExecutiveResult(response);
       if (response.route === 'module' && response.preview) {
         addTraceStep(trace, 'executor_output', response.preview);
-        if (response.report) {
-          setScanPreview(response.report);
-        }
-        if (response.runtime) {
-          applyRuntimePayload(response.runtime);
-        }
         setStatus(`executive module route complete | ${response.preview.artifact_type || 'artifact'} | ${Math.round((response.preview.confidence || 0) * 100)}% confidence`);
         return;
       }
@@ -3955,6 +3949,7 @@ function drawCanvasScene(canvas, graph, viewport, connecting, pointerWorld, simI
 }
 
 ReactDOM.createRoot(document.getElementById('spatial-root')).render(h(SpatialNotebook));
+
 
 
 
