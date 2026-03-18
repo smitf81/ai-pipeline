@@ -2764,6 +2764,34 @@ app.get('/api/health', (req, res) => {
   res.json(getHealthSnapshot());
 });
 
+app.post('/api/llm/test', async (req, res) => {
+  const body = req.body || {};
+  const prompt = String(body.prompt || '').trim();
+  if (!prompt) {
+    return res.status(400).json({ error: 'prompt is required.' });
+  }
+  try {
+    const result = await callOllamaGenerate({
+      prompt,
+      model: String(body.model || 'mixtral').trim() || 'mixtral',
+      host: String(body.host || '').trim() || undefined,
+      timeoutMs: Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : undefined,
+      expectJson: false,
+    });
+    return res.json({
+      ok: true,
+      model: String(body.model || 'mixtral').trim() || 'mixtral',
+      prompt,
+      text: result.text,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: String(error.message || error),
+    });
+  }
+});
+
 app.post('/api/spatial/self-upgrade/preflight', (req, res) => {
   const body = req.body || {};
   const taskId = String(body.taskId || '').trim();

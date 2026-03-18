@@ -1,10 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const {
-  requestOllamaJson,
   DEFAULT_OLLAMA_HOST,
   DEFAULT_OLLAMA_TIMEOUT_MS,
 } = require('./localModelClient');
+const {
+  callOllamaGenerate,
+} = require('./llmAdapter');
 const { resolveAgentDefinition } = require('./agentRegistry');
 const {
   analyzeSpatialIntent,
@@ -135,6 +137,15 @@ const FALLBACK_EXECUTOR_PROMPT = [
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function addTraceStep(trace, stage, payload = {}) {
+  if (!trace || !Array.isArray(trace.steps)) return;
+  trace.steps.push({
+    stage,
+    at: nowIso(),
+    ...payload,
+  });
 }
 
 function normalizeRelativePath(relativePath = '') {
@@ -945,7 +956,7 @@ async function runPlannerWorker(options = {}) {
           runId,
           definition,
         })
-      : await requestOllamaJson({
+      : await callOllamaGenerate({
           prompt: buildPlannerPrompt({
             promptTemplate: config.prompt,
             handoff,
@@ -1113,7 +1124,7 @@ async function runExecutorWorker(options = {}) {
           definition,
           fallbackReport,
         })
-      : await requestOllamaJson({
+      : await callOllamaGenerate({
           prompt: buildExecutorPrompt({
             promptTemplate: config.prompt,
             card,
@@ -1509,6 +1520,7 @@ function createContextManagerRunRecord({
   handoff = null,
   usedFallback = false,
   rawResponse = '',
+  llmTrace = null,
 }) {
   return {
     id: runId,
@@ -1532,6 +1544,7 @@ function createContextManagerRunRecord({
     handoff,
     usedFallback: Boolean(usedFallback),
     rawResponse: rawResponse || null,
+    llmTrace: llmTrace && Array.isArray(llmTrace.steps) ? llmTrace : null,
   };
 }
 
@@ -1594,8 +1607,25 @@ async function runContextManagerWorker(options = {}) {
   };
   let rawResponse = '';
   let generatedExtractedIntentPayload = null;
+  const llmTrace = {
+    runId,
+    steps: [],
+  };
 
   try {
+    const contextPrompt = buildContextManagerPrompt({
+      promptTemplate: config.prompt,
+      text: rawText,
+      anchorBundle: anchorBundle || { anchors: {}, truthSources: [] },
+      workspace,
+      plannerFeedback: activePlannerFeedback,
+      previousHandoff,
+    });
+    addTraceStep(llmTrace, 'llm_call_start', {
+      model: resolvedModel,
+      stage: 'context-packet',
+      promptPreview: contextPrompt.slice(0, 300),
+    });
     const generated = generator
       ? await generator({
           stage: 'context-packet',
@@ -1614,15 +1644,8 @@ async function runContextManagerWorker(options = {}) {
           runId,
           definition,
         })
-      : await requestOllamaJson({
-          prompt: buildContextManagerPrompt({
-            promptTemplate: config.prompt,
-            text: rawText,
-            anchorBundle: anchorBundle || { anchors: {}, truthSources: [] },
-            workspace,
-            plannerFeedback: activePlannerFeedback,
-            previousHandoff,
-          }),
+      : await callOllamaGenerate({
+          prompt: contextPrompt,
           model: resolvedModel,
           host: resolvedHost,
           timeoutMs: resolvedTimeoutMs,
@@ -1637,9 +1660,19 @@ async function runContextManagerWorker(options = {}) {
       : null;
     rawResponse = generated?.text || (typeof generated === 'string' ? generated : JSON.stringify(rawPayload));
     packet = normalizeContextPacket(packetPayload, anchorBundle || { truthSources: [] });
+    addTraceStep(llmTrace, 'llm_call_success', {
+      model: resolvedModel,
+      stage: 'context-packet',
+      textPreview: rawResponse.slice(0, 300),
+    });
   } catch (error) {
     usedFallback = true;
     fallbackReason = String(error.message || error);
+    addTraceStep(llmTrace, 'llm_call_failure', {
+      model: resolvedModel,
+      stage: 'context-packet',
+      error: String(error.message || error),
+    });
   }
 
   try {
@@ -1685,19 +1718,30 @@ async function runContextManagerWorker(options = {}) {
       });
     } else {
       try {
-        const extractedResponse = await requestOllamaJson({
-          prompt: buildExtractedIntentPrompt({
-            text: rawText,
-            packet,
-            report: baseReport,
-            workspace,
-          }),
+        const extractedPrompt = buildExtractedIntentPrompt({
+          text: rawText,
+          packet,
+          report: baseReport,
+          workspace,
+        });
+        addTraceStep(llmTrace, 'llm_call_start', {
+          model: resolvedModel,
+          stage: 'extracted-intent',
+          promptPreview: extractedPrompt.slice(0, 300),
+        });
+        const extractedResponse = await callOllamaGenerate({
+          prompt: extractedPrompt,
           model: resolvedModel,
           host: resolvedHost,
           timeoutMs: resolvedTimeoutMs,
           fetchImpl,
         });
         const rawExtractedPayload = extractedResponse?.json ?? extractedResponse;
+        addTraceStep(llmTrace, 'llm_call_success', {
+          model: resolvedModel,
+          stage: 'extracted-intent',
+          textPreview: String(extractedResponse?.text || JSON.stringify(rawExtractedPayload)).slice(0, 300),
+        });
         extractedIntent = normalizeExtractedIntent(rawExtractedPayload, {
           rawText,
           packet,
@@ -1711,6 +1755,11 @@ async function runContextManagerWorker(options = {}) {
       } catch (error) {
         extractedIntentUsedFallback = true;
         extractedIntentReason = String(error.message || error);
+        addTraceStep(llmTrace, 'llm_call_failure', {
+          model: resolvedModel,
+          stage: 'extracted-intent',
+          error: String(error.message || error),
+        });
         extractedIntent = buildFallbackExtractedIntent({
           rawText,
           packet,
@@ -1755,6 +1804,7 @@ async function runContextManagerWorker(options = {}) {
       handoff,
       usedFallback: combinedFallback,
       rawResponse,
+      llmTrace,
     }));
     return {
       ok: true,
@@ -1771,6 +1821,11 @@ async function runContextManagerWorker(options = {}) {
     };
   } catch (error) {
     const reason = String(error.message || error);
+    addTraceStep(llmTrace, 'llm_call_failure', {
+      model: resolvedModel,
+      stage: 'context-manager',
+      error: reason,
+    });
     const runRecord = persistContextManagerRun(rootPath, createContextManagerRunRecord({
       runId,
       mode,
@@ -1787,6 +1842,7 @@ async function runContextManagerWorker(options = {}) {
       handoff: null,
       usedFallback,
       rawResponse,
+      llmTrace,
     }));
     return {
       ok: false,
