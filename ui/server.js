@@ -72,6 +72,12 @@ const {
 const {
   executeModuleAction,
 } = require('./moduleRunner');
+const {
+  OllamaClient,
+  chatWithContext,
+  withLogging,
+  withRetry,
+} = require('./llmClient');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -92,6 +98,19 @@ const dashboardFiles = listCanonicalAnchorPaths(DOMAIN_KEY);
 
 const runStore = new Map();
 const runOrder = [];
+const ctoLlmClient = withLogging(new OllamaClient({}), console);
+const DESK_AGENT_DEFAULTS = {
+  'context-manager': ['context-manager'],
+  planner: ['planner'],
+  executor: ['executor'],
+  'memory-archivist': ['memory-archivist'],
+  'cto-architect': ['cto-architect'],
+};
+const TEAM_BOARD_DESK_TO_STUDIO_DESK = {
+  Planner: 'planner',
+  Builder: 'executor',
+  CTO: 'cto-architect',
+};
 
 
 function ensureSpatialStorage() {
@@ -200,6 +219,213 @@ function readJsonSafe(filePath, fallback = null) {
   }
 }
 
+function normalizeDeskPropertiesState(workspace = {}) {
+  const current = workspace?.studio?.deskProperties || {};
+  return Object.fromEntries(
+    Object.keys(DESK_AGENT_DEFAULTS).map((deskId) => {
+      const deskState = current?.[deskId] || {};
+      return [deskId, {
+        managedAgents: Array.isArray(deskState.managedAgents) ? [...new Set(deskState.managedAgents.filter(Boolean))] : [],
+        moduleIds: Array.isArray(deskState.moduleIds) ? [...new Set(deskState.moduleIds.filter(Boolean))] : [],
+        manualTests: Array.isArray(deskState.manualTests)
+          ? deskState.manualTests.filter((entry) => entry && entry.id).map((entry) => ({
+              id: String(entry.id),
+              verdict: String(entry.verdict || 'unknown'),
+              createdAt: entry.createdAt || nowIso(),
+              notes: entry.notes || '',
+            }))
+          : [],
+      }];
+    }),
+  );
+}
+
+function listModuleManifests() {
+  const root = path.join(ROOT, 'modules');
+  if (!fs.existsSync(root)) return [];
+  const manifests = [];
+  const stack = [root];
+  while (stack.length) {
+    const current = stack.pop();
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    entries.forEach((entry) => {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        return;
+      }
+      if (!entry.isFile() || !entry.name.endsWith('.module.json')) return;
+      const payload = readJsonSafe(fullPath, null);
+      if (!payload || !payload.module_id) return;
+      manifests.push({
+        id: String(payload.module_id),
+        version: String(payload.version || 'unknown'),
+        summary: payload.description || payload.summary || payload.name || payload.module_id,
+        manifestPath: path.relative(ROOT, fullPath),
+      });
+    });
+  }
+  return manifests.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function normalizeLifecycleStatus(rawStatus = '') {
+  const value = String(rawStatus || '').toLowerCase();
+  if (!value) return 'queued';
+  if (value === 'done' || value === 'complete' || value === 'completed' || value === 'success') return 'done';
+  if (value === 'failed' || value === 'error' || value.includes('fail')) return 'failed';
+  if (value === 'blocked') return 'blocked';
+  if (['running', 'active', 'in_progress', 'in-progress', 'building', 'applying', 'deploying', 'verifying'].includes(value)) return 'in_progress';
+  return 'queued';
+}
+
+function deriveTaskProgress(task = {}) {
+  const status = normalizeLifecycleStatus(task.status);
+  if (status === 'done') return { label: '100%', value: 100 };
+  if (status === 'queued') return { label: '0%', value: 0 };
+  if (status === 'failed') return { label: 'failed', value: null };
+  if (status === 'blocked') return { label: 'blocked', value: null };
+  if (Number.isFinite(Number(task.stageProgress))) {
+    const pct = Math.max(1, Math.min(99, Math.round(Number(task.stageProgress))));
+    return { label: `${pct}%`, value: pct };
+  }
+  if (task.stageName) return { label: String(task.stageName), value: null };
+  return { label: 'in progress', value: null };
+}
+
+function collectDeskTasks(workspace, deskId) {
+  const orchestratorDesk = workspace?.studio?.orchestrator?.desks?.[deskId];
+  const deskWorkItems = (orchestratorDesk?.workItems || []).map((item) => ({
+    id: item.id,
+    title: item.title || item.kind || item.id,
+    status: item.status || orchestratorDesk?.localState || 'queued',
+    stageName: item.kind || null,
+    source: 'orchestrator',
+    artifactRefs: item.artifactRefs || [],
+  }));
+
+  const boardCards = normalizeTeamBoardState(workspace).cards
+    .filter((card) => TEAM_BOARD_DESK_TO_STUDIO_DESK[card.desk] === deskId)
+    .map((card) => ({
+      id: card.id,
+      title: card.title || card.id,
+      status: card.status || card.state || 'queued',
+      stageName: card.state || null,
+      stageProgress: Number.isFinite(Number(card.phaseTicks)) ? Number(card.phaseTicks) : null,
+      source: 'team-board',
+      artifactRefs: card.artifactRefs || [],
+    }));
+
+  const deduped = new Map();
+  [...deskWorkItems, ...boardCards].forEach((task) => {
+    if (!task?.id) return;
+    deduped.set(task.id, task);
+  });
+  return Array.from(deduped.values()).map((task) => {
+    const lifecycle = normalizeLifecycleStatus(task.status);
+    return {
+      ...task,
+      lifecycle,
+      progress: deriveTaskProgress({ ...task, status: lifecycle }),
+    };
+  });
+}
+
+function collectDeskReports(workspace, deskId) {
+  const taskReports = collectDeskTasks(workspace, deskId)
+    .filter((task) => task.source === 'team-board')
+    .map((task) => ({
+      id: `task-${task.id}`,
+      type: 'task-verification',
+      name: task.title,
+      verdict: task.lifecycle === 'done' ? 'pass' : (task.lifecycle === 'failed' || task.lifecycle === 'blocked' ? 'fail' : 'pending'),
+      source: 'team-board',
+      detail: task.progress?.label || task.lifecycle,
+    }));
+  const qaReports = listQARuns(ROOT)
+    .map((run) => summarizeQARun(run))
+    .filter((run) => !run.linked || !run.linked.deskId || run.linked.deskId === deskId)
+    .map((run) => ({
+      id: run.id,
+      type: 'qa-run',
+      name: run.scenario || run.id,
+      verdict: run.verdict || run.status || 'unknown',
+      source: 'qa-runner',
+      detail: run.summary || run.trigger || '',
+    }));
+  const manual = normalizeDeskPropertiesState(workspace)?.[deskId]?.manualTests || [];
+  const manualReports = manual.map((entry) => ({
+    id: `manual-${entry.id}`,
+    type: 'manual-test',
+    name: entry.id,
+    verdict: entry.verdict,
+    source: 'desk-properties',
+    detail: entry.notes || '',
+    createdAt: entry.createdAt,
+  }));
+  return [...taskReports, ...qaReports, ...manualReports];
+}
+
+function buildDeskPropertiesPayload(workspace, deskId) {
+  const desk = workspace?.studio?.orchestrator?.desks?.[deskId] || {};
+  const deskProperties = normalizeDeskPropertiesState(workspace)?.[deskId] || { managedAgents: [], moduleIds: [], manualTests: [] };
+  const modules = listModuleManifests();
+  const tasks = collectDeskTasks(workspace, deskId);
+  const primaryAgentIds = DESK_AGENT_DEFAULTS[deskId] || [];
+  const agents = [...new Set([...primaryAgentIds, ...deskProperties.managedAgents])]
+    .map((agentId) => {
+      const worker = workspace?.studio?.agentWorkers?.[agentId] || null;
+      const currentTask = tasks.find((task) => task.lifecycle === 'in_progress') || tasks[0] || null;
+      return {
+        id: agentId,
+        model: worker?.model || null,
+        backend: worker?.backend || null,
+        status: worker?.status || desk.localState || 'idle',
+        currentTask: currentTask ? {
+          id: currentTask.id,
+          title: currentTask.title,
+          lifecycle: currentTask.lifecycle,
+          progress: currentTask.progress,
+        } : null,
+      };
+    });
+  return {
+    deskId,
+    desk: {
+      mission: desk.mission || null,
+      currentGoal: desk.currentGoal || null,
+      localState: desk.localState || null,
+    },
+    agents,
+    tasks,
+    modules: modules.map((module) => ({
+      ...module,
+      assigned: deskProperties.moduleIds.includes(module.id),
+    })),
+    reports: collectDeskReports(workspace, deskId),
+    sources: {
+      tasks: ['studio.orchestrator.desks.*.workItems', 'studio.teamBoard.cards'],
+      modules: ['modules/**/*.module.json'],
+      reports: ['studio.teamBoard.cards.verifyStatus/applyStatus/deployStatus', 'data/spatial/qa/runs/*.json', 'studio.deskProperties.manualTests'],
+      agents: ['studio.agentWorkers', 'studio.deskProperties.managedAgents'],
+    },
+  };
+}
+
+function buildCtoDeskChatReply({ prompt = '', run = null, report = null, handoff = null }) {
+  const packet = run?.packet || {};
+  const headline = String(packet.statement || report?.summary || '').trim()
+    || 'I could not generate a direct answer for that question yet.';
+  const nextTasks = (handoff?.tasks || report?.tasks || []).filter(Boolean).slice(0, 3);
+  const constraints = (handoff?.constraints || report?.constraints || []).filter(Boolean).slice(0, 2);
+  const lines = [headline];
+  if (nextTasks.length) lines.push(`Next tasks: ${nextTasks.join(' | ')}`);
+  if (constraints.length) lines.push(`Constraints: ${constraints.join(' | ')}`);
+  if (report?.summary && report.summary !== headline) lines.push(`Context summary: ${report.summary}`);
+  if (run?.usedFallback) lines.push('Note: fallback analysis was used for part of this response.');
+  if (prompt) lines.push(`Question: ${prompt}`);
+  return lines.join('\n');
+}
+
 function getAnchorBundle() {
   return buildAnchorBundle({
     rootPath: ROOT,
@@ -253,6 +479,7 @@ function defaultSpatialWorkspace() {
     studio: {
       handoffs: {},
       agentWorkers: createDefaultAgentWorkersState(),
+      deskProperties: normalizeDeskPropertiesState({}),
       selfUpgrade: createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }),
     },
   };
@@ -279,6 +506,7 @@ function normalizeSpatialWorkspaceShape(workspace = {}) {
       ...(baseWorkspace.studio || {}),
       handoffs: { ...((baseWorkspace.studio || {}).handoffs || {}) },
       agentWorkers: normalizeAgentWorkersState(baseWorkspace?.studio?.agentWorkers),
+      deskProperties: normalizeDeskPropertiesState(baseWorkspace),
       selfUpgrade: getSelfUpgradeState(baseWorkspace),
     },
   };
@@ -2965,6 +3193,78 @@ app.get('/api/spatial/workspace', async (req, res) => {
   res.json(workspace);
 });
 
+app.get('/api/spatial/desks/:deskId/properties', async (req, res) => {
+  const deskId = String(req.params.deskId || '').trim();
+  if (!DESK_AGENT_DEFAULTS[deskId]) {
+    res.status(404).json({ error: 'Unknown desk id' });
+    return;
+  }
+  const workspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
+    workspace: await pumpAutomatedTeamBoardAsync(),
+  }));
+  const payload = buildDeskPropertiesPayload(workspace, deskId);
+  console.debug(`[desk-properties] loaded desk=${deskId} tasks=${payload.tasks.length} modules=${payload.modules.length} reports=${payload.reports.length}`);
+  res.json(payload);
+});
+
+app.post('/api/spatial/desks/:deskId/actions', (req, res) => {
+  const deskId = String(req.params.deskId || '').trim();
+  if (!DESK_AGENT_DEFAULTS[deskId]) {
+    res.status(404).json({ error: 'Unknown desk id' });
+    return;
+  }
+  const action = String(req.body?.action || '').trim();
+  if (!action) {
+    res.status(400).json({ error: 'action is required' });
+    return;
+  }
+  try {
+    const updatedWorkspace = updateSpatialWorkspace((workspace) => {
+      const current = normalizeDeskPropertiesState(workspace);
+      const nextDesk = { ...(current[deskId] || { managedAgents: [], moduleIds: [], manualTests: [] }) };
+      if (action === 'add_agent') {
+        const agentId = String(req.body?.agentId || '').trim();
+        if (!agentId) throw new Error('agentId is required');
+        nextDesk.managedAgents = [...new Set([...(nextDesk.managedAgents || []), agentId])];
+      } else if (action === 'assign_module') {
+        const moduleId = String(req.body?.moduleId || '').trim();
+        if (!moduleId) throw new Error('moduleId is required');
+        const moduleExists = listModuleManifests().some((entry) => entry.id === moduleId);
+        if (!moduleExists) throw new Error(`Unknown moduleId: ${moduleId}`);
+        nextDesk.moduleIds = [...new Set([...(nextDesk.moduleIds || []), moduleId])];
+      } else if (action === 'add_test') {
+        const testId = String(req.body?.testId || '').trim();
+        if (!testId) throw new Error('testId is required');
+        nextDesk.manualTests = [
+          ...(nextDesk.manualTests || []),
+          {
+            id: testId,
+            verdict: String(req.body?.verdict || 'unknown'),
+            notes: String(req.body?.notes || ''),
+            createdAt: nowIso(),
+          },
+        ];
+      } else {
+        throw new Error(`Unsupported action: ${action}`);
+      }
+      return {
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          deskProperties: {
+            ...current,
+            [deskId]: nextDesk,
+          },
+        },
+      };
+    });
+    const payload = buildDeskPropertiesPayload(updatedWorkspace, deskId);
+    res.json({ ok: true, action, deskId, payload });
+  } catch (error) {
+    res.status(400).json({ error: String(error.message || error) });
+  }
+});
+
 app.get('/api/spatial/runtime', async (req, res) => {
   res.json(await refreshSpatialRuntime({ persist: true }));
 });
@@ -3410,6 +3710,71 @@ app.post('/api/modules/run', (req, res) => {
     return res.status(status).json(result);
   }
   return res.json(result);
+});
+
+app.post('/api/spatial/cto/chat', async (req, res) => {
+  const prompt = String(req.body?.prompt || '').trim();
+  if (!prompt) {
+    return res.status(400).json({ error: 'prompt is required.' });
+  }
+  const deskId = String(req.body?.deskId || 'cto-architect').trim() || 'cto-architect';
+  try {
+    const workspace = readSpatialWorkspace();
+    const deskPayload = DESK_AGENT_DEFAULTS[deskId] ? buildDeskPropertiesPayload(workspace, deskId) : null;
+    const managerSummary = getDashboardStateSnapshot();
+    const contextBlocks = [
+      deskPayload?.desk?.currentGoal ? `Desk goal: ${deskPayload.desk.currentGoal}` : null,
+      (deskPayload?.tasks || []).length
+        ? `Desk tasks:\n${deskPayload.tasks.slice(0, 5).map((task) => `- ${task.title} (${task.lifecycle}, ${task.progress?.label || 'n/a'})`).join('\n')}`
+        : null,
+      (deskPayload?.modules || []).length
+        ? `Desk modules:\n${deskPayload.modules.filter((module) => module.assigned).map((module) => `- ${module.id}@${module.version}`).join('\n') || '- none assigned'}`
+        : null,
+      managerSummary?.current_focus ? `Manager focus: ${managerSummary.current_focus}` : null,
+      (managerSummary?.next_actions || []).length ? `Manager next actions: ${managerSummary.next_actions.slice(0, 4).join(' | ')}` : null,
+    ].filter(Boolean);
+    let llmReply = '';
+    try {
+      llmReply = await withRetry(() => chatWithContext(ctoLlmClient, {
+        question: prompt,
+        contextBlocks,
+      }), { retries: 1, delayMs: 250 });
+    } catch (error) {
+      console.warn(`[cto-chat] direct llm reply failed, falling back to context worker: ${error.message}`);
+    }
+
+    const cycle = await maybeRunContextManagerWorker(workspace, {
+      text: `CTO Desk Question (${deskId}): ${prompt}`,
+      source: 'cto-desk-chat',
+      mode: 'manual',
+    });
+    if (!cycle.result?.report) {
+      return res.status(500).json({ error: cycle.reason || 'CTO chat could not produce a response.' });
+    }
+    const fallbackReply = buildCtoDeskChatReply({
+      prompt,
+      run: cycle.result.run,
+      report: cycle.result.report,
+      handoff: cycle.result.handoff,
+    });
+    const reply = llmReply || fallbackReply;
+    const runtime = buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    }));
+    return res.json({
+      ok: true,
+      deskId,
+      reply,
+      usedDirectLlmReply: Boolean(llmReply),
+      worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
+      report: cycle.result.report,
+      handoff: cycle.result.handoff,
+      runtime,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: String(error.message || error) });
+  }
 });
 
 app.post('/api/spatial/intent', async (req, res) => {
