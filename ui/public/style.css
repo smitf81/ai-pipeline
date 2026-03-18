@@ -721,6 +721,17 @@ textarea {
   z-index: 6;
 }
 
+.desk-properties-trigger {
+  position: absolute;
+  left: -4px;
+  top: -18px;
+  z-index: 6;
+}
+
+.cto-edit-trigger {
+  left: 52px;
+}
+
 .whiteboard-edit-handle {
   border-style: solid;
 }
@@ -1445,6 +1456,53 @@ textarea {
   z-index: 60;
 }
 
+.desk-properties-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(0, 0, 0, 0.76);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.desk-properties-card {
+  width: min(760px, 100%);
+  max-height: 86vh;
+  overflow: auto;
+  background: rgba(8, 14, 24, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+}
+
+.desk-tabs {
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.desk-panel-list {
+  display: grid;
+  gap: 8px;
+}
+
+.desk-panel-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.desk-cto-controls {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.desk-chat-panel {
+  margin-top: 12px;
+}
+
 @media (max-width: 1180px) {
   .spatial-main { grid-template-columns: 1fr 300px; }
   .toolbar-status { max-width: 28vw; }
@@ -1633,8 +1691,6 @@ textarea {
   margin-top: 0;
 }
 .criteria-row { display: grid; gap: 3px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
-
-
 
 
 
