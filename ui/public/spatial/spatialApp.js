@@ -786,6 +786,7 @@ function SpatialNotebook() {
   const [contextDraft, setContextDraft] = useState('');
   const [scanPreview, setScanPreview] = useState(null);
   const [scannerBusy, setScannerBusy] = useState(false);
+  const [executiveResult, setExecutiveResult] = useState(null);
   const [intentState, setIntentState] = useState(EMPTY_INTENT_STATE);
   const [rsgMeta, setRsgMeta] = useState(() => createDefaultRsgState());
   const [pages, setPages] = useState([createDefaultPage()]);
@@ -1871,7 +1872,7 @@ function SpatialNotebook() {
     }
   }
 
-  const scanContextIntent = async () => {
+  const scanContextIntent = async ({ forceIntentScan = false } = {}) => {
     if (activeGraphLayer !== 'system') {
       setStatus('switch to the system graph to run context intake');
       return;
@@ -1884,13 +1885,54 @@ function SpatialNotebook() {
     setScannerBusy(true);
     try {
       const contextNode = captureContextInput();
-      addTraceStep(trace, 'executor_input', { operation: 'intent_parse', nodeId: contextNode?.id || null });
-      const response = await ace.parseIntent({
-        text: contextDraft,
-        nodeId: contextNode?.id || null,
-        source: 'context-intake',
+      addTraceStep(trace, 'executor_input', { operation: 'executive_route', nodeId: contextNode?.id || null, forceIntentScan });
+      const response = await ace.runExecutiveRoute({
+        envelope: {
+          version: 'ace/studio-envelope.v1',
+          entries: [
+            {
+              type: 'prompt',
+              node_id: contextNode?.id || 'prompt-1',
+              content: contextDraft,
+              data: {},
+            },
+            {
+              type: 'constraints',
+              node_id: 'constraints-1',
+              content: '',
+              data: {
+                engine_target: 'unreal',
+                require_tileable: true,
+              },
+            },
+            {
+              type: 'target',
+              node_id: 'target-1',
+              content: 'Preview in studio',
+              data: {
+                module_id: 'material_gen',
+                export_format: 'manifest',
+              },
+            },
+          ],
+        },
+        override: {
+          force_intent_scan: forceIntentScan,
+        },
         trace_id: trace.trace_id,
       });
+      setExecutiveResult(response);
+      if (response.route === 'module' && response.preview) {
+        addTraceStep(trace, 'executor_output', response.preview);
+        setStatus(`executive module route complete | ${response.preview.artifact_type || 'artifact'} | ${Math.round((response.preview.confidence || 0) * 100)}% confidence`);
+        return;
+      }
+      if (response.route === 'legacy-fallback') {
+        addTraceStep(trace, 'executor_output', response.legacy || response);
+        const legacyAction = response.legacy?.action || 'legacy';
+        setStatus(`executive fallback ran legacy ${legacyAction}`);
+        return;
+      }
       const report = {
         ...(response.report || response),
         nodeId: (response.report || response).nodeId || contextNode?.id || null,
@@ -1948,6 +1990,50 @@ function SpatialNotebook() {
     } finally {
       setScannerBusy(false);
     }
+  };
+
+  const exportExecutiveManifest = async () => {
+    if (!executiveResult) {
+      setStatus('run the executive route before exporting');
+      return;
+    }
+    try {
+      const payload = await ace.exportExecutiveManifest(executiveResult);
+      setStatus(`manifest exported to ${payload.manifest_path}`);
+    } catch (error) {
+      setStatus(`manifest export failed: ${error.message}`);
+    }
+  };
+
+  const copyExecutiveMetadata = async () => {
+    if (!executiveResult?.preview) {
+      setStatus('no executive preview metadata to copy');
+      return;
+    }
+    const text = JSON.stringify({
+      route: executiveResult.route || null,
+      preview: executiveResult.preview,
+      module_id: executiveResult.moduleRun?.module_id || null,
+    }, null, 2);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setStatus('executive metadata copied');
+        return;
+      }
+      throw new Error('clipboard unavailable');
+    } catch (error) {
+      setStatus(`copy failed: ${error.message}`);
+    }
+  };
+
+  const revealExecutiveOutputPaths = () => {
+    const paths = executiveResult?.preview?.output_paths || [];
+    if (!paths.length) {
+      setStatus('no output paths available');
+      return;
+    }
+    setStatus(`output paths: ${paths.join(', ')}`);
   };
 
   const openAdvancedProperties = (event, node) => {
@@ -3395,7 +3481,8 @@ function SpatialNotebook() {
             }),
             h('div', { className: 'button-row' },
               h('button', { className: 'mini', type: 'button', onClick: captureContextInput, disabled: activeGraphLayer !== 'system' }, 'Save to Context'),
-              h('button', { className: 'mini', type: 'button', onClick: () => scanContextIntent().catch((error) => setStatus(error.message)), disabled: scannerBusy || activeGraphLayer !== 'system' }, scannerBusy ? 'Scanning...' : 'Scan Intent'),
+              h('button', { className: 'mini', type: 'button', onClick: () => scanContextIntent().catch((error) => setStatus(error.message)), disabled: scannerBusy || activeGraphLayer !== 'system' }, scannerBusy ? 'Routing...' : 'Run Executive Route'),
+              h('button', { className: 'mini', type: 'button', onClick: () => scanContextIntent({ forceIntentScan: true }).catch((error) => setStatus(error.message)), disabled: scannerBusy || activeGraphLayer !== 'system' }, 'Scan for intent'),
               scanPreview ? h('button', { className: 'mini', type: 'button', onClick: () => { setSelectedAgentId('context-manager'); setScene(SCENES.STUDIO); setReviewPanelOpen(true); } }, 'Open problem report') : null,
             ),
             scanPreview
@@ -3412,6 +3499,23 @@ function SpatialNotebook() {
                 ))),
               )
               : h('div', { className: 'signal-empty muted' }, 'Run the scanner to preview extracted intent items.'),
+            executiveResult?.route === 'module' && executiveResult.preview
+              ? h(React.Fragment, null,
+                h('div', { className: 'intent-summary-card' },
+                  h('div', { className: 'confidence-pill' }, `${Math.round((executiveResult.preview.confidence || 0) * 100)}% confidence`),
+                  h('div', null, `Artifact: ${executiveResult.preview.artifact_type || 'unknown'}`),
+                ),
+                h('div', { className: 'muted' }, `Validation ${executiveResult.preview.validation_status} | Human review ${executiveResult.preview.requires_human_review ? 'required' : 'not required'}`),
+                (executiveResult.preview.output_paths || []).length
+                  ? h('ul', { className: 'signal-list' }, executiveResult.preview.output_paths.map((item) => h('li', { key: item }, item)))
+                  : h('div', { className: 'signal-empty muted' }, 'No output paths reported.'),
+                h('div', { className: 'button-row' },
+                  h('button', { className: 'mini', type: 'button', onClick: () => exportExecutiveManifest().catch((error) => setStatus(error.message)) }, 'Export Manifest'),
+                  h('button', { className: 'mini', type: 'button', onClick: () => copyExecutiveMetadata().catch((error) => setStatus(error.message)) }, 'Copy Metadata'),
+                  h('button', { className: 'mini', type: 'button', onClick: revealExecutiveOutputPaths }, 'Reveal Paths'),
+                ),
+              )
+              : null,
           ),
           h('div', { className: 'inspector-block panel-card' },
             h('div', { className: 'inspector-label' }, 'Backend Signal Check'),
@@ -3729,7 +3833,7 @@ function SpatialNotebook() {
         h('div', { className: 'card-title' }, 'ACE Suggestion Preview'),
         h('pre', { className: 'doc' }, preview.summary.join('\n')),
         h('div', { className: 'button-row' },
-          h('button', { type: 'button', onClick: approvePreview }, 'Apply'),
+          h('button', { type: 'button', onClick: approvePreview }, 'Accept Preview'),
           h('button', { type: 'button', onClick: () => setPreview(null) }, 'Dismiss'),
         ),
       ),
@@ -3845,12 +3949,6 @@ function drawCanvasScene(canvas, graph, viewport, connecting, pointerWorld, simI
 }
 
 ReactDOM.createRoot(document.getElementById('spatial-root')).render(h(SpatialNotebook));
-
-
-
-
-
-
 
 
 
