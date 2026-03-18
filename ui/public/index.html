@@ -59,7 +59,8 @@
             </section>
 
             <section class="card">
-                <div class="card-title">Pipeline Control</div>
+                <div class="card-title">Legacy Fallback Control</div>
+                <div class="muted">Legacy CLI fallback only. Canonical execution now routes through Studio/Canvas executive flow.</div>
                 <div class="form-grid">
                     <label>Project</label>
                     <select id="projectSelect"></select>
@@ -75,16 +76,7 @@
                         <option value="scan">Scan</option>
                         <option value="manage">Manage</option>
                         <option value="build">Build</option>
-                        <option value="run">Run</option>
-                        <option value="apply-dry-run">Apply (Dry Run)</option>
-                        <option value="apply">Apply</option>
                     </select>
-
-                    <div id="presetRow" class="hidden-row">
-                        <label>Run preset <button class="mini" id="presetHelpBtn" type="button">?</button></label>
-                        <select id="presetSelect"></select>
-                        <div id="presetHelp" class="help muted"></div>
-                    </div>
                 </div>
                 <div class="button-row"><button id="executeBtn">Execute</button></div>
             </section>
@@ -127,21 +119,9 @@
         </div>
     </aside>
 
-    <div id="reviewModal" class="modal hidden">
-        <div class="modal-content card">
-            <div class="card-title">Apply Review</div>
-            <div id="reviewBody" class="doc"></div>
-            <div class="button-row">
-                <button id="cancelReviewBtn">Cancel</button>
-                <button id="confirmReviewBtn">Confirm</button>
-            </div>
-        </div>
-    </div>
-
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="app.js"></script>
     <script type="module" src="spatial/spatialApp.js"></script>
 </body>
 </html>
-
