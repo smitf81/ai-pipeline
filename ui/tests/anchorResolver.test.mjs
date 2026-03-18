@@ -16,10 +16,12 @@ export default async function runAnchorResolverTests() {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-anchor-'));
   const resolverPath = path.resolve(process.cwd(), 'anchorResolver.js');
   const {
+    ANCHOR_BY_ID,
     buildAnchorBundle,
     CANONICAL_AUTHORITY,
     DERIVED_AUTHORITY,
     readAnchorFile,
+    resolveAnchorIntentWeight,
     resolveTargetsConfig,
   } = require(resolverPath);
 
@@ -56,6 +58,14 @@ export default async function runAnchorResolverTests() {
   assert.ok(bundle.drift.some((flag) => flag.id === 'legacy-plan'));
   assert.ok(bundle.drift.some((flag) => flag.id === 'state-focus-divergence'));
   assert.ok(bundle.drift.some((flag) => flag.id === 'state-milestone-divergence'));
+  assert.equal(ANCHOR_BY_ID.project_brain.intentWeight, 4);
+  assert.equal(ANCHOR_BY_ID.roadmap.intentWeight, 4);
+  assert.equal(ANCHOR_BY_ID.plan.intentWeight, 4);
+  assert.equal(ANCHOR_BY_ID.tasks.intentWeight, 4);
+  assert.equal(ANCHOR_BY_ID.decisions.intentWeight, 3);
+  assert.equal(ANCHOR_BY_ID.changelog.intentWeight, 3);
+  assert.equal(resolveAnchorIntentWeight(bundle.anchors.roadmap), 4);
+  assert.equal(resolveAnchorIntentWeight({ weight: 0 }), 1);
 
   const legacyRoadmapRead = readAnchorFile(rootPath, 'projects/emergence/roadmap.md');
   assert.equal(legacyRoadmapRead.path, 'brain/emergence/roadmap.md');

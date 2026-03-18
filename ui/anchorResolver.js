@@ -10,13 +10,13 @@ const CANONICAL_AUTHORITY = 'canonical-anchor';
 const DERIVED_AUTHORITY = 'derived-state';
 
 const ANCHOR_DEFINITIONS = Object.freeze([
-  { id: 'project_brain', fileName: 'project_brain.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 3, keywordWeight: 3, required: true },
-  { id: 'roadmap', fileName: 'roadmap.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 5, keywordWeight: 5, required: true },
-  { id: 'plan', fileName: 'plan.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 4, keywordWeight: 4, required: true },
-  { id: 'tasks', fileName: 'tasks.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 4, keywordWeight: 4, required: true },
-  { id: 'decisions', fileName: 'decisions.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 2, keywordWeight: 2, required: true },
-  { id: 'changelog', fileName: 'changelog.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 2, keywordWeight: 2, required: true },
-  { id: 'state', fileName: 'state.json', type: 'json', authority: DERIVED_AUTHORITY, weight: 1, keywordWeight: 0, required: true },
+  { id: 'project_brain', fileName: 'project_brain.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 3, intentWeight: 4, keywordWeight: 3, required: true },
+  { id: 'roadmap', fileName: 'roadmap.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 5, intentWeight: 4, keywordWeight: 5, required: true },
+  { id: 'plan', fileName: 'plan.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 4, intentWeight: 4, keywordWeight: 4, required: true },
+  { id: 'tasks', fileName: 'tasks.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 4, intentWeight: 4, keywordWeight: 4, required: true },
+  { id: 'decisions', fileName: 'decisions.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 2, intentWeight: 3, keywordWeight: 2, required: true },
+  { id: 'changelog', fileName: 'changelog.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 2, intentWeight: 3, keywordWeight: 2, required: true },
+  { id: 'state', fileName: 'state.json', type: 'json', authority: DERIVED_AUTHORITY, weight: 1, intentWeight: 1, keywordWeight: 0, required: true },
 ]);
 
 const ANCHOR_BY_ID = Object.freeze(Object.fromEntries(ANCHOR_DEFINITIONS.map((definition) => [definition.id, definition])));
@@ -539,6 +539,15 @@ function resolveTargetsConfig(rootPath) {
   };
 }
 
+function resolveAnchorIntentWeight(anchorLike) {
+  if (!anchorLike) return 1;
+  const explicitIntentWeight = Number(anchorLike.intentWeight);
+  if (Number.isFinite(explicitIntentWeight) && explicitIntentWeight > 0) return explicitIntentWeight;
+  const fallbackWeight = Number(anchorLike.weight);
+  if (Number.isFinite(fallbackWeight) && fallbackWeight > 0) return fallbackWeight;
+  return 1;
+}
+
 module.exports = {
   ANCHOR_BY_ID,
   ANCHOR_DEFINITIONS,
@@ -558,6 +567,7 @@ module.exports = {
   normalizeRelativePath,
   readAnchorBundle,
   readAnchorFile,
+  resolveAnchorIntentWeight,
   resolveTargetsConfig,
   topKeywordsFromCounts,
   tokenizeKeywordSource,

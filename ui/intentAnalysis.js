@@ -7,6 +7,7 @@ const INTENT_STOPWORDS = new Set([
 const {
   DEFAULT_DOMAIN_KEY,
   buildAnchorBundle,
+  resolveAnchorIntentWeight,
   tokenizeKeywordSource,
   topKeywordsFromCounts,
 } = require('./anchorResolver');
@@ -86,15 +87,34 @@ function buildLegacyIntentTasks(text) {
 
 function buildWeightedKeywordCounts(anchorBundle, contextNode) {
   const counts = new Map();
+  const canonicalSeeds = new Map();
   Object.values(anchorBundle?.anchors || {}).forEach((anchor) => {
+    const intentWeight = resolveAnchorIntentWeight(anchor);
+    const seededKeywords = [];
     (anchor?.keywords || []).forEach((token) => {
-      counts.set(token, (counts.get(token) || 0) + Number(anchor.weight || 1));
+      counts.set(token, (counts.get(token) || 0) + intentWeight);
+      if (seededKeywords.length < 3) seededKeywords.push(token);
     });
+    if (anchor?.authority === 'canonical-anchor' && seededKeywords.length > 0) {
+      canonicalSeeds.set(anchor.id, seededKeywords);
+    }
   });
   tokenizeKeywordSource(contextNode?.content || '').forEach((token) => {
     counts.set(token, (counts.get(token) || 0) + 4);
   });
-  return counts;
+  return { counts, canonicalSeeds };
+}
+
+function buildBalancedProjectKeywords({ counts, canonicalSeeds }, limit = 28) {
+  const prioritized = [];
+  (canonicalSeeds instanceof Map ? [...canonicalSeeds.values()] : []).forEach((tokens) => {
+    tokens.forEach((token) => {
+      if (!prioritized.includes(token)) prioritized.push(token);
+    });
+  });
+  const weighted = topKeywordsFromCounts(counts, limit * 2);
+  const merged = [...prioritized, ...weighted];
+  return [...new Set(merged)].slice(0, limit);
 }
 
 function buildAnchorCatalog(anchorBundle) {
@@ -106,6 +126,8 @@ function buildAnchorCatalog(anchorBundle) {
       sourceRelativePath: anchor.sourceRelativePath,
       source: anchor.source,
       weight: anchor.weight,
+      intentWeight: resolveAnchorIntentWeight(anchor),
+      authority: anchor.authority || 'canonical-anchor',
       keywords: (anchor.keywords || []).slice(0, 24),
     }));
 }
@@ -122,7 +144,7 @@ function buildIntentProjectContext({
     readEntry: readDashboardFile,
   });
   const contextNode = (workspace.graph?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
-  const keywordCounts = buildWeightedKeywordCounts(anchorBundle, contextNode);
+  const weightedKeywords = buildWeightedKeywordCounts(anchorBundle, contextNode);
   const managerSummary = anchorBundle.managerSummary || {};
   return {
     domainKey,
@@ -130,7 +152,7 @@ function buildIntentProjectContext({
     currentFocus: managerSummary.current_focus || '',
     activeMilestone: managerSummary.active_milestone || '',
     blockers: managerSummary.blockers || [],
-    keywords: topKeywordsFromCounts(keywordCounts, 28),
+    keywords: buildBalancedProjectKeywords(weightedKeywords, 28),
     sourcesRead: [
       ...anchorBundle.truthSources.filter((source) => source.exists).map((source) => source.relativePath),
       ...(contextNode ? ['workspace.graph.context-manager-node'] : []),
@@ -147,15 +169,22 @@ function buildAnchorMatches(tokens = [], project = {}) {
   const tokenSet = new Set(tokens || []);
   const catalog = Array.isArray(project.anchorCatalog) ? project.anchorCatalog : [];
   const matches = catalog
-    .map((anchor) => ({
-      anchorRef: anchor.relativePath,
-      sourceRef: anchor.sourceRelativePath,
-      source: anchor.source,
-      weight: anchor.weight,
-      matchedTerms: (anchor.keywords || []).filter((token) => tokenSet.has(token)).slice(0, 8),
-    }))
+    .map((anchor) => {
+      const matchedTerms = (anchor.keywords || []).filter((token) => tokenSet.has(token)).slice(0, 8);
+      const intentWeight = Number(anchor.intentWeight || anchor.weight || 1);
+      const canonicalBonus = anchor.authority === 'canonical-anchor' ? 1 : 0;
+      return {
+        anchorRef: anchor.relativePath,
+        sourceRef: anchor.sourceRelativePath,
+        source: anchor.source,
+        weight: anchor.weight,
+        intentWeight,
+        matchedTerms,
+        score: matchedTerms.length ? Number((matchedTerms.length * intentWeight + canonicalBonus).toFixed(2)) : 0,
+      };
+    })
     .filter((entry) => entry.matchedTerms.length > 0)
-    .sort((left, right) => right.matchedTerms.length - left.matchedTerms.length || right.weight - left.weight);
+    .sort((left, right) => right.score - left.score || right.matchedTerms.length - left.matchedTerms.length || right.intentWeight - left.intentWeight);
   return matches;
 }
 
