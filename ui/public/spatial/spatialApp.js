@@ -86,6 +86,12 @@ const DEFAULT_STUDIO_DESK_LAYOUT = {
 const DEFAULT_STUDIO_WHITEBOARDS = {
   teamBoard: { x: 320, y: 96 },
 };
+const DESK_PROPERTY_TABS = [
+  { id: 'agents', label: 'Agents' },
+  { id: 'tasks', label: 'Tasks' },
+  { id: 'tools', label: 'Tools (Modules)' },
+  { id: 'reports', label: 'Reports (Tests)' },
+];
 
 function clampDeskPosition(position = {}, room = STUDIO_ROOM, fallbackPosition = DEFAULT_STUDIO_DESK_LAYOUT['context-manager']) {
   return {
@@ -807,6 +813,15 @@ function SpatialNotebook() {
   const [expandedReviewCardId, setExpandedReviewCardId] = useState(null);
   const [traceLog, setTraceLog] = useState([]);
   const [expandedTraceIds, setExpandedTraceIds] = useState({});
+  const [deskPanelState, setDeskPanelState] = useState({ open: false, deskId: null, mode: 'properties' });
+  const [deskPanelTab, setDeskPanelTab] = useState('agents');
+  const [deskPanelBusy, setDeskPanelBusy] = useState(false);
+  const [deskPanelActionBusy, setDeskPanelActionBusy] = useState(false);
+  const [deskPanelData, setDeskPanelData] = useState(null);
+  const [ctoEditTargetDeskId, setCtoEditTargetDeskId] = useState('planner');
+  const [deskChatDraft, setDeskChatDraft] = useState('');
+  const [deskChatBusy, setDeskChatBusy] = useState(false);
+  const [deskChatLog, setDeskChatLog] = useState([]);
 
   const canvasRef = useRef(null);
   const studioRef = useRef(null);
@@ -898,6 +913,48 @@ function SpatialNotebook() {
   }), [memory, graphBundle]);
   const studioRoom = studioLayout.room || STUDIO_ROOM;
   const teamBoardFrame = studioLayout.whiteboards?.teamBoard || DEFAULT_STUDIO_WHITEBOARDS.teamBoard;
+
+  const loadDeskPanel = async (deskId) => {
+    if (!deskId) return;
+    setDeskPanelBusy(true);
+    try {
+      const payload = await ace.getDeskProperties(deskId);
+      setDeskPanelData(payload);
+      setStatus(`desk properties loaded: ${deskId}`);
+      console.debug('[desk-properties-panel] sources', payload.sources);
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setDeskPanelBusy(false);
+    }
+  };
+
+  function openDeskPropertiesPanel(deskId, mode = 'properties') {
+    if (!deskId) return;
+    setSelectedAgentId(deskId);
+    setDeskPanelState({ open: true, deskId, mode });
+    if (mode === 'edit') {
+      setDeskPanelTab('agents');
+      if (deskId === 'cto-architect') loadDeskPanel(ctoEditTargetDeskId);
+    } else {
+      loadDeskPanel(deskId);
+    }
+  }
+
+  async function runDeskPanelAction(action, payload = {}, targetDeskId = null) {
+    const deskId = targetDeskId || deskPanelState.deskId;
+    if (!deskId) return;
+    setDeskPanelActionBusy(true);
+    try {
+      await ace.updateDeskProperties(deskId, action, payload);
+      await loadDeskPanel(deskId);
+      setStatus(`${action} updated for ${deskId}`);
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setDeskPanelActionBusy(false);
+    }
+  }
 
   function createTraceId() {
     return `trace_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -2499,6 +2556,14 @@ function SpatialNotebook() {
     }
   }, [expandedReviewCardId, teamBoard]);
 
+  useEffect(() => {
+    if (!deskPanelState.open || !deskPanelState.deskId) return;
+    const sourceDeskId = deskPanelState.mode === 'edit' && deskPanelState.deskId === 'cto-architect'
+      ? ctoEditTargetDeskId
+      : deskPanelState.deskId;
+    loadDeskPanel(sourceDeskId);
+  }, [deskPanelState.open, deskPanelState.deskId, deskPanelState.mode, ctoEditTargetDeskId]);
+
   const resolvePageTitle = (pageId) => {
     if (!pageId) return 'Unknown page';
     if (pageId === activePage?.id) return 'Current page';
@@ -2734,6 +2799,157 @@ function SpatialNotebook() {
         )
       : h('div', { className: 'signal-empty muted' }, 'No throughput session recorded yet. Run a fixture pass or a live ACE pass to inspect the full pipeline.'),
   );
+
+  const renderDeskPropertiesPanel = () => {
+    if (!deskPanelState.open || !deskPanelState.deskId) return null;
+    const deskId = deskPanelState.deskId;
+    const deskLabel = getStudioAgents().find((entry) => entry.id === deskId)?.name || deskId;
+    const isCtoEdit = deskPanelState.mode === 'edit' && deskId === 'cto-architect';
+    const targetDeskId = isCtoEdit ? ctoEditTargetDeskId : deskId;
+    const targetDeskLabel = getStudioAgents().find((entry) => entry.id === targetDeskId)?.name || targetDeskId;
+    const panelData = deskPanelData && deskPanelData.deskId === targetDeskId ? deskPanelData : null;
+    return h('div', { className: 'desk-properties-modal' },
+      h('div', { className: 'desk-properties-card panel-card' },
+        h('div', { className: 'inline review-header' },
+          h('div', null,
+            h('div', { className: 'inspector-label' }, isCtoEdit ? 'CTO Desk Edit Panel' : 'Desk Properties Panel'),
+            h('div', { className: 'signal-summary' }, isCtoEdit ? `${deskLabel} managing ${targetDeskLabel}` : deskLabel),
+          ),
+          h('button', { className: 'mini', type: 'button', onClick: () => setDeskPanelState({ open: false, deskId: null, mode: 'properties' }) }, 'Close'),
+        ),
+        isCtoEdit ? h('div', { className: 'desk-cto-controls' },
+          h('label', { className: 'muted', htmlFor: 'cto-target-desk' }, 'Managed desk'),
+          h('select', {
+            id: 'cto-target-desk',
+            className: 'mini recent-select',
+            value: ctoEditTargetDeskId,
+            onChange: async (event) => {
+              setCtoEditTargetDeskId(event.target.value);
+              await loadDeskPanel(event.target.value);
+            },
+          }, getStudioAgents().filter((entry) => entry.id !== 'cto-architect').map((entry) => h('option', { key: entry.id, value: entry.id }, entry.name))),
+          h('div', { className: 'button-row' },
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              disabled: deskPanelActionBusy,
+              onClick: async () => {
+                const agentId = window.prompt(`Add agent id to ${targetDeskLabel}`);
+                if (!agentId) return;
+                await runDeskPanelAction('add_agent', { agentId }, targetDeskId);
+              },
+            }, deskPanelActionBusy ? 'Saving...' : '+ Add Agent'),
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              disabled: deskPanelActionBusy,
+              onClick: async () => {
+                const moduleId = window.prompt(`Assign module id to ${targetDeskLabel}`);
+                if (!moduleId) return;
+                await runDeskPanelAction('assign_module', { moduleId }, targetDeskId);
+              },
+            }, deskPanelActionBusy ? 'Saving...' : '+ Assign Module'),
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              disabled: deskPanelActionBusy,
+              onClick: async () => {
+                const testId = window.prompt(`Add test/report id for ${targetDeskLabel}`);
+                if (!testId) return;
+                await runDeskPanelAction('add_test', { testId, verdict: 'pending' }, targetDeskId);
+              },
+            }, deskPanelActionBusy ? 'Saving...' : '+ Add Test'),
+          ),
+        ) : null,
+        h('div', { className: 'scene-switcher desk-tabs' },
+          DESK_PROPERTY_TABS.map((tab) => h('button', {
+            key: tab.id,
+            className: `mini ${deskPanelTab === tab.id ? 'active' : ''}`,
+            type: 'button',
+            onClick: () => setDeskPanelTab(tab.id),
+          }, tab.label)),
+        ),
+        deskPanelBusy
+          ? h('div', { className: 'signal-empty muted' }, 'Loading desk properties...')
+          : null,
+        !deskPanelBusy && !panelData ? h('div', { className: 'signal-empty muted' }, 'No desk properties available.') : null,
+        !deskPanelBusy && panelData && deskPanelTab === 'agents' ? h('div', { className: 'desk-panel-list' },
+          (panelData.agents || []).length
+            ? panelData.agents.map((entry) => h('div', { key: entry.id, className: 'desk-panel-item' },
+                h('div', { className: 'signal-summary' }, entry.id),
+                h('div', { className: 'signal-meta muted' }, `Status: ${entry.status} | ${entry.backend || 'backend n/a'} ${entry.model || ''}`),
+                entry.currentTask
+                  ? h('div', { className: 'signal-meta muted' }, `Task: ${entry.currentTask.title} | ${entry.currentTask.lifecycle} | ${entry.currentTask.progress?.label || 'n/a'}`)
+                  : h('div', { className: 'signal-meta muted' }, 'No current task assigned'),
+              ))
+            : h('div', { className: 'signal-empty muted' }, 'No agents assigned.'),
+        ) : null,
+        !deskPanelBusy && panelData && deskPanelTab === 'tasks' ? h('div', { className: 'desk-panel-list' },
+          (panelData.tasks || []).length
+            ? panelData.tasks.map((task) => h('div', { key: task.id, className: 'desk-panel-item' },
+                h('div', { className: 'signal-summary' }, task.title),
+                h('div', { className: 'signal-meta muted' }, `${task.lifecycle} | ${task.progress?.label || 'n/a'} | source ${task.source}`),
+              ))
+            : h('div', { className: 'signal-empty muted' }, 'No backlog tasks assigned to this desk.'),
+        ) : null,
+        !deskPanelBusy && panelData && deskPanelTab === 'tools' ? h('div', { className: 'desk-panel-list' },
+          (panelData.modules || []).length
+            ? panelData.modules.map((module) => h('div', { key: module.id, className: 'desk-panel-item' },
+                h('div', { className: 'signal-summary' }, `${module.id} ${module.assigned ? '(assigned)' : ''}`),
+                h('div', { className: 'signal-meta muted' }, `${module.version} | ${module.manifestPath}`),
+              ))
+            : h('div', { className: 'signal-empty muted' }, 'No modules found in workspace registry.'),
+        ) : null,
+        !deskPanelBusy && panelData && deskPanelTab === 'reports' ? h('div', { className: 'desk-panel-list' },
+          (panelData.reports || []).length
+            ? panelData.reports.map((report) => h('div', { key: report.id, className: 'desk-panel-item' },
+                h('div', { className: 'signal-summary' }, `${report.name} (${report.verdict})`),
+                h('div', { className: 'signal-meta muted' }, `${report.type} | ${report.source}${report.detail ? ` | ${report.detail}` : ''}`),
+              ))
+            : h('div', { className: 'signal-empty muted' }, 'no reports available'),
+        ) : null,
+        isCtoEdit ? h('div', { className: 'desk-chat-panel' },
+          h('div', { className: 'inspector-label' }, 'LLM chatbox'),
+          h('div', { className: 'comment-thread' },
+            deskChatLog.length
+              ? deskChatLog.map((entry) => h('div', { key: entry.id, className: 'comment-entry' },
+                  h('div', { className: 'comment-meta muted' }, entry.role),
+                  h('div', null, entry.text),
+                ))
+              : h('div', { className: 'muted' }, 'Ask about desk state and task coordination.'),
+          ),
+          h('textarea', {
+            className: 'comment-box',
+            value: deskChatDraft,
+            placeholder: 'Ask ACE about this desk...',
+            onChange: (event) => setDeskChatDraft(event.target.value),
+          }),
+          h('div', { className: 'button-row' },
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              disabled: deskChatBusy || !deskChatDraft.trim(),
+              onClick: async () => {
+                const prompt = deskChatDraft.trim();
+                if (!prompt) return;
+                setDeskChatBusy(true);
+                setDeskChatDraft('');
+                setDeskChatLog((current) => [{ id: `chat-${Date.now()}-u`, role: 'user', text: prompt }, ...current].slice(0, 10));
+                try {
+                  const response = await ace.parseIntent({ text: prompt, source: 'desk-properties-chat' });
+                  setDeskChatLog((current) => [{ id: `chat-${Date.now()}-a`, role: 'ace', text: response?.summary || 'No summary returned.' }, ...current].slice(0, 10));
+                } catch (error) {
+                  setDeskChatLog((current) => [{ id: `chat-${Date.now()}-e`, role: 'error', text: error.message }, ...current].slice(0, 10));
+                } finally {
+                  setDeskChatBusy(false);
+                }
+              },
+            }, deskChatBusy ? 'Asking...' : 'Send'),
+          ),
+        ) : null,
+      ),
+    );
+  };
 
   return h('section', { className: 'spatial-main ace-shell', 'data-qa': 'spatial-root', style: { gridTemplateColumns: `minmax(0, 1fr) ${sidebarColumnWidth}px` } },
     h('div', { className: 'canvas-column scene-column' },
@@ -3094,6 +3310,24 @@ function SpatialNotebook() {
                       event.stopPropagation();
                     },
                   }, 'Move'),
+                  h('button', {
+                    className: 'mini desk-properties-trigger',
+                    type: 'button',
+                    onClick: (event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openDeskPropertiesPanel(agent.id, 'properties');
+                    },
+                  }, 'Props'),
+                  agent.id === 'cto-architect' ? h('button', {
+                    className: 'mini desk-properties-trigger cto-edit-trigger',
+                    type: 'button',
+                    onClick: (event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openDeskPropertiesPanel(agent.id, 'edit');
+                    },
+                  }, 'Edit desks') : null,
                   pageBadge ? h('div', { className: 'desk-page-badge' }, pageBadge) : null,
                   h('div', { className: 'station-desk' },
                     h('div', { className: `desk-light ${agent.activityPulse ? 'pulse' : ''} ${agent.unresolved ? 'warning' : ''}` }),
@@ -3489,6 +3723,7 @@ function SpatialNotebook() {
         ),
       ),
     ),
+    renderDeskPropertiesPanel(),
     preview && h('div', { className: 'modal' },
       h('div', { className: 'modal-content card' },
         h('div', { className: 'card-title' }, 'ACE Suggestion Preview'),
@@ -3610,14 +3845,6 @@ function drawCanvasScene(canvas, graph, viewport, connecting, pointerWorld, simI
 }
 
 ReactDOM.createRoot(document.getElementById('spatial-root')).render(h(SpatialNotebook));
-
-
-
-
-
-
-
-
 
 
 
