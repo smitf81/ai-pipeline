@@ -1,10 +1,8 @@
 const state = {
   refreshIntervalMs: 10000,
   refreshTimer: null,
-  presets: [],
   currentRunId: null,
   currentOutput: '',
-  pendingApplyPayload: null,
   taLoading: false,
 };
 
@@ -107,26 +105,6 @@ async function loadTasks() {
   if (data.tasks[0]) document.getElementById('taskIdInput').value = data.tasks[0];
 }
 
-async function loadPresets() {
-  const data = await api('/api/presets');
-  state.presets = data.presets || [];
-  const select = document.getElementById('presetSelect');
-  const help = document.getElementById('presetHelp');
-  select.innerHTML = '';
-  state.presets.forEach((p) => {
-    const opt = document.createElement('option');
-    opt.value = p.name;
-    opt.textContent = p.name;
-    select.appendChild(opt);
-  });
-  const first = state.presets[0];
-  help.textContent = first ? `${first.name}: ${first.description}` : 'No presets configured.';
-  select.onchange = () => {
-    const preset = state.presets.find((p) => p.name === select.value);
-    help.textContent = preset ? `${preset.name}: ${preset.description}` : '';
-  };
-}
-
 function selectedTaskId() {
   return (document.getElementById('taskIdInput').value || document.getElementById('taskSelect').value || '').trim();
 }
@@ -150,8 +128,9 @@ function actionMode() {
 }
 
 function syncActionUi() {
-  const isRun = actionMode() === 'run';
-  document.getElementById('presetRow').style.display = isRun ? 'block' : 'none';
+  const mode = actionMode();
+  const executeButton = document.getElementById('executeBtn');
+  if (executeButton) executeButton.textContent = `Execute ${mode}`;
 }
 
 function setTalentUiState({ status = '', error = '', loading = false } = {}) {
@@ -306,64 +285,14 @@ async function generateTalentCandidates() {
   }
 }
 
-function openReviewModal(text, onConfirm) {
-  const modal = document.getElementById('reviewModal');
-  setText('reviewBody', text);
-  modal.classList.remove('hidden');
-  modal.setAttribute('aria-hidden', 'false');
-  const confirm = document.getElementById('confirmReviewBtn');
-  confirm.onclick = () => {
-    closeReviewModal();
-    onConfirm();
-  };
-}
-
-function closeReviewModal() {
-  const modal = document.getElementById('reviewModal');
-  modal.classList.add('hidden');
-  modal.setAttribute('aria-hidden', 'true');
-  document.getElementById('confirmReviewBtn').onclick = null;
-}
-
-async function executeAction(forceApply = false) {
+async function executeAction() {
   const mode = actionMode();
   const taskId = selectedTaskId();
   const payload = {
-    action: mode.includes('apply') ? 'apply' : mode,
+    action: mode,
     project: document.getElementById('projectSelect').value,
     taskId,
-    preset: document.getElementById('presetSelect').value,
-    dryRun: mode === 'apply-dry-run',
   };
-
-  if (payload.action === 'apply' && !forceApply) {
-    const review = await api('/api/execute', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, previewOnly: true }),
-    });
-    const reviewText = [
-      `Validation: ${review.ok ? 'PASS' : 'FAIL'}`,
-      `Branch: ${review.review.branchName}`,
-      `Changed files: ${review.review.changedFiles.join(', ') || '(none)'}`,
-      `Refusal reasons: ${review.review.refusalReasons.join(' | ') || '(none)'}`,
-      `Warnings: ${review.review.warnings.join(' | ') || '(none)'}`,
-      payload.dryRun ? 'Dry run will validate without writing git changes.' : 'Apply will create branch + commit.',
-    ].join('\n');
-
-    if (payload.dryRun) {
-      openReviewModal(reviewText, () => executeAction(true));
-      return;
-    }
-
-    if (!review.ok) {
-      openReviewModal(reviewText, () => {});
-      return;
-    }
-
-    openReviewModal(reviewText, () => executeAction(true));
-    return;
-  }
-
-  if (payload.action === 'apply') payload.confirmApply = true;
 
   state.currentOutput = '';
   appendOutput('Starting...\n');
@@ -385,9 +314,6 @@ function streamRun(runId) {
     if (event.type === 'done') {
       const duration = event.durationMs ? `${(event.durationMs / 1000).toFixed(2)}s` : '—';
       setRunHeader({ status: event.status, exit: event.exitCode, duration, artifacts: event.artifacts || [] });
-      if (event.meta?.branch || event.meta?.commit) {
-        appendOutput(`\nBranch: ${event.meta.branch || 'n/a'}\nCommit: ${event.meta.commit || 'n/a'}\nNext: ${event.meta.nextAction || ''}\n`);
-      }
       es.close();
     }
   };
@@ -428,12 +354,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('actionSelect').onchange = syncActionUi;
   document.getElementById('taskSelect').onchange = (e) => { document.getElementById('taskIdInput').value = e.target.value; };
-  document.getElementById('presetHelpBtn').onclick = () => document.getElementById('presetHelp').classList.toggle('show-help');
   document.getElementById('executeBtn').onclick = () => executeAction().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
   document.getElementById('generateCandidatesBtn').onclick = () => generateTalentCandidates();
-  document.getElementById('cancelReviewBtn').onclick = closeReviewModal;
-  document.getElementById('reviewModal').onclick = (e) => { if (e.target.id === 'reviewModal') closeReviewModal(); };
-  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReviewModal(); });
   document.getElementById('copyOutputBtn').onclick = () => navigator.clipboard.writeText(state.currentOutput || '');
   document.getElementById('openTaskFolderBtn').onclick = async () => {
     try {
@@ -457,7 +379,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (name && projectPath) await postAdd('/api/add/project', { name, path: projectPath });
   };
 
-  await Promise.all([refreshDashboard(), loadProjects(), loadTasks(), loadPresets(), hydrateRunHistory()]);
+  await Promise.all([refreshDashboard(), loadProjects(), loadTasks(), hydrateRunHistory()]);
   syncActionUi();
   startAutoRefresh();
 });
@@ -466,4 +388,3 @@ window.__ACE_APP_TEST__ = {
   renderTalentCandidates,
   generateTalentCandidates,
 };
-

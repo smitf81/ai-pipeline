@@ -1,4 +1,26 @@
 export class AceConnector {
+  async runExecutiveRoute(payload = {}) {
+    const res = await fetch('/api/spatial/executive/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.error || 'Executive route failed');
+    return response;
+  }
+
+  async exportExecutiveManifest(result) {
+    const res = await fetch('/api/spatial/executive/export/manifest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ result }),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.error || 'Manifest export failed');
+    return response;
+  }
+
   async parseIntent(input, options = {}) {
     const payload = typeof input === 'string'
       ? { text: input, ...(options || {}) }
