@@ -69,6 +69,9 @@ const {
   generateCandidates,
   validateGap,
 } = require('../ta/generateCandidates');
+const {
+  executeModuleAction,
+} = require('./moduleRunner');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -109,6 +112,45 @@ function appendArchitectureHistory(entry) {
   const history = readJsonSafe(SPATIAL_HISTORY_FILE, []) || [];
   history.push(entry);
   writeJson(SPATIAL_HISTORY_FILE, history.slice(-80));
+}
+
+function detectMaterialGenerationIntent(text) {
+  const value = String(text || '').toLowerCase();
+  if (!value.trim()) return false;
+  const mentionsMaterial = /\bmaterial(s)?\b/.test(value);
+  const generationVerb = /\b(generate|create|make|build)\b/.test(value);
+  return mentionsMaterial && generationVerb;
+}
+
+function inferMaterialSurface(text) {
+  const value = String(text || '').trim();
+  const quoted = value.match(/"([^"]{2,80})"/);
+  if (quoted && quoted[1]) return quoted[1].toLowerCase();
+  const knownSurfaces = ['wet stone', 'stone', 'metal', 'wood', 'concrete', 'mud', 'sand'];
+  const hit = knownSurfaces.find((surface) => value.toLowerCase().includes(surface));
+  return hit || 'generic';
+}
+
+function buildMaterialIntentModuleEnvelope({ text = '', nodeId = null, source = 'context-intake' } = {}) {
+  return {
+    action: 'run_module',
+    module_id: 'material_gen',
+    input: {
+      intent: {
+        type: 'material',
+        surface: inferMaterialSurface(text),
+        request_text: String(text || ''),
+      },
+      constraints: {
+        engine_target: 'unreal',
+        require_tileable: true,
+      },
+      context: {
+        source,
+        source_node_id: nodeId,
+      },
+    },
+  };
 }
 
 function appendNewRsgHistoryEntries(previousWorkspace = {}, nextWorkspace = {}) {
@@ -3358,17 +3400,47 @@ app.post('/api/spatial/debug/throughput', async (req, res) => {
   }
 });
 
+
+app.post('/api/modules/run', (req, res) => {
+  const result = executeModuleAction(req.body || {}, {
+    logger: (line) => console.log(line),
+  });
+  if (!result.ok) {
+    const status = result.error?.code === 'validation-failed' ? 422 : 400;
+    return res.status(status).json(result);
+  }
+  return res.json(result);
+});
+
 app.post('/api/spatial/intent', async (req, res) => {
   const body = req.body || {};
   const text = String(body.text || '').trim();
   if (!text) {
     return res.status(400).json({ error: 'text is required.' });
   }
+  const sourceNodeId = String(body.nodeId || '').trim() || null;
+  const source = String(body.source || 'context-intake').trim() || 'context-intake';
+  if (detectMaterialGenerationIntent(text)) {
+    const envelope = buildMaterialIntentModuleEnvelope({
+      text,
+      nodeId: sourceNodeId,
+      source,
+    });
+    const moduleRun = executeModuleAction(envelope, {
+      logger: (line) => console.log(line),
+    });
+    const status = moduleRun.ok ? 200 : (moduleRun.error?.code === 'validation-failed' ? 422 : 400);
+    return res.status(status).json({
+      routedToModule: true,
+      envelope,
+      moduleRun,
+    });
+  }
   try {
     const cycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
       text,
-      sourceNodeId: String(body.nodeId || '').trim() || null,
-      source: String(body.source || 'context-intake').trim() || 'context-intake',
+      sourceNodeId,
+      source,
       mode: 'manual',
     });
     if (!cycle.result?.report) {
@@ -3449,5 +3521,7 @@ module.exports = {
   buildVerificationPlan,
   createExecutorBlocker,
   generateCandidates,
+  executeModuleAction,
+  detectMaterialGenerationIntent,
+  buildMaterialIntentModuleEnvelope,
 };
-

@@ -120,3 +120,14 @@ The legacy dashboard remains available from the right-side drawer and still expo
 - `POST /api/spatial/intent`
 - `POST /api/spatial/mutations/preview`
 - `POST /api/spatial/mutations/apply`
+
+
+## Modules (ACE deterministic transformer contract)
+
+A new `modules/` workspace has been added for building agent-usable tools as typed deterministic modules.
+
+- Base contract: `modules/schemas/base-module.schema.json`
+- Shared artifact backbone: `modules/schemas/shared-artifact.schema.json`
+- Agent run interface: `modules/schemas/module-interface.schema.json`
+- Specialized artifact schemas: `modules/schemas/specialized/`
+- Example module manifest: `modules/examples/material_gen.module.json`

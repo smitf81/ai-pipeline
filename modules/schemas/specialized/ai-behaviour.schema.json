@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ace.local/schemas/specialized/ai-behaviour.schema.json",
+  "title": "ACE AI Behaviour Artifact",
+  "type": "object",
+  "required": ["artifact_type", "data"],
+  "properties": {
+    "artifact_type": { "const": "ai_behaviour" },
+    "data": {
+      "type": "object",
+      "required": ["states", "transitions", "blackboard"],
+      "properties": {
+        "states": { "type": "array", "items": { "type": "object" } },
+        "transitions": { "type": "array", "items": { "type": "object" } },
+        "blackboard": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

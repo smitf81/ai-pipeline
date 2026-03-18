@@ -11,7 +11,28 @@ export default async function runServerTests() {
     evaluateVerifyGate,
     evaluateDeployGate,
     buildVerificationPlan,
+    detectMaterialGenerationIntent,
+    buildMaterialIntentModuleEnvelope,
+    executeModuleAction,
   } = require(serverPath);
+
+  assert.equal(detectMaterialGenerationIntent('Generate a material for wet stone'), true);
+  assert.equal(detectMaterialGenerationIntent('Need planning updates for team board'), false);
+
+  const moduleEnvelope = buildMaterialIntentModuleEnvelope({
+    text: 'Generate a material for "wet stone" for Unreal',
+    nodeId: 'n-1',
+    source: 'context-intake',
+  });
+  assert.equal(moduleEnvelope.action, 'run_module');
+  assert.equal(moduleEnvelope.module_id, 'material_gen');
+  assert.equal(moduleEnvelope.input.intent.surface, 'wet stone');
+  assert.equal(moduleEnvelope.input.context.source_node_id, 'n-1');
+
+  const moduleResult = executeModuleAction(moduleEnvelope, { logger: null });
+  assert.equal(moduleResult.ok, true);
+  assert.equal(moduleResult.output.validation.status, 'pass');
+  assert.equal(moduleResult.confidence, 0.82);
 
   const baseWorkspace = {
     studio: {

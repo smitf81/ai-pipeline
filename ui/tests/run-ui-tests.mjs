@@ -4,6 +4,7 @@ const testEntries = [
   { name: 'agentWorkers', path: './agentWorkers.test.mjs' },
   { name: 'aceConnector', path: './aceConnector.test.mjs' },
   { name: 'aceRuntimeMcp', path: './aceRuntimeMcp.test.mjs' },
+  { name: 'moduleRunner', path: './moduleRunner.test.mjs' },
   { name: 'graphEngine', path: './graphEngine.test.mjs' },
   { name: 'mutationEngine', path: './mutationEngine.test.mjs' },
   { name: 'studioData', path: './studioData.test.mjs' },
