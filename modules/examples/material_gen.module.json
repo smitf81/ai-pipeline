@@ -1,0 +1,84 @@
+{
+  "module_id": "material_gen",
+  "version": "0.1.0",
+  "input": {
+    "intent": {
+      "type": "material",
+      "surface": "wet stone",
+      "properties": {
+        "roughness": "high_variance",
+        "tileable": true
+      }
+    },
+    "constraints": {
+      "engine_target": "unreal",
+      "resolution": "2048x2048"
+    },
+    "context": {
+      "project": "emergence"
+    }
+  },
+  "pipeline": [
+    {
+      "step": "plan",
+      "description": "Interpret intent into structured plan"
+    },
+    {
+      "step": "generate",
+      "description": "Produce raw output"
+    },
+    {
+      "step": "refine",
+      "description": "Apply constraints and corrections"
+    },
+    {
+      "step": "validate",
+      "description": "Ensure output correctness"
+    },
+    {
+      "step": "export",
+      "description": "Convert to engine-ready format"
+    }
+  ],
+  "output": {
+    "artifact": {
+      "artifact_type": "material",
+      "id": "wet_stone_v1",
+      "data": {
+        "maps": {
+          "albedo": "artifacts/materials/wet_stone/albedo.png",
+          "normal": "artifacts/materials/wet_stone/normal.png",
+          "roughness": "artifacts/materials/wet_stone/roughness.png"
+        },
+        "tileable": true
+      },
+      "dependencies": [],
+      "parameters": [
+        {
+          "name": "wetness",
+          "type": "float",
+          "default": 0.7
+        }
+      ],
+      "meta": {
+        "author": "agent",
+        "created_at": "2026-03-18T00:00:00Z",
+        "engine_target": "unreal"
+      }
+    },
+    "metadata": {
+      "module_run_id": "material_gen_20260318_000000"
+    },
+    "validation": {
+      "checks": [
+        "is_tileable",
+        "pbr_consistent",
+        "no_missing_dependencies"
+      ],
+      "status": "pass",
+      "errors": []
+    }
+  },
+  "confidence": 0.82,
+  "requires_human_review": false
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ace.local/schemas/specialized/blueprint.schema.json",
+  "title": "ACE Blueprint Artifact",
+  "type": "object",
+  "required": ["artifact_type", "data"],
+  "properties": {
+    "artifact_type": { "const": "blueprint" },
+    "data": {
+      "type": "object",
+      "required": ["nodes", "connections", "variables"],
+      "properties": {
+        "nodes": { "type": "array", "items": { "type": "object" } },
+        "connections": { "type": "array", "items": { "type": "object" } },
+        "variables": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
