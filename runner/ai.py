@@ -283,6 +283,69 @@ def tree_preview(root: Path, depth: int = 3, max_entries: int = 220) -> str:
     return "\n".join(out)
 
 
+def infer_module_target(text: str) -> str | None:
+    value = (text or "").lower()
+    if not value.strip():
+        return None
+    mentions_material = bool(re.search(r"\bmaterial(s)?\b", value))
+    generation_verb = bool(re.search(r"\b(generate|create|make|build)\b", value))
+    if mentions_material and generation_verb:
+        return "material_gen"
+    return None
+
+
+def infer_surface_hint(text: str) -> str:
+    raw = text or ""
+    value = raw.lower()
+    quoted = re.search(r"\"([^\"]{2,80})\"", raw)
+    if quoted and quoted.group(1):
+        return quoted.group(1).strip().lower()
+    for candidate in ["wet stone", "stone", "metal", "wood", "concrete", "mud", "sand"]:
+        if candidate in value:
+            return candidate
+    return "generic"
+
+
+def build_scan_intent_handoff(task_dir: Path) -> dict:
+    idea_path = task_dir / "idea.txt"
+    idea_text = idea_path.read_text(encoding="utf-8", errors="replace").strip() if idea_path.exists() else ""
+    module_id = infer_module_target(idea_text)
+    return {
+        "version": "ace/studio-envelope.v1",
+        "entries": [
+            {
+                "type": "prompt",
+                "node_id": "prompt-1",
+                "content": idea_text,
+                "data": {},
+            },
+            {
+                "type": "constraints",
+                "node_id": "constraints-1",
+                "content": "",
+                "data": {
+                    "engine_target": "unreal",
+                    "require_tileable": True,
+                },
+            },
+            {
+                "type": "target",
+                "node_id": "target-1",
+                "content": "Export artifact manifest and preview output map paths.",
+                "data": {
+                    "module_id": module_id or "",
+                    "surface_hint": infer_surface_hint(idea_text),
+                    "export_format": "manifest",
+                },
+            },
+        ],
+        "derived": {
+            "module_candidate": module_id,
+            "source": "runner-scan",
+        },
+    }
+
+
 def safe_read_text(path: Path, max_chars: int = 20000) -> str:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -411,6 +474,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     project_root = resolve_project_path(args.project)
     if not project_root.exists():
         raise FileNotFoundError(f"Project path does not exist: {project_root}")
+    intent_handoff = build_scan_intent_handoff(task_dir)
 
     git_branch = run_git(["rev-parse", "--abbrev-ref", "HEAD"], project_root) or "(not a git repo?)"
     last_commit = run_git(["log", "-1", "--oneline"], project_root) or ""
@@ -426,9 +490,14 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if last_commit:
         parts.append(f"- last commit: {last_commit}")
     parts.append("")
-    parts.append("## Tree (depth 3, truncated)")
+    parts.append("## Intent handoff seed")
+    parts.append("```json")
+    parts.append(json.dumps(intent_handoff, indent=2))
     parts.append("```")
-    parts.append(tree_preview(project_root, depth=3, max_entries=220))
+    parts.append("")
+    parts.append("## Tree (depth 2, truncated)")
+    parts.append("```")
+    parts.append(tree_preview(project_root, depth=2, max_entries=140))
     parts.append("```")
     parts.append("")
     parts.append("## Key docs")
@@ -443,7 +512,10 @@ def cmd_scan(args: argparse.Namespace) -> int:
 
     out_path = task_dir / "context.md"
     out_path.write_text("\n".join(parts).rstrip() + "\n", encoding="utf-8")
+    handoff_path = task_dir / "intent_handoff.json"
+    handoff_path.write_text(json.dumps(intent_handoff, indent=2) + "\n", encoding="utf-8")
     print(f"✅ Wrote context bundle: {out_path}")
+    print(f"✅ Wrote intent handoff seed: {handoff_path}")
     return 0
 
 
