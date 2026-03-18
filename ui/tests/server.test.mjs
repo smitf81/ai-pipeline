@@ -13,6 +13,10 @@ export default async function runServerTests() {
     buildVerificationPlan,
     detectMaterialGenerationIntent,
     buildMaterialIntentModuleEnvelope,
+    normalizeExecutiveEnvelope,
+    mapEnvelopeToMaterialModule,
+    buildModulePreview,
+    resolveLegacyFallbackPayload,
     executeModuleAction,
   } = require(serverPath);
 
@@ -33,6 +37,45 @@ export default async function runServerTests() {
   assert.equal(moduleResult.ok, true);
   assert.equal(moduleResult.output.validation.status, 'pass');
   assert.equal(moduleResult.confidence, 0.82);
+
+  const executiveEnvelope = normalizeExecutiveEnvelope({
+    envelope: {
+      entries: [
+        { type: 'prompt', node_id: 'prompt-1', content: 'Generate a material for wet stone', data: {} },
+        { type: 'constraints', node_id: 'constraints-1', content: '', data: { engine_target: 'unreal' } },
+        { type: 'target', node_id: 'target-1', content: '', data: { module_id: 'material_gen' } },
+      ],
+    },
+  });
+  assert.equal(executiveEnvelope.version, 'ace/studio-envelope.v1');
+  assert.equal(executiveEnvelope.nodes.prompt.node_id, 'prompt-1');
+
+  const mappedModuleEnvelope = mapEnvelopeToMaterialModule(executiveEnvelope);
+  assert.equal(mappedModuleEnvelope.action, 'run_module');
+  assert.equal(mappedModuleEnvelope.module_id, 'material_gen');
+  assert.equal(mappedModuleEnvelope.input.context.source_node_id, 'prompt-1');
+
+  const mappedModuleResult = executeModuleAction(mappedModuleEnvelope, { logger: null });
+  assert.equal(mappedModuleResult.ok, true);
+  const modulePreview = buildModulePreview(mappedModuleResult);
+  assert.equal(modulePreview.artifact_type, 'material');
+  assert.equal(modulePreview.validation_status, 'pass');
+  assert.equal(modulePreview.requires_human_review, false);
+  assert.ok(Array.isArray(modulePreview.output_paths));
+  assert.ok(modulePreview.output_paths.length >= 3);
+
+  const fallbackPayload = resolveLegacyFallbackPayload({
+    nodes: {
+      target: {
+        data: {
+          legacy_action: 'scan',
+          task_id: '0007',
+          project: 'ace-self',
+        },
+      },
+    },
+  });
+  assert.deepEqual(fallbackPayload, { action: 'scan', taskId: '0007', project: 'ace-self' });
 
   const baseWorkspace = {
     studio: {

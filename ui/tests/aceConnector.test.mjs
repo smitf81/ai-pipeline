@@ -41,6 +41,17 @@ export default async function runAceConnectorTests() {
       cardId: '0007',
       mode: 'manual',
     });
+
+    const executivePayload = await ace.runExecutiveRoute({
+      envelope: {
+        entries: [
+          { type: 'prompt', content: 'Generate a wet stone material' },
+        ],
+      },
+    });
+    assert.equal(executivePayload.ok, true);
+    assert.equal(requests[1].url, '/api/spatial/executive/route');
+    assert.equal(requests[1].options.method, 'POST');
   } finally {
     globalThis.fetch = originalFetch;
   }
