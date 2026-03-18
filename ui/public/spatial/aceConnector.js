@@ -95,4 +95,26 @@ export class AceConnector {
     if (!res.ok) throw new Error(payload.error || 'Unable to load QA run');
     return payload.run;
   }
+
+  async getDeskProperties(deskId) {
+    const id = String(deskId || '').trim();
+    if (!id) throw new Error('Desk id is required');
+    const res = await fetch(`/api/spatial/desks/${encodeURIComponent(id)}/properties`);
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load desk properties');
+    return payload;
+  }
+
+  async updateDeskProperties(deskId, action, payload = {}) {
+    const id = String(deskId || '').trim();
+    if (!id) throw new Error('Desk id is required');
+    const res = await fetch(`/api/spatial/desks/${encodeURIComponent(id)}/actions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...(payload || {}) }),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.error || 'Unable to update desk properties');
+    return response;
+  }
 }
