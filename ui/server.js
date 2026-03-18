@@ -72,6 +72,12 @@ const {
 const {
   executeModuleAction,
 } = require('./moduleRunner');
+const {
+  LEGACY_FALLBACK_ACTIONS,
+  buildLegacyRunnerCommand,
+  runLegacyFallbackSync,
+  runLegacyFallbackStream,
+} = require('./legacyRunnerAdapter');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -104,6 +110,8 @@ const TEAM_BOARD_DESK_TO_STUDIO_DESK = {
   Builder: 'executor',
   CTO: 'cto-architect',
 };
+const EXECUTIVE_ENVELOPE_VERSION = 'ace/studio-envelope.v1';
+const EXECUTIVE_EXPORT_DIR = path.join(ROOT, 'data', 'spatial', 'exports');
 
 
 function ensureSpatialStorage() {
@@ -2462,21 +2470,13 @@ function finishRun(run, exitCode, extra = {}) {
 }
 
 function runCommandForAction(action, body) {
-  const aiPath = path.join(ROOT, 'runner', 'ai.py');
-  const taskId = String(body.taskId || '').trim();
-  const project = String(body.project || '').trim();
-  const args = [aiPath, action, taskId, '--project', project];
-
-  if (action === 'run') {
-    if (!body.preset) throw new Error('Preset is required for Run action.');
-    args.push('--preset', String(body.preset));
-    if (body.timeout_s) args.push('--timeout-s', String(body.timeout_s));
-  }
-
-  if (action === 'apply' && body.dryRun) args.push('--dry-run');
-  if ((action === 'manage' || action === 'build') && body.model) args.push('--model', String(body.model));
-
-  return { cmd: 'python', args };
+  return buildLegacyRunnerCommand({
+    rootPath: ROOT,
+    action,
+    taskId: body.taskId,
+    project: body.project,
+    model: body.model,
+  });
 }
 
 function extractApplySummary(stdout) {
@@ -2488,109 +2488,27 @@ function extractApplySummary(stdout) {
 function executeActionSync(action, body) {
   const taskId = String(body.taskId || '').trim();
   const project = String(body.project || '').trim();
-  const { projectKey, projectPath } = resolveProjectTarget(project);
-
-  if (!['scan', 'manage', 'build', 'run', 'apply'].includes(action)) {
-    throw new Error('Invalid action.');
+  if (!LEGACY_FALLBACK_ACTIONS.includes(action)) {
+    throw new Error('Invalid legacy fallback action.');
   }
   if (!project || !taskId) {
     throw new Error('project and taskId are required.');
   }
 
-  if (action === 'apply') {
-    const taskFolder = getTaskFolders().find((folder) => folder.startsWith(taskId.slice(0, 4)));
-    if (!taskFolder) throw new Error('Task folder not found for apply.');
-    const review = validateApply(projectPath, taskFolder);
-    const patchText = fs.existsSync(review.patchPath) ? fs.readFileSync(review.patchPath, 'utf8') : '';
-    const selfPatchReview = reviewSelfUpgradePatch({
-      patchText,
-      taskId,
-      projectKey,
-      projectPath,
-      rootPath: ROOT,
-    });
-    if (!body.confirmApply) {
-      throw new Error('Apply requires confirmation.');
-    }
-    if ((!review.ok || !selfPatchReview.ok) && !body.dryRun) {
-      throw new Error(summarizeGateMessage([
-        ...(review.refusalReasons || []),
-        ...(selfPatchReview.refusalReasons || []),
-      ], 'Apply validation failed.'));
-    }
-    if (isSelfTarget(projectKey, projectPath, ROOT) && !body.dryRun) {
-      const selfUpgrade = getSelfUpgradeState(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
-      const preflightMatchesTask = selfUpgrade.preflight?.taskId === taskId;
-      if ((!selfUpgrade.preflight?.ok || !preflightMatchesTask) && !body.confirmOverride) {
-        throw new Error(preflightMatchesTask
-          ? (selfUpgrade.preflight?.summary || 'Self-upgrade apply requires a passing preflight for this task.')
-          : 'Self-upgrade preflight is stale for this task and must be rerun.');
-      }
-      updateSelfUpgradeState((state) => ({
-        ...state,
-        status: 'apply-review',
-        taskId,
-        targetProjectKey: SELF_TARGET_KEY,
-        patchReview: selfPatchReview,
-        requiresPermission: body.autoApproved ? 'none' : 'user-confirmation',
-      }));
-    }
-  }
-
   const command = runCommandForAction(action, body);
   const run = createRun(action, body);
-  run.meta.command = [command.cmd, ...command.args].join(' ');
+  run.meta.command = command.commandLine;
   pushRunEvent(run, { type: 'status', message: `Started ${action}...`, timestamp: nowIso() });
-  const result = spawnSyncSafe(command.cmd, command.args, ROOT);
+  const result = runLegacyFallbackSync({
+    action,
+    taskId,
+    project,
+    model: body.model,
+  }, {
+    rootPath: ROOT,
+  });
   if (result.stdout) pushRunEvent(run, { type: 'stdout', text: result.stdout, timestamp: nowIso() });
   if (result.stderr) pushRunEvent(run, { type: 'stderr', text: result.stderr, timestamp: nowIso() });
-  if (action === 'run') {
-    const taskFolder = getTaskFolders().find((folder) => folder.startsWith(taskId.slice(0, 4)));
-    if (taskFolder && body.preset) {
-      run.artifacts.push(path.join('work', 'tasks', taskFolder, `run_${body.preset}.log`));
-      run.artifacts.push(path.join('work', 'tasks', taskFolder, `run_${body.preset}.json`));
-    }
-  }
-  if (action === 'apply' && result.code === 0) {
-    const combined = run.logs.map((entry) => entry.text || '').join('');
-    const summary = extractApplySummary(combined);
-    run.meta = {
-      ...run.meta,
-      ...summary,
-      nextAction: 'Create PR from the generated apply branch.',
-    };
-    if (isSelfTarget(projectKey, projectPath, ROOT)) {
-      updateSelfUpgradeState((state) => ({
-        ...state,
-        status: 'ready-to-deploy',
-        taskId,
-        targetProjectKey: SELF_TARGET_KEY,
-        apply: {
-          status: 'applied',
-          ok: true,
-          appliedAt: nowIso(),
-          branch: summary.branch,
-          commit: summary.commit,
-          taskId,
-        },
-        requiresPermission: body.autoApproved ? 'none' : 'user-confirmation',
-      }));
-    }
-  } else if (action === 'apply' && isSelfTarget(projectKey, projectPath, ROOT)) {
-    updateSelfUpgradeState((state) => ({
-      ...state,
-      status: 'blocked',
-      taskId,
-      apply: {
-        ...state.apply,
-        status: 'failed',
-        ok: false,
-        appliedAt: nowIso(),
-        taskId,
-      },
-      requiresPermission: 'none',
-    }));
-  }
   finishRun(run, result.code || 0);
   const combinedOutput = [result.stdout || '', result.stderr || ''].filter(Boolean).join('\n').trim();
   return {
@@ -2920,139 +2838,35 @@ app.post('/api/execute', (req, res) => {
   const project = String(body.project || '').trim();
   const taskId = String(body.taskId || '').trim();
 
-  if (!['scan', 'manage', 'build', 'run', 'apply'].includes(action)) {
-    return res.status(400).json({ error: 'Invalid action.' });
+  if (!LEGACY_FALLBACK_ACTIONS.includes(action)) {
+    return res.status(400).json({ error: `Invalid legacy fallback action. Supported actions: ${LEGACY_FALLBACK_ACTIONS.join(', ')}.` });
   }
   if (!project || !taskId) {
     return res.status(400).json({ error: 'project and taskId are required.' });
   }
 
-  const { projectKey, projectPath } = resolveProjectTarget(project);
-
-  if (action === 'apply') {
-    const taskFolder = getTaskFolders().find((t) => t.startsWith(taskId.slice(0, 4)));
-    if (!taskFolder) {
-      return res.status(400).json({ error: 'Task folder not found for apply.' });
-    }
-    const review = validateApply(projectPath, taskFolder);
-    const patchText = fs.existsSync(review.patchPath) ? fs.readFileSync(review.patchPath, 'utf8') : '';
-    const selfPatchReview = reviewSelfUpgradePatch({
-      patchText,
-      taskId,
-      projectKey,
-      projectPath,
-      rootPath: ROOT,
-    });
-    if (body.previewOnly) {
-      const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
-      return res.json({
-        ok: review.ok && selfPatchReview.ok,
-        review,
-        selfUpgrade: {
-          patchReview: selfPatchReview,
-          preflight: getSelfUpgradeState(workspace).preflight,
-        },
-      });
-    }
-    if (!body.confirmApply) {
-      return res.status(400).json({ error: 'Apply requires confirmation.', review, selfPatchReview });
-    }
-    if ((!review.ok || !selfPatchReview.ok) && !body.dryRun) {
-      return res.status(400).json({ error: 'Apply validation failed.', review, selfPatchReview });
-    }
-    if (isSelfTarget(projectKey, projectPath, ROOT) && !body.dryRun) {
-      const selfUpgrade = getSelfUpgradeState(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
-      const preflightMatchesTask = selfUpgrade.preflight?.taskId === taskId;
-      if ((!selfUpgrade.preflight?.ok || !preflightMatchesTask) && !body.confirmOverride) {
-        return res.status(400).json({
-          error: 'Self-upgrade apply requires a passing preflight for this task.',
-          review,
-          selfPatchReview,
-          selfUpgrade,
-        });
-      }
-      updateSelfUpgradeState((state) => ({
-        ...state,
-        status: 'apply-review',
-        taskId,
-        targetProjectKey: SELF_TARGET_KEY,
-        patchReview: selfPatchReview,
-        requiresPermission: 'user-confirmation',
-      }));
-    }
-  }
-
-  let command;
+  const run = createRun(action, body);
+  let stream;
   try {
-    command = runCommandForAction(action, body);
+    stream = runLegacyFallbackStream({
+      action,
+      taskId,
+      project,
+      model: body.model,
+    }, {
+      rootPath: ROOT,
+      onStdout: (text) => pushRunEvent(run, { type: 'stdout', text, timestamp: nowIso() }),
+      onStderr: (text) => pushRunEvent(run, { type: 'stderr', text, timestamp: nowIso() }),
+    });
   } catch (err) {
     return res.status(400).json({ error: String(err.message || err) });
   }
+  const child = stream.child;
+  run.meta.command = stream.command.commandLine;
 
-  const run = createRun(action, body);
-  const child = spawn(command.cmd, command.args, { cwd: ROOT, windowsHide: true });
-  run.meta.command = [command.cmd, ...command.args].join(' ');
-
-  pushRunEvent(run, { type: 'status', message: `Started ${action}...`, timestamp: nowIso() });
-
-  child.stdout.on('data', (chunk) => {
-    const text = chunk.toString();
-    pushRunEvent(run, { type: 'stdout', text, timestamp: nowIso() });
-  });
-
-  child.stderr.on('data', (chunk) => {
-    const text = chunk.toString();
-    pushRunEvent(run, { type: 'stderr', text, timestamp: nowIso() });
-  });
+  pushRunEvent(run, { type: 'status', message: `Started legacy fallback ${action}...`, timestamp: nowIso() });
 
   child.on('close', (code) => {
-    if (action === 'run') {
-      const taskFolder = getTaskFolders().find((t) => t.startsWith(taskId.slice(0, 4)));
-      if (taskFolder && body.preset) {
-        run.artifacts.push(path.join('work', 'tasks', taskFolder, `run_${body.preset}.log`));
-        run.artifacts.push(path.join('work', 'tasks', taskFolder, `run_${body.preset}.json`));
-      }
-    }
-    if (action === 'apply' && code === 0) {
-      const combined = run.logs.map((l) => l.text || '').join('');
-      const summary = extractApplySummary(combined);
-      run.meta = {
-        ...run.meta,
-        ...summary,
-        nextAction: 'Create PR from the generated apply branch.',
-      };
-      if (isSelfTarget(projectKey, projectPath, ROOT)) {
-        updateSelfUpgradeState((state) => ({
-          ...state,
-          status: 'ready-to-deploy',
-          taskId,
-          targetProjectKey: SELF_TARGET_KEY,
-          apply: {
-            status: 'applied',
-            ok: true,
-            appliedAt: nowIso(),
-            branch: summary.branch,
-            commit: summary.commit,
-            taskId,
-          },
-          requiresPermission: 'user-confirmation',
-        }));
-      }
-    } else if (action === 'apply' && isSelfTarget(projectKey, projectPath, ROOT)) {
-      updateSelfUpgradeState((state) => ({
-        ...state,
-        status: 'blocked',
-        taskId,
-        apply: {
-          ...state.apply,
-          status: 'failed',
-          ok: false,
-          appliedAt: nowIso(),
-          taskId,
-        },
-        requiresPermission: 'none',
-      }));
-    }
     finishRun(run, code || 0);
   });
 
@@ -3678,6 +3492,295 @@ app.post('/api/spatial/debug/throughput', async (req, res) => {
   }
 });
 
+function normalizeExecutiveEnvelope(payload = {}) {
+  const envelope = payload?.envelope && typeof payload.envelope === 'object' ? payload.envelope : payload;
+  const entries = Array.isArray(envelope.entries)
+    ? envelope.entries
+    : [
+        envelope.promptNode ? { type: 'prompt', ...(envelope.promptNode || {}) } : null,
+        envelope.constraintsNode ? { type: 'constraints', ...(envelope.constraintsNode || {}) } : null,
+        envelope.targetNode ? { type: 'target', ...(envelope.targetNode || {}) } : null,
+      ].filter(Boolean);
+  const typedEntries = entries
+    .map((entry, index) => {
+      const type = String(entry?.type || entry?.node_type || '').trim().toLowerCase();
+      if (!['prompt', 'constraints', 'target'].includes(type)) return null;
+      return {
+        type,
+        node_id: String(entry?.node_id || entry?.nodeId || `${type}-${index + 1}`).trim(),
+        content: String(entry?.content || entry?.text || '').trim(),
+        data: entry?.data && typeof entry.data === 'object' ? entry.data : {},
+      };
+    })
+    .filter(Boolean);
+
+  const promptNode = typedEntries.find((entry) => entry.type === 'prompt') || {
+    type: 'prompt',
+    node_id: 'prompt-1',
+    content: '',
+    data: {},
+  };
+  const constraintsNode = typedEntries.find((entry) => entry.type === 'constraints') || {
+    type: 'constraints',
+    node_id: 'constraints-1',
+    content: '',
+    data: {},
+  };
+  const targetNode = typedEntries.find((entry) => entry.type === 'target') || {
+    type: 'target',
+    node_id: 'target-1',
+    content: '',
+    data: {},
+  };
+
+  return {
+    version: String(envelope.version || EXECUTIVE_ENVELOPE_VERSION),
+    entries: [promptNode, constraintsNode, targetNode],
+    nodes: {
+      prompt: promptNode,
+      constraints: constraintsNode,
+      target: targetNode,
+    },
+  };
+}
+
+function mapEnvelopeToMaterialModule(envelope) {
+  const prompt = envelope.nodes.prompt;
+  const constraints = envelope.nodes.constraints;
+  const target = envelope.nodes.target;
+
+  return {
+    action: 'run_module',
+    module_id: 'material_gen',
+    input: {
+      intent: {
+        type: 'material',
+        surface: inferMaterialSurface(prompt.content),
+        request_text: prompt.content,
+      },
+      constraints: {
+        engine_target: constraints.data.engine_target || constraints.data.engineTarget || 'unreal',
+        require_tileable: constraints.data.require_tileable !== false,
+        ...(constraints.data || {}),
+      },
+      context: {
+        source: 'studio-canvas-executive',
+        source_node_id: prompt.node_id,
+        target: {
+          export_format: target.data.export_format || target.data.format || 'manifest',
+          destination: target.data.destination || target.content || null,
+        },
+      },
+    },
+  };
+}
+
+function buildModulePreview(moduleRun = {}) {
+  const artifact = moduleRun?.output?.artifact || {};
+  const mapPaths = artifact?.data?.maps && typeof artifact.data.maps === 'object'
+    ? artifact.data.maps
+    : {};
+  const outputPaths = Object.values(mapPaths).filter(Boolean);
+
+  return {
+    artifact_type: artifact.artifact_type || null,
+    output_paths: outputPaths,
+    output_map_paths: mapPaths,
+    validation_status: moduleRun?.output?.validation?.status || 'unknown',
+    confidence: Number.isFinite(Number(moduleRun?.confidence)) ? Number(moduleRun.confidence) : null,
+    requires_human_review: Boolean(moduleRun?.requires_human_review),
+  };
+}
+
+function resolveLegacyFallbackPayload(envelope, body = {}) {
+  const targetData = envelope.nodes.target.data || {};
+  const action = String(targetData.legacy_action || targetData.fallback_action || body.legacy_action || '').trim().toLowerCase();
+  const taskId = String(targetData.task_id || body.task_id || '').trim();
+  const project = String(targetData.project || body.project || '').trim();
+  if (!action || !taskId || !project) return null;
+  return { action, taskId, project };
+}
+
+function buildExecutiveMetadataFromResult(result = {}) {
+  return {
+    route: result.route || null,
+    preview: result.preview || null,
+    module_id: result.moduleRun?.module_id || null,
+    confidence: result.moduleRun?.confidence ?? null,
+    requires_human_review: result.moduleRun?.requires_human_review ?? null,
+    exported_at: nowIso(),
+  };
+}
+
+app.post('/api/spatial/executive/route', async (req, res) => {
+  const body = req.body || {};
+  const envelope = normalizeExecutiveEnvelope(body);
+  const promptText = envelope.nodes.prompt.content;
+
+  if (!promptText) {
+    return res.status(400).json({ error: 'prompt node content is required.', envelope });
+  }
+
+  const forceIntentScan = Boolean(body.override?.force_intent_scan);
+  const looksLikeMaterial = detectMaterialGenerationIntent(promptText)
+    || String(envelope.nodes.target.data.module_id || '').trim() === 'material_gen';
+
+  if (!forceIntentScan && looksLikeMaterial) {
+    const moduleEnvelope = mapEnvelopeToMaterialModule(envelope);
+    let contextCycle = null;
+    try {
+      contextCycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
+        text: promptText,
+        sourceNodeId: envelope.nodes.prompt.node_id,
+        source: 'executive-module-pre-handoff',
+        mode: 'manual',
+      });
+    } catch (error) {
+      contextCycle = {
+        ok: false,
+        skipped: true,
+        reason: String(error.message || error),
+      };
+    }
+    const moduleRun = executeModuleAction(moduleEnvelope, {
+      logger: (line) => console.log(line),
+    });
+    if (!moduleRun.ok) {
+      const status = moduleRun.error?.code === 'validation-failed' ? 422 : 400;
+      return res.status(status).json({
+        ok: false,
+        route: 'module',
+        envelope,
+        moduleEnvelope,
+        moduleRun,
+        report: contextCycle?.result?.report || null,
+        extractedIntent: contextCycle?.result?.extractedIntent || contextCycle?.result?.report?.extractedIntent || null,
+        handoff: contextCycle?.result?.handoff || null,
+        worker: contextCycle?.result?.run ? summarizeContextManagerRun(contextCycle.result.run) : null,
+        runtime: contextCycle?.workspace
+          ? buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+              persist: true,
+              workspace: contextCycle.workspace,
+            }))
+          : null,
+        contextScan: contextCycle && !contextCycle.result?.report
+          ? {
+              ok: false,
+              skipped: Boolean(contextCycle.skipped),
+              reason: contextCycle.reason || 'context-manager did not produce a report',
+            }
+          : {
+              ok: true,
+            },
+      });
+    }
+    const contextRuntime = contextCycle?.workspace
+      ? buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+          persist: true,
+          workspace: contextCycle.workspace,
+        }))
+      : null;
+    return res.json({
+      ok: true,
+      route: 'module',
+      envelope,
+      moduleEnvelope,
+      moduleRun,
+      preview: buildModulePreview(moduleRun),
+      report: contextCycle?.result?.report || null,
+      extractedIntent: contextCycle?.result?.extractedIntent || contextCycle?.result?.report?.extractedIntent || null,
+      handoff: contextCycle?.result?.handoff || null,
+      worker: contextCycle?.result?.run ? summarizeContextManagerRun(contextCycle.result.run) : null,
+      runtime: contextRuntime,
+      contextScan: contextCycle && !contextCycle.result?.report
+        ? {
+            ok: false,
+            skipped: Boolean(contextCycle.skipped),
+            reason: contextCycle.reason || 'context-manager did not produce a report',
+          }
+        : {
+            ok: true,
+          },
+    });
+  }
+
+  const fallbackPayload = resolveLegacyFallbackPayload(envelope, body);
+  if (fallbackPayload) {
+    try {
+      const result = runLegacyFallbackSync(fallbackPayload, { rootPath: ROOT });
+      return res.status(result.code === 0 ? 200 : 400).json({
+        ok: result.code === 0,
+        route: 'legacy-fallback',
+        envelope,
+        legacy: {
+          action: fallbackPayload.action,
+          task_id: fallbackPayload.taskId,
+          project: fallbackPayload.project,
+          command: result.command.commandLine,
+          exit_code: result.code,
+          stdout: result.stdout,
+          stderr: result.stderr,
+        },
+      });
+    } catch (error) {
+      return res.status(400).json({
+        ok: false,
+        route: 'legacy-fallback',
+        envelope,
+        error: String(error.message || error),
+      });
+    }
+  }
+
+  try {
+    const cycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
+      text: promptText,
+      sourceNodeId: envelope.nodes.prompt.node_id,
+      source: 'executive-scan-override',
+      mode: 'manual',
+    });
+    if (!cycle.result?.report) {
+      return res.status(500).json({ error: cycle.reason || 'Context Manager could not produce an intent report.', envelope });
+    }
+    const runtime = buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    }));
+    return res.json({
+      ok: true,
+      route: 'intent-scan',
+      envelope,
+      report: cycle.result.report,
+      extractedIntent: cycle.result.extractedIntent || cycle.result.report?.extractedIntent || null,
+      worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
+      handoff: cycle.result.handoff,
+      runtime,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: String(error.message || error), envelope });
+  }
+});
+
+app.post('/api/spatial/executive/export/manifest', (req, res) => {
+  const body = req.body || {};
+  const result = body.result && typeof body.result === 'object' ? body.result : null;
+  if (!result) {
+    return res.status(400).json({ error: 'result is required.' });
+  }
+  fs.mkdirSync(EXECUTIVE_EXPORT_DIR, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+  const filePath = path.join(EXECUTIVE_EXPORT_DIR, `executive-result-${stamp}.json`);
+  writeJson(filePath, {
+    createdAt: nowIso(),
+    metadata: buildExecutiveMetadataFromResult(result),
+    result,
+  });
+  return res.json({
+    ok: true,
+    manifest_path: path.relative(ROOT, filePath),
+  });
+});
+
 
 app.post('/api/modules/run', (req, res) => {
   const result = executeModuleAction(req.body || {}, {
@@ -3696,29 +3799,38 @@ app.post('/api/spatial/intent', async (req, res) => {
   if (!text) {
     return res.status(400).json({ error: 'text is required.' });
   }
-  const sourceNodeId = String(body.nodeId || '').trim() || null;
-  const source = String(body.source || 'context-intake').trim() || 'context-intake';
-  if (detectMaterialGenerationIntent(text)) {
-    const envelope = buildMaterialIntentModuleEnvelope({
-      text,
-      nodeId: sourceNodeId,
-      source,
-    });
-    const moduleRun = executeModuleAction(envelope, {
+  const sourceNodeId = String(body.nodeId || '').trim() || 'prompt-1';
+  const executiveEnvelope = normalizeExecutiveEnvelope({
+    envelope: {
+      version: EXECUTIVE_ENVELOPE_VERSION,
+      entries: [
+        { type: 'prompt', node_id: sourceNodeId, content: text, data: {} },
+        { type: 'constraints', node_id: 'constraints-1', content: '', data: {} },
+        { type: 'target', node_id: 'target-1', content: '', data: {} },
+      ],
+    },
+  });
+  const looksLikeMaterial = detectMaterialGenerationIntent(text);
+  if (looksLikeMaterial) {
+    const moduleEnvelope = mapEnvelopeToMaterialModule(executiveEnvelope);
+    const moduleRun = executeModuleAction(moduleEnvelope, {
       logger: (line) => console.log(line),
     });
     const status = moduleRun.ok ? 200 : (moduleRun.error?.code === 'validation-failed' ? 422 : 400);
     return res.status(status).json({
       routedToModule: true,
-      envelope,
+      route: 'module',
+      envelope: executiveEnvelope,
+      moduleEnvelope,
       moduleRun,
+      preview: moduleRun.ok ? buildModulePreview(moduleRun) : null,
     });
   }
   try {
     const cycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
       text,
       sourceNodeId,
-      source,
+      source: String(body.source || 'context-intake').trim() || 'context-intake',
       mode: 'manual',
     });
     if (!cycle.result?.report) {
@@ -3802,4 +3914,8 @@ module.exports = {
   executeModuleAction,
   detectMaterialGenerationIntent,
   buildMaterialIntentModuleEnvelope,
+  normalizeExecutiveEnvelope,
+  mapEnvelopeToMaterialModule,
+  buildModulePreview,
+  resolveLegacyFallbackPayload,
 };
