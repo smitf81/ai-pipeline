@@ -1,0 +1,627 @@
+{
+  "id": "context_manager_1773853548721_0qkg4h",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-18T17:06:18.798Z",
+  "completedAt": "2026-03-18T17:06:18.798Z",
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mixtral",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+  "reason": "Local model request timed out after 30000ms. | Local model request timed out after 30000ms.",
+  "sourceNodeId": "node_1773498206362_0ly8n",
+  "sourceText": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "",
+    "statement": "",
+    "tasks": [],
+    "constraints": [],
+    "clarifications": [],
+    "focusTerms": [],
+    "suggestedAnchorRefs": []
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1773853548721_0qkg4h",
+    "sourceNodeId": "node_1773498206362_0ly8n",
+    "sourceText": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+    "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+    "explicitClaims": [],
+    "inferredClaims": [],
+    "candidateNodes": [
+      {
+        "id": "literal_1",
+        "label": "maybe expose more how it's being calculated",
+        "kind": "thought",
+        "basis": "explicit",
+        "rationale": "Literal candidate derived from the current input and upstream packet.",
+        "confidence": 0.3
+      },
+      {
+        "id": "literal_2",
+        "label": "we also need more clarity on our context management calculations",
+        "kind": "thought",
+        "basis": "explicit",
+        "rationale": "Literal candidate derived from the current input and upstream packet.",
+        "confidence": 0.3
+      }
+    ],
+    "candidateEdges": [],
+    "gaps": [
+      "Project alignment: Matched project terms: context",
+      "Actionability: Detected 1 implementation/planning verb signals.",
+      "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mixtral",
+      "runId": "context_manager_1773853548721_0qkg4h",
+      "usedFallback": true,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.3,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0.14285714285714285,
+          "reason": "Matched project terms: context"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.5,
+          "reason": "Detected 1 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.2222222222222222,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 0.6296296296296297,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "thought",
+        "labels": [
+          "context"
+        ]
+      },
+      "matchedTerms": [
+        "context"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+    "confidence": 0.3,
+    "legacyConfidence": 0.26,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.14285714285714285,
+        "reason": "Matched project terms: context"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.5,
+        "reason": "Detected 1 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.2222222222222222,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.6296296296296297,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.16666666666666666,
+        "reason": "Matched project terms: context"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.3333333333333333,
+        "reason": "Input reads more like a note than a concrete action."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.2857142857142857,
+        "reason": "References ACE system structure, agents, or implementation surfaces."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.5238095238095238,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.3,
+      "executionReadiness": 0.53,
+      "plannerUsefulness": 0.45,
+      "deployReadiness": 0.11
+    },
+    "truth": {
+      "rawInput": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+      "statement": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+      "intentType": "General context signal",
+      "requestedOutcomes": [
+        "maybe expose more how it's being calculated",
+        "we also need more clarity on our context management calculations",
+        "maybe expose more how it's being calculated"
+      ],
+      "unresolved": [
+        "Project alignment: Matched project terms: context",
+        "Actionability: Detected 1 implementation/planning verb signals.",
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Actionability: Detected 1 implementation/planning verb signals.",
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/tasks.md"
+      ],
+      "plannerBrief": "Planner should treat this as: maybe expose more how it's being calculated; we also need more clarity on our context management calculations; maybe expose more how it's being calculated",
+      "readiness": {
+        "intentConfidence": 0.3,
+        "plannerUsefulness": 0.45,
+        "executionReadiness": 0.53,
+        "deployReadiness": 0.11
+      }
+    },
+    "tasks": [
+      "maybe expose more how it's being calculated",
+      "we also need more clarity on our context management calculations",
+      "maybe expose more how it's being calculated"
+    ],
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/tasks.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "context"
+          ],
+          "score": 5
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "context"
+          ],
+          "score": 5
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "thought",
+      "labels": [
+        "context"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 10,
+      "sentenceCount": 1,
+      "matchedProjectTerms": [
+        "context"
+      ],
+      "actionSignals": 1,
+      "featureRequestSignals": 0,
+      "architectureSignals": 1,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "context"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "brain",
+        "the",
+        "anchor",
+        "runtime",
+        "for",
+        "legacy"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/tasks.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-18T17:06:18.797Z",
+    "nodeId": "node_1773498206362_0ly8n",
+    "source": "node-idle",
+    "createdAt": "2026-03-18T17:06:18.797Z",
+    "contextPacket": {
+      "summary": "",
+      "statement": "",
+      "tasks": [],
+      "constraints": [],
+      "clarifications": [],
+      "focusTerms": [],
+      "suggestedAnchorRefs": [],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1773853548721_0qkg4h",
+      "sourceNodeId": "node_1773498206362_0ly8n",
+      "sourceText": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+      "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+      "explicitClaims": [],
+      "inferredClaims": [],
+      "candidateNodes": [
+        {
+          "id": "literal_1",
+          "label": "maybe expose more how it's being calculated",
+          "kind": "thought",
+          "basis": "explicit",
+          "rationale": "Literal candidate derived from the current input and upstream packet.",
+          "confidence": 0.3
+        },
+        {
+          "id": "literal_2",
+          "label": "we also need more clarity on our context management calculations",
+          "kind": "thought",
+          "basis": "explicit",
+          "rationale": "Literal candidate derived from the current input and upstream packet.",
+          "confidence": 0.3
+        }
+      ],
+      "candidateEdges": [],
+      "gaps": [
+        "Project alignment: Matched project terms: context",
+        "Actionability: Detected 1 implementation/planning verb signals.",
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mixtral",
+        "runId": "context_manager_1773853548721_0qkg4h",
+        "usedFallback": true,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.3,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.14285714285714285,
+            "reason": "Matched project terms: context"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.5,
+            "reason": "Detected 1 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.2222222222222222,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.6296296296296297,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "thought",
+          "labels": [
+            "context"
+          ]
+        },
+        "matchedTerms": [
+          "context"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mixtral",
+      "runId": "context_manager_1773853548721_0qkg4h",
+      "usedFallback": true
+    }
+  },
+  "handoffId": "handoff_1773853578798_bto1jo",
+  "handoff": {
+    "id": "handoff_1773853578798_bto1jo",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-18T17:06:18.797Z",
+    "sourceNodeId": "node_1773498206362_0ly8n",
+    "summary": "we also need more clarity on our context management calculations, maybe expose more how it's being calculated?",
+    "problemStatement": "Goal: we also need more clarity on our context management calculations, maybe expose more how it's being calculated?\nRequested outcomes: maybe expose more how it's being calculated; we also need more clarity on our context management calculations; maybe expose more how it's being calculated.\nWhy ACE believes this: Project alignment 14%, Actionability 50%, Architecture fit 22%.\nConstraints and review signals: Project alignment: Matched project terms: context | Actionability: Detected 1 implementation/planning verb signals. | Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow. | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Planner usefulness is low and needs tighter scope before execution expands.",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/tasks.md"
+    ],
+    "tasks": [
+      "maybe expose more how it's being calculated",
+      "we also need more clarity on our context management calculations",
+      "maybe expose more how it's being calculated"
+    ],
+    "constraints": [
+      "Project alignment: Matched project terms: context",
+      "Actionability: Detected 1 implementation/planning verb signals.",
+      "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.3,
+    "legacyConfidence": 0.26,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.14285714285714285,
+        "reason": "Matched project terms: context"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.5,
+        "reason": "Detected 1 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.2222222222222222,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.6296296296296297,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.3,
+      "executionReadiness": 0.53,
+      "plannerUsefulness": 0.45,
+      "deployReadiness": 0.11
+    },
+    "classification": {
+      "role": "thought",
+      "labels": [
+        "context"
+      ]
+    },
+    "status": "needs-clarification"
+  },
+  "usedFallback": true,
+  "rawResponse": null
+}

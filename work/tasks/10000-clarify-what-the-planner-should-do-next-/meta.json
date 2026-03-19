@@ -1,10 +1,10 @@
 {
   "id": "10000",
   "title": "Clarify what the planner should do next and make the desk state readable in Studio",
-  "created_utc": "2026-03-17T17:28:27.982Z",
+  "created_utc": "2026-03-19T10:49:07.515Z",
   "source": "studio-team-board",
   "sessionId": null,
-  "handoffId": "handoff_1773765770903_uqxxd5",
+  "handoffId": "handoff_1773915741868_71urkg",
   "anchorRefs": [
     "brain/emergence/project_brain.md"
   ]

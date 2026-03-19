@@ -34,6 +34,16 @@ export class AceConnector {
     return res.json();
   }
 
+  async askCtoDesk(payload = {}) {
+    const res = await fetch('/api/spatial/cto/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('CTO desk chat failed');
+    return res.json();
+  }
+
   async decomposeTask(node) {
     return this.parseIntent(node.content);
   }

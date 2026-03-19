@@ -3,6 +3,7 @@ import json
 import subprocess
 import time
 import re
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 import sys
@@ -102,6 +103,35 @@ def call_ollama(prompt: str, model: str | None = None) -> str:
             "If needed: open a terminal and run: ollama serve\n"
             f"Details: {e}"
         )
+
+
+def callLLM(agent: str, stage: str, prompt: str, model: str | None = None) -> str:
+    start_time = int(time.time() * 1000)
+    success = False
+    response = ""
+    try:
+        response = call_ollama(prompt, model)
+        success = bool(response)
+    finally:
+        prompt_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+        response_hash = hashlib.sha256(response.encode("utf-8")).hexdigest()
+        log_entry = {
+            "agent": agent,
+            "stage": stage,
+            "model": model or DEFAULT_MODEL,
+            "timestamp": start_time,
+            "prompt_hash": prompt_hash,
+            "response_hash": response_hash,
+            "success": success
+        }
+        log_file = ROOT / "runtime" / "llm_invocations.json"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_entry) + "\n")
+        except Exception:
+            pass
+    return response
 
 
 def run_git(args: list[str], cwd: Path) -> str:
@@ -571,7 +601,7 @@ Rules:
 
     model = args.model or DEFAULT_MODEL
     print(f"🧠 Generating plan with Ollama ({model})...")
-    plan = call_ollama(prompt, model=model)
+    plan = callLLM("runner", "manage", prompt, model=model)
     if not plan:
         raise RuntimeError("Ollama returned an empty response.")
     (task_dir / "plan.md").write_text(plan + "\n", encoding="utf-8")
@@ -676,7 +706,7 @@ Output requirements:
 
     model = args.model or DEFAULT_MODEL
     print(f"🛠️  Building patch with Ollama ({model})... (no files will be modified)")
-    diff_text = call_ollama(prompt, model=model)
+    diff_text = callLLM("runner", "build", prompt, model=model)
 
     ok, reason = diff_guardrails(diff_text)
     if not ok:

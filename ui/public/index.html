@@ -107,6 +107,16 @@
             </section>
 
             <section class="card">
+                <div class="card-title">Structured QA</div>
+                <div class="muted">Runs deterministic desk-level validation and returns one report.</div>
+                <div class="button-row">
+                    <button id="runQaBtn" type="button">Run QA</button>
+                </div>
+                <div id="qaStatus" class="muted">No QA report yet.</div>
+                <pre id="qaReport" class="console"></pre>
+            </section>
+
+            <section class="card">
                 <div class="card-title">Output</div>
                 <div class="meta"><div class="meta-item"><div class="meta-label">Status</div><div class="meta-value" id="runStatus">idle</div></div><div class="meta-item"><div class="meta-label">Exit code</div><div class="meta-value" id="runExit">—</div></div><div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value" id="runDuration">—</div></div></div>
                 <div class="muted" id="artifactPath">No artifacts yet.</div>

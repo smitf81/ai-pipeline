@@ -78,6 +78,9 @@ const {
   runLegacyFallbackSync,
   runLegacyFallbackStream,
 } = require('./legacyRunnerAdapter');
+const {
+  runAll: runStructuredQA,
+} = require('../qa/qaLead');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -2764,6 +2767,31 @@ app.get('/api/health', (req, res) => {
   res.json(getHealthSnapshot());
 });
 
+app.post('/api/qa/run', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const report = await runStructuredQA({
+      rootPath: ROOT,
+      existingApp: app,
+      allowedPaths: body.allowedPaths,
+      fixture: body.fixture,
+    });
+    res.json(report);
+  } catch (error) {
+    res.status(500).json({
+      status: 'fail',
+      summary: 'qa lead crashed',
+      failures: [
+        {
+          desk: 'qa',
+          test: 'suite_boot',
+          reason: String(error.message || error),
+        },
+      ],
+    });
+  }
+});
+
 app.post('/api/llm/test', async (req, res) => {
   const body = req.body || {};
   const prompt = String(body.prompt || '').trim();
@@ -3765,6 +3793,29 @@ app.post('/api/modules/run', (req, res) => {
     return res.status(status).json(result);
   }
   return res.json(result);
+});
+
+app.post('/api/spatial/cto/chat', async (req, res) => {
+  try {
+    const { text, source } = req.body || {};
+    console.log('[DEBUG] POST /api/spatial/cto/chat received:', { text, source });
+    
+    if (!text || !text.trim()) {
+      return res.json({ reply_text: 'I cannot reply to an empty message.' });
+    }
+
+    const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace());
+    const result = await analyzeIntentWithContextWorker(text, workspace, { source: source || 'cto-chat' });
+    
+    console.log('[DEBUG] Context Manager Raw Response:', typeof result.run?.rawResponse === 'string' ? result.run.rawResponse.slice(0, 100) + '...' : result.run?.rawResponse);
+    console.log('[DEBUG] Context Manager Extracted Report Summary:', result.report?.summary);
+    
+    const reply_text = `[LLM LIVE REPLY] ${result.report?.summary || result.run?.summary || 'No text generated.'}`;
+    return res.json({ reply_text });
+  } catch (error) {
+    console.error('[ERROR] /api/spatial/cto/chat failed:', error);
+    return res.json({ reply_text: `[LLM LIVE REPLY] Error generating reply: ${error.message}` });
+  }
 });
 
 app.post('/api/spatial/intent', async (req, res) => {

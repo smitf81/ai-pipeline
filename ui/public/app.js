@@ -285,6 +285,27 @@ async function generateTalentCandidates() {
   }
 }
 
+async function runStructuredQa() {
+  const statusEl = document.getElementById('qaStatus');
+  const reportEl = document.getElementById('qaReport');
+
+  if (statusEl) statusEl.textContent = 'Running structured QA...';
+  if (reportEl) reportEl.textContent = '';
+
+  try {
+    const report = await api('/api/qa/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (statusEl) statusEl.textContent = `${String(report.status || 'unknown').toUpperCase()}: ${report.summary || ''}`;
+    if (reportEl) reportEl.textContent = JSON.stringify(report, null, 2);
+  } catch (error) {
+    if (statusEl) statusEl.textContent = `FAIL: ${String(error.message || error)}`;
+    if (reportEl) reportEl.textContent = '';
+  }
+}
+
 async function executeAction() {
   const mode = actionMode();
   const taskId = selectedTaskId();
@@ -356,6 +377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('taskSelect').onchange = (e) => { document.getElementById('taskIdInput').value = e.target.value; };
   document.getElementById('executeBtn').onclick = () => executeAction().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
   document.getElementById('generateCandidatesBtn').onclick = () => generateTalentCandidates();
+  document.getElementById('runQaBtn').onclick = () => runStructuredQa();
   document.getElementById('copyOutputBtn').onclick = () => navigator.clipboard.writeText(state.currentOutput || '');
   document.getElementById('openTaskFolderBtn').onclick = async () => {
     try {

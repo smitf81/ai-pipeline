@@ -3022,8 +3022,8 @@ function SpatialNotebook() {
                 setDeskChatDraft('');
                 setDeskChatLog((current) => [{ id: `chat-${Date.now()}-u`, role: 'user', text: prompt }, ...current].slice(0, 10));
                 try {
-                  const response = await ace.parseIntent({ text: prompt, source: 'desk-properties-chat' });
-                  setDeskChatLog((current) => [{ id: `chat-${Date.now()}-a`, role: 'ace', text: response?.summary || 'No summary returned.' }, ...current].slice(0, 10));
+                  const response = await ace.askCtoDesk({ text: prompt, source: 'desk-properties-chat' });
+                  setDeskChatLog((current) => [{ id: `chat-${Date.now()}-a`, role: 'ace', text: response?.reply_text || 'No reply text returned.' }, ...current].slice(0, 10));
                 } catch (error) {
                   setDeskChatLog((current) => [{ id: `chat-${Date.now()}-e`, role: 'error', text: error.message }, ...current].slice(0, 10));
                 } finally {

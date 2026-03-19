@@ -1,0 +1,597 @@
+{
+  "id": "context_manager_1773851141548_joxytm",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-18T16:26:11.655Z",
+  "completedAt": "2026-03-18T16:26:11.655Z",
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mixtral",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "we want a wet stone pbr texture to export to blender",
+  "reason": "Local model request timed out after 30000ms. | Local model request timed out after 30000ms.",
+  "sourceNodeId": "node_1773851109788_3yiju",
+  "sourceText": "we want a wet stone pbr texture to export to blender",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "",
+    "statement": "",
+    "tasks": [],
+    "constraints": [],
+    "clarifications": [],
+    "focusTerms": [],
+    "suggestedAnchorRefs": []
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1773851141548_joxytm",
+    "sourceNodeId": "node_1773851109788_3yiju",
+    "sourceText": "we want a wet stone pbr texture to export to blender",
+    "summary": "we want a wet stone pbr texture to export to blender",
+    "explicitClaims": [],
+    "inferredClaims": [],
+    "candidateNodes": [
+      {
+        "id": "literal_1",
+        "label": "we want a wet stone pbr texture to export to blender",
+        "kind": "thought",
+        "basis": "explicit",
+        "rationale": "Literal candidate derived from the current input and upstream packet.",
+        "confidence": 0.11
+      }
+    ],
+    "candidateEdges": [],
+    "gaps": [
+      "Project alignment: Few direct overlaps with current project context.",
+      "Actionability: Input still reads more like a note than a concrete action.",
+      "Architecture fit: Little direct architecture language found.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mixtral",
+      "runId": "context_manager_1773851141548_joxytm",
+      "usedFallback": true,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.11,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0,
+          "reason": "Few direct overlaps with current project context."
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.125,
+          "reason": "Input still reads more like a note than a concrete action."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.1111111111111111,
+          "reason": "Little direct architecture language found."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 0.3333333333333333,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "thought",
+        "labels": [
+          "general"
+        ]
+      },
+      "matchedTerms": []
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "we want a wet stone pbr texture to export to blender",
+    "confidence": 0.11,
+    "legacyConfidence": 0.14,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0,
+        "reason": "Few direct overlaps with current project context."
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.125,
+        "reason": "Input still reads more like a note than a concrete action."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.1111111111111111,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.3333333333333333,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0,
+        "reason": "Few direct overlaps with current project context."
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.16666666666666666,
+        "reason": "Input reads more like a note than a concrete action."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.14285714285714285,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.38095238095238093,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.11,
+      "executionReadiness": 0.2,
+      "plannerUsefulness": 0.16,
+      "deployReadiness": 0.03
+    },
+    "truth": {
+      "rawInput": "we want a wet stone pbr texture to export to blender",
+      "statement": "we want a wet stone pbr texture to export to blender",
+      "intentType": "General context signal",
+      "requestedOutcomes": [
+        "we want a wet stone pbr texture to export to blender"
+      ],
+      "unresolved": [
+        "Project alignment: Few direct overlaps with current project context.",
+        "Actionability: Input still reads more like a note than a concrete action.",
+        "Architecture fit: Little direct architecture language found.",
+        "Constraint coverage: No clear constraints or review gates were stated.",
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Project alignment is weak, so the request may still need anchoring to current ACE work."
+      ],
+      "evidence": [
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Actionability: Input still reads more like a note than a concrete action.",
+        "Architecture fit: Little direct architecture language found."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "plannerBrief": "Planner should treat this as: we want a wet stone pbr texture to export to blender",
+      "readiness": {
+        "intentConfidence": 0.11,
+        "plannerUsefulness": 0.16,
+        "executionReadiness": 0.2,
+        "deployReadiness": 0.03
+      }
+    },
+    "tasks": [
+      "we want a wet stone pbr texture to export to blender"
+    ],
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/state.json"
+    ],
+    "provenance": {
+      "anchors": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "thought",
+      "labels": [
+        "general"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 6,
+      "sentenceCount": 1,
+      "matchedProjectTerms": [],
+      "actionSignals": 0,
+      "featureRequestSignals": 0,
+      "architectureSignals": 0,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "brain",
+        "the",
+        "anchor",
+        "runtime",
+        "for",
+        "legacy"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-18T16:26:11.655Z",
+    "nodeId": "node_1773851109788_3yiju",
+    "source": "node-enter",
+    "createdAt": "2026-03-18T16:26:11.655Z",
+    "contextPacket": {
+      "summary": "",
+      "statement": "",
+      "tasks": [],
+      "constraints": [],
+      "clarifications": [],
+      "focusTerms": [],
+      "suggestedAnchorRefs": [],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1773851141548_joxytm",
+      "sourceNodeId": "node_1773851109788_3yiju",
+      "sourceText": "we want a wet stone pbr texture to export to blender",
+      "summary": "we want a wet stone pbr texture to export to blender",
+      "explicitClaims": [],
+      "inferredClaims": [],
+      "candidateNodes": [
+        {
+          "id": "literal_1",
+          "label": "we want a wet stone pbr texture to export to blender",
+          "kind": "thought",
+          "basis": "explicit",
+          "rationale": "Literal candidate derived from the current input and upstream packet.",
+          "confidence": 0.11
+        }
+      ],
+      "candidateEdges": [],
+      "gaps": [
+        "Project alignment: Few direct overlaps with current project context.",
+        "Actionability: Input still reads more like a note than a concrete action.",
+        "Architecture fit: Little direct architecture language found.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mixtral",
+        "runId": "context_manager_1773851141548_joxytm",
+        "usedFallback": true,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.11,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0,
+            "reason": "Few direct overlaps with current project context."
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.125,
+            "reason": "Input still reads more like a note than a concrete action."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.1111111111111111,
+            "reason": "Little direct architecture language found."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 0.3333333333333333,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "thought",
+          "labels": [
+            "general"
+          ]
+        },
+        "matchedTerms": []
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mixtral",
+      "runId": "context_manager_1773851141548_joxytm",
+      "usedFallback": true
+    }
+  },
+  "handoffId": "handoff_1773851141096_slrt96",
+  "handoff": {
+    "id": "handoff_1773851141096_slrt96",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-18T16:26:11.655Z",
+    "sourceNodeId": "node_1773851109788_3yiju",
+    "summary": "we want a wet stone pbr texture to export to blender",
+    "problemStatement": "Goal: we want a wet stone pbr texture to export to blender\nRequested outcomes: we want a wet stone pbr texture to export to blender.\nWhy ACE believes this: Project alignment 0%, Actionability 13%, Architecture fit 11%.\nConstraints and review signals: Project alignment: Few direct overlaps with current project context. | Actionability: Input still reads more like a note than a concrete action. | Architecture fit: Little direct architecture language found. | Constraint coverage: No clear constraints or review gates were stated. | Clarity: Input includes enough detail to classify intent reliably..\nStill unclear: Planner usefulness is low and needs tighter scope before execution expands. Execution readiness is low, so a worker should not start blindly. Project alignment is weak, so planner scope may need refinement.",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/state.json"
+    ],
+    "tasks": [
+      "we want a wet stone pbr texture to export to blender"
+    ],
+    "constraints": [
+      "Project alignment: Few direct overlaps with current project context.",
+      "Actionability: Input still reads more like a note than a concrete action.",
+      "Architecture fit: Little direct architecture language found.",
+      "Constraint coverage: No clear constraints or review gates were stated.",
+      "Clarity: Input includes enough detail to classify intent reliably."
+    ],
+    "confidence": 0.11,
+    "legacyConfidence": 0.14,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0,
+        "reason": "Few direct overlaps with current project context."
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.125,
+        "reason": "Input still reads more like a note than a concrete action."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.1111111111111111,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 0.3333333333333333,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.11,
+      "executionReadiness": 0.2,
+      "plannerUsefulness": 0.16,
+      "deployReadiness": 0.03
+    },
+    "classification": {
+      "role": "thought",
+      "labels": [
+        "general"
+      ]
+    },
+    "status": "needs-clarification"
+  },
+  "usedFallback": true,
+  "rawResponse": null
+}

@@ -1,0 +1,2 @@
+{"agent": "runner", "stage": "manage", "model": "mixtral", "timestamp": 1773914105228, "prompt_hash": "123c3a03330c6657b6f5b8efa0696e19787a11259faec7579d14a485863cecdd", "response_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "success": false}
+{"agent": "planner", "stage": "manage", "model": "dummy", "timestamp": 1773914388297, "prompt_hash": "cb2fea287ffb357f914bffe2f58c7583bb74a60f3f96f259866c94b77a843a2d", "response_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "success": false}

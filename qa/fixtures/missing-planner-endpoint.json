@@ -1,0 +1,11 @@
+{
+  "name": "missing-planner-endpoint",
+  "summary": "Intentional QA failure fixture for validating planner contract reporting.",
+  "forceFailures": [
+    {
+      "desk": "planner",
+      "test": "contract_check",
+      "reason": "fixture: simulate missing endpoint /api/spatial/agents/planner/run"
+    }
+  ]
+}
