@@ -1,0 +1,14 @@
+{
+  "id": "10000",
+  "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
+  "created_utc": "2026-03-27T10:47:52.806Z",
+  "source": "studio-team-board",
+  "sessionId": null,
+  "handoffId": null,
+  "anchorRefs": [
+    "brain/emergence/project_brain.md",
+    "brain/emergence/roadmap.md",
+    "brain/emergence/decisions.md",
+    "brain/emergence/changelog.md"
+  ]
+}

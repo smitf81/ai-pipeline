@@ -1,0 +1,4693 @@
+{
+  "capturedAt": "2026-03-27T10:15:22.688Z",
+  "runtime": {
+    "activePageId": "page_1774440616080_m3p3",
+    "pages": [
+      {
+        "outputs": [],
+        "handoffs": [],
+        "artifactRefs": [],
+        "id": "page_1774440616080_m3p3",
+        "title": "Current Page",
+        "status": "active",
+        "sourceNodeId": "node_1774259559573_gj2ai",
+        "summary": "Notebook page for current studio work.",
+        "createdAt": "2026-03-25T12:10:16.080Z",
+        "updatedAt": "2026-03-27T10:15:22.628Z"
+      }
+    ],
+    "handoffs": {
+      "contextToPlanner": null,
+      "plannerToContext": null,
+      "history": []
+    },
+    "agentWorkers": {
+      "context-manager": {
+        "status": "degraded",
+        "statusReason": "Ollama generate timed out after 1ms. | Ollama generate timed out after 1ms.",
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": "context_manager_1774606509930_qx26mi",
+        "lastOutcome": "degraded",
+        "lastOutcomeAt": "2026-03-27T10:15:09.973Z",
+        "lastSourceNodeId": null,
+        "lastHandoffId": null,
+        "lastReportNodeId": null,
+        "lastBlockedReason": "Ollama generate timed out after 1ms. | Ollama generate timed out after 1ms.",
+        "lastUsedFallback": true,
+        "lastPlannerFeedbackAction": null,
+        "startedAt": "2026-03-27T10:15:09.930Z",
+        "completedAt": "2026-03-27T10:15:09.973Z"
+      },
+      "executor": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mixtral",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastBlockedReason": null,
+        "lastCardId": null,
+        "lastTaskId": null,
+        "lastDecision": null,
+        "lastAssessmentSummary": null,
+        "lastAssessmentBlockers": [],
+        "lastVerifiedCardId": null,
+        "lastAppliedCardId": null,
+        "lastDeployCardId": null,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "planner": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "auto",
+        "backend": "ollama",
+        "model": "mixtral",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastSourceHandoffId": null,
+        "lastBlockedReason": null,
+        "lastProducedCardIds": [],
+        "proposalArtifactRefs": [],
+        "startedAt": null,
+        "completedAt": null
+      },
+      "dave": {
+        "name": "Dave",
+        "role": "Practical learning companion",
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "tokensUsed": 0,
+        "durationMs": 0,
+        "responseStatus": "idle",
+        "contextAlignmentScore": 0,
+        "contextAlignmentReason": null,
+        "startedAt": null,
+        "completedAt": null
+      }
+    },
+    "selfUpgrade": {
+      "status": "idle",
+      "targetProjectKey": "ace-self",
+      "taskId": "",
+      "patchReview": null,
+      "preflight": {
+        "status": "idle",
+        "ok": null,
+        "checkedAt": null,
+        "checks": [],
+        "summary": "Run preflight before applying a self patch."
+      },
+      "apply": {
+        "status": "idle",
+        "ok": null,
+        "appliedAt": null,
+        "branch": null,
+        "commit": null,
+        "taskId": ""
+      },
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": 26296,
+          "startedAt": "2026-03-19T08:21:36.902Z"
+        }
+      },
+      "requiresPermission": "none"
+    },
+    "teamBoard": {
+      "cards": [],
+      "selectedCardId": null,
+      "updatedAt": "2026-03-27T10:15:22.672Z",
+      "summary": {
+        "plan": 0,
+        "active": 0,
+        "complete": 0,
+        "review": 0,
+        "assigned": 0,
+        "handedOff": 0,
+        "binned": 0,
+        "idleWorkers": 2
+      }
+    },
+    "orchestrator": {
+      "status": "running",
+      "lastTickAt": "2026-03-27T10:15:22.628Z",
+      "activeDeskIds": [],
+      "conflicts": [
+        {
+          "id": "low-confidence-context",
+          "kind": "low-confidence-context",
+          "severity": "medium",
+          "desks": [
+            "context-manager",
+            "planner",
+            "executor"
+          ],
+          "summary": "Planner and Executor are sharing work against a low-confidence context packet."
+        }
+      ],
+      "pendingUserActions": [
+        "Clarify the active page goal before execution advances further."
+      ],
+      "desks": {
+        "context-manager": {
+          "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
+          "localState": "blocked",
+          "statusLabel": "Idle",
+          "statusDetail": "Waiting for the next source context input.",
+          "currentGoal": "Waiting for source context",
+          "allowedActions": [
+            "set-active-page",
+            "slice-context",
+            "publish-handoff",
+            "flag-ambiguity"
+          ],
+          "workItems": [
+            {
+              "id": "page_1774440616080_m3p3-context-watch",
+              "pageId": "page_1774440616080_m3p3",
+              "deskId": "context-manager",
+              "kind": "context-watch",
+              "status": "waiting",
+              "dependsOn": [],
+              "conflictTags": [
+                "context"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [],
+              "title": "Waiting for source context"
+            }
+          ],
+          "lastOutput": null,
+          "blockedReason": "Ollama generate timed out after 1ms. | Ollama generate timed out after 1ms.",
+          "contextSlice": {
+            "activePageId": "page_1774440616080_m3p3",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-27T10:15:22.628Z",
+          "thoughtBubble": "Context status: idle. Deterministic fallback kept intake alive."
+        },
+        "planner": {
+          "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
+          "localState": "waiting",
+          "statusLabel": "Idle",
+          "statusDetail": "Planner is waiting for the next context handoff.",
+          "currentGoal": "Planner is waiting for a context handoff.",
+          "allowedActions": [
+            "expand-plan",
+            "prioritise-work",
+            "publish-plan"
+          ],
+          "workItems": [
+            {
+              "id": "page_1774440616080_m3p3-planner-awaiting-handoff",
+              "pageId": "page_1774440616080_m3p3",
+              "deskId": "planner",
+              "kind": "planner-awaiting-handoff",
+              "status": "waiting",
+              "dependsOn": [],
+              "conflictTags": [
+                "plan",
+                "handoff"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [],
+              "title": "Planner is waiting for a context handoff."
+            }
+          ],
+          "lastOutput": "Planner is waiting for a context handoff.",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774440616080_m3p3",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-27T10:15:22.628Z",
+          "thoughtBubble": "Planner status: idle. Waiting for context handoff."
+        },
+        "executor": {
+          "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
+          "localState": "waiting",
+          "statusLabel": "Idle",
+          "statusDetail": "Executor is idle.",
+          "currentGoal": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
+          "allowedActions": [
+            "apply-package",
+            "run-preflight",
+            "deploy-runtime",
+            "report-blocker"
+          ],
+          "workItems": [],
+          "lastOutput": null,
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774440616080_m3p3",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-27T10:15:22.628Z",
+          "thoughtBubble": "Executor status: idle. Waiting for approved work."
+        },
+        "memory-archivist": {
+          "mission": "Persist useful summaries, artifact references, and history for active work.",
+          "localState": "waiting",
+          "statusLabel": "Idle",
+          "statusDetail": "Desk is waiting for the next assignment.",
+          "currentGoal": "Capture notes, handoffs, and artifact history",
+          "allowedActions": [
+            "archive-summary",
+            "record-artifact",
+            "snapshot-history"
+          ],
+          "workItems": [
+            {
+              "id": "page_1774440616080_m3p3-memory-sync",
+              "pageId": "page_1774440616080_m3p3",
+              "deskId": "memory-archivist",
+              "kind": "memory-sync",
+              "status": "waiting",
+              "dependsOn": [],
+              "conflictTags": [
+                "memory"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [],
+              "title": "Capture notes, handoffs, and artifact history"
+            }
+          ],
+          "lastOutput": "Capture notes, handoffs, and artifact history",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774440616080_m3p3",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-27T10:15:22.628Z",
+          "thoughtBubble": "Archivist status: idle. Waiting to archive changes."
+        },
+        "cto-architect": {
+          "mission": "Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.",
+          "localState": "waiting",
+          "statusLabel": "Idle",
+          "statusDetail": "Governance is monitoring active desks and mutation risk.",
+          "currentGoal": "Review desk overlap, approval state, and guardrails",
+          "allowedActions": [
+            "raise-conflict",
+            "approve-apply",
+            "reject-risky-change"
+          ],
+          "workItems": [
+            {
+              "id": "page_1774440616080_m3p3-governance-check",
+              "pageId": "page_1774440616080_m3p3",
+              "deskId": "cto-architect",
+              "kind": "governance-check",
+              "status": "waiting",
+              "dependsOn": [],
+              "conflictTags": [
+                "review",
+                "governance"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [],
+              "title": "Review desk overlap, approval state, and guardrails"
+            }
+          ],
+          "lastOutput": "Review desk overlap, approval state, and guardrails",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774440616080_m3p3",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-27T10:15:22.628Z",
+          "thoughtBubble": "Governance status: queued. Reviewing governance signals."
+        }
+      },
+      "activePageId": "page_1774440616080_m3p3"
+    },
+    "graphs": {
+      "system": {
+        "nodes": [
+          {
+            "id": "node_1774259559573_gj2ai",
+            "type": "text",
+            "content": "QA desk in studio",
+            "position": {
+              "x": 1422.0588235294117,
+              "y": 624.0196003633387
+            },
+            "connections": [],
+            "metadata": {
+              "role": "thought",
+              "graphLayer": "system",
+              "intentStatus": "processing",
+              "lastCommittedContent": "QA desk in studio",
+              "labels": [
+                "context",
+                "plan",
+                "governance"
+              ],
+              "proposalTarget": "system-structure",
+              "approvalPolicy": "auto-record",
+              "intentAnalysis": {
+                "agent": {
+                  "id": "context-manager",
+                  "name": "Context Manager",
+                  "criteriaVersion": "ace-intent-v2",
+                  "legacyCriteriaVersion": "ace-intent-v1",
+                  "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+                },
+                "summary": "Align repo anchors and update configuration for improved manager behavior",
+                "confidence": 0.59,
+                "legacyConfidence": 0.69,
+                "criteria": [
+                  {
+                    "id": "project-alignment",
+                    "label": "Project alignment",
+                    "score": 1,
+                    "reason": "Matched project terms: repo, manager, brain, emergence, canonical"
+                  },
+                  {
+                    "id": "actionability",
+                    "label": "Actionability",
+                    "score": 0.625,
+                    "reason": "Detected 2 implementation/planning verb signals."
+                  },
+                  {
+                    "id": "architecture-fit",
+                    "label": "Architecture fit",
+                    "score": 0.3333333333333333,
+                    "reason": "Little direct architecture language found."
+                  },
+                  {
+                    "id": "constraint-coverage",
+                    "label": "Constraint coverage",
+                    "score": 0,
+                    "reason": "No clear constraints or review gates were stated."
+                  },
+                  {
+                    "id": "clarity",
+                    "label": "Clarity",
+                    "score": 1,
+                    "reason": "Input includes enough detail to classify intent reliably."
+                  }
+                ],
+                "legacyCriteria": [
+                  {
+                    "id": "project-alignment",
+                    "label": "Project alignment",
+                    "score": 1,
+                    "reason": "Matched project terms: repo, manager, brain, emergence, canonical"
+                  },
+                  {
+                    "id": "actionability",
+                    "label": "Actionability",
+                    "score": 1,
+                    "reason": "Detected 2 implementation/planning verb signals."
+                  },
+                  {
+                    "id": "architecture-fit",
+                    "label": "Architecture fit",
+                    "score": 0.42857142857142855,
+                    "reason": "Little direct architecture language found."
+                  },
+                  {
+                    "id": "constraint-coverage",
+                    "label": "Constraint coverage",
+                    "score": 0,
+                    "reason": "No clear constraints or review gates were stated."
+                  },
+                  {
+                    "id": "clarity",
+                    "label": "Clarity",
+                    "score": 1,
+                    "reason": "Input includes enough detail to classify intent reliably."
+                  }
+                ],
+                "scores": {
+                  "intentConfidence": 0.59,
+                  "executionReadiness": 0.66,
+                  "plannerUsefulness": 0.83,
+                  "deployReadiness": 0.14
+                },
+                "truth": {
+                  "rawInput": "new note",
+                  "statement": "Align repo anchors and update configuration for improved manager behavior",
+                  "intentType": "Constraint / guardrail request",
+                  "requestedOutcomes": [
+                    "Update configuration files",
+                    "Move legacy repo trees",
+                    "Modify runtime and dashboard to read from `brain/emergence`"
+                  ],
+                  "unresolved": [
+                    "Architecture fit: Little direct architecture language found.",
+                    "Constraint coverage: No clear constraints or review gates were stated."
+                  ],
+                  "evidence": [
+                    "Project alignment: Matched project terms: repo, manager, brain, emergence, canonical",
+                    "Clarity: Input includes enough detail to classify intent reliably.",
+                    "Actionability: Detected 2 implementation/planning verb signals."
+                  ],
+                  "anchorRefs": [
+                    "brain/emergence/project_brain.md",
+                    "brain/emergence/plan.md",
+                    "brain/emergence/tasks.md",
+                    "brain/emergence/decisions.md",
+                    "brain/emergence/changelog.md",
+                    "brain/emergence/roadmap.md"
+                  ],
+                  "plannerBrief": "Planner should treat this as: Update configuration files; Move legacy repo trees; Modify runtime and dashboard to read from `brain/emergence`",
+                  "readiness": {
+                    "intentConfidence": 0.59,
+                    "plannerUsefulness": 0.83,
+                    "executionReadiness": 0.66,
+                    "deployReadiness": 0.14
+                  }
+                },
+                "tasks": [
+                  "Update configuration files",
+                  "Move legacy repo trees",
+                  "Modify runtime and dashboard to read from `brain/emergence`"
+                ],
+                "anchorRefs": [
+                  "brain/emergence/project_brain.md",
+                  "brain/emergence/plan.md",
+                  "brain/emergence/tasks.md",
+                  "brain/emergence/decisions.md",
+                  "brain/emergence/changelog.md",
+                  "brain/emergence/roadmap.md"
+                ],
+                "provenance": {
+                  "anchors": [
+                    {
+                      "anchorRef": "brain/emergence/project_brain.md",
+                      "sourceRef": "brain/emergence/project_brain.md",
+                      "source": "canonical",
+                      "weight": 3,
+                      "intentWeight": 4,
+                      "matchedTerms": [
+                        "ace",
+                        "brain",
+                        "emergence",
+                        "runtime",
+                        "canonical",
+                        "legacy",
+                        "manager",
+                        "repo"
+                      ],
+                      "score": 33
+                    },
+                    {
+                      "anchorRef": "brain/emergence/plan.md",
+                      "sourceRef": "brain/emergence/plan.md",
+                      "source": "canonical",
+                      "weight": 4,
+                      "intentWeight": 4,
+                      "matchedTerms": [
+                        "runtime",
+                        "canonical",
+                        "legacy",
+                        "compatibility",
+                        "manager",
+                        "active",
+                        "brain",
+                        "dashboard"
+                      ],
+                      "score": 33
+                    },
+                    {
+                      "anchorRef": "brain/emergence/tasks.md",
+                      "sourceRef": "brain/emergence/tasks.md",
+                      "source": "canonical",
+                      "weight": 4,
+                      "intentWeight": 4,
+                      "matchedTerms": [
+                        "brain",
+                        "compatibility",
+                        "emergence",
+                        "legacy",
+                        "manager",
+                        "repo",
+                        "runtime"
+                      ],
+                      "score": 29
+                    },
+                    {
+                      "anchorRef": "brain/emergence/decisions.md",
+                      "sourceRef": "brain/emergence/decisions.md",
+                      "source": "canonical",
+                      "weight": 2,
+                      "intentWeight": 3,
+                      "matchedTerms": [
+                        "legacy",
+                        "brain",
+                        "emergence",
+                        "targets",
+                        "canonical",
+                        "compatibility",
+                        "external",
+                        "migration"
+                      ],
+                      "score": 25
+                    },
+                    {
+                      "anchorRef": "brain/emergence/changelog.md",
+                      "sourceRef": "brain/emergence/changelog.md",
+                      "source": "canonical",
+                      "weight": 2,
+                      "intentWeight": 3,
+                      "matchedTerms": [
+                        "legacy",
+                        "brain",
+                        "canonical",
+                        "runtime",
+                        "dashboard",
+                        "drift",
+                        "external",
+                        "manager"
+                      ],
+                      "score": 25
+                    },
+                    {
+                      "anchorRef": "brain/emergence/roadmap.md",
+                      "sourceRef": "brain/emergence/roadmap.md",
+                      "source": "canonical",
+                      "weight": 5,
+                      "intentWeight": 4,
+                      "matchedTerms": [
+                        "emergence",
+                        "manager",
+                        "compatibility",
+                        "drift",
+                        "runtime",
+                        "active"
+                      ],
+                      "score": 25
+                    }
+                  ],
+                  "managerSummary": {
+                    "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+                    "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+                    "active_plan_slice": [
+                      "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+                      "Add a shared anchor resolver and bundle builder.",
+                      "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+                      "Rename external target config to `targets.json` with `projects.json` fallback."
+                    ],
+                    "next_actions": [
+                      "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+                      "Add a shared anchor resolver and bundle builder.",
+                      "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+                      "Rename external target config to `targets.json` with `projects.json` fallback.",
+                      "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+                      "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+                      "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+                    ],
+                    "blockers": [],
+                    "drift_flags": [],
+                    "last_manager_sync": "2026-03-15T12:00:00Z"
+                  }
+                },
+                "classification": {
+                  "role": "constraint",
+                  "labels": [
+                    "context",
+                    "plan",
+                    "governance"
+                  ]
+                },
+                "metrics": {
+                  "tokenCount": 61,
+                  "sentenceCount": 15,
+                  "matchedProjectTerms": [
+                    "repo",
+                    "manager",
+                    "brain",
+                    "emergence",
+                    "canonical",
+                    "ace",
+                    "external",
+                    "legacy",
+                    "runtime",
+                    "dashboard",
+                    "compatibility",
+                    "active",
+                    "drift"
+                  ],
+                  "actionSignals": 2,
+                  "featureRequestSignals": 0,
+                  "architectureSignals": 0,
+                  "constraintSignals": 0,
+                  "executionSignals": 0
+                },
+                "projectContext": {
+                  "domainKey": "emergence",
+                  "brainRoot": "brain/emergence",
+                  "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+                  "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+                  "blockers": [],
+                  "matchedTerms": [
+                    "repo",
+                    "manager",
+                    "brain",
+                    "emergence",
+                    "canonical",
+                    "ace",
+                    "external",
+                    "legacy"
+                  ],
+                  "referenceKeywords": [
+                    "and",
+                    "ace",
+                    "brain",
+                    "the",
+                    "anchor",
+                    "runtime",
+                    "for",
+                    "legacy"
+                  ],
+                  "sourcesRead": [
+                    "brain/emergence/project_brain.md",
+                    "brain/emergence/roadmap.md",
+                    "brain/emergence/plan.md",
+                    "brain/emergence/tasks.md",
+                    "brain/emergence/decisions.md",
+                    "brain/emergence/changelog.md",
+                    "brain/emergence/state.json"
+                  ],
+                  "anchorRefs": [
+                    "brain/emergence/project_brain.md",
+                    "brain/emergence/plan.md",
+                    "brain/emergence/tasks.md",
+                    "brain/emergence/decisions.md",
+                    "brain/emergence/changelog.md",
+                    "brain/emergence/roadmap.md"
+                  ],
+                  "truthSources": [
+                    {
+                      "id": "project_brain",
+                      "relativePath": "brain/emergence/project_brain.md",
+                      "sourceRelativePath": "brain/emergence/project_brain.md",
+                      "source": "canonical",
+                      "authority": "canonical-anchor",
+                      "exists": true,
+                      "required": true,
+                      "canonicalRelativePath": "brain/emergence/project_brain.md",
+                      "legacyRelativePaths": [
+                        "projects/emergence/project_brain.md"
+                      ]
+                    },
+                    {
+                      "id": "roadmap",
+                      "relativePath": "brain/emergence/roadmap.md",
+                      "sourceRelativePath": "brain/emergence/roadmap.md",
+                      "source": "canonical",
+                      "authority": "canonical-anchor",
+                      "exists": true,
+                      "required": true,
+                      "canonicalRelativePath": "brain/emergence/roadmap.md",
+                      "legacyRelativePaths": [
+                        "projects/emergence/roadmap.md"
+                      ]
+                    },
+                    {
+                      "id": "plan",
+                      "relativePath": "brain/emergence/plan.md",
+                      "sourceRelativePath": "brain/emergence/plan.md",
+                      "source": "canonical",
+                      "authority": "canonical-anchor",
+                      "exists": true,
+                      "required": true,
+                      "canonicalRelativePath": "brain/emergence/plan.md",
+                      "legacyRelativePaths": [
+                        "projects/emergence/plan.md"
+                      ]
+                    },
+                    {
+                      "id": "tasks",
+                      "relativePath": "brain/emergence/tasks.md",
+                      "sourceRelativePath": "brain/emergence/tasks.md",
+                      "source": "canonical",
+                      "authority": "canonical-anchor",
+                      "exists": true,
+                      "required": true,
+                      "canonicalRelativePath": "brain/emergence/tasks.md",
+                      "legacyRelativePaths": [
+                        "projects/emergence/tasks.md"
+                      ]
+                    },
+                    {
+                      "id": "decisions",
+                      "relativePath": "brain/emergence/decisions.md",
+                      "sourceRelativePath": "brain/emergence/decisions.md",
+                      "source": "canonical",
+                      "authority": "canonical-anchor",
+                      "exists": true,
+                      "required": true,
+                      "canonicalRelativePath": "brain/emergence/decisions.md",
+                      "legacyRelativePaths": [
+                        "projects/emergence/decisions.md"
+                      ]
+                    },
+                    {
+                      "id": "changelog",
+                      "relativePath": "brain/emergence/changelog.md",
+                      "sourceRelativePath": "brain/emergence/changelog.md",
+                      "source": "canonical",
+                      "authority": "canonical-anchor",
+                      "exists": true,
+                      "required": true,
+                      "canonicalRelativePath": "brain/emergence/changelog.md",
+                      "legacyRelativePaths": [
+                        "projects/emergence/changelog.md"
+                      ]
+                    },
+                    {
+                      "id": "state",
+                      "relativePath": "brain/emergence/state.json",
+                      "sourceRelativePath": "brain/emergence/state.json",
+                      "source": "canonical",
+                      "authority": "derived-state",
+                      "exists": true,
+                      "required": true,
+                      "canonicalRelativePath": "brain/emergence/state.json",
+                      "legacyRelativePaths": [
+                        "projects/emergence/state.json"
+                      ]
+                    }
+                  ],
+                  "drift": [],
+                  "managerSummary": {
+                    "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+                    "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+                    "active_plan_slice": [
+                      "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+                      "Add a shared anchor resolver and bundle builder.",
+                      "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+                      "Rename external target config to `targets.json` with `projects.json` fallback."
+                    ],
+                    "next_actions": [
+                      "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+                      "Add a shared anchor resolver and bundle builder.",
+                      "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+                      "Rename external target config to `targets.json` with `projects.json` fallback.",
+                      "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+                      "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+                      "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+                    ],
+                    "blockers": [],
+                    "drift_flags": [],
+                    "last_manager_sync": "2026-03-15T12:00:00Z"
+                  },
+                  "plannerFeedback": null
+                },
+                "judgedAt": "2026-03-23T09:52:53.103Z",
+                "nodeId": "node_1774259559573_gj2ai",
+                "source": "node-idle",
+                "createdAt": "2026-03-23T09:53:13.564Z",
+                "contextPacket": {
+                  "summary": "Align repo anchors and update configuration for improved manager behavior",
+                  "statement": "The task at hand is to make the `brain/emergence` directory the canonical source of truth for ACE manager behavior. This includes moving external target configurations, legacy repo trees, and updating the runtime and dashboard to read from this new location.",
+                  "tasks": [
+                    "Update configuration files",
+                    "Move legacy repo trees",
+                    "Modify runtime and dashboard to read from `brain/emergence`"
+                  ],
+                  "constraints": [
+                    "Ensure compatibility for deprecated paths during migration",
+                    "Maintain active runtime resolution independence from `legacy/`"
+                  ],
+                  "clarifications": [
+                    "What is the timeline for removing deprecated paths?",
+                    "How will drift detection handle anchors in both `brain/emergence` and legacy paths?"
+                  ],
+                  "focusTerms": [
+                    "brain/emergence",
+                    "external targets",
+                    "legacy repo trees"
+                  ],
+                  "suggestedAnchorRefs": [
+                    "brain/emergence/plan.md",
+                    "brain/emergence/roadmap.md"
+                  ],
+                  "plannerFeedbackAction": null
+                },
+                "extractedIntent": {
+                  "id": "extracted_intent_context_manager_1774259560782_3o6wc4",
+                  "sourceNodeId": "node_1774259559573_gj2ai",
+                  "sourceText": "new note",
+                  "summary": "Align repo anchors and update configuration for improved manager behavior",
+                  "explicitClaims": [
+                    "Update configuration files",
+                    "Move legacy repo trees",
+                    "Modify runtime and dashboard to read from `brain/emergence`"
+                  ],
+                  "inferredClaims": [
+                    "Ensure compatibility during migration of deprecated paths",
+                    "Implement drift detection handling anchors in both `brain/emergence` and legacy paths"
+                  ],
+                  "candidateNodes": [
+                    {
+                      "id": "update_config_files",
+                      "label": "Update configuration files",
+                      "kind": "task",
+                      "basis": "explicit",
+                      "rationale": "Stated explicitly in the context as a task to be executed.",
+                      "confidence": 1
+                    },
+                    {
+                      "id": "move_legacy_repo_trees",
+                      "label": "Move legacy repo trees",
+                      "kind": "task",
+                      "basis": "explicit",
+                      "rationale": "Stated explicitly in the context as a task to be executed.",
+                      "confidence": 1
+                    },
+                    {
+                      "id": "modify_runtime_and_dashboard",
+                      "label": "Modify runtime and dashboard",
+                      "kind": "task",
+                      "basis": "explicit",
+                      "rationale": "Stated explicitly in the context as a task to be executed.",
+                      "confidence": 1
+                    },
+                    {
+                      "id": "compatibility_migration",
+                      "label": "Compatibility during migration",
+                      "kind": "constraint",
+                      "basis": "inferred",
+                      "rationale": "Inferred from the need to ensure compatibility for deprecated paths during the migration.",
+                      "confidence": 0.75
+                    },
+                    {
+                      "id": "drift_detection",
+                      "label": "Drift detection handling",
+                      "kind": "constraint",
+                      "basis": "inferred",
+                      "rationale": "Inferred from the question about how drift detection will handle anchors in both `brain/emergence` and legacy paths.",
+                      "confidence": 0.75
+                    }
+                  ],
+                  "candidateEdges": [],
+                  "gaps": [
+                    "Timeline for removing deprecated paths"
+                  ],
+                  "provenance": {
+                    "backend": "ollama",
+                    "model": "mistral:latest",
+                    "runId": "context_manager_1774259560782_3o6wc4",
+                    "usedFallback": false,
+                    "inferenceMode": "small-inference"
+                  },
+                  "audit": {
+                    "confidence": 0.59,
+                    "criteria": [
+                      {
+                        "id": "project-alignment",
+                        "label": "Project alignment",
+                        "score": 1,
+                        "reason": "Matched project terms: repo, manager, brain, emergence, canonical"
+                      },
+                      {
+                        "id": "actionability",
+                        "label": "Actionability",
+                        "score": 0.625,
+                        "reason": "Detected 2 implementation/planning verb signals."
+                      },
+                      {
+                        "id": "architecture-fit",
+                        "label": "Architecture fit",
+                        "score": 0.3333333333333333,
+                        "reason": "Little direct architecture language found."
+                      },
+                      {
+                        "id": "constraint-coverage",
+                        "label": "Constraint coverage",
+                        "score": 0,
+                        "reason": "No clear constraints or review gates were stated."
+                      },
+                      {
+                        "id": "clarity",
+                        "label": "Clarity",
+                        "score": 1,
+                        "reason": "Input includes enough detail to classify intent reliably."
+                      }
+                    ],
+                    "classification": {
+                      "role": "constraint",
+                      "labels": [
+                        "context",
+                        "plan",
+                        "governance"
+                      ]
+                    },
+                    "matchedTerms": [
+                      "repo",
+                      "manager",
+                      "brain",
+                      "emergence",
+                      "canonical",
+                      "ace",
+                      "external",
+                      "legacy"
+                    ]
+                  }
+                },
+                "worker": {
+                  "id": "context-manager",
+                  "backend": "ollama",
+                  "model": "mistral:latest",
+                  "runId": "context_manager_1774259560782_3o6wc4",
+                  "usedFallback": false
+                }
+              }
+            }
+          },
+          {
+            "id": "node_1774259572293_baake",
+            "type": "text",
+            "content": "QA lead agent",
+            "position": {
+              "x": 1432.3529411764705,
+              "y": 871.0784238927504
+            },
+            "connections": [],
+            "metadata": {
+              "role": "thought",
+              "graphLayer": "system",
+              "intentStatus": "error",
+              "lastCommittedContent": "QA lead agent",
+              "labels": [],
+              "proposalTarget": "system-structure",
+              "approvalPolicy": "auto-record"
+            }
+          },
+          {
+            "id": "node_1774259587600_4d8nq",
+            "type": "text",
+            "content": "tools they can use",
+            "position": {
+              "x": 1458.3333333333335,
+              "y": 1107.2222137451172
+            },
+            "connections": [],
+            "metadata": {
+              "role": "thought",
+              "graphLayer": "system",
+              "intentStatus": "processing",
+              "lastCommittedContent": "tools they can use",
+              "labels": [],
+              "proposalTarget": "system-structure",
+              "approvalPolicy": "auto-record"
+            }
+          },
+          {
+            "id": "node_1774266261879_lwdfw",
+            "type": "text",
+            "content": "new note",
+            "position": {
+              "x": 1572.3684210526314,
+              "y": 1432.0175371671978
+            },
+            "connections": [],
+            "metadata": {
+              "role": "thought",
+              "origin": "user",
+              "sourceNodeId": null,
+              "intentRef": null,
+              "basis": "explicit",
+              "confidence": null,
+              "usedFallback": false,
+              "graphLayer": "system",
+              "intentStatus": "error",
+              "lastCommittedContent": "new note",
+              "labels": [],
+              "proposalTarget": "system-structure",
+              "approvalPolicy": "auto-record"
+            }
+          },
+          {
+            "id": "node_1774420880476_jek1r",
+            "type": "text",
+            "content": "skill idea (of sorts)\n- humility\n- self doubt\n-being able to say \"i don't know\"\n- \"but try asking someone at the(X) desk they might have a better understanding",
+            "position": {
+              "x": 2136.842105263158,
+              "y": 755.7017476935135
+            },
+            "connections": [],
+            "metadata": {
+              "role": "thought",
+              "origin": "user",
+              "sourceNodeId": null,
+              "intentRef": null,
+              "basis": "explicit",
+              "confidence": null,
+              "usedFallback": false,
+              "graphLayer": "system",
+              "intentStatus": "error",
+              "lastCommittedContent": "skill idea (of sorts)\n- humility\n- self doubt\n-being able to say \"i don't know\"\n- \"but try asking someone at the(X) desk they might have a better understanding",
+              "labels": [],
+              "proposalTarget": "system-structure",
+              "approvalPolicy": "auto-record"
+            }
+          },
+          {
+            "id": "node_1774421003609_yrxt9",
+            "type": "text",
+            "content": "in business alot of good management is knowing who to ask ",
+            "position": {
+              "x": 2111.842105263158,
+              "y": 1063.5964845356189
+            },
+            "connections": [],
+            "metadata": {
+              "role": "thought",
+              "origin": "user",
+              "sourceNodeId": null,
+              "intentRef": null,
+              "basis": "explicit",
+              "confidence": null,
+              "usedFallback": false,
+              "graphLayer": "system",
+              "intentStatus": "processing",
+              "lastCommittedContent": "in business",
+              "labels": [],
+              "proposalTarget": "system-structure",
+              "approvalPolicy": "auto-record"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "node_1774259559573_gj2ai",
+            "target": "node_1774259572293_baake",
+            "relationship_type": "relates_to"
+          },
+          {
+            "source": "node_1774259572293_baake",
+            "target": "node_1774259587600_4d8nq",
+            "relationship_type": "relates_to"
+          },
+          {
+            "source": "node_1774259587600_4d8nq",
+            "target": "node_1774266261879_lwdfw",
+            "relationship_type": "relates_to"
+          },
+          {
+            "source": "node_1774420880476_jek1r",
+            "target": "node_1774421003609_yrxt9",
+            "relationship_type": "relates_to"
+          }
+        ]
+      },
+      "world": {
+        "nodes": [],
+        "edges": []
+      }
+    },
+    "rsg": {
+      "mode": "dual-layer",
+      "worldDomain": "gameplay-systems",
+      "approvalPolicy": {
+        "system-structure": "auto-record",
+        "world-structure": "auto-record",
+        "adapter-translation": "auto-record",
+        "code-runtime-mutation": "risk-gated-review"
+      },
+      "proposals": [
+        {
+          "id": "node_1774259559573_gj2ai",
+          "title": "QA desk in studio",
+          "target": "system-structure",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1774259559573_gj2ai",
+          "approval": "auto-record",
+          "status": "proposed"
+        },
+        {
+          "id": "node_1774259572293_baake",
+          "title": "QA lead agent",
+          "target": "system-structure",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1774259572293_baake",
+          "approval": "auto-record",
+          "status": "proposed"
+        },
+        {
+          "id": "node_1774259587600_4d8nq",
+          "title": "tools they can use",
+          "target": "system-structure",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1774259587600_4d8nq",
+          "approval": "auto-record",
+          "status": "proposed"
+        },
+        {
+          "id": "node_1774266261879_lwdfw",
+          "title": "new note",
+          "target": "system-structure",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1774266261879_lwdfw",
+          "approval": "auto-record",
+          "status": "proposed"
+        },
+        {
+          "id": "node_1774420880476_jek1r",
+          "title": "skill idea (of sorts)\n- humility\n- self doubt\n-being able to say \"i don't know\"\n- \"but try asking someone at the(X) desk they might have a better understanding",
+          "target": "system-structure",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1774420880476_jek1r",
+          "approval": "auto-record",
+          "status": "proposed"
+        },
+        {
+          "id": "node_1774421003609_yrxt9",
+          "title": "in business alot of good management is knowing who to ask ",
+          "target": "system-structure",
+          "sourceLayer": "system",
+          "sourceNodeId": "node_1774421003609_yrxt9",
+          "approval": "auto-record",
+          "status": "proposed"
+        }
+      ],
+      "summary": {
+        "systemStructure": 6,
+        "worldStructure": 0,
+        "adapterTranslation": 0,
+        "codeRuntimeMutation": 0
+      },
+      "activity": [
+        {
+          "id": "rsg-generate_1774259593591_9cq7o",
+          "type": "rsg-generate",
+          "at": "2026-03-23T09:53:13.590Z",
+          "sourceNodeId": "node_1774259559573_gj2ai",
+          "sourceNodeLabel": "QA desk in studio",
+          "summary": "Align repo anchors and update configuration for improved manager behavior",
+          "confidence": 0.59,
+          "generatedCount": 3,
+          "replacedCount": 0,
+          "usedFallback": false,
+          "reason": "",
+          "trigger": "idle",
+          "generationId": "rsg_1774259593590_bwf1p"
+        }
+      ],
+      "lastSourceNodeId": "node_1774259559573_gj2ai",
+      "lastGenerationAt": "2026-03-23T09:53:13.590Z",
+      "lastStatus": "rsg-generate",
+      "lastEvaluatedAt": "2026-03-27T10:15:22.673Z"
+    },
+    "manager": {
+      "current_focus": "Make repo anchors canonical for manager, context, and intent flow.",
+      "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "active_plan_slice": [],
+      "next_actions": [
+        "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "Keep the manager, runtime, and intent systems on the shared anchor bundle contract.",
+        "Use anchor provenance and drift detection to block unanchored execution from advancing.",
+        "Keep archived repo history under `legacy/` and out of active runtime flow."
+      ],
+      "blockers": [],
+      "drift_flags": [
+        "empty-slices"
+      ],
+      "last_manager_sync": "2026-03-15T12:00:00Z"
+    },
+    "canonicalSlices": {
+      "version": "ace/slices.v1",
+      "updatedAt": "2026-03-27T10:15:22.428Z",
+      "slices": []
+    },
+    "truthSources": [
+      {
+        "id": "project_brain",
+        "relativePath": "brain/emergence/project_brain.md",
+        "sourceRelativePath": "brain/emergence/project_brain.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/project_brain.md",
+        "legacyRelativePaths": [
+          "projects/emergence/project_brain.md"
+        ]
+      },
+      {
+        "id": "roadmap",
+        "relativePath": "brain/emergence/roadmap.md",
+        "sourceRelativePath": "brain/emergence/roadmap.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/roadmap.md",
+        "legacyRelativePaths": [
+          "projects/emergence/roadmap.md"
+        ]
+      },
+      {
+        "id": "slices",
+        "relativePath": "brain/emergence/slices.md",
+        "sourceRelativePath": "brain/emergence/slices.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/slices.md",
+        "legacyRelativePaths": [
+          "projects/emergence/slices.md"
+        ]
+      },
+      {
+        "id": "plan",
+        "relativePath": "brain/emergence/plan.md",
+        "sourceRelativePath": "brain/emergence/plan.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/plan.md",
+        "legacyRelativePaths": [
+          "projects/emergence/plan.md"
+        ]
+      },
+      {
+        "id": "tasks",
+        "relativePath": "brain/emergence/tasks.md",
+        "sourceRelativePath": "brain/emergence/tasks.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": false,
+        "canonicalRelativePath": "brain/emergence/tasks.md",
+        "legacyRelativePaths": [
+          "projects/emergence/tasks.md"
+        ]
+      },
+      {
+        "id": "decisions",
+        "relativePath": "brain/emergence/decisions.md",
+        "sourceRelativePath": "brain/emergence/decisions.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/decisions.md",
+        "legacyRelativePaths": [
+          "projects/emergence/decisions.md"
+        ]
+      },
+      {
+        "id": "changelog",
+        "relativePath": "brain/emergence/changelog.md",
+        "sourceRelativePath": "brain/emergence/changelog.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/changelog.md",
+        "legacyRelativePaths": [
+          "projects/emergence/changelog.md"
+        ]
+      },
+      {
+        "id": "state",
+        "relativePath": "brain/emergence/state.json",
+        "sourceRelativePath": "brain/emergence/state.json",
+        "source": "canonical",
+        "authority": "derived-state",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/state.json",
+        "legacyRelativePaths": [
+          "projects/emergence/state.json"
+        ]
+      }
+    ],
+    "drift": [
+      {
+        "id": "empty-slices",
+        "severity": "high",
+        "summary": "slices.md does not currently expose actionable active slices.",
+        "anchorRef": "brain/emergence/slices.md"
+      }
+    ],
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/slices.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/state.json"
+    ],
+    "throughputDebug": {
+      "latestSession": {
+        "id": "throughput_1773765740802_vjofq8",
+        "prompt": "I think we should add a desk to the studio for a QA agent",
+        "status": "completed",
+        "verdict": "pass",
+        "targetProjectKey": "ace-self",
+        "mode": "live",
+        "createdAt": "2026-03-17T16:42:20.802Z",
+        "finishedAt": "2026-03-17T16:42:51.218Z",
+        "pageId": "page_debug_1773765740818_66iawr",
+        "nodeId": "node_debug_1773765740818_nku99b",
+        "runnerTaskId": "10000",
+        "qaRunId": "qa_1773765771223_mzya4z",
+        "anchorRefs": [
+          "brain/emergence/roadmap.md",
+          "brain/emergence/tasks.md"
+        ],
+        "provenance": {
+          "classification": "unknown",
+          "orchestration": "unknown",
+          "execution": "unknown",
+          "engine": null,
+          "stageIds": [],
+          "legacyActions": [],
+          "nativeActions": [],
+          "evidence": [],
+          "notes": []
+        },
+        "stageSummary": [
+          {
+            "id": "seed",
+            "label": "Seed Debug Page",
+            "verdict": "pass",
+            "status": "completed",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "intent",
+            "label": "Context Analysis",
+            "verdict": "pass",
+            "status": "completed",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "handoff",
+            "label": "Planner Handoff",
+            "verdict": "pass",
+            "status": "completed",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "team-board",
+            "label": "Team Board Progression",
+            "verdict": "pass",
+            "status": "completed",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "runner-task",
+            "label": "Runner Task Mapping",
+            "verdict": "pass",
+            "status": "completed",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "scan",
+            "label": "Runner Scan",
+            "verdict": "failed",
+            "status": "failed",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "manage",
+            "label": "Runner Manage",
+            "verdict": "pending",
+            "status": "pending",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "build",
+            "label": "Runner Build",
+            "verdict": "pending",
+            "status": "pending",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "apply",
+            "label": "Runner Apply",
+            "verdict": "pending",
+            "status": "pending",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "preflight",
+            "label": "Self-Upgrade Preflight",
+            "verdict": "blocked",
+            "status": "blocked",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "deploy",
+            "label": "Self-Upgrade Deploy",
+            "verdict": "blocked",
+            "status": "blocked",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "archives",
+            "label": "Archive Verification",
+            "verdict": "pass",
+            "status": "completed",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          },
+          {
+            "id": "final",
+            "label": "Final Comparison",
+            "verdict": "pass",
+            "status": "completed",
+            "provenance": {
+              "classification": "unknown",
+              "orchestration": "unknown",
+              "execution": "unknown",
+              "engine": null,
+              "stageIds": [],
+              "legacyActions": [],
+              "nativeActions": [],
+              "evidence": [],
+              "notes": []
+            }
+          }
+        ]
+      },
+      "sessions": [
+        {
+          "id": "throughput_1773765740802_vjofq8",
+          "prompt": "I think we should add a desk to the studio for a QA agent",
+          "status": "completed",
+          "verdict": "pass",
+          "targetProjectKey": "ace-self",
+          "mode": "live",
+          "createdAt": "2026-03-17T16:42:20.802Z",
+          "finishedAt": "2026-03-17T16:42:51.218Z",
+          "pageId": "page_debug_1773765740818_66iawr",
+          "nodeId": "node_debug_1773765740818_nku99b",
+          "runnerTaskId": "10000",
+          "qaRunId": "qa_1773765771223_mzya4z",
+          "anchorRefs": [
+            "brain/emergence/roadmap.md",
+            "brain/emergence/tasks.md"
+          ],
+          "provenance": {
+            "classification": "unknown",
+            "orchestration": "unknown",
+            "execution": "unknown",
+            "engine": null,
+            "stageIds": [],
+            "legacyActions": [],
+            "nativeActions": [],
+            "evidence": [],
+            "notes": []
+          },
+          "stageSummary": [
+            {
+              "id": "seed",
+              "label": "Seed Debug Page",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "intent",
+              "label": "Context Analysis",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "handoff",
+              "label": "Planner Handoff",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "team-board",
+              "label": "Team Board Progression",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "runner-task",
+              "label": "Runner Task Mapping",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "scan",
+              "label": "Runner Scan",
+              "verdict": "failed",
+              "status": "failed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "manage",
+              "label": "Runner Manage",
+              "verdict": "pending",
+              "status": "pending",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "build",
+              "label": "Runner Build",
+              "verdict": "pending",
+              "status": "pending",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "apply",
+              "label": "Runner Apply",
+              "verdict": "pending",
+              "status": "pending",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "preflight",
+              "label": "Self-Upgrade Preflight",
+              "verdict": "blocked",
+              "status": "blocked",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "deploy",
+              "label": "Self-Upgrade Deploy",
+              "verdict": "blocked",
+              "status": "blocked",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "archives",
+              "label": "Archive Verification",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "final",
+              "label": "Final Comparison",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            }
+          ]
+        },
+        {
+          "id": "throughput_1773762539013_rk45gm",
+          "prompt": "I think we should add a desk to the studio for a QA agent",
+          "status": "completed",
+          "verdict": "pass",
+          "targetProjectKey": "ace-self",
+          "mode": "fixture",
+          "createdAt": "2026-03-17T15:48:59.013Z",
+          "finishedAt": "2026-03-17T15:49:29.473Z",
+          "pageId": "page_debug_1773762539026_gf289j",
+          "nodeId": "node_debug_1773762539026_xmsfpq",
+          "runnerTaskId": "10000",
+          "qaRunId": "qa_1773762569479_ffaa1l",
+          "anchorRefs": [
+            "brain/emergence/roadmap.md",
+            "brain/emergence/tasks.md"
+          ],
+          "provenance": {
+            "classification": "unknown",
+            "orchestration": "unknown",
+            "execution": "unknown",
+            "engine": null,
+            "stageIds": [],
+            "legacyActions": [],
+            "nativeActions": [],
+            "evidence": [],
+            "notes": []
+          },
+          "stageSummary": [
+            {
+              "id": "seed",
+              "label": "Seed Debug Page",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "intent",
+              "label": "Context Analysis",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "handoff",
+              "label": "Planner Handoff",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "team-board",
+              "label": "Team Board Progression",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "runner-task",
+              "label": "Runner Task Mapping",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "scan",
+              "label": "Runner Scan",
+              "verdict": "failed",
+              "status": "failed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "manage",
+              "label": "Runner Manage",
+              "verdict": "pending",
+              "status": "pending",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "build",
+              "label": "Runner Build",
+              "verdict": "pending",
+              "status": "pending",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "apply",
+              "label": "Runner Apply",
+              "verdict": "pending",
+              "status": "pending",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "preflight",
+              "label": "Self-Upgrade Preflight",
+              "verdict": "blocked",
+              "status": "blocked",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "deploy",
+              "label": "Self-Upgrade Deploy",
+              "verdict": "blocked",
+              "status": "blocked",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "archives",
+              "label": "Archive Verification",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            },
+            {
+              "id": "final",
+              "label": "Final Comparison",
+              "verdict": "pass",
+              "status": "completed",
+              "provenance": {
+                "classification": "unknown",
+                "orchestration": "unknown",
+                "execution": "unknown",
+                "engine": null,
+                "stageIds": [],
+                "legacyActions": [],
+                "nativeActions": [],
+                "evidence": [],
+                "notes": []
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "qaState": {
+      "structuredReport": {
+        "status": "fail",
+        "summary": "1 of 4 desks failed; 1 of 19 checks failed",
+        "failures": [
+          {
+            "desk": "ui",
+            "test": "syntax_load",
+            "reason": "ui/tests/debugSuite.test.mjs: missing import ./world/tilemap.js"
+          }
+        ],
+        "desks": [
+          {
+            "desk": "planner",
+            "status": "pass",
+            "tests": [
+              {
+                "name": "contract_check",
+                "status": "pass",
+                "qualityCard": {
+                  "schema": "qa.test-attribute-card.v1",
+                  "id": "planner.contract_check",
+                  "desk": "planner",
+                  "testId": "contract_check",
+                  "testName": "Planner contract check",
+                  "status": "pass",
+                  "overallScore": {
+                    "value": 3.5,
+                    "max": 5,
+                    "method": "weighted_average"
+                  },
+                  "metrics": {
+                    "integrity": {
+                      "definitionId": "integrity",
+                      "score": 4,
+                      "weight": 1,
+                      "summary": "Checks the planner desk contract through the real properties route and planner run route registration.",
+                      "evidence": [
+                        "Validates planner run route existence",
+                        "Requests /api/spatial/desks/planner/properties",
+                        "Checks desk payload shape and returned deskId"
+                      ],
+                      "factorScores": {
+                        "assertion_relevance": 4,
+                        "real_path_alignment": 4,
+                        "false_positive_risk": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 4,
+                        "displayFormula": "avg(assertion_relevance, real_path_alignment, invert(false_positive_risk))"
+                      },
+                      "improvementHint": "Add one assertion for planner-specific payload content beyond the shared desk shell."
+                    },
+                    "specificity": {
+                      "definitionId": "specificity",
+                      "score": 4,
+                      "weight": 0.9,
+                      "summary": "Failures identify whether the planner route, desk payload shape, or desk identity drifted.",
+                      "evidence": [
+                        "Reports missing route names directly",
+                        "Calls out missing payload keys by name",
+                        "Flags deskId mismatches explicitly"
+                      ],
+                      "factorScores": {
+                        "assertion_precision": 4,
+                        "failure_localization": 4,
+                        "noise_risk": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 4,
+                        "displayFormula": "avg(assertion_precision, failure_localization, invert(noise_risk))"
+                      },
+                      "improvementHint": "Split route registration and payload-shape failures into separate checks when the scorecard model expands."
+                    },
+                    "coverage": {
+                      "definitionId": "coverage",
+                      "score": 2,
+                      "weight": 0.8,
+                      "summary": "Covers the primary planner contract, but not downstream planner execution branches or proposal artifacts.",
+                      "evidence": [
+                        "Exercises the planner properties payload",
+                        "Checks run-route registration without executing a planner run",
+                        "Does not inspect produced card or artifact payloads"
+                      ],
+                      "factorScores": {
+                        "path_coverage": 3,
+                        "branch_coverage": 2,
+                        "edge_case_coverage": 1
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 2,
+                        "displayFormula": "avg(path_coverage, branch_coverage, edge_case_coverage)"
+                      },
+                      "improvementHint": "Add a scored card for planner output artifacts once planner execution becomes deterministic enough for QA."
+                    },
+                    "observability": {
+                      "definitionId": "observability",
+                      "score": 3,
+                      "weight": 0.8,
+                      "summary": "Contract failures are readable, but the test still reports string failures instead of structured evidence.",
+                      "evidence": [
+                        "Includes route names and missing keys in failure strings",
+                        "Does not attach a structured payload excerpt to the result"
+                      ],
+                      "factorScores": {
+                        "debug_signal": 3,
+                        "artifact_visibility": 2,
+                        "failure_readability": 4
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 3,
+                        "displayFormula": "avg(debug_signal, artifact_visibility, failure_readability)"
+                      },
+                      "improvementHint": "Attach a compact planner desk payload excerpt when contract assertions fail."
+                    },
+                    "reliability": {
+                      "definitionId": "reliability",
+                      "score": 4,
+                      "weight": 1,
+                      "summary": "The planner contract check is stable because it relies on route registration and a read-only desk properties request.",
+                      "evidence": [
+                        "Uses deterministic route existence checks",
+                        "Hits a read-only planner desk properties endpoint",
+                        "Does not depend on live model execution"
+                      ],
+                      "factorScores": {
+                        "repeatability": 5,
+                        "environment_stability": 4,
+                        "dependency_fragility": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 4.33,
+                        "displayFormula": "avg(repeatability, environment_stability, invert(dependency_fragility))"
+                      },
+                      "improvementHint": "Keep planner desk properties read-only and fixture-safe so the contract check stays deterministic."
+                    }
+                  },
+                  "ui": {
+                    "cardVariant": "qa-test-attribute-card",
+                    "metricOrder": [
+                      "integrity",
+                      "specificity",
+                      "coverage",
+                      "observability",
+                      "reliability"
+                    ],
+                    "clickableMetrics": true,
+                    "defaultExpandedMetricId": null
+                  },
+                  "updatedAt": "2026-03-27T10:15:09.361Z",
+                  "validation": {
+                    "ok": true,
+                    "issues": [],
+                    "missingMetricIds": [],
+                    "summary": "Scorecard schema and metrics are complete.",
+                    "metricCount": 5
+                  }
+                }
+              },
+              {
+                "name": "file_scope",
+                "status": "pass"
+              },
+              {
+                "name": "syntax_load",
+                "status": "pass"
+              },
+              {
+                "name": "llm_invocation_check",
+                "status": "pass"
+              }
+            ]
+          },
+          {
+            "desk": "runner",
+            "status": "pass",
+            "tests": [
+              {
+                "name": "contract_check",
+                "status": "pass",
+                "qualityCard": {
+                  "schema": "qa.test-attribute-card.v1",
+                  "id": "runner.contract_check",
+                  "desk": "runner",
+                  "testId": "contract_check",
+                  "testName": "Runner contract check",
+                  "status": "pass",
+                  "overallScore": {
+                    "value": 3.6,
+                    "max": 5,
+                    "method": "weighted_average"
+                  },
+                  "metrics": {
+                    "integrity": {
+                      "definitionId": "integrity",
+                      "score": 4,
+                      "weight": 1,
+                      "summary": "Checks the real runner contract across execute and presets routes, UI-command alignment, and preset file presence.",
+                      "evidence": [
+                        "Validates /api/execute and /api/presets route existence",
+                        "Compares UI action options to runner subcommands",
+                        "Checks preset commands and referenced files on disk"
+                      ],
+                      "factorScores": {
+                        "assertion_relevance": 5,
+                        "real_path_alignment": 4,
+                        "false_positive_risk": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 4.33,
+                        "displayFormula": "avg(assertion_relevance, real_path_alignment, invert(false_positive_risk))"
+                      },
+                      "improvementHint": "Add one assertion for an execute payload contract once the runner has a stable dry-run response shape."
+                    },
+                    "specificity": {
+                      "definitionId": "specificity",
+                      "score": 4,
+                      "weight": 0.9,
+                      "summary": "Failures pinpoint which command, preset, route, or response field drifted.",
+                      "evidence": [
+                        "Reports missing runner subcommands by UI action name",
+                        "Reports missing preset files with normalized paths",
+                        "Checks /api/presets response keys explicitly"
+                      ],
+                      "factorScores": {
+                        "assertion_precision": 4,
+                        "failure_localization": 4,
+                        "noise_risk": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 4,
+                        "displayFormula": "avg(assertion_precision, failure_localization, invert(noise_risk))"
+                      },
+                      "improvementHint": "Separate preset-file failures from API-shape failures once the suite grows more cards."
+                    },
+                    "coverage": {
+                      "definitionId": "coverage",
+                      "score": 3,
+                      "weight": 0.8,
+                      "summary": "Covers more runner surface area than a single route check, but does not execute a full command lifecycle.",
+                      "evidence": [
+                        "Checks command parity between UI and runner",
+                        "Validates preset configuration and the presets API",
+                        "Does not run /api/execute with a live command payload"
+                      ],
+                      "factorScores": {
+                        "path_coverage": 4,
+                        "branch_coverage": 3,
+                        "edge_case_coverage": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 3,
+                        "displayFormula": "avg(path_coverage, branch_coverage, edge_case_coverage)"
+                      },
+                      "improvementHint": "Add a deterministic execute dry-run assertion for one representative command path."
+                    },
+                    "observability": {
+                      "definitionId": "observability",
+                      "score": 3,
+                      "weight": 0.8,
+                      "summary": "The runner contract check gives useful failure messages, but it does not emit structured artifacts yet.",
+                      "evidence": [
+                        "Failure strings include command names, preset names, and missing files",
+                        "No structured preset diff or command manifest is attached to the test result"
+                      ],
+                      "factorScores": {
+                        "debug_signal": 3,
+                        "artifact_visibility": 2,
+                        "failure_readability": 4
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 3,
+                        "displayFormula": "avg(debug_signal, artifact_visibility, failure_readability)"
+                      },
+                      "improvementHint": "Attach the resolved preset name and command when a runner contract assertion fails."
+                    },
+                    "reliability": {
+                      "definitionId": "reliability",
+                      "score": 4,
+                      "weight": 1,
+                      "summary": "The runner contract check is stable under normal runs because it relies on static inspection and a read-only presets call.",
+                      "evidence": [
+                        "Uses static command extraction and file existence checks",
+                        "Calls the read-only /api/presets endpoint",
+                        "Avoids executing arbitrary runner commands in the contract test"
+                      ],
+                      "factorScores": {
+                        "repeatability": 4,
+                        "environment_stability": 4,
+                        "dependency_fragility": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 4,
+                        "displayFormula": "avg(repeatability, environment_stability, invert(dependency_fragility))"
+                      },
+                      "improvementHint": "Keep execution out of this card unless a deterministic fixture mode is added for runner actions."
+                    }
+                  },
+                  "ui": {
+                    "cardVariant": "qa-test-attribute-card",
+                    "metricOrder": [
+                      "integrity",
+                      "specificity",
+                      "coverage",
+                      "observability",
+                      "reliability"
+                    ],
+                    "clickableMetrics": true,
+                    "defaultExpandedMetricId": null
+                  },
+                  "updatedAt": "2026-03-27T10:15:09.605Z",
+                  "validation": {
+                    "ok": true,
+                    "issues": [],
+                    "missingMetricIds": [],
+                    "summary": "Scorecard schema and metrics are complete.",
+                    "metricCount": 5
+                  }
+                }
+              },
+              {
+                "name": "file_scope",
+                "status": "pass"
+              },
+              {
+                "name": "syntax_load",
+                "status": "pass"
+              },
+              {
+                "name": "llm_invocation_check",
+                "status": "pass"
+              }
+            ]
+          },
+          {
+            "desk": "ui",
+            "status": "fail",
+            "tests": [
+              {
+                "name": "contract_check",
+                "status": "pass",
+                "qualityCard": {
+                  "schema": "qa.test-attribute-card.v1",
+                  "id": "ui.contract_check",
+                  "desk": "ui",
+                  "testId": "contract_check",
+                  "testName": "UI contract check",
+                  "status": "pass",
+                  "overallScore": {
+                    "value": 3.6,
+                    "max": 5,
+                    "method": "weighted_average"
+                  },
+                  "metrics": {
+                    "integrity": {
+                      "definitionId": "integrity",
+                      "score": 4,
+                      "weight": 1,
+                      "summary": "Checks the real UI/backend contract surface instead of a shallow proxy.",
+                      "evidence": [
+                        "Validates endpoint existence for UI fetch calls",
+                        "Checks live and degraded LLM response branches",
+                        "Verifies contract shapes for intent and CTO chat"
+                      ],
+                      "factorScores": {
+                        "assertion_relevance": 5,
+                        "real_path_alignment": 4,
+                        "false_positive_risk": 3
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 4,
+                        "displayFormula": "avg(assertion_relevance, real_path_alignment, invert(false_positive_risk))"
+                      },
+                      "improvementHint": "Assert one concrete payload field per route, not only top-level shape presence."
+                    },
+                    "specificity": {
+                      "definitionId": "specificity",
+                      "score": 4,
+                      "weight": 0.9,
+                      "summary": "Failures point at a narrow contract mismatch instead of a vague UI crash.",
+                      "evidence": [
+                        "Reports missing response keys per endpoint",
+                        "Separates idempotency, dashboard, project, task, and LLM contract checks"
+                      ],
+                      "factorScores": {
+                        "assertion_precision": 4,
+                        "failure_localization": 4,
+                        "noise_risk": 3
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 3.67,
+                        "displayFormula": "avg(assertion_precision, failure_localization, invert(noise_risk))"
+                      },
+                      "improvementHint": "Split the large contract check into smaller named checks once the card model expands."
+                    },
+                    "coverage": {
+                      "definitionId": "coverage",
+                      "score": 3,
+                      "weight": 0.8,
+                      "summary": "Covers the main UI-facing endpoints, but not every route permutation or desk path.",
+                      "evidence": [
+                        "Exercises mutations, dashboard, tasks, projects, CTO chat, intent, and LLM test",
+                        "Does not cover every route method or every degraded edge case"
+                      ],
+                      "factorScores": {
+                        "path_coverage": 3,
+                        "branch_coverage": 3,
+                        "edge_case_coverage": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 2.67,
+                        "displayFormula": "avg(path_coverage, branch_coverage, edge_case_coverage)"
+                      },
+                      "improvementHint": "Add one targeted card for mutation apply edge cases and one for dashboard/task drift."
+                    },
+                    "observability": {
+                      "definitionId": "observability",
+                      "score": 3,
+                      "weight": 0.8,
+                      "summary": "The test surfaces contract failures clearly, but runner-level artifact visibility is still limited.",
+                      "evidence": [
+                        "Failure strings include endpoint names and missing keys",
+                        "No structured artifact bundle is attached to the test itself yet"
+                      ],
+                      "factorScores": {
+                        "debug_signal": 3,
+                        "artifact_visibility": 3,
+                        "failure_readability": 3
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 3,
+                        "displayFormula": "avg(debug_signal, artifact_visibility, failure_readability)"
+                      },
+                      "improvementHint": "Attach structured endpoint evidence or response excerpts when a contract check fails."
+                    },
+                    "reliability": {
+                      "definitionId": "reliability",
+                      "score": 4,
+                      "weight": 1,
+                      "summary": "Contract assertions are stable and deterministic under normal runs.",
+                      "evidence": [
+                        "Checks rely on explicit endpoint responses rather than timing-sensitive UI behavior",
+                        "Idempotency check runs the same preview twice against the same payload"
+                      ],
+                      "factorScores": {
+                        "repeatability": 4,
+                        "environment_stability": 4,
+                        "dependency_fragility": 3
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 3.67,
+                        "displayFormula": "avg(repeatability, environment_stability, invert(dependency_fragility))"
+                      },
+                      "improvementHint": "Reduce external model dependency further by isolating a deterministic contract fixture mode."
+                    }
+                  },
+                  "ui": {
+                    "cardVariant": "qa-test-attribute-card",
+                    "metricOrder": [
+                      "integrity",
+                      "specificity",
+                      "coverage",
+                      "observability",
+                      "reliability"
+                    ],
+                    "clickableMetrics": true,
+                    "defaultExpandedMetricId": null
+                  },
+                  "updatedAt": "2026-03-27T10:15:10.184Z",
+                  "validation": {
+                    "ok": true,
+                    "issues": [],
+                    "missingMetricIds": [],
+                    "summary": "Scorecard schema and metrics are complete.",
+                    "metricCount": 5
+                  }
+                }
+              },
+              {
+                "name": "file_scope",
+                "status": "pass"
+              },
+              {
+                "name": "syntax_load",
+                "status": "fail",
+                "severity": "critical",
+                "reason": "ui/tests/debugSuite.test.mjs: missing import ./world/tilemap.js"
+              },
+              {
+                "name": "smoke",
+                "status": "pass"
+              },
+              {
+                "name": "llm_invocation_check",
+                "status": "pass"
+              }
+            ]
+          },
+          {
+            "desk": "ta",
+            "status": "pass",
+            "tests": [
+              {
+                "name": "contract_check",
+                "status": "pass",
+                "qualityCard": {
+                  "schema": "qa.test-attribute-card.v1",
+                  "id": "ta.contract_check",
+                  "desk": "ta",
+                  "testId": "contract_check",
+                  "testName": "TA contract check",
+                  "status": "pass",
+                  "overallScore": {
+                    "value": 3.2,
+                    "max": 5,
+                    "method": "weighted_average"
+                  },
+                  "metrics": {
+                    "integrity": {
+                      "definitionId": "integrity",
+                      "score": 4,
+                      "weight": 1,
+                      "summary": "Checks the TA candidate contract through the live candidates route and the required candidate payload shape.",
+                      "evidence": [
+                        "Validates /api/ta/candidates route existence",
+                        "Posts a representative gap payload to the candidates route",
+                        "Checks the first candidate for required fields"
+                      ],
+                      "factorScores": {
+                        "assertion_relevance": 4,
+                        "real_path_alignment": 4,
+                        "false_positive_risk": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 4,
+                        "displayFormula": "avg(assertion_relevance, real_path_alignment, invert(false_positive_risk))"
+                      },
+                      "improvementHint": "Add one assertion for candidate rationale quality once a stable rubric exists for TA output."
+                    },
+                    "specificity": {
+                      "definitionId": "specificity",
+                      "score": 4,
+                      "weight": 0.9,
+                      "summary": "Failures distinguish route availability, top-level payload shape, and candidate field drift.",
+                      "evidence": [
+                        "Reports non-200 candidate responses directly",
+                        "Flags missing top-level candidates array",
+                        "Names the specific candidate fields that are missing"
+                      ],
+                      "factorScores": {
+                        "assertion_precision": 4,
+                        "failure_localization": 3,
+                        "noise_risk": 2
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 3.67,
+                        "displayFormula": "avg(assertion_precision, failure_localization, invert(noise_risk))"
+                      },
+                      "improvementHint": "Include candidate index and a compact response excerpt when candidate shape checks fail."
+                    },
+                    "coverage": {
+                      "definitionId": "coverage",
+                      "score": 2,
+                      "weight": 0.8,
+                      "summary": "Covers the core candidate-generation path, but not alternate gap types or deeper recommendation edge cases.",
+                      "evidence": [
+                        "Exercises one representative gap payload end to end",
+                        "Checks top-level and first-candidate shape only",
+                        "Does not score alternate inputs or empty-result branches"
+                      ],
+                      "factorScores": {
+                        "path_coverage": 3,
+                        "branch_coverage": 2,
+                        "edge_case_coverage": 1
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 2,
+                        "displayFormula": "avg(path_coverage, branch_coverage, edge_case_coverage)"
+                      },
+                      "improvementHint": "Add a second scored TA card for alternate gap shapes or empty-result handling when needed."
+                    },
+                    "observability": {
+                      "definitionId": "observability",
+                      "score": 3,
+                      "weight": 0.8,
+                      "summary": "The TA contract test produces readable failures, but the evidence remains mostly string-based.",
+                      "evidence": [
+                        "Reports missing payload keys clearly",
+                        "Does not attach candidate excerpts or a structured artifact bundle"
+                      ],
+                      "factorScores": {
+                        "debug_signal": 3,
+                        "artifact_visibility": 2,
+                        "failure_readability": 3
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 2.67,
+                        "displayFormula": "avg(debug_signal, artifact_visibility, failure_readability)"
+                      },
+                      "improvementHint": "Attach a compact candidate payload excerpt when the TA contract check fails."
+                    },
+                    "reliability": {
+                      "definitionId": "reliability",
+                      "score": 3,
+                      "weight": 1,
+                      "summary": "The TA contract check is mostly stable, but it depends on live candidate generation rather than a fixture path.",
+                      "evidence": [
+                        "Uses a fixed sample gap payload",
+                        "Relies on deterministic candidate generation logic in normal runs",
+                        "Still depends on the TA generation path remaining stable across environments"
+                      ],
+                      "factorScores": {
+                        "repeatability": 4,
+                        "environment_stability": 3,
+                        "dependency_fragility": 3
+                      },
+                      "calculation": {
+                        "method": "rounded_weighted_average",
+                        "rawValue": 3.33,
+                        "displayFormula": "avg(repeatability, environment_stability, invert(dependency_fragility))"
+                      },
+                      "improvementHint": "Introduce a fixture-backed TA contract mode if the live candidate path starts drifting by environment."
+                    }
+                  },
+                  "ui": {
+                    "cardVariant": "qa-test-attribute-card",
+                    "metricOrder": [
+                      "integrity",
+                      "specificity",
+                      "coverage",
+                      "observability",
+                      "reliability"
+                    ],
+                    "clickableMetrics": true,
+                    "defaultExpandedMetricId": null
+                  },
+                  "updatedAt": "2026-03-27T10:15:10.347Z",
+                  "validation": {
+                    "ok": true,
+                    "issues": [],
+                    "missingMetricIds": [],
+                    "summary": "Scorecard schema and metrics are complete.",
+                    "metricCount": 5
+                  }
+                }
+              },
+              {
+                "name": "file_scope",
+                "status": "pass"
+              },
+              {
+                "name": "syntax_load",
+                "status": "pass"
+              },
+              {
+                "name": "smoke",
+                "status": "pass"
+              },
+              {
+                "name": "idempotency",
+                "status": "pass"
+              },
+              {
+                "name": "llm_invocation_check",
+                "status": "pass"
+              }
+            ]
+          }
+        ],
+        "metricDefinitions": {
+          "schema": "qa.test-metric-definitions.v1",
+          "version": 1,
+          "metrics": {
+            "integrity": {
+              "id": "integrity",
+              "label": "Integrity",
+              "shortLabel": "Integrity",
+              "defaultWeight": 1,
+              "definition": "Does this test genuinely validate the intended truth?",
+              "whyItMatters": "High-integrity tests reduce fake confidence and catch real regressions.",
+              "scoringGuide": {
+                "1": "Barely connected to the real behaviour",
+                "2": "Touches behaviour indirectly but weakly",
+                "3": "Validates core outcome with gaps",
+                "4": "Strongly validates intended behaviour",
+                "5": "Direct, robust, hard-to-fake proof of behaviour"
+              },
+              "factors": [
+                {
+                  "id": "assertion_relevance",
+                  "label": "Assertion relevance",
+                  "weight": 1
+                },
+                {
+                  "id": "real_path_alignment",
+                  "label": "Real path alignment",
+                  "weight": 1
+                },
+                {
+                  "id": "false_positive_risk",
+                  "label": "False positive risk",
+                  "weight": 1,
+                  "invert": true
+                }
+              ]
+            },
+            "specificity": {
+              "id": "specificity",
+              "label": "Specificity",
+              "shortLabel": "Specificity",
+              "defaultWeight": 0.9,
+              "definition": "Does it fail in a way that points to the real problem?",
+              "whyItMatters": "Low-specificity tests waste time because they fail noisily or ambiguously.",
+              "scoringGuide": {
+                "1": "Failure gives almost no useful signal",
+                "2": "Signal exists but is broad or noisy",
+                "3": "Reasonably informative",
+                "4": "Clear and well-targeted",
+                "5": "Very precise and immediately actionable"
+              },
+              "factors": [
+                {
+                  "id": "assertion_precision",
+                  "label": "Assertion precision",
+                  "weight": 1
+                },
+                {
+                  "id": "failure_localization",
+                  "label": "Failure localization",
+                  "weight": 1
+                },
+                {
+                  "id": "noise_risk",
+                  "label": "Noise risk",
+                  "weight": 1,
+                  "invert": true
+                }
+              ]
+            },
+            "coverage": {
+              "id": "coverage",
+              "label": "Coverage",
+              "shortLabel": "Coverage",
+              "defaultWeight": 0.8,
+              "definition": "How much of the intended path or behaviour does it exercise?",
+              "whyItMatters": "A passing test with narrow coverage can still leave large blind spots.",
+              "scoringGuide": {
+                "1": "Tiny sliver of intended behaviour",
+                "2": "Some relevant path coverage",
+                "3": "Core path covered",
+                "4": "Core plus important branches",
+                "5": "Excellent breadth with relevant edge cases"
+              },
+              "factors": [
+                {
+                  "id": "path_coverage",
+                  "label": "Path coverage",
+                  "weight": 1
+                },
+                {
+                  "id": "branch_coverage",
+                  "label": "Branch coverage",
+                  "weight": 1
+                },
+                {
+                  "id": "edge_case_coverage",
+                  "label": "Edge-case coverage",
+                  "weight": 1
+                }
+              ]
+            },
+            "observability": {
+              "id": "observability",
+              "label": "Observability",
+              "shortLabel": "Observability",
+              "defaultWeight": 0.8,
+              "definition": "How much useful debug evidence does it expose?",
+              "whyItMatters": "Good observability makes debugging faster and QA more trustworthy.",
+              "scoringGuide": {
+                "1": "Hard to inspect or understand",
+                "2": "Some output, weak traceability",
+                "3": "Usable but limited",
+                "4": "Clear and helpful",
+                "5": "Excellent traceability and debug value"
+              },
+              "factors": [
+                {
+                  "id": "debug_signal",
+                  "label": "Debug signal",
+                  "weight": 1
+                },
+                {
+                  "id": "artifact_visibility",
+                  "label": "Artifact visibility",
+                  "weight": 1
+                },
+                {
+                  "id": "failure_readability",
+                  "label": "Failure readability",
+                  "weight": 1
+                }
+              ]
+            },
+            "reliability": {
+              "id": "reliability",
+              "label": "Reliability",
+              "shortLabel": "Reliability",
+              "defaultWeight": 1,
+              "definition": "How stable and repeatable is it across normal runs?",
+              "whyItMatters": "Flaky tests destroy trust in QA.",
+              "scoringGuide": {
+                "1": "Very flaky or environment-dependent",
+                "2": "Frequently unstable",
+                "3": "Mostly stable with caveats",
+                "4": "Stable in normal use",
+                "5": "Highly stable and dependable"
+              },
+              "factors": [
+                {
+                  "id": "repeatability",
+                  "label": "Repeatability",
+                  "weight": 1
+                },
+                {
+                  "id": "environment_stability",
+                  "label": "Environment stability",
+                  "weight": 1
+                },
+                {
+                  "id": "dependency_fragility",
+                  "label": "Dependency fragility",
+                  "weight": 1,
+                  "invert": true
+                }
+              ]
+            }
+          }
+        },
+        "startedAt": "2026-03-27T10:15:09.334Z",
+        "finishedAt": "2026-03-27T10:15:10.444Z",
+        "durationMs": 1110
+      },
+      "structuredBusy": false,
+      "latestBrowserRun": {
+        "id": "qa_1774606518130_3xr34v",
+        "scenario": "whiteboard-board-pass",
+        "mode": "interactive",
+        "trigger": "manual",
+        "status": "running",
+        "verdict": "pending",
+        "createdAt": "2026-03-27T10:15:18.130Z",
+        "finishedAt": null,
+        "findingCount": 0,
+        "highestSeverity": "info",
+        "primaryScreenshot": {
+          "name": "01-initial.png",
+          "label": "Initial ACE render",
+          "url": "/api/spatial/qa/runs/qa_1774606518130_3xr34v/artifacts/01-initial.png"
+        },
+        "stepSummary": [
+          {
+            "id": "health",
+            "label": "Wait for ACE runtime",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "launch",
+            "label": "Launch browser",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "open",
+            "label": "Open ACE",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "studio",
+            "label": "Enter ACE Studio",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "scenario",
+            "label": "Run QA scenario actions",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "capture",
+            "label": "Capture artifacts",
+            "status": "pending",
+            "verdict": "pending"
+          },
+          {
+            "id": "analyze",
+            "label": "Analyze layout and runtime",
+            "status": "pending",
+            "verdict": "pending"
+          }
+        ],
+        "linked": {}
+      },
+      "browserRuns": [
+        {
+          "id": "qa_1774606518130_3xr34v",
+          "scenario": "whiteboard-board-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "running",
+          "verdict": "pending",
+          "createdAt": "2026-03-27T10:15:18.130Z",
+          "finishedAt": null,
+          "findingCount": 0,
+          "highestSeverity": "info",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774606518130_3xr34v/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "pending",
+              "verdict": "pending"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "pending",
+              "verdict": "pending"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774606405097_c8yc6o",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-27T10:13:25.097Z",
+          "finishedAt": "2026-03-27T10:13:31.211Z",
+          "findingCount": 22,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774606405097_c8yc6o/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774446149074_87bjdq",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-25T13:42:29.074Z",
+          "finishedAt": "2026-03-25T13:42:31.390Z",
+          "findingCount": 22,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774446149074_87bjdq/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774434022892_bsrg2d",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-25T10:20:22.892Z",
+          "finishedAt": "2026-03-25T10:20:24.688Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774434022892_bsrg2d/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774434008964_bk0684",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-25T10:20:08.964Z",
+          "finishedAt": "2026-03-25T10:20:11.928Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774434008964_bk0684/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774353345795_05hqjt",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-24T11:55:45.795Z",
+          "finishedAt": "2026-03-24T11:55:48.722Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774353345795_05hqjt/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773932801395_6lka1w",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-19T15:06:41.395Z",
+          "finishedAt": "2026-03-19T15:06:43.240Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773932801395_6lka1w/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773932794281_cy62r8",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-19T15:06:34.281Z",
+          "finishedAt": "2026-03-19T15:06:37.332Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773932794281_cy62r8/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        }
+      ],
+      "browserBusy": false,
+      "localGate": {
+        "unit": {
+          "id": "test-unit-latest",
+          "source": "ui-test-runner",
+          "command": "npm run test:unit",
+          "status": "pass",
+          "summary": "All 27 UI checks passed.",
+          "startedAt": "2026-03-27T09:24:41.473Z",
+          "finishedAt": "2026-03-27T09:24:42.037Z",
+          "durationMs": 564,
+          "totalChecks": 27,
+          "passedCount": 27,
+          "failedCount": 0,
+          "failures": [],
+          "results": [
+            {
+              "name": "anchorResolver",
+              "path": "./anchorResolver.test.mjs",
+              "status": "pass",
+              "durationMs": 25,
+              "error": null
+            },
+            {
+              "name": "agentRegistry",
+              "path": "./agentRegistry.test.mjs",
+              "status": "pass",
+              "durationMs": 6,
+              "error": null
+            },
+            {
+              "name": "agentWorkers",
+              "path": "./agentWorkers.test.mjs",
+              "status": "pass",
+              "durationMs": 46,
+              "error": null
+            },
+            {
+              "name": "aceConnector",
+              "path": "./aceConnector.test.mjs",
+              "status": "pass",
+              "durationMs": 6,
+              "error": null
+            },
+            {
+              "name": "testAttributeCards",
+              "path": "./testAttributeCards.test.mjs",
+              "status": "pass",
+              "durationMs": 3,
+              "error": null
+            },
+            {
+              "name": "aceRuntimeMcp",
+              "path": "./aceRuntimeMcp.test.mjs",
+              "status": "pass",
+              "durationMs": 157,
+              "error": null
+            },
+            {
+              "name": "llmAdapter",
+              "path": "./llmAdapter.test.mjs",
+              "status": "pass",
+              "durationMs": 1,
+              "error": null
+            },
+            {
+              "name": "moduleRunner",
+              "path": "./moduleRunner.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "graphEngine",
+              "path": "./graphEngine.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "graphQueries",
+              "path": "./graphQueries.test.mjs",
+              "status": "pass",
+              "durationMs": 1,
+              "error": null
+            },
+            {
+              "name": "graphMutations",
+              "path": "./graphMutations.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "mutationEngine",
+              "path": "./mutationEngine.test.mjs",
+              "status": "pass",
+              "durationMs": 5,
+              "error": null
+            },
+            {
+              "name": "spatialAppSmoke",
+              "path": "./spatialApp.smoke.test.mjs",
+              "status": "pass",
+              "durationMs": 31,
+              "error": null
+            },
+            {
+              "name": "spatialAppRsg",
+              "path": "./spatialApp.rsg.test.mjs",
+              "status": "pass",
+              "durationMs": 24,
+              "error": null
+            },
+            {
+              "name": "sliceRepository",
+              "path": "./sliceRepository.test.mjs",
+              "status": "pass",
+              "durationMs": 5,
+              "error": null
+            },
+            {
+              "name": "archivistWriteback",
+              "path": "./archivistWriteback.test.mjs",
+              "status": "pass",
+              "durationMs": 10,
+              "error": null
+            },
+            {
+              "name": "debugSuite",
+              "path": "./debugSuite.test.mjs",
+              "status": "pass",
+              "durationMs": 7,
+              "error": null
+            },
+            {
+              "name": "studioData",
+              "path": "./studioData.test.mjs",
+              "status": "pass",
+              "durationMs": 11,
+              "error": null
+            },
+            {
+              "name": "orchestratorState",
+              "path": "./orchestratorState.test.mjs",
+              "status": "pass",
+              "durationMs": 8,
+              "error": null
+            },
+            {
+              "name": "selfUpgrade",
+              "path": "./selfUpgrade.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "taCandidates",
+              "path": "./taCandidates.test.mjs",
+              "status": "pass",
+              "durationMs": 125,
+              "error": null
+            },
+            {
+              "name": "talentUi",
+              "path": "./talentUi.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "server",
+              "path": "./server.test.mjs",
+              "status": "pass",
+              "durationMs": 24,
+              "error": null
+            },
+            {
+              "name": "intentAnalysis",
+              "path": "./intentAnalysis.test.mjs",
+              "status": "pass",
+              "durationMs": 4,
+              "error": null
+            },
+            {
+              "name": "throughputDebug",
+              "path": "./throughputDebug.test.mjs",
+              "status": "pass",
+              "durationMs": 36,
+              "error": null
+            },
+            {
+              "name": "qaRunner",
+              "path": "./qaRunner.test.mjs",
+              "status": "pass",
+              "durationMs": 5,
+              "error": null
+            },
+            {
+              "name": "appViewerMode",
+              "path": "./appViewerMode.test.mjs",
+              "status": "pass",
+              "durationMs": 11,
+              "error": null
+            }
+          ]
+        },
+        "studioBoot": {
+          "id": "qa_1774603482489_fsa814",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "guardrail",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-27T09:24:42.489Z",
+          "finishedAt": "2026-03-27T09:24:47.823Z",
+          "findingCount": 22,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774603482489_fsa814/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {},
+          "source": "studio-boot-guardrail",
+          "consoleErrorCount": 1,
+          "networkFailureCount": 0,
+          "failedSteps": [
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "verdict": "weak"
+            }
+          ]
+        }
+      }
+    },
+    "qaDebug": {
+      "latestRun": {
+        "id": "qa_1774606518130_3xr34v",
+        "scenario": "whiteboard-board-pass",
+        "mode": "interactive",
+        "trigger": "manual",
+        "status": "running",
+        "verdict": "pending",
+        "createdAt": "2026-03-27T10:15:18.130Z",
+        "finishedAt": null,
+        "findingCount": 0,
+        "highestSeverity": "info",
+        "primaryScreenshot": {
+          "name": "01-initial.png",
+          "label": "Initial ACE render",
+          "url": "/api/spatial/qa/runs/qa_1774606518130_3xr34v/artifacts/01-initial.png"
+        },
+        "stepSummary": [
+          {
+            "id": "health",
+            "label": "Wait for ACE runtime",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "launch",
+            "label": "Launch browser",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "open",
+            "label": "Open ACE",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "studio",
+            "label": "Enter ACE Studio",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "scenario",
+            "label": "Run QA scenario actions",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "capture",
+            "label": "Capture artifacts",
+            "status": "pending",
+            "verdict": "pending"
+          },
+          {
+            "id": "analyze",
+            "label": "Analyze layout and runtime",
+            "status": "pending",
+            "verdict": "pending"
+          }
+        ],
+        "linked": {}
+      },
+      "runs": [
+        {
+          "id": "qa_1774606518130_3xr34v",
+          "scenario": "whiteboard-board-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "running",
+          "verdict": "pending",
+          "createdAt": "2026-03-27T10:15:18.130Z",
+          "finishedAt": null,
+          "findingCount": 0,
+          "highestSeverity": "info",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774606518130_3xr34v/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "pending",
+              "verdict": "pending"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "pending",
+              "verdict": "pending"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774606405097_c8yc6o",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-27T10:13:25.097Z",
+          "finishedAt": "2026-03-27T10:13:31.211Z",
+          "findingCount": 22,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774606405097_c8yc6o/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774446149074_87bjdq",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-25T13:42:29.074Z",
+          "finishedAt": "2026-03-25T13:42:31.390Z",
+          "findingCount": 22,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774446149074_87bjdq/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774434022892_bsrg2d",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-25T10:20:22.892Z",
+          "finishedAt": "2026-03-25T10:20:24.688Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774434022892_bsrg2d/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774434008964_bk0684",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-25T10:20:08.964Z",
+          "finishedAt": "2026-03-25T10:20:11.928Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774434008964_bk0684/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1774353345795_05hqjt",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-24T11:55:45.795Z",
+          "finishedAt": "2026-03-24T11:55:48.722Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774353345795_05hqjt/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773932801395_6lka1w",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-19T15:06:41.395Z",
+          "finishedAt": "2026-03-19T15:06:43.240Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773932801395_6lka1w/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773932794281_cy62r8",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-19T15:06:34.281Z",
+          "finishedAt": "2026-03-19T15:06:37.332Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773932794281_cy62r8/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        }
+      ],
+      "localGate": {
+        "unit": {
+          "id": "test-unit-latest",
+          "source": "ui-test-runner",
+          "command": "npm run test:unit",
+          "status": "pass",
+          "summary": "All 27 UI checks passed.",
+          "startedAt": "2026-03-27T09:24:41.473Z",
+          "finishedAt": "2026-03-27T09:24:42.037Z",
+          "durationMs": 564,
+          "totalChecks": 27,
+          "passedCount": 27,
+          "failedCount": 0,
+          "failures": [],
+          "results": [
+            {
+              "name": "anchorResolver",
+              "path": "./anchorResolver.test.mjs",
+              "status": "pass",
+              "durationMs": 25,
+              "error": null
+            },
+            {
+              "name": "agentRegistry",
+              "path": "./agentRegistry.test.mjs",
+              "status": "pass",
+              "durationMs": 6,
+              "error": null
+            },
+            {
+              "name": "agentWorkers",
+              "path": "./agentWorkers.test.mjs",
+              "status": "pass",
+              "durationMs": 46,
+              "error": null
+            },
+            {
+              "name": "aceConnector",
+              "path": "./aceConnector.test.mjs",
+              "status": "pass",
+              "durationMs": 6,
+              "error": null
+            },
+            {
+              "name": "testAttributeCards",
+              "path": "./testAttributeCards.test.mjs",
+              "status": "pass",
+              "durationMs": 3,
+              "error": null
+            },
+            {
+              "name": "aceRuntimeMcp",
+              "path": "./aceRuntimeMcp.test.mjs",
+              "status": "pass",
+              "durationMs": 157,
+              "error": null
+            },
+            {
+              "name": "llmAdapter",
+              "path": "./llmAdapter.test.mjs",
+              "status": "pass",
+              "durationMs": 1,
+              "error": null
+            },
+            {
+              "name": "moduleRunner",
+              "path": "./moduleRunner.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "graphEngine",
+              "path": "./graphEngine.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "graphQueries",
+              "path": "./graphQueries.test.mjs",
+              "status": "pass",
+              "durationMs": 1,
+              "error": null
+            },
+            {
+              "name": "graphMutations",
+              "path": "./graphMutations.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "mutationEngine",
+              "path": "./mutationEngine.test.mjs",
+              "status": "pass",
+              "durationMs": 5,
+              "error": null
+            },
+            {
+              "name": "spatialAppSmoke",
+              "path": "./spatialApp.smoke.test.mjs",
+              "status": "pass",
+              "durationMs": 31,
+              "error": null
+            },
+            {
+              "name": "spatialAppRsg",
+              "path": "./spatialApp.rsg.test.mjs",
+              "status": "pass",
+              "durationMs": 24,
+              "error": null
+            },
+            {
+              "name": "sliceRepository",
+              "path": "./sliceRepository.test.mjs",
+              "status": "pass",
+              "durationMs": 5,
+              "error": null
+            },
+            {
+              "name": "archivistWriteback",
+              "path": "./archivistWriteback.test.mjs",
+              "status": "pass",
+              "durationMs": 10,
+              "error": null
+            },
+            {
+              "name": "debugSuite",
+              "path": "./debugSuite.test.mjs",
+              "status": "pass",
+              "durationMs": 7,
+              "error": null
+            },
+            {
+              "name": "studioData",
+              "path": "./studioData.test.mjs",
+              "status": "pass",
+              "durationMs": 11,
+              "error": null
+            },
+            {
+              "name": "orchestratorState",
+              "path": "./orchestratorState.test.mjs",
+              "status": "pass",
+              "durationMs": 8,
+              "error": null
+            },
+            {
+              "name": "selfUpgrade",
+              "path": "./selfUpgrade.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "taCandidates",
+              "path": "./taCandidates.test.mjs",
+              "status": "pass",
+              "durationMs": 125,
+              "error": null
+            },
+            {
+              "name": "talentUi",
+              "path": "./talentUi.test.mjs",
+              "status": "pass",
+              "durationMs": 2,
+              "error": null
+            },
+            {
+              "name": "server",
+              "path": "./server.test.mjs",
+              "status": "pass",
+              "durationMs": 24,
+              "error": null
+            },
+            {
+              "name": "intentAnalysis",
+              "path": "./intentAnalysis.test.mjs",
+              "status": "pass",
+              "durationMs": 4,
+              "error": null
+            },
+            {
+              "name": "throughputDebug",
+              "path": "./throughputDebug.test.mjs",
+              "status": "pass",
+              "durationMs": 36,
+              "error": null
+            },
+            {
+              "name": "qaRunner",
+              "path": "./qaRunner.test.mjs",
+              "status": "pass",
+              "durationMs": 5,
+              "error": null
+            },
+            {
+              "name": "appViewerMode",
+              "path": "./appViewerMode.test.mjs",
+              "status": "pass",
+              "durationMs": 11,
+              "error": null
+            }
+          ]
+        },
+        "studioBoot": {
+          "id": "qa_1774603482489_fsa814",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "guardrail",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-27T09:24:42.489Z",
+          "finishedAt": "2026-03-27T09:24:47.823Z",
+          "findingCount": 22,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1774603482489_fsa814/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {},
+          "source": "studio-boot-guardrail",
+          "consoleErrorCount": 1,
+          "networkFailureCount": 0,
+          "failedSteps": [
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "verdict": "weak"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "health": {
+    "ok": true,
+    "pid": 33224,
+    "startedAt": "2026-03-26T23:58:15.754Z",
+    "selfUpgrade": {
+      "status": "idle",
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": 26296,
+          "startedAt": "2026-03-19T08:21:36.902Z"
+        }
+      }
+    }
+  }
+}

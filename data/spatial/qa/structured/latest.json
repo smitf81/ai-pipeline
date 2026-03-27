@@ -1,0 +1,860 @@
+{
+  "status": "fail",
+  "summary": "1 of 4 desks failed; 1 of 19 checks failed",
+  "failures": [
+    {
+      "desk": "ui",
+      "test": "syntax_load",
+      "reason": "ui/tests/debugSuite.test.mjs: missing import ./world/tilemap.js"
+    }
+  ],
+  "desks": [
+    {
+      "desk": "planner",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "contract_check",
+          "status": "pass",
+          "qualityCard": {
+            "schema": "qa.test-attribute-card.v1",
+            "id": "planner.contract_check",
+            "desk": "planner",
+            "testId": "contract_check",
+            "testName": "Planner contract check",
+            "status": "pass",
+            "overallScore": {
+              "value": 3.5,
+              "max": 5,
+              "method": "weighted_average"
+            },
+            "metrics": {
+              "integrity": {
+                "definitionId": "integrity",
+                "score": 4,
+                "weight": 1,
+                "summary": "Checks the planner desk contract through the real properties route and planner run route registration.",
+                "evidence": [
+                  "Validates planner run route existence",
+                  "Requests /api/spatial/desks/planner/properties",
+                  "Checks desk payload shape and returned deskId"
+                ],
+                "factorScores": {
+                  "assertion_relevance": 4,
+                  "real_path_alignment": 4,
+                  "false_positive_risk": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 4,
+                  "displayFormula": "avg(assertion_relevance, real_path_alignment, invert(false_positive_risk))"
+                },
+                "improvementHint": "Add one assertion for planner-specific payload content beyond the shared desk shell."
+              },
+              "specificity": {
+                "definitionId": "specificity",
+                "score": 4,
+                "weight": 0.9,
+                "summary": "Failures identify whether the planner route, desk payload shape, or desk identity drifted.",
+                "evidence": [
+                  "Reports missing route names directly",
+                  "Calls out missing payload keys by name",
+                  "Flags deskId mismatches explicitly"
+                ],
+                "factorScores": {
+                  "assertion_precision": 4,
+                  "failure_localization": 4,
+                  "noise_risk": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 4,
+                  "displayFormula": "avg(assertion_precision, failure_localization, invert(noise_risk))"
+                },
+                "improvementHint": "Split route registration and payload-shape failures into separate checks when the scorecard model expands."
+              },
+              "coverage": {
+                "definitionId": "coverage",
+                "score": 2,
+                "weight": 0.8,
+                "summary": "Covers the primary planner contract, but not downstream planner execution branches or proposal artifacts.",
+                "evidence": [
+                  "Exercises the planner properties payload",
+                  "Checks run-route registration without executing a planner run",
+                  "Does not inspect produced card or artifact payloads"
+                ],
+                "factorScores": {
+                  "path_coverage": 3,
+                  "branch_coverage": 2,
+                  "edge_case_coverage": 1
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 2,
+                  "displayFormula": "avg(path_coverage, branch_coverage, edge_case_coverage)"
+                },
+                "improvementHint": "Add a scored card for planner output artifacts once planner execution becomes deterministic enough for QA."
+              },
+              "observability": {
+                "definitionId": "observability",
+                "score": 3,
+                "weight": 0.8,
+                "summary": "Contract failures are readable, but the test still reports string failures instead of structured evidence.",
+                "evidence": [
+                  "Includes route names and missing keys in failure strings",
+                  "Does not attach a structured payload excerpt to the result"
+                ],
+                "factorScores": {
+                  "debug_signal": 3,
+                  "artifact_visibility": 2,
+                  "failure_readability": 4
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 3,
+                  "displayFormula": "avg(debug_signal, artifact_visibility, failure_readability)"
+                },
+                "improvementHint": "Attach a compact planner desk payload excerpt when contract assertions fail."
+              },
+              "reliability": {
+                "definitionId": "reliability",
+                "score": 4,
+                "weight": 1,
+                "summary": "The planner contract check is stable because it relies on route registration and a read-only desk properties request.",
+                "evidence": [
+                  "Uses deterministic route existence checks",
+                  "Hits a read-only planner desk properties endpoint",
+                  "Does not depend on live model execution"
+                ],
+                "factorScores": {
+                  "repeatability": 5,
+                  "environment_stability": 4,
+                  "dependency_fragility": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 4.33,
+                  "displayFormula": "avg(repeatability, environment_stability, invert(dependency_fragility))"
+                },
+                "improvementHint": "Keep planner desk properties read-only and fixture-safe so the contract check stays deterministic."
+              }
+            },
+            "ui": {
+              "cardVariant": "qa-test-attribute-card",
+              "metricOrder": [
+                "integrity",
+                "specificity",
+                "coverage",
+                "observability",
+                "reliability"
+              ],
+              "clickableMetrics": true,
+              "defaultExpandedMetricId": null
+            },
+            "updatedAt": "2026-03-27T10:15:09.361Z",
+            "validation": {
+              "ok": true,
+              "issues": [],
+              "missingMetricIds": [],
+              "summary": "Scorecard schema and metrics are complete.",
+              "metricCount": 5
+            }
+          }
+        },
+        {
+          "name": "file_scope",
+          "status": "pass"
+        },
+        {
+          "name": "syntax_load",
+          "status": "pass"
+        },
+        {
+          "name": "llm_invocation_check",
+          "status": "pass"
+        }
+      ]
+    },
+    {
+      "desk": "runner",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "contract_check",
+          "status": "pass",
+          "qualityCard": {
+            "schema": "qa.test-attribute-card.v1",
+            "id": "runner.contract_check",
+            "desk": "runner",
+            "testId": "contract_check",
+            "testName": "Runner contract check",
+            "status": "pass",
+            "overallScore": {
+              "value": 3.6,
+              "max": 5,
+              "method": "weighted_average"
+            },
+            "metrics": {
+              "integrity": {
+                "definitionId": "integrity",
+                "score": 4,
+                "weight": 1,
+                "summary": "Checks the real runner contract across execute and presets routes, UI-command alignment, and preset file presence.",
+                "evidence": [
+                  "Validates /api/execute and /api/presets route existence",
+                  "Compares UI action options to runner subcommands",
+                  "Checks preset commands and referenced files on disk"
+                ],
+                "factorScores": {
+                  "assertion_relevance": 5,
+                  "real_path_alignment": 4,
+                  "false_positive_risk": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 4.33,
+                  "displayFormula": "avg(assertion_relevance, real_path_alignment, invert(false_positive_risk))"
+                },
+                "improvementHint": "Add one assertion for an execute payload contract once the runner has a stable dry-run response shape."
+              },
+              "specificity": {
+                "definitionId": "specificity",
+                "score": 4,
+                "weight": 0.9,
+                "summary": "Failures pinpoint which command, preset, route, or response field drifted.",
+                "evidence": [
+                  "Reports missing runner subcommands by UI action name",
+                  "Reports missing preset files with normalized paths",
+                  "Checks /api/presets response keys explicitly"
+                ],
+                "factorScores": {
+                  "assertion_precision": 4,
+                  "failure_localization": 4,
+                  "noise_risk": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 4,
+                  "displayFormula": "avg(assertion_precision, failure_localization, invert(noise_risk))"
+                },
+                "improvementHint": "Separate preset-file failures from API-shape failures once the suite grows more cards."
+              },
+              "coverage": {
+                "definitionId": "coverage",
+                "score": 3,
+                "weight": 0.8,
+                "summary": "Covers more runner surface area than a single route check, but does not execute a full command lifecycle.",
+                "evidence": [
+                  "Checks command parity between UI and runner",
+                  "Validates preset configuration and the presets API",
+                  "Does not run /api/execute with a live command payload"
+                ],
+                "factorScores": {
+                  "path_coverage": 4,
+                  "branch_coverage": 3,
+                  "edge_case_coverage": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 3,
+                  "displayFormula": "avg(path_coverage, branch_coverage, edge_case_coverage)"
+                },
+                "improvementHint": "Add a deterministic execute dry-run assertion for one representative command path."
+              },
+              "observability": {
+                "definitionId": "observability",
+                "score": 3,
+                "weight": 0.8,
+                "summary": "The runner contract check gives useful failure messages, but it does not emit structured artifacts yet.",
+                "evidence": [
+                  "Failure strings include command names, preset names, and missing files",
+                  "No structured preset diff or command manifest is attached to the test result"
+                ],
+                "factorScores": {
+                  "debug_signal": 3,
+                  "artifact_visibility": 2,
+                  "failure_readability": 4
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 3,
+                  "displayFormula": "avg(debug_signal, artifact_visibility, failure_readability)"
+                },
+                "improvementHint": "Attach the resolved preset name and command when a runner contract assertion fails."
+              },
+              "reliability": {
+                "definitionId": "reliability",
+                "score": 4,
+                "weight": 1,
+                "summary": "The runner contract check is stable under normal runs because it relies on static inspection and a read-only presets call.",
+                "evidence": [
+                  "Uses static command extraction and file existence checks",
+                  "Calls the read-only /api/presets endpoint",
+                  "Avoids executing arbitrary runner commands in the contract test"
+                ],
+                "factorScores": {
+                  "repeatability": 4,
+                  "environment_stability": 4,
+                  "dependency_fragility": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 4,
+                  "displayFormula": "avg(repeatability, environment_stability, invert(dependency_fragility))"
+                },
+                "improvementHint": "Keep execution out of this card unless a deterministic fixture mode is added for runner actions."
+              }
+            },
+            "ui": {
+              "cardVariant": "qa-test-attribute-card",
+              "metricOrder": [
+                "integrity",
+                "specificity",
+                "coverage",
+                "observability",
+                "reliability"
+              ],
+              "clickableMetrics": true,
+              "defaultExpandedMetricId": null
+            },
+            "updatedAt": "2026-03-27T10:15:09.605Z",
+            "validation": {
+              "ok": true,
+              "issues": [],
+              "missingMetricIds": [],
+              "summary": "Scorecard schema and metrics are complete.",
+              "metricCount": 5
+            }
+          }
+        },
+        {
+          "name": "file_scope",
+          "status": "pass"
+        },
+        {
+          "name": "syntax_load",
+          "status": "pass"
+        },
+        {
+          "name": "llm_invocation_check",
+          "status": "pass"
+        }
+      ]
+    },
+    {
+      "desk": "ui",
+      "status": "fail",
+      "tests": [
+        {
+          "name": "contract_check",
+          "status": "pass",
+          "qualityCard": {
+            "schema": "qa.test-attribute-card.v1",
+            "id": "ui.contract_check",
+            "desk": "ui",
+            "testId": "contract_check",
+            "testName": "UI contract check",
+            "status": "pass",
+            "overallScore": {
+              "value": 3.6,
+              "max": 5,
+              "method": "weighted_average"
+            },
+            "metrics": {
+              "integrity": {
+                "definitionId": "integrity",
+                "score": 4,
+                "weight": 1,
+                "summary": "Checks the real UI/backend contract surface instead of a shallow proxy.",
+                "evidence": [
+                  "Validates endpoint existence for UI fetch calls",
+                  "Checks live and degraded LLM response branches",
+                  "Verifies contract shapes for intent and CTO chat"
+                ],
+                "factorScores": {
+                  "assertion_relevance": 5,
+                  "real_path_alignment": 4,
+                  "false_positive_risk": 3
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 4,
+                  "displayFormula": "avg(assertion_relevance, real_path_alignment, invert(false_positive_risk))"
+                },
+                "improvementHint": "Assert one concrete payload field per route, not only top-level shape presence."
+              },
+              "specificity": {
+                "definitionId": "specificity",
+                "score": 4,
+                "weight": 0.9,
+                "summary": "Failures point at a narrow contract mismatch instead of a vague UI crash.",
+                "evidence": [
+                  "Reports missing response keys per endpoint",
+                  "Separates idempotency, dashboard, project, task, and LLM contract checks"
+                ],
+                "factorScores": {
+                  "assertion_precision": 4,
+                  "failure_localization": 4,
+                  "noise_risk": 3
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 3.67,
+                  "displayFormula": "avg(assertion_precision, failure_localization, invert(noise_risk))"
+                },
+                "improvementHint": "Split the large contract check into smaller named checks once the card model expands."
+              },
+              "coverage": {
+                "definitionId": "coverage",
+                "score": 3,
+                "weight": 0.8,
+                "summary": "Covers the main UI-facing endpoints, but not every route permutation or desk path.",
+                "evidence": [
+                  "Exercises mutations, dashboard, tasks, projects, CTO chat, intent, and LLM test",
+                  "Does not cover every route method or every degraded edge case"
+                ],
+                "factorScores": {
+                  "path_coverage": 3,
+                  "branch_coverage": 3,
+                  "edge_case_coverage": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 2.67,
+                  "displayFormula": "avg(path_coverage, branch_coverage, edge_case_coverage)"
+                },
+                "improvementHint": "Add one targeted card for mutation apply edge cases and one for dashboard/task drift."
+              },
+              "observability": {
+                "definitionId": "observability",
+                "score": 3,
+                "weight": 0.8,
+                "summary": "The test surfaces contract failures clearly, but runner-level artifact visibility is still limited.",
+                "evidence": [
+                  "Failure strings include endpoint names and missing keys",
+                  "No structured artifact bundle is attached to the test itself yet"
+                ],
+                "factorScores": {
+                  "debug_signal": 3,
+                  "artifact_visibility": 3,
+                  "failure_readability": 3
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 3,
+                  "displayFormula": "avg(debug_signal, artifact_visibility, failure_readability)"
+                },
+                "improvementHint": "Attach structured endpoint evidence or response excerpts when a contract check fails."
+              },
+              "reliability": {
+                "definitionId": "reliability",
+                "score": 4,
+                "weight": 1,
+                "summary": "Contract assertions are stable and deterministic under normal runs.",
+                "evidence": [
+                  "Checks rely on explicit endpoint responses rather than timing-sensitive UI behavior",
+                  "Idempotency check runs the same preview twice against the same payload"
+                ],
+                "factorScores": {
+                  "repeatability": 4,
+                  "environment_stability": 4,
+                  "dependency_fragility": 3
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 3.67,
+                  "displayFormula": "avg(repeatability, environment_stability, invert(dependency_fragility))"
+                },
+                "improvementHint": "Reduce external model dependency further by isolating a deterministic contract fixture mode."
+              }
+            },
+            "ui": {
+              "cardVariant": "qa-test-attribute-card",
+              "metricOrder": [
+                "integrity",
+                "specificity",
+                "coverage",
+                "observability",
+                "reliability"
+              ],
+              "clickableMetrics": true,
+              "defaultExpandedMetricId": null
+            },
+            "updatedAt": "2026-03-27T10:15:10.184Z",
+            "validation": {
+              "ok": true,
+              "issues": [],
+              "missingMetricIds": [],
+              "summary": "Scorecard schema and metrics are complete.",
+              "metricCount": 5
+            }
+          }
+        },
+        {
+          "name": "file_scope",
+          "status": "pass"
+        },
+        {
+          "name": "syntax_load",
+          "status": "fail",
+          "severity": "critical",
+          "reason": "ui/tests/debugSuite.test.mjs: missing import ./world/tilemap.js"
+        },
+        {
+          "name": "smoke",
+          "status": "pass"
+        },
+        {
+          "name": "llm_invocation_check",
+          "status": "pass"
+        }
+      ]
+    },
+    {
+      "desk": "ta",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "contract_check",
+          "status": "pass",
+          "qualityCard": {
+            "schema": "qa.test-attribute-card.v1",
+            "id": "ta.contract_check",
+            "desk": "ta",
+            "testId": "contract_check",
+            "testName": "TA contract check",
+            "status": "pass",
+            "overallScore": {
+              "value": 3.2,
+              "max": 5,
+              "method": "weighted_average"
+            },
+            "metrics": {
+              "integrity": {
+                "definitionId": "integrity",
+                "score": 4,
+                "weight": 1,
+                "summary": "Checks the TA candidate contract through the live candidates route and the required candidate payload shape.",
+                "evidence": [
+                  "Validates /api/ta/candidates route existence",
+                  "Posts a representative gap payload to the candidates route",
+                  "Checks the first candidate for required fields"
+                ],
+                "factorScores": {
+                  "assertion_relevance": 4,
+                  "real_path_alignment": 4,
+                  "false_positive_risk": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 4,
+                  "displayFormula": "avg(assertion_relevance, real_path_alignment, invert(false_positive_risk))"
+                },
+                "improvementHint": "Add one assertion for candidate rationale quality once a stable rubric exists for TA output."
+              },
+              "specificity": {
+                "definitionId": "specificity",
+                "score": 4,
+                "weight": 0.9,
+                "summary": "Failures distinguish route availability, top-level payload shape, and candidate field drift.",
+                "evidence": [
+                  "Reports non-200 candidate responses directly",
+                  "Flags missing top-level candidates array",
+                  "Names the specific candidate fields that are missing"
+                ],
+                "factorScores": {
+                  "assertion_precision": 4,
+                  "failure_localization": 3,
+                  "noise_risk": 2
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 3.67,
+                  "displayFormula": "avg(assertion_precision, failure_localization, invert(noise_risk))"
+                },
+                "improvementHint": "Include candidate index and a compact response excerpt when candidate shape checks fail."
+              },
+              "coverage": {
+                "definitionId": "coverage",
+                "score": 2,
+                "weight": 0.8,
+                "summary": "Covers the core candidate-generation path, but not alternate gap types or deeper recommendation edge cases.",
+                "evidence": [
+                  "Exercises one representative gap payload end to end",
+                  "Checks top-level and first-candidate shape only",
+                  "Does not score alternate inputs or empty-result branches"
+                ],
+                "factorScores": {
+                  "path_coverage": 3,
+                  "branch_coverage": 2,
+                  "edge_case_coverage": 1
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 2,
+                  "displayFormula": "avg(path_coverage, branch_coverage, edge_case_coverage)"
+                },
+                "improvementHint": "Add a second scored TA card for alternate gap shapes or empty-result handling when needed."
+              },
+              "observability": {
+                "definitionId": "observability",
+                "score": 3,
+                "weight": 0.8,
+                "summary": "The TA contract test produces readable failures, but the evidence remains mostly string-based.",
+                "evidence": [
+                  "Reports missing payload keys clearly",
+                  "Does not attach candidate excerpts or a structured artifact bundle"
+                ],
+                "factorScores": {
+                  "debug_signal": 3,
+                  "artifact_visibility": 2,
+                  "failure_readability": 3
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 2.67,
+                  "displayFormula": "avg(debug_signal, artifact_visibility, failure_readability)"
+                },
+                "improvementHint": "Attach a compact candidate payload excerpt when the TA contract check fails."
+              },
+              "reliability": {
+                "definitionId": "reliability",
+                "score": 3,
+                "weight": 1,
+                "summary": "The TA contract check is mostly stable, but it depends on live candidate generation rather than a fixture path.",
+                "evidence": [
+                  "Uses a fixed sample gap payload",
+                  "Relies on deterministic candidate generation logic in normal runs",
+                  "Still depends on the TA generation path remaining stable across environments"
+                ],
+                "factorScores": {
+                  "repeatability": 4,
+                  "environment_stability": 3,
+                  "dependency_fragility": 3
+                },
+                "calculation": {
+                  "method": "rounded_weighted_average",
+                  "rawValue": 3.33,
+                  "displayFormula": "avg(repeatability, environment_stability, invert(dependency_fragility))"
+                },
+                "improvementHint": "Introduce a fixture-backed TA contract mode if the live candidate path starts drifting by environment."
+              }
+            },
+            "ui": {
+              "cardVariant": "qa-test-attribute-card",
+              "metricOrder": [
+                "integrity",
+                "specificity",
+                "coverage",
+                "observability",
+                "reliability"
+              ],
+              "clickableMetrics": true,
+              "defaultExpandedMetricId": null
+            },
+            "updatedAt": "2026-03-27T10:15:10.347Z",
+            "validation": {
+              "ok": true,
+              "issues": [],
+              "missingMetricIds": [],
+              "summary": "Scorecard schema and metrics are complete.",
+              "metricCount": 5
+            }
+          }
+        },
+        {
+          "name": "file_scope",
+          "status": "pass"
+        },
+        {
+          "name": "syntax_load",
+          "status": "pass"
+        },
+        {
+          "name": "smoke",
+          "status": "pass"
+        },
+        {
+          "name": "idempotency",
+          "status": "pass"
+        },
+        {
+          "name": "llm_invocation_check",
+          "status": "pass"
+        }
+      ]
+    }
+  ],
+  "metricDefinitions": {
+    "schema": "qa.test-metric-definitions.v1",
+    "version": 1,
+    "metrics": {
+      "integrity": {
+        "id": "integrity",
+        "label": "Integrity",
+        "shortLabel": "Integrity",
+        "defaultWeight": 1,
+        "definition": "Does this test genuinely validate the intended truth?",
+        "whyItMatters": "High-integrity tests reduce fake confidence and catch real regressions.",
+        "scoringGuide": {
+          "1": "Barely connected to the real behaviour",
+          "2": "Touches behaviour indirectly but weakly",
+          "3": "Validates core outcome with gaps",
+          "4": "Strongly validates intended behaviour",
+          "5": "Direct, robust, hard-to-fake proof of behaviour"
+        },
+        "factors": [
+          {
+            "id": "assertion_relevance",
+            "label": "Assertion relevance",
+            "weight": 1
+          },
+          {
+            "id": "real_path_alignment",
+            "label": "Real path alignment",
+            "weight": 1
+          },
+          {
+            "id": "false_positive_risk",
+            "label": "False positive risk",
+            "weight": 1,
+            "invert": true
+          }
+        ]
+      },
+      "specificity": {
+        "id": "specificity",
+        "label": "Specificity",
+        "shortLabel": "Specificity",
+        "defaultWeight": 0.9,
+        "definition": "Does it fail in a way that points to the real problem?",
+        "whyItMatters": "Low-specificity tests waste time because they fail noisily or ambiguously.",
+        "scoringGuide": {
+          "1": "Failure gives almost no useful signal",
+          "2": "Signal exists but is broad or noisy",
+          "3": "Reasonably informative",
+          "4": "Clear and well-targeted",
+          "5": "Very precise and immediately actionable"
+        },
+        "factors": [
+          {
+            "id": "assertion_precision",
+            "label": "Assertion precision",
+            "weight": 1
+          },
+          {
+            "id": "failure_localization",
+            "label": "Failure localization",
+            "weight": 1
+          },
+          {
+            "id": "noise_risk",
+            "label": "Noise risk",
+            "weight": 1,
+            "invert": true
+          }
+        ]
+      },
+      "coverage": {
+        "id": "coverage",
+        "label": "Coverage",
+        "shortLabel": "Coverage",
+        "defaultWeight": 0.8,
+        "definition": "How much of the intended path or behaviour does it exercise?",
+        "whyItMatters": "A passing test with narrow coverage can still leave large blind spots.",
+        "scoringGuide": {
+          "1": "Tiny sliver of intended behaviour",
+          "2": "Some relevant path coverage",
+          "3": "Core path covered",
+          "4": "Core plus important branches",
+          "5": "Excellent breadth with relevant edge cases"
+        },
+        "factors": [
+          {
+            "id": "path_coverage",
+            "label": "Path coverage",
+            "weight": 1
+          },
+          {
+            "id": "branch_coverage",
+            "label": "Branch coverage",
+            "weight": 1
+          },
+          {
+            "id": "edge_case_coverage",
+            "label": "Edge-case coverage",
+            "weight": 1
+          }
+        ]
+      },
+      "observability": {
+        "id": "observability",
+        "label": "Observability",
+        "shortLabel": "Observability",
+        "defaultWeight": 0.8,
+        "definition": "How much useful debug evidence does it expose?",
+        "whyItMatters": "Good observability makes debugging faster and QA more trustworthy.",
+        "scoringGuide": {
+          "1": "Hard to inspect or understand",
+          "2": "Some output, weak traceability",
+          "3": "Usable but limited",
+          "4": "Clear and helpful",
+          "5": "Excellent traceability and debug value"
+        },
+        "factors": [
+          {
+            "id": "debug_signal",
+            "label": "Debug signal",
+            "weight": 1
+          },
+          {
+            "id": "artifact_visibility",
+            "label": "Artifact visibility",
+            "weight": 1
+          },
+          {
+            "id": "failure_readability",
+            "label": "Failure readability",
+            "weight": 1
+          }
+        ]
+      },
+      "reliability": {
+        "id": "reliability",
+        "label": "Reliability",
+        "shortLabel": "Reliability",
+        "defaultWeight": 1,
+        "definition": "How stable and repeatable is it across normal runs?",
+        "whyItMatters": "Flaky tests destroy trust in QA.",
+        "scoringGuide": {
+          "1": "Very flaky or environment-dependent",
+          "2": "Frequently unstable",
+          "3": "Mostly stable with caveats",
+          "4": "Stable in normal use",
+          "5": "Highly stable and dependable"
+        },
+        "factors": [
+          {
+            "id": "repeatability",
+            "label": "Repeatability",
+            "weight": 1
+          },
+          {
+            "id": "environment_stability",
+            "label": "Environment stability",
+            "weight": 1
+          },
+          {
+            "id": "dependency_fragility",
+            "label": "Dependency fragility",
+            "weight": 1,
+            "invert": true
+          }
+        ]
+      }
+    }
+  },
+  "startedAt": "2026-03-27T10:15:09.334Z",
+  "finishedAt": "2026-03-27T10:15:10.444Z",
+  "durationMs": 1110
+}

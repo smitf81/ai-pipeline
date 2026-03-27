@@ -1,875 +1,776 @@
 [
   {
-    "at": "2026-03-25T13:42:00.614Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:24.878Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608384686-bgzw99"
+      ]
     }
   },
   {
-    "at": "2026-03-25T13:42:24.952Z",
-    "type": "context-manager-worker-start",
+    "at": "2026-03-27T10:46:28.665Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "sourceNodeId": "prompt-1",
-      "runId": "context_manager_1774446144947_0t37j9",
-      "mode": "manual",
-      "source": "qa-test"
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T13:42:24.974Z",
-    "type": "context-manager-worker-degraded",
+    "at": "2026-03-27T10:46:28.687Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "sourceNodeId": "prompt-1",
-      "runId": "context_manager_1774446144947_0t37j9",
-      "reason": "Ollama generate timed out after 1ms. | Ollama generate timed out after 1ms.",
-      "handoffId": null,
-      "usedFallback": true
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T13:42:24.978Z",
-    "type": "mutation-apply",
-    "count": 0
+    "at": "2026-03-27T10:46:28.890Z",
+    "type": "team-board-builder-failed",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608388689-497fja"
+      ]
+    }
   },
   {
-    "at": "2026-03-25T13:42:30.648Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:32.674Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T13:42:33.466Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:32.694Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:48:16.522Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:32.886Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608392695-wztz5u"
+      ]
     }
   },
   {
-    "at": "2026-03-25T16:48:18.905Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:36.688Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:48:22.968Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:36.708Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:49:15.469Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:36.895Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608396710-4eo66g"
+      ]
     }
   },
   {
-    "at": "2026-03-25T16:49:31.493Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:39.012Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:49:34.402Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:39.033Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:49:44.967Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:39.228Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608399036-p1pr3n"
+      ]
     }
   },
   {
-    "at": "2026-03-25T16:49:58.317Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:40.695Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:50:05.881Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:40.717Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:50:09.097Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:40.909Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608400719-28abso"
+      ]
     }
   },
   {
-    "at": "2026-03-25T16:50:11.067Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:44.712Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:50:41.259Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:44.737Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:50:42.027Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:44.937Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608404738-l448di"
+      ]
     }
   },
   {
-    "at": "2026-03-25T16:51:06.698Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:48.709Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:52:15.484Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:48.732Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:52:18.471Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:48.933Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608408734-ey7984"
+      ]
     }
   },
   {
-    "at": "2026-03-25T16:52:43.670Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:52.724Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:52:52.621Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:52.749Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:53:00.558Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:52.951Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608412752-4r5ehe"
+      ]
     }
   },
   {
-    "at": "2026-03-25T16:53:03.206Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:54.391Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:53:07.102Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:54.409Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T16:53:11.439Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:54.607Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608414411-4toqbg"
+      ]
     }
   },
   {
-    "at": "2026-03-25T16:53:12.833Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:56.734Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T20:19:57.745Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:56.757Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T20:20:02.837Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:46:56.960Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608416758-qc0dgd"
+      ]
     }
   },
   {
-    "at": "2026-03-25T20:20:04.271Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:00.738Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T20:21:12.694Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:00.758Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T20:21:14.278Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:00.975Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608420760-0cjlcn"
+      ]
     }
   },
   {
-    "at": "2026-03-25T20:21:18.076Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:04.739Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T22:30:45.187Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:04.758Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T22:30:51.608Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:04.978Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608424760-22lav3"
+      ]
     }
   },
   {
-    "at": "2026-03-25T22:30:53.039Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:08.747Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T22:31:00.424Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:12.754Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T22:31:02.435Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:12.779Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-25T22:31:03.302Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:12.991Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608432781-qsnzx7"
+      ]
     }
   },
   {
-    "at": "2026-03-25T22:31:04.459Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:16.770Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:08:34.245Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:16.791Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:08:35.577Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:16.995Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608436793-qbyqi3"
+      ]
     }
   },
   {
-    "at": "2026-03-26T07:10:42.174Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:18.578Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:10:43.081Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:18.599Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:16:08.066Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:18.777Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608438601-mdnhhs"
+      ]
     }
   },
   {
-    "at": "2026-03-26T07:16:48.975Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:20.765Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:16:50.700Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:20.789Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:16:51.893Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:20.988Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608440791-cp2zhl"
+      ]
     }
   },
   {
-    "at": "2026-03-26T07:16:54.731Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:24.784Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:20:04.800Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:24.804Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:20:06.561Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:25.006Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608444805-15q136"
+      ]
     }
   },
   {
-    "at": "2026-03-26T07:27:37.692Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:28.786Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:28:15.106Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:28.805Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T07:28:16.314Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:29.005Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608448807-u5n5oy"
+      ]
     }
   },
   {
-    "at": "2026-03-26T07:28:20.166Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:32.787Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T10:32:14.856Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:32.809Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T10:32:15.807Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:33.023Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608452812-jtpm57"
+      ]
     }
   },
   {
-    "at": "2026-03-26T11:10:22.672Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:33.957Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T11:11:09.650Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:33.996Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T11:11:11.389Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:34.181Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608453999-s010nm"
+      ]
     }
   },
   {
-    "at": "2026-03-26T11:13:10.961Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:36.811Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T11:13:11.815Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:36.839Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-26T23:58:18.954Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:37.034Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608456841-aryd0h"
+      ]
     }
   },
   {
-    "at": "2026-03-27T00:11:29.220Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:40.808Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T00:11:31.567Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:40.829Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T00:11:34.563Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:41.028Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608460833-nq5mqj"
+      ]
     }
   },
   {
-    "at": "2026-03-27T00:11:36.071Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:44.816Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T06:15:20.412Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:44.840Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T06:15:22.928Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:45.050Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608464841-i6razn"
+      ]
     }
   },
   {
-    "at": "2026-03-27T06:15:28.796Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:48.826Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T06:15:39.670Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:48.849Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T06:15:43.368Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:49.039Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608468851-7car96"
+      ]
     }
   },
   {
-    "at": "2026-03-27T06:15:44.376Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:49.377Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T06:15:45.512Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:49.399Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T09:23:57.148Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:49.583Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608469402-ty9rig"
+      ]
     }
   },
   {
-    "at": "2026-03-27T09:23:58.040Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:52.831Z",
+    "type": "team-board-builder-start",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T09:24:46.315Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:52.853Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
     }
   },
   {
-    "at": "2026-03-27T09:24:47.221Z",
-    "type": "workspace-save",
+    "at": "2026-03-27T10:47:53.030Z",
+    "type": "team-board-builder-failed",
     "summary": {
-      "nodes": 6,
-      "edges": 4,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774608472855-pjrh9u"
+      ]
     }
   }
 ]
