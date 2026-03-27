@@ -489,4 +489,215 @@ export default async function runAgentWorkersTests() {
   assert.equal(contextFallback.extractedIntent.inferredClaims.length, 0);
   assert.ok(contextFallback.extractedIntent.candidateNodes.every((node) => node.basis === 'explicit'));
   assert.match(contextFallback.run.reason || '', /Ollama unavailable/);
+
+  const normalizedGraphContext = await runContextManagerWorker({
+    rootPath,
+    text: 'Normalize the planner handoff around the graph bundle.',
+    sourceNodeId: 'node_graph_bundle',
+    source: 'context-intake',
+    workspace: {
+      ...workspace,
+      graphs: {
+        system: {
+          nodes: [
+            {
+              id: 'node_system_graph',
+              type: 'module',
+              content: 'System graph anchor',
+              metadata: { role: 'module' },
+            },
+          ],
+          edges: [
+            { source: 'node_system_graph', target: 'node_world_graph', relationship_type: 'relates_to' },
+          ],
+        },
+        world: {
+          nodes: [
+            {
+              id: 'node_world_graph',
+              type: 'text',
+              content: 'World graph context-manager anchor',
+              metadata: { agentId: 'context-manager' },
+            },
+          ],
+          edges: [],
+        },
+      },
+      studio: {
+        ...workspace.studio,
+        handoffs: {
+          contextToPlanner: previousHandoff,
+          plannerToContext: plannerFeedback,
+        },
+      },
+    },
+    anchorBundle,
+    dashboardState: { blockers: ['Keep planner proposal-only'] },
+    previousHandoff,
+    plannerFeedback,
+    runId: 'context_graph_bundle',
+    generator: async ({ plannerFeedback: activeFeedback }) => {
+      assert.equal(activeFeedback.action, 'retry-handoff');
+      return {
+        packet: {
+          summary: 'Bridge normalized graph bundle into context manager output.',
+          statement: 'Carry graph-aware context into planner-facing handoff data.',
+          goal: 'Carry graph-aware context into planner-facing handoff data.',
+          requestedOutcomes: ['Carry graph-aware context into planner-facing handoff data'],
+          targets: ['planner'],
+          constraints: ['Keep graph bridging narrow'],
+          urgency: 'normal',
+          requestType: 'planning_request',
+          signals: { graphSignals: 2 },
+          clarifications: [],
+          focusTerms: ['graph', 'bundle'],
+          suggestedAnchorRefs: ['brain/emergence/plan.md'],
+        },
+        extractedIntent: {
+          summary: 'Graph bundle bridge needs planner visibility.',
+          explicitClaims: ['Carry graph-aware context into planner-facing handoff data'],
+          inferredClaims: [],
+          candidateNodes: [
+            { id: 'candidate_graph', label: 'Carry graph-aware context into planner-facing handoff data', kind: 'module', basis: 'explicit', rationale: 'Derived from the normalized graph bundle path.', confidence: 0.91 },
+          ],
+          candidateEdges: [],
+          gaps: [],
+        },
+      };
+    },
+    fallbackAnalyze: (text, currentWorkspace) => analyzeSpatialIntent(text, buildIntentProjectContext({
+      workspace: currentWorkspace,
+      rootPath,
+    })),
+  });
+
+  assert.equal(normalizedGraphContext.ok, true);
+  assert.deepEqual(normalizedGraphContext.handoff.requestedOutcomes, ['Carry graph-aware context into planner-facing handoff data']);
+  assert.equal(normalizedGraphContext.report.projectContext.graphBundle.system.nodes[0].id, 'node_system_graph');
+  assert.equal(normalizedGraphContext.report.projectContext.graphBundle.world.nodes[0].id, 'node_world_graph');
+  assert.equal(normalizedGraphContext.report.projectContext.graphBundle.system.edges[0].source, 'node_system_graph');
+  assert.equal(normalizedGraphContext.handoff.graphBundle.world.nodes[0].id, 'node_world_graph');
+
+  const legacyGraphContext = await runContextManagerWorker({
+    rootPath,
+    text: 'Preserve legacy graph input handling.',
+    sourceNodeId: 'node_legacy_graph',
+    source: 'context-intake',
+    workspace: {
+      ...workspace,
+      graph: {
+        nodes: [
+          {
+            id: 'node_legacy_ctx',
+            type: 'text',
+            content: 'Legacy graph context-manager node',
+            metadata: { agentId: 'context-manager' },
+          },
+        ],
+        edges: [
+          { source: 'node_legacy_ctx', target: 'node_legacy_link', relationship_type: 'relates_to' },
+        ],
+      },
+    },
+    anchorBundle,
+    dashboardState: {},
+    runId: 'context_legacy_graph',
+    generator: async () => ({
+      packet: {
+        summary: 'Legacy graph fallback should still work.',
+        statement: 'Use the old graph shape when normalized graphs are absent.',
+        goal: 'Use the old graph shape when normalized graphs are absent.',
+        requestedOutcomes: ['Use the old graph shape when normalized graphs are absent'],
+        targets: ['planner'],
+        constraints: ['Keep legacy fallback alive'],
+        urgency: 'normal',
+        requestType: 'planning_request',
+        signals: { graphSignals: 1 },
+        clarifications: [],
+        focusTerms: ['legacy'],
+        suggestedAnchorRefs: ['brain/emergence/tasks.md'],
+      },
+      extractedIntent: {
+        summary: 'Legacy graph fallback remains supported.',
+        explicitClaims: ['Use the old graph shape when normalized graphs are absent'],
+        inferredClaims: [],
+        candidateNodes: [
+          { id: 'candidate_legacy', label: 'Use the old graph shape when normalized graphs are absent', kind: 'module', basis: 'explicit', rationale: 'Derived from legacy workspace.graph input.', confidence: 0.9 },
+        ],
+        candidateEdges: [],
+        gaps: [],
+      },
+    }),
+    fallbackAnalyze: (text, currentWorkspace) => analyzeSpatialIntent(text, buildIntentProjectContext({
+      workspace: currentWorkspace,
+      rootPath,
+    })),
+  });
+
+  assert.equal(legacyGraphContext.ok, true);
+  assert.equal(legacyGraphContext.report.projectContext.graphBundle.system.nodes[0].id, 'node_legacy_ctx');
+  assert.equal(legacyGraphContext.report.projectContext.graphBundle.world.nodes.length, 0);
+  assert.equal(legacyGraphContext.handoff.graphBundle.system.nodes[0].id, 'node_legacy_ctx');
+
+  const partialGraphContext = await runContextManagerWorker({
+    rootPath,
+    text: 'Handle partial graph bundle input safely.',
+    sourceNodeId: 'node_partial_graph',
+    source: 'context-intake',
+    workspace: {
+      ...workspace,
+      graphs: {
+        system: {
+          nodes: null,
+          edges: null,
+        },
+        world: {
+          nodes: [],
+          edges: null,
+        },
+      },
+    },
+    anchorBundle,
+    dashboardState: {},
+    runId: 'context_partial_graph',
+    generator: async () => ({
+      packet: {
+        summary: 'Partial graph data should not break the handoff path.',
+        statement: 'Normalize missing graph arrays safely.',
+        goal: 'Normalize missing graph arrays safely.',
+        requestedOutcomes: ['Normalize missing graph arrays safely'],
+        targets: ['planner'],
+        constraints: ['Keep fallback safe'],
+        urgency: 'normal',
+        requestType: 'planning_request',
+        signals: { graphSignals: 0 },
+        clarifications: [],
+        focusTerms: ['partial'],
+        suggestedAnchorRefs: ['brain/emergence/plan.md'],
+      },
+      extractedIntent: {
+        summary: 'Partial graph data must fail safely.',
+        explicitClaims: ['Normalize missing graph arrays safely'],
+        inferredClaims: [],
+        candidateNodes: [
+          { id: 'candidate_partial', label: 'Normalize missing graph arrays safely', kind: 'task', basis: 'explicit', rationale: 'Derived from partial workspace graph input.', confidence: 0.87 },
+        ],
+        candidateEdges: [],
+        gaps: [],
+      },
+    }),
+    fallbackAnalyze: (text, currentWorkspace) => analyzeSpatialIntent(text, buildIntentProjectContext({
+      workspace: currentWorkspace,
+      rootPath,
+    })),
+  });
+
+  assert.equal(partialGraphContext.ok, true);
+  assert.ok(Array.isArray(partialGraphContext.report.projectContext.graphBundle.system.nodes));
+  assert.ok(Array.isArray(partialGraphContext.report.projectContext.graphBundle.system.edges));
+  assert.ok(Array.isArray(partialGraphContext.report.projectContext.graphBundle.world.nodes));
+  assert.ok(Array.isArray(partialGraphContext.report.projectContext.graphBundle.world.edges));
+  assert.equal(partialGraphContext.report.projectContext.graphBundle.system.nodes.length, 0);
+  assert.equal(partialGraphContext.report.projectContext.graphBundle.world.edges.length, 0);
+  assert.equal(partialGraphContext.handoff.graphBundle.system.nodes.length, 0);
 }

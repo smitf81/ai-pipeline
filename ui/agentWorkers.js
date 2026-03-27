@@ -13,6 +13,10 @@ const {
   buildIntentProjectContext,
   buildIntentTruth,
 } = require('./intentAnalysis');
+const {
+  getContextManagerNode,
+  normalizeGraphBundle,
+} = require('./graphQueries');
 const { createPlannerHandoff } = require('./throughputDebug');
 
 const DEFAULT_PLANNER_BACKEND = 'ollama';
@@ -191,6 +195,21 @@ function slugify(value) {
 
 function uniqueStrings(values = []) {
   return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function buildGraphBundleSection(graphBundle = {}) {
+  const contextNode = getContextManagerNode(graphBundle);
+  const systemNodes = Array.isArray(graphBundle?.system?.nodes) ? graphBundle.system.nodes.length : 0;
+  const systemEdges = Array.isArray(graphBundle?.system?.edges) ? graphBundle.system.edges.length : 0;
+  const worldNodes = Array.isArray(graphBundle?.world?.nodes) ? graphBundle.world.nodes.length : 0;
+  const worldEdges = Array.isArray(graphBundle?.world?.edges) ? graphBundle.world.edges.length : 0;
+  return [
+    `System graph: ${systemNodes} nodes / ${systemEdges} edges`,
+    `World graph: ${worldNodes} nodes / ${worldEdges} edges`,
+    contextNode
+      ? `Context node: ${contextNode.id || 'unknown'} (${contextNode.type || 'unknown'})`
+      : 'Context node: none',
+  ].join('\n');
 }
 
 function writeJson(filePath, payload) {
@@ -1278,6 +1297,7 @@ function buildContextManagerPrompt({
   text,
   anchorBundle,
   workspace,
+  graphBundle = null,
   plannerFeedback = null,
   previousHandoff = null,
 }) {
@@ -1310,6 +1330,9 @@ function buildContextManagerPrompt({
     '',
     '## Current Workspace Slice',
     buildContextWorkspaceSection(workspace),
+    '',
+    '## Normalized Graph Bundle',
+    buildGraphBundleSection(graphBundle || normalizeGraphBundle(workspace)),
   ].join('\n').trim();
 }
 
@@ -1577,6 +1600,7 @@ function mergeContextPacketIntoReport(report, {
   backend,
   model,
   usedFallback = false,
+  graphBundle = null,
 }) {
   const summary = packet.summary || report.summary;
   const packetRequestedOutcomes = Array.isArray(packet.requestedOutcomes) && packet.requestedOutcomes.length
@@ -1603,6 +1627,7 @@ function mergeContextPacketIntoReport(report, {
     : (report.signals && typeof report.signals === 'object' ? report.signals : {});
   const mergedProjectContext = {
     ...(report.projectContext || {}),
+    graphBundle: graphBundle || report.projectContext?.graphBundle || null,
     plannerFeedback: plannerFeedback ? {
       id: plannerFeedback.id || null,
       action: plannerFeedback.action || null,
@@ -1627,6 +1652,7 @@ function mergeContextPacketIntoReport(report, {
     projectContext: mergedProjectContext,
     contextPacket: {
       ...packet,
+      graphBundle: graphBundle || packet.graphBundle || null,
       requestedOutcomes,
       tasks: requestedOutcomes,
       plannerFeedbackAction: plannerFeedback?.action || null,
@@ -1748,6 +1774,7 @@ async function runContextManagerWorker(options = {}) {
   const resolvedHost = host || config.host || DEFAULT_OLLAMA_HOST;
   const resolvedTimeoutMs = Number(timeoutMs || config.timeoutMs || DEFAULT_CONTEXT_MANAGER_TIMEOUT_MS);
   const activePlannerFeedback = plannerFeedback || resolvePlannerFeedback(workspace, previousHandoff);
+  const graphBundle = normalizeGraphBundle(workspace);
   const analyze = typeof fallbackAnalyze === 'function'
     ? fallbackAnalyze
     : ((sourceText, currentWorkspace) => analyzeSpatialIntent(sourceText, buildIntentProjectContext({
@@ -1786,6 +1813,7 @@ async function runContextManagerWorker(options = {}) {
       text: rawText,
       anchorBundle: anchorBundle || { anchors: {}, truthSources: [] },
       workspace,
+      graphBundle,
       plannerFeedback: activePlannerFeedback,
       previousHandoff,
     });
@@ -1953,6 +1981,7 @@ async function runContextManagerWorker(options = {}) {
       backend: resolvedBackend,
       model: resolvedModel,
       usedFallback: combinedFallback,
+      graphBundle,
     });
     const handoff = createPlannerHandoff(report, dashboardState, previousHandoff);
     const completedAt = nowIso();

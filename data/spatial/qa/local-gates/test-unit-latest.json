@@ -3,12 +3,12 @@
   "source": "ui-test-runner",
   "command": "npm run test:unit",
   "status": "pass",
-  "summary": "All 24 UI checks passed.",
-  "startedAt": "2026-03-26T11:13:07.048Z",
-  "finishedAt": "2026-03-26T11:13:07.594Z",
-  "durationMs": 545,
-  "totalChecks": 24,
-  "passedCount": 24,
+  "summary": "All 27 UI checks passed.",
+  "startedAt": "2026-03-27T09:24:41.473Z",
+  "finishedAt": "2026-03-27T09:24:42.037Z",
+  "durationMs": 564,
+  "totalChecks": 27,
+  "passedCount": 27,
   "failedCount": 0,
   "failures": [],
   "results": [
@@ -30,7 +30,7 @@
       "name": "agentWorkers",
       "path": "./agentWorkers.test.mjs",
       "status": "pass",
-      "durationMs": 39,
+      "durationMs": 46,
       "error": null
     },
     {
@@ -51,14 +51,14 @@
       "name": "aceRuntimeMcp",
       "path": "./aceRuntimeMcp.test.mjs",
       "status": "pass",
-      "durationMs": 158,
+      "durationMs": 157,
       "error": null
     },
     {
       "name": "llmAdapter",
       "path": "./llmAdapter.test.mjs",
       "status": "pass",
-      "durationMs": 2,
+      "durationMs": 1,
       "error": null
     },
     {
@@ -72,56 +72,77 @@
       "name": "graphEngine",
       "path": "./graphEngine.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 2,
+      "error": null
+    },
+    {
+      "name": "graphQueries",
+      "path": "./graphQueries.test.mjs",
+      "status": "pass",
+      "durationMs": 1,
+      "error": null
+    },
+    {
+      "name": "graphMutations",
+      "path": "./graphMutations.test.mjs",
+      "status": "pass",
+      "durationMs": 2,
       "error": null
     },
     {
       "name": "mutationEngine",
       "path": "./mutationEngine.test.mjs",
       "status": "pass",
-      "durationMs": 11,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "spatialAppSmoke",
       "path": "./spatialApp.smoke.test.mjs",
       "status": "pass",
-      "durationMs": 35,
+      "durationMs": 31,
       "error": null
     },
     {
       "name": "spatialAppRsg",
       "path": "./spatialApp.rsg.test.mjs",
       "status": "pass",
-      "durationMs": 23,
+      "durationMs": 24,
       "error": null
     },
     {
       "name": "sliceRepository",
       "path": "./sliceRepository.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "archivistWriteback",
       "path": "./archivistWriteback.test.mjs",
       "status": "pass",
-      "durationMs": 13,
+      "durationMs": 10,
+      "error": null
+    },
+    {
+      "name": "debugSuite",
+      "path": "./debugSuite.test.mjs",
+      "status": "pass",
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "studioData",
       "path": "./studioData.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 11,
       "error": null
     },
     {
       "name": "orchestratorState",
       "path": "./orchestratorState.test.mjs",
       "status": "pass",
-      "durationMs": 7,
+      "durationMs": 8,
       "error": null
     },
     {
@@ -135,35 +156,35 @@
       "name": "taCandidates",
       "path": "./taCandidates.test.mjs",
       "status": "pass",
-      "durationMs": 123,
+      "durationMs": 125,
       "error": null
     },
     {
       "name": "talentUi",
       "path": "./talentUi.test.mjs",
       "status": "pass",
-      "durationMs": 1,
+      "durationMs": 2,
       "error": null
     },
     {
       "name": "server",
       "path": "./server.test.mjs",
       "status": "pass",
-      "durationMs": 21,
+      "durationMs": 24,
       "error": null
     },
     {
       "name": "intentAnalysis",
       "path": "./intentAnalysis.test.mjs",
       "status": "pass",
-      "durationMs": 2,
+      "durationMs": 4,
       "error": null
     },
     {
       "name": "throughputDebug",
       "path": "./throughputDebug.test.mjs",
       "status": "pass",
-      "durationMs": 33,
+      "durationMs": 36,
       "error": null
     },
     {
@@ -177,7 +198,7 @@
       "name": "appViewerMode",
       "path": "./appViewerMode.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 11,
       "error": null
     }
   ]

@@ -293,6 +293,7 @@ function collectConstraints(report, dashboardState) {
 
 function createPlannerHandoff(report, dashboardState = {}, previousHandoff = null) {
   if (!report) return null;
+  const graphBundle = report?.projectContext?.graphBundle || null;
   const requestedOutcomes = uniqueStrings(
     Array.isArray(report.requestedOutcomes) && report.requestedOutcomes.length
       ? report.requestedOutcomes
@@ -346,6 +347,7 @@ function createPlannerHandoff(report, dashboardState = {}, previousHandoff = nul
     urgency: report.urgency || report.truth?.urgency || 'normal',
     targets: Array.isArray(report.targets) ? report.targets.slice(0, 8) : [],
     signals: report.signals || report.truth?.signals || null,
+    graphBundle,
     status: clarifications.length ? 'needs-clarification' : 'ready',
   };
 }

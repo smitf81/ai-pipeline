@@ -11,6 +11,14 @@ const {
   tokenizeKeywordSource,
   topKeywordsFromCounts,
 } = require('./anchorResolver');
+const {
+  getContextManagerNode,
+  normalizeGraphBundle,
+} = require('./graphQueries');
+const {
+  buildGraphMutationPreview,
+  applyGraphMutations,
+} = require('./graphMutations');
 
 const LEGACY_ACTION_PATTERN = /\b(build|fix|create|implement|wire|connect|review|scan|plan|design|update|remove|delete|disable|support)\b/gi;
 const CURRENT_ACTION_PATTERN = /\b(build|fix|create|implement|wire|connect|review|scan|plan|design|update|remove|delete|disable|support|add|introduce|expose|enable|allow|test|verify|document)\b/gi;
@@ -216,15 +224,29 @@ function buildIntentProjectContext({
     domainKey,
     readEntry: readDashboardFile,
   });
-  const contextNode = (workspace.graph?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
+  const graphs = normalizeGraphBundle(workspace);
+  const contextNode = getContextManagerNode(graphs);
   const weightedKeywords = buildWeightedKeywordCounts(anchorBundle, contextNode);
   const managerSummary = anchorBundle.managerSummary || {};
+  const graphMutationsPreview = buildGraphMutationPreview({
+    graphBundle: graphs,
+    projectContext: {
+      currentFocus: managerSummary.current_focus || '',
+      activeMilestone: managerSummary.active_milestone || '',
+      anchorRefs: anchorBundle.anchorRefs || [],
+    },
+    source: managerSummary.current_focus || managerSummary.active_milestone || '',
+  });
+  const graphMutationApplyResult = applyGraphMutations(graphs, graphMutationsPreview);
   return {
     domainKey,
     brainRoot: anchorBundle.brainRoot,
     currentFocus: managerSummary.current_focus || '',
     activeMilestone: managerSummary.active_milestone || '',
     blockers: managerSummary.blockers || [],
+    graphBundle: graphs,
+    graphMutationsPreview,
+    graphMutationApplyResult,
     keywords: buildBalancedProjectKeywords(weightedKeywords, 28),
     sourcesRead: [
       ...anchorBundle.truthSources.filter((source) => source.exists).map((source) => source.relativePath),
@@ -455,6 +477,15 @@ function analyzeSpatialIntent(text, project) {
     keywords: [],
     sourcesRead: [],
     anchorRefs: [],
+    graphMutationsPreview: [],
+    graphMutationApplyResult: {
+      graphBundle: {
+        system: { nodes: [], edges: [] },
+        world: { nodes: [], edges: [] },
+      },
+      applied: [],
+      rejected: [],
+    },
     anchorCatalog: [],
     truthSources: [],
     drift: [],
@@ -568,6 +599,15 @@ function analyzeSpatialIntent(text, project) {
       referenceKeywords: (safeProject.keywords || []).slice(0, 8),
       sourcesRead: (safeProject.sourcesRead || []).slice(0, 8),
       anchorRefs,
+      graphMutationsPreview: Array.isArray(safeProject.graphMutationsPreview) ? safeProject.graphMutationsPreview : [],
+      graphMutationApplyResult: safeProject.graphMutationApplyResult || {
+        graphBundle: {
+          system: { nodes: [], edges: [] },
+          world: { nodes: [], edges: [] },
+        },
+        applied: [],
+        rejected: [],
+      },
       truthSources: (safeProject.truthSources || []).slice(0, 8),
       drift: (safeProject.drift || []).slice(0, 8),
       managerSummary: safeProject.managerSummary || null,

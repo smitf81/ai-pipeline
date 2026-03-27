@@ -72,6 +72,16 @@ export default async function runIntentAnalysisTests() {
   assert.ok(projectContext.keywords.includes('changelog'));
   assert.ok(report.projectContext.sourcesRead.includes('brain/emergence/state.json'));
   assert.ok(report.projectContext.sourcesRead.includes('workspace.graph.context-manager-node'));
+  assert.ok(Array.isArray(projectContext.graphMutationsPreview));
+  assert.ok(projectContext.graphMutationsPreview.length >= 1);
+  assert.equal(projectContext.graphMutationsPreview[0].type, 'set_prop');
+  assert.equal(projectContext.graphMutationsPreview[0].preview, true);
+  assert.equal(projectContext.graphMutationsPreview[0].nodeId, 'node_ctx');
+  assert.ok(projectContext.graphMutationApplyResult);
+  assert.ok(Array.isArray(projectContext.graphMutationApplyResult.applied));
+  assert.ok(Array.isArray(projectContext.graphMutationApplyResult.rejected));
+  assert.ok(projectContext.graphMutationApplyResult.applied.length >= 1);
+  assert.equal(projectContext.graphMutationApplyResult.rejected.length, 0);
   assert.ok(report.projectContext.anchorRefs.includes('brain/emergence/roadmap.md'));
   assert.ok(report.projectContext.truthSources.some((source) => source.relativePath === 'brain/emergence/state.json' && source.authority === 'derived-state'));
   assert.ok(report.projectContext.truthSources.some((source) => source.relativePath === 'brain/emergence/roadmap.md' && source.authority === 'canonical-anchor'));
@@ -91,6 +101,152 @@ export default async function runIntentAnalysisTests() {
   );
   assert.ok(report.anchorRefs.includes('brain/emergence/roadmap.md'));
   assert.ok(report.provenance.anchors.some((anchor) => anchor.anchorRef === 'brain/emergence/roadmap.md'));
+
+  const normalizedProjectContext = buildIntentProjectContext({
+    workspace: {
+      graphs: {
+        system: {
+          nodes: [
+            {
+              id: 'node_sys_ctx',
+              type: 'module',
+              content: 'System layer runtime anchor',
+              metadata: { role: 'module' },
+            },
+          ],
+          edges: [],
+        },
+        world: {
+          nodes: [
+            {
+              id: 'node_world_ctx',
+              type: 'text',
+              content: 'World field visibility pressure planner',
+              metadata: { agentId: 'context-manager' },
+            },
+          ],
+          edges: [],
+        },
+      },
+    },
+    readDashboardFile(relativePath) {
+      if (relativePath === 'brain/emergence/state.json') {
+        return {
+          parsed: {
+            current_focus: 'World graph bridge',
+            next_actions: ['Bridge graph bundle into intent analysis'],
+            blockers: ['Keep the bridge narrow'],
+          },
+        };
+      }
+      if (relativePath === 'brain/emergence/plan.md') {
+        return { content: 'Plan the graph bridge and preserve existing intent output.' };
+      }
+      if (relativePath === 'brain/emergence/project_brain.md') {
+        return { content: 'ACE now consumes the normalized graph bundle.' };
+      }
+      if (relativePath === 'brain/emergence/roadmap.md') {
+        return { content: 'Roadmap: use graph/world state for intent intake.' };
+      }
+      if (relativePath === 'brain/emergence/tasks.md') {
+        return { content: '- Bridge normalized graph bundle\n- Keep legacy fallback intact\n' };
+      }
+      if (relativePath === 'brain/emergence/decisions.md') {
+        return { content: '2026-03-27: Keep graph bundle consumption narrow.' };
+      }
+      if (relativePath === 'brain/emergence/changelog.md') {
+        return { content: '2026-03-27: Graph bundle bridge noted.' };
+      }
+      return { parsed: {}, content: '' };
+    },
+  });
+
+  assert.ok(normalizedProjectContext.keywords.includes('world'));
+  assert.ok(normalizedProjectContext.keywords.includes('field'));
+  assert.ok(normalizedProjectContext.keywords.includes('visibility'));
+  assert.ok(normalizedProjectContext.sourcesRead.includes('brain/emergence/state.json'));
+  assert.ok(Array.isArray(normalizedProjectContext.graphMutationsPreview));
+  assert.ok(normalizedProjectContext.graphMutationsPreview.length >= 1);
+  assert.equal(normalizedProjectContext.graphMutationsPreview[0].nodeId, 'node_world_ctx');
+  assert.ok(normalizedProjectContext.graphMutationApplyResult);
+  assert.ok(normalizedProjectContext.graphMutationApplyResult.applied.length >= 1);
+  assert.equal(normalizedProjectContext.graphMutationApplyResult.rejected.length, 0);
+
+  const normalizedReport = analyzeSpatialIntent(
+    'We should wire world field visibility into the planner without changing the UI.',
+    normalizedProjectContext,
+  );
+
+  assert.ok(normalizedReport.projectContext.matchedTerms.includes('world'));
+  assert.ok(normalizedReport.projectContext.matchedTerms.includes('field'));
+  assert.ok(normalizedReport.projectContext.matchedTerms.includes('visibility'));
+  assert.ok(Array.isArray(normalizedReport.projectContext.graphMutationsPreview));
+  assert.ok(normalizedReport.projectContext.graphMutationsPreview.length >= 1);
+  assert.match(normalizedReport.truth.plannerBrief, /Planner should treat this as/i);
+
+  const partialProjectContext = buildIntentProjectContext({
+    workspace: {
+      graphs: {
+        system: {
+          nodes: null,
+          edges: null,
+        },
+        world: {
+          nodes: [],
+          edges: [],
+        },
+      },
+    },
+    readDashboardFile(relativePath) {
+      if (relativePath === 'brain/emergence/state.json') {
+        return {
+          parsed: {
+            current_focus: 'Partial graph fallback',
+            next_actions: [],
+            blockers: [],
+          },
+        };
+      }
+      if (relativePath === 'brain/emergence/plan.md') {
+        return { content: 'Plan stays stable when graph data is partial.' };
+      }
+      if (relativePath === 'brain/emergence/project_brain.md') {
+        return { content: 'Intent intake should fail safely on partial graph bundles.' };
+      }
+      if (relativePath === 'brain/emergence/roadmap.md') {
+        return { content: 'Roadmap keeps compatibility paths until the bridge is stable.' };
+      }
+      if (relativePath === 'brain/emergence/tasks.md') {
+        return { content: '- Preserve fallback behavior\n' };
+      }
+      if (relativePath === 'brain/emergence/decisions.md') {
+        return { content: '2026-03-27: Partial graph data must not crash intent analysis.' };
+      }
+      if (relativePath === 'brain/emergence/changelog.md') {
+        return { content: '2026-03-27: Partial bundle fallback recorded.' };
+      }
+      return { parsed: {}, content: '' };
+    },
+  });
+
+  assert.ok(Array.isArray(partialProjectContext.keywords));
+  assert.ok(partialProjectContext.keywords.length > 0);
+  assert.ok(partialProjectContext.sourcesRead.includes('brain/emergence/state.json'));
+  assert.deepEqual(partialProjectContext.graphMutationsPreview, []);
+  assert.ok(partialProjectContext.graphMutationApplyResult);
+  assert.deepEqual(partialProjectContext.graphMutationApplyResult.applied, []);
+  assert.deepEqual(partialProjectContext.graphMutationApplyResult.rejected, []);
+
+  const partialReport = analyzeSpatialIntent(
+    'Keep intent analysis stable when graph data is partial.',
+    partialProjectContext,
+  );
+
+  assert.ok(partialReport.requestedOutcomes.length >= 1);
+  assert.ok(Array.isArray(partialReport.projectContext.matchedTerms));
+  assert.deepEqual(partialReport.projectContext.graphMutationsPreview, []);
+  assert.deepEqual(partialReport.projectContext.graphMutationApplyResult.applied, []);
+  assert.deepEqual(partialReport.projectContext.graphMutationApplyResult.rejected, []);
 
   const precedenceReport = analyzeSpatialIntent(
     'Document decision protocols and changelog provenance alongside roadmap milestone gates.',

@@ -15,11 +15,18 @@ function buildTextRequestMap(responses = {}) {
   };
 }
 
+function writeFile(rootPath, relativePath, content) {
+  const targetPath = path.join(rootPath, ...relativePath.split('/'));
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, content, 'utf8');
+}
+
 export default async function runServerTests() {
   const serverPath = path.resolve(process.cwd(), 'server.js');
   const throughputDebugPath = path.resolve(process.cwd(), 'throughputDebug.js');
   const {
     app,
+    dashboardFiles,
     buildDeskPropertiesPayload,
     buildProjectRecord,
     buildQAStatePayload,
@@ -39,6 +46,7 @@ export default async function runServerTests() {
     normalizeExecutiveEnvelope,
     mapEnvelopeToMaterialModule,
     buildModulePreview,
+    readDashboardFileForRoot,
     resolveLegacyFallbackPayload,
     smokeCheckStaticWebBoot,
     stopProjectRun,
@@ -59,6 +67,38 @@ export default async function runServerTests() {
   assert.ok(app.router.stack.some((layer) => Array.isArray(layer.route?.path) && layer.route.path.includes('/qa')));
   assert.ok(app.router.stack.some((layer) => layer.route?.path === '/api/projects/run'));
   assert.ok(app.router.stack.some((layer) => layer.route?.path === '/api/spatial/archive/writeback'));
+  assert.ok(dashboardFiles.includes('brain/emergence/state.json'));
+  assert.ok(dashboardFiles.includes('brain/emergence/tasks.md'));
+  assert.ok(dashboardFiles.includes('brain/emergence/decisions.md'));
+  assert.ok(dashboardFiles.includes('brain/emergence/roadmap.md'));
+  assert.ok(dashboardFiles.includes('brain/emergence/changelog.md'));
+  assert.ok(!dashboardFiles.includes('projects/emergence/state.json'));
+  assert.ok(!dashboardFiles.includes('projects/emergence/tasks.md'));
+  assert.ok(!dashboardFiles.includes('projects/emergence/decisions.md'));
+  assert.ok(!dashboardFiles.includes('projects/emergence/roadmap.md'));
+  assert.ok(!dashboardFiles.includes('projects/emergence/changelog.md'));
+
+  const canonicalDashboardRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-dashboard-canonical-'));
+  writeFile(canonicalDashboardRoot, 'brain/emergence/state.json', JSON.stringify({ current_focus: 'brain state' }, null, 2));
+  writeFile(canonicalDashboardRoot, 'projects/emergence/state.json', JSON.stringify({ current_focus: 'legacy state' }, null, 2));
+  const canonicalState = readDashboardFileForRoot(canonicalDashboardRoot, 'brain/emergence/state.json');
+  assert.equal(canonicalState.path, 'brain/emergence/state.json');
+  assert.equal(canonicalState.sourcePath, 'brain/emergence/state.json');
+  assert.equal(canonicalState.parsed.current_focus, 'brain state');
+
+  const fallbackDashboardRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-dashboard-fallback-'));
+  writeFile(fallbackDashboardRoot, 'projects/emergence/roadmap.md', '# Roadmap\n\nLegacy fallback roadmap\n');
+  const fallbackRoadmap = readDashboardFileForRoot(fallbackDashboardRoot, 'brain/emergence/roadmap.md');
+  assert.equal(fallbackRoadmap.path, 'brain/emergence/roadmap.md');
+  assert.equal(fallbackRoadmap.sourcePath, 'projects/emergence/roadmap.md');
+  assert.equal(fallbackRoadmap.content.includes('Legacy fallback roadmap'), true);
+
+  const missingDashboardRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-dashboard-missing-'));
+  const missingChangelog = readDashboardFileForRoot(missingDashboardRoot, 'brain/emergence/changelog.md');
+  assert.equal(missingChangelog.path, 'brain/emergence/changelog.md');
+  assert.equal(missingChangelog.exists, false);
+  assert.equal(missingChangelog.sourcePath, 'brain/emergence/changelog.md');
+  assert.equal(missingChangelog.error, 'File not found');
 
   const topdownProject = listProjectsForUi().find((project) => project.key === 'topdown-slice');
   assert.ok(topdownProject);

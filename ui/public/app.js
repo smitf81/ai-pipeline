@@ -16,6 +16,7 @@ const state = {
   projects: [],
   projectLaunching: false,
   projectLaunch: null,
+  artifactStatusSignature: '',
 };
 
 function detectQaMode() {
@@ -191,6 +192,7 @@ async function refreshDashboard() {
       refreshedAt: data.refreshedAt,
       runs: runs?.runs || [],
     });
+    await refreshTaskArtifacts();
     document.getElementById('error_wrap').style.display = 'none';
     setText('error_box', '');
 
@@ -257,6 +259,7 @@ async function loadTasks() {
     select.appendChild(opt);
   });
   if (data.tasks[0]) document.getElementById('taskIdInput').value = data.tasks[0];
+  await refreshTaskArtifacts();
 }
 
 function selectedTaskId() {
@@ -278,11 +281,110 @@ function setRunHeader({ status = 'idle', exit = '—', duration = '—', artifac
   });
 }
 
+const TASK_ARTIFACT_NAMES = [
+  { name: 'context.md', id: 'artifact_context_status' },
+  { name: 'plan.md', id: 'artifact_plan_status' },
+  { name: 'patch.diff', id: 'artifact_patch_status' },
+];
+
+function artifactStatusText(entry = null) {
+  if (!entry) return 'unknown';
+  if (entry.exists === true) return 'present';
+  if (entry.exists === false) return 'missing';
+  return 'unknown';
+}
+
+function setArtifactBadge(id, value, count = null) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = artifactStatusText(value);
+  el.textContent = count === null ? text : `${text}${count ? ` (${count})` : ''}`;
+  el.classList.remove('present', 'missing', 'unknown');
+  el.classList.add(text);
+}
+
+function renderTaskArtifactStatus(payload = null) {
+  const taskId = String(payload?.taskId || selectedTaskId() || '').trim();
+  const folder = String(payload?.folder || '').trim();
+  const artifacts = Array.isArray(payload?.artifacts) ? payload.artifacts : [];
+  const signature = JSON.stringify({ taskId, folder, artifacts });
+  if (signature === state.artifactStatusSignature) return;
+  state.artifactStatusSignature = signature;
+
+  setText('artifactTaskLabel', taskId ? `Selected task: ${taskId}` : 'Selected task: none');
+  setText('artifactTaskFolder', folder ? `Task folder: ${folder}` : 'Task folder: not found');
+  setText('artifactStatusMeta', payload?.presentCount != null && payload?.totalCount != null
+    ? `${payload.presentCount}/${payload.totalCount} artifacts present`
+    : 'Artifact status unavailable');
+
+  const byName = new Map(artifacts.map((artifact) => [artifact.name, artifact]));
+  TASK_ARTIFACT_NAMES.forEach(({ name, id }) => {
+    setArtifactBadge(id, byName.get(name));
+  });
+}
+
+async function refreshTaskArtifacts() {
+  const taskId = selectedTaskId();
+  if (!taskId) {
+    renderTaskArtifactStatus({
+      taskId: null,
+      folder: null,
+      artifacts: TASK_ARTIFACT_NAMES.map(({ name }) => ({ name, exists: false, path: null })),
+      presentCount: 0,
+      totalCount: TASK_ARTIFACT_NAMES.length,
+    });
+    return null;
+  }
+  try {
+    const data = await api(`/api/task-artifacts?taskId=${encodeURIComponent(taskId)}`);
+    renderTaskArtifactStatus(data);
+    return data;
+  } catch (error) {
+    renderTaskArtifactStatus({
+      taskId,
+      folder: null,
+      artifacts: TASK_ARTIFACT_NAMES.map(({ name }) => ({ name, exists: false, path: null })),
+      presentCount: 0,
+      totalCount: TASK_ARTIFACT_NAMES.length,
+    });
+    setText('artifactStatusMeta', `Artifact status error: ${shortText(error.message || error, 120)}`);
+    return null;
+  }
+}
+
 function appendOutput(text) {
   state.currentOutput += text;
   const out = document.getElementById('commandOutput');
   out.textContent = state.currentOutput;
   out.scrollTop = out.scrollHeight;
+}
+
+function resetOutput(text = '') {
+  state.currentOutput = '';
+  state.currentStderr = '';
+  const out = document.getElementById('commandOutput');
+  if (out) {
+    out.textContent = '';
+  }
+  if (text) {
+    appendOutput(text);
+  }
+}
+
+function isSuccessfulRun(result) {
+  const status = String(result?.status || '').toLowerCase();
+  return status === 'success' || Number(result?.exitCode) === 0;
+}
+
+function runHeaderSummary(name, stateLabel, exitCode, error, timestamp = Date.now()) {
+  state.lastCommandSummary = {
+    name,
+    state: stateLabel,
+    exitCode,
+    timestamp: formatTimestamp(timestamp),
+    error,
+  };
+  renderCommandSummary(state.lastCommandSummary);
 }
 
 function actionMode() {
@@ -351,6 +453,80 @@ function syncActionUi() {
   const mode = actionMode();
   const executeButton = document.getElementById('executeBtn');
   if (executeButton) executeButton.textContent = `Execute ${mode}`;
+}
+
+async function runLegacyCommandStep({
+  action,
+  taskId,
+  project,
+  model = null,
+  updateSummary = true,
+  stepLabel = action,
+} = {}) {
+  const payload = {
+    action,
+    project,
+    taskId,
+    ...(model ? { model } : {}),
+  };
+
+  appendOutput(`\n[${stepLabel}] starting...\n`);
+  const response = await api('/api/execute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  state.currentRunId = response.runId;
+  return new Promise((resolve, reject) => {
+    const es = new EventSource(`/api/stream/${response.runId}`);
+    let finished = false;
+    let stepStderr = '';
+
+    es.onmessage = (msg) => {
+      const event = JSON.parse(msg.data);
+      if (event.type === 'stdout' || event.type === 'stderr') {
+        appendOutput(event.text || '');
+        if (event.type === 'stderr') {
+          const chunk = event.text || '';
+          stepStderr += `${stepStderr ? '\n' : ''}${chunk}`;
+          state.currentStderr += `${state.currentStderr ? '\n' : ''}${chunk}`;
+        }
+      }
+      if (event.type === 'status') appendOutput(`${event.message}\n`);
+      if (event.type === 'done') {
+        finished = true;
+        const duration = event.durationMs ? `${(event.durationMs / 1000).toFixed(2)}s` : '—';
+        if (updateSummary) {
+          setRunHeader({ status: event.status, exit: event.exitCode, duration, artifacts: event.artifacts || [] });
+          state.lastCommandSummary = {
+            ...(state.lastCommandSummary || {}),
+            state: event.status,
+            exitCode: event.exitCode,
+            timestamp: state.lastCommandSummary?.timestamp || formatTimestamp(Date.now()),
+            error: stepStderr ? shortText(stepStderr) : (event.status === 'success' ? 'none' : state.lastCommandSummary?.error || 'see console output'),
+          };
+          renderCommandSummary(state.lastCommandSummary);
+        }
+        refreshTaskArtifacts().catch(() => {});
+        es.close();
+        resolve({
+          status: event.status,
+          exitCode: event.exitCode,
+          durationMs: event.durationMs || 0,
+          artifacts: event.artifacts || [],
+          stderr: stepStderr,
+          ok: isSuccessfulRun(event),
+        });
+      }
+    };
+
+    es.onerror = () => {
+      if (finished) return;
+      es.close();
+      reject(new Error(`Stream failed for run ${response.runId}`));
+    };
+  });
 }
 
 function setTalentUiState({ status = '', error = '', loading = false } = {}) {
@@ -625,6 +801,7 @@ function streamRun(runId) {
     if (event.type === 'done') {
       const duration = event.durationMs ? `${(event.durationMs / 1000).toFixed(2)}s` : '—';
       setRunHeader({ status: event.status, exit: event.exitCode, duration, artifacts: event.artifacts || [] });
+      refreshTaskArtifacts().catch(() => {});
       state.lastCommandSummary = {
         ...(state.lastCommandSummary || {}),
         state: event.status,
@@ -636,6 +813,57 @@ function streamRun(runId) {
       es.close();
     }
   };
+}
+
+async function runAllActions() {
+  const project = document.getElementById('projectSelect').value;
+  const taskId = selectedTaskId();
+  if (!project || !taskId) {
+    resetOutput('Please select a project and task before running.\n');
+    runHeaderSummary('Run All', 'failure', '—', 'project and task required');
+    setRunHeader({ status: 'failure', exit: '—', duration: '—', artifacts: [] });
+    return;
+  }
+
+  const steps = ['scan', 'manage', 'build'];
+  const startedAt = Date.now();
+  resetOutput('Starting Run All v0...\n');
+  runHeaderSummary('Run All', 'running', '—', 'none', startedAt);
+  setRunHeader({ status: 'running' });
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const action = steps[index];
+    state.currentStderr = '';
+    try {
+      const result = await runLegacyCommandStep({
+        action,
+        taskId,
+        project,
+        stepLabel: `${index + 1}/${steps.length} ${action}`,
+        updateSummary: false,
+      });
+      appendOutput(`[${index + 1}/${steps.length}] ${action}: ${result.ok ? 'completed successfully' : `failed (exit ${result.exitCode ?? '—'})`}\n`);
+      if (!result.ok) {
+        const totalDuration = Date.now() - startedAt;
+        runHeaderSummary('Run All', 'failure', result.exitCode ?? '—', shortText(result.stderr || state.currentStderr || 'see console output'), startedAt);
+        setRunHeader({ status: 'failure', exit: result.exitCode ?? '—', duration: `${(totalDuration / 1000).toFixed(2)}s`, artifacts: result.artifacts || [] });
+        appendOutput('Run All stopped on the first failure.\n');
+        return;
+      }
+    } catch (error) {
+      const totalDuration = Date.now() - startedAt;
+      appendOutput(`[${index + 1}/${steps.length}] ${action}: failed to start (${String(error.message || error)})\n`);
+      runHeaderSummary('Run All', 'failure', '—', shortText(error.message || error), startedAt);
+      setRunHeader({ status: 'failure', exit: '—', duration: `${(totalDuration / 1000).toFixed(2)}s`, artifacts: [] });
+      appendOutput('Run All stopped on the first failure.\n');
+      return;
+    }
+  }
+
+  const totalDuration = Date.now() - startedAt;
+  runHeaderSummary('Run All', 'success', 0, 'none', startedAt);
+  setRunHeader({ status: 'success', exit: 0, duration: `${(totalDuration / 1000).toFixed(2)}s`, artifacts: [] });
+  appendOutput('Run All completed successfully.\n');
 }
 
 async function hydrateRunHistory() {
@@ -678,7 +906,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('actionSelect').onchange = syncActionUi;
   document.getElementById('projectSelect').onchange = syncProjectRunnerUi;
-  document.getElementById('taskSelect').onchange = (e) => { document.getElementById('taskIdInput').value = e.target.value; };
+  document.getElementById('taskSelect').onchange = (e) => {
+    document.getElementById('taskIdInput').value = e.target.value;
+    refreshTaskArtifacts().catch(() => {});
+  };
+  document.getElementById('runAllBtn').onclick = () => runAllActions().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
   document.getElementById('executeBtn').onclick = () => executeAction().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
   document.getElementById('runProjectBtn').onclick = () => runSelectedProject();
   document.getElementById('generateCandidatesBtn').onclick = () => generateTalentCandidates();
@@ -720,6 +952,7 @@ window.__ACE_APP_TEST__ = {
   buildCommandSummary,
   loadProjects,
   renderCommandSummary,
+  runAllActions,
   runSelectedProject,
   syncProjectRunnerUi,
   updateRefreshStatus,

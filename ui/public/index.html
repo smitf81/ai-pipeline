@@ -96,7 +96,10 @@
                         <option value="build">Build</option>
                     </select>
                 </div>
-                <div class="button-row"><button id="executeBtn">Execute</button></div>
+                <div class="button-row">
+                    <button id="runAllBtn" type="button">Run All</button>
+                    <button id="executeBtn">Execute</button>
+                </div>
             </section>
 
             <section class="card">
@@ -142,6 +145,20 @@
                     <div class="status-row"><span class="muted">Exit code</span><span id="pipelineCommandExit" class="status-value">—</span></div>
                     <div class="status-row"><span class="muted">Timestamp</span><span id="pipelineCommandTimestamp" class="status-value">—</span></div>
                     <div class="status-row"><span class="muted">Error summary</span><span id="pipelineCommandError" class="status-value">none</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="artifactStatusCard">
+                <div class="card-title">Artifact Status</div>
+                <div class="artifact-summary">
+                    <div class="muted" id="artifactTaskLabel">Selected task: none</div>
+                    <div class="muted" id="artifactTaskFolder">Task folder: not found</div>
+                    <div class="muted" id="artifactStatusMeta">Artifact status unavailable</div>
+                </div>
+                <div class="artifact-status-grid" aria-live="polite">
+                    <div class="artifact-row"><span class="muted">context.md</span><span id="artifact_context_status" class="artifact-pill unknown">unknown</span></div>
+                    <div class="artifact-row"><span class="muted">plan.md</span><span id="artifact_plan_status" class="artifact-pill unknown">unknown</span></div>
+                    <div class="artifact-row"><span class="muted">patch.diff</span><span id="artifact_patch_status" class="artifact-pill unknown">unknown</span></div>
                 </div>
             </section>
 

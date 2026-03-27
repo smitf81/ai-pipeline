@@ -144,6 +144,7 @@ const STATIC_WEB_SUPPORTED_ORIGIN = `http://${STATIC_WEB_HOST}:${STATIC_WEB_DEFA
 const STATIC_WEB_SHELL_MARKER = 'Top-Down Thin Slice';
 const STATIC_WEB_BOOT_ENTRY_PATHS = ['/src/main.js', '/src/editor/ui.js'];
 const PROJECT_RUN_START_TIMEOUT_MS = 4000;
+const TASK_ARTIFACT_NAMES = ['context.md', 'plan.md', 'patch.diff'];
 const DESK_AGENT_DEFAULTS = {
   'context-manager': ['context-manager'],
   planner: ['planner'],
@@ -1865,8 +1866,12 @@ function queueAutoBrowserQARun(options = {}) {
   }, 80);
 }
 
+function readDashboardFileForRoot(rootPath, relPath, domainKey = DOMAIN_KEY) {
+  return readAnchorFile(rootPath, relPath, domainKey);
+}
+
 function readDashboardFile(relPath) {
-  return readAnchorFile(ROOT, relPath, DOMAIN_KEY);
+  return readDashboardFileForRoot(ROOT, relPath, DOMAIN_KEY);
 }
 
 function getTaskFolders() {
@@ -2615,6 +2620,28 @@ async function maybeRunExecutorWorker(workspace = null, { mode = 'manual', cardI
 
 function findTaskFolderByTaskId(taskId) {
   return getTaskFolders().find((folder) => folder.startsWith(String(taskId || '').slice(0, 4))) || null;
+}
+
+function readTaskArtifactStatus(taskId = '') {
+  const normalizedTaskId = String(taskId || '').trim();
+  const folder = normalizedTaskId ? findTaskFolderByTaskId(normalizedTaskId) : null;
+  const taskDir = folder ? path.join(TASKS_DIR, folder) : null;
+  const artifacts = TASK_ARTIFACT_NAMES.map((name) => {
+    const fullPath = taskDir ? path.join(taskDir, name) : null;
+    return {
+      name,
+      exists: Boolean(fullPath && fs.existsSync(fullPath)),
+      path: fullPath ? relativeToRoot(fullPath) : null,
+    };
+  });
+  return {
+    taskId: normalizedTaskId || null,
+    folder,
+    taskDir: taskDir ? relativeToRoot(taskDir) : null,
+    artifacts,
+    presentCount: artifacts.filter((artifact) => artifact.exists).length,
+    totalCount: artifacts.length,
+  };
 }
 
 function mutateTeamBoardCard(workspace, cardId, mutator) {
@@ -3983,6 +4010,14 @@ app.get('/api/dashboard', (req, res) => {
     anchorRefs: anchorBundle.anchorRefs,
     files,
     errors,
+  });
+});
+
+app.get('/api/task-artifacts', (req, res) => {
+  const taskId = String(req.query?.taskId || '').trim();
+  res.json({
+    ok: true,
+    ...readTaskArtifactStatus(taskId),
   });
 });
 
@@ -5559,6 +5594,7 @@ if (require.main === module) {
 module.exports = {
   app,
   startServer,
+  dashboardFiles,
   buildDeskPropertiesPayload,
   buildQAStatePayload,
   buildProjectRecord,
@@ -5582,6 +5618,8 @@ module.exports = {
   normalizeExecutiveEnvelope,
   mapEnvelopeToMaterialModule,
   buildModulePreview,
+  readDashboardFileForRoot,
+  readTaskArtifactStatus,
   resolveLegacyFallbackPayload,
   stopProjectRun,
   runArchivistWriteback,

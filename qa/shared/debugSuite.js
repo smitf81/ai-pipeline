@@ -327,14 +327,176 @@ function resolveRelativeImport(filePath, specifier) {
   return candidates.find((candidate) => fs.existsSync(candidate)) || null;
 }
 
+function blankNonCodeCharacter(character) {
+  return character === '\r' || character === '\n' ? character : ' ';
+}
+
+function maskTemplateExpression(source, startIndex) {
+  let index = startIndex;
+  let depth = 1;
+  let masked = '';
+
+  while (index < source.length) {
+    const character = source[index];
+    const next = source[index + 1];
+
+    if (character === "'" || character === '"' || character === '`') {
+      const stringMask = maskQuotedLiteral(source, index, character);
+      masked += stringMask.masked;
+      index = stringMask.endIndex;
+      continue;
+    }
+    if (character === '/' && next === '/') {
+      const commentMask = maskLineComment(source, index);
+      masked += commentMask.masked;
+      index = commentMask.endIndex;
+      continue;
+    }
+    if (character === '/' && next === '*') {
+      const commentMask = maskBlockComment(source, index);
+      masked += commentMask.masked;
+      index = commentMask.endIndex;
+      continue;
+    }
+    if (character === '{') {
+      depth += 1;
+      masked += character;
+      index += 1;
+      continue;
+    }
+    if (character === '}') {
+      depth -= 1;
+      masked += character;
+      index += 1;
+      if (depth === 0) break;
+      continue;
+    }
+    masked += character;
+    index += 1;
+  }
+
+  return { masked, endIndex: index };
+}
+
+function maskQuotedLiteral(source, startIndex, quoteCharacter) {
+  let index = startIndex;
+  let masked = quoteCharacter;
+  index += 1;
+
+  while (index < source.length) {
+    const character = source[index];
+    const next = source[index + 1];
+
+    if (character === '\\') {
+      masked += blankNonCodeCharacter(character);
+      if (index + 1 < source.length) {
+        masked += blankNonCodeCharacter(next);
+      }
+      index += 2;
+      continue;
+    }
+
+    if (quoteCharacter === '`' && character === '$' && next === '{') {
+      masked += '${';
+      const expressionMask = maskTemplateExpression(source, index + 2);
+      masked += expressionMask.masked;
+      index = expressionMask.endIndex;
+      continue;
+    }
+
+    masked += character === quoteCharacter ? quoteCharacter : blankNonCodeCharacter(character);
+    index += 1;
+    if (character === quoteCharacter) break;
+  }
+
+  return { masked, endIndex: index };
+}
+
+function maskLineComment(source, startIndex) {
+  let index = startIndex;
+  let masked = '  ';
+  index += 2;
+
+  while (index < source.length) {
+    const character = source[index];
+    if (character === '\r' || character === '\n') {
+      masked += character;
+      index += 1;
+      break;
+    }
+    masked += ' ';
+    index += 1;
+  }
+
+  return { masked, endIndex: index };
+}
+
+function maskBlockComment(source, startIndex) {
+  let index = startIndex;
+  let masked = '  ';
+  index += 2;
+
+  while (index < source.length) {
+    const character = source[index];
+    const next = source[index + 1];
+    if (character === '*' && next === '/') {
+      masked += '  ';
+      index += 2;
+      break;
+    }
+    masked += blankNonCodeCharacter(character);
+    index += 1;
+  }
+
+  return { masked, endIndex: index };
+}
+
+function maskNonExecutableJavaScript(source) {
+  let index = 0;
+  let masked = '';
+
+  while (index < source.length) {
+    const character = source[index];
+    const next = source[index + 1];
+
+    if (character === "'" || character === '"' || character === '`') {
+      const stringMask = maskQuotedLiteral(source, index, character);
+      masked += stringMask.masked;
+      index = stringMask.endIndex;
+      continue;
+    }
+    if (character === '/' && next === '/') {
+      const commentMask = maskLineComment(source, index);
+      masked += commentMask.masked;
+      index = commentMask.endIndex;
+      continue;
+    }
+    if (character === '/' && next === '*') {
+      const commentMask = maskBlockComment(source, index);
+      masked += commentMask.masked;
+      index = commentMask.endIndex;
+      continue;
+    }
+
+    masked += character;
+    index += 1;
+  }
+
+  return masked;
+}
+
 function validateRelativeImports(filePath, source) {
+  const maskedSource = maskNonExecutableJavaScript(source);
   const failures = [];
   for (const pattern of RELATIVE_IMPORT_PATTERNS) {
     pattern.lastIndex = 0;
     let match = pattern.exec(source);
     while (match) {
+      const leadingKeyword = (match[0].match(/\b(import|export|require)\b/) || [])[1] || '';
+      const executableKeyword = leadingKeyword
+        && maskedSource.slice(match.index, match.index + leadingKeyword.length) === leadingKeyword;
       const specifier = match[1];
-      if (specifier && specifier.startsWith('.') && !resolveRelativeImport(filePath, specifier)) {
+      if (executableKeyword && specifier && specifier.startsWith('.') && !resolveRelativeImport(filePath, specifier)) {
         failures.push(`missing import ${specifier}`);
       }
       match = pattern.exec(source);

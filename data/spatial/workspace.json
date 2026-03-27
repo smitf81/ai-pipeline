@@ -1636,7 +1636,7 @@
       "sourceNodeId": "node_1774259559573_gj2ai",
       "summary": "Notebook page for current studio work.",
       "createdAt": "2026-03-25T12:10:16.080Z",
-      "updatedAt": "2026-03-27T06:49:06.527Z"
+      "updatedAt": "2026-03-27T10:04:51.067Z"
     }
   ],
   "activePageId": "page_1774440616080_m3p3",
@@ -1731,7 +1731,7 @@
     "lastSourceNodeId": "node_1774259559573_gj2ai",
     "lastGenerationAt": "2026-03-23T09:53:13.590Z",
     "lastStatus": "rsg-generate",
-    "lastEvaluatedAt": "2026-03-27T06:49:06.527Z"
+    "lastEvaluatedAt": "2026-03-27T10:04:51.067Z"
   },
   "studio": {
     "handoffs": {
@@ -1747,17 +1747,17 @@
         "backend": "ollama",
         "model": "mistral:latest",
         "currentRunId": null,
-        "lastRunId": "context_manager_1774446144947_0t37j9",
+        "lastRunId": "context_manager_1774596226869_ql73j9",
         "lastOutcome": "degraded",
-        "lastOutcomeAt": "2026-03-25T13:42:24.961Z",
+        "lastOutcomeAt": "2026-03-27T07:23:46.894Z",
         "lastSourceNodeId": null,
         "lastHandoffId": null,
         "lastReportNodeId": null,
         "lastBlockedReason": "Ollama generate timed out after 1ms. | Ollama generate timed out after 1ms.",
         "lastUsedFallback": true,
         "lastPlannerFeedbackAction": null,
-        "startedAt": "2026-03-25T13:42:24.947Z",
-        "completedAt": "2026-03-25T13:42:24.961Z"
+        "startedAt": "2026-03-27T07:23:46.869Z",
+        "completedAt": "2026-03-27T07:23:46.894Z"
       },
       "executor": {
         "status": "idle",
@@ -1884,7 +1884,7 @@
     "teamBoard": {
       "cards": [],
       "selectedCardId": null,
-      "updatedAt": "2026-03-27T06:49:06.527Z",
+      "updatedAt": "2026-03-27T10:04:51.067Z",
       "summary": {
         "plan": 0,
         "active": 0,
@@ -1898,7 +1898,7 @@
     },
     "orchestrator": {
       "status": "running",
-      "lastTickAt": "2026-03-27T06:49:06.527Z",
+      "lastTickAt": "2026-03-27T10:04:51.067Z",
       "activeDeskIds": [],
       "conflicts": [
         {
@@ -1953,7 +1953,7 @@
             "pageGoal": "Notebook page for current studio work.",
             "matchedTerms": []
           },
-          "freshAt": "2026-03-27T06:49:06.527Z",
+          "freshAt": "2026-03-27T10:04:51.067Z",
           "thoughtBubble": "Context status: idle. Deterministic fallback kept intake alive."
         },
         "planner": {
@@ -1992,7 +1992,7 @@
             "pageGoal": "Notebook page for current studio work.",
             "matchedTerms": []
           },
-          "freshAt": "2026-03-27T06:49:06.527Z",
+          "freshAt": "2026-03-27T10:04:51.067Z",
           "thoughtBubble": "Planner status: idle. Waiting for context handoff."
         },
         "executor": {
@@ -2016,7 +2016,7 @@
             "pageGoal": "Notebook page for current studio work.",
             "matchedTerms": []
           },
-          "freshAt": "2026-03-27T06:49:06.527Z",
+          "freshAt": "2026-03-27T10:04:51.067Z",
           "thoughtBubble": "Executor status: idle. Waiting for approved work."
         },
         "memory-archivist": {
@@ -2054,7 +2054,7 @@
             "pageGoal": "Notebook page for current studio work.",
             "matchedTerms": []
           },
-          "freshAt": "2026-03-27T06:49:06.527Z",
+          "freshAt": "2026-03-27T10:04:51.067Z",
           "thoughtBubble": "Archivist status: idle. Waiting to archive changes."
         },
         "cto-architect": {
@@ -2093,7 +2093,7 @@
             "pageGoal": "Notebook page for current studio work.",
             "matchedTerms": []
           },
-          "freshAt": "2026-03-27T06:49:06.527Z",
+          "freshAt": "2026-03-27T10:04:51.067Z",
           "thoughtBubble": "Governance status: queued. Reviewing governance signals."
         }
       },
@@ -2148,13 +2148,13 @@
     "selectedTab": "qa",
     "canvasViewport": {
       "zoom": 0.84,
-      "x": -0.3765957446807988,
-      "y": -251.24
+      "x": 69.1234042553192,
+      "y": -483.74
     },
     "studioViewport": {
       "zoom": 1.28,
-      "x": -0.3765957446807988,
-      "y": -251.24
+      "x": 69.1234042553192,
+      "y": -483.74
     }
   },
   "selectedDeskId": "qa-lead",
@@ -2162,8 +2162,8 @@
   "scene": "studio",
   "camera": {
     "zoom": 1.28,
-    "x": -0.3765957446807988,
-    "y": -251.24
+    "x": 69.1234042553192,
+    "y": -483.74
   },
   "zoom": 0.84,
   "openTraceId": "trace_1773929104167_5s0jkc",

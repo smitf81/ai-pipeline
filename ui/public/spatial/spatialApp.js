@@ -998,6 +998,7 @@ function SpatialNotebook() {
   const [status, setStatus] = useState('ready');
   const [originFilter, setOriginFilter] = useState('all');
   const [preview, setPreview] = useState(null);
+  const [normalizedGraphBundlePresent, setNormalizedGraphBundlePresent] = useState(null);
   const [pointerWorld, setPointerWorld] = useState(null);
   const [simulating, setSimulating] = useState(false);
   const [simStep, setSimStep] = useState(0);
@@ -1113,6 +1114,16 @@ function SpatialNotebook() {
   const notebookState = useMemo(() => normalizeNotebookState({ graph: systemGraph, graphs: graphBundle, intentState, pages, activePageId }), [systemGraph, graphBundle, intentState, pages, activePageId]);
   const activePage = notebookState.activePage;
   const activeLayerNodeTypes = useMemo(() => getNodeTypesForLayer(activeGraphLayer), [activeGraphLayer]);
+  const graphInspectorPreviewCount = Array.isArray(preview?.mutations) ? preview.mutations.length : null;
+  const graphInspectorLayerRows = GRAPH_LAYERS.map((layer) => {
+    const layerGraph = graphBundle[layer] || buildStarterGraph();
+    return {
+      layer,
+      nodes: Array.isArray(layerGraph.nodes) ? layerGraph.nodes.length : 0,
+      edges: Array.isArray(layerGraph.edges) ? layerGraph.edges.length : 0,
+    };
+  });
+  const graphInspectorContextNodeFound = Boolean(systemGraph.nodes.find((node) => node?.metadata?.agentId === 'context-manager'));
   const rsgState = useMemo(() => buildRsgState({
     graph: systemGraph,
     graphs: graphBundle,
@@ -1518,6 +1529,7 @@ function SpatialNotebook() {
     loadWorkspace().then((workspace) => {
       if (cancelled) return;
       const graphs = normalizeGraphBundle(workspace);
+      setNormalizedGraphBundlePresent(true);
       const storedStudio = workspace.studio || {};
       const initialLayer = GRAPH_LAYERS.includes(storedStudio.activeGraphLayer) ? storedStudio.activeGraphLayer : 'system';
       setGraphLayers(graphs);
@@ -1587,6 +1599,7 @@ function SpatialNotebook() {
       setScanPreview(storedIntentState.contextReport || null);
       hasLoadedWorkspace.current = true;
     }).catch(() => {
+      setNormalizedGraphBundlePresent(false);
       hasLoadedWorkspace.current = true;
     });
     return () => {
@@ -4256,6 +4269,32 @@ function SpatialNotebook() {
         h('button', { className: 'mini', type: 'button', onClick: () => setSidebarCollapsed((value) => !value) }, sidebarCollapsed ? 'Open' : 'Collapse'),
       ),
       !sidebarCollapsed && h('div', { className: 'sidebar-scroll' },
+      h('div', { className: 'inspector-block panel-card graph-inspector-panel' },
+        h('div', { className: 'inspector-label' }, 'Graph Inspector v0'),
+        h('div', { className: 'signal-meta muted' }, 'Read-only bundle health for the normalized graph state.'),
+        h('div', { className: 'criteria-list desk-metric-list' },
+          h('div', { className: 'criteria-row' },
+            h('span', null, 'Normalized bundle'),
+            h('span', { className: 'muted' }, normalizedGraphBundlePresent === null ? 'loading' : (normalizedGraphBundlePresent ? 'present' : 'missing')),
+          ),
+          h('div', { className: 'criteria-row' },
+            h('span', null, 'Available layers'),
+            h('span', { className: 'muted' }, GRAPH_LAYERS.join(' / ')),
+          ),
+          graphInspectorLayerRows.map((row) => h('div', { key: row.layer, className: 'criteria-row' },
+            h('span', null, `${row.layer} layer`),
+            h('span', { className: 'muted' }, `${row.nodes} nodes / ${row.edges} edges`),
+          )),
+          h('div', { className: 'criteria-row' },
+            h('span', null, 'Context-manager node'),
+            h('span', { className: 'muted' }, graphInspectorContextNodeFound ? 'found' : 'missing'),
+          ),
+          h('div', { className: 'criteria-row' },
+            h('span', null, 'Mutation preview'),
+            h('span', { className: 'muted' }, graphInspectorPreviewCount === null ? 'not present' : `${graphInspectorPreviewCount} mutations`),
+          ),
+        ),
+      ),
       scene === SCENES.CANVAS
         ? h(React.Fragment, null,
           h('div', { className: 'inspector-block' },
@@ -4376,14 +4415,6 @@ function SpatialNotebook() {
                   : null,
               )
               : h('div', { className: 'signal-empty muted' }, 'RSG runs appear here after Enter or idle-triggered intent capture on the system canvas.'),
-          ),
-          h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'Graph Layer Summary'),
-            h('div', { className: 'criteria-list desk-metric-list' },
-              h('div', { className: 'criteria-row' }, h('span', null, 'System graph'), h('span', { className: 'muted' }, `${systemGraph.nodes.length} nodes / ${systemGraph.edges.length} edges`)),
-              h('div', { className: 'criteria-row' }, h('span', null, 'World graph'), h('span', { className: 'muted' }, `${(graphBundle.world?.nodes || []).length} nodes / ${(graphBundle.world?.edges || []).length} edges`)),
-              h('div', { className: 'criteria-row' }, h('span', null, 'Active layer'), h('span', { className: 'muted' }, activeGraphLabel)),
-            ),
           ),
           h('div', { className: 'inspector-block' },
             h('div', { className: 'inspector-label' }, 'Architecture Memory'),

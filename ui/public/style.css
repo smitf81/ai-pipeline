@@ -1593,6 +1593,59 @@ body.qa-mode .status-row:last-child {
 .meta-item { background: rgba(255, 255, 255, 0.05); padding: 8px; border: 1px solid var(--border); border-radius: 10px; }
 .meta-label { font-size: 11px; color: var(--muted); }
 .meta-value { font-weight: 700; }
+.artifact-summary {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.artifact-status-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.artifact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.artifact-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.artifact-pill {
+  min-width: 88px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  text-align: center;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.artifact-pill.present {
+  color: var(--good);
+  border-color: rgba(92, 226, 159, 0.32);
+  background: rgba(92, 226, 159, 0.08);
+}
+
+.artifact-pill.missing {
+  color: var(--bad);
+  border-color: rgba(255, 131, 121, 0.28);
+  background: rgba(255, 131, 121, 0.06);
+}
+
+.artifact-pill.unknown {
+  color: var(--warn);
+  border-color: rgba(255, 211, 110, 0.28);
+  background: rgba(255, 211, 110, 0.06);
+}
 .hidden-row, .hidden { display: none; }
 .modal.hidden { display: none !important; }
 .help { margin-top: 6px; }
