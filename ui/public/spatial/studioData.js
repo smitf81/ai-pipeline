@@ -40,6 +40,16 @@ const STATIONS = [
     position: { x: 54, y: 56 },
   },
   {
+    id: 'qa-lead',
+    name: 'QA / Test Lead',
+    shortLabel: 'QA',
+    role: 'Runs suites, surfaces evidence, and rates test quality across desks.',
+    responsibility: 'report wall / evidence bench',
+    scope: ['qa', 'test', 'scorecard', 'browser', 'evidence'],
+    theme: { accent: '#7dd6c8', shadow: 'rgba(78, 157, 145, 0.38)' },
+    position: { x: 50, y: 35 },
+  },
+  {
     id: 'cto-architect',
     name: 'CTO / Architect',
     shortLabel: 'CTO',
@@ -57,14 +67,20 @@ const DESK_MISSIONS = {
   planner: 'Translate active context into concrete plans, work items, and dependency-aware handoffs.',
   executor: 'Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.',
   'memory-archivist': 'Persist useful summaries, artifact references, and history for active work.',
+  'qa-lead': 'Run QA suites, expose evidence, and score test quality for current ACE surfaces.',
   'cto-architect': 'Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.',
 };
+
+function uniqueStrings(values = []) {
+  return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
 
 const DESK_ALLOWED_ACTIONS = {
   'context-manager': ['set-active-page', 'slice-context', 'publish-handoff', 'flag-ambiguity'],
   planner: ['expand-plan', 'prioritise-work', 'publish-plan'],
   executor: ['apply-package', 'run-preflight', 'deploy-runtime', 'report-blocker'],
   'memory-archivist': ['archive-summary', 'record-artifact', 'snapshot-history'],
+  'qa-lead': ['run-structured-qa', 'run-browser-pass', 'inspect-scorecards', 'inspect-artifacts'],
   'cto-architect': ['raise-conflict', 'approve-apply', 'reject-risky-change'],
 };
 
@@ -74,7 +90,7 @@ function defaultPlannerWorkerState() {
     statusReason: null,
     mode: 'auto',
     backend: 'ollama',
-    model: 'mixtral',
+    model: 'mistral:latest',
     currentRunId: null,
     lastRunId: null,
     lastOutcome: null,
@@ -94,7 +110,7 @@ function defaultContextManagerWorkerState() {
     statusReason: null,
     mode: 'manual',
     backend: 'ollama',
-    model: 'mixtral',
+    model: 'mistral:latest',
     currentRunId: null,
     lastRunId: null,
     lastOutcome: null,
@@ -116,7 +132,7 @@ function defaultExecutorWorkerState() {
     statusReason: null,
     mode: 'manual',
     backend: 'ollama',
-    model: 'mixtral',
+    model: 'mistral:latest',
     currentRunId: null,
     lastRunId: null,
     lastOutcome: null,
@@ -241,9 +257,113 @@ export function createDefaultTeamBoard() {
       active: 0,
       complete: 0,
       review: 0,
+      assigned: 0,
+      handedOff: 0,
       binned: 0,
       idleWorkers: 0,
     },
+  };
+}
+
+const TASK_PHASES = new Set(['captured', 'planned', 'active', 'handed_off']);
+const TASK_ASSIGNMENT_STATES = new Set(['unassigned', 'assigned', 'claimed']);
+
+function taskPhaseLabel(phase) {
+  const labels = {
+    captured: 'Captured',
+    planned: 'Planned',
+    active: 'Active',
+    handed_off: 'Handed off',
+  };
+  return labels[phase] || 'Planned';
+}
+
+function taskAssignmentLabel(state) {
+  const labels = {
+    unassigned: 'Unassigned',
+    assigned: 'Assigned',
+    claimed: 'Claimed',
+  };
+  return labels[state] || 'Unassigned';
+}
+
+function createTaskFlowEntry({
+  phase = 'planned',
+  assignmentState = 'unassigned',
+  ownerDeskId = null,
+  assigneeDeskId = null,
+  label = '',
+  note = '',
+  at = null,
+} = {}) {
+  return {
+    phase: TASK_PHASES.has(phase) ? phase : 'planned',
+    assignmentState: TASK_ASSIGNMENT_STATES.has(assignmentState) ? assignmentState : 'unassigned',
+    ownerDeskId: ownerDeskId || null,
+    assigneeDeskId: assigneeDeskId || null,
+    label: label || taskPhaseLabel(phase),
+    note: note || '',
+    at: at || null,
+  };
+}
+
+function normalizeTaskFlow(taskFlow = {}, fallback = {}) {
+  const history = Array.isArray(taskFlow.history)
+    ? taskFlow.history.filter(Boolean).map((entry) => createTaskFlowEntry(entry))
+    : [];
+  const phase = TASK_PHASES.has(taskFlow.phase)
+    ? taskFlow.phase
+    : (TASK_PHASES.has(fallback.phase) ? fallback.phase : 'planned');
+  const assignmentState = TASK_ASSIGNMENT_STATES.has(taskFlow.assignmentState)
+    ? taskFlow.assignmentState
+    : (TASK_ASSIGNMENT_STATES.has(fallback.assignmentState) ? fallback.assignmentState : 'unassigned');
+  return {
+    phase,
+    assignmentState,
+    ownerDeskId: taskFlow.ownerDeskId || fallback.ownerDeskId || null,
+    assigneeDeskId: taskFlow.assigneeDeskId || fallback.assigneeDeskId || null,
+    sourceIntentId: taskFlow.sourceIntentId || fallback.sourceIntentId || null,
+    sourceHandoffId: taskFlow.sourceHandoffId || fallback.sourceHandoffId || null,
+    lastTransitionAt: taskFlow.lastTransitionAt || fallback.lastTransitionAt || history[0]?.at || null,
+    lastTransitionLabel: taskFlow.lastTransitionLabel || fallback.lastTransitionLabel || taskPhaseLabel(phase),
+    history,
+  };
+}
+
+function transitionTaskFlow(taskFlow = {}, next = {}, fallback = {}) {
+  const current = normalizeTaskFlow(taskFlow, fallback);
+  const nextPhase = TASK_PHASES.has(next.phase) ? next.phase : current.phase;
+  const nextAssignmentState = TASK_ASSIGNMENT_STATES.has(next.assignmentState) ? next.assignmentState : current.assignmentState;
+  const nextOwnerDeskId = next.ownerDeskId !== undefined ? (next.ownerDeskId || null) : current.ownerDeskId;
+  const nextAssigneeDeskId = next.assigneeDeskId !== undefined ? (next.assigneeDeskId || null) : current.assigneeDeskId;
+  const nextAt = next.at || current.lastTransitionAt || null;
+  const nextLabel = next.label || taskPhaseLabel(nextPhase);
+  const nextEntry = createTaskFlowEntry({
+    phase: nextPhase,
+    assignmentState: nextAssignmentState,
+    ownerDeskId: nextOwnerDeskId,
+    assigneeDeskId: nextAssigneeDeskId,
+    label: nextLabel,
+    note: next.note || '',
+    at: nextAt,
+  });
+  const head = current.history[0] || null;
+  const shouldAppend = !head
+    || head.phase !== nextEntry.phase
+    || head.assignmentState !== nextEntry.assignmentState
+    || head.ownerDeskId !== nextEntry.ownerDeskId
+    || head.assigneeDeskId !== nextEntry.assigneeDeskId
+    || head.label !== nextEntry.label
+    || head.note !== nextEntry.note;
+  return {
+    ...current,
+    phase: nextPhase,
+    assignmentState: nextAssignmentState,
+    ownerDeskId: nextOwnerDeskId,
+    assigneeDeskId: nextAssigneeDeskId,
+    lastTransitionAt: nextEntry.at,
+    lastTransitionLabel: nextEntry.label,
+    history: shouldAppend ? [nextEntry, ...current.history].slice(0, 8) : current.history,
   };
 }
 
@@ -317,18 +437,47 @@ function deriveCardState(card = {}) {
 
 function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, sourceAnchorRefs = [], title, createdAt = null }) {
   const now = createdAt || new Date().toISOString();
+  const capturedFlow = createTaskFlowEntry({
+    phase: 'captured',
+    assignmentState: 'unassigned',
+    ownerDeskId: 'context-manager',
+    assigneeDeskId: 'planner',
+    label: 'Captured from intent',
+    note: title,
+    at: now,
+  });
   return {
     id: nextTeamBoardTaskId(cards),
     sourceKey: cardSourceKey(pageId, title),
     pageId,
     sourceHandoffId: handoffId || null,
     sourceNodeId: sourceNodeId || null,
+    sourceIntentId: sourceNodeId || null,
     sourceAnchorRefs: Array.isArray(sourceAnchorRefs) ? sourceAnchorRefs.filter(Boolean) : [],
     title,
     status: 'plan',
     desk: 'Planner',
     state: 'Ready',
     phaseTicks: 0,
+    taskFlow: transitionTaskFlow({
+      phase: 'captured',
+      assignmentState: 'unassigned',
+      ownerDeskId: 'context-manager',
+      assigneeDeskId: 'planner',
+      sourceIntentId: sourceNodeId || null,
+      sourceHandoffId: handoffId || null,
+      lastTransitionAt: now,
+      lastTransitionLabel: 'Captured from intent',
+      history: [capturedFlow],
+    }, {
+      phase: 'planned',
+      assignmentState: 'unassigned',
+      ownerDeskId: 'planner',
+      assigneeDeskId: 'executor',
+      label: 'Moved to planner board',
+      at: now,
+      note: title,
+    }),
     targetProjectKey: 'ace-self',
     builderTaskId: null,
     runnerTaskId: null,
@@ -354,6 +503,15 @@ export function normalizeTeamBoardState(workspace = {}) {
   const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
   const plannerWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).planner;
   const cards = Array.isArray(board.cards) ? board.cards.filter(Boolean).map((card) => {
+    const fallbackTaskFlow = {
+      phase: card.status === 'active' ? 'active' : (card.status === 'complete' || card.status === 'review' ? 'handed_off' : 'planned'),
+      assignmentState: card.status === 'active' ? 'assigned' : (card.status === 'complete' || card.status === 'review' ? 'claimed' : 'unassigned'),
+      ownerDeskId: card.status === 'active' || card.status === 'complete' || card.status === 'review' ? 'executor' : 'planner',
+      assigneeDeskId: 'executor',
+      sourceIntentId: card.sourceIntentId || card.sourceNodeId || null,
+      sourceHandoffId: card.sourceHandoffId || null,
+      lastTransitionAt: card.updatedAt || card.createdAt || null,
+    };
     const normalizedCard = {
     ...card,
     status: normalizeBoardStatus(card.status),
@@ -361,6 +519,7 @@ export function normalizeTeamBoardState(workspace = {}) {
     phaseTicks: Number(card.phaseTicks || 0),
     targetProjectKey: card.targetProjectKey || 'ace-self',
     sourceAnchorRefs: Array.isArray(card.sourceAnchorRefs) ? card.sourceAnchorRefs.filter(Boolean) : [],
+    sourceIntentId: card.sourceIntentId || card.sourceNodeId || null,
     builderTaskId: card.builderTaskId || card.runnerTaskId || null,
     runnerTaskId: card.runnerTaskId || null,
     runIds: Array.isArray(card.runIds) ? card.runIds.filter(Boolean) : [],
@@ -382,29 +541,10 @@ export function normalizeTeamBoardState(workspace = {}) {
     auditSessionId: card.auditSessionId || null,
     desk: card.desk || deriveCardDesk(card),
     state: card.state || deriveCardState(card),
+    taskFlow: normalizeTaskFlow(card.taskFlow, fallbackTaskFlow),
     };
     return normalizedCard;
   }) : [];
-  const plannerOwnsHandoff = Boolean(handoff?.id && (
-    handoff?.plannerRunId
-    || plannerWorker?.currentRunId
-    || plannerWorker?.lastSourceHandoffId === handoff.id
-  ));
-  if (!plannerOwnsHandoff && Array.isArray(handoff?.tasks) && handoff.tasks.length) {
-    handoff.tasks.filter(Boolean).forEach((task) => {
-      const sourceKey = cardSourceKey(workspace.activePageId || 'page', task);
-      if (cards.some((card) => card.sourceKey === sourceKey)) return;
-      cards.push(createTeamBoardCard({
-        cards,
-        pageId: workspace.activePageId || 'page',
-        handoffId: handoff.id,
-        sourceNodeId: handoff.sourceNodeId || null,
-        sourceAnchorRefs: handoff.anchorRefs || [],
-        title: task,
-        createdAt: handoff.createdAt || null,
-      }));
-    });
-  }
   const selectedCard = cards.find((card) => card.id === board.selectedCardId) || null;
   return {
     cards,
@@ -415,6 +555,8 @@ export function normalizeTeamBoardState(workspace = {}) {
       active: cards.filter((card) => card.status === 'active').length,
       complete: cards.filter((card) => card.status === 'complete').length,
       review: cards.filter((card) => card.status === 'review').length,
+      assigned: cards.filter((card) => card.taskFlow?.assignmentState === 'assigned').length,
+      handedOff: cards.filter((card) => card.taskFlow?.phase === 'handed_off').length,
       binned: cards.filter((card) => card.status === 'binned').length,
       idleWorkers: Number(board.summary?.idleWorkers || 0),
     },
@@ -447,13 +589,21 @@ function collectConstraints(report, dashboardState) {
 
 export function createPlannerHandoff(report, dashboardState = {}, previousHandoff = null) {
   if (!report) return null;
-  const tasks = Array.isArray(report.tasks) ? report.tasks.filter(Boolean) : [];
+  const requestedOutcomes = uniqueStrings(
+    Array.isArray(report.requestedOutcomes) && report.requestedOutcomes.length
+      ? report.requestedOutcomes
+      : (Array.isArray(report.tasks) && report.tasks.length
+        ? report.tasks
+        : (Array.isArray(report.truth?.requestedOutcomes) && report.truth.requestedOutcomes.length
+          ? report.truth.requestedOutcomes
+          : (Array.isArray(report.truth?.tasks) ? report.truth.tasks : []))),
+  ).slice(0, 4);
   const constraints = collectConstraints(report, dashboardState);
   const clarifications = Array.isArray(report?.contextPacket?.clarifications)
     ? report.contextPacket.clarifications.filter(Boolean)
     : [];
   if (Number(report.confidence || 0) < 0.55) clarifications.push('Intent confidence is low and should be checked before execution expands.');
-  if (!tasks.length) clarifications.push('No concrete tasks were extracted from the latest context input.');
+  if (!requestedOutcomes.length) clarifications.push('No concrete requested outcomes were extracted from the latest context input.');
   if (!report.projectContext?.matchedTerms?.length) clarifications.push('Project alignment is weak, so planner scope may need refinement.');
   const rationale = (report.criteria || [])
     .slice(0, 3)
@@ -461,7 +611,7 @@ export function createPlannerHandoff(report, dashboardState = {}, previousHandof
     .join(', ');
   const problemStatement = [
     `Goal: ${report.summary || 'Clarify the next problem to solve.'}`,
-    tasks.length ? `Requested outcomes: ${tasks.join('; ')}.` : 'Requested outcomes: no concrete task list extracted yet.',
+    requestedOutcomes.length ? `Requested outcomes: ${requestedOutcomes.join('; ')}.` : 'Requested outcomes: no concrete task list extracted yet.',
     rationale ? `Why ACE believes this: ${rationale}.` : null,
     constraints.length ? `Constraints and review signals: ${constraints.join(' | ')}.` : 'Constraints and review signals: none surfaced from the latest report.',
     clarifications.length ? `Still unclear: ${clarifications.join(' ')}` : 'Still unclear: no immediate clarification requested.',
@@ -476,13 +626,19 @@ export function createPlannerHandoff(report, dashboardState = {}, previousHandof
     summary: report.summary || 'Intent ready for planner review.',
     problemStatement,
     anchorRefs: Array.isArray(report.anchorRefs) ? report.anchorRefs.filter(Boolean) : [],
-    tasks,
+    goal: report.goal || report.truth?.goal || report.summary || '',
+    requestedOutcomes,
+    tasks: requestedOutcomes,
     constraints,
     confidence: Number(report.confidence || 0),
     criteria: Array.isArray(report.criteria) ? report.criteria : [],
     truth: report.truth || null,
     scores: report.scores || null,
     classification: report.classification || { role: 'context', labels: [] },
+    requestType: report.requestType || report.truth?.requestType || 'context_request',
+    urgency: report.urgency || report.truth?.urgency || 'normal',
+    targets: Array.isArray(report.targets) ? report.targets.slice(0, 8) : [],
+    signals: report.signals || report.truth?.signals || null,
     status: clarifications.length ? 'needs-clarification' : 'ready',
   };
 }
@@ -569,6 +725,9 @@ function buildDeskStatusLabel({ deskId, localState, handoff, plannerToContext = 
     if (localState === 'ready') return 'Ready to execute';
     return 'Idle';
   }
+  if (deskId === 'qa-lead') {
+    return 'QA wall';
+  }
   if (deskId === 'cto-architect') {
     if (localState === 'blocked') return 'Reviewing blockers';
     if (localState === 'running') return 'Governing';
@@ -603,6 +762,9 @@ function buildDeskStatusDetail({ deskId, localState, handoff, plannerToContext =
       ? 'Execution cannot advance until review gates or context blockers clear.'
       : (localState === 'ready' ? 'A reviewed package is waiting for executor work.' : 'Executor is idle.');
   }
+  if (deskId === 'qa-lead') {
+    return 'QA remains read-only in v1 and surfaces suite evidence, browser runs, and scorecards without joining orchestrator task ownership.';
+  }
   if (deskId === 'cto-architect') {
     return localState === 'ready'
       ? 'A review or approval gate is waiting on governance.'
@@ -629,12 +791,30 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
       const isSelected = card.id === board.selectedCardId;
       let status = normalizeBoardStatus(card.status);
       let phaseTicks = Number(card.phaseTicks || 0);
+      let taskFlow = normalizeTaskFlow(card.taskFlow, {
+        phase: status === 'active' ? 'active' : (status === 'complete' || status === 'review' ? 'handed_off' : 'planned'),
+        assignmentState: status === 'active' ? 'assigned' : (status === 'complete' || status === 'review' ? 'claimed' : 'unassigned'),
+        ownerDeskId: status === 'active' || status === 'complete' || status === 'review' ? 'executor' : 'planner',
+        assigneeDeskId: 'executor',
+        sourceIntentId: card.sourceIntentId || card.sourceNodeId || null,
+        sourceHandoffId: card.sourceHandoffId || null,
+        lastTransitionAt: card.updatedAt || card.createdAt || null,
+      });
       if (isSelected) {
         return {
           ...card,
           status: 'review',
           desk: 'Worker',
           state: latestExecutorRun?.status === 'running' ? 'Running patch' : 'Queued for execution',
+          taskFlow: transitionTaskFlow(taskFlow, {
+            phase: 'handed_off',
+            assignmentState: 'claimed',
+            ownerDeskId: 'executor',
+            assigneeDeskId: 'executor',
+            label: 'Executor claimed task',
+            at: now,
+            note: card.title,
+          }),
           updatedAt: now,
         };
       }
@@ -646,11 +826,29 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
           status = 'active';
           phaseTicks = 0;
           openActiveSlots -= 1;
+          taskFlow = transitionTaskFlow(taskFlow, {
+            phase: 'active',
+            assignmentState: 'assigned',
+            ownerDeskId: 'planner',
+            assigneeDeskId: 'executor',
+            label: 'Placed into active',
+            at: now,
+            note: card.title,
+          });
         } else {
           phaseTicks = 0;
         }
       } else if (status === 'active') {
         phaseTicks += 1;
+        taskFlow = transitionTaskFlow(taskFlow, {
+          phase: 'active',
+          assignmentState: 'assigned',
+          ownerDeskId: 'planner',
+          assigneeDeskId: 'executor',
+          label: 'Active on planner slab',
+          at: now,
+          note: card.title,
+        });
         if (phaseTicks >= 1) {
           status = 'complete';
           phaseTicks = 0;
@@ -672,6 +870,7 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
         state: reviewGate && status === 'active'
           ? 'Clarifying'
           : deriveCardState({ ...card, status }),
+        taskFlow,
         updatedAt: now,
       };
     });
@@ -684,6 +883,8 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
       active: cards.filter((card) => card.status === 'active').length,
       complete: cards.filter((card) => card.status === 'complete').length,
       review: cards.filter((card) => card.status === 'review').length,
+      assigned: cards.filter((card) => card.taskFlow?.assignmentState === 'assigned').length,
+      handedOff: cards.filter((card) => card.taskFlow?.phase === 'handed_off').length,
       idleWorkers: countIdleWorkers(deskStates),
     },
   };
@@ -699,14 +900,14 @@ function collectNodeMetrics(agent, graph, workspace) {
     return matchesScope(agent, content);
   });
   const latestIntent = latestIntentReport(workspace);
-  if (agent.id === 'planner' && latestIntent?.tasks?.length) {
+  if (agent.id === 'planner' && (latestIntent?.requestedOutcomes || latestIntent?.tasks || []).length) {
     return {
       nodes,
       count: Math.max(nodes.length, latestIntent.tasks.length),
       queue: Math.max(0, latestIntent.tasks.length - 1),
     };
   }
-  if (agent.id === 'executor' && latestIntent?.tasks?.length) {
+  if (agent.id === 'executor' && (latestIntent?.requestedOutcomes || latestIntent?.tasks || []).length) {
     return {
       nodes,
       count: Math.max(nodes.length, Math.min(2, latestIntent.tasks.length)),
@@ -850,12 +1051,13 @@ function buildDeskWorkItems(agentId, workspace, notebook, handoff, selectedExecu
         pageId: card.pageId || notebook.activePageId,
         deskId: agentId,
         kind: 'planned-card',
-        status: card.status === 'plan' ? 'ready' : 'running',
+        status: card.taskFlow?.phase === 'planned' ? 'ready' : 'running',
         dependsOn: card.sourceHandoffId ? [card.sourceHandoffId] : [],
         conflictTags: ['plan', card.id],
         artifactRefs: card.artifactRefs || [],
         anchorRefs: card.sourceAnchorRefs || [],
         title: card.title,
+        detail: `${taskPhaseLabel(card.taskFlow?.phase || 'planned')} | ${taskAssignmentLabel(card.taskFlow?.assignmentState || 'unassigned')} | owner ${card.taskFlow?.ownerDeskId || 'planner'} → ${card.taskFlow?.assigneeDeskId || 'executor'} | trail ${taskTrailSummary(card.taskFlow)}`,
       }));
     }
     return [{
@@ -872,7 +1074,9 @@ function buildDeskWorkItems(agentId, workspace, notebook, handoff, selectedExecu
     }];
   }
   if (agentId === 'executor') {
-    const intentTasks = Array.isArray(latestIntent?.tasks) ? latestIntent.tasks.filter(Boolean) : [];
+    const intentTasks = Array.isArray(latestIntent?.requestedOutcomes)
+      ? latestIntent.requestedOutcomes.filter(Boolean)
+      : (Array.isArray(latestIntent?.tasks) ? latestIntent.tasks.filter(Boolean) : []);
     if (selectedExecutionCard) {
       return [{
         id: makeId('work'),
@@ -915,6 +1119,9 @@ function buildDeskWorkItems(agentId, workspace, notebook, handoff, selectedExecu
         title: 'Capture notes, handoffs, and artifact history',
       },
     ];
+  }
+  if (agentId === 'qa-lead') {
+    return [];
   }
   return [
     {
@@ -994,7 +1201,25 @@ export function advanceOrchestratorState({ workspace, dashboardState = {}, runs 
   const plannerWorker = workers.planner;
   const plannerToContext = workspace.studio?.handoffs?.plannerToContext || null;
   const baseBoard = normalizeTeamBoardState(workspace);
-  const initialSelectedExecutionCard = getSelectedExecutionCard(baseBoard);
+  const seededBoard = !baseBoard.cards.length && handoff
+    ? {
+        ...baseBoard,
+        cards: [createTeamBoardCard({
+          cards: baseBoard.cards,
+          pageId: notebook.activePageId || workspace.activePageId || 'page-1',
+          handoffId: handoff.id || null,
+          sourceNodeId: latestIntent?.nodeId || handoff.sourceNodeId || null,
+          sourceAnchorRefs: Array.isArray(handoff.anchorRefs) ? handoff.anchorRefs : [],
+          title: (Array.isArray(handoff.requestedOutcomes) && handoff.requestedOutcomes[0])
+            || (Array.isArray(handoff.tasks) && handoff.tasks[0])
+            || handoff.summary
+            || latestIntent?.summary
+            || 'Planned task',
+          createdAt: handoff.createdAt || latestIntent?.createdAt || null,
+        })],
+      }
+    : baseBoard;
+  const initialSelectedExecutionCard = getSelectedExecutionCard(seededBoard);
   const initialDeskStates = Object.fromEntries(STATIONS.map((agent) => {
     const workItems = buildDeskWorkItems(agent.id, workspace, notebook, handoff, initialSelectedExecutionCard);
     const plannerFeedbackActive = isPlannerFeedbackActive(plannerToContext, handoff);
@@ -1061,7 +1286,7 @@ export function advanceOrchestratorState({ workspace, dashboardState = {}, runs 
   const teamBoard = advanceTeamBoardState({
     workspace,
     handoff,
-    board: baseBoard,
+    board: seededBoard,
     deskStates: initialDeskStates,
     conflicts: initialConflicts,
     runs,
@@ -1225,11 +1450,13 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
   const handoff = workspace.studio?.handoffs?.contextToPlanner || null;
   const plannerToContext = workspace.studio?.handoffs?.plannerToContext || null;
   const notebook = normalizeNotebookState(workspace);
+  const board = normalizeTeamBoardState(workspace);
   const governedDesk = workspace.studio?.orchestrator?.desks?.[agent.id] || null;
   const contextWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers)['context-manager'];
   const actionSignals = Number(report?.metrics?.actionSignals || 0);
   const constraintSignals = Number(report?.metrics?.constraintSignals || 0);
   const matchedTerms = report?.projectContext?.matchedTerms || [];
+  const taskCards = canonicalTaskRecords(board);
   const history = buildContextHistory({
     report,
     handoff,
@@ -1241,7 +1468,7 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
   if (Number(report?.confidence || 0) < 0.55) {
     userActions.push('Clarify the desired outcome so the planner handoff is less ambiguous.');
   }
-  if (!(report?.tasks || []).length) {
+  if (!(report?.requestedOutcomes || report?.tasks || []).length) {
     userActions.push('Add a more concrete task or expected output in the context input.');
   }
   if ((dashboardState?.blockers || []).length) {
@@ -1267,7 +1494,7 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
     },
     metrics: {
       confidence: Number(report?.confidence || 0),
-      extractedTasks: (report?.tasks || []).length,
+      extractedTasks: (report?.requestedOutcomes || report?.tasks || []).length,
       matchedProjectTerms: matchedTerms.length,
       actionSignals,
       constraintSignals,
@@ -1288,7 +1515,7 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
         id: 'context-worker',
         label: 'Context Worker',
         kind: 'summary',
-        value: `Status: ${contextWorker?.status || 'idle'} | backend ${contextWorker?.backend || 'ollama'} | model ${contextWorker?.model || 'mixtral'}`,
+      value: `Status: ${contextWorker?.status || 'idle'} | backend ${contextWorker?.backend || 'ollama'} | model ${contextWorker?.model || 'mistral:latest'}`,
         detail: contextWorker?.currentRunId
           ? `Running ${contextWorker.currentRunId}`
           : (contextWorker?.lastRunId
@@ -1310,6 +1537,17 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
         emptyState: 'Planner handoff will appear after the next intent scan.',
       },
       {
+        id: 'task-creation',
+        label: 'Task Creation',
+        kind: 'history',
+        items: taskCards.map((record) => ({
+          id: record.id,
+          summary: record.title,
+          detail: `${taskPhaseLabel(record.phase || 'captured')} | ${taskAssignmentLabel(record.assignmentState || 'unassigned')} | owner ${record.ownerDeskId || 'context-manager'} → ${record.assigneeDeskId || 'planner'} | trail ${taskTrailSummary(record.taskFlow)}`,
+        })),
+        emptyState: 'No canonical task cards have been created yet.',
+      },
+      {
         id: 'intent-pipeline',
         label: 'Intent Extraction',
         kind: 'intent',
@@ -1325,7 +1563,7 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
           { label: 'Planner usefulness', value: `${Math.round((report?.scores?.plannerUsefulness || 0) * 100)}%` },
           { label: 'Execution readiness', value: `${Math.round((report?.scores?.executionReadiness || 0) * 100)}%` },
           { label: 'Deploy readiness', value: `${Math.round((report?.scores?.deployReadiness || 0) * 100)}%` },
-          { label: 'Tasks', value: `${(report?.tasks || []).length}` },
+          { label: 'Requested outcomes', value: `${(report?.requestedOutcomes || report?.tasks || []).length}` },
           { label: 'Project matches', value: `${matchedTerms.length}` },
           { label: 'Action signals', value: `${actionSignals}` },
           { label: 'Constraint signals', value: `${constraintSignals}` },
@@ -1349,7 +1587,10 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
   };
 }
 
-function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal, status }) {
+function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal, status, qaState = null }) {
+  if (agent.id === 'qa-lead') {
+    return buildQADeskSnapshot({ agent, workspace, status, qaState });
+  }
   const notebook = normalizeNotebookState(workspace);
   const orchestrator = workspace.studio?.orchestrator || null;
   const governedDesk = orchestrator?.desks?.[agent.id] || null;
@@ -1362,12 +1603,15 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
   const plannerProducedCards = board.cards.filter((card) => (plannerWorker.lastProducedCardIds || []).includes(card.id));
   const selectedExecutionCard = getSelectedExecutionCard(workspace);
   const history = recentRunSummary(runs).map((entry, index) => ({ id: `${agent.id}-history-${index}`, summary: entry }));
+  const normalizedQA = normalizeQAState(qaState);
+  const qaScorecards = agent.id === 'cto-architect' ? collectQAScorecards(normalizedQA.structuredReport) : null;
+  const latestQARun = normalizedQA.latestBrowserRun || normalizedQA.browserRuns[0] || null;
   const plannerSections = agent.id === 'planner' ? [
     {
       id: 'planner-worker',
       label: 'Planner Worker',
       kind: 'summary',
-      value: `Status: ${plannerWorker.status || 'idle'} | backend ${plannerWorker.backend || 'ollama'} | model ${plannerWorker.model || 'mixtral'}`,
+      value: `Status: ${plannerWorker.status || 'idle'} | backend ${plannerWorker.backend || 'ollama'} | model ${plannerWorker.model || 'mistral:latest'}`,
       detail: plannerWorker.currentRunId
         ? `Running ${plannerWorker.currentRunId}`
         : (plannerWorker.lastRunId
@@ -1388,9 +1632,20 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
       items: plannerProducedCards.map((card) => ({
         id: card.id,
         summary: card.title,
-        detail: `${card.status} | anchors ${(card.sourceAnchorRefs || []).join(', ') || 'none'}`,
+        detail: `${taskPhaseLabel(card.taskFlow?.phase || 'planned')} | ${taskAssignmentLabel(card.taskFlow?.assignmentState || 'unassigned')} | anchors ${(card.sourceAnchorRefs || []).join(', ') || 'none'} | trail ${taskTrailSummary(card.taskFlow)}`,
       })),
       emptyState: 'Planner has not produced anchored plan cards yet.',
+    },
+    {
+      id: 'task-movement',
+      label: 'Task Movement',
+      kind: 'history',
+      items: plannerProducedCards.map((card) => ({
+        id: `${card.id}-movement`,
+        summary: card.taskFlow?.lastTransitionLabel || taskPhaseLabel(card.taskFlow?.phase || 'planned'),
+        detail: `${card.title} | owner ${card.taskFlow?.ownerDeskId || 'planner'} → ${card.taskFlow?.assigneeDeskId || 'executor'} | ${taskAssignmentLabel(card.taskFlow?.assignmentState || 'unassigned')} | ${card.taskFlow?.lastTransitionAt ? new Date(card.taskFlow.lastTransitionAt).toLocaleString() : 'unknown time'} | trail ${taskTrailSummary(card.taskFlow)}`,
+      })),
+      emptyState: 'Planner has not moved any tasks yet.',
     },
     {
       id: 'planner-artifacts',
@@ -1420,7 +1675,7 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
       id: 'executor-worker',
       label: 'Executor Worker',
       kind: 'summary',
-      value: `Status: ${executorWorker.status || 'idle'} | backend ${executorWorker.backend || 'ollama'} | model ${executorWorker.model || 'mixtral'}`,
+      value: `Status: ${executorWorker.status || 'idle'} | backend ${executorWorker.backend || 'ollama'} | model ${executorWorker.model || 'mistral:latest'}`,
       detail: executorWorker.currentRunId
         ? `Running ${executorWorker.currentRunId}`
         : (executorWorker.lastRunId
@@ -1456,6 +1711,25 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
         ...(selfUpgrade?.patchReview?.refusalReasons || []),
       ],
       emptyState: 'No permission gate is active right now.',
+    },
+  ] : [];
+  const qaSummarySections = agent.id === 'cto-architect' ? [
+    {
+      id: 'qa-summary',
+      label: 'QA Summary',
+      kind: 'qa-summary',
+      structuredStatus: normalizedQA.structuredBusy ? 'running' : (qaScorecards?.status || null),
+      structuredSummary: normalizedQA.structuredBusy
+        ? 'Structured QA suite is running now.'
+        : (qaScorecards?.summary || ''),
+      scorecardCount: qaScorecards?.cards?.length || 0,
+      scorecardDeskCount: qaScorecards?.deskCount || 0,
+      latestBrowserRun: latestQARun,
+      browserBusy: normalizedQA.browserBusy,
+      localGate: normalizedQA.localGate,
+      emptyState: normalizedQA.structuredReport || latestQARun || normalizedQA.structuredBusy || normalizedQA.browserBusy || localGateOutputCount(normalizedQA.localGate)
+        ? ''
+        : 'Focus QA desk to run structured QA or browser evidence passes.',
     },
   ] : [];
   return {
@@ -1495,14 +1769,14 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
           ? `Desk state: ${governedDesk.localState}${governedDesk.statusLabel ? ` | ${governedDesk.statusLabel}` : ''}${governedDesk.statusDetail ? ` | ${governedDesk.statusDetail}` : ''}`
           : 'Desk has no active governed state yet.',
       },
-    {
+      {
       id: 'active-work',
       label: 'Active Work Items',
         kind: 'history',
         items: (governedDesk?.workItems || []).map((item) => ({
           id: item.id,
           summary: item.title,
-          detail: `${item.kind} | ${item.status}`,
+          detail: item.detail || `${item.kind} | ${item.status}`,
         })),
         emptyState: 'No governed work items assigned.',
       },
@@ -1524,18 +1798,22 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
       }] : []),
       ...executorSections,
       ...plannerSections,
+      ...qaSummarySections,
       ...selfUpgradeSections,
     ],
   };
 }
 
-function defaultRecentActions(agent, workspace, runs) {
+function defaultRecentActions(agent, workspace, runs, qaState = null) {
   const summaries = recentRunSummary(runs);
   const intent = latestIntentReport(workspace);
   const contextWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers)['context-manager'];
   const executorWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).executor;
   const plannerWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).planner;
   const plannerToContext = workspace?.studio?.handoffs?.plannerToContext || null;
+  const normalizedQA = normalizeQAState(qaState);
+  const qaScorecards = collectQAScorecards(normalizedQA.structuredReport);
+  const latestBrowserRun = normalizedQA.latestBrowserRun || normalizedQA.browserRuns[0] || null;
   if (agent.id === 'context-manager') {
     return [
       contextWorker?.status === 'running'
@@ -1543,14 +1821,14 @@ function defaultRecentActions(agent, workspace, runs) {
         : (contextWorker?.statusReason || plannerToContext?.summary || intent?.summary || `Synced ${(workspace.graph?.edges || []).length} workspace links`),
       contextWorker?.lastUsedFallback
         ? 'Latest context run used deterministic fallback after local-model failure'
-        : (intent ? `Intent confidence ${Math.round((intent.confidence || 0) * 100)}% across ${(intent.tasks || []).length} tasks` : (summaries[0] || 'Watching current focus and constraints')),
+        : (intent ? `Intent confidence ${Math.round((intent.confidence || 0) * 100)}% across ${(intent.requestedOutcomes || intent.tasks || []).length} requested outcomes` : (summaries[0] || 'Watching current focus and constraints')),
     ];
   }
   if (agent.id === 'planner') {
     return [
       plannerWorker.status === 'running'
         ? `Planner worker is running ${plannerWorker.currentRunId || 'current handoff'}`
-        : (plannerWorker?.statusReason || plannerToContext?.summary || (intent?.tasks?.length ? `Received ${(intent.tasks || []).length} intent tasks from Context Manager` : `Tracking ${(workspace.graph?.nodes || []).filter((node) => node.type === 'task').length} task notes`)),
+        : (plannerWorker?.statusReason || plannerToContext?.summary || (intent?.requestedOutcomes?.length || intent?.tasks?.length ? `Received ${(intent.requestedOutcomes || intent.tasks || []).length} requested outcomes from Context Manager` : `Tracking ${(workspace.graph?.nodes || []).filter((node) => node.type === 'task').length} task notes`)),
       plannerWorker.lastProducedCardIds?.length
         ? `Produced ${plannerWorker.lastProducedCardIds.length} anchored plan card${plannerWorker.lastProducedCardIds.length === 1 ? '' : 's'}`
         : (summaries.find((entry) => entry.includes('manage')) || 'Waiting for a new plan decomposition'),
@@ -1561,7 +1839,7 @@ function defaultRecentActions(agent, workspace, runs) {
       executorWorker.status === 'running'
         ? `Executor worker is running ${executorWorker.currentRunId || 'the active verification/apply cycle'}`
         : (executorWorker.lastAssessmentSummary || executorWorker.statusReason || summaries.find((entry) => entry.includes('build') || entry.includes('run')) || 'No build execution in recent history'),
-      intent?.tasks?.length ? `Execution queue seeded from ${(intent.tasks || []).length} intent tasks` : `Modules/files in workspace: ${(workspace.graph?.nodes || []).filter((node) => ['module', 'file'].includes(node.type)).length}`,
+      intent?.requestedOutcomes?.length || intent?.tasks?.length ? `Execution queue seeded from ${(intent.requestedOutcomes || intent.tasks || []).length} requested outcomes` : `Modules/files in workspace: ${(workspace.graph?.nodes || []).filter((node) => ['module', 'file'].includes(node.type)).length}`,
     ];
   }
   if (agent.id === 'memory-archivist') {
@@ -1570,20 +1848,45 @@ function defaultRecentActions(agent, workspace, runs) {
       `Architecture versions: ${(workspace.architectureMemory?.versions || []).length}`,
     ];
   }
+  if (agent.id === 'qa-lead') {
+    return [
+      normalizedQA.structuredBusy
+        ? 'Structured QA suite is running.'
+        : (normalizedQA.structuredReport?.summary || 'Structured QA has not been run in this session.'),
+      normalizedQA.browserBusy
+        ? 'Browser QA is running.'
+        : summarizeQABrowserRun(latestBrowserRun),
+      summarizeLocalGate(normalizedQA.localGate),
+      qaScorecards.cards.length
+        ? `Scorecards live: ${qaScorecards.cards.length} across ${qaScorecards.deskCount} desk${qaScorecards.deskCount === 1 ? '' : 's'}.`
+        : 'No scored QA cards are loaded yet.',
+    ];
+  }
   return [
     summaries[0] || 'Reviewing ACE governance boundaries',
     `Rules in force: ${(workspace.architectureMemory?.rules || []).length}`,
   ];
 }
 
-function deriveStatus(agent, metrics, workspace, dashboardState, runSignal) {
+function deriveStatus(agent, metrics, workspace, dashboardState, runSignal, qaState = null) {
   const blockers = dashboardState?.blockers || [];
   const intent = latestIntentReport(workspace);
   const contextWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers)['context-manager'];
   const plannerWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).planner;
   const plannerToContext = workspace?.studio?.handoffs?.plannerToContext || null;
+  const normalizedQA = normalizeQAState(qaState);
+  const qaScorecards = collectQAScorecards(normalizedQA.structuredReport);
+  const latestBrowserRun = normalizedQA.latestBrowserRun || normalizedQA.browserRuns[0] || null;
   if (runSignal?.status === 'running') return 'processing';
   if (runSignal?.status === 'error') return 'review';
+  if (agent.id === 'qa-lead') {
+    if (normalizedQA.structuredBusy || normalizedQA.browserBusy) return 'processing';
+    if (normalizedQA.structuredReport?.status && ['fail', 'failed', 'error'].includes(String(normalizedQA.structuredReport.status).toLowerCase())) return 'review';
+    if (latestBrowserRun && ['fail', 'failed', 'error'].includes(String(latestQAVerdict(latestBrowserRun)).toLowerCase())) return 'review';
+    if (hasLocalGateIssue(normalizedQA.localGate)) return 'review';
+    if (qaScorecards.cards.length || latestBrowserRun || normalizedQA.structuredReport || localGateOutputCount(normalizedQA.localGate)) return 'queued';
+    return 'idle';
+  }
   if (agent.id === 'cto-architect' && blockers.length) return 'review';
   if (agent.id === 'context-manager' && contextWorker.status === 'running') return 'processing';
   if (agent.id === 'context-manager' && contextWorker.status === 'blocked') return 'blocked';
@@ -1612,6 +1915,291 @@ function statusDetail(status) {
   return map[status] || map.idle;
 }
 
+function taskTrailSummary(taskFlow = {}) {
+  const history = Array.isArray(taskFlow.history) ? [...taskFlow.history].reverse() : [];
+  if (!history.length) return taskPhaseLabel(taskFlow.phase || 'planned');
+  return history
+    .map((entry) => entry.label || taskPhaseLabel(entry.phase))
+    .filter(Boolean)
+    .join(' -> ');
+}
+
+function canonicalTaskRecords(board = {}) {
+  return Array.isArray(board.cards)
+    ? board.cards.filter((card) => card && card.taskFlow).map((card) => ({
+      id: card.id,
+      title: card.title,
+      phase: card.taskFlow?.phase || 'planned',
+      assignmentState: card.taskFlow?.assignmentState || 'unassigned',
+      ownerDeskId: card.taskFlow?.ownerDeskId || 'planner',
+      assigneeDeskId: card.taskFlow?.assigneeDeskId || 'executor',
+      sourceIntentId: card.taskFlow?.sourceIntentId || card.sourceIntentId || null,
+      sourceHandoffId: card.taskFlow?.sourceHandoffId || card.sourceHandoffId || null,
+      createdAt: card.createdAt || null,
+      lastTransitionAt: card.taskFlow?.lastTransitionAt || card.updatedAt || card.createdAt || null,
+      lastTransitionLabel: card.taskFlow?.lastTransitionLabel || '',
+      taskFlow: card.taskFlow,
+    }))
+    : [];
+}
+
+function normalizeQAMetricDefinitions(definitions = null) {
+  const metrics = definitions?.metrics && typeof definitions.metrics === 'object'
+    ? definitions.metrics
+    : {};
+  return {
+    schema: definitions?.schema || 'qa.test-metric-definitions.v1',
+    version: Number.isFinite(Number(definitions?.version)) ? Number(definitions.version) : 1,
+    metrics,
+  };
+}
+
+function collectQAScorecards(qaReport = null) {
+  const definitions = normalizeQAMetricDefinitions(qaReport?.metricDefinitions || null);
+  const cards = [];
+
+  for (const desk of qaReport?.desks || []) {
+    for (const test of desk?.tests || []) {
+      if (!test?.qualityCard) continue;
+      cards.push({
+        ...test.qualityCard,
+        desk: test.qualityCard.desk || desk.desk || null,
+        status: test.status || test.qualityCard.status || 'pass',
+        testId: test.qualityCard.testId || test.name || null,
+        testName: test.qualityCard.testName || test.name || 'Unnamed QA test',
+      });
+    }
+  }
+
+  return {
+    status: qaReport?.status || null,
+    summary: qaReport?.summary || '',
+    deskCount: Array.isArray(qaReport?.desks) ? qaReport.desks.length : 0,
+    testCount: Array.isArray(qaReport?.desks)
+      ? qaReport.desks.reduce((total, desk) => total + (Array.isArray(desk?.tests) ? desk.tests.length : 0), 0)
+      : 0,
+    definitions,
+    cards,
+  };
+}
+
+function normalizeLocalGateState(localGate = null) {
+  return {
+    unit: localGate?.unit || null,
+    studioBoot: localGate?.studioBoot || null,
+  };
+}
+
+function normalizeQAState(qaState = null) {
+  return {
+    structuredReport: qaState?.structuredReport || null,
+    structuredBusy: Boolean(qaState?.structuredBusy),
+    latestBrowserRun: qaState?.latestBrowserRun || null,
+    browserRuns: Array.isArray(qaState?.browserRuns) ? qaState.browserRuns.filter(Boolean) : [],
+    browserBusy: Boolean(qaState?.browserBusy),
+    localGate: normalizeLocalGateState(qaState?.localGate),
+  };
+}
+
+function localGateVerdict(entry = null) {
+  return String(entry?.verdict || entry?.status || 'pending').toLowerCase();
+}
+
+function localGateOutputCount(localGate = null) {
+  return (localGate?.unit ? 1 : 0) + (localGate?.studioBoot ? 1 : 0);
+}
+
+function hasLocalGateIssue(localGate = null) {
+  const unitStatus = localGateVerdict(localGate?.unit);
+  const studioBootStatus = localGateVerdict(localGate?.studioBoot);
+  return ['fail', 'failed', 'error'].includes(unitStatus)
+    || ['weak', 'fail', 'failed', 'error'].includes(studioBootStatus);
+}
+
+function summarizeLocalGate(localGate = null) {
+  if (!localGate?.unit && !localGate?.studioBoot) {
+    return 'No local UI gate results recorded yet.';
+  }
+  const parts = [];
+  if (localGate?.unit) {
+    const failedCount = Number(localGate.unit.failedCount || localGate.unit.failures?.length || 0);
+    parts.push(`Unit gate ${localGate.unit.status || 'pending'}${failedCount ? ` | ${failedCount} failing check${failedCount === 1 ? '' : 's'}` : ''}`);
+  }
+  if (localGate?.studioBoot) {
+    parts.push(`Studio boot ${localGate.studioBoot.verdict || localGate.studioBoot.status || 'pending'} | findings ${browserFindingCount(localGate.studioBoot)}`);
+  }
+  return parts.join(' | ');
+}
+
+function browserFindingCount(run = null) {
+  if (!run) return 0;
+  const numericCount = Number(run.findingCount);
+  if (Number.isFinite(numericCount)) return numericCount;
+  return Array.isArray(run.findings) ? run.findings.length : 0;
+}
+
+function latestQAVerdict(run = null) {
+  return run?.verdict || run?.status || 'pending';
+}
+
+function summarizeQABrowserRun(run = null) {
+  if (!run) return 'No browser pass has been recorded yet.';
+  return `${run.scenario || 'layout-pass'} | ${latestQAVerdict(run)} | findings ${browserFindingCount(run)}`;
+}
+
+function mergeBrowserRuns(latestRun = null, runs = []) {
+  const merged = [];
+  const seen = new Set();
+  for (const run of [latestRun, ...(runs || [])]) {
+    if (!run) continue;
+    const key = run.id || `${run.scenario || 'browser-pass'}:${run.startedAt || run.completedAt || run.createdAt || 'latest'}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(run);
+  }
+  return merged;
+}
+
+function buildQADeskSnapshot({ agent, workspace, status, qaState = null }) {
+  const notebook = normalizeNotebookState(workspace);
+  const normalizedQA = normalizeQAState(qaState);
+  const scorecards = collectQAScorecards(normalizedQA.structuredReport);
+  const latestBrowserRun = normalizedQA.latestBrowserRun || normalizedQA.browserRuns[0] || null;
+  const browserRuns = mergeBrowserRuns(latestBrowserRun, normalizedQA.browserRuns).slice(0, 6);
+  const localGate = normalizedQA.localGate;
+  const localGateSummary = summarizeLocalGate(localGate);
+  const currentGoal = normalizedQA.structuredBusy
+    ? 'Running structured QA suite for the current ACE session.'
+    : normalizedQA.browserBusy
+      ? 'Running browser evidence capture for the current Studio view.'
+      : hasLocalGateIssue(localGate)
+        ? 'Review the latest local UI gate failures and browser guardrail evidence.'
+      : scorecards.cards.length
+        ? `Review ${scorecards.cards.length} scored QA card${scorecards.cards.length === 1 ? '' : 's'} and latest evidence.`
+        : latestBrowserRun
+          ? `Inspect browser QA evidence from ${latestBrowserRun.scenario || 'latest run'}.`
+          : localGateOutputCount(localGate)
+            ? 'Review the latest local UI gate before running additional QA.'
+            : 'Run structured QA or a browser pass to populate the QA desk.';
+  const waitingOnYou = [];
+  if (!normalizedQA.structuredReport && !normalizedQA.structuredBusy) {
+    waitingOnYou.push('Run Structured QA to publish scorecards in this session.');
+  }
+  if (!latestBrowserRun && !normalizedQA.browserBusy) {
+    waitingOnYou.push('Run Browser Pass to capture visual QA evidence.');
+  }
+  if (latestBrowserRun && browserFindingCount(latestBrowserRun)) {
+    waitingOnYou.push(`Review ${browserFindingCount(latestBrowserRun)} browser finding${browserFindingCount(latestBrowserRun) === 1 ? '' : 's'} from the latest run.`);
+  }
+  if (localGate?.unit && ['fail', 'failed', 'error'].includes(localGateVerdict(localGate.unit))) {
+    const failedCount = Number(localGate.unit.failedCount || localGate.unit.failures?.length || 0);
+    waitingOnYou.push(`Inspect ${failedCount} failing fast UI check${failedCount === 1 ? '' : 's'} from the latest local gate.`);
+  }
+  if (localGate?.studioBoot && ['weak', 'fail', 'failed', 'error'].includes(localGateVerdict(localGate.studioBoot))) {
+    waitingOnYou.push(`Review the latest Studio boot guardrail run (${localGate.studioBoot.verdict || localGate.studioBoot.status || 'pending'}).`);
+  }
+  return {
+    identity: { id: agent.id, name: agent.name, role: agent.role },
+    status,
+    focus: {
+      summary: currentGoal,
+      detail: agent.role,
+    },
+    metrics: {
+      assignedTasks: scorecards.cards.length,
+      queueSize: latestBrowserRun && latestQAVerdict(latestBrowserRun) !== 'pass' ? browserFindingCount(latestBrowserRun) : 0,
+      outputs: (normalizedQA.structuredReport ? 1 : 0) + browserRuns.length + localGateOutputCount(localGate),
+    },
+    history: browserRuns.map((run) => ({
+      id: run.id || `qa-run-${run.scenario || 'latest'}`,
+      summary: summarizeQABrowserRun(run),
+      detail: run.summary || run.notes || null,
+      at: run.completedAt || run.startedAt || run.createdAt || null,
+    })),
+    userActions: waitingOnYou,
+    handoff: null,
+    sections: [
+      {
+        id: 'mission',
+        label: 'Mission',
+        kind: 'summary',
+        value: DESK_MISSIONS['qa-lead'] || agent.role,
+        detail: `Active page: ${notebook.activePage.title}`,
+      },
+      {
+        id: 'current-goal',
+        label: 'Current Goal',
+        kind: 'summary',
+        value: currentGoal,
+        detail: normalizedQA.structuredBusy || normalizedQA.browserBusy
+          ? 'QA desk is actively refreshing suite evidence.'
+          : 'QA desk is read-only in v1 and does not own orchestrator tasks.',
+      },
+      {
+        id: 'structured-qa',
+        label: 'Structured QA',
+        kind: 'qa-structured',
+        report: normalizedQA.structuredReport,
+        busy: normalizedQA.structuredBusy,
+        scorecardCount: scorecards.cards.length,
+        emptyState: 'No structured QA report loaded yet.',
+      },
+      {
+        id: 'qa-scorecards',
+        label: 'Structured QA Scorecards',
+        kind: 'qa-scorecards',
+        cards: scorecards.cards || [],
+        definitions: scorecards.definitions || normalizeQAMetricDefinitions(),
+        suiteStatus: scorecards.status || null,
+        suiteSummary: scorecards.summary || '',
+        meta: {
+          deskCount: scorecards.deskCount || 0,
+          testCount: scorecards.testCount || 0,
+        },
+        emptyState: normalizedQA.structuredReport
+          ? 'Latest structured QA report does not include any scored test cards yet.'
+          : 'Run structured QA to load test quality scorecards.',
+      },
+      {
+        id: 'browser-pass',
+        label: 'Browser Pass',
+        kind: 'qa-browser',
+        latestRun: latestBrowserRun,
+        busy: normalizedQA.browserBusy,
+        emptyState: 'No browser pass has been recorded yet.',
+      },
+      {
+        id: 'local-ui-gates',
+        label: 'Local UI Gate',
+        kind: 'qa-local-gates',
+        gate: localGate,
+        summary: localGateSummary,
+        emptyState: 'No local UI gate results recorded yet.',
+      },
+      {
+        id: 'recent-qa-runs',
+        label: 'Recent QA Runs',
+        kind: 'qa-run-history',
+        items: browserRuns.map((run) => ({
+          id: run.id || `qa-run-${run.scenario || 'latest'}`,
+          summary: `${run.scenario || 'layout-pass'} | ${latestQAVerdict(run)}`,
+          detail: `Findings ${browserFindingCount(run)}${run.summary ? ` | ${run.summary}` : ''}`,
+          at: run.completedAt || run.startedAt || run.createdAt || null,
+          runId: run.id || null,
+        })),
+        emptyState: 'No browser QA runs recorded yet.',
+      },
+      {
+        id: 'waiting-on-you',
+        label: 'Waiting On You',
+        kind: 'actions',
+        items: waitingOnYou,
+        emptyState: 'No manual QA follow-up needed right now.',
+      },
+    ],
+  };
+}
+
 export function createInitialComments() {
   return Object.fromEntries(STATIONS.map((agent) => [agent.id, []]));
 }
@@ -1620,7 +2208,7 @@ export function getStudioAgents() {
   return STATIONS.map((agent) => ({ ...agent }));
 }
 
-export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComments, recentHistory = [] }) {
+export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComments, recentHistory = [], qaState = null }) {
   const systemGraph = systemGraphOf(workspace);
   const runtimeBoard = normalizeTeamBoardState({
     activePageId: workspace.activePageId,
@@ -1630,7 +2218,12 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
       agentWorkers: workspace.studio?.agentWorkers || {},
     },
   });
+  const workers = normalizeAgentWorkersState(workspace?.studio?.agentWorkers);
+  const normalizedQA = normalizeQAState(qaState);
+  const qaScorecards = collectQAScorecards(normalizedQA.structuredReport);
+  const latestBrowserRun = normalizedQA.latestBrowserRun || normalizedQA.browserRuns[0] || null;
   return STATIONS.map((agent) => {
+    const workerState = workers[agent.id] || {};
     const metrics = collectNodeMetrics(agent, systemGraph, workspace);
     const comments = agentComments?.[agent.id] || [];
     const outputs = recentRunSummary(runs).slice(0, 2);
@@ -1645,28 +2238,50 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
       waiting: 'idle',
       complete: 'idle',
     };
-    const status = governedDesk?.localState ? (governedStatusMap[governedDesk.localState] || 'idle') : deriveStatus(agent, metrics, workspace, dashboardState, runSignal);
+    const status = agent.id === 'qa-lead'
+      ? deriveStatus(agent, metrics, workspace, dashboardState, runSignal, normalizedQA)
+      : (governedDesk?.localState ? (governedStatusMap[governedDesk.localState] || 'idle') : deriveStatus(agent, metrics, workspace, dashboardState, runSignal, normalizedQA));
     const recentActions = [
       ...(runSignal ? [`${runSignal.action}: ${runSignal.summary}`] : []),
-      ...defaultRecentActions(agent, workspace, runs),
+      ...defaultRecentActions(agent, workspace, runs, normalizedQA),
       ...outputs,
     ].slice(0, 4);
+    const profileName = workerState.displayName || workerState.name || agent.name;
+    const profileRole = workerState.role || agent.role;
+    const workload = agent.id === 'qa-lead'
+      ? {
+          assignedTasks: qaScorecards.cards.length,
+          queueSize: latestBrowserRun && latestQAVerdict(latestBrowserRun) !== 'pass' ? browserFindingCount(latestBrowserRun) : 0,
+          outputs: (normalizedQA.structuredReport ? 1 : 0) + mergeBrowserRuns(latestBrowserRun, normalizedQA.browserRuns).length + localGateOutputCount(normalizedQA.localGate),
+        }
+      : {
+          assignedTasks: metrics.count,
+          queueSize: metrics.queue,
+          outputs: Math.max(outputs.length, runSignal ? 1 : 0),
+        };
     return {
       ...agent,
+      name: profileName,
+      role: profileRole,
+      workerState,
       status,
       statusDetail: statusDetail(status),
-      workload: {
-        assignedTasks: metrics.count,
-        queueSize: metrics.queue,
-        outputs: Math.max(outputs.length, runSignal ? 1 : 0),
-      },
+      workload,
       recentActions,
       comments,
       focusSummary: agent.id === 'context-manager' && intent
         ? `${intent.summary || 'Intent captured'} (${Math.round((intent.confidence || 0) * 100)}%)`
+        : agent.id === 'qa-lead'
+          ? (normalizedQA.structuredBusy
+            ? 'Structured QA is running'
+            : normalizedQA.browserBusy
+              ? 'Browser QA is running'
+              : (normalizedQA.structuredReport?.summary || summarizeLocalGate(normalizedQA.localGate) || summarizeQABrowserRun(latestBrowserRun)))
         : `${metrics.count} related items in workspace`,
       throughputLabel: agent.id === 'context-manager' && intent
         ? `${(intent.tasks || []).length} intent tasks / ${Math.round((intent.confidence || 0) * 100)}% confidence`
+        : agent.id === 'qa-lead'
+          ? `${qaScorecards.cards.length} scorecards / ${mergeBrowserRuns(latestBrowserRun, normalizedQA.browserRuns).length} browser runs / ${localGateOutputCount(normalizedQA.localGate)} local gates`
         : agent.id === 'executor'
           ? `${runtimeBoard.summary.review} ready to apply / ${runtimeBoard.summary.active} active`
           : `${metrics.count} tracked / ${metrics.queue} queued`,
@@ -1686,7 +2301,7 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
             status,
             metrics,
           })
-        : buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal, status }),
+        : buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal, status, qaState: normalizedQA }),
     };
   });
 }

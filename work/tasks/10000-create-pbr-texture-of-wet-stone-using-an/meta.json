@@ -1,0 +1,16 @@
+{
+  "id": "10000",
+  "title": "Create PBR texture of wet stone using anchored intent",
+  "created_utc": "2026-03-19T15:25:45.361Z",
+  "source": "studio-team-board",
+  "sessionId": null,
+  "handoffId": "handoff_1773933938304_yjvnic",
+  "anchorRefs": [
+    "brain/emergence/project_brain.md",
+    "brain/emergence/plan.md",
+    "brain/emergence/tasks.md",
+    "brain/emergence/decisions.md",
+    "brain/emergence/changelog.md",
+    "brain/emergence/roadmap.md"
+  ]
+}

@@ -49,10 +49,17 @@ function readJsonSafe(filePath, fallback = null) {
   }
 }
 
-function makeTest(name, ok, reason = null, severity = 'critical') {
+function makeTest(name, ok, reason = null, severity = 'critical', extras = null) {
+  const metadata = extras && typeof extras === 'object' ? extras : null;
   return ok
-    ? { name, status: 'pass' }
-    : { name, status: 'fail', severity, reason: String(reason || 'validation failed') };
+    ? { name, status: 'pass', ...(metadata || {}) }
+    : {
+        name,
+        status: 'fail',
+        severity,
+        reason: String(reason || 'validation failed'),
+        ...(metadata || {}),
+      };
 }
 
 function finalizeDeskResult(desk, tests) {
@@ -549,36 +556,90 @@ function extractRunnerSubcommands(filePath) {
 }
 
 function verifyLlmInvocation(rootPath, minTimestamp, expectedAgent = null) {
-  const logFile = path.join(rootPath, 'runtime', 'llm_invocations.json');
-  if (!fs.existsSync(logFile)) {
-    return { ok: false, reason: 'llm_invocations.json missing' };
-  }
-  const lines = readText(logFile).split('\\n').filter(Boolean);
-  const invocations = lines.map(line => {
-    try {
-      return JSON.parse(line);
-    } catch {
-      return null;
-    }
-  }).filter(Boolean);
-  
-  if (invocations.length === 0) {
-    return { ok: false, reason: 'no invocations logged' };
-  }
+  const freshRuns = readAgentRunArtifacts(rootPath)
+    .filter((run) => run.observedAtMs >= minTimestamp);
 
-  const fresh = invocations.filter(inv => inv.timestamp >= minTimestamp);
-  if (fresh.length === 0) {
-    return { ok: false, reason: 'invocation timestamp is stale' };
-  }
-  
   if (expectedAgent) {
-    const hasAgent = fresh.some(inv => inv.agent === expectedAgent);
-    if (!hasAgent) {
-      return { ok: false, reason: `agent ${expectedAgent} ran but no invocation recorded` };
+    const targetAgent = String(expectedAgent || '').trim();
+    const matching = freshRuns.filter((run) => run.agent === targetAgent);
+    if (!matching.length) {
+      return { ok: false, reason: `agent ${targetAgent} ran but no fresh agent-run artifact was recorded` };
+    }
+    const latest = matching.sort((left, right) => right.observedAtMs - left.observedAtMs)[0];
+    if (latest.usedFallback || latest.outcome !== 'completed') {
+      return { ok: false, reason: `${targetAgent} produced ${latest.outcome || 'unknown'} (${latest.reason || latest.llmStatus || 'no reason'})` };
+    }
+    return { ok: true, reason: `fresh live ${targetAgent} run verified` };
+  }
+
+  if (!freshRuns.length) {
+    return { ok: false, reason: 'no fresh agent-run artifacts recorded' };
+  }
+
+  const latest = freshRuns.sort((left, right) => right.observedAtMs - left.observedAtMs)[0];
+  if (latest.usedFallback || latest.outcome !== 'completed') {
+    return { ok: false, reason: `${latest.agent || 'agent'} produced ${latest.outcome || 'unknown'} (${latest.reason || latest.llmStatus || 'no reason'})` };
+  }
+
+  return { ok: true, reason: 'fresh live agent run verified' };
+}
+
+function readAgentRunArtifacts(rootPath) {
+  const runsRoot = path.join(rootPath, 'data', 'spatial', 'agent-runs');
+  if (!fs.existsSync(runsRoot)) {
+    return [];
+  }
+
+  const runFiles = [];
+  const stack = [runsRoot];
+  while (stack.length) {
+    const current = stack.pop();
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+      if (entry.isFile() && entry.name.endsWith('.json')) {
+        runFiles.push(fullPath);
+      }
     }
   }
 
-  return { ok: true, reason: 'fresh LLM invocation verified' };
+  return runFiles
+    .map((filePath) => normalizeAgentRunArtifact(readJsonSafe(filePath, null), filePath))
+    .filter(Boolean);
+}
+
+function normalizeAgentRunArtifact(run, filePath = null) {
+  if (!run || typeof run !== 'object') return null;
+
+  const startedAt = run.startedAt || run.createdAt || null;
+  const completedAt = run.completedAt || run.createdAt || null;
+  const durationMs = Number.isFinite(run.durationMs)
+    ? Number(run.durationMs)
+    : Math.max(0, (Date.parse(completedAt || '') || 0) - (Date.parse(startedAt || '') || 0));
+  const reason = String(run.reason || run.error || run.rawResponse || run.llmStatus || '').trim() || null;
+  const outcome = String(run.outcome || (run.usedFallback ? 'degraded' : 'completed') || '').trim() || 'unknown';
+  const llmStatus = String(run.llmStatus || (run.usedFallback ? 'degraded_fallback' : (outcome === 'completed' ? 'live' : outcome)) || '').trim() || 'unknown';
+
+  return {
+    ...run,
+    filePath: filePath ? normalizeSlashes(filePath) : null,
+    agent: run.workerId || null,
+    startedAt,
+    completedAt,
+    observedAtMs: Date.parse(completedAt || startedAt || '') || 0,
+    durationMs,
+    outcome,
+    llmStatus,
+    reason,
+    usedFallback: Boolean(run.usedFallback),
+    backend: run.backend || null,
+    model: run.model || null,
+    runId: run.id || run.runId || null,
+  };
 }
 
 function extractUiNetworkContracts(rootPath) {
@@ -589,7 +650,7 @@ function extractUiNetworkContracts(rootPath) {
     const source = readText(file);
     let match;
     while ((match = pattern.exec(source)) !== null) {
-      endpoints.add(match[1]);
+      endpoints.add(normalizeRoute(match[1]));
     }
   }
   return Array.from(endpoints).sort();
@@ -616,5 +677,7 @@ module.exports = {
   validateJavaScriptFiles,
   validateJsonFile,
   validatePythonFiles,
+  normalizeAgentRunArtifact,
+  readAgentRunArtifacts,
   verifyLlmInvocation,
 };

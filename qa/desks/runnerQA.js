@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { buildRunnerContractCheckQualityCard } = require('../testAttributeCards');
 const {
   applyFixtureFailures,
   commandExists,
@@ -89,7 +90,13 @@ async function runTests(context) {
     contractFailures.push(`/api/presets failed: ${String(error.message || error)}`);
   }
 
-  tests.push(makeTest('contract_check', contractFailures.length === 0, contractFailures.join('; ')));
+  tests.push(makeTest(
+    'contract_check',
+    contractFailures.length === 0,
+    contractFailures.join('; '),
+    'critical',
+    { qualityCard: buildRunnerContractCheckQualityCard() },
+  ));
 
   const fileScope = evaluateDeskFileScope(context, 'runner');
   tests.push(makeTest('file_scope', fileScope.ok, fileScope.reason));

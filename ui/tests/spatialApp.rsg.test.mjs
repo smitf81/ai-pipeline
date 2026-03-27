@@ -10,6 +10,9 @@ export default async function runSpatialAppRsgTests() {
   const {
     RSG_IDLE_DELAY_MS,
     buildRsgActivityEntry,
+    getExtractedIntent,
+    isAdoptedDraftNode,
+    isLinkedDraftNode,
     pushRsgActivityEntry,
     resolveGeneratedNodeInspection,
     shouldRunFocusedRsgLoop,
@@ -49,6 +52,10 @@ export default async function runSpatialAppRsgTests() {
     shouldRunFocusedRsgLoop({ node: normalNode, activeGraphLayer: 'world' }),
     { ok: false, reason: 'not-system-layer' },
   );
+  assert.equal(isLinkedDraftNode({ metadata: { rsg: { state: 'linked-draft' } } }), true);
+  assert.equal(isAdoptedDraftNode({ metadata: { rsg: { state: 'adopted' } } }), true);
+  assert.equal(getExtractedIntent({ extractedIntent: { id: 'intent_1' } }).id, 'intent_1');
+  assert.equal(getExtractedIntent(null), null);
 
   const activityEntry = buildRsgActivityEntry({
     type: 'rsg-generate',
@@ -95,6 +102,7 @@ export default async function runSpatialAppRsgTests() {
         id: 'node_generated',
         content: 'Show extracted intent inline',
         metadata: {
+          origin: 'agent_generated',
           rsg: {
             intentRef: {
               sourceNodeId: 'node_source',
@@ -109,7 +117,13 @@ export default async function runSpatialAppRsgTests() {
     ],
   };
   const inspection = resolveGeneratedNodeInspection(graph.nodes[1], graph);
+  assert.ok(inspection);
   assert.equal(inspection.candidate.id, 'candidate_1');
   assert.equal(inspection.extractedIntent.summary, 'Show the extracted intent directly in generated nodes');
+  assert.equal(inspection.sourceNode.id, 'node_source');
+  assert.equal(inspection.basis, 'explicit');
+  assert.equal(inspection.confidence, 0.84);
   assert.equal(inspection.relatedEdges.length, 1);
+
+  assert.equal(resolveGeneratedNodeInspection({ id: 'node_plain', content: 'Plain note', metadata: {} }, graph), null);
 }

@@ -4,7 +4,7 @@ const { DEFAULT_OLLAMA_HOST, DEFAULT_OLLAMA_TIMEOUT_MS } = require('./localModel
 
 const AGENTS_ROOT = 'agents';
 const DEFAULT_AGENT_BACKEND = 'ollama';
-const DEFAULT_AGENT_MODEL = 'mixtral';
+const DEFAULT_AGENT_MODEL = 'mistral:latest';
 
 function normalizeAgentId(agentId = '') {
   return String(agentId || '').trim().toLowerCase();

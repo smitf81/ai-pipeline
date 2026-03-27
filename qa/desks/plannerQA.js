@@ -1,4 +1,5 @@
 const path = require('path');
+const { buildPlannerContractCheckQualityCard } = require('../testAttributeCards');
 const {
   applyFixtureFailures,
   evaluateDeskFileScope,
@@ -41,7 +42,13 @@ async function runTests(context) {
     contractFailures.push(`planner desk properties failed: ${String(error.message || error)}`);
   }
 
-  tests.push(makeTest('contract_check', contractFailures.length === 0, contractFailures.join('; ')));
+  tests.push(makeTest(
+    'contract_check',
+    contractFailures.length === 0,
+    contractFailures.join('; '),
+    'critical',
+    { qualityCard: buildPlannerContractCheckQualityCard() },
+  ));
 
   const fileScope = evaluateDeskFileScope(context, 'planner');
   tests.push(makeTest('file_scope', fileScope.ok, fileScope.reason));

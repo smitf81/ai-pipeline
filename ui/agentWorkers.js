@@ -16,13 +16,13 @@ const {
 const { createPlannerHandoff } = require('./throughputDebug');
 
 const DEFAULT_PLANNER_BACKEND = 'ollama';
-const DEFAULT_PLANNER_MODEL = 'mixtral';
+const DEFAULT_PLANNER_MODEL = 'mistral:latest';
 const DEFAULT_PLANNER_TIMEOUT_MS = 30000;
 const DEFAULT_CONTEXT_MANAGER_BACKEND = 'ollama';
-const DEFAULT_CONTEXT_MANAGER_MODEL = 'mixtral';
+const DEFAULT_CONTEXT_MANAGER_MODEL = 'mistral:latest';
 const DEFAULT_CONTEXT_MANAGER_TIMEOUT_MS = 30000;
 const DEFAULT_EXECUTOR_BACKEND = 'ollama';
-const DEFAULT_EXECUTOR_MODEL = 'mixtral';
+const DEFAULT_EXECUTOR_MODEL = 'mistral:latest';
 const DEFAULT_EXECUTOR_TIMEOUT_MS = 30000;
 const MAX_PLANNER_CARDS = 3;
 const MAX_CONTEXT_TASKS = 4;
@@ -76,8 +76,13 @@ const FALLBACK_CONTEXT_MANAGER_PROMPT = [
   '{',
   '  "summary": "short focus summary",',
   '  "statement": "plain-language problem statement",',
-  '  "tasks": ["short task"],',
+  '  "goal": "what the requester is trying to achieve",',
+  '  "requestedOutcomes": ["short outcome"],',
+  '  "targets": ["target or surface"],',
   '  "constraints": ["constraint or guardrail"],',
+  '  "urgency": "low|normal|high",',
+  '  "requestType": "context_request|planning_request|execution_request|architecture_request|constraint_request",',
+  '  "signals": {"actionSignals": 0, "constraintSignals": 0},',
   '  "clarifications": ["what still needs clarification"],',
   '  "focusTerms": ["token", "token"],',
   '  "suggestedAnchorRefs": ["brain/emergence/plan.md"]',
@@ -137,6 +142,22 @@ const FALLBACK_EXECUTOR_PROMPT = [
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function durationMsFrom(startedAt, completedAt) {
+  const start = Date.parse(startedAt || '');
+  const end = Date.parse(completedAt || '');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  return Math.max(0, end - start);
+}
+
+function classifyLlmFailure(reason = '', usedFallback = false) {
+  const message = String(reason || '').toLowerCase();
+  if (message.includes('timed out')) return 'timed_out';
+  if (message.includes('econnrefused') || message.includes('fetch failed') || message.includes('no fetch implementation') || message.includes('ollama unavailable')) {
+    return 'model_unavailable';
+  }
+  return usedFallback ? 'degraded_fallback' : 'model_error';
 }
 
 function addTraceStep(trace, stage, payload = {}) {
@@ -359,11 +380,33 @@ function defaultExecutorWorkerState() {
   };
 }
 
+function defaultDaveWorkerState() {
+  return {
+    name: 'Dave',
+    role: 'Practical learning companion',
+    status: 'idle',
+    statusReason: null,
+    mode: 'manual',
+    backend: DEFAULT_CONTEXT_MANAGER_BACKEND,
+    model: DEFAULT_CONTEXT_MANAGER_MODEL,
+    currentRunId: null,
+    lastRunId: null,
+    tokensUsed: 0,
+    durationMs: 0,
+    responseStatus: 'idle',
+    contextAlignmentScore: null,
+    contextAlignmentReason: null,
+    startedAt: null,
+    completedAt: null,
+  };
+}
+
 function createDefaultAgentWorkersState() {
   return {
     'context-manager': defaultContextManagerWorkerState(),
     executor: defaultExecutorWorkerState(),
     planner: defaultPlannerWorkerState(),
+    dave: defaultDaveWorkerState(),
   };
 }
 
@@ -393,6 +436,15 @@ function normalizeAgentWorkersState(agentWorkers = {}) {
       proposalArtifactRefs: Array.isArray(agentWorkers?.planner?.proposalArtifactRefs)
         ? uniqueStrings(agentWorkers.planner.proposalArtifactRefs)
         : [],
+    },
+    dave: {
+      ...defaults.dave,
+      ...(agentWorkers?.dave || {}),
+      tokensUsed: Number(agentWorkers?.dave?.tokensUsed ?? defaults.dave.tokensUsed),
+      durationMs: Number(agentWorkers?.dave?.durationMs ?? defaults.dave.durationMs),
+      contextAlignmentScore: Number(agentWorkers?.dave?.contextAlignmentScore ?? (defaults.dave.contextAlignmentScore ?? 0)),
+      contextAlignmentReason: agentWorkers?.dave?.contextAlignmentReason || defaults.dave.contextAlignmentReason,
+      responseStatus: String(agentWorkers?.dave?.responseStatus || defaults.dave.responseStatus),
     },
   };
 }
@@ -684,16 +736,28 @@ function buildExecutorPrompt({ promptTemplate, card, workspace }) {
 }
 
 function buildPlannerPrompt({ promptTemplate, handoff, anchorBundle, board }) {
+  const requestedOutcomes = Array.isArray(handoff?.requestedOutcomes)
+    ? handoff.requestedOutcomes
+    : (Array.isArray(handoff?.tasks) ? handoff.tasks : []);
   return [
     String(promptTemplate || FALLBACK_PLANNER_PROMPT).trim(),
-    '## Handoff',
+    '## Structured Intent Packet',
     `ID: ${handoff?.id || 'unknown'}`,
     `Summary: ${handoff?.summary || ''}`,
-    'Problem:',
-    handoff?.problemStatement || '',
     '',
-    'Tasks:',
-    (handoff?.tasks || []).map((task) => `- ${task}`).join('\n') || '- None',
+    JSON.stringify({
+      goal: handoff?.goal || handoff?.summary || '',
+      requestType: handoff?.requestType || 'context_request',
+      urgency: handoff?.urgency || 'normal',
+      requestedOutcomes,
+      targets: Array.isArray(handoff?.targets) ? handoff.targets : [],
+      constraints: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
+      signals: handoff?.signals || {},
+      problemStatement: handoff?.problemStatement || '',
+    }, null, 2),
+    '',
+    '## Handoff Problem Statement',
+    handoff?.problemStatement || '',
     '',
     'Constraints:',
     (handoff?.constraints || []).map((constraint) => `- ${constraint}`).join('\n') || '- None',
@@ -806,12 +870,16 @@ function createPlannerRunRecord({
   proposalArtifactRefs = [],
   plannerToContext = null,
   rawResponse = '',
+  startedAt = nowIso(),
+  completedAt = nowIso(),
 }) {
   return {
     id: runId,
     workerId: 'planner',
-    createdAt: nowIso(),
-    completedAt: nowIso(),
+    createdAt: startedAt,
+    startedAt,
+    completedAt,
+    durationMs: durationMsFrom(startedAt, completedAt),
     mode,
     backend,
     model,
@@ -902,8 +970,10 @@ async function runPlannerWorker(options = {}) {
 
   const blockedAttempt = (runs || []).filter((run) => runMatchesHandoff(run, handoff) && ['blocked', 'degraded'].includes(run.outcome)).length + 1;
   const blockedAction = blockedAttempt >= 2 ? 'bin-candidate' : 'retry-handoff';
+  const startedAt = nowIso();
 
   const createBlockedResult = (reason, outcome = 'blocked', rawResponse = '') => {
+    const completedAt = nowIso();
     const plannerToContext = buildPlannerToContextHandoff({
       handoff,
       action: blockedAction,
@@ -925,6 +995,8 @@ async function runPlannerWorker(options = {}) {
       proposalArtifactRefs: [],
       plannerToContext,
       rawResponse,
+      startedAt,
+      completedAt,
     }));
     return {
       ok: false,
@@ -941,7 +1013,10 @@ async function runPlannerWorker(options = {}) {
   if (!handoff) return createBlockedResult('Planner handoff is missing.');
   if (handoff.status !== 'ready') return createBlockedResult('Planner handoff is not ready and must be clarified before planning.');
   if (!Array.isArray(handoff.anchorRefs) || !handoff.anchorRefs.length) return createBlockedResult('Planner handoff has no anchor provenance.');
-  if (!Array.isArray(handoff.tasks) || !handoff.tasks.length) return createBlockedResult('Planner handoff has no concrete tasks to decompose.');
+  const requestedOutcomes = Array.isArray(handoff.requestedOutcomes)
+    ? handoff.requestedOutcomes.filter(Boolean)
+    : (Array.isArray(handoff.tasks) ? handoff.tasks.filter(Boolean) : []);
+  if (!requestedOutcomes.length) return createBlockedResult('Planner handoff has no concrete requested outcomes to decompose.');
 
   try {
     const generated = generator
@@ -978,6 +1053,7 @@ async function runPlannerWorker(options = {}) {
       return createBlockedResult('Planner produced no cards or review proposals for this handoff.', 'blocked', rawResponse);
     }
     const proposalArtifactRefs = writeProposalArtifacts(rootPath, runId, payload.brainProposals);
+    const completedAt = nowIso();
     const runRecord = persistPlannerRun(rootPath, createPlannerRunRecord({
       runId,
       handoff,
@@ -991,6 +1067,8 @@ async function runPlannerWorker(options = {}) {
       proposalArtifactRefs,
       plannerToContext: null,
       rawResponse,
+      startedAt,
+      completedAt,
     }));
     return {
       ok: true,
@@ -1039,28 +1117,35 @@ function createExecutorRunRecord({
   mode,
   backend,
   model,
+  outcome = 'completed',
   summary,
   report,
   usedFallback = false,
   rawResponse = '',
+  reason = null,
+  startedAt = nowIso(),
+  completedAt = nowIso(),
 }) {
   return {
     id: runId,
     workerId: 'executor',
-    createdAt: nowIso(),
-    completedAt: nowIso(),
+    createdAt: startedAt,
+    startedAt,
+    completedAt,
+    durationMs: durationMsFrom(startedAt, completedAt),
     mode,
     backend,
     model,
-    outcome: 'completed',
-    status: 'completed',
+    outcome,
+    status: outcome,
     summary: String(summary || '').trim() || String(report?.summary || card?.title || 'Executor assessment complete.').trim(),
-    reason: Array.isArray(report?.blockers) && report.blockers.length ? report.blockers[0] : null,
+    reason: String(reason || (Array.isArray(report?.blockers) && report.blockers.length ? report.blockers[0] : '')).trim() || null,
     cardId: card?.id || null,
     taskId: executorTaskId(card),
     targetProjectKey: card?.targetProjectKey || null,
     report,
     usedFallback: Boolean(usedFallback),
+    llmStatus: outcome === 'completed' ? 'live' : classifyLlmFailure(reason, usedFallback),
     rawResponse: rawResponse || null,
   };
 }
@@ -1106,10 +1191,13 @@ async function runExecutorWorker(options = {}) {
   const resolvedHost = host || config.host || DEFAULT_OLLAMA_HOST;
   const resolvedTimeoutMs = Number(timeoutMs || config.timeoutMs || DEFAULT_EXECUTOR_TIMEOUT_MS);
   const fallbackReport = deriveExecutorAssessment({ card, workspace });
+  const startedAt = nowIso();
 
   let usedFallback = false;
   let rawResponse = '';
   let report = fallbackReport;
+  let outcome = 'completed';
+  let reason = '';
 
   try {
     const generated = generator
@@ -1142,7 +1230,10 @@ async function runExecutorWorker(options = {}) {
     usedFallback = true;
     rawResponse = String(error.message || error);
     report = fallbackReport;
+    outcome = 'degraded';
+    reason = rawResponse;
   }
+  const completedAt = nowIso();
 
   const runRecord = persistExecutorRun(rootPath, createExecutorRunRecord({
     runId,
@@ -1150,17 +1241,21 @@ async function runExecutorWorker(options = {}) {
     mode,
     backend: resolvedBackend,
     model: resolvedModel,
+    outcome,
     summary: report.summary,
     report,
     usedFallback,
     rawResponse,
+    reason,
+    startedAt,
+    completedAt,
   }));
 
   return {
-    ok: true,
+    ok: !usedFallback,
     skipped: false,
-    outcome: 'completed',
-    reason: report.blockers[0] || '',
+    outcome,
+    reason: reason || report.blockers[0] || '',
     run: runRecord,
     report,
     usedFallback,
@@ -1197,7 +1292,7 @@ function buildContextManagerPrompt({
           `ID: ${previousHandoff.id || 'unknown'}`,
           `Summary: ${previousHandoff.summary || ''}`,
           `Status: ${previousHandoff.status || 'unknown'}`,
-          `Tasks: ${(previousHandoff.tasks || []).join(' | ') || 'none'}`,
+          `Requested outcomes: ${(previousHandoff.requestedOutcomes || previousHandoff.tasks || []).join(' | ') || 'none'}`,
         ].join('\n')
       : 'No previous planner handoff.',
     '',
@@ -1223,11 +1318,26 @@ function normalizeContextPacket(packet, anchorBundle = {}) {
   const knownAnchorRefs = new Set((anchorBundle?.truthSources || [])
     .filter((source) => source?.exists && source.authority === 'canonical-anchor')
     .map((source) => normalizeRelativePath(source.relativePath)));
+  const requestedOutcomes = uniqueStrings(
+    Array.isArray(safePacket.requestedOutcomes)
+      ? safePacket.requestedOutcomes
+      : Array.isArray(safePacket.tasks)
+        ? safePacket.tasks
+        : [],
+  ).slice(0, MAX_CONTEXT_TASKS);
   return {
     summary: String(safePacket.summary || '').trim().slice(0, 180),
     statement: String(safePacket.statement || '').trim(),
-    tasks: uniqueStrings(Array.isArray(safePacket.tasks) ? safePacket.tasks : []).slice(0, MAX_CONTEXT_TASKS),
+    goal: String(safePacket.goal || safePacket.statement || safePacket.summary || '').trim().slice(0, 180),
+    requestedOutcomes,
+    tasks: requestedOutcomes,
+    targets: uniqueStrings(Array.isArray(safePacket.targets) ? safePacket.targets : []).slice(0, 8),
     constraints: uniqueStrings(Array.isArray(safePacket.constraints) ? safePacket.constraints : []).slice(0, 4),
+    urgency: ['low', 'normal', 'high'].includes(String(safePacket.urgency || '').trim().toLowerCase())
+      ? String(safePacket.urgency).trim().toLowerCase()
+      : 'normal',
+    requestType: String(safePacket.requestType || 'context_request').trim() || 'context_request',
+    signals: safePacket.signals && typeof safePacket.signals === 'object' ? safePacket.signals : {},
     clarifications: uniqueStrings(Array.isArray(safePacket.clarifications) ? safePacket.clarifications : []).slice(0, 4),
     focusTerms: uniqueStrings(Array.isArray(safePacket.focusTerms) ? safePacket.focusTerms : []).slice(0, 8),
     suggestedAnchorRefs: uniqueStrings(Array.isArray(safePacket.suggestedAnchorRefs) ? safePacket.suggestedAnchorRefs : [])
@@ -1241,14 +1351,21 @@ function buildContextAnalysisSource(text, packet, plannerFeedback = null) {
   const sections = [String(text || '').trim()];
   if (packet.summary) sections.push(`Focus summary: ${packet.summary}`);
   if (packet.statement) sections.push(`Problem statement: ${packet.statement}`);
-  if ((packet.tasks || []).length) {
+  if (packet.goal) sections.push(`Goal: ${packet.goal}`);
+  if ((packet.requestedOutcomes || packet.tasks || []).length) {
     sections.push('Requested outcomes:');
-    packet.tasks.forEach((task) => sections.push(`- ${task}`));
+    (packet.requestedOutcomes || packet.tasks || []).forEach((task) => sections.push(`- ${task}`));
+  }
+  if ((packet.targets || []).length) {
+    sections.push('Targets:');
+    packet.targets.forEach((target) => sections.push(`- ${target}`));
   }
   if ((packet.constraints || []).length) {
     sections.push('Constraints:');
     packet.constraints.forEach((constraint) => sections.push(`- ${constraint}`));
   }
+  if (packet.requestType) sections.push(`Request type: ${packet.requestType}`);
+  if (packet.urgency) sections.push(`Urgency: ${packet.urgency}`);
   if ((packet.clarifications || []).length) {
     sections.push('Clarifications:');
     packet.clarifications.forEach((clarification) => sections.push(`- ${clarification}`));
@@ -1281,7 +1398,13 @@ function buildExtractedIntentPrompt({
       summary: report?.summary || '',
       confidence: report?.confidence || 0,
       classification: report?.classification || { role: 'thought', labels: [] },
-      tasks: report?.tasks || [],
+      goal: report?.goal || '',
+      requestedOutcomes: report?.requestedOutcomes || report?.tasks || [],
+      targets: report?.targets || [],
+      constraints: report?.constraints || [],
+      requestType: report?.requestType || 'context_request',
+      urgency: report?.urgency || 'normal',
+      signals: report?.signals || {},
       matchedTerms: report?.projectContext?.matchedTerms || [],
       criteria: report?.criteria || [],
     }, null, 2),
@@ -1305,7 +1428,9 @@ function literalClaimsFromPacket(packet = {}, report = {}) {
   return uniqueStrings([
     packet.summary,
     packet.statement,
-    ...(packet.tasks || []),
+    packet.goal,
+    ...(packet.requestedOutcomes || packet.tasks || []),
+    ...(packet.targets || []),
     ...(packet.constraints || []),
   ]);
 }
@@ -1323,9 +1448,10 @@ function buildFallbackExtractedIntent({
 }) {
   const explicitClaims = literalClaimsFromPacket(packet, report).slice(0, MAX_CONTEXT_TASKS + 2);
   const literalCandidates = uniqueStrings([
-    ...(packet.tasks || []),
-    ...(report?.tasks || []),
+    ...(packet.requestedOutcomes || packet.tasks || []),
+    ...(report?.requestedOutcomes || report?.tasks || []),
     packet.summary,
+    packet.goal,
   ]).slice(0, MAX_EXTRACTED_INTENT_CANDIDATES);
   return {
     id: `extracted_intent_${runId}`,
@@ -1453,7 +1579,28 @@ function mergeContextPacketIntoReport(report, {
   usedFallback = false,
 }) {
   const summary = packet.summary || report.summary;
-  const tasks = (packet.tasks || []).length ? packet.tasks : report.tasks;
+  const packetRequestedOutcomes = Array.isArray(packet.requestedOutcomes) && packet.requestedOutcomes.length
+    ? packet.requestedOutcomes
+    : (Array.isArray(packet.tasks) ? packet.tasks : []);
+  const reportRequestedOutcomes = Array.isArray(report.requestedOutcomes) && report.requestedOutcomes.length
+    ? report.requestedOutcomes
+    : (Array.isArray(report.tasks) ? report.tasks : []);
+  const requestedOutcomes = uniqueStrings(packetRequestedOutcomes.length ? packetRequestedOutcomes : reportRequestedOutcomes)
+    .slice(0, MAX_CONTEXT_TASKS);
+  const goal = String(packet.goal || packet.statement || report.goal || summary || '').trim();
+  const packetTargets = Array.isArray(packet.targets) ? packet.targets : [];
+  const reportTargets = Array.isArray(report.targets) ? report.targets : [];
+  const targets = uniqueStrings(packetTargets.length ? packetTargets : reportTargets).slice(0, 8);
+  const packetConstraints = Array.isArray(packet.constraints) ? packet.constraints : [];
+  const reportConstraints = Array.isArray(report.constraints) ? report.constraints : [];
+  const constraints = uniqueStrings(packetConstraints.length ? packetConstraints : reportConstraints).slice(0, 6);
+  const urgency = ['low', 'normal', 'high'].includes(String(packet.urgency || report.urgency || '').trim().toLowerCase())
+    ? String(packet.urgency || report.urgency).trim().toLowerCase()
+    : 'normal';
+  const requestType = String(packet.requestType || report.requestType || report.classification?.role || 'context_request').trim() || 'context_request';
+  const signals = packet.signals && typeof packet.signals === 'object'
+    ? packet.signals
+    : (report.signals && typeof report.signals === 'object' ? report.signals : {});
   const mergedProjectContext = {
     ...(report.projectContext || {}),
     plannerFeedback: plannerFeedback ? {
@@ -1466,13 +1613,22 @@ function mergeContextPacketIntoReport(report, {
   return {
     ...report,
     summary,
-    tasks,
+    goal,
+    targets,
+    constraints,
+    urgency,
+    requestType,
+    requestedOutcomes,
+    tasks: requestedOutcomes,
+    signals,
     nodeId: sourceNodeId || report.nodeId || null,
     source,
     createdAt: report.createdAt || nowIso(),
     projectContext: mergedProjectContext,
     contextPacket: {
       ...packet,
+      requestedOutcomes,
+      tasks: requestedOutcomes,
       plannerFeedbackAction: plannerFeedback?.action || null,
     },
     extractedIntent,
@@ -1486,7 +1642,7 @@ function mergeContextPacketIntoReport(report, {
     truth: buildIntentTruth({
       source: rawText,
       summary,
-      tasks,
+      requestedOutcomes,
       criteria: report.criteria || [],
       classification: report.classification || { role: 'context', labels: [] },
       projectContext: mergedProjectContext,
@@ -1521,12 +1677,16 @@ function createContextManagerRunRecord({
   usedFallback = false,
   rawResponse = '',
   llmTrace = null,
+  startedAt = nowIso(),
+  completedAt = nowIso(),
 }) {
   return {
     id: runId,
     workerId: 'context-manager',
-    createdAt: nowIso(),
-    completedAt: nowIso(),
+    createdAt: startedAt,
+    startedAt,
+    completedAt,
+    durationMs: durationMsFrom(startedAt, completedAt),
     mode,
     backend,
     model,
@@ -1543,6 +1703,7 @@ function createContextManagerRunRecord({
     handoffId: handoff?.id || null,
     handoff,
     usedFallback: Boolean(usedFallback),
+    llmStatus: outcome === 'completed' ? 'live' : classifyLlmFailure(reason, usedFallback),
     rawResponse: rawResponse || null,
     llmTrace: llmTrace && Array.isArray(llmTrace.steps) ? llmTrace : null,
   };
@@ -1593,14 +1754,21 @@ async function runContextManagerWorker(options = {}) {
         workspace: currentWorkspace,
         rootPath,
       })));
+  const startedAt = nowIso();
 
   let usedFallback = false;
   let fallbackReason = '';
   let packet = {
     summary: '',
     statement: '',
+    goal: '',
+    requestedOutcomes: [],
     tasks: [],
+    targets: [],
     constraints: [],
+    urgency: 'normal',
+    requestType: 'context_request',
+    signals: {},
     clarifications: [],
     focusTerms: [],
     suggestedAnchorRefs: [],
@@ -1787,12 +1955,13 @@ async function runContextManagerWorker(options = {}) {
       usedFallback: combinedFallback,
     });
     const handoff = createPlannerHandoff(report, dashboardState, previousHandoff);
+    const completedAt = nowIso();
     const runRecord = persistContextManagerRun(rootPath, createContextManagerRunRecord({
       runId,
       mode,
       backend: resolvedBackend,
       model: resolvedModel,
-      outcome: 'completed',
+      outcome: combinedFallback ? 'degraded' : 'completed',
       summary: report.summary,
       reason: combinedFallbackReason,
       sourceText: rawText,
@@ -1805,11 +1974,13 @@ async function runContextManagerWorker(options = {}) {
       usedFallback: combinedFallback,
       rawResponse,
       llmTrace,
+      startedAt,
+      completedAt,
     }));
     return {
-      ok: true,
+      ok: !combinedFallback,
       skipped: false,
-      outcome: 'completed',
+      outcome: combinedFallback ? 'degraded' : 'completed',
       reason: combinedFallbackReason,
       run: runRecord,
       report,
@@ -1826,6 +1997,7 @@ async function runContextManagerWorker(options = {}) {
       stage: 'context-manager',
       error: reason,
     });
+    const completedAt = nowIso();
     const runRecord = persistContextManagerRun(rootPath, createContextManagerRunRecord({
       runId,
       mode,
@@ -1843,6 +2015,8 @@ async function runContextManagerWorker(options = {}) {
       usedFallback,
       rawResponse,
       llmTrace,
+      startedAt,
+      completedAt,
     }));
     return {
       ok: false,

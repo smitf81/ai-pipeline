@@ -1,0 +1,17 @@
+{
+  "pages": [
+    {
+      "outputs": [],
+      "handoffs": [],
+      "artifactRefs": [],
+      "id": "page_1774440616080_m3p3",
+      "title": "Current Page",
+      "status": "active",
+      "sourceNodeId": "node_1774259559573_gj2ai",
+      "summary": "Notebook page for current studio work.",
+      "createdAt": "2026-03-25T12:10:16.080Z",
+      "updatedAt": "2026-03-27T06:21:25.520Z"
+    }
+  ],
+  "activePageId": "page_1774440616080_m3p3"
+}

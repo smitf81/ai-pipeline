@@ -1,0 +1,944 @@
+{
+  "id": "context_manager_1774421075296_64zpf2",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-25T06:44:35.301Z",
+  "startedAt": "2026-03-25T06:44:35.301Z",
+  "completedAt": "2026-03-25T06:44:49.429Z",
+  "durationMs": 14128,
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Implement shared anchor resolution system for ACE manager, context, and runtime",
+  "reason": null,
+  "sourceNodeId": "node_1774421003609_yrxt9",
+  "sourceText": "in business alot of good management is knowing who to ask for a particular thing,",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Implement shared anchor resolution system for ACE manager, context, and runtime",
+    "statement": "Create a system that resolves anchors for the ACE manager, context, and runtime from a central location, ensuring compatibility with existing systems during migration.",
+    "goal": "Create a system that resolves anchors for the ACE manager, context, and runtime from a central location, ensuring compatibility with existing systems during migration.",
+    "requestedOutcomes": [
+      "Add a shared anchor resolver and bundle builder"
+    ],
+    "tasks": [
+      "Add a shared anchor resolver and bundle builder"
+    ],
+    "targets": [],
+    "constraints": [
+      "Keep `brain/emergence` canonical while compatibility reads remain available from `projects/emergence/`",
+      "Ensure `plan.md`, `roadmap.md`, `tasks.md`, `decisions.md`, `changelog.md`, `project_brain.md`, and `state.json` stay in sync"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "signals": {},
+    "clarifications": [
+      "What is the timeline for removing deprecated compatibility aliases?",
+      "How will drift warnings be handled once canonical docs get out of sync with runtime fields?"
+    ],
+    "focusTerms": [
+      "anchor",
+      "resolver",
+      "bundle builder"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/plan.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1774421075296_64zpf2",
+    "sourceNodeId": "node_1774421003609_yrxt9",
+    "sourceText": "in business alot of good management is knowing who to ask for a particular thing,",
+    "summary": "Implement a centralized anchor resolution system for ACE manager, context, and runtime",
+    "explicitClaims": [
+      "Add a shared anchor resolver and bundle builder"
+    ],
+    "inferredClaims": [
+      "Create a system that ensures compatibility with existing systems during migration"
+    ],
+    "candidateNodes": [
+      {
+        "id": "anchor_resolver",
+        "label": "Anchor Resolver",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Required to implement the requested outcome of adding an anchor resolver and bundle builder.",
+        "confidence": 0.72
+      },
+      {
+        "id": "compatibility_manager",
+        "label": "Compatibility Manager",
+        "kind": "module",
+        "basis": "inferred",
+        "rationale": "Inferred to manage compatibility during the migration of existing systems.",
+        "confidence": 0.65
+      }
+    ],
+    "candidateEdges": [
+      {
+        "sourceCandidateId": "anchor_resolver",
+        "targetCandidateId": "compatibility_manager",
+        "kind": "relates_to",
+        "basis": "explicit",
+        "rationale": "The compatibility manager is expected to utilize the anchor resolver during migration."
+      }
+    ],
+    "gaps": [
+      "Timeline for removing deprecated compatibility aliases, handling drift warnings when canonical docs get out of sync with runtime fields."
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774421075296_64zpf2",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.78,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 1,
+          "reason": "Matched project terms: anchor, ace, manager, context, runtime"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 1,
+          "reason": "Detected 5 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.8888888888888888,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context",
+          "plan",
+          "execution",
+          "ux",
+          "governance"
+        ]
+      },
+      "matchedTerms": [
+        "anchor",
+        "ace",
+        "manager",
+        "context",
+        "runtime",
+        "compatibility",
+        "add",
+        "keep"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Implement shared anchor resolution system for ACE manager, context, and runtime",
+    "confidence": 0.78,
+    "legacyConfidence": 0.8,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: anchor, ace, manager, context, runtime"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 5 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.8888888888888888,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: anchor, ace, manager, context, runtime"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 4 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 1,
+        "reason": "References ACE system structure, agents, or implementation surfaces."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.78,
+      "executionReadiness": 0.75,
+      "plannerUsefulness": 0.97,
+      "deployReadiness": 0.22
+    },
+    "truth": {
+      "rawSource": "in business alot of good management is knowing who to ask for a particular thing,",
+      "rawInput": "in business alot of good management is knowing who to ask for a particular thing,",
+      "statement": "Implement shared anchor resolution system for ACE manager, context, and runtime",
+      "goal": "Implement shared anchor resolution system for ACE manager, context, and runtime",
+      "intentType": "Constraint / guardrail request",
+      "requestType": "constraint_request",
+      "requestedOutcomes": [
+        "Add a shared anchor resolver and bundle builder"
+      ],
+      "tasks": [
+        "Add a shared anchor resolver and bundle builder"
+      ],
+      "targets": [
+        "anchor",
+        "ace",
+        "manager",
+        "context",
+        "runtime",
+        "compatibility",
+        "add",
+        "keep"
+      ],
+      "constraints": [
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "urgency": "normal",
+      "signals": {
+        "actionSignals": 0,
+        "constraintSignals": 0,
+        "architectureSignals": 0,
+        "executionSignals": 0,
+        "featureSignals": 0,
+        "matchedProjectTerms": 8,
+        "anchorRefs": 6,
+        "lowConfidenceCriteria": 1,
+        "plannerUsefulness": 0.97,
+        "executionReadiness": 0.75,
+        "deployReadiness": 0.22,
+        "labels": [
+          "context",
+          "plan",
+          "execution",
+          "ux"
+        ],
+        "role": "constraint",
+        "requestedOutcomeCount": 1
+      },
+      "unresolved": [
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Project alignment: Matched project terms: anchor, ace, manager, context, runtime",
+        "Actionability: Detected 5 implementation/planning verb signals.",
+        "Clarity: Input includes enough detail to classify intent reliably."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Add a shared anchor resolver and bundle builder",
+      "readiness": {
+        "intentConfidence": 0.78,
+        "plannerUsefulness": 0.97,
+        "executionReadiness": 0.75,
+        "deployReadiness": 0.22
+      }
+    },
+    "goal": "Create a system that resolves anchors for the ACE manager, context, and runtime from a central location, ensuring compatibility with existing systems during migration.",
+    "targets": [
+      "anchor",
+      "ace",
+      "manager",
+      "context",
+      "runtime",
+      "compatibility",
+      "add",
+      "keep"
+    ],
+    "constraints": [
+      "Keep `brain/emergence` canonical while compatibility reads remain available from `projects/emergence/`",
+      "Ensure `plan.md`, `roadmap.md`, `tasks.md`, `decisions.md`, `changelog.md`, `project_brain.md`, and `state.json` stay in sync"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "requestedOutcomes": [
+      "Add a shared anchor resolver and bundle builder"
+    ],
+    "tasks": [
+      "Add a shared anchor resolver and bundle builder"
+    ],
+    "signals": {},
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "ace",
+            "brain",
+            "emergence",
+            "runtime",
+            "canonical",
+            "context",
+            "manager",
+            "state"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "anchor",
+            "emergence",
+            "keep",
+            "manager",
+            "projects",
+            "compatibility",
+            "drift",
+            "once"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "anchor",
+            "runtime",
+            "canonical",
+            "json",
+            "compatibility",
+            "manager",
+            "brain",
+            "drift"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "anchor",
+            "tasks",
+            "brain",
+            "changelog",
+            "compatibility",
+            "context",
+            "decisions",
+            "emergence"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "brain",
+            "emergence",
+            "json",
+            "canonical",
+            "compatibility",
+            "migration",
+            "projects",
+            "ace"
+          ],
+          "score": 25
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "anchor",
+            "brain",
+            "canonical",
+            "json",
+            "runtime",
+            "bundle",
+            "changelog",
+            "drift"
+          ],
+          "score": 25
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "plan",
+        "execution",
+        "ux",
+        "governance"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 80,
+      "sentenceCount": 22,
+      "matchedProjectTerms": [
+        "anchor",
+        "ace",
+        "manager",
+        "context",
+        "runtime",
+        "compatibility",
+        "add",
+        "keep",
+        "brain",
+        "emergence",
+        "canonical",
+        "projects",
+        "roadmap",
+        "changelog",
+        "json",
+        "drift"
+      ],
+      "actionSignals": 5,
+      "featureRequestSignals": 0,
+      "architectureSignals": 3,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "anchor",
+        "ace",
+        "manager",
+        "context",
+        "runtime",
+        "compatibility",
+        "add",
+        "keep"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "brain",
+        "the",
+        "anchor",
+        "runtime",
+        "for",
+        "legacy"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-25T06:44:41.440Z",
+    "nodeId": "node_1774421003609_yrxt9",
+    "source": "node-idle",
+    "createdAt": "2026-03-25T06:44:49.428Z",
+    "contextPacket": {
+      "summary": "Implement shared anchor resolution system for ACE manager, context, and runtime",
+      "statement": "Create a system that resolves anchors for the ACE manager, context, and runtime from a central location, ensuring compatibility with existing systems during migration.",
+      "goal": "Create a system that resolves anchors for the ACE manager, context, and runtime from a central location, ensuring compatibility with existing systems during migration.",
+      "requestedOutcomes": [
+        "Add a shared anchor resolver and bundle builder"
+      ],
+      "tasks": [
+        "Add a shared anchor resolver and bundle builder"
+      ],
+      "targets": [],
+      "constraints": [
+        "Keep `brain/emergence` canonical while compatibility reads remain available from `projects/emergence/`",
+        "Ensure `plan.md`, `roadmap.md`, `tasks.md`, `decisions.md`, `changelog.md`, `project_brain.md`, and `state.json` stay in sync"
+      ],
+      "urgency": "normal",
+      "requestType": "context_request",
+      "signals": {},
+      "clarifications": [
+        "What is the timeline for removing deprecated compatibility aliases?",
+        "How will drift warnings be handled once canonical docs get out of sync with runtime fields?"
+      ],
+      "focusTerms": [
+        "anchor",
+        "resolver",
+        "bundle builder"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/plan.md"
+      ],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1774421075296_64zpf2",
+      "sourceNodeId": "node_1774421003609_yrxt9",
+      "sourceText": "in business alot of good management is knowing who to ask for a particular thing,",
+      "summary": "Implement a centralized anchor resolution system for ACE manager, context, and runtime",
+      "explicitClaims": [
+        "Add a shared anchor resolver and bundle builder"
+      ],
+      "inferredClaims": [
+        "Create a system that ensures compatibility with existing systems during migration"
+      ],
+      "candidateNodes": [
+        {
+          "id": "anchor_resolver",
+          "label": "Anchor Resolver",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Required to implement the requested outcome of adding an anchor resolver and bundle builder.",
+          "confidence": 0.72
+        },
+        {
+          "id": "compatibility_manager",
+          "label": "Compatibility Manager",
+          "kind": "module",
+          "basis": "inferred",
+          "rationale": "Inferred to manage compatibility during the migration of existing systems.",
+          "confidence": 0.65
+        }
+      ],
+      "candidateEdges": [
+        {
+          "sourceCandidateId": "anchor_resolver",
+          "targetCandidateId": "compatibility_manager",
+          "kind": "relates_to",
+          "basis": "explicit",
+          "rationale": "The compatibility manager is expected to utilize the anchor resolver during migration."
+        }
+      ],
+      "gaps": [
+        "Timeline for removing deprecated compatibility aliases, handling drift warnings when canonical docs get out of sync with runtime fields."
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1774421075296_64zpf2",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.78,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: anchor, ace, manager, context, runtime"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 1,
+            "reason": "Detected 5 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.8888888888888888,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "plan",
+            "execution",
+            "ux",
+            "governance"
+          ]
+        },
+        "matchedTerms": [
+          "anchor",
+          "ace",
+          "manager",
+          "context",
+          "runtime",
+          "compatibility",
+          "add",
+          "keep"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774421075296_64zpf2",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1774421069277_avjn2v",
+  "handoff": {
+    "id": "handoff_1774421069277_avjn2v",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-25T06:44:49.428Z",
+    "sourceNodeId": "node_1774421003609_yrxt9",
+    "summary": "Implement shared anchor resolution system for ACE manager, context, and runtime",
+    "goal": "Create a system that resolves anchors for the ACE manager, context, and runtime from a central location, ensuring compatibility with existing systems during migration.",
+    "problemStatement": "Goal: Implement shared anchor resolution system for ACE manager, context, and runtime\nRequested outcomes: Add a shared anchor resolver and bundle builder.\nWhy ACE believes this: Project alignment 100%, Actionability 100%, Architecture fit 89%.\nConstraints and review signals: Keep `brain/emergence` canonical while compatibility reads remain available from `projects/emergence/` | Ensure `plan.md`, `roadmap.md`, `tasks.md`, `decisions.md`, `changelog.md`, `project_brain.md`, and `state.json` stay in sync | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: What is the timeline for removing deprecated compatibility aliases? How will drift warnings be handled once canonical docs get out of sync with runtime fields?",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md"
+    ],
+    "requestedOutcomes": [
+      "Add a shared anchor resolver and bundle builder"
+    ],
+    "tasks": [
+      "Add a shared anchor resolver and bundle builder"
+    ],
+    "constraints": [
+      "Keep `brain/emergence` canonical while compatibility reads remain available from `projects/emergence/`",
+      "Ensure `plan.md`, `roadmap.md`, `tasks.md`, `decisions.md`, `changelog.md`, `project_brain.md`, and `state.json` stay in sync",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.78,
+    "legacyConfidence": 0.8,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: anchor, ace, manager, context, runtime"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 5 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.8888888888888888,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.78,
+      "executionReadiness": 0.75,
+      "plannerUsefulness": 0.97,
+      "deployReadiness": 0.22
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "plan",
+        "execution",
+        "ux",
+        "governance"
+      ]
+    },
+    "requestType": "context_request",
+    "urgency": "normal",
+    "targets": [
+      "anchor",
+      "ace",
+      "manager",
+      "context",
+      "runtime",
+      "compatibility",
+      "add",
+      "keep"
+    ],
+    "signals": {},
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "llmStatus": "live",
+  "rawResponse": "{\n  \"summary\": \"Implement shared anchor resolution system for ACE manager, context, and runtime\",\n  \"statement\": \"Create a system that resolves anchors for the ACE manager, context, and runtime from a central location, ensuring compatibility with existing systems during migration.\",\n  \"tasks\": [\"Add a shared anchor resolver and bundle builder\"],\n  \"constraints\": [\"Keep `brain/emergence` canonical while compatibility reads remain available from `projects/emergence/`\", \"Ensure `plan.md`, `roadmap.md`, `tasks.md`, `decisions.md`, `changelog.md`, `project_brain.md`, and `state.json` stay in sync\"],\n  \"clarifications\": [\"What is the timeline for removing deprecated compatibility aliases?\", \"How will drift warnings be handled once canonical docs get out of sync with runtime fields?\"],\n  \"focusTerms\": [\"anchor\", \"resolver\", \"bundle builder\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/plan.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1774421075296_64zpf2",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T06:44:35.301Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T06:44:41.437Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Implement shared anchor resolution system for ACE manager, context, and runtime\",\n  \"statement\": \"Create a system that resolves anchors for the ACE manager, context, and runtime from a central location, ensuring compatibility with existing systems during migration.\",\n  \"tasks\": [\"Add"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T06:44:41.440Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T06:44:49.428Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Implement a centralized anchor resolution system for ACE manager, context, and runtime\",\n  \"explicitClaims\": [\"Add a shared anchor resolver and bundle builder\"],\n  \"inferredClaims\": [\"Create a system that ensures compatibility with existing systems during migration\"],\n  \"candidateNod"
+      }
+    ]
+  }
+}

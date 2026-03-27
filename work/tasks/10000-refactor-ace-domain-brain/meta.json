@@ -1,0 +1,16 @@
+{
+  "id": "10000",
+  "title": "Refactor ACE domain brain",
+  "created_utc": "2026-03-19T15:41:17.373Z",
+  "source": "studio-team-board",
+  "sessionId": null,
+  "handoffId": "handoff_1773934861643_w7nuq6",
+  "anchorRefs": [
+    "brain/emergence/project_brain.md",
+    "brain/emergence/roadmap.md",
+    "brain/emergence/plan.md",
+    "brain/emergence/tasks.md",
+    "brain/emergence/decisions.md",
+    "brain/emergence/changelog.md"
+  ]
+}

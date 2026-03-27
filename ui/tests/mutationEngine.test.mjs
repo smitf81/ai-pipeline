@@ -66,11 +66,16 @@ export default async function runMutationEngineTests() {
   assert.equal(graphEngine.getState().nodes.length, 4);
   assert.equal(graphEngine.getState().edges.length, 3);
   assert.ok(firstPass.generatedNodes.every((node) => node.position.x > sourceNode.position.x));
+  assert.ok(firstPass.generatedNodes.every((node) => node.metadata?.origin === 'ai'));
+  assert.ok(firstPass.generatedNodes.every((node) => node.metadata?.sourceNodeId === sourceNode.id));
+  assert.ok(firstPass.generatedNodes.every((node) => node.metadata?.intentRef?.sourceNodeId === sourceNode.id));
+  assert.ok(firstPass.generatedNodes.every((node) => node.metadata?.intentRef?.basis === node.metadata?.basis));
   assert.ok(firstPass.generatedNodes.every((node) => node.metadata?.rsg?.sourceNodeId === sourceNode.id));
   assert.ok(firstPass.generatedNodes.every((node) => node.metadata?.rsg?.state === 'linked-draft'));
   assert.equal(firstPass.generatedNodes[0].content, 'Expose planner handoff');
   assert.equal(firstPass.generatedNodes[1].content, 'Show RSG activity');
   assert.equal(firstPass.generatedNodes[2].content, 'Create linked drafts');
+  assert.ok(firstPass.generatedNodes.every((node) => node.metadata?.labels?.includes('ai')));
   assert.equal(firstPass.generatedNodes[0].metadata?.rsg?.intentRef?.candidateNodeId, 'cand_1');
   assert.equal(firstPass.generatedNodes[2].metadata?.rsg?.intentRef?.basis, 'inferred');
   assert.ok(graphEngine.getState().edges.every((edge) => edge.source === sourceNode.id));

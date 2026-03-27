@@ -198,9 +198,91 @@ function createDefaultTeamBoard() {
       active: 0,
       complete: 0,
       review: 0,
+      assigned: 0,
+      handedOff: 0,
       binned: 0,
       idleWorkers: 0,
     },
+  };
+}
+
+const TASK_PHASES = new Set(['captured', 'planned', 'active', 'handed_off']);
+const TASK_ASSIGNMENT_STATES = new Set(['unassigned', 'assigned', 'claimed']);
+
+function normalizeTaskFlow(taskFlow = {}, fallback = {}) {
+  const phase = TASK_PHASES.has(taskFlow.phase)
+    ? taskFlow.phase
+    : (TASK_PHASES.has(fallback.phase) ? fallback.phase : 'planned');
+  const assignmentState = TASK_ASSIGNMENT_STATES.has(taskFlow.assignmentState)
+    ? taskFlow.assignmentState
+    : (TASK_ASSIGNMENT_STATES.has(fallback.assignmentState) ? fallback.assignmentState : 'unassigned');
+  return {
+    phase,
+    assignmentState,
+    ownerDeskId: taskFlow.ownerDeskId || fallback.ownerDeskId || null,
+    assigneeDeskId: taskFlow.assigneeDeskId || fallback.assigneeDeskId || null,
+    sourceIntentId: taskFlow.sourceIntentId || fallback.sourceIntentId || null,
+    sourceHandoffId: taskFlow.sourceHandoffId || fallback.sourceHandoffId || null,
+    lastTransitionAt: taskFlow.lastTransitionAt || fallback.lastTransitionAt || null,
+    lastTransitionLabel: taskFlow.lastTransitionLabel || fallback.lastTransitionLabel || null,
+    history: Array.isArray(taskFlow.history) ? taskFlow.history.filter(Boolean) : [],
+  };
+}
+
+function createTaskFlowEntry({
+  phase = 'planned',
+  assignmentState = 'unassigned',
+  ownerDeskId = null,
+  assigneeDeskId = null,
+  label = '',
+  note = '',
+  at = null,
+} = {}) {
+  return {
+    phase: TASK_PHASES.has(phase) ? phase : 'planned',
+    assignmentState: TASK_ASSIGNMENT_STATES.has(assignmentState) ? assignmentState : 'unassigned',
+    ownerDeskId: ownerDeskId || null,
+    assigneeDeskId: assigneeDeskId || null,
+    label: label || 'Planned',
+    note: note || '',
+    at: at || null,
+  };
+}
+
+function transitionTaskFlow(taskFlow = {}, next = {}, fallback = {}) {
+  const current = normalizeTaskFlow(taskFlow, fallback);
+  const nextPhase = TASK_PHASES.has(next.phase) ? next.phase : current.phase;
+  const nextAssignmentState = TASK_ASSIGNMENT_STATES.has(next.assignmentState) ? next.assignmentState : current.assignmentState;
+  const nextOwnerDeskId = next.ownerDeskId !== undefined ? (next.ownerDeskId || null) : current.ownerDeskId;
+  const nextAssigneeDeskId = next.assigneeDeskId !== undefined ? (next.assigneeDeskId || null) : current.assigneeDeskId;
+  const nextAt = next.at || current.lastTransitionAt || null;
+  const nextLabel = next.label || (nextPhase === 'captured' ? 'Captured from intent' : nextPhase === 'active' ? 'Placed into active' : nextPhase === 'handed_off' ? 'Handed off to executor' : 'Moved to planner board');
+  const nextEntry = createTaskFlowEntry({
+    phase: nextPhase,
+    assignmentState: nextAssignmentState,
+    ownerDeskId: nextOwnerDeskId,
+    assigneeDeskId: nextAssigneeDeskId,
+    label: nextLabel,
+    note: next.note || '',
+    at: nextAt,
+  });
+  const head = current.history[0] || null;
+  const shouldAppend = !head
+    || head.phase !== nextEntry.phase
+    || head.assignmentState !== nextEntry.assignmentState
+    || head.ownerDeskId !== nextEntry.ownerDeskId
+    || head.assigneeDeskId !== nextEntry.assigneeDeskId
+    || head.label !== nextEntry.label
+    || head.note !== nextEntry.note;
+  return {
+    ...current,
+    phase: nextPhase,
+    assignmentState: nextAssignmentState,
+    ownerDeskId: nextOwnerDeskId,
+    assigneeDeskId: nextAssigneeDeskId,
+    lastTransitionAt: nextEntry.at,
+    lastTransitionLabel: nextEntry.label,
+    history: shouldAppend ? [nextEntry, ...current.history].slice(0, 8) : current.history,
   };
 }
 
@@ -374,18 +456,47 @@ function deriveCardState(card = {}) {
 
 function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, sourceAnchorRefs = [], title, createdAt = null }) {
   const now = createdAt || new Date().toISOString();
+  const capturedFlow = createTaskFlowEntry({
+    phase: 'captured',
+    assignmentState: 'unassigned',
+    ownerDeskId: 'context-manager',
+    assigneeDeskId: 'planner',
+    label: 'Captured from intent',
+    note: title,
+    at: now,
+  });
   return {
     id: nextTeamBoardTaskId(cards),
     sourceKey: cardSourceKey(pageId, title),
     pageId,
     sourceHandoffId: handoffId || null,
     sourceNodeId: sourceNodeId || null,
+    sourceIntentId: sourceNodeId || null,
     sourceAnchorRefs: Array.isArray(sourceAnchorRefs) ? sourceAnchorRefs.filter(Boolean) : [],
     title,
     status: 'plan',
     desk: 'Planner',
     state: 'Ready',
     phaseTicks: 0,
+    taskFlow: transitionTaskFlow({
+      phase: 'captured',
+      assignmentState: 'unassigned',
+      ownerDeskId: 'context-manager',
+      assigneeDeskId: 'planner',
+      sourceIntentId: sourceNodeId || null,
+      sourceHandoffId: handoffId || null,
+      lastTransitionAt: now,
+      lastTransitionLabel: 'Captured from intent',
+      history: [capturedFlow],
+    }, {
+      phase: 'planned',
+      assignmentState: 'unassigned',
+      ownerDeskId: 'planner',
+      assigneeDeskId: 'executor',
+      label: 'Moved to planner board',
+      at: now,
+      note: title,
+    }),
     targetProjectKey: 'ace-self',
     builderTaskId: null,
     runnerTaskId: null,
@@ -424,6 +535,7 @@ function normalizeTeamBoardState(workspace = {}) {
     phaseTicks: Number(card.phaseTicks || 0),
     targetProjectKey: card.targetProjectKey || 'ace-self',
     sourceAnchorRefs: Array.isArray(card.sourceAnchorRefs) ? card.sourceAnchorRefs.filter(Boolean) : [],
+    sourceIntentId: card.sourceIntentId || card.sourceNodeId || null,
     builderTaskId: card.builderTaskId || card.runnerTaskId || null,
     runnerTaskId: card.runnerTaskId || null,
     runIds: Array.isArray(card.runIds) ? card.runIds.filter(Boolean) : [],
@@ -458,45 +570,30 @@ function normalizeTeamBoardState(workspace = {}) {
     auditSessionId: card.auditSessionId || null,
     desk: card.desk || deriveCardDesk(card),
     state: card.state || deriveCardState(card),
+    taskFlow: normalizeTaskFlow(card.taskFlow, {
+      phase: card.status === 'active' ? 'active' : (card.status === 'complete' || card.status === 'review' ? 'handed_off' : 'planned'),
+      assignmentState: card.status === 'active' ? 'assigned' : (card.status === 'complete' || card.status === 'review' ? 'claimed' : 'unassigned'),
+      ownerDeskId: card.status === 'active' || card.status === 'complete' || card.status === 'review' ? 'executor' : 'planner',
+      assigneeDeskId: 'executor',
+      sourceIntentId: card.sourceIntentId || card.sourceNodeId || null,
+      sourceHandoffId: card.sourceHandoffId || null,
+      lastTransitionAt: card.updatedAt || card.createdAt || null,
+    }),
   })) : [];
   const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
-  const plannerOwnsHandoff = Boolean(handoff?.id && (
-    handoff?.plannerRunId
-    || plannerWorker?.currentRunId
-    || plannerWorker?.lastSourceHandoffId === handoff.id
-  ));
-  const workingCards = [...existingCards];
-  const seededCards = plannerOwnsHandoff ? [] : (handoff?.tasks || []).filter(Boolean).map((task) => {
-    const sourceKey = cardSourceKey(notebook.activePageId, task);
-    const existingCard = workingCards.find((card) => card.sourceKey === sourceKey);
-    if (existingCard) return existingCard;
-    const nextCard = createTeamBoardCard({
-      cards: workingCards,
-      pageId: notebook.activePageId,
-      handoffId: handoff?.id || null,
-      sourceNodeId: handoff?.sourceNodeId || null,
-      sourceAnchorRefs: handoff?.anchorRefs || [],
-      title: task,
-      createdAt: handoff?.createdAt || null,
-    });
-    workingCards.push(nextCard);
-    return nextCard;
-  });
-  const mergedCards = [...workingCards];
-  seededCards.forEach((card) => {
-    if (!mergedCards.some((entry) => entry.id === card.id)) mergedCards.push(card);
-  });
-  const selectedCard = mergedCards.find((card) => card.id === board.selectedCardId) || null;
+  const selectedCard = existingCards.find((card) => card.id === board.selectedCardId) || null;
   return {
-    cards: mergedCards,
+    cards: existingCards,
     selectedCardId: selectedCard?.id || null,
     updatedAt: new Date().toISOString(),
     summary: {
-      plan: mergedCards.filter((card) => card.status === 'plan').length,
-      active: mergedCards.filter((card) => card.status === 'active').length,
-      complete: mergedCards.filter((card) => card.status === 'complete').length,
-      review: mergedCards.filter((card) => card.status === 'review').length,
-      binned: mergedCards.filter((card) => card.status === 'binned').length,
+      plan: existingCards.filter((card) => card.status === 'plan').length,
+      active: existingCards.filter((card) => card.status === 'active').length,
+      complete: existingCards.filter((card) => card.status === 'complete').length,
+      review: existingCards.filter((card) => card.status === 'review').length,
+      assigned: existingCards.filter((card) => card.taskFlow?.assignmentState === 'assigned').length,
+      handedOff: existingCards.filter((card) => card.taskFlow?.phase === 'handed_off').length,
+      binned: existingCards.filter((card) => card.status === 'binned').length,
       idleWorkers: Number(board.summary?.idleWorkers || 0),
     },
   };
@@ -882,18 +979,47 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
     .sort((left, right) => String(left.createdAt || '').localeCompare(String(right.createdAt || '')))
     .map((card) => {
       let status = normalizeBoardStatus(card.status);
+      let taskFlow = normalizeTaskFlow(card.taskFlow, {
+        phase: status === 'active' ? 'active' : (status === 'complete' || status === 'review' ? 'handed_off' : 'planned'),
+        assignmentState: status === 'active' ? 'assigned' : (status === 'complete' || status === 'review' ? 'claimed' : 'unassigned'),
+        ownerDeskId: status === 'active' || status === 'complete' || status === 'review' ? 'executor' : 'planner',
+        assigneeDeskId: 'executor',
+        sourceIntentId: card.sourceIntentId || card.sourceNodeId || null,
+        sourceHandoffId: card.sourceHandoffId || null,
+        lastTransitionAt: card.updatedAt || card.createdAt || null,
+      });
       if (status === 'plan' && handoff) {
         if ((card.sourceAnchorRefs || []).length === 0) {
           status = 'plan';
         } else if (openActiveSlots > 0) {
           status = 'active';
           openActiveSlots -= 1;
+          taskFlow = transitionTaskFlow(taskFlow, {
+            phase: 'active',
+            assignmentState: 'assigned',
+            ownerDeskId: 'planner',
+            assigneeDeskId: 'executor',
+            label: 'Placed into active',
+            at: now,
+            note: card.title,
+          });
         }
       }
       const nextCard = {
         ...card,
         status,
         phaseTicks: status === 'plan' ? Number(card.phaseTicks || 0) : 0,
+        taskFlow: status === 'active'
+          ? transitionTaskFlow(taskFlow, {
+              phase: 'active',
+              assignmentState: 'assigned',
+              ownerDeskId: 'planner',
+              assigneeDeskId: 'executor',
+              label: 'Active on planner slab',
+              at: now,
+              note: card.title,
+            })
+          : taskFlow,
         updatedAt: now,
       };
       return {
@@ -911,6 +1037,8 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
       active: cards.filter((card) => card.status === 'active').length,
       complete: cards.filter((card) => card.status === 'complete').length,
       review: cards.filter((card) => card.status === 'review').length,
+      assigned: cards.filter((card) => card.taskFlow?.assignmentState === 'assigned').length,
+      handedOff: cards.filter((card) => card.taskFlow?.phase === 'handed_off').length,
       binned: cards.filter((card) => card.status === 'binned').length,
       idleWorkers: countIdleWorkers(deskStates),
     },
@@ -1187,7 +1315,25 @@ function advanceOrchestratorWorkspace(workspace = {}, { dashboardState = {}, run
   const latestIntent = latestIntentReport(normalizedWorkspace);
   const handoff = normalizedWorkspace?.studio?.handoffs?.contextToPlanner || null;
   const baseBoard = normalizeTeamBoardState(normalizedWorkspace);
-  const initialSelectedExecutionCard = getSelectedExecutionCard(baseBoard);
+  const seededBoard = !baseBoard.cards.length && handoff
+    ? {
+        ...baseBoard,
+        cards: [createTeamBoardCard({
+          cards: baseBoard.cards,
+          pageId: notebook.activePageId || normalizedWorkspace.activePageId || 'page-1',
+          handoffId: handoff.id || null,
+          sourceNodeId: latestIntent?.nodeId || handoff.sourceNodeId || null,
+          sourceAnchorRefs: Array.isArray(handoff.anchorRefs) ? handoff.anchorRefs : [],
+          title: (Array.isArray(handoff.requestedOutcomes) && handoff.requestedOutcomes[0])
+            || (Array.isArray(handoff.tasks) && handoff.tasks[0])
+            || handoff.summary
+            || latestIntent?.summary
+            || 'Planned task',
+          createdAt: handoff.createdAt || latestIntent?.createdAt || null,
+        })],
+      }
+    : baseBoard;
+  const initialSelectedExecutionCard = getSelectedExecutionCard(seededBoard);
   const initialDeskStates = buildDeskStates({
     workspace: normalizedWorkspace,
     notebook,
@@ -1198,7 +1344,7 @@ function advanceOrchestratorWorkspace(workspace = {}, { dashboardState = {}, run
   const teamBoard = advanceTeamBoardState({
     workspace: normalizedWorkspace,
     handoff,
-    board: baseBoard,
+    board: seededBoard,
     deskStates: initialDeskStates,
     conflicts: initialConflicts,
     runs,

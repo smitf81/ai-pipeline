@@ -1,0 +1,887 @@
+{
+  "id": "context_manager_1774259560782_3o6wc4",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-23T09:52:40.789Z",
+  "startedAt": "2026-03-23T09:52:40.789Z",
+  "completedAt": "2026-03-23T09:53:13.564Z",
+  "durationMs": 32775,
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Align repo anchors and update configuration for improved manager behavior",
+  "reason": null,
+  "sourceNodeId": "node_1774259559573_gj2ai",
+  "sourceText": "new note",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Align repo anchors and update configuration for improved manager behavior",
+    "statement": "The task at hand is to make the `brain/emergence` directory the canonical source of truth for ACE manager behavior. This includes moving external target configurations, legacy repo trees, and updating the runtime and dashboard to read from this new location.",
+    "tasks": [
+      "Update configuration files",
+      "Move legacy repo trees",
+      "Modify runtime and dashboard to read from `brain/emergence`"
+    ],
+    "constraints": [
+      "Ensure compatibility for deprecated paths during migration",
+      "Maintain active runtime resolution independence from `legacy/`"
+    ],
+    "clarifications": [
+      "What is the timeline for removing deprecated paths?",
+      "How will drift detection handle anchors in both `brain/emergence` and legacy paths?"
+    ],
+    "focusTerms": [
+      "brain/emergence",
+      "external targets",
+      "legacy repo trees"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/plan.md",
+      "brain/emergence/roadmap.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1774259560782_3o6wc4",
+    "sourceNodeId": "node_1774259559573_gj2ai",
+    "sourceText": "new note",
+    "summary": "Align repo anchors and update configuration for improved manager behavior",
+    "explicitClaims": [
+      "Update configuration files",
+      "Move legacy repo trees",
+      "Modify runtime and dashboard to read from `brain/emergence`"
+    ],
+    "inferredClaims": [
+      "Ensure compatibility during migration of deprecated paths",
+      "Implement drift detection handling anchors in both `brain/emergence` and legacy paths"
+    ],
+    "candidateNodes": [
+      {
+        "id": "update_config_files",
+        "label": "Update configuration files",
+        "kind": "task",
+        "basis": "explicit",
+        "rationale": "Stated explicitly in the context as a task to be executed.",
+        "confidence": 1
+      },
+      {
+        "id": "move_legacy_repo_trees",
+        "label": "Move legacy repo trees",
+        "kind": "task",
+        "basis": "explicit",
+        "rationale": "Stated explicitly in the context as a task to be executed.",
+        "confidence": 1
+      },
+      {
+        "id": "modify_runtime_and_dashboard",
+        "label": "Modify runtime and dashboard",
+        "kind": "task",
+        "basis": "explicit",
+        "rationale": "Stated explicitly in the context as a task to be executed.",
+        "confidence": 1
+      },
+      {
+        "id": "compatibility_migration",
+        "label": "Compatibility during migration",
+        "kind": "constraint",
+        "basis": "inferred",
+        "rationale": "Inferred from the need to ensure compatibility for deprecated paths during the migration.",
+        "confidence": 0.75
+      },
+      {
+        "id": "drift_detection",
+        "label": "Drift detection handling",
+        "kind": "constraint",
+        "basis": "inferred",
+        "rationale": "Inferred from the question about how drift detection will handle anchors in both `brain/emergence` and legacy paths.",
+        "confidence": 0.75
+      }
+    ],
+    "candidateEdges": [],
+    "gaps": [
+      "Timeline for removing deprecated paths"
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774259560782_3o6wc4",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.59,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 1,
+          "reason": "Matched project terms: repo, manager, brain, emergence, canonical"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.625,
+          "reason": "Detected 2 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.3333333333333333,
+          "reason": "Little direct architecture language found."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context",
+          "plan",
+          "governance"
+        ]
+      },
+      "matchedTerms": [
+        "repo",
+        "manager",
+        "brain",
+        "emergence",
+        "canonical",
+        "ace",
+        "external",
+        "legacy"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Align repo anchors and update configuration for improved manager behavior",
+    "confidence": 0.59,
+    "legacyConfidence": 0.69,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: repo, manager, brain, emergence, canonical"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.625,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.3333333333333333,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: repo, manager, brain, emergence, canonical"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.42857142857142855,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.59,
+      "executionReadiness": 0.66,
+      "plannerUsefulness": 0.83,
+      "deployReadiness": 0.14
+    },
+    "truth": {
+      "rawInput": "new note",
+      "statement": "Align repo anchors and update configuration for improved manager behavior",
+      "intentType": "Constraint / guardrail request",
+      "requestedOutcomes": [
+        "Update configuration files",
+        "Move legacy repo trees",
+        "Modify runtime and dashboard to read from `brain/emergence`"
+      ],
+      "unresolved": [
+        "Architecture fit: Little direct architecture language found.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Project alignment: Matched project terms: repo, manager, brain, emergence, canonical",
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Actionability: Detected 2 implementation/planning verb signals."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/roadmap.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Update configuration files; Move legacy repo trees; Modify runtime and dashboard to read from `brain/emergence`",
+      "readiness": {
+        "intentConfidence": 0.59,
+        "plannerUsefulness": 0.83,
+        "executionReadiness": 0.66,
+        "deployReadiness": 0.14
+      }
+    },
+    "tasks": [
+      "Update configuration files",
+      "Move legacy repo trees",
+      "Modify runtime and dashboard to read from `brain/emergence`"
+    ],
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "ace",
+            "brain",
+            "emergence",
+            "runtime",
+            "canonical",
+            "legacy",
+            "manager",
+            "repo"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "runtime",
+            "canonical",
+            "legacy",
+            "compatibility",
+            "manager",
+            "active",
+            "brain",
+            "dashboard"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "brain",
+            "compatibility",
+            "emergence",
+            "legacy",
+            "manager",
+            "repo",
+            "runtime"
+          ],
+          "score": 29
+        },
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "legacy",
+            "brain",
+            "emergence",
+            "targets",
+            "canonical",
+            "compatibility",
+            "external",
+            "migration"
+          ],
+          "score": 25
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "legacy",
+            "brain",
+            "canonical",
+            "runtime",
+            "dashboard",
+            "drift",
+            "external",
+            "manager"
+          ],
+          "score": 25
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "emergence",
+            "manager",
+            "compatibility",
+            "drift",
+            "runtime",
+            "active"
+          ],
+          "score": 25
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "plan",
+        "governance"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 61,
+      "sentenceCount": 15,
+      "matchedProjectTerms": [
+        "repo",
+        "manager",
+        "brain",
+        "emergence",
+        "canonical",
+        "ace",
+        "external",
+        "legacy",
+        "runtime",
+        "dashboard",
+        "compatibility",
+        "active",
+        "drift"
+      ],
+      "actionSignals": 2,
+      "featureRequestSignals": 0,
+      "architectureSignals": 0,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "repo",
+        "manager",
+        "brain",
+        "emergence",
+        "canonical",
+        "ace",
+        "external",
+        "legacy"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "brain",
+        "the",
+        "anchor",
+        "runtime",
+        "for",
+        "legacy"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/roadmap.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-23T09:52:53.103Z",
+    "nodeId": "node_1774259559573_gj2ai",
+    "source": "node-idle",
+    "createdAt": "2026-03-23T09:53:13.564Z",
+    "contextPacket": {
+      "summary": "Align repo anchors and update configuration for improved manager behavior",
+      "statement": "The task at hand is to make the `brain/emergence` directory the canonical source of truth for ACE manager behavior. This includes moving external target configurations, legacy repo trees, and updating the runtime and dashboard to read from this new location.",
+      "tasks": [
+        "Update configuration files",
+        "Move legacy repo trees",
+        "Modify runtime and dashboard to read from `brain/emergence`"
+      ],
+      "constraints": [
+        "Ensure compatibility for deprecated paths during migration",
+        "Maintain active runtime resolution independence from `legacy/`"
+      ],
+      "clarifications": [
+        "What is the timeline for removing deprecated paths?",
+        "How will drift detection handle anchors in both `brain/emergence` and legacy paths?"
+      ],
+      "focusTerms": [
+        "brain/emergence",
+        "external targets",
+        "legacy repo trees"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/plan.md",
+        "brain/emergence/roadmap.md"
+      ],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1774259560782_3o6wc4",
+      "sourceNodeId": "node_1774259559573_gj2ai",
+      "sourceText": "new note",
+      "summary": "Align repo anchors and update configuration for improved manager behavior",
+      "explicitClaims": [
+        "Update configuration files",
+        "Move legacy repo trees",
+        "Modify runtime and dashboard to read from `brain/emergence`"
+      ],
+      "inferredClaims": [
+        "Ensure compatibility during migration of deprecated paths",
+        "Implement drift detection handling anchors in both `brain/emergence` and legacy paths"
+      ],
+      "candidateNodes": [
+        {
+          "id": "update_config_files",
+          "label": "Update configuration files",
+          "kind": "task",
+          "basis": "explicit",
+          "rationale": "Stated explicitly in the context as a task to be executed.",
+          "confidence": 1
+        },
+        {
+          "id": "move_legacy_repo_trees",
+          "label": "Move legacy repo trees",
+          "kind": "task",
+          "basis": "explicit",
+          "rationale": "Stated explicitly in the context as a task to be executed.",
+          "confidence": 1
+        },
+        {
+          "id": "modify_runtime_and_dashboard",
+          "label": "Modify runtime and dashboard",
+          "kind": "task",
+          "basis": "explicit",
+          "rationale": "Stated explicitly in the context as a task to be executed.",
+          "confidence": 1
+        },
+        {
+          "id": "compatibility_migration",
+          "label": "Compatibility during migration",
+          "kind": "constraint",
+          "basis": "inferred",
+          "rationale": "Inferred from the need to ensure compatibility for deprecated paths during the migration.",
+          "confidence": 0.75
+        },
+        {
+          "id": "drift_detection",
+          "label": "Drift detection handling",
+          "kind": "constraint",
+          "basis": "inferred",
+          "rationale": "Inferred from the question about how drift detection will handle anchors in both `brain/emergence` and legacy paths.",
+          "confidence": 0.75
+        }
+      ],
+      "candidateEdges": [],
+      "gaps": [
+        "Timeline for removing deprecated paths"
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1774259560782_3o6wc4",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.59,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: repo, manager, brain, emergence, canonical"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.625,
+            "reason": "Detected 2 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.3333333333333333,
+            "reason": "Little direct architecture language found."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "plan",
+            "governance"
+          ]
+        },
+        "matchedTerms": [
+          "repo",
+          "manager",
+          "brain",
+          "emergence",
+          "canonical",
+          "ace",
+          "external",
+          "legacy"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774259560782_3o6wc4",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1774259593564_to353t",
+  "handoff": {
+    "id": "handoff_1774259593564_to353t",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-23T09:53:13.564Z",
+    "sourceNodeId": "node_1774259559573_gj2ai",
+    "summary": "Align repo anchors and update configuration for improved manager behavior",
+    "problemStatement": "Goal: Align repo anchors and update configuration for improved manager behavior\nRequested outcomes: Update configuration files; Move legacy repo trees; Modify runtime and dashboard to read from `brain/emergence`.\nWhy ACE believes this: Project alignment 100%, Actionability 63%, Architecture fit 33%.\nConstraints and review signals: Ensure compatibility for deprecated paths during migration | Maintain active runtime resolution independence from `legacy/` | Architecture fit: Little direct architecture language found. | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: What is the timeline for removing deprecated paths? How will drift detection handle anchors in both `brain/emergence` and legacy paths?",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "tasks": [
+      "Update configuration files",
+      "Move legacy repo trees",
+      "Modify runtime and dashboard to read from `brain/emergence`"
+    ],
+    "constraints": [
+      "Ensure compatibility for deprecated paths during migration",
+      "Maintain active runtime resolution independence from `legacy/`",
+      "Architecture fit: Little direct architecture language found.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.59,
+    "legacyConfidence": 0.69,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: repo, manager, brain, emergence, canonical"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.625,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.3333333333333333,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.59,
+      "executionReadiness": 0.66,
+      "plannerUsefulness": 0.83,
+      "deployReadiness": 0.14
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "plan",
+        "governance"
+      ]
+    },
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "llmStatus": "live",
+  "rawResponse": "{\n  \"summary\": \"Align repo anchors and update configuration for improved manager behavior\",\n  \"statement\": \"The task at hand is to make the `brain/emergence` directory the canonical source of truth for ACE manager behavior. This includes moving external target configurations, legacy repo trees, and updating the runtime and dashboard to read from this new location.\",\n  \"tasks\": [\"Update configuration files\", \"Move legacy repo trees\", \"Modify runtime and dashboard to read from `brain/emergence`\"],\n  \"constraints\": [\"Ensure compatibility for deprecated paths during migration\", \"Maintain active runtime resolution independence from `legacy/`\"],\n  \"clarifications\": [\"What is the timeline for removing deprecated paths?\", \"How will drift detection handle anchors in both `brain/emergence` and legacy paths?\"],\n  \"focusTerms\": [\"brain/emergence\", \"external targets\", \"legacy repo trees\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/plan.md\", \"brain/emergence/roadmap.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1774259560782_3o6wc4",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-23T09:52:40.790Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-23T09:52:53.100Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Align repo anchors and update configuration for improved manager behavior\",\n  \"statement\": \"The task at hand is to make the `brain/emergence` directory the canonical source of truth for ACE manager behavior. This includes moving external target configurations, legacy repo trees, and "
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-23T09:52:53.103Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-23T09:53:13.563Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Align repo anchors and update configuration for improved manager behavior\",\n  \"explicitClaims\": [\"Update configuration files\", \"Move legacy repo trees\", \"Modify runtime and dashboard to read from `brain/emergence`\"],\n  \"inferredClaims\": [\"Ensure compatibility during migration of depr"
+      }
+    ]
+  }
+}

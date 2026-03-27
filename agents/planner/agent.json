@@ -9,7 +9,7 @@
     "brain/emergence/*",
     "studio.teamBoard"
   ],
-  "model": "mixtral",
+  "model": "mistral:latest",
   "name": "Planner",
   "outputs": [
     "studio.teamBoard.cards(plan)",

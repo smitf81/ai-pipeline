@@ -1,0 +1,51 @@
+{
+  "exhaustedSnapshot": {
+    "workerList": [
+      "unit-001 | exhausted | energy 0/16"
+    ],
+    "workerDetails": {
+      "state": "exhausted",
+      "energy": "0/16",
+      "currentTask": "task-0003 | paintTile (def=+0.43, reg=+0.03, mem=+0.00, hold=+0.00, flow=-0.02, trav=-0.03, corr=-0.01) [source defensibility @ 0.61] [threat 0.54] | blocked | @(16,6) | energy: 1 + 1/tile | reason: needs 1 energy for paint action, has 0"
+    }
+  },
+  "energyResetSnapshot": {
+    "workerList": [
+      "unit-001 | working | energy 13/16"
+    ],
+    "workerDetails": {
+      "state": "working",
+      "energy": "13/16",
+      "currentTask": "task-0005 | paintTile (def=+0.40, reg=+0.01, mem=+0.00, hold=+0.00, flow=-0.03, trav=-0.03, corr=-0.02) [source defensibility @ 0.44] [threat 0.90] | in_progress | @(16,8) | energy: 1 + 1/tile"
+    },
+    "eventLog": [
+      "Worker (unit-001) | task-0005 | paintTile (def=+0.40, reg=+0.01, mem=+0.00, hold=+0.00, flow=-0.03, trav=-0.03, corr=-0.02) [source defensibility @ 0.44] [threat 0.90] -> in_progress",
+      "Reason: High blockers: favour openness/traversal and soften blocker stickiness; Low openness preserved: increase flow/traversal preservation; Low structure coherence: increase regional and corridor bias",
+      "Adaptive weights updated: mem -0.02, hold -0.03, flow +0.10, trav +0.10",
+      "Task enqueued (field balance) | task-0005 | paintTile (def=+0.40, reg=+0.01, mem=+0.00, hold=+0.00, flow=-0.03, trav=-0.03, corr=-0.02) [source defensibility @ 0.44] [threat 0.90] -> Worker (unit-001)",
+      "Worker (unit-001) | task-0004 | paintTile (def=+0.39, reg=+0.02, mem=+0.01, hold=+0.00, flow=-0.00, trav=-0.04, corr=-0.01) [source defensibility @ 0.59] [threat 0.50] -> done",
+      "Worker (unit-001) | task-0004 | paintTile (def=+0.39, reg=+0.02, mem=+0.01, hold=+0.00, flow=-0.00, trav=-0.04, corr=-0.01) [source defensibility @ 0.59] [threat 0.50] | painted grass -> stone | reinforcement 0.18"
+    ]
+  },
+  "scenarioResetSnapshot": {
+    "workerList": [
+      "unit-001 | idle | energy 12/16"
+    ],
+    "workerDetails": {
+      "state": "idle",
+      "energy": "12/16",
+      "currentTask": "Idle"
+    },
+    "adaptiveStatus": "Cycle 0 | steady | base resolver weights",
+    "eventLog": [
+      "Scenario reset | restored authored demo state",
+      "Demo setup | seeded unit-001 at (18, 8) with energy 12/16 for visible constraint feedback",
+      "Worker (unit-001) | task-0005 | paintTile (def=+0.40, reg=+0.01, mem=+0.00, hold=+0.00, flow=-0.03, trav=-0.03, corr=-0.02) [source defensibility @ 0.44] [threat 0.90] -> in_progress",
+      "Reason: High blockers: favour openness/traversal and soften blocker stickiness; Low openness preserved: increase flow/traversal preservation; Low structure coherence: increase regional and corridor bias",
+      "Adaptive weights updated: mem -0.02, hold -0.03, flow +0.10, trav +0.10",
+      "Task enqueued (field balance) | task-0005 | paintTile (def=+0.40, reg=+0.01, mem=+0.00, hold=+0.00, flow=-0.03, trav=-0.03, corr=-0.02) [source defensibility @ 0.44] [threat 0.90] -> Worker (unit-001)",
+      "Worker (unit-001) | task-0004 | paintTile (def=+0.39, reg=+0.02, mem=+0.01, hold=+0.00, flow=-0.00, trav=-0.04, corr=-0.01) [source defensibility @ 0.59] [threat 0.50] -> done",
+      "Worker (unit-001) | task-0004 | paintTile (def=+0.39, reg=+0.02, mem=+0.01, hold=+0.00, flow=-0.00, trav=-0.04, corr=-0.01) [source defensibility @ 0.59] [threat 0.50] | painted grass -> stone | reinforcement 0.18"
+    ]
+  }
+}

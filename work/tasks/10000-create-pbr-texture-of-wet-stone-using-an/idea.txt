@@ -1,0 +1,15 @@
+Create PBR texture of wet stone using anchored intent
+
+Goal: Create a PBR texture for wet stone using the updated ACE context manager
+Requested outcomes: Create PBR texture of wet stone using anchored intent.
+Why ACE believes this: Project alignment 100%, Actionability 63%, Architecture fit 56%.
+Constraints and review signals: Use anchored intent system for texture creation | Constraint coverage: No clear constraints or review gates were stated..
+Still unclear: Ensure that the anchor bundle is set to `brain/emergence` and external targets are configured in `targets.json`
+
+Anchor refs:
+- brain/emergence/project_brain.md
+- brain/emergence/plan.md
+- brain/emergence/tasks.md
+- brain/emergence/decisions.md
+- brain/emergence/changelog.md
+- brain/emergence/roadmap.md

@@ -1,4 +1,5 @@
 const path = require('path');
+const { buildUiContractCheckQualityCard } = require('../testAttributeCards');
 const {
   applyFixtureFailures,
   ensureServer,
@@ -22,7 +23,7 @@ async function runTests(context) {
   const endpoints = extractUiNetworkContracts(context.rootPath);
   for (const route of endpoints) {
     // Basic test: is it supported by ANY method?
-    if (!routeExists(context, 'get', route) && !routeExists(context, 'post', route) && !routeExists(context, 'put', route) && !routeExists(context, 'delete', route)) {
+    if (!routeExists(context, 'get', route) && !routeExists(context, 'post', route) && !routeExists(context, 'put', route) && !routeExists(context, 'patch', route) && !routeExists(context, 'delete', route)) {
       contractFailures.push(`UI calls missing endpoint: ${route}`);
     }
   }
@@ -52,6 +53,75 @@ async function runTests(context) {
     }
   } catch (error) {
     contractFailures.push(`CTO chat check failed: ${String(error.message || error)}`);
+  }
+
+  try {
+    const llmTest = await requestJson(context, 'POST', '/api/llm/test', { prompt: 'hello', timeoutMs: 1 }, 5000);
+    if (![200, 500].includes(llmTest.statusCode)) {
+      contractFailures.push(`/api/llm/test returned unexpected status ${llmTest.statusCode}`);
+    } else {
+      const expectedKeys = llmTest.statusCode === 200
+        ? ['ok', 'status', 'backend', 'model', 'prompt', 'text']
+        : ['ok', 'status', 'backend', 'model', 'error'];
+      const missing = objectMissingKeys(llmTest.body, expectedKeys);
+      if (missing.length) {
+        contractFailures.push(`/api/llm/test missing ${missing.join(', ')}`);
+      }
+    }
+  } catch (error) {
+    contractFailures.push(`/api/llm/test failed: ${String(error.message || error)}`);
+  }
+
+  try {
+    const ctoFailure = await requestJson(context, 'POST', '/api/spatial/cto/chat', {
+      text: 'hello qa',
+      source: 'qa-test',
+      timeoutMs: 1,
+      model: 'mistral:latest',
+    }, 5000);
+    if (![200, 503].includes(ctoFailure.statusCode)) {
+      contractFailures.push(`/api/spatial/cto/chat returned unexpected status ${ctoFailure.statusCode}`);
+    } else if (ctoFailure.statusCode === 200) {
+      const missing = objectMissingKeys(ctoFailure.body, ['ok', 'status', 'reply_text', 'backend', 'model', 'runId']);
+      if (missing.length) {
+        contractFailures.push(`/api/spatial/cto/chat missing ${missing.join(', ')}`);
+      } else if (ctoFailure.body.status !== 'live') {
+        contractFailures.push(`/api/spatial/cto/chat claimed success with non-live status ${ctoFailure.body.status}`);
+      } else if (String(ctoFailure.body.reply_text || '').includes('[LLM LIVE REPLY]')) {
+        contractFailures.push('/api/spatial/cto/chat still returns fake live reply text');
+      }
+    } else {
+      const missing = objectMissingKeys(ctoFailure.body, ['ok', 'status', 'error', 'reason', 'usedFallback', 'backend', 'model', 'runId']);
+      if (missing.length) {
+        contractFailures.push(`/api/spatial/cto/chat degraded payload missing ${missing.join(', ')}`);
+      }
+    }
+  } catch (error) {
+    contractFailures.push(`CTO live/fallback contract failed: ${String(error.message || error)}`);
+  }
+
+  try {
+    const intentRes = await requestJson(context, 'POST', '/api/spatial/intent', {
+      text: 'hello qa',
+      source: 'qa-test',
+      timeoutMs: 1,
+      model: 'mistral:latest',
+    }, 5000);
+    if (![200, 503].includes(intentRes.statusCode)) {
+      contractFailures.push(`/api/spatial/intent returned unexpected status ${intentRes.statusCode}`);
+    } else if (intentRes.statusCode === 200) {
+      const missing = objectMissingKeys(intentRes.body, ['report', 'extractedIntent', 'worker', 'handoff', 'runtime']);
+      if (missing.length) {
+        contractFailures.push(`/api/spatial/intent missing ${missing.join(', ')}`);
+      }
+    } else {
+      const missing = objectMissingKeys(intentRes.body, ['ok', 'status', 'error', 'reason', 'usedFallback', 'backend', 'model', 'runId']);
+      if (missing.length) {
+        contractFailures.push(`/api/spatial/intent degraded payload missing ${missing.join(', ')}`);
+      }
+    }
+  } catch (error) {
+    contractFailures.push(`Intent live/fallback contract failed: ${String(error.message || error)}`);
   }
 
   // Apply command mismatch check
@@ -100,7 +170,58 @@ async function runTests(context) {
     contractFailures.push(`/api/tasks failed: ${String(error.message || error)}`);
   }
 
-  tests.push(makeTest('contract_check', contractFailures.length === 0, contractFailures.join('; ')));
+  try {
+    const qaProps = await requestJson(context, 'GET', '/api/spatial/desks/qa-lead/properties');
+    if (qaProps.statusCode !== 200) {
+      contractFailures.push(`/api/spatial/desks/qa-lead/properties returned ${qaProps.statusCode}`);
+    } else {
+      const missing = objectMissingKeys(qaProps.body, ['deskId', 'desk', 'agents', 'tasks', 'modules', 'reports', 'qa']);
+      if (missing.length) contractFailures.push(`/api/spatial/desks/qa-lead/properties missing ${missing.join(', ')}`);
+      if (qaProps.body?.deskId !== 'qa-lead') {
+        contractFailures.push(`qa desk payload returned deskId ${String(qaProps.body?.deskId || '(missing)')}`);
+      }
+      if (!Array.isArray(qaProps.body?.agents) || !qaProps.body.agents.some((agent) => agent.id === 'qa-lead')) {
+        contractFailures.push('qa desk payload does not expose the qa-lead agent');
+      }
+      if (!Array.isArray(qaProps.body?.qa?.availableTests) || qaProps.body.qa.availableTests.length === 0) {
+        contractFailures.push('qa desk payload does not expose runnable QA suites');
+      } else {
+        const suiteIds = qaProps.body.qa.availableTests.map((suite) => suite.id);
+        const requiredSuites = ['planner', 'runner', 'ui', 'ta'];
+        for (const suiteId of requiredSuites) {
+          if (!suiteIds.includes(suiteId)) {
+            contractFailures.push(`qa desk payload missing runnable suite ${suiteId}`);
+          }
+        }
+        if (JSON.stringify(suiteIds.slice(0, requiredSuites.length)) !== JSON.stringify(requiredSuites)) {
+          contractFailures.push(`qa desk runnable suites out of order: ${suiteIds.join(', ')}`);
+        }
+      }
+    }
+  } catch (error) {
+    contractFailures.push(`qa desk properties failed: ${String(error.message || error)}`);
+  }
+
+  try {
+    const qaAction = await requestJson(context, 'POST', '/api/spatial/desks/qa-lead/actions', {
+      action: 'add_test',
+      testId: 'qa-readonly-check',
+      verdict: 'pending',
+    }, 5000);
+    if (qaAction.statusCode !== 403) {
+      contractFailures.push(`/api/spatial/desks/qa-lead/actions should be read-only, got ${qaAction.statusCode}`);
+    }
+  } catch (error) {
+    contractFailures.push(`qa desk read-only check failed: ${String(error.message || error)}`);
+  }
+
+  tests.push(makeTest(
+    'contract_check',
+    contractFailures.length === 0,
+    contractFailures.join('; '),
+    'critical',
+    { qualityCard: buildUiContractCheckQualityCard() },
+  ));
 
   const fileScope = evaluateDeskFileScope(context, 'ui');
   tests.push(makeTest('file_scope', fileScope.ok, fileScope.reason));

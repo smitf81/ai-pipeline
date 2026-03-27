@@ -1,6 +1,7 @@
 const plannerQA = require('./desks/plannerQA');
 const runnerQA = require('./desks/runnerQA');
 const taQA = require('./desks/taQA');
+const { TEST_METRIC_DEFINITIONS } = require('./testMetricDefinitions');
 const uiQA = require('./desks/uiQA');
 const { closeContext, createContext } = require('./shared/debugSuite');
 
@@ -48,6 +49,7 @@ async function runAll(options = {}) {
       summary: buildSummary(desks, failures),
       failures,
       desks,
+      metricDefinitions: TEST_METRIC_DEFINITIONS,
       startedAt: context.startedAt,
       finishedAt: new Date().toISOString(),
       durationMs: Date.now() - context.startedMs,

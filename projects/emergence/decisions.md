@@ -14,3 +14,15 @@ External repos and tools are now configured through `targets.json`.
 
 Archived repo content now lives under `legacy/`.
 Active runtime resolution must not depend on `legacy/ai-pipeline` or `legacy/Old`.
+
+## 2026-03-25 - Shift to intent-driven spatial system
+
+### Rationale
+
+ACE is moving beyond direct task execution so the system can reason over persistent world state, reconcile competing pressures, and produce more adaptive behavior than fixed pipeline outputs allow.
+
+### Consequences
+
+- Architecture planning now centers on three layers: ACE orchestration, a persistent graph world model, and spatial field systems.
+- New features should prefer continuous evaluation, spatial reasoning, and constrained agent action over one-shot object edits or instant global changes.
+- Success criteria increasingly shift from predefined task completion toward stable, emergent outcomes shaped by world conditions.

@@ -12,6 +12,7 @@ export default async function runOrchestratorStateTests() {
     normalizeGraphBundle,
     createDefaultRsgState,
     buildRsgState,
+    createTeamBoardCard,
     normalizeTeamBoardState,
     normalizeNotebookState,
     deriveExecutorBlocker,
@@ -71,7 +72,7 @@ export default async function runOrchestratorStateTests() {
           summary: 'Planner brief ready.',
           status: 'needs-clarification',
           anchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
-          tasks: ['Clarify desk overlap', 'Show current desk job'],
+          requestedOutcomes: ['Clarify desk overlap', 'Show current desk job'],
         },
         plannerToContext: {
           id: 'feedback_1',
@@ -80,6 +81,19 @@ export default async function runOrchestratorStateTests() {
           detail: 'Need clearer acceptance criteria.',
           anchorRefs: ['brain/emergence/plan.md'],
         },
+      },
+      teamBoard: {
+        cards: [
+          createTeamBoardCard({
+            cards: [],
+            pageId: 'page_1',
+            handoffId: 'handoff_1',
+            sourceNodeId: 'node_ctx',
+            sourceAnchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
+            title: 'Clarify desk overlap',
+            createdAt: '2026-03-16T08:31:00.000Z',
+          }),
+        ],
       },
       agentWorkers: {
         'context-manager': {
@@ -134,6 +148,7 @@ export default async function runOrchestratorStateTests() {
   assert.match(nextWorkspace.studio.orchestrator.desks.planner.thoughtBubble, /retry|waiting|sequencing|tasks/i);
   assert.match(nextWorkspace.studio.orchestrator.desks.executor.thoughtBubble, /blocked|queued|waiting/i);
   assert.ok((nextWorkspace.studio.teamBoard.summary.active || 0) >= 1);
+  assert.ok((nextWorkspace.studio.teamBoard.summary.assigned || 0) >= 1);
   assert.ok(nextWorkspace.studio.teamBoard.cards[0].sourceAnchorRefs.includes('brain/emergence/plan.md'));
 
   const runtime = buildRuntimePayload(nextWorkspace);
@@ -156,6 +171,8 @@ export default async function runOrchestratorStateTests() {
     pages: notebook.pages,
     activePageId: notebook.activePageId,
   });
+  assert.equal(board.cards[0].taskFlow.phase, 'planned');
+  assert.equal(board.cards[0].taskFlow.assignmentState, 'unassigned');
   const approvedWorkspace = advanceOrchestratorWorkspace({
     ...workspace,
     pages: notebook.pages,

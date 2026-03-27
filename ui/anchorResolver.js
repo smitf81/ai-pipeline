@@ -12,8 +12,9 @@ const DERIVED_AUTHORITY = 'derived-state';
 const ANCHOR_DEFINITIONS = Object.freeze([
   { id: 'project_brain', fileName: 'project_brain.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 3, intentWeight: 4, keywordWeight: 3, required: true },
   { id: 'roadmap', fileName: 'roadmap.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 5, intentWeight: 4, keywordWeight: 5, required: true },
-  { id: 'plan', fileName: 'plan.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 4, intentWeight: 4, keywordWeight: 4, required: true },
-  { id: 'tasks', fileName: 'tasks.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 4, intentWeight: 4, keywordWeight: 4, required: true },
+  { id: 'slices', fileName: 'slices.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 6, intentWeight: 5, keywordWeight: 6, required: true },
+  { id: 'plan', fileName: 'plan.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 1, intentWeight: 1, keywordWeight: 1, required: true },
+  { id: 'tasks', fileName: 'tasks.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 1, intentWeight: 1, keywordWeight: 1, required: false },
   { id: 'decisions', fileName: 'decisions.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 2, intentWeight: 3, keywordWeight: 2, required: true },
   { id: 'changelog', fileName: 'changelog.md', type: 'markdown', authority: CANONICAL_AUTHORITY, weight: 2, intentWeight: 3, keywordWeight: 2, required: true },
   { id: 'state', fileName: 'state.json', type: 'json', authority: DERIVED_AUTHORITY, weight: 1, intentWeight: 1, keywordWeight: 0, required: true },
@@ -283,14 +284,13 @@ function hasComparableOverlap(left, right) {
 
 function buildMarkdownSummary(anchorMap) {
   const roadmapNow = extractMarkdownSectionLines(anchorMap.roadmap?.content || '', ['now'], 6);
-  const planGoal = extractMarkdownSectionLines(anchorMap.plan?.content || '', ['goal'], 4);
   const projectFocus = extractMarkdownSectionLines(anchorMap.project_brain?.content || '', ['current focus', 'focus'], 4);
+  const sliceActions = extractActionLines(anchorMap.slices?.content || '', 8);
   const taskActions = extractActionLines(anchorMap.tasks?.content || '', 6);
-  const planActions = extractActionLines(anchorMap.plan?.content || '', 6);
   return {
-    currentFocus: firstAvailableLine(planGoal, projectFocus, roadmapNow, firstMeaningfulLine(anchorMap.project_brain?.content || '')),
-    activeMilestone: firstAvailableLine(roadmapNow, planGoal, firstMeaningfulLine(anchorMap.roadmap?.content || '')),
-    nextActions: uniqueStrings([...planActions, ...taskActions, ...roadmapNow]).slice(0, 7),
+    currentFocus: firstAvailableLine(projectFocus, sliceActions, roadmapNow, firstMeaningfulLine(anchorMap.project_brain?.content || '')),
+    activeMilestone: firstAvailableLine(roadmapNow, sliceActions, firstMeaningfulLine(anchorMap.roadmap?.content || '')),
+    nextActions: uniqueStrings([...sliceActions, ...roadmapNow, ...taskActions]).slice(0, 7),
   };
 }
 
@@ -363,29 +363,21 @@ function buildDriftFlags(anchorMap, markdownSummary = {}) {
     }
   });
 
-  const planActions = extractActionLines(anchorMap.plan?.content || '', 6);
+  const sliceActions = extractActionLines(anchorMap.slices?.content || '', 8);
   const taskActions = extractActionLines(anchorMap.tasks?.content || '', 6);
-  if (!planActions.length) {
+  if (!sliceActions.length) {
     flags.push({
-      id: 'empty-plan',
+      id: 'empty-slices',
       severity: 'high',
-      summary: 'plan.md is present but does not expose an active execution slice.',
-      anchorRef: anchorMap.plan?.relativePath || canonicalAnchorRelativePath(DEFAULT_DOMAIN_KEY, 'plan.md'),
-    });
-  }
-  if (!taskActions.length) {
-    flags.push({
-      id: 'empty-tasks',
-      severity: 'medium',
-      summary: 'tasks.md does not currently expose actionable backlog items.',
-      anchorRef: anchorMap.tasks?.relativePath || canonicalAnchorRelativePath(DEFAULT_DOMAIN_KEY, 'tasks.md'),
+      summary: 'slices.md does not currently expose actionable active slices.',
+      anchorRef: anchorMap.slices?.relativePath || canonicalAnchorRelativePath(DEFAULT_DOMAIN_KEY, 'slices.md'),
     });
   }
 
   const roadmapKeywords = new Set(anchorMap.roadmap?.keywords || []);
-  const executionKeywords = uniqueStrings([...(anchorMap.plan?.keywords || []), ...(anchorMap.tasks?.keywords || [])]);
+  const executionKeywords = uniqueStrings([...(anchorMap.slices?.keywords || []), ...(anchorMap.tasks?.keywords || [])]);
   const overlap = executionKeywords.filter((token) => roadmapKeywords.has(token));
-  if ((anchorMap.roadmap?.exists && (anchorMap.plan?.exists || anchorMap.tasks?.exists)) && overlap.length === 0) {
+  if ((anchorMap.roadmap?.exists && (anchorMap.slices?.exists || anchorMap.tasks?.exists)) && overlap.length === 0) {
     flags.push({
       id: 'roadmap-execution-divergence',
       severity: 'medium',
@@ -422,7 +414,7 @@ function buildManagerSummary(anchorMap, driftFlags, markdownSummary = {}) {
   return {
     current_focus: markdownSummary.currentFocus || state.current_focus || '',
     active_milestone: markdownSummary.activeMilestone || state.active_milestone || '',
-    active_plan_slice: extractActionLines(anchorMap.plan?.content || '', 4),
+    active_plan_slice: extractActionLines(anchorMap.slices?.content || '', 4),
     next_actions: nextActions,
     blockers: uniqueStrings(Array.isArray(state.blockers) ? state.blockers : []).slice(0, 7),
     drift_flags: uniqueStrings([

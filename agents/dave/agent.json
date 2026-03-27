@@ -1,0 +1,14 @@
+{
+  "id": "dave",
+  "name": "Dave",
+  "deskId": "memory-archivist",
+  "runtime": "ollama-json",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "host": "http://127.0.0.1:11434",
+  "timeoutMs": 30000,
+  "autoRun": false,
+  "inputs": ["studio.agentWorkers.dave", "studio.teamBoard", "brain/emergence/*"],
+  "outputs": ["studio.agentWorkers.dave"],
+  "writesCanonicalBrain": false
+}

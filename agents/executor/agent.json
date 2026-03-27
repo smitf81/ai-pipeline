@@ -10,7 +10,7 @@
     "ace_commands.json",
     "studio.selfUpgrade"
   ],
-  "model": "mixtral",
+  "model": "mistral:latest",
   "name": "Executor",
   "outputs": [
     "studio.teamBoard.cards(execution)",

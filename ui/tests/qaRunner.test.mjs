@@ -7,24 +7,32 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const {
   QA_RELATIVE_DIR,
+  STRUCTURED_QA_RELATIVE_DIR,
+  LOCAL_GATE_RELATIVE_DIR,
   analyzeStudioSnapshot,
+  ensureLocalGateStorage,
   ensureQAStorage,
+  ensureStructuredQAStorage,
   listQARuns,
+  readLocalGateReport,
   readQARun,
+  readStructuredQAReport,
   summarizeQARun,
+  writeLocalGateReport,
+  writeStructuredQAReport,
 } = require('../qaRunner.js');
 
 export default async function runQARunnerTests() {
-  const findings = analyzeStudioSnapshot({
-    room: { x: 72, y: 86, width: 1056, height: 642 },
-    roomRect: { left: 60, top: 40, width: 920, height: 580 },
+  const snapshot = {
+    room: { x: 56, y: 72, width: 1088, height: 664 },
+    roomRect: { left: 60, top: 40, width: 960, height: 610 },
     shellRect: { left: 0, top: 0, width: 1600, height: 900 },
     desks: [
       { id: 'planner', label: 'Planner', x: 590, y: 210 },
       { id: 'cto-architect', label: 'CTO', x: 930, y: 422 },
     ],
     whiteboards: [
-      { id: 'teamBoard', label: 'Team Board', x: 320, y: 96, width: 560, height: 164 },
+      { id: 'teamBoard', label: 'Team Board', x: 284, y: 88, width: 584, height: 208 },
     ],
     links: [
       {
@@ -42,7 +50,12 @@ export default async function runQARunnerTests() {
     controls: [
       { id: 'reset-view-button', label: 'Reset View', visible: false },
     ],
-  });
+  };
+  assert.ok(snapshot.whiteboards[0].x >= snapshot.room.x);
+  assert.ok(snapshot.whiteboards[0].y >= snapshot.room.y);
+  assert.ok(snapshot.whiteboards[0].x + snapshot.whiteboards[0].width <= snapshot.room.x + snapshot.room.width);
+  assert.ok(snapshot.whiteboards[0].y + snapshot.whiteboards[0].height <= snapshot.room.y + snapshot.room.height);
+  const findings = analyzeStudioSnapshot(snapshot);
   assert.ok(findings.some((finding) => finding.id === 'camera-off-center'));
   assert.ok(findings.some((finding) => finding.id === 'whiteboard-overlap-teamBoard-planner'));
   assert.ok(findings.some((finding) => finding.id === 'control-hidden-reset-view-button'));
@@ -51,6 +64,8 @@ export default async function runQARunnerTests() {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-qa-'));
   const storage = ensureQAStorage(rootPath);
   assert.equal(storage, path.join(rootPath, QA_RELATIVE_DIR));
+  assert.equal(ensureStructuredQAStorage(rootPath), path.join(rootPath, STRUCTURED_QA_RELATIVE_DIR));
+  assert.equal(ensureLocalGateStorage(rootPath), path.join(rootPath, LOCAL_GATE_RELATIVE_DIR));
   const run = {
     id: 'qa_001',
     scenario: 'layout-pass',
@@ -68,10 +83,28 @@ export default async function runQARunnerTests() {
     steps: [{ id: 'capture', label: 'Capture', status: 'completed', verdict: 'pass' }],
   };
   fs.writeFileSync(path.join(storage, 'qa_001.json'), `${JSON.stringify(run, null, 2)}\n`, 'utf8');
+  const structuredReport = {
+    status: 'pass',
+    summary: 'all structured desks passed',
+    desks: [{ desk: 'ui', status: 'pass', tests: [] }],
+  };
+  const localGateReport = {
+    id: 'test-unit-latest',
+    status: 'pass',
+    summary: 'All 22 UI checks passed.',
+    totalChecks: 22,
+    passedCount: 22,
+    failedCount: 0,
+    failures: [],
+  };
+  writeStructuredQAReport(rootPath, structuredReport, 'latest');
+  writeLocalGateReport(rootPath, 'test-unit-latest', localGateReport);
 
   const listed = listQARuns(rootPath);
   assert.equal(listed.length, 1);
   assert.equal(readQARun(rootPath, 'qa_001').id, 'qa_001');
+  assert.equal(readStructuredQAReport(rootPath, 'latest').summary, 'all structured desks passed');
+  assert.equal(readLocalGateReport(rootPath, 'test-unit-latest').passedCount, 22);
   const summary = summarizeQARun(listed[0]);
   assert.equal(summary.id, 'qa_001');
   assert.equal(summary.primaryScreenshot.url, '/api/spatial/qa/runs/qa_001/artifacts/01-layout.png');

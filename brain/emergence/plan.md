@@ -1,4 +1,9 @@
-# Active Plan
+# Historical Plan
+
+Status: Archived historical slice from 2026-03-15
+
+This file is preserved as historical context only.
+Active slice authority now lives in `brain/emergence/slices.json` and `brain/emergence/slices.md`.
 
 Created: 2026-03-15T00:00:00Z
 

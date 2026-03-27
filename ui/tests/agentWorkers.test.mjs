@@ -32,7 +32,7 @@ function seedAgents(rootPath) {
     deskId: 'planner',
     runtime: 'ollama-json',
     backend: 'ollama',
-    model: 'mixtral',
+    model: 'mistral:latest',
     host: 'http://127.0.0.1:11434',
     timeoutMs: 30000,
     autoRun: true,
@@ -44,7 +44,7 @@ function seedAgents(rootPath) {
     deskId: 'context-manager',
     runtime: 'ollama-json',
     backend: 'ollama',
-    model: 'mixtral',
+    model: 'mistral:latest',
     host: 'http://127.0.0.1:11434',
     timeoutMs: 30000,
     autoRun: false,
@@ -56,7 +56,7 @@ function seedAgents(rootPath) {
     deskId: 'executor',
     runtime: 'ollama-json',
     backend: 'ollama',
-    model: 'mixtral',
+    model: 'mistral:latest',
     host: 'http://127.0.0.1:11434',
     timeoutMs: 30000,
     autoRun: false,
@@ -144,14 +144,14 @@ export default async function runAgentWorkersTests() {
     status: 'ready',
     summary: 'Planner handoff ready.',
     problemStatement: 'Goal: add the planner worker.',
-    tasks: ['Create planner cards', 'Persist proposals'],
+    requestedOutcomes: ['Create planner cards', 'Persist proposals'],
     constraints: ['Keep planner proposal-only'],
     anchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
   };
 
-  assert.equal(getAgentWorkerConfig(rootPath, 'planner').model, 'mixtral');
+  assert.equal(getAgentWorkerConfig(rootPath, 'planner').model, 'mistral:latest');
   assert.equal(getAgentWorkerConfig(rootPath, 'context-manager').backend, 'ollama');
-  assert.equal(getAgentWorkerConfig(rootPath, 'executor').model, 'mixtral');
+  assert.equal(getAgentWorkerConfig(rootPath, 'executor').model, 'mistral:latest');
   assert.equal(evaluatePlannerEligibility({ workspace, handoff: readyHandoff, mode: 'auto', runs: [] }).eligible, true);
   assert.equal(evaluatePlannerEligibility({
     workspace,
@@ -212,7 +212,7 @@ export default async function runAgentWorkersTests() {
 
   const blockedFirst = await runPlannerWorker({
     rootPath,
-    handoff: { ...readyHandoff, id: 'handoff_retry', tasks: ['Clarify planner output'] },
+    handoff: { ...readyHandoff, id: 'handoff_retry', requestedOutcomes: ['Clarify planner output'] },
     workspace,
     anchorBundle,
     runId: 'planner_blocked_1',
@@ -230,7 +230,7 @@ export default async function runAgentWorkersTests() {
 
   const blockedSecond = await runPlannerWorker({
     rootPath,
-    handoff: { ...readyHandoff, id: 'handoff_retry', tasks: ['Clarify planner output'] },
+    handoff: { ...readyHandoff, id: 'handoff_retry', requestedOutcomes: ['Clarify planner output'] },
     workspace,
     anchorBundle,
     runId: 'planner_blocked_2',
@@ -357,7 +357,8 @@ export default async function runAgentWorkersTests() {
     },
   });
 
-  assert.equal(executorFallback.ok, true);
+  assert.equal(executorFallback.ok, false);
+  assert.equal(executorFallback.outcome, 'degraded');
   assert.equal(executorFallback.usedFallback, true);
   assert.equal(executorFallback.report.decision, 'blocked');
   assert.ok(executorFallback.report.blockers.includes('Approval is still required before apply can run.'));
@@ -367,7 +368,7 @@ export default async function runAgentWorkersTests() {
     id: 'handoff_ctx',
     sourceNodeId: 'node_ctx',
     summary: 'Need a tighter planner brief.',
-    tasks: ['Clarify planner acceptance criteria'],
+    requestedOutcomes: ['Clarify planner acceptance criteria'],
     anchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
     status: 'needs-clarification',
   };
@@ -405,8 +406,13 @@ export default async function runAgentWorkersTests() {
         packet: {
           summary: 'Tighten the planner brief before execution expands.',
           statement: 'Clarify planner acceptance criteria and expose review state in Studio.',
-          tasks: ['Clarify planner acceptance criteria', 'Expose review state in Studio'],
+          goal: 'Clarify planner acceptance criteria and expose review state in Studio.',
+          requestedOutcomes: ['Clarify planner acceptance criteria', 'Expose review state in Studio'],
+          targets: ['planner', 'studio'],
           constraints: ['Keep planner proposal-only'],
+          urgency: 'normal',
+          requestType: 'planning_request',
+          signals: { actionSignals: 3, constraintSignals: 1 },
           clarifications: ['Need an explicit success signal for planner cards'],
           focusTerms: ['planner', 'review', 'acceptance'],
           suggestedAnchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
@@ -437,6 +443,7 @@ export default async function runAgentWorkersTests() {
   assert.equal(contextSuccess.outcome, 'completed');
   assert.equal(contextSuccess.usedFallback, false);
   assert.equal(contextSuccess.report.contextPacket.constraints[0], 'Keep planner proposal-only');
+  assert.deepEqual(contextSuccess.report.requestedOutcomes, ['Clarify planner acceptance criteria', 'Expose review state in Studio']);
   assert.ok(contextSuccess.extractedIntent);
   assert.equal(contextSuccess.extractedIntent.provenance.usedFallback, false);
   assert.ok(contextSuccess.report.extractedIntent);
@@ -446,6 +453,7 @@ export default async function runAgentWorkersTests() {
   assert.equal(contextSuccess.report.extractedIntent.audit.classification.role, contextSuccess.report.classification.role);
   assert.equal(contextSuccess.handoff.sourceAgentId, 'context-manager');
   assert.equal(contextSuccess.handoff.targetAgentId, 'planner');
+  assert.deepEqual(contextSuccess.handoff.requestedOutcomes, ['Clarify planner acceptance criteria', 'Expose review state in Studio']);
   assert.ok(contextSuccess.handoff.constraints.includes('Keep planner proposal-only'));
   assert.ok(contextSuccess.handoff.problemStatement.includes('Still unclear: Need an explicit success signal'));
   assert.equal(contextSuccess.run.handoffId, contextSuccess.handoff.id);
@@ -469,10 +477,11 @@ export default async function runAgentWorkersTests() {
     })),
   });
 
-  assert.equal(contextFallback.ok, true);
-  assert.equal(contextFallback.outcome, 'completed');
+  assert.equal(contextFallback.ok, false);
+  assert.equal(contextFallback.outcome, 'degraded');
   assert.equal(contextFallback.usedFallback, true);
   assert.equal(contextFallback.run.usedFallback, true);
+  assert.equal(contextFallback.run.outcome, 'degraded');
   assert.ok(contextFallback.report);
   assert.ok(contextFallback.handoff);
   assert.ok(contextFallback.extractedIntent);

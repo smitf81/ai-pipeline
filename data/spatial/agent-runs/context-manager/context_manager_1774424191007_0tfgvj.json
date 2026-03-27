@@ -1,0 +1,907 @@
+{
+  "id": "context_manager_1774424191007_0tfgvj",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-25T07:36:31.013Z",
+  "startedAt": "2026-03-25T07:36:31.013Z",
+  "completedAt": "2026-03-25T07:36:47.328Z",
+  "durationMs": 16315,
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Modify LLM configuration to read from brain/emergence source",
+  "reason": null,
+  "sourceNodeId": "node_1774424189797_w7lvx",
+  "sourceText": "new note",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Modify LLM configuration to read from brain/emergence source",
+    "statement": "Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior.",
+    "goal": "Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior.",
+    "requestedOutcomes": [
+      "Configure LLM to use brain/emergence"
+    ],
+    "tasks": [
+      "Configure LLM to use brain/emergence"
+    ],
+    "targets": [],
+    "constraints": [
+      "Ensure compatibility reads from projects/emergence remain available during migration"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "signals": {},
+    "clarifications": [
+      "What are the implications for existing LLM configurations?"
+    ],
+    "focusTerms": [
+      "LLM",
+      "brain/emergence",
+      "projects/emergence"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/plan.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1774424191007_0tfgvj",
+    "sourceNodeId": "node_1774424189797_w7lvx",
+    "sourceText": "new note",
+    "summary": "Modify LLM configuration to read from brain/emergence source",
+    "explicitClaims": [
+      "Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior"
+    ],
+    "inferredClaims": [
+      "The change in configuration may impact existing LLM behaviors"
+    ],
+    "candidateNodes": [
+      {
+        "id": "llm_module",
+        "label": "LLM Configuration Module",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Represents the configuration module of the LLM system",
+        "confidence": 0.72
+      },
+      {
+        "id": "brain_emergence_source",
+        "label": "Brain/Emergence Source",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Represents the updated source of context and behavior for LLM",
+        "confidence": 0.72
+      },
+      {
+        "id": "existing_llm_behaviors",
+        "label": "Existing LLM Behaviors",
+        "kind": "module",
+        "basis": "inferred",
+        "rationale": "Represents the current behaviors of the LLM system",
+        "confidence": 0.65
+      }
+    ],
+    "candidateEdges": [
+      {
+        "sourceCandidateId": "llm_module",
+        "targetCandidateId": "brain_emergence_source",
+        "kind": "utilizes",
+        "basis": "explicit",
+        "rationale": ""
+      },
+      {
+        "sourceCandidateId": "brain_emergence_source",
+        "targetCandidateId": "existing_llm_behaviors",
+        "kind": "impacts",
+        "basis": "explicit",
+        "rationale": ""
+      }
+    ],
+    "gaps": [
+      "The implications for existing LLM configurations require further clarification"
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774424191007_0tfgvj",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.53,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0.7142857142857143,
+          "reason": "Matched project terms: brain, emergence, projects, context, compatibility"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.625,
+          "reason": "Detected 2 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.3333333333333333,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context"
+        ]
+      },
+      "matchedTerms": [
+        "brain",
+        "emergence",
+        "projects",
+        "context",
+        "compatibility"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Modify LLM configuration to read from brain/emergence source",
+    "confidence": 0.53,
+    "legacyConfidence": 0.65,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.7142857142857143,
+        "reason": "Matched project terms: brain, emergence, projects, context, compatibility"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.625,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.3333333333333333,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.8333333333333334,
+        "reason": "Matched project terms: brain, emergence, projects, context, compatibility"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.42857142857142855,
+        "reason": "References ACE system structure, agents, or implementation surfaces."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.53,
+      "executionReadiness": 0.66,
+      "plannerUsefulness": 0.76,
+      "deployReadiness": 0.14
+    },
+    "truth": {
+      "rawSource": "new note",
+      "rawInput": "new note",
+      "statement": "Modify LLM configuration to read from brain/emergence source",
+      "goal": "Modify LLM configuration to read from brain/emergence source",
+      "intentType": "Constraint / guardrail request",
+      "requestType": "constraint_request",
+      "requestedOutcomes": [
+        "Configure LLM to use brain/emergence"
+      ],
+      "tasks": [
+        "Configure LLM to use brain/emergence"
+      ],
+      "targets": [
+        "brain",
+        "emergence",
+        "projects",
+        "context",
+        "compatibility",
+        "and",
+        "ace",
+        "the"
+      ],
+      "constraints": [
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "urgency": "normal",
+      "signals": {
+        "actionSignals": 0,
+        "constraintSignals": 0,
+        "architectureSignals": 0,
+        "executionSignals": 0,
+        "featureSignals": 0,
+        "matchedProjectTerms": 5,
+        "anchorRefs": 6,
+        "lowConfidenceCriteria": 2,
+        "plannerUsefulness": 0.76,
+        "executionReadiness": 0.66,
+        "deployReadiness": 0.14,
+        "labels": [
+          "context"
+        ],
+        "role": "constraint",
+        "requestedOutcomeCount": 1
+      },
+      "unresolved": [
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Project alignment: Matched project terms: brain, emergence, projects, context, compatibility",
+        "Actionability: Detected 2 implementation/planning verb signals."
+      ],
+      "anchorRefs": [
+        "brain/emergence/decisions.md",
+        "brain/emergence/project_brain.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/changelog.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Configure LLM to use brain/emergence",
+      "readiness": {
+        "intentConfidence": 0.53,
+        "plannerUsefulness": 0.76,
+        "executionReadiness": 0.66,
+        "deployReadiness": 0.14
+      }
+    },
+    "goal": "Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior.",
+    "targets": [
+      "brain",
+      "emergence",
+      "projects",
+      "context",
+      "compatibility",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md"
+    ],
+    "constraints": [
+      "Ensure compatibility reads from projects/emergence remain available during migration"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "requestedOutcomes": [
+      "Configure LLM to use brain/emergence"
+    ],
+    "tasks": [
+      "Configure LLM to use brain/emergence"
+    ],
+    "signals": {},
+    "anchorRefs": [
+      "brain/emergence/decisions.md",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/changelog.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "brain",
+            "emergence",
+            "compatibility",
+            "migration",
+            "projects",
+            "are"
+          ],
+          "score": 19
+        },
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "brain",
+            "emergence",
+            "context",
+            "projects"
+          ],
+          "score": 17
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "compatibility",
+            "brain",
+            "emergence",
+            "projects"
+          ],
+          "score": 17
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "brain",
+            "compatibility",
+            "context",
+            "emergence"
+          ],
+          "score": 17
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "emergence",
+            "projects",
+            "compatibility"
+          ],
+          "score": 13
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "brain",
+            "projects"
+          ],
+          "score": 7
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 45,
+      "sentenceCount": 13,
+      "matchedProjectTerms": [
+        "brain",
+        "emergence",
+        "projects",
+        "context",
+        "compatibility"
+      ],
+      "actionSignals": 2,
+      "featureRequestSignals": 0,
+      "architectureSignals": 2,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "brain",
+        "emergence",
+        "projects",
+        "context",
+        "compatibility"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "brain",
+        "the",
+        "anchor",
+        "runtime",
+        "for",
+        "legacy"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/decisions.md",
+        "brain/emergence/project_brain.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/changelog.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-25T07:36:37.163Z",
+    "nodeId": "node_1774424189797_w7lvx",
+    "source": "node-idle",
+    "createdAt": "2026-03-25T07:36:47.328Z",
+    "contextPacket": {
+      "summary": "Modify LLM configuration to read from brain/emergence source",
+      "statement": "Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior.",
+      "goal": "Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior.",
+      "requestedOutcomes": [
+        "Configure LLM to use brain/emergence"
+      ],
+      "tasks": [
+        "Configure LLM to use brain/emergence"
+      ],
+      "targets": [],
+      "constraints": [
+        "Ensure compatibility reads from projects/emergence remain available during migration"
+      ],
+      "urgency": "normal",
+      "requestType": "context_request",
+      "signals": {},
+      "clarifications": [
+        "What are the implications for existing LLM configurations?"
+      ],
+      "focusTerms": [
+        "LLM",
+        "brain/emergence",
+        "projects/emergence"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/plan.md"
+      ],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1774424191007_0tfgvj",
+      "sourceNodeId": "node_1774424189797_w7lvx",
+      "sourceText": "new note",
+      "summary": "Modify LLM configuration to read from brain/emergence source",
+      "explicitClaims": [
+        "Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior"
+      ],
+      "inferredClaims": [
+        "The change in configuration may impact existing LLM behaviors"
+      ],
+      "candidateNodes": [
+        {
+          "id": "llm_module",
+          "label": "LLM Configuration Module",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Represents the configuration module of the LLM system",
+          "confidence": 0.72
+        },
+        {
+          "id": "brain_emergence_source",
+          "label": "Brain/Emergence Source",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Represents the updated source of context and behavior for LLM",
+          "confidence": 0.72
+        },
+        {
+          "id": "existing_llm_behaviors",
+          "label": "Existing LLM Behaviors",
+          "kind": "module",
+          "basis": "inferred",
+          "rationale": "Represents the current behaviors of the LLM system",
+          "confidence": 0.65
+        }
+      ],
+      "candidateEdges": [
+        {
+          "sourceCandidateId": "llm_module",
+          "targetCandidateId": "brain_emergence_source",
+          "kind": "utilizes",
+          "basis": "explicit",
+          "rationale": ""
+        },
+        {
+          "sourceCandidateId": "brain_emergence_source",
+          "targetCandidateId": "existing_llm_behaviors",
+          "kind": "impacts",
+          "basis": "explicit",
+          "rationale": ""
+        }
+      ],
+      "gaps": [
+        "The implications for existing LLM configurations require further clarification"
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1774424191007_0tfgvj",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.53,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.7142857142857143,
+            "reason": "Matched project terms: brain, emergence, projects, context, compatibility"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.625,
+            "reason": "Detected 2 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.3333333333333333,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context"
+          ]
+        },
+        "matchedTerms": [
+          "brain",
+          "emergence",
+          "projects",
+          "context",
+          "compatibility"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774424191007_0tfgvj",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1774424207328_y6ihdg",
+  "handoff": {
+    "id": "handoff_1774424207328_y6ihdg",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-25T07:36:47.328Z",
+    "sourceNodeId": "node_1774424189797_w7lvx",
+    "summary": "Modify LLM configuration to read from brain/emergence source",
+    "goal": "Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior.",
+    "problemStatement": "Goal: Modify LLM configuration to read from brain/emergence source\nRequested outcomes: Configure LLM to use brain/emergence.\nWhy ACE believes this: Project alignment 71%, Actionability 63%, Architecture fit 33%.\nConstraints and review signals: Ensure compatibility reads from projects/emergence remain available during migration | Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow. | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: What are the implications for existing LLM configurations?",
+    "anchorRefs": [
+      "brain/emergence/decisions.md",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/changelog.md"
+    ],
+    "requestedOutcomes": [
+      "Configure LLM to use brain/emergence"
+    ],
+    "tasks": [
+      "Configure LLM to use brain/emergence"
+    ],
+    "constraints": [
+      "Ensure compatibility reads from projects/emergence remain available during migration",
+      "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.53,
+    "legacyConfidence": 0.65,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.7142857142857143,
+        "reason": "Matched project terms: brain, emergence, projects, context, compatibility"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.625,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.3333333333333333,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.53,
+      "executionReadiness": 0.66,
+      "plannerUsefulness": 0.76,
+      "deployReadiness": 0.14
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context"
+      ]
+    },
+    "requestType": "context_request",
+    "urgency": "normal",
+    "targets": [
+      "brain",
+      "emergence",
+      "projects",
+      "context",
+      "compatibility",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md"
+    ],
+    "signals": {},
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "llmStatus": "live",
+  "rawResponse": "{\n  \"summary\": \"Modify LLM configuration to read from brain/emergence source\",\n  \"statement\": \"Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior.\",\n  \"tasks\": [\"Configure LLM to use brain/emergence\"],\n  \"constraints\": [\"Ensure compatibility reads from projects/emergence remain available during migration\"],\n  \"clarifications\": [\"What are the implications for existing LLM configurations?\"],\n  \"focusTerms\": [\"LLM\", \"brain/emergence\", \"projects/emergence\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/plan.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1774424191007_0tfgvj",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T07:36:31.013Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T07:36:37.162Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Modify LLM configuration to read from brain/emergence source\",\n  \"statement\": \"Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior.\",\n  \"tasks\": [\"Configure LLM to use brain/emergence\"],\n  \"constrain"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T07:36:37.163Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T07:36:47.328Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Modify LLM configuration to read from brain/emergence source\",\n  \"explicitClaims\": [\"Update the LLM configuration to utilize `brain/emergence` instead of `projects/emergence` as its primary source for context and behavior\"],\n  \"inferredClaims\": [\"The change in configuration may impac"
+      }
+    ]
+  }
+}

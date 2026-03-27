@@ -1,4 +1,24 @@
 export class AceConnector {
+  async getProjects() {
+    const res = await fetch('/api/projects');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Project list fetch failed');
+    return payload;
+  }
+
+  async runProject(projectKey) {
+    const key = String(projectKey || '').trim();
+    if (!key) throw new Error('Project key is required');
+    const res = await fetch('/api/projects/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project: key }),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Project launch failed');
+    return payload;
+  }
+
   async runExecutiveRoute(payload = {}) {
     const res = await fetch('/api/spatial/executive/route', {
       method: 'POST',
@@ -30,8 +50,13 @@ export class AceConnector {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error('Intent parsing failed');
-    return res.json();
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'Intent parsing failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
   }
 
   async askCtoDesk(payload = {}) {
@@ -40,8 +65,13 @@ export class AceConnector {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error('CTO desk chat failed');
-    return res.json();
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'CTO desk chat failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
   }
 
   async decomposeTask(node) {
@@ -76,8 +106,13 @@ export class AceConnector {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mutations }),
     });
-    if (!res.ok) throw new Error('Mutation apply failed');
-    return res.json();
+    const payload = await res.json();
+    if (!res.ok) {
+      const error = new Error(payload.error || payload.mutationResult?.reason || 'Mutation apply failed');
+      error.payload = payload;
+      throw error;
+    }
+    return payload;
   }
 
   async teamBoardAction(action, cardId) {
@@ -104,6 +139,62 @@ export class AceConnector {
     return response;
   }
 
+  async getAgentLedger(agentId) {
+    const id = String(agentId || '').trim();
+    if (!id) throw new Error('Agent id is required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/ledger`);
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load agent ledger');
+    return payload;
+  }
+
+  async createAgentLedgerEntry(agentId, entry = {}) {
+    const id = String(agentId || '').trim();
+    if (!id) throw new Error('Agent id is required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/ledger`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry || {}),
+    });
+    const payload = await res.json();
+    if (![200, 201].includes(res.status)) throw new Error(payload.error || 'Failed to record learning entry');
+    return payload;
+  }
+
+  async updateAgentLedgerEntry(agentId, entryId, patch = {}) {
+    const id = String(agentId || '').trim();
+    const targetId = String(entryId || '').trim();
+    if (!id || !targetId) throw new Error('Agent id and entry id are required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/ledger/${encodeURIComponent(targetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch || {}),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Failed to update learning entry');
+    return payload;
+  }
+
+  async updateAgentProperties(agentId, properties = {}) {
+    const id = String(agentId || '').trim();
+    if (!id) throw new Error('Agent id is required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/properties`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(properties || {}),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Failed to update agent properties');
+    return payload;
+  }
+
+  async listModelOptions() {
+    const res = await fetch('/api/spatial/models');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Model list fetch failed');
+    return payload;
+  }
+
   async runBrowserPass({ scenario = 'layout-pass', mode = 'interactive', prompt = '', actions = [], linked = {} } = {}) {
     const res = await fetch('/api/spatial/qa/run', {
       method: 'POST',
@@ -119,6 +210,17 @@ export class AceConnector {
     const payload = await res.json();
     if (!res.ok) throw new Error(payload.error || 'Browser pass failed');
     return payload;
+  }
+
+  async runStructuredQA(payload = {}) {
+    const res = await fetch('/api/qa/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.summary || response.error || 'Structured QA failed');
+    return response;
   }
 
   async getQARun(runId) {

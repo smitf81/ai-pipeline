@@ -19,6 +19,90 @@ function makeId(prefix) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function uniqueStrings(values = []) {
+  return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function createExecutionProvenance({
+  classification = 'unknown',
+  orchestration = 'unknown',
+  execution = 'unknown',
+  engine = null,
+  stageIds = [],
+  legacyActions = [],
+  nativeActions = [],
+  evidence = [],
+  notes = [],
+} = {}) {
+  return {
+    classification,
+    orchestration,
+    execution,
+    engine: engine || null,
+    stageIds: uniqueStrings(stageIds),
+    legacyActions: uniqueStrings(legacyActions),
+    nativeActions: uniqueStrings(nativeActions),
+    evidence: uniqueStrings(evidence),
+    notes: uniqueStrings(notes),
+  };
+}
+
+function classifyExecutionProvenance({
+  usesLegacyFallback = false,
+  usesStudioNative = false,
+  evidence = [],
+} = {}) {
+  if (usesLegacyFallback && usesStudioNative) return 'mixed';
+  if (usesLegacyFallback) return 'legacy-fallback';
+  if (usesStudioNative && (evidence || []).length) return 'studio-native';
+  return 'unknown';
+}
+
+function mergeExecutionProvenance(...items) {
+  const provenances = items.filter(Boolean);
+  if (!provenances.length) return createExecutionProvenance();
+  const classifications = new Set(provenances.map((entry) => String(entry.classification || 'unknown')));
+  const usesLegacyFallback = classifications.has('legacy-fallback') || classifications.has('mixed');
+  const usesStudioNative = classifications.has('studio-native') || classifications.has('mixed');
+  const evidence = uniqueStrings(provenances.flatMap((entry) => entry.evidence || []));
+  return createExecutionProvenance({
+    classification: classifyExecutionProvenance({ usesLegacyFallback, usesStudioNative, evidence }),
+    orchestration: provenances.some((entry) => entry.orchestration === 'studio') ? 'studio' : 'unknown',
+    execution: usesLegacyFallback && usesStudioNative
+      ? 'hybrid'
+      : (usesLegacyFallback ? 'legacy-fallback' : (usesStudioNative ? 'studio-native' : 'unknown')),
+    engine: provenances.map((entry) => entry.engine).find(Boolean) || null,
+    stageIds: provenances.flatMap((entry) => entry.stageIds || []),
+    legacyActions: provenances.flatMap((entry) => entry.legacyActions || []),
+    nativeActions: provenances.flatMap((entry) => entry.nativeActions || []),
+    evidence,
+    notes: provenances.flatMap((entry) => entry.notes || []),
+  });
+}
+
+function stageProvenance(stageId, overrides = {}) {
+  const nativeStage = createExecutionProvenance({
+    classification: 'studio-native',
+    orchestration: 'studio',
+    execution: 'studio-native',
+    engine: `ace-${stageId}`,
+    stageIds: [stageId],
+    nativeActions: [stageId],
+    evidence: [`stage:${stageId}`, 'route:studio'],
+  });
+  return createExecutionProvenance({
+    ...nativeStage,
+    ...overrides,
+    stageIds: [...(nativeStage.stageIds || []), ...((overrides && overrides.stageIds) || [])],
+    nativeActions: [...(nativeStage.nativeActions || []), ...((overrides && overrides.nativeActions) || [])],
+    evidence: [...(nativeStage.evidence || []), ...((overrides && overrides.evidence) || [])],
+  });
+}
+
+function aggregateSessionProvenance(session) {
+  return mergeExecutionProvenance(...((session?.stages || []).map((stage) => stage.provenance).filter(Boolean)));
+}
+
 function ensureThroughputStorage(rootPath) {
   const dir = path.join(rootPath, THROUGHPUT_RELATIVE_DIR);
   fs.mkdirSync(dir, { recursive: true });
@@ -79,11 +163,13 @@ function summarizeSession(session) {
     runnerTaskId: session.runnerTaskId,
     qaRunId: session.qaRunId || null,
     anchorRefs: Array.isArray(session.anchorRefs) ? session.anchorRefs : [],
+    provenance: session.provenance || createExecutionProvenance(),
     stageSummary: (session.stages || []).map((stage) => ({
       id: stage.id,
       label: stage.label,
       verdict: stage.verdict,
       status: stage.status,
+      provenance: stage.provenance || createExecutionProvenance(),
     })),
   };
 }
@@ -100,6 +186,7 @@ function createStage(id, label) {
     output: null,
     artifacts: [],
     failureReason: null,
+    provenance: createExecutionProvenance(),
   };
 }
 
@@ -123,6 +210,7 @@ function createSession({ prompt, targetProjectKey, mode, executionProfile = 'liv
     anchorRefs: [],
     runIds: [],
     cardIds: [],
+    provenance: createExecutionProvenance(),
     stages: [
       createStage('seed', 'Seed Debug Page'),
       createStage('intent', 'Context Analysis'),
@@ -165,6 +253,7 @@ function finishStage(session, stageId, {
   output = null,
   artifacts = [],
   failureReason = null,
+  provenance = null,
 } = {}) {
   const stage = getStage(session, stageId);
   if (!stage) return;
@@ -174,6 +263,8 @@ function finishStage(session, stageId, {
   stage.artifacts = artifacts;
   stage.failureReason = failureReason;
   stage.finishedAt = nowIso();
+  stage.provenance = provenance || stage.provenance || createExecutionProvenance();
+  session.provenance = aggregateSessionProvenance(session);
 }
 
 function markRemainingStagesBlocked(session, fromStageId, reason) {
@@ -185,7 +276,9 @@ function markRemainingStagesBlocked(session, fromStageId, reason) {
     stage.verdict = 'blocked';
     stage.failureReason = reason;
     stage.finishedAt = nowIso();
+    stage.provenance = stage.provenance || createExecutionProvenance();
   }
+  session.provenance = aggregateSessionProvenance(session);
 }
 
 function collectConstraints(report, dashboardState) {
@@ -200,7 +293,15 @@ function collectConstraints(report, dashboardState) {
 
 function createPlannerHandoff(report, dashboardState = {}, previousHandoff = null) {
   if (!report) return null;
-  const tasks = Array.isArray(report.tasks) ? report.tasks.filter(Boolean) : [];
+  const requestedOutcomes = uniqueStrings(
+    Array.isArray(report.requestedOutcomes) && report.requestedOutcomes.length
+      ? report.requestedOutcomes
+      : (Array.isArray(report.tasks) && report.tasks.length
+        ? report.tasks
+        : (Array.isArray(report.truth?.requestedOutcomes) && report.truth.requestedOutcomes.length
+          ? report.truth.requestedOutcomes
+          : (Array.isArray(report.truth?.tasks) ? report.truth.tasks : []))),
+  ).slice(0, 4);
   const constraints = collectConstraints(report, dashboardState);
   const clarifications = Array.isArray(report?.contextPacket?.clarifications)
     ? report.contextPacket.clarifications.filter(Boolean)
@@ -209,7 +310,7 @@ function createPlannerHandoff(report, dashboardState = {}, previousHandoff = nul
   const executionReadiness = Number(report?.scores?.executionReadiness || 0);
   if (plannerUsefulness < 0.55) clarifications.push('Planner usefulness is low and needs tighter scope before execution expands.');
   if (executionReadiness < 0.45) clarifications.push('Execution readiness is low, so a worker should not start blindly.');
-  if (!tasks.length) clarifications.push('No concrete tasks were extracted from the latest context input.');
+  if (!requestedOutcomes.length) clarifications.push('No concrete requested outcomes were extracted from the latest context input.');
   if (!report.projectContext?.matchedTerms?.length) clarifications.push('Project alignment is weak, so planner scope may need refinement.');
   const rationale = (report.criteria || [])
     .slice(0, 3)
@@ -217,7 +318,7 @@ function createPlannerHandoff(report, dashboardState = {}, previousHandoff = nul
     .join(', ');
   const problemStatement = [
     `Goal: ${report.summary || 'Clarify the next problem to solve.'}`,
-    tasks.length ? `Requested outcomes: ${tasks.join('; ')}.` : 'Requested outcomes: no concrete task list extracted yet.',
+    requestedOutcomes.length ? `Requested outcomes: ${requestedOutcomes.join('; ')}.` : 'Requested outcomes: no concrete task list extracted yet.',
     rationale ? `Why ACE believes this: ${rationale}.` : null,
     constraints.length ? `Constraints and review signals: ${constraints.join(' | ')}.` : 'Constraints and review signals: none surfaced from the latest report.',
     clarifications.length ? `Still unclear: ${clarifications.join(' ')}` : 'Still unclear: no immediate clarification requested.',
@@ -230,15 +331,21 @@ function createPlannerHandoff(report, dashboardState = {}, previousHandoff = nul
     createdAt: report.createdAt || nowIso(),
     sourceNodeId: report.nodeId || null,
     summary: report.summary || 'Intent ready for planner review.',
+    goal: report.goal || report.truth?.goal || report.summary || '',
     problemStatement,
     anchorRefs: Array.isArray(report.anchorRefs) ? report.anchorRefs.filter(Boolean) : [],
-    tasks,
+    requestedOutcomes,
+    tasks: requestedOutcomes,
     constraints,
     confidence: Number(report.confidence || 0),
     legacyConfidence: Number(report.legacyConfidence || 0),
     criteria: Array.isArray(report.criteria) ? report.criteria : [],
     scores: report.scores || null,
     classification: report.classification || { role: 'context', labels: [] },
+    requestType: report.requestType || report.truth?.requestType || 'context_request',
+    urgency: report.urgency || report.truth?.urgency || 'normal',
+    targets: Array.isArray(report.targets) ? report.targets.slice(0, 8) : [],
+    signals: report.signals || report.truth?.signals || null,
     status: clarifications.length ? 'needs-clarification' : 'ready',
   };
 }
@@ -514,6 +621,7 @@ async function runThroughputSession(options = {}) {
     finishStage(session, 'seed', {
       verdict: 'pass',
       output: { pageId, nodeId },
+      provenance: stageProvenance('seed'),
     });
     recordHistory('throughput-seed', { pageId, nodeId });
     saveSession();
@@ -570,6 +678,9 @@ async function runThroughputSession(options = {}) {
         tasks: report.tasks,
         anchorRefs: report.anchorRefs,
       },
+      provenance: stageProvenance('intent', {
+        evidence: ['source:intent-analysis'],
+      }),
     });
     recordHistory('throughput-intent', {
       confidence: report.confidence,
@@ -601,6 +712,9 @@ async function runThroughputSession(options = {}) {
         constraints: handoff?.constraints,
         problemStatement: handoff?.problemStatement,
       },
+      provenance: stageProvenance('handoff', {
+        evidence: ['source:planner-handoff'],
+      }),
     });
     recordHistory('throughput-handoff', {
       handoffId: handoff?.id,
@@ -626,6 +740,9 @@ async function runThroughputSession(options = {}) {
         boardSummary: workspace?.studio?.teamBoard?.summary || {},
       },
       failureReason: selectedCard ? null : 'No board card was seeded from the planner handoff.',
+      provenance: stageProvenance('team-board', {
+        evidence: ['source:team-board'],
+      }),
     });
     recordHistory('throughput-board', {
       cardCount: cards.length,
@@ -701,6 +818,9 @@ async function runThroughputSession(options = {}) {
         taskDir: taskInfo.taskDir,
       },
       artifacts: summarizeArtifacts(rootPath, collectRunnerArtifacts(taskInfo.taskDir)),
+      provenance: stageProvenance('runner-task', {
+        evidence: ['source:runner-task-folder'],
+      }),
     });
     recordHistory('throughput-runner-task', {
       taskId: taskInfo.taskId,
@@ -759,6 +879,15 @@ async function runThroughputSession(options = {}) {
         },
         artifacts: artifactRefs,
         failureReason: result.ok ? null : (result.error || result.summary || `${action} failed.`),
+        provenance: result.provenance || createExecutionProvenance({
+          classification: 'legacy-fallback',
+          orchestration: 'unknown',
+          execution: 'legacy-fallback',
+          engine: 'legacy-runner',
+          stageIds: [action],
+          legacyActions: [action],
+          evidence: [`stage:${action}`, 'route:legacy-fallback'],
+        }),
       });
       recordHistory(`throughput-${action}`, {
         taskId: taskInfo.taskId,
@@ -782,6 +911,9 @@ async function runThroughputSession(options = {}) {
         verdict: preflight.ok ? 'pass' : 'blocked',
         output: preflight,
         failureReason: preflight.ok ? null : (preflight.error || preflight.selfUpgrade?.preflight?.summary || 'Preflight failed.'),
+        provenance: stageProvenance('preflight', {
+          evidence: ['source:self-upgrade-preflight'],
+        }),
       });
       recordHistory('throughput-preflight', {
         taskId: taskInfo.taskId,
@@ -798,6 +930,9 @@ async function runThroughputSession(options = {}) {
           verdict: deploy.ok ? 'pass' : 'failed',
           output: deploy,
           failureReason: deploy.ok ? null : (deploy.error || 'Deploy failed.'),
+          provenance: stageProvenance('deploy', {
+            evidence: ['source:self-upgrade-deploy'],
+          }),
         });
         recordHistory('throughput-deploy', {
           taskId: taskInfo.taskId,
@@ -810,6 +945,9 @@ async function runThroughputSession(options = {}) {
           verdict: 'blocked',
           output: { skipped: true, confirmDeploy, preflightOk: preflight.ok },
           failureReason: preflight.ok ? 'Deploy confirmation is disabled for this session.' : 'Deploy skipped because preflight failed.',
+          provenance: stageProvenance('deploy', {
+            evidence: ['source:self-upgrade-deploy'],
+          }),
         });
       }
     }
@@ -832,6 +970,9 @@ async function runThroughputSession(options = {}) {
       verdict: session.sinks['data/spatial/history.json']?.write ? 'pass' : 'weak',
       output: session.sinks,
       artifacts: taskInfo?.taskDir ? summarizeArtifacts(rootPath, collectRunnerArtifacts(taskInfo.taskDir)) : [],
+      provenance: stageProvenance('archives', {
+        evidence: ['source:archive-verification'],
+      }),
     });
     saveSession();
 
@@ -856,6 +997,9 @@ async function runThroughputSession(options = {}) {
         runIds: session.runIds,
         finalHealth,
       },
+      provenance: stageProvenance('final', {
+        evidence: ['source:final-comparison'],
+      }),
     });
     session.status = finalVerdict === 'pass' ? 'completed' : (finalVerdict === 'weak' ? 'completed-with-warnings' : 'blocked');
     session.verdict = finalVerdict;
@@ -913,6 +1057,7 @@ async function reconcilePendingThroughputSessions({
   latest.status = 'completed';
   latest.verdict = latest.verdict === 'failed' ? 'failed' : 'pass';
   latest.finishedAt = latest.finishedAt || nowIso();
+  latest.provenance = aggregateSessionProvenance(latest);
   const workspace = await loadWorkspace();
   latest.snapshots.after = buildRuntimeSnapshot({
     workspace,
@@ -928,12 +1073,16 @@ async function reconcilePendingThroughputSessions({
 
 module.exports = {
   THROUGHPUT_RELATIVE_DIR,
+  classifyExecutionProvenance,
+  createExecutionProvenance,
   createPlannerHandoff,
   createSession,
   ensureThroughputStorage,
   listThroughputSessions,
+  mergeExecutionProvenance,
   readThroughputSession,
   summarizeSession,
+  stageProvenance,
   updateThroughputSession,
   runThroughputSession,
   reconcilePendingThroughputSessions,

@@ -1,0 +1,847 @@
+{
+  "id": "context_manager_1773933919600_y28vfu",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-19T15:25:38.304Z",
+  "completedAt": "2026-03-19T15:25:38.304Z",
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Create a PBR texture for wet stone using the updated ACE context manager",
+  "reason": null,
+  "sourceNodeId": "node_1773933892109_gslz8",
+  "sourceText": "make a PBR texture of wet stone",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Create a PBR texture for wet stone using the updated ACE context manager",
+    "statement": "Make a photobashed realistic texture of wet stone using the new anchor-driven context system in the ACE runtime",
+    "tasks": [
+      "Create PBR texture of wet stone using anchored intent"
+    ],
+    "constraints": [
+      "Use anchored intent system for texture creation"
+    ],
+    "clarifications": [
+      "Ensure that the anchor bundle is set to `brain/emergence` and external targets are configured in `targets.json`"
+    ],
+    "focusTerms": [
+      "PBR texture",
+      "wet stone",
+      "anchor-driven context system"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/project_brain.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1773933919600_y28vfu",
+    "sourceNodeId": "node_1773933892109_gslz8",
+    "sourceText": "make a PBR texture of wet stone",
+    "summary": "Create a PBR texture for wet stone using the updated ACE context manager",
+    "explicitClaims": [
+      "Use anchored intent system for texture creation"
+    ],
+    "inferredClaims": [
+      "The texture is of wet stone and uses PBR technique"
+    ],
+    "candidateNodes": [
+      {
+        "id": "1",
+        "label": "ACE Context Manager",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "It is the updated system being used for creating the texture.",
+        "confidence": 0.85
+      },
+      {
+        "id": "2",
+        "label": "Texture Creator Agent",
+        "kind": "module",
+        "basis": "inferred",
+        "rationale": "It is an inferred agent responsible for creating textures within the ACE context manager.",
+        "confidence": 0.68
+      },
+      {
+        "id": "3",
+        "label": "Wet Stone Texture Asset",
+        "kind": "thought",
+        "basis": "inferred",
+        "rationale": "It is the output asset that the texture creator agent produces.",
+        "confidence": 0.78
+      }
+    ],
+    "candidateEdges": [
+      {
+        "sourceCandidateId": "1",
+        "targetCandidateId": "2",
+        "kind": "utilizes",
+        "basis": "explicit",
+        "rationale": ""
+      },
+      {
+        "sourceCandidateId": "2",
+        "targetCandidateId": "3",
+        "kind": "produces",
+        "basis": "inferred",
+        "rationale": ""
+      }
+    ],
+    "gaps": [
+      "The specific PBR techniques or tools used for creating the texture"
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1773933919600_y28vfu",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.64,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 1,
+          "reason": "Matched project terms: ace, context, manager, runtime, anchor"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.625,
+          "reason": "Detected 2 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.5555555555555556,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context",
+          "governance"
+        ]
+      },
+      "matchedTerms": [
+        "ace",
+        "context",
+        "manager",
+        "runtime",
+        "anchor",
+        "brain",
+        "emergence",
+        "external"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Create a PBR texture for wet stone using the updated ACE context manager",
+    "confidence": 0.64,
+    "legacyConfidence": 0.74,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: ace, context, manager, runtime, anchor"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.625,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.5555555555555556,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: ace, context, manager, runtime, anchor"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.7142857142857143,
+        "reason": "References ACE system structure, agents, or implementation surfaces."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.64,
+      "executionReadiness": 0.66,
+      "plannerUsefulness": 0.89,
+      "deployReadiness": 0.14
+    },
+    "truth": {
+      "rawInput": "make a PBR texture of wet stone",
+      "statement": "Create a PBR texture for wet stone using the updated ACE context manager",
+      "intentType": "Constraint / guardrail request",
+      "requestedOutcomes": [
+        "Create PBR texture of wet stone using anchored intent"
+      ],
+      "unresolved": [
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Project alignment: Matched project terms: ace, context, manager, runtime, anchor",
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Actionability: Detected 2 implementation/planning verb signals."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/roadmap.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Create PBR texture of wet stone using anchored intent",
+      "readiness": {
+        "intentConfidence": 0.64,
+        "plannerUsefulness": 0.89,
+        "executionReadiness": 0.66,
+        "deployReadiness": 0.14
+      }
+    },
+    "tasks": [
+      "Create PBR texture of wet stone using anchored intent"
+    ],
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "ace",
+            "brain",
+            "emergence",
+            "runtime",
+            "context",
+            "manager",
+            "external",
+            "json"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "anchor",
+            "runtime",
+            "json",
+            "manager",
+            "brain",
+            "emergence",
+            "external",
+            "intent"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "anchor",
+            "brain",
+            "context",
+            "emergence",
+            "json",
+            "manager",
+            "runtime"
+          ],
+          "score": 29
+        },
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "brain",
+            "emergence",
+            "json",
+            "targets",
+            "external",
+            "ace",
+            "anchor",
+            "are"
+          ],
+          "score": 25
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "anchor",
+            "brain",
+            "json",
+            "runtime",
+            "bundle",
+            "external",
+            "intent",
+            "manager"
+          ],
+          "score": 25
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "anchor",
+            "emergence",
+            "manager",
+            "runtime"
+          ],
+          "score": 17
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "governance"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 40,
+      "sentenceCount": 11,
+      "matchedProjectTerms": [
+        "ace",
+        "context",
+        "manager",
+        "runtime",
+        "anchor",
+        "brain",
+        "emergence",
+        "external",
+        "json"
+      ],
+      "actionSignals": 2,
+      "featureRequestSignals": 0,
+      "architectureSignals": 3,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "ace",
+        "context",
+        "manager",
+        "runtime",
+        "anchor",
+        "brain",
+        "emergence",
+        "external"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "brain",
+        "the",
+        "anchor",
+        "runtime",
+        "for",
+        "legacy"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/roadmap.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-19T15:25:26.293Z",
+    "nodeId": "node_1773933892109_gslz8",
+    "source": "node-idle",
+    "createdAt": "2026-03-19T15:25:38.304Z",
+    "contextPacket": {
+      "summary": "Create a PBR texture for wet stone using the updated ACE context manager",
+      "statement": "Make a photobashed realistic texture of wet stone using the new anchor-driven context system in the ACE runtime",
+      "tasks": [
+        "Create PBR texture of wet stone using anchored intent"
+      ],
+      "constraints": [
+        "Use anchored intent system for texture creation"
+      ],
+      "clarifications": [
+        "Ensure that the anchor bundle is set to `brain/emergence` and external targets are configured in `targets.json`"
+      ],
+      "focusTerms": [
+        "PBR texture",
+        "wet stone",
+        "anchor-driven context system"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/project_brain.md"
+      ],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1773933919600_y28vfu",
+      "sourceNodeId": "node_1773933892109_gslz8",
+      "sourceText": "make a PBR texture of wet stone",
+      "summary": "Create a PBR texture for wet stone using the updated ACE context manager",
+      "explicitClaims": [
+        "Use anchored intent system for texture creation"
+      ],
+      "inferredClaims": [
+        "The texture is of wet stone and uses PBR technique"
+      ],
+      "candidateNodes": [
+        {
+          "id": "1",
+          "label": "ACE Context Manager",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "It is the updated system being used for creating the texture.",
+          "confidence": 0.85
+        },
+        {
+          "id": "2",
+          "label": "Texture Creator Agent",
+          "kind": "module",
+          "basis": "inferred",
+          "rationale": "It is an inferred agent responsible for creating textures within the ACE context manager.",
+          "confidence": 0.68
+        },
+        {
+          "id": "3",
+          "label": "Wet Stone Texture Asset",
+          "kind": "thought",
+          "basis": "inferred",
+          "rationale": "It is the output asset that the texture creator agent produces.",
+          "confidence": 0.78
+        }
+      ],
+      "candidateEdges": [
+        {
+          "sourceCandidateId": "1",
+          "targetCandidateId": "2",
+          "kind": "utilizes",
+          "basis": "explicit",
+          "rationale": ""
+        },
+        {
+          "sourceCandidateId": "2",
+          "targetCandidateId": "3",
+          "kind": "produces",
+          "basis": "inferred",
+          "rationale": ""
+        }
+      ],
+      "gaps": [
+        "The specific PBR techniques or tools used for creating the texture"
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1773933919600_y28vfu",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.64,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: ace, context, manager, runtime, anchor"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.625,
+            "reason": "Detected 2 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.5555555555555556,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "governance"
+          ]
+        },
+        "matchedTerms": [
+          "ace",
+          "context",
+          "manager",
+          "runtime",
+          "anchor",
+          "brain",
+          "emergence",
+          "external"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1773933919600_y28vfu",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1773933938304_yjvnic",
+  "handoff": {
+    "id": "handoff_1773933938304_yjvnic",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-19T15:25:38.304Z",
+    "sourceNodeId": "node_1773933892109_gslz8",
+    "summary": "Create a PBR texture for wet stone using the updated ACE context manager",
+    "problemStatement": "Goal: Create a PBR texture for wet stone using the updated ACE context manager\nRequested outcomes: Create PBR texture of wet stone using anchored intent.\nWhy ACE believes this: Project alignment 100%, Actionability 63%, Architecture fit 56%.\nConstraints and review signals: Use anchored intent system for texture creation | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Ensure that the anchor bundle is set to `brain/emergence` and external targets are configured in `targets.json`",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "tasks": [
+      "Create PBR texture of wet stone using anchored intent"
+    ],
+    "constraints": [
+      "Use anchored intent system for texture creation",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.64,
+    "legacyConfidence": 0.74,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: ace, context, manager, runtime, anchor"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.625,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.5555555555555556,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.64,
+      "executionReadiness": 0.66,
+      "plannerUsefulness": 0.89,
+      "deployReadiness": 0.14
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "governance"
+      ]
+    },
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "rawResponse": "{\n  \"summary\": \"Create a PBR texture for wet stone using the updated ACE context manager\",\n  \"statement\": \"Make a photobashed realistic texture of wet stone using the new anchor-driven context system in the ACE runtime\",\n  \"tasks\": [\"Create PBR texture of wet stone using anchored intent\"],\n  \"constraints\": [\"Use anchored intent system for texture creation\"],\n  \"clarifications\": [\" Ensure that the anchor bundle is set to `brain/emergence` and external targets are configured in `targets.json`\"],\n  \"focusTerms\": [\"PBR texture\", \"wet stone\", \"anchor-driven context system\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/project_brain.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1773933919600_y28vfu",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-19T15:25:19.607Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-19T15:25:26.291Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Create a PBR texture for wet stone using the updated ACE context manager\",\n  \"statement\": \"Make a photobashed realistic texture of wet stone using the new anchor-driven context system in the ACE runtime\",\n  \"tasks\": [\"Create PBR texture of wet stone using anchored intent\"],\n  \"constr"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-19T15:25:26.293Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-19T15:25:38.304Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Create a PBR texture for wet stone using the updated ACE context manager\",\n  \"explicitClaims\": [\"Use anchored intent system for texture creation\"],\n  \"inferredClaims\": [\"The texture is of wet stone and uses PBR technique\"],\n  \"candidateNodes\": [\n    {\n      \"id\": \"1\",\n      \"label\": "
+      }
+    ]
+  }
+}

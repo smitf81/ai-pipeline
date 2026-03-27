@@ -10,7 +10,7 @@
     "workspace.active-page",
     "studio.handoffs.plannerToContext"
   ],
-  "model": "mixtral",
+  "model": "mistral:latest",
   "name": "Context Manager",
   "outputs": [
     "intent-report",

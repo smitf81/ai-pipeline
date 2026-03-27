@@ -1,0 +1,275 @@
+<!DOCTYPE html><html lang="en" data-ui-mode="operator"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACE Studio Overlay</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-ui-mode="operator">
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">ACE</div>
+                <div>
+                    <div class="brand-title">ACE Studio Overlay</div>
+                    <div class="brand-sub">Canvas-first planning with an agent architecture overlay</div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <span class="badge badge-mode" id="mode_badge">OPERATOR</span>
+                <span class="badge badge-readonly" id="readonly_badge">READ WRITE</span>
+                <button id="toggleLegacyBtn" class="mini" type="button">Show Legacy Controls</button>
+                <span class="badge ok" id="status_badge">LIVE</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="workspace-shell" aria-label="Sketchpad Workspace">
+        <div id="spatial-root"><section class="spatial-main ace-shell" data-qa="spatial-root" style="grid-template-columns: minmax(0px, 1fr) 380px;"><div class="canvas-column scene-column"><div class="canvas-toolbar ace-toolbar"><div class="toolbar-primary"><div class="workspace-title">ACE Overlay Workspace</div><div class="toolbar-caption muted">Page: Current Page | Orchestrator: running | Active desks: 0</div></div><div class="toolbar-secondary"><div class="toolbar-meta toolbar-meta-top"><div class="scene-switcher"><button class="mini " data-qa="scene-canvas-button" type="button">Canvas</button><button class="mini active" data-qa="scene-studio-button" type="button">ACE Studio</button></div><div class="scene-switcher graph-layer-switcher"><button class="mini graph-layer-pill active" data-qa="graph-layer-system" type="button">System Graph</button><button class="mini graph-layer-pill " data-qa="graph-layer-world" type="button">World Graph</button></div><select class="mini recent-select" data-qa="page-select"><option value="page_1774353347448_0x0c">Current Page</option></select><select class="mini recent-select" data-qa="recent-saves-select"><option value="">Recent Saves</option><option value="2026-03-24T11:55:38.538Z">11:55 - 4 nodes</option><option value="2026-03-24T11:55:36.612Z">11:55 - 4 nodes</option><option value="2026-03-24T11:55:33.487Z">11:55 - 4 nodes</option><option value="2026-03-24T11:55:30.672Z">11:55 - 4 nodes</option><option value="2026-03-24T11:55:24.730Z">11:55 - 4 nodes</option><option value="2026-03-24T11:55:23.605Z">11:55 - 4 nodes</option><option value="2026-03-24T11:55:07.857Z">11:55 - 4 nodes</option><option value="2026-03-24T11:54:52.788Z">11:54 - 4 nodes</option></select><button class="mini" data-qa="reset-view-button" type="button">Reset View</button><span class="toolbar-status">ACE Studio | System Graph | Page Current Page | Canvas 100% | Studio 94% | studio recentered on room</span></div><div class="canvas-control-dock toolbar-meta toolbar-meta-bottom"><div class="button-row"><button class="mini" type="button">New Canvas</button><button class="mini " type="button" disabled="">Sketch</button><button class="mini" type="button" disabled="">Clear Marks</button><button class="mini" type="button">Simulate</button></div></div></div></div><div class="scene-shell"><div class="scene-layer canvas-scene inactive" data-qa="canvas-scene" aria-hidden="true"><div class="canvas-shell" data-qa="canvas-shell"><canvas width="1220" height="866" tabindex="0"></canvas><div class="node text thought origin-user layer-system     " style="left: 1422.06px; top: 624.02px; transform: scale(1); transform-origin: left top; pointer-events: auto; opacity: 1;"><button class="node-handle input" type="button" title="Drop connector here"></button><button class="node-close" type="button" title="Delete node">X</button><div class="node-header-row"><div class="node-header">SYSTEM | system-structure</div><div class="node-header-tags"><div class="node-origin-badge origin-user">User input</div></div></div><textarea class="node-editor" style="">QA desk in studio</textarea><div class="node-footer"><div class="node-labels">context - plan - governance</div><div class="node-intent-summary muted">j2ai | thought | User input</div><div class="node-intent-summary muted node-provenance-line">User input</div><div class="node-intent-summary">Align repo anchors and update configuration for improved manager behavior | 59% confidence</div></div><button class="node-handle output" type="button" title="Drag connection"></button></div><div class="node text thought origin-user layer-system     " style="left: 1432.35px; top: 871.078px; transform: scale(1); transform-origin: left top; pointer-events: auto; opacity: 1;"><button class="node-handle input" type="button" title="Drop connector here"></button><button class="node-close" type="button" title="Delete node">X</button><div class="node-header-row"><div class="node-header">SYSTEM | system-structure</div><div class="node-header-tags"><div class="node-origin-badge origin-user">User input</div></div></div><textarea class="node-editor" style="">QA lead agent</textarea><div class="node-footer"><div class="node-labels">press Enter to classify</div><div class="node-intent-summary muted">aake | thought | User input</div><div class="node-intent-summary muted node-provenance-line">User input</div><div class="node-intent-summary">press Enter to classify</div></div><button class="node-handle output" type="button" title="Drag connection"></button></div><div class="node text thought origin-user layer-system     " style="left: 1458.33px; top: 1107.22px; transform: scale(1); transform-origin: left top; pointer-events: auto; opacity: 1;"><button class="node-handle input" type="button" title="Drop connector here"></button><button class="node-close" type="button" title="Delete node">X</button><div class="node-header-row"><div class="node-header">SYSTEM | system-structure</div><div class="node-header-tags"><div class="node-origin-badge origin-user">User input</div></div></div><textarea class="node-editor" style="">tools they can use</textarea><div class="node-footer"><div class="node-labels">press Enter to classify</div><div class="node-intent-summary muted">d8nq | thought | User input</div><div class="node-intent-summary muted node-provenance-line">User input</div><div class="node-intent-summary">press Enter to classify</div></div><button class="node-handle output" type="button" title="Drag connection"></button></div><div class="node text thought origin-user layer-system     " style="left: 1572.37px; top: 1432.02px; transform: scale(1); transform-origin: left top; pointer-events: auto; opacity: 1;"><button class="node-handle input" type="button" title="Drop connector here"></button><button class="node-close" type="button" title="Delete node">X</button><div class="node-header-row"><div class="node-header">SYSTEM | system-structure</div><div class="node-header-tags"><div class="node-origin-badge origin-user">User input</div></div></div><textarea class="node-editor" style="">new note</textarea><div class="node-footer"><div class="node-labels">press Enter to classify</div><div class="node-intent-summary muted">wdfw | thought | User input</div><div class="node-intent-summary muted node-provenance-line">User input • Basis: explicit • Confidence: 0%</div><div class="node-intent-summary">press Enter to classify</div></div><button class="node-handle output" type="button" title="Drag connection"></button></div><div class="scene-indicator canvas-indicator"><div class="indicator-title">Canvas Layer</div><div class="muted">Zoom below 48% or press Tab to open ACE Studio.</div></div></div></div><div class="scene-layer studio-scene active" data-qa="studio-scene" aria-hidden="false"><div class="studio-shell" data-qa="studio-shell"><div class="studio-world" data-qa="studio-world" style="width: 1200px; height: 800px; transform: translate(46px, 50.42px) scale(0.94);"><div class="studio-floor"></div><div class="studio-room" data-qa="studio-room" data-stage-x="72" data-stage-y="86" data-stage-width="1056" data-stage-height="642" style="left: 72px; top: 86px; width: 1056px; height: 642px;"></div><div class="studio-lane lane-top "></div><div class="studio-lane lane-mid active workflow level-2"></div><div class="studio-lane lane-side active conflict level-2"></div><section class="studio-team-board" data-qa="whiteboard-teamBoard" data-whiteboard-id="teamBoard" data-whiteboard-label="Team Board" data-stage-x="320" data-stage-y="102" data-stage-width="560" data-stage-height="164" style="left: 320px; top: 102px; width: 560px; min-height: 164px;"><div class="studio-team-board-hangers" aria-hidden="true"><span></span><span></span></div><div class="studio-team-board-header"><div><div class="studio-team-board-title">Team Board</div><div class="studio-team-board-subtitle muted">Global workflow truth for planner output, builder packages, executor apply/deploy, and risk-gated approvals.</div></div><div class="studio-team-board-meta"><span>Page Current Page</span><span>Plan 0</span><span>Active 0</span><span>Assigned 0</span><span>Handed off 0</span><span>Idle workers 2</span><span class="">Ready to Apply 0</span><button class="mini studio-edit-handle whiteboard-edit-handle" type="button">Move</button></div></div><div class="team-board-columns"><div class="team-board-column plan"><div class="team-board-column-header"><span>Plan</span><span class="muted">0</span></div><div class="signal-empty muted team-board-empty">Planner tasks land here.</div></div><div class="team-board-column active"><div class="team-board-column-header"><span>Active</span><span class="muted">0</span></div><div class="signal-empty muted team-board-empty">Agents are not advancing anything right now.</div></div><div class="team-board-column complete"><div class="team-board-column-header"><span>Complete</span><span class="muted">0</span></div><div class="signal-empty muted team-board-empty">Completed tasks settle here.</div></div><div class="team-board-column review"><div class="team-board-column-header"><span>Ready to Apply</span><span class="muted">0</span></div><div class="signal-empty muted team-board-empty">No risky mutation package is waiting for approval.</div></div></div></section><svg class="studio-links-layer" data-qa="studio-links-layer" viewBox="0 0 1200 800" aria-hidden="true"><g class="studio-link workflow"><path d="M 924.7234042553191 389.48936170212767 C 764.7234042553191 389.48936170212767, 390.59574468085106 638.4468085106383, 230.59574468085106 638.4468085106383" class="studio-link-path" data-qa="studio-link-path" data-link-id="planner-executor" data-link-label="1 plan item" data-link-kind="workflow" data-from-desk="planner" data-to-desk="executor" data-start-x="924.7234042553191" data-start-y="389.48936170212767" data-end-x="230.59574468085106" data-end-y="638.4468085106383"></path></g><g class="studio-link memory"><path d="M 232.59574468085106 638.4468085106383 C 392.59574468085106 638.4468085106383, 388 591, 548 591" class="studio-link-path" data-qa="studio-link-path" data-link-id="work-to-memory" data-link-label="Artifacts" data-link-kind="memory" data-from-desk="executor" data-to-desk="memory-archivist" data-start-x="232.59574468085106" data-start-y="638.4468085106383" data-end-x="548" data-end-y="591"></path></g><g class="studio-link conflict"><path d="M 915.1914893617022 628.6382978723404 C 755.1914893617022 628.6382978723404, 384 445.8723404255319, 224 445.8723404255319" class="studio-link-path" data-qa="studio-link-path" data-link-id="conflict-0-context-manager" data-link-label="Low confidence" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="context-manager" data-start-x="915.1914893617022" data-start-y="628.6382978723404" data-end-x="224" data-end-y="445.8723404255319"></path><text x="569.5957446808511" y="511.2553191489362" class="studio-link-label">Low confidence</text></g><g class="studio-link conflict"><path d="M 983.1914893617022 580.6382978723404 C 983.1914893617022 496.936170212766, 998.7234042553191 527.1914893617021, 998.7234042553191 443.48936170212767" class="studio-link-path" data-qa="studio-link-path" data-link-id="conflict-0-planner" data-link-label="Low confidence" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="planner" data-start-x="983.1914893617022" data-start-y="580.6382978723404" data-end-x="998.7234042553191" data-end-y="443.48936170212767"></path></g><g class="studio-link conflict"><path d="M 915.1914893617022 628.6382978723404 C 755.1914893617022 628.6382978723404, 384.59574468085106 638.4468085106383, 224.59574468085106 638.4468085106383" class="studio-link-path" data-qa="studio-link-path" data-link-id="conflict-0-executor" data-link-label="Low confidence" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="executor" data-start-x="915.1914893617022" data-start-y="628.6382978723404" data-end-x="224.59574468085106" data-end-y="638.4468085106383"></path></g></svg><button class="agent-station selected " data-qa="desk-context-manager" data-desk-id="context-manager" data-desk-label="Context Manager" data-stage-x="158" data-stage-y="449.8723404255319" type="button" title="Context Manager | Waiting for source context" style="left: 158px; top: 449.872px; --agent-accent: #66c7ff; --agent-shadow: rgba(64, 133, 184, 0.38);"><div class="desk-thought-bubble blocked" title="Context status: idle. Deterministic fallback kept intake alive.">Context status: idle. Deterministic fallback kept intake alive.</div><span class="studio-edit-handle station-edit-handle">Move</span><button class="mini desk-properties-trigger" type="button">Props</button><div class="station-desk"><div class="desk-light  warning"></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar blocked"><span class="pixel-head" style="background: rgb(102, 199, 255);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip blocked">BLOCK</div><div class="agent-label">Context</div></button><button class="agent-station  " data-qa="desk-planner" data-desk-id="planner" data-desk-label="Planner" data-stage-x="998.7234042553191" data-stage-y="393.48936170212767" type="button" title="Planner | Planner is waiting for a context handoff." style="left: 998.723px; top: 393.489px; --agent-accent: #ffd36e; --agent-shadow: rgba(180, 132, 54, 0.38);"><div class="desk-thought-bubble idle" title="Planner status: idle. Waiting for context handoff.">Planner status: idle. Waiting for context handoff.</div><span class="studio-edit-handle station-edit-handle">Move</span><button class="mini desk-properties-trigger" type="button">Props</button><div class="station-desk"><div class="desk-light  "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar idle"><span class="pixel-head" style="background: rgb(255, 211, 110);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip idle">IDLE</div><div class="agent-label">Planner</div></button><button class="agent-station  " data-qa="desk-executor" data-desk-id="executor" data-desk-label="Executor" data-stage-x="158.59574468085106" data-stage-y="642.4468085106383" type="button" title="Executor | Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow." style="left: 158.596px; top: 642.447px; --agent-accent: #5ce29f; --agent-shadow: rgba(49, 132, 94, 0.38);"><div class="desk-thought-bubble idle" title="Executor status: idle. Waiting for approved work.">Executor status: idle. Waiting for approved work.</div><span class="studio-edit-handle station-edit-handle">Move</span><button class="mini desk-properties-trigger" type="button">Props</button><div class="station-desk"><div class="desk-light  "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar idle"><span class="pixel-head" style="background: rgb(92, 226, 159);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip idle">IDLE</div><div class="agent-label">Exec</div></button><button class="agent-station  " data-qa="desk-memory-archivist" data-desk-id="memory-archivist" data-desk-label="Memory Archivist" data-stage-x="620" data-stage-y="595" type="button" title="Memory Archivist | Capture notes, handoffs, and artifact history" style="left: 620px; top: 595px; --agent-accent: #d2a3ff; --agent-shadow: rgba(126, 87, 160, 0.38);"><div class="desk-thought-bubble idle" title="Archivist status: idle. Waiting to archive changes.">Archivist status: idle. Waiting to archive changes.</div><span class="studio-edit-handle station-edit-handle">Move</span><button class="mini desk-properties-trigger" type="button">Props</button><div class="station-desk"><div class="desk-light  "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar idle"><span class="pixel-head" style="background: rgb(210, 163, 255);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip idle">IDLE</div><div class="agent-label">Archivist</div></button><button class="agent-station  " data-qa="desk-qa-lead" data-desk-id="qa-lead" data-desk-label="QA / Test Lead" data-stage-x="422.5598404255319" data-stage-y="658" type="button" title="QA / Test Lead | Runs suites, surfaces evidence, and rates test quality across desks." style="left: 422.56px; top: 658px; --agent-accent: #7dd6c8; --agent-shadow: rgba(78, 157, 145, 0.38);"><span class="studio-edit-handle station-edit-handle">Move</span><div class="station-desk"><div class="desk-light pulse "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar thinking"><span class="pixel-head" style="background: rgb(125, 214, 200);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip thinking">QUEUE</div><div class="agent-label">QA</div></button><button class="agent-station  oversight" data-qa="desk-cto-architect" data-desk-id="cto-architect" data-desk-label="CTO / Architect" data-stage-x="983.1914893617022" data-stage-y="632.6382978723404" type="button" title="CTO / Architect | Review desk overlap, approval state, and guardrails" style="left: 983.191px; top: 632.638px; --agent-accent: #ff8f7a; --agent-shadow: rgba(166, 86, 72, 0.42);"><div class="desk-thought-bubble idle" title="Governance status: queued. Reviewing governance signals.">Governance status: queued. Reviewing governance signals.</div><span class="studio-edit-handle station-edit-handle">Move</span><button class="mini desk-properties-trigger" type="button">Props</button><button class="mini desk-properties-trigger cto-edit-trigger" type="button">Edit desks</button><div class="station-desk"><div class="desk-light  "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar idle"><span class="pixel-head" style="background: rgb(255, 143, 122);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip idle">IDLE</div><div class="agent-label">CTO</div></button><div class="studio-plaque"><div class="studio-name">ACE Studio</div><div class="muted">System visualization and control layer</div></div></div><div class="scene-indicator studio-indicator"><div class="indicator-title">Studio Map</div><div class="minimap-dots"><button type="button" class="minimap-dot selected" title="Context Manager" style="left: 13.1667%; top: 56.234%; background: rgb(102, 199, 255);"></button><button type="button" class="minimap-dot " title="Planner" style="left: 83.227%; top: 49.1862%; background: rgb(255, 211, 110);"></button><button type="button" class="minimap-dot " title="Executor" style="left: 13.2163%; top: 80.3059%; background: rgb(92, 226, 159);"></button><button type="button" class="minimap-dot " title="Memory Archivist" style="left: 51.6667%; top: 74.375%; background: rgb(210, 163, 255);"></button><button type="button" class="minimap-dot " title="QA / Test Lead" style="left: 35.2133%; top: 82.25%; background: rgb(125, 214, 200);"></button><button type="button" class="minimap-dot " title="CTO / Architect" style="left: 81.9326%; top: 79.0798%; background: rgb(255, 143, 122);"></button></div><div class="muted">Click a station to inspect scope. Active layer: System Graph. World domain: gameplay-systems.</div></div></div></div></div></div><aside class="spatial-sidebar ace-sidebar " style="width: 380px;"><button class="sidebar-resize-handle" type="button" tabindex="-1" aria-hidden="true"></button><div class="sidebar-header"><div class="inspector-label">Studio Inspector</div><button class="mini" type="button">Collapse</button></div><div class="sidebar-scroll"><div class="inspector-block"><div class="inspector-label">Agent Scope</div><div class="agent-panel-title">Context Manager</div><div class="agent-panel-status blocked">blocked</div><p class="muted">Curates project context, live constraints, and working memory for the rest of ACE.</p></div><div class="inspector-block panel-card"><div class="inspector-label">Agent Signal</div><div class="signal-summary">Waiting for source context</div><div class="signal-meta muted">Run state: blocked</div><div class="signal-meta muted">Ollama generate timed out after 1ms. | Ollama generate timed out after 1ms.</div></div><div class="inspector-block panel-card truth-panel"><div class="inspector-label">Core Truth</div><div class="signal-empty muted">Run context intake to expose ACE’s extracted intent truth.</div></div><div class="inspector-block panel-card review-panel"><div class="inspector-label">Problem To Solve</div><div class="signal-empty muted">Planner handoff will appear after the next context scan.</div></div><div class="inspector-block panel-card"><div class="inspector-label">Workstation</div><div class="muted">books / archive / memory terminal</div><div class="agent-focus muted">Watching current context intake and workspace signals.</div><div class="signal-meta muted">No active project focus reported.</div></div><div class="inspector-block panel-card"><div class="inspector-label">Throughput</div><div class="throughput-row"><div class="throughput-label muted">Assigned: 0</div><div class="throughput-track"><div class="throughput-fill" style="width: 8%;"></div></div></div><div class="throughput-row"><div class="throughput-label muted">Queue: 0</div><div class="throughput-track"><div class="throughput-fill" style="width: 8%;"></div></div></div><div class="throughput-row"><div class="throughput-label muted">Outputs: 0</div><div class="throughput-track"><div class="throughput-fill" style="width: 8%;"></div></div></div></div><div class="inspector-block panel-card"><div class="inspector-label">Intent Extraction</div><div class="confidence-pill">0% confidence</div><div class="signal-summary">Intent captured.</div><div class="signal-meta muted">Source: context input | Classified as context</div><div class="criteria-list"></div></div><div class="inspector-block panel-card"><div class="inspector-label">Recent History</div><ul class="signal-list"><li><div>Intent report refreshed</div></li><li><div>workspace-save</div><div class="muted">24/03/2026, 11:55:38</div></li><li><div>workspace-save</div><div class="muted">24/03/2026, 11:55:36</div></li><li><div>workspace-save</div><div class="muted">24/03/2026, 11:55:33</div></li></ul></div><div class="inspector-block panel-card"><div class="inspector-label">Waiting On You</div><ul class="signal-list"><li>Clarify the desired outcome so the planner handoff is less ambiguous.</li><li>Add a more concrete task or expected output in the context input.</li></ul></div><div class="inspector-block panel-card"><div class="inspector-label">Feedback Thread</div><div class="comment-thread"><div class="muted">No comments yet for this agent.</div></div><textarea class="comment-box" placeholder="Leave feedback for Context Manager" style=""></textarea><div class="button-row"><button class="mini" type="button">Add comment</button><button class="mini" type="button">Refocus station</button></div></div><div class="inspector-block panel-card trace-panel"><div class="inspector-label">Trace Debug (last 5)</div><div class="signal-empty muted">No traces yet. Run context intake or executor actions.</div></div></div></aside></section></div>
+    </main>
+
+    <aside id="legacy-ui" class="legacy-hidden legacy-drawer" aria-label="Legacy Controls Drawer">
+        <div class="legacy-drawer-inner">
+            <section id="error_wrap" class="card error" style="display:none;">
+                <div class="card-title">Something went wrong</div>
+                <pre id="error_box"></pre>
+            </section>
+
+            <section class="card refresh-row">
+                <div>
+                    <div class="card-title">Legacy Dashboard Refresh</div>
+                    <div class="muted" id="refreshMeta">Last refreshed: 24/03/2026, 11:55:47 (every 10s)</div>
+                    <div class="muted" id="refreshErrors"></div>
+                </div>
+                <div class="button-row"><button id="refreshBtn">Refresh now</button></div>
+            </section>
+
+            <section class="card" id="systemStatusCard">
+                <div class="card-title">System Status</div>
+                <div class="status-grid">
+                    <div class="status-row"><span class="muted">UI connection</span><span id="uiConnectionState" class="status-value">connected</span></div>
+                    <div class="status-row"><span class="muted">Last successful refresh</span><span id="uiLastRefresh" class="status-value">24/03/2026, 11:55:47</span></div>
+                    <div class="status-row"><span class="muted">Last refresh error</span><span id="uiLastRefreshError" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Last command summary</span><span id="uiLastCommandSummary" class="status-value">none | idle | exit —</span></div>
+                    <div class="status-row"><span class="muted">Mode</span><span id="uiModeLabel" class="status-value">operator</span></div>
+                </div>
+            </section>
+
+            <section class="grid">
+                <div class="card"><div class="card-title">Current Focus</div><div class="big" id="current_focus">Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.</div></div>
+                <div class="card"><div class="card-title">Next Actions</div><ul class="list" id="next_actions"><li>Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.</li><li>Add a shared anchor resolver and bundle builder.</li><li>Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.</li><li>Rename external target config to `targets.json` with `projects.json` fallback.</li><li>Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.</li><li>Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.</li><li>[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`.</li></ul></div>
+                <div class="card"><div class="card-title">Blockers</div><ul class="list" id="blockers"><li>None</li></ul></div>
+            </section>
+
+            <section class="two-col">
+                <div class="card"><div class="card-title">Decisions</div><pre class="doc" id="decisions_text"># Decision Log
+
+## 2026-03-15 - Canonical brain moves to brain/emergence
+
+ACE now treats `brain/emergence` as the canonical manager/context anchor bundle.
+`projects/emergence` remains as a deprecated compatibility path during migration.
+
+## 2026-03-15 - External targets move to targets.json
+
+External repos and tools are now configured through `targets.json`.
+`projects.json` remains as a compatibility input until the migration is complete.
+
+## 2026-03-15 - Legacy repo trees move under legacy
+
+Archived repo content now lives under `legacy/`.
+Active runtime resolution must not depend on `legacy/ai-pipeline` or `legacy/Old`.</pre></div>
+                <div class="card"><div class="card-title">Tasks</div><pre class="doc" id="tasks_text"># Tasks
+
+## Repo Anchor Realignment
+
+- [x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`.
+- [x] Ensure `plan.md`, `roadmap.md`, `tasks.md`, `decisions.md`, `changelog.md`, `project_brain.md`, and `state.json` stay in sync.
+- [x] Block unanchored execution work from moving through builder, apply, or deploy.
+
+## Context And Manager Flow
+
+- [x] Build a shared anchor bundle for runtime, dashboard, throughput, and intent analysis.
+- [x] Add anchor provenance and drift reporting to manager/runtime payloads.
+- [ ] Improve context weighting across roadmap, plan, tasks, decisions, and changelog history.
+
+## Layout Cleanup
+
+- [x] Prefer `targets.json` for external repo configuration.
+- [x] Stage legacy folders under `legacy/`.
+- [ ] Remove deprecated path assumptions after compatibility coverage is stable.</pre></div>
+                <div class="card"><div class="card-title">Roadmap</div><pre class="doc" id="roadmap_text"># Roadmap
+
+## Now
+
+- Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.
+- Keep the manager, runtime, and intent systems on the shared anchor bundle contract.
+- Use anchor provenance and drift detection to block unanchored execution from advancing.
+- Keep archived repo history under `legacy/` and out of active runtime flow.
+
+## Next
+
+- Deepen manager orchestration so desk activation and team-board seeding are explicitly anchor-driven.
+- Expand the context system from weighted keywords into richer structured retrieval over roadmap, tasks, decisions, and changelog history.
+- Extend MCP and QA flows to surface manager drift and deployment readiness more explicitly.
+- Decide when to remove `projects/emergence/*` and `projects.json` compatibility once the current contract is stable.
+
+## Later
+
+- Add multi-domain brains once a single-domain anchor model is stable.
+- Flatten the outer checkout path after internal layout cleanup is complete.</pre></div>
+                <div class="card"><div class="card-title">Plan</div><pre class="doc" id="plan_text"># Active Plan
+
+Created: 2026-03-15T00:00:00Z
+
+## Goal
+
+- Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.
+
+## MVP scope (must-haves)
+
+- Add a shared anchor resolver and bundle builder.
+- Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.
+- Rename external target config to `targets.json` with `projects.json` fallback.
+- Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.
+- Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.
+
+## Out of scope (not now)
+
+- Multi-domain manager support.
+- New desk/agent roles.
+- Removing compatibility aliases in the same pass.
+
+## Acceptance criteria
+
+- [x] Runtime and dashboard read canonical anchor files from `brain/emergence`.
+- [x] Intent reports include anchor provenance and manager truth metadata.
+- [x] Unanchored execution cards are blocked from automatic advancement.
+- [x] External target lookup prefers `targets.json` but still works with `projects.json`.
+
+## Risks / notes
+
+- Legacy compatibility must survive the path move.
+- Canonical docs must stay aligned with runtime fields or drift warnings will become noise.
+- Archived content under `legacy/` must stay out of active runtime resolution.</pre></div>
+                <div class="card"><div class="card-title">Project Brain</div><pre class="doc" id="brain_text"># Project Brain - Emergence
+
+Emergence is the active ACE domain brain.
+It tracks the architecture and operating model for ACE as a local-first manager for code, context, tool access, and guarded self-upgrade.
+
+## Current Architecture
+
+- ACE Studio exposes Context Manager, Planner, Executor, Memory Archivist, and CTO/Architect desks.
+- The runtime keeps a persisted workspace, handoffs, team-board state, throughput sessions, and QA history.
+- The runner owns scan, manage, build, run, and apply actions against target repos.
+- MCP exposes ACE runtime state as a tool/resource layer instead of forcing bespoke per-tool wiring.
+
+## Current Focus
+
+- Make repo anchors canonical for manager, context, and intent flow.
+- Separate canonical brain storage from external target-repo configuration.
+- Remove legacy path drift so runtime behavior is not coupled to stale folder structure.
+
+## Current State
+
+- Canonical anchor storage is `brain/emergence/` with compatibility reads from `projects/emergence/`.
+- External targets resolve from `targets.json` first, then `projects.json`.
+- Legacy repo content is archived under `legacy/` and excluded from active runtime resolution.</pre></div>
+                <div class="card"><div class="card-title">Changelog</div><pre class="doc" id="changelog_text"># Changelog
+
+## 2026-03-15
+
+- Added a shared anchor resolver and canonical brain bundle.
+- Switched runtime/dashboard/intent flow to canonical brain paths with legacy fallback.
+- Added anchor provenance and drift metadata for manager/runtime surfaces.
+- Renamed external target config to `targets.json` with `projects.json` fallback.
+- Moved legacy repo trees under `legacy/`.</pre></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Legacy Fallback Control</div>
+                <div class="muted">Legacy CLI fallback only. Canonical execution now routes through Studio/Canvas executive flow.</div>
+                <div class="form-grid">
+                    <label>Project</label>
+                    <select id="projectSelect"><option value="bridge">bridge (C:\Users\felix\Desktop\Blender\send_to_unreal_bridge\send_to_unreal_bridge)</option><option value="ace">ace (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline)</option><option value="yt_transcript_exporter">yt_transcript_exporter (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline)</option><option value="ace-self">ace-self (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline)</option></select>
+
+                    <label>Task</label>
+                    <div class="inline">
+                        <select id="taskSelect"><option value="0001-Blender-UE-import-hygiene">0001-Blender-UE-import-hygiene</option><option value="9999-smoke-test">9999-smoke-test</option></select>
+                        <input id="taskIdInput" placeholder="Manual task id (e.g. 0001-name)" style="">
+                    </div>
+
+                    <label>Action</label>
+                    <select id="actionSelect">
+                        <option value="scan">Scan</option>
+                        <option value="manage">Manage</option>
+                        <option value="build">Build</option>
+                    </select>
+                </div>
+                <div class="button-row"><button id="executeBtn">Execute scan</button></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Add</div>
+                <div class="button-row">
+                    <button id="addIdeaBtn">Add Idea</button>
+                    <button id="addTaskBtn">Add Task</button>
+                    <button id="addProjectBtn">Add Project</button>
+                </div>
+                <div id="addMessage" class="muted"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Talent Acquisition</div>
+                <div class="muted ta-panel-copy">Describe a system gap and ACE will generate candidate profiles that could fill it.</div>
+                <div class="ta-panel">
+                    <label for="talentGapInput" class="muted">Gap description</label>
+                    <textarea id="talentGapInput" placeholder="Example: UI actions appear disconnected from backend execution" style=""></textarea>
+                    <div class="button-row">
+                        <button id="generateCandidatesBtn" type="button">Generate Candidates</button>
+                    </div>
+                    <div id="taCandidateStatus" class="muted">No candidate set generated yet.</div>
+                    <div id="taCandidateError" class="ta-message ta-message-error hidden"></div>
+                    <div id="taCandidateResults" class="ta-candidate-grid" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Structured QA</div>
+                <div class="muted">Runs deterministic desk-level validation and returns one report.</div>
+                <div class="button-row">
+                    <button id="runQaBtn" type="button">Run QA</button>
+                </div>
+                <div id="qaStatus" class="muted">No QA report yet.</div>
+                <pre id="qaReport" class="console"></pre>
+            </section>
+
+            <section class="card" id="pipelineSummaryCard">
+                <div class="card-title">Pipeline Command Summary</div>
+                <div class="pipeline-summary-grid">
+                    <div class="status-row"><span class="muted">Command</span><span id="pipelineCommandName" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Result</span><span id="pipelineCommandState" class="status-value">idle</span></div>
+                    <div class="status-row"><span class="muted">Exit code</span><span id="pipelineCommandExit" class="status-value">—</span></div>
+                    <div class="status-row"><span class="muted">Timestamp</span><span id="pipelineCommandTimestamp" class="status-value">—</span></div>
+                    <div class="status-row"><span class="muted">Error summary</span><span id="pipelineCommandError" class="status-value">none</span></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Output</div>
+                <div class="meta"><div class="meta-item"><div class="meta-label">Status</div><div class="meta-value" id="runStatus">idle</div></div><div class="meta-item"><div class="meta-label">Exit code</div><div class="meta-value" id="runExit">—</div></div><div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value" id="runDuration">—</div></div></div>
+                <div class="muted" id="artifactPath">No artifacts yet.</div>
+                <div class="button-row">
+                    <button id="copyOutputBtn">Copy output</button>
+                    <button id="openTaskFolderBtn">Open task folder</button>
+                </div>
+                <pre id="commandOutput" class="console"></pre>
+            </section>
+        </div>
+    </aside>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="app.js"></script>
+    <script type="module" src="spatial/spatialApp.js"></script>
+
+
+</body></html>

@@ -1,4 +1,5 @@
 import { createTask, enqueueActorTask, taskToLabel } from '../ai/agentStub.js';
+import { getActorEnergyText } from '../units/energy.js';
 
 const ASSIGNMENT_STRATEGIES = new Set(['manual', 'nearest_worker', 'least_loaded_worker']);
 
@@ -8,7 +9,9 @@ export function runCommand(state, command) {
     return {
       ok: true,
       mode: 'list-workers',
-      message: workers.length === 0 ? 'No workers available.' : workers.map((worker) => `${worker.id} @ (${worker.x}, ${worker.y})`).join(' | '),
+      message: workers.length === 0
+        ? 'No workers available.'
+        : workers.map((worker) => `${worker.id} @ (${worker.x}, ${worker.y}) | energy ${getActorEnergyText(worker)}`).join(' | '),
       workers
     };
   }
@@ -77,7 +80,7 @@ export function runCommand(state, command) {
   };
 }
 
-function resolveAssignee(state, taskSpec) {
+export function resolveAssignee(state, taskSpec) {
   if (!isWorkerAssignable(taskSpec.type) || state.assignmentStrategy === 'manual') {
     return state.store.agent;
   }

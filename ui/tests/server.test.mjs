@@ -1,27 +1,167 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 
+function buildTextRequestMap(responses = {}) {
+  return async (url) => {
+    if (!Object.prototype.hasOwnProperty.call(responses, url)) {
+      throw new Error(`unexpected request: ${url}`);
+    }
+    return responses[url];
+  };
+}
+
 export default async function runServerTests() {
   const serverPath = path.resolve(process.cwd(), 'server.js');
+  const throughputDebugPath = path.resolve(process.cwd(), 'throughputDebug.js');
   const {
+    app,
+    buildDeskPropertiesPayload,
+    buildProjectRecord,
+    buildQAStatePayload,
+    buildSpatialRuntimePayload,
+    applySpatialMutationsToWorkspace,
     evaluateApplyGate,
     evaluateVerifyGate,
     evaluateDeployGate,
     buildVerificationPlan,
+    buildLegacyFallbackProvenance,
+    buildMixedStudioProvenance,
+    detectRunnableProjectType,
     detectMaterialGenerationIntent,
     buildMaterialIntentModuleEnvelope,
+    listProjectsForUi,
+    launchProject,
     normalizeExecutiveEnvelope,
     mapEnvelopeToMaterialModule,
     buildModulePreview,
     resolveLegacyFallbackPayload,
+    smokeCheckStaticWebBoot,
+    stopProjectRun,
+    summarizeExecutionProvenance,
     executeModuleAction,
   } = require(serverPath);
+  const {
+    createPlannerHandoff,
+  } = require(throughputDebugPath);
+  const {
+    ensureQAStorage,
+    writeLocalGateReport,
+    writeStructuredQAReport,
+  } = require(path.resolve(process.cwd(), 'qaRunner.js'));
 
   assert.equal(detectMaterialGenerationIntent('Generate a material for wet stone'), true);
   assert.equal(detectMaterialGenerationIntent('Need planning updates for team board'), false);
+  assert.ok(app.router.stack.some((layer) => Array.isArray(layer.route?.path) && layer.route.path.includes('/qa')));
+  assert.ok(app.router.stack.some((layer) => layer.route?.path === '/api/projects/run'));
+  assert.ok(app.router.stack.some((layer) => layer.route?.path === '/api/spatial/archive/writeback'));
+
+  const topdownProject = listProjectsForUi().find((project) => project.key === 'topdown-slice');
+  assert.ok(topdownProject);
+  assert.equal(topdownProject.projectType, 'static-web');
+  assert.equal(topdownProject.launchable, true);
+  assert.equal(detectRunnableProjectType('topdown-slice', topdownProject.path), 'static-web');
+  assert.equal(detectRunnableProjectType('ace-self', path.resolve(process.cwd(), '..')), null);
+
+  const rebuiltProject = buildProjectRecord('topdown-slice', topdownProject.path);
+  assert.equal(rebuiltProject.projectType, 'static-web');
+  assert.equal(rebuiltProject.launchable, true);
+  assert.equal(rebuiltProject.supportedOrigin, 'http://127.0.0.1:4173/');
+
+  const smokeBaseUrl = rebuiltProject.supportedOrigin;
+  const smokePass = await smokeCheckStaticWebBoot({
+    baseUrl: smokeBaseUrl,
+    requestText: buildTextRequestMap({
+      [smokeBaseUrl]: {
+        status: 200,
+        body: '<!doctype html><title>Top-Down Thin Slice</title>',
+      },
+      [`${smokeBaseUrl}src/main.js`]: {
+        status: 200,
+        body: "import { createTilemap, TILE_SIZE } from './world/tilemap.js';\n",
+      },
+      [`${smokeBaseUrl}src/world/tilemap.js`]: {
+        status: 200,
+        body: 'export function createTilemap() {}\nexport const TILE_SIZE = 32;\n',
+      },
+      [`${smokeBaseUrl}src/editor/ui.js`]: {
+        status: 200,
+        body: "import { formatTaskTraceLabel } from '../ai/agentStub.js';\n",
+      },
+      [`${smokeBaseUrl}src/ai/agentStub.js`]: {
+        status: 200,
+        body: 'export function formatTaskTraceLabel() {}\n',
+      },
+    }),
+  });
+  assert.equal(smokePass.ok, true);
+  assert.equal(smokePass.baseUrl, smokeBaseUrl);
+
+  await assert.rejects(
+    () => smokeCheckStaticWebBoot({
+      baseUrl: smokeBaseUrl,
+      requestText: buildTextRequestMap({
+        [smokeBaseUrl]: {
+          status: 200,
+          body: '<!doctype html><title>Top-Down Thin Slice</title>',
+        },
+        [`${smokeBaseUrl}src/main.js`]: {
+          status: 200,
+          body: "import { createTilemap } from './world/tilemap.js';\n",
+        },
+        [`${smokeBaseUrl}src/world/tilemap.js`]: {
+          status: 200,
+          body: 'export function createTilemap() {}\n',
+        },
+        [`${smokeBaseUrl}src/editor/ui.js`]: {
+          status: 200,
+          body: "import { formatTaskTraceLabel } from '../ai/agentStub.js';\n",
+        },
+        [`${smokeBaseUrl}src/ai/agentStub.js`]: {
+          status: 200,
+          body: 'export const taskToLabel = () => {};\n',
+        },
+      }),
+    }),
+    /\/src\/editor\/ui\.js imports "formatTaskTraceLabel" from \/src\/ai\/agentStub\.js, but that export was not found\./,
+  );
+
+  const launchedProject = await launchProject('topdown-slice', {
+    checkPortAvailable: async () => true,
+    resolveLaunchCommand: () => ({
+      command: 'python',
+      args: ['-m', 'http.server', '4173'],
+      commandLine: 'python -m http.server 4173',
+    }),
+    spawnChild: () => ({
+      pid: 424242,
+      unref() {},
+    }),
+    waitForPortOpen: async () => {},
+    smokeCheck: async ({ baseUrl }) => {
+      assert.equal(baseUrl, smokeBaseUrl);
+      return { ok: true };
+    },
+  });
+  assert.equal(launchedProject.url, smokeBaseUrl);
+  assert.equal(launchedProject.supportedOrigin, smokeBaseUrl);
+  assert.equal(launchedProject.port, 4173);
+  assert.equal(launchedProject.reused, false);
+  stopProjectRun('topdown-slice', { killProcess: () => {} });
+
+  await assert.rejects(
+    () => launchProject('topdown-slice', {
+      checkPortAvailable: async () => false,
+      smokeCheck: async () => {
+        throw new Error('/ returned 200 without the Top-Down Thin Slice shell marker.');
+      },
+    }),
+    /topdown-slice requires http:\/\/127\.0\.0\.1:4173\/, but the service currently bound there did not pass the boot smoke check/i,
+  );
 
   const moduleEnvelope = buildMaterialIntentModuleEnvelope({
     text: 'Generate a material for "wet stone" for Unreal',
@@ -77,6 +217,36 @@ export default async function runServerTests() {
   });
   assert.deepEqual(fallbackPayload, { action: 'scan', taskId: '0007', project: 'ace-self' });
 
+  const legacyPath = buildLegacyFallbackProvenance({
+    action: 'scan',
+    stageId: 'scan',
+    commandLine: 'python runner/ai.py scan 0007 --project ace-self',
+  });
+  assert.equal(legacyPath.classification, 'legacy-fallback');
+  assert.ok(legacyPath.evidence.includes('route:legacy-fallback'));
+
+  const mixedPath = buildMixedStudioProvenance({
+    engine: 'ace-studio-builder-pipeline',
+    stageIds: ['builder', 'scan', 'manage', 'build'],
+    legacyActions: ['scan', 'manage', 'build'],
+    evidence: ['source:team-board-builder'],
+  });
+  assert.equal(mixedPath.classification, 'mixed');
+  assert.match(summarizeExecutionProvenance(mixedPath), /Studio orchestrates, legacy runs scan, manage, build/i);
+
+  const handoff = createPlannerHandoff({
+    nodeId: 'node_1',
+    summary: 'Plan the next anchored ACE slice',
+    confidence: 0.72,
+    tasks: ['Plan the next anchored ACE slice'],
+    anchorRefs: ['brain/emergence/plan.md'],
+    criteria: [],
+    projectContext: { matchedTerms: ['ace'], blockers: [] },
+    contextPacket: { constraints: [], clarifications: [] },
+    scores: { plannerUsefulness: 0.88, executionReadiness: 0.6 },
+  }, {});
+  assert.equal(Object.prototype.hasOwnProperty.call(handoff, 'provenance'), false);
+
   const baseWorkspace = {
     studio: {
       selfUpgrade: {
@@ -109,7 +279,10 @@ export default async function runServerTests() {
       patchPath: 'work/tasks/0007-tighten-executor/patch.diff',
       changedFiles: ['ui/server.js'],
       expectedAction: 'apply + deploy',
+      provenance: mixedPath,
+      provenanceSummary: summarizeExecutionProvenance(mixedPath),
     },
+    executionProvenance: mixedPath,
     verifyRequired: true,
     verifyStatus: 'passed',
     verifiedSignature: 'sig',
@@ -284,4 +457,187 @@ export default async function runServerTests() {
   });
   assert.equal(deployStaleApply.ok, false);
   assert.equal(deployStaleApply.code, 'apply-stale');
+
+  const qaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-server-qa-'));
+  const qaStorage = ensureQAStorage(qaRoot);
+  writeStructuredQAReport(qaRoot, {
+    status: 'pass',
+    summary: 'All QA suites passed after stabilising the UI gate.',
+    desks: [
+      {
+        desk: 'ui',
+        status: 'pass',
+        tests: [{ name: 'contract_check', status: 'pass' }],
+      },
+    ],
+  }, 'latest');
+  writeLocalGateReport(qaRoot, 'test-unit-latest', {
+    id: 'test-unit-latest',
+    source: 'ui-test-runner',
+    command: 'npm run test:unit',
+    status: 'pass',
+    summary: 'All 22 UI checks passed.',
+    totalChecks: 22,
+    passedCount: 22,
+    failedCount: 0,
+    failures: [],
+  });
+  fs.writeFileSync(path.join(qaStorage, 'qa_manual_1.json'), `${JSON.stringify({
+    id: 'qa_manual_1',
+    scenario: 'layout-pass',
+    mode: 'interactive',
+    trigger: 'manual',
+    status: 'completed',
+    verdict: 'pass',
+    createdAt: '2026-03-25T09:15:00.000Z',
+    finishedAt: '2026-03-25T09:16:00.000Z',
+    findings: [],
+    steps: [{ id: 'scenario', label: 'Run QA scenario actions', status: 'completed', verdict: 'pass' }],
+    artifacts: { screenshots: [] },
+    console: [],
+    network: [],
+  }, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(path.join(qaStorage, 'qa_guardrail_1.json'), `${JSON.stringify({
+    id: 'qa_guardrail_1',
+    scenario: 'studio-smoke',
+    mode: 'interactive',
+    trigger: 'guardrail',
+    status: 'completed',
+    verdict: 'pass',
+    createdAt: '2026-03-25T09:10:00.000Z',
+    finishedAt: '2026-03-25T09:11:00.000Z',
+    findings: [],
+    steps: [
+      { id: 'open', label: 'Open ACE', status: 'completed', verdict: 'pass' },
+      { id: 'studio', label: 'Enter ACE Studio', status: 'completed', verdict: 'pass' },
+    ],
+    artifacts: { screenshots: [] },
+    console: [],
+    network: [],
+  }, null, 2)}\n`, 'utf8');
+
+  const qaState = buildQAStatePayload(qaRoot);
+  assert.equal(qaState.structuredReport.summary, 'All QA suites passed after stabilising the UI gate.');
+  assert.equal(qaState.latestBrowserRun.id, 'qa_manual_1');
+  assert.equal(qaState.browserRuns.length, 1);
+  assert.equal(qaState.browserRuns[0].id, 'qa_manual_1');
+  assert.equal(qaState.localGate.unit.status, 'pass');
+  assert.equal(qaState.localGate.studioBoot.id, 'qa_guardrail_1');
+  assert.equal(qaState.localGate.studioBoot.source, 'studio-boot-guardrail');
+
+  const qaWorkspace = {
+    graph: { nodes: [], edges: [] },
+    graphs: {
+      system: { nodes: [], edges: [] },
+      world: { nodes: [], edges: [] },
+    },
+    sketches: [],
+    annotations: [],
+    pages: [],
+    activePageId: null,
+    intentState: {
+      latest: null,
+      contextReport: null,
+      byNode: {},
+      reports: [],
+    },
+    studio: {
+      handoffs: {},
+      teamBoard: {
+        cards: [],
+        selectedCardId: null,
+        summary: { plan: 0, active: 0, complete: 0, review: 0, assigned: 0, idleWorkers: 0 },
+      },
+      orchestrator: {
+        status: 'idle',
+        activeDeskIds: [],
+        conflicts: [],
+        pendingUserActions: [],
+        desks: {
+          'qa-lead': {
+            mission: 'Restore QA desk truth',
+            currentGoal: 'Surface QA evidence in one place',
+            localState: 'review',
+            workItems: [],
+          },
+        },
+      },
+      deskProperties: {},
+      agentWorkers: {},
+      selfUpgrade: {},
+    },
+  };
+  const qaDeskPayload = buildDeskPropertiesPayload(qaWorkspace, 'qa-lead', qaState);
+  assert.equal(qaDeskPayload.qa.structuredSummary.status, 'pass');
+  assert.equal(qaDeskPayload.qa.structuredSummary.testCount, 1);
+  assert.equal(qaDeskPayload.qa.latestBrowserRun.id, 'qa_manual_1');
+  assert.equal(qaDeskPayload.qa.browserRuns.length, 1);
+  assert.equal(qaDeskPayload.qa.localGate.studioBoot.id, 'qa_guardrail_1');
+  assert.ok(Array.isArray(qaDeskPayload.qa.availableTests));
+
+  const runtimePayload = buildSpatialRuntimePayload(qaWorkspace, {
+    qaState,
+    anchorBundle: {
+      managerSummary: { status: 'ready' },
+      truthSources: [],
+      anchorRefs: [],
+    },
+  });
+  assert.equal(runtimePayload.qaState.latestBrowserRun.id, 'qa_manual_1');
+  assert.equal(runtimePayload.qaState.localGate.unit.status, 'pass');
+  assert.ok(runtimePayload.canonicalSlices);
+  assert.ok(Array.isArray(runtimePayload.canonicalSlices.slices));
+
+  const mutationWorkspace = {
+    graph: {
+      nodes: [{ id: 'node_1', type: 'text', content: 'Original', position: { x: 0, y: 0 }, metadata: { graphLayer: 'system' } }],
+      edges: [],
+    },
+    graphs: {
+      system: {
+        nodes: [{ id: 'node_1', type: 'text', content: 'Original', position: { x: 0, y: 0 }, metadata: { graphLayer: 'system' } }],
+        edges: [],
+      },
+      world: { nodes: [], edges: [] },
+    },
+    studio: {},
+  };
+  const applyResult = applySpatialMutationsToWorkspace(mutationWorkspace, [
+    {
+      type: 'create_node',
+      node: { id: 'node_2', type: 'task', content: 'Confirmed', position: { x: 120, y: 60 }, metadata: { graphLayer: 'system' } },
+    },
+    {
+      type: 'create_edge',
+      edge: { source: 'node_1', target: 'node_2', relationship_type: 'relates_to' },
+    },
+  ]);
+  assert.equal(applyResult.ok, true);
+  assert.equal(applyResult.status, 'applied');
+  assert.equal(applyResult.confirmed, true);
+  assert.equal(applyResult.applied, 2);
+  assert.equal(applyResult.workspace.graphs.system.nodes.length, 2);
+  assert.equal(applyResult.workspace.graphs.system.edges.length, 1);
+
+  const noOpResult = applySpatialMutationsToWorkspace(applyResult.workspace, [
+    {
+      type: 'create_edge',
+      edge: { source: 'node_1', target: 'node_2', relationship_type: 'relates_to' },
+    },
+  ]);
+  assert.equal(noOpResult.ok, true);
+  assert.equal(noOpResult.status, 'no-op');
+  assert.equal(noOpResult.confirmed, false);
+  assert.equal(noOpResult.applied, 0);
+
+  assert.throws(
+    () => applySpatialMutationsToWorkspace(mutationWorkspace, [
+      {
+        type: 'modify_node',
+        id: 'missing-node',
+        patch: { content: 'Broken' },
+      },
+    ]),
+    /Cannot modify missing node "missing-node"\./,
+  );
 }

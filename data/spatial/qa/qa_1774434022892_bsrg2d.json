@@ -1,0 +1,278 @@
+{
+  "id": "qa_1774434022892_bsrg2d",
+  "scenario": "studio-smoke",
+  "mode": "interactive",
+  "trigger": "manual",
+  "prompt": "I think we should add a desk to the studio for a QA agent",
+  "baseUrl": "http://localhost:3000",
+  "status": "completed",
+  "verdict": "failed",
+  "createdAt": "2026-03-25T10:20:22.892Z",
+  "finishedAt": "2026-03-25T10:20:24.688Z",
+  "linked": {},
+  "browser": {
+    "executablePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "engine": "chromium"
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T10:20:22.893Z",
+      "finishedAt": "2026-03-25T10:20:22.897Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T10:20:22.897Z",
+      "finishedAt": "2026-03-25T10:20:23.229Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T10:20:23.231Z",
+      "finishedAt": "2026-03-25T10:20:23.870Z",
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T10:20:23.871Z",
+      "finishedAt": "2026-03-25T10:20:24.173Z",
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T10:20:24.174Z",
+      "finishedAt": "2026-03-25T10:20:24.652Z",
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T10:20:24.653Z",
+      "finishedAt": "2026-03-25T10:20:24.680Z",
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "weak",
+      "startedAt": "2026-03-25T10:20:24.681Z",
+      "finishedAt": "2026-03-25T10:20:24.688Z",
+      "error": null
+    }
+  ],
+  "findings": [
+    {
+      "id": "console-1",
+      "severity": "error",
+      "kind": "console",
+      "summary": "Console errors were captured during the browser pass.",
+      "details": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <button> button \n    at button\n    at button\n    at div\n    at div\n    at div\n    at div\n    at div\n    at section\n    at SpatialNotebook (http://localhost:3000/spatial/spatialApp.js:1158:25)"
+    }
+  ],
+  "artifacts": {
+    "screenshots": [
+      {
+        "name": "01-initial.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774434022892_bsrg2d\\01-initial.png",
+        "url": "/api/spatial/qa/runs/qa_1774434022892_bsrg2d/artifacts/01-initial.png",
+        "label": "Initial ACE render"
+      },
+      {
+        "name": "02-studio-smoke.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774434022892_bsrg2d\\02-studio-smoke.png",
+        "url": "/api/spatial/qa/runs/qa_1774434022892_bsrg2d/artifacts/02-studio-smoke.png",
+        "label": "Scenario studio-smoke"
+      }
+    ],
+    "domSnapshot": {
+      "name": "dom.html",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774434022892_bsrg2d\\dom.html",
+      "url": "/api/spatial/qa/runs/qa_1774434022892_bsrg2d/artifacts/dom.html"
+    },
+    "consoleLog": {
+      "name": "console.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774434022892_bsrg2d\\console.json",
+      "url": "/api/spatial/qa/runs/qa_1774434022892_bsrg2d/artifacts/console.json"
+    },
+    "networkSummary": {
+      "name": "network.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774434022892_bsrg2d\\network.json",
+      "url": "/api/spatial/qa/runs/qa_1774434022892_bsrg2d/artifacts/network.json"
+    },
+    "runtimeSnapshot": {
+      "name": "runtime.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774434022892_bsrg2d\\runtime.json",
+      "url": "/api/spatial/qa/runs/qa_1774434022892_bsrg2d/artifacts/runtime.json"
+    },
+    "layoutFindings": {
+      "name": "layout-findings.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774434022892_bsrg2d\\layout-findings.json",
+      "url": "/api/spatial/qa/runs/qa_1774434022892_bsrg2d/artifacts/layout-findings.json"
+    }
+  },
+  "console": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "type": "error",
+      "text": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <button> button \n    at button\n    at button\n    at div\n    at div\n    at div\n    at div\n    at div\n    at section\n    at SpatialNotebook (http://localhost:3000/spatial/spatialApp.js:1158:25)",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+        "lineNumber": 72,
+        "columnNumber": 31
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://localhost:3000/favicon.ico",
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace payload bytes: 46695",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 9,
+        "columnNumber": 12
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"graph\": 18034 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"graphs\": 18077 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"sketches\": 2 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"annotations\": 2 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"architectureMemory\": 831 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"agentComments\": 103 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"intentState\": 237 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"pages\": 291 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"activePageId\": 25 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"rsg\": 2294 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"studio\": 6656 bytes",
+      "location": {
+        "url": "http://localhost:3000/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    }
+  ],
+  "network": [],
+  "error": null
+}

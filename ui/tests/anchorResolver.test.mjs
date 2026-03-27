@@ -32,11 +32,12 @@ export default async function runAnchorResolverTests() {
     next_actions: ['This should not become canonical focus'],
     blockers: ['Need review gate before deploy'],
   }, null, 2));
-  writeFile(rootPath, 'brain/emergence/tasks.md', '# Tasks\n- Move canonical reads\n- Add anchor refs\n');
+  writeFile(rootPath, 'brain/emergence/slices.md', '# Active Slices\n\n## 0007: Canonical Slice Authority v0\n- Summary: Move canonical reads\n- Status: plan\n');
+  writeFile(rootPath, 'brain/emergence/tasks.md', '# Tasks\nDeprecated compatibility view.\n');
   writeFile(rootPath, 'brain/emergence/decisions.md', '# Decisions\n- Split paths\n');
   writeFile(rootPath, 'brain/emergence/changelog.md', '# Changelog\n- Resolver added\n');
   writeFile(rootPath, 'projects/emergence/roadmap.md', '# Roadmap\n\n## Now\n- Brain migration milestone\n');
-  writeFile(rootPath, 'projects/emergence/plan.md', '# Active Plan\n\n## Goal\n- Canonical anchor rollout\n\n## Next\n- Keep plan anchor\n');
+  writeFile(rootPath, 'projects/emergence/plan.md', '# Historical Plan\n\nStatus: Archived historical slice.\n');
   writeFile(rootPath, 'projects.json', JSON.stringify({ bridge: 'C:/bridge-legacy' }, null, 2));
   writeFile(rootPath, 'targets.json', JSON.stringify({ bridge: 'C:/bridge-canonical' }, null, 2));
 
@@ -45,23 +46,25 @@ export default async function runAnchorResolverTests() {
   assert.equal(bundle.anchors.project_brain.source, 'canonical');
   assert.equal(bundle.anchors.roadmap.source, 'legacy');
   assert.equal(bundle.anchors.plan.source, 'legacy');
+  assert.equal(bundle.anchors.slices.source, 'canonical');
   assert.equal(bundle.anchors.project_brain.authority, CANONICAL_AUTHORITY);
   assert.equal(bundle.anchors.state.authority, DERIVED_AUTHORITY);
   assert.ok(bundle.anchorRefs.includes('brain/emergence/project_brain.md'));
+  assert.ok(bundle.anchorRefs.includes('brain/emergence/slices.md'));
   assert.ok(bundle.truthSources.some((source) => source.relativePath === 'brain/emergence/roadmap.md' && source.source === 'legacy'));
   assert.ok(bundle.truthSources.some((source) => source.relativePath === 'brain/emergence/state.json' && source.authority === DERIVED_AUTHORITY));
-  assert.equal(bundle.managerSummary.current_focus, 'Canonical anchor rollout');
+  assert.equal(bundle.managerSummary.current_focus, 'Canonical markdown focus');
   assert.equal(bundle.managerSummary.active_milestone, 'Brain migration milestone');
-  assert.ok(bundle.managerSummary.next_actions.includes('Move canonical reads'));
+  assert.ok(bundle.managerSummary.next_actions.some((action) => action.includes('Move canonical reads')));
   assert.ok(bundle.managerSummary.blockers.includes('Need review gate before deploy'));
   assert.ok(bundle.drift.some((flag) => flag.id === 'legacy-roadmap'));
   assert.ok(bundle.drift.some((flag) => flag.id === 'legacy-plan'));
-  assert.ok(bundle.drift.some((flag) => flag.id === 'state-focus-divergence'));
   assert.ok(bundle.drift.some((flag) => flag.id === 'state-milestone-divergence'));
   assert.equal(ANCHOR_BY_ID.project_brain.intentWeight, 4);
   assert.equal(ANCHOR_BY_ID.roadmap.intentWeight, 4);
-  assert.equal(ANCHOR_BY_ID.plan.intentWeight, 4);
-  assert.equal(ANCHOR_BY_ID.tasks.intentWeight, 4);
+  assert.equal(ANCHOR_BY_ID.slices.intentWeight, 5);
+  assert.equal(ANCHOR_BY_ID.plan.intentWeight, 1);
+  assert.equal(ANCHOR_BY_ID.tasks.intentWeight, 1);
   assert.equal(ANCHOR_BY_ID.decisions.intentWeight, 3);
   assert.equal(ANCHOR_BY_ID.changelog.intentWeight, 3);
   assert.equal(resolveAnchorIntentWeight(bundle.anchors.roadmap), 4);
@@ -75,8 +78,7 @@ export default async function runAnchorResolverTests() {
   assert.equal(targets.source, 'canonical');
   assert.equal(targets.targets.bridge, 'C:/bridge-canonical');
 
-  fs.rmSync(path.join(rootPath, 'brain', 'emergence', 'plan.md'), { force: true });
-  fs.rmSync(path.join(rootPath, 'projects', 'emergence', 'plan.md'), { force: true });
+  fs.rmSync(path.join(rootPath, 'brain', 'emergence', 'slices.md'), { force: true });
   const missingPlanBundle = buildAnchorBundle({ rootPath });
-  assert.ok(missingPlanBundle.drift.some((flag) => flag.id === 'missing-plan'));
+  assert.ok(missingPlanBundle.drift.some((flag) => flag.id === 'missing-slices'));
 }

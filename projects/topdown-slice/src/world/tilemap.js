@@ -1,3 +1,5 @@
+import { createCellAddress, createTileAddress, GROUND_Z } from './coordinates.js';
+
 export const TILE_SIZE = 32;
 
 export const TILE_TYPES = {
@@ -20,13 +22,56 @@ export function createTilemap() {
       return 'grass';
     })
   );
+  const elevation = Array.from({ length: height }, () => Array.from({ length: width }, () => GROUND_Z));
 
-  return { width, height, tiles };
+  return {
+    width,
+    height,
+    tiles,
+    elevation,
+    bounds: {
+      minZ: GROUND_Z,
+      maxZ: GROUND_Z
+    }
+  };
 }
 
-export function getTileType(map, x, y) {
-  if (x < 0 || y < 0 || x >= map.width || y >= map.height) {
+export function isTileAddressInBounds(map, input, y) {
+  const tile = createTileAddress(input, y);
+  return tile.x >= 0 && tile.y >= 0 && tile.x < map.width && tile.y < map.height;
+}
+
+export function isCellAddressInBounds(map, input, y, z) {
+  const cell = createCellAddress(input, y, z);
+  const minZ = Number(map?.bounds?.minZ ?? GROUND_Z);
+  const maxZ = Number(map?.bounds?.maxZ ?? GROUND_Z);
+
+  return isTileAddressInBounds(map, cell) && cell.z >= minZ && cell.z <= maxZ;
+}
+
+export function getTileType(map, input, y) {
+  const tile = createTileAddress(input, y);
+  if (!isTileAddressInBounds(map, tile)) {
     return null;
   }
-  return map.tiles[y][x];
+
+  return map.tiles[tile.y][tile.x];
+}
+
+export function getTileElevation(map, input, y) {
+  const tile = createTileAddress(input, y);
+  if (!isTileAddressInBounds(map, tile)) {
+    return null;
+  }
+
+  return Number(map.elevation?.[tile.y]?.[tile.x] ?? GROUND_Z);
+}
+
+export function getGroundCellAddress(map, input, y) {
+  const tile = createTileAddress(input, y);
+  if (!isTileAddressInBounds(map, tile)) {
+    return null;
+  }
+
+  return createCellAddress(tile.x, tile.y, getTileElevation(map, tile));
 }

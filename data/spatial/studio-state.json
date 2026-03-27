@@ -1,0 +1,21 @@
+{
+  "handoffs": {
+    "contextToPlanner": null,
+    "history": []
+  },
+  "teamBoard": {
+    "cards": [],
+    "selectedCardId": null,
+    "updatedAt": "2026-03-27T06:21:25.516Z",
+    "summary": {
+      "plan": 0,
+      "active": 0,
+      "complete": 0,
+      "review": 0,
+      "assigned": 0,
+      "handedOff": 0,
+      "binned": 0,
+      "idleWorkers": 2
+    }
+  }
+}

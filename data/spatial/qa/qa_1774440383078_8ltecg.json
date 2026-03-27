@@ -1,0 +1,243 @@
+{
+  "id": "qa_1774440383078_8ltecg",
+  "scenario": "studio-smoke",
+  "mode": "interactive",
+  "trigger": "guardrail",
+  "prompt": "Local Studio boot guardrail",
+  "baseUrl": "http://127.0.0.1:3107",
+  "status": "completed",
+  "verdict": "pass",
+  "createdAt": "2026-03-25T12:06:23.078Z",
+  "finishedAt": "2026-03-25T12:06:25.261Z",
+  "linked": {},
+  "browser": {
+    "executablePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "engine": "chromium"
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T12:06:23.079Z",
+      "finishedAt": "2026-03-25T12:06:23.084Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T12:06:23.084Z",
+      "finishedAt": "2026-03-25T12:06:23.742Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T12:06:23.743Z",
+      "finishedAt": "2026-03-25T12:06:24.460Z",
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T12:06:24.460Z",
+      "finishedAt": "2026-03-25T12:06:24.758Z",
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T12:06:24.759Z",
+      "finishedAt": "2026-03-25T12:06:25.222Z",
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T12:06:25.223Z",
+      "finishedAt": "2026-03-25T12:06:25.251Z",
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T12:06:25.251Z",
+      "finishedAt": "2026-03-25T12:06:25.261Z",
+      "error": null
+    }
+  ],
+  "findings": [],
+  "artifacts": {
+    "screenshots": [
+      {
+        "name": "01-initial.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774440383078_8ltecg\\01-initial.png",
+        "url": "/api/spatial/qa/runs/qa_1774440383078_8ltecg/artifacts/01-initial.png",
+        "label": "Initial ACE render"
+      },
+      {
+        "name": "02-studio-smoke.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774440383078_8ltecg\\02-studio-smoke.png",
+        "url": "/api/spatial/qa/runs/qa_1774440383078_8ltecg/artifacts/02-studio-smoke.png",
+        "label": "Scenario studio-smoke"
+      }
+    ],
+    "domSnapshot": {
+      "name": "dom.html",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774440383078_8ltecg\\dom.html",
+      "url": "/api/spatial/qa/runs/qa_1774440383078_8ltecg/artifacts/dom.html"
+    },
+    "consoleLog": {
+      "name": "console.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774440383078_8ltecg\\console.json",
+      "url": "/api/spatial/qa/runs/qa_1774440383078_8ltecg/artifacts/console.json"
+    },
+    "networkSummary": {
+      "name": "network.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774440383078_8ltecg\\network.json",
+      "url": "/api/spatial/qa/runs/qa_1774440383078_8ltecg/artifacts/network.json"
+    },
+    "runtimeSnapshot": {
+      "name": "runtime.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774440383078_8ltecg\\runtime.json",
+      "url": "/api/spatial/qa/runs/qa_1774440383078_8ltecg/artifacts/runtime.json"
+    },
+    "layoutFindings": {
+      "name": "layout-findings.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774440383078_8ltecg\\layout-findings.json",
+      "url": "/api/spatial/qa/runs/qa_1774440383078_8ltecg/artifacts/layout-findings.json"
+    }
+  },
+  "console": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:3107/favicon.ico",
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace payload bytes: 263",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 9,
+        "columnNumber": 12
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"activePageId\": 25 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"selectedDeskId\": 17 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"selectedTab\": 8 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"scene\": 8 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"camera\": 43 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"zoom\": 1 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"openTraceId\": 28 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"openReportId\": 4 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"openTaskId\": 7 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    }
+  ],
+  "network": [],
+  "error": null
+}

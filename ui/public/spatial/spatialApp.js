@@ -12,7 +12,14 @@ import {
 import { AceConnector } from './aceConnector.js';
 import { MutationEngine } from './mutationEngine.js';
 import { ArchitectureMemory } from './architectureMemory.js';
-import { loadWorkspace, saveWorkspace } from './persistence.js';
+import {
+  loadWorkspace,
+  saveWorkspace,
+  savePages,
+  saveIntentState,
+  saveStudioState,
+  saveArchitectureMemory,
+} from './persistence.js';
 import {
   SCENES,
   STUDIO_ZOOM_THRESHOLD,
@@ -37,7 +44,7 @@ import {
   normalizeTeamBoardState,
 } from './studioData.js';
 
-const { useEffect, useMemo, useRef, useState } = React;
+const { useEffect, useMemo, useRef, useState, useCallback } = React;
 const h = React.createElement;
 
 const STUDIO_SIZE = { width: 1200, height: 800 };
@@ -51,6 +58,9 @@ const STATUS_META = {
   thinking: { badge: 'THINK', tone: 'thinking' },
   'needs review': { badge: 'REVIEW', tone: 'review' },
 };
+const DAVE_DEFAULT_MODEL = 'mistral:latest';
+const DAVE_STATUS_OPTIONS = ['idle', 'queued', 'processing', 'blocked', 'degraded', 'review'];
+const DAVE_RESPONSE_STATUSES = ['live', 'degraded_fallback', 'model_unavailable', 'timed_out', 'model_error'];
 
 const NODE_LAYOUT = {
   outputAnchorX: 229,
@@ -69,13 +79,26 @@ const GRAPH_LAYER_TITLES = {
   system: 'System Graph',
   world: 'World Graph',
 };
+const NODE_ORIGINS = ['user_input', 'system_generated', 'agent_generated', 'agent_edited'];
+const NODE_ORIGIN_DEFAULT = 'system_generated';
+const NODE_ORIGIN_LABELS = {
+  user_input: 'User input',
+  system_generated: 'System',
+  agent_generated: 'Agent suggestion',
+  agent_edited: 'Agent edited',
+};
+const NODE_ORIGIN_FILTER_OPTIONS = [
+  { value: 'all', label: 'All nodes' },
+  ...NODE_ORIGINS.map((origin) => ({ value: origin, label: NODE_ORIGIN_LABELS[origin] || origin })),
+];
 export const RSG_IDLE_DELAY_MS = 1200;
 const RSG_LOW_CONFIDENCE_THRESHOLD = 0.55;
 const RSG_ACTIVITY_LIMIT = 24;
 
-const STUDIO_ROOM = { x: 72, y: 86, width: 1056, height: 642 };
+const STUDIO_ROOM = { x: 56, y: 72, width: 1088, height: 664 };
 const STUDIO_DESK_SIZE = { width: 172, height: 140 };
-const STUDIO_TEAM_BOARD_SIZE = { width: 560, height: 164 };
+const STUDIO_TEAM_BOARD_SIZE = { width: 584, height: 208 };
+const STUDIO_ROOM_FIT_PADDING = 56;
 const DEFAULT_STUDIO_DESK_LAYOUT = {
   'context-manager': { x: 182, y: 252 },
   planner: { x: 970, y: 252 },
@@ -84,14 +107,20 @@ const DEFAULT_STUDIO_DESK_LAYOUT = {
   'cto-architect': { x: 930, y: 422 },
 };
 const DEFAULT_STUDIO_WHITEBOARDS = {
-  teamBoard: { x: 320, y: 96 },
+  teamBoard: { x: 284, y: 88 },
 };
-const DESK_PROPERTY_TABS = [
+const DESK_PROPERTY_BASE_TABS = [
   { id: 'agents', label: 'Agents' },
   { id: 'tasks', label: 'Tasks' },
   { id: 'tools', label: 'Tools (Modules)' },
   { id: 'reports', label: 'Reports (Tests)' },
 ];
+
+function getDeskPropertyTabs(deskId = null) {
+  return deskId === 'qa-lead'
+    ? [{ id: 'qa', label: 'QA' }, ...DESK_PROPERTY_BASE_TABS]
+    : DESK_PROPERTY_BASE_TABS;
+}
 
 function clampDeskPosition(position = {}, room = STUDIO_ROOM, fallbackPosition = DEFAULT_STUDIO_DESK_LAYOUT['context-manager']) {
   return {
@@ -115,6 +144,17 @@ function createDefaultStudioLayout() {
       teamBoard: { ...DEFAULT_STUDIO_WHITEBOARDS.teamBoard },
     },
   };
+}
+
+function resolveStudioRoomZoom(container, room = STUDIO_ROOM, padding = STUDIO_ROOM_FIT_PADDING) {
+  if (!container) return 0.94;
+  const availableWidth = Math.max(320, container.clientWidth - (padding * 2));
+  const availableHeight = Math.max(240, container.clientHeight - (padding * 2));
+  const fittedZoom = Math.min(
+    availableWidth / Math.max(1, room.width),
+    availableHeight / Math.max(1, room.height),
+  );
+  return clamp(Number(fittedZoom.toFixed(2)), MIN_STUDIO_ZOOM, MAX_STUDIO_ZOOM);
 }
 
 function normalizeStudioLayout(layout = {}) {
@@ -208,9 +248,25 @@ const EMPTY_THROUGHPUT_DEBUG = {
   sessions: [],
 };
 
-const EMPTY_QA_DEBUG = {
-  latestRun: null,
-  runs: [],
+const EMPTY_QA_STATE = {
+  structuredReport: null,
+  structuredBusy: false,
+  latestBrowserRun: null,
+  browserRuns: [],
+  browserBusy: false,
+  localGate: {
+    unit: null,
+    studioBoot: null,
+  },
+};
+
+const EMPTY_SIM_LAUNCHER = {
+  project: null,
+  status: 'Checking sim launcher availability...',
+  launchedUrl: '',
+  supportedOrigin: 'http://127.0.0.1:4173/',
+  busy: false,
+  error: '',
 };
 
 const TRACE_HISTORY_LIMIT = 5;
@@ -400,6 +456,16 @@ function classifyNode(node, graph, layer = 'system') {
   };
 }
 
+function resolveNodeOrigin(node) {
+  if (!node) return NODE_ORIGIN_DEFAULT;
+  const metadata = node.metadata || {};
+  if (NODE_ORIGINS.includes(metadata.origin)) return metadata.origin;
+  if (metadata.agentId === 'context-manager') return 'user_input';
+  if (metadata.agentId) return 'agent_generated';
+  if (metadata.rsg) return 'agent_generated';
+  return NODE_ORIGIN_DEFAULT;
+}
+
 function mergeComments(saved) {
   return { ...createInitialComments(), ...(saved || {}) };
 }
@@ -460,6 +526,15 @@ function isStudioViewportOutOfRange(viewport) {
   if (![viewport.x, viewport.y, viewport.zoom].every((value) => Number.isFinite(value))) return true;
   if (viewport.zoom < MIN_STUDIO_ZOOM || viewport.zoom > MAX_STUDIO_ZOOM) return true;
   return Math.abs(viewport.x) > STUDIO_SIZE.width * 2 || Math.abs(viewport.y) > STUDIO_SIZE.height * 2;
+}
+
+function summarizeGateStatus(entry = null) {
+  return entry?.verdict || entry?.status || 'pending';
+}
+
+function summarizeGateFailures(entry = null) {
+  if (!entry) return 0;
+  return Number(entry.failedCount || entry.findingCount || entry.consoleErrorCount || entry.failures?.length || 0);
 }
 
 function renderDeskSection(section, helpers = {}) {
@@ -561,6 +636,117 @@ function renderDeskSection(section, helpers = {}) {
       ))),
     );
   }
+  if (section.kind === 'qa-summary') {
+    const latestRun = section.latestBrowserRun || null;
+    return h('div', { key: section.id, className: 'inspector-block panel-card review-panel' },
+      h('div', { className: 'inspector-label' }, section.label),
+      section.structuredSummary || latestRun || section.localGate?.unit || section.localGate?.studioBoot
+        ? h(React.Fragment, null,
+            h('div', { className: 'signal-summary' }, section.structuredStatus === 'running' ? 'Structured QA suite is running now.' : (section.structuredSummary || 'No structured QA summary recorded.')),
+            h('div', { className: 'signal-meta muted' }, `Scorecards: ${section.scorecardCount || 0} across ${section.scorecardDeskCount || 0} desk${Number(section.scorecardDeskCount || 0) === 1 ? '' : 's'}`),
+            latestRun ? h('div', { className: 'signal-meta muted' }, `Browser: ${latestRun.scenario || 'layout-pass'} | ${latestRun.verdict || latestRun.status || 'pending'} | findings ${latestRun.findingCount || 0}`) : null,
+            section.localGate?.unit ? h('div', { className: 'signal-meta muted' }, `Unit gate: ${summarizeGateStatus(section.localGate.unit)} | failures ${summarizeGateFailures(section.localGate.unit)}`) : null,
+            section.localGate?.studioBoot ? h('div', { className: 'signal-meta muted' }, `Studio boot: ${summarizeGateStatus(section.localGate.studioBoot)} | findings ${section.localGate.studioBoot.findingCount || 0}`) : null,
+          )
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No QA summary recorded yet.'),
+    );
+  }
+  if (section.kind === 'qa-structured') {
+    const report = section.report || null;
+    return h('div', { key: section.id, className: 'inspector-block panel-card review-panel' },
+      h('div', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.busy ? 'Structured QA suite is running...' : (report?.summary || section.emptyState || 'No structured QA report loaded yet.')),
+        ),
+        helpers.runStructuredQA ? h('button', { className: 'mini', type: 'button', disabled: section.busy, onClick: helpers.runStructuredQA }, section.busy ? 'Running...' : 'Run Structured QA') : null,
+      ),
+      report
+        ? h(React.Fragment, null,
+            h('div', { className: 'signal-meta muted' }, `Status: ${report.status || 'unknown'} | Desks ${(report.desks || []).length} | Scorecards ${section.scorecardCount || 0}`),
+            (report.failures || []).length
+              ? h('ul', { className: 'signal-list' }, report.failures.slice(0, 4).map((failure, index) => h('li', { key: `${section.id}-failure-${index}` }, `${failure.desk}: ${failure.test} | ${failure.reason}`)))
+              : h('div', { className: 'signal-meta muted' }, 'No structured QA failures are recorded in the latest suite.'),
+          )
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No structured QA report loaded yet.'),
+    );
+  }
+  if (section.kind === 'qa-scorecards') {
+    return h('div', { key: section.id, className: 'inspector-block panel-card' },
+      h('div', { className: 'inspector-label' }, section.label),
+      section.suiteSummary ? h('div', { className: 'signal-summary' }, section.suiteSummary) : null,
+      (section.cards || []).length
+        ? h('div', { className: 'desk-panel-list' }, section.cards.slice(0, 6).map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item' },
+            h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
+            h('div', { className: 'signal-meta muted' }, `Status: ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+            card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
+          )))
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No structured QA scorecards recorded yet.'),
+    );
+  }
+  if (section.kind === 'qa-browser') {
+    const run = section.latestRun || null;
+    return h('div', { key: section.id, className: 'inspector-block panel-card review-panel browser-pass-panel' },
+      h('div', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.busy ? 'Browser QA is running...' : (run ? `${run.scenario || 'layout-pass'} | ${run.verdict || run.status || 'pending'}` : (section.emptyState || 'No browser pass has been recorded yet.'))),
+        ),
+        helpers.runBrowserPass ? h('button', { className: 'mini', type: 'button', disabled: section.busy, onClick: helpers.runBrowserPass }, section.busy ? 'Running...' : 'Run Browser Pass') : null,
+      ),
+      run
+        ? h(React.Fragment, null,
+            h('div', { className: 'signal-meta muted' }, `Trigger: ${run.trigger || 'manual'} | Findings ${run.findingCount || 0}`),
+            run.primaryScreenshot?.url ? h('img', {
+              className: 'qa-screenshot-preview',
+              alt: 'Latest QA screenshot',
+              src: run.primaryScreenshot.url,
+            }) : null,
+            (run.stepSummary || []).length
+              ? h('div', { className: 'qa-step-list' }, run.stepSummary.map((step) => h('div', { key: step.id, className: 'qa-step-row muted' }, `${step.label}: ${step.verdict || step.status}`)))
+              : null,
+          )
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No browser pass has been recorded yet.'),
+    );
+  }
+  if (section.kind === 'qa-local-gates') {
+    const unitGate = section.gate?.unit || null;
+    const studioBootGate = section.gate?.studioBoot || null;
+    return h('div', { key: section.id, className: 'inspector-block panel-card', 'data-qa': 'qa-local-gates-section' },
+      h('div', { className: 'inspector-label' }, section.label),
+      h('div', { className: 'signal-summary' }, section.summary || section.emptyState || 'No local UI gate results recorded yet.'),
+      unitGate ? h('div', { className: 'desk-panel-item' },
+        h('div', { className: 'signal-summary' }, 'Fast Unit Gate'),
+        h('div', { className: 'signal-meta muted' }, `${unitGate.status || 'pending'} | ${unitGate.passedCount || 0}/${unitGate.totalChecks || 0} checks passed`),
+        (unitGate.failures || []).length
+          ? h('ul', { className: 'signal-list compact' }, unitGate.failures.slice(0, 3).map((failure) => h('li', { key: failure.name }, `${failure.name}: ${failure.error}`)))
+          : h('div', { className: 'signal-meta muted' }, 'No failing fast UI checks in the latest run.'),
+      ) : null,
+      studioBootGate ? h('div', { className: 'desk-panel-item' },
+        h('div', { className: 'signal-summary' }, 'Studio Boot Guardrail'),
+        h('div', { className: 'signal-meta muted' }, `${studioBootGate.verdict || studioBootGate.status || 'pending'} | console ${studioBootGate.consoleErrorCount || 0} | network ${studioBootGate.networkFailureCount || 0}`),
+        (studioBootGate.failedSteps || []).length
+          ? h('ul', { className: 'signal-list compact' }, studioBootGate.failedSteps.map((step) => h('li', { key: step.id }, `${step.label}: ${step.verdict}`)))
+          : h('div', { className: 'signal-meta muted' }, 'No failing studio boot steps in the latest guardrail run.'),
+      ) : null,
+      !unitGate && !studioBootGate ? h('div', { className: 'signal-empty muted' }, section.emptyState || 'No local UI gate results recorded yet.') : null,
+    );
+  }
+  if (section.kind === 'qa-run-history') {
+    return h('div', { key: section.id, className: 'inspector-block panel-card' },
+      h('div', { className: 'inspector-label' }, section.label),
+      (section.items || []).length
+        ? h('div', { className: 'desk-panel-list' }, section.items.map((item, index) => h('div', { key: item.id || `${section.id}-${index}`, className: 'desk-panel-item' },
+            h('div', { className: 'signal-summary' }, item.summary || 'QA run'),
+            item.detail ? h('div', { className: 'signal-meta muted' }, item.detail) : null,
+            item.at ? h('div', { className: 'signal-meta muted' }, formatTimestamp(item.at)) : null,
+            item.runId && helpers.openQARun ? h('div', { className: 'button-row' },
+              h('button', { className: 'mini', type: 'button', onClick: () => helpers.openQARun(item.runId) }, 'Open run'),
+            ) : null,
+          )))
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No browser QA runs recorded yet.'),
+    );
+  }
   if (section.kind === 'history' || section.kind === 'actions') {
     return h('div', { key: section.id, className: 'inspector-block panel-card' },
       h('div', { className: 'inspector-label' }, section.label),
@@ -574,6 +760,50 @@ function renderDeskSection(section, helpers = {}) {
     );
   }
   return null;
+}
+
+function renderSimLaunchOverlay({
+  project = null,
+  status = 'Sim launcher unavailable.',
+  launchedUrl = '',
+  supportedOrigin = '',
+  busy = false,
+  error = '',
+  onLaunch = null,
+} = {}) {
+  const resolvedOrigin = supportedOrigin || project?.supportedOrigin || '';
+  const displayName = project?.name || 'topdown-slice';
+  const launchable = Boolean(project?.launchable);
+  const buttonLabel = busy ? 'Launching...' : (launchedUrl ? 'Relaunch / Reuse' : 'Launch Sim');
+  return h('section', {
+    className: 'sim-launch-overlay panel-card',
+    'data-qa': 'sim-launch-overlay',
+  },
+  h('div', { className: 'sim-launch-header' },
+    h('div', null,
+      h('div', { className: 'inspector-label' }, 'Sim Launch'),
+      h('div', { className: 'signal-summary' }, displayName),
+    ),
+    h('button', {
+      className: 'mini',
+      type: 'button',
+      disabled: busy || !launchable || !onLaunch,
+      onClick: onLaunch || undefined,
+      'data-qa': 'sim-launch-button',
+    }, buttonLabel),
+  ),
+  resolvedOrigin ? h('div', { className: 'signal-meta muted', 'data-qa': 'sim-launch-supported-origin' }, `Supported URL: ${resolvedOrigin}`) : null,
+  h('div', { className: 'signal-meta muted', 'data-qa': 'sim-launch-status' }, status),
+  launchedUrl ? h('a', {
+    className: 'signal-meta muted sim-launch-link',
+    href: launchedUrl,
+    target: '_blank',
+    rel: 'noreferrer noopener',
+    'data-qa': 'sim-launch-url',
+  }, `Launched URL: ${launchedUrl}`) : null,
+  error ? h('div', { className: 'signal-meta sim-launch-error', 'data-qa': 'sim-launch-error' }, error) : null,
+  !launchable && !busy ? h('div', { className: 'signal-meta muted' }, 'topdown-slice launch is currently unavailable in this workspace.') : null,
+  );
 }
 
 function summarizeHistoryEntry(entry) {
@@ -766,6 +996,7 @@ function SpatialNotebook() {
   const [studioViewport, setStudioViewport] = useState(createDefaultStudioViewport());
   const [scene, setScene] = useState(SCENES.CANVAS);
   const [status, setStatus] = useState('ready');
+  const [originFilter, setOriginFilter] = useState('all');
   const [preview, setPreview] = useState(null);
   const [pointerWorld, setPointerWorld] = useState(null);
   const [simulating, setSimulating] = useState(false);
@@ -791,18 +1022,22 @@ function SpatialNotebook() {
   const [rsgMeta, setRsgMeta] = useState(() => createDefaultRsgState());
   const [pages, setPages] = useState([createDefaultPage()]);
   const [activePageId, setActivePageId] = useState(null);
+  const [openTraceId, setOpenTraceId] = useState(null);
+  const [openReportId, setOpenReportId] = useState(null);
+  const [openTaskId, setOpenTaskId] = useState(null);
+  const [architectureDirty, setArchitectureDirty] = useState(0);
   const [handoffs, setHandoffs] = useState(EMPTY_HANDOFFS);
   const [teamBoard, setTeamBoard] = useState(EMPTY_TEAM_BOARD);
   const [orchestratorState, setOrchestratorState] = useState(EMPTY_ORCHESTRATOR_STATE);
   const [selfUpgrade, setSelfUpgrade] = useState(EMPTY_SELF_UPGRADE);
   const [serverHealth, setServerHealth] = useState(EMPTY_SERVER_HEALTH);
   const [throughputDebug, setThroughputDebug] = useState(EMPTY_THROUGHPUT_DEBUG);
-  const [qaDebug, setQaDebug] = useState(EMPTY_QA_DEBUG);
+  const [qaState, setQaState] = useState(EMPTY_QA_STATE);
   const [qaRunDetail, setQaRunDetail] = useState(null);
   const [qaScenario, setQaScenario] = useState('layout-pass');
-  const [qaBusy, setQaBusy] = useState(false);
   const [throughputPrompt, setThroughputPrompt] = useState('I think we should add a desk to the studio for a QA agent');
   const [throughputBusy, setThroughputBusy] = useState(false);
+  const [simLauncher, setSimLauncher] = useState(EMPTY_SIM_LAUNCHER);
   const [selfUpgradeTaskId, setSelfUpgradeTaskId] = useState('');
   const [selfUpgradeBusy, setSelfUpgradeBusy] = useState(false);
   const [teamBoardBusy, setTeamBoardBusy] = useState(false);
@@ -819,6 +1054,27 @@ function SpatialNotebook() {
   const [deskPanelBusy, setDeskPanelBusy] = useState(false);
   const [deskPanelActionBusy, setDeskPanelActionBusy] = useState(false);
   const [deskPanelData, setDeskPanelData] = useState(null);
+  const [daveLedger, setDaveLedger] = useState({ entries: [], stats: {} });
+  const [daveLedgerLoading, setDaveLedgerLoading] = useState(false);
+  const [daveLedgerError, setDaveLedgerError] = useState(null);
+  const [daveLedgerDraft, setDaveLedgerDraft] = useState({
+    taskPrompt: '',
+    generatedOutput: '',
+    responseStatus: 'live',
+    qaOutcome: 'unknown',
+    qaReason: '',
+    datasetReady: false,
+  });
+  const [daveModelOptions, setDaveModelOptions] = useState([]);
+  const [davePropertiesForm, setDavePropertiesForm] = useState({
+    name: 'Dave',
+    role: 'Practical learning companion',
+    model: DAVE_DEFAULT_MODEL,
+    status: 'idle',
+    responseStatus: 'idle',
+    backend: 'ollama',
+  });
+  const [daveFixDrafts, setDaveFixDrafts] = useState({});
   const [ctoEditTargetDeskId, setCtoEditTargetDeskId] = useState('planner');
   const [deskChatDraft, setDeskChatDraft] = useState('');
   const [deskChatBusy, setDeskChatBusy] = useState(false);
@@ -836,6 +1092,10 @@ function SpatialNotebook() {
   const studioElementDrag = useRef(null);
   const hasLoadedWorkspace = useRef(false);
   const autosaveTimer = useRef(null);
+  const pagesSaveTimer = useRef(null);
+  const intentSaveTimer = useRef(null);
+  const studioStateTimer = useRef(null);
+  const architectureSaveTimer = useRef(null);
   const lastCanvasViewport = useRef(createDefaultCanvasViewport());
   const lastStudioViewport = useRef(createDefaultStudioViewport());
   const lastScene = useRef(SCENES.CANVAS);
@@ -892,13 +1152,44 @@ function SpatialNotebook() {
     },
   }), [systemGraph, graphBundle, sketches, annotations, agentComments, intentState, pages, notebookState.activePageId, rsgState, scene, selectedAgentId, activeGraphLayer, handoffs, teamBoard, orchestratorState, selfUpgrade, studioLayout, canvasViewport, studioViewport, sidebarCollapsed, sidebarWidth, memory]);
 
+  const lightweightWorkspacePayload = useMemo(() => ({
+    activePageId,
+    selectedDeskId: selectedAgentId,
+    selectedTab: deskPanelTab,
+    scene,
+    camera: studioViewport,
+    zoom: canvasViewport?.zoom,
+    openTraceId,
+    openReportId,
+    openTaskId,
+  }), [activePageId, selectedAgentId, deskPanelTab, scene, studioViewport, canvasViewport, openTraceId, openReportId, openTaskId]);
+
+  const slimIntentStatePayload = useMemo(() => {
+    const source = intentState.contextReport || intentState.latest || null;
+    return {
+      currentIntentId: source?.currentIntentId || source?.id || null,
+      summary: source?.summary || '',
+      status: source?.status || 'idle',
+    };
+  }, [intentState]);
+
+  const qaStateForSnapshots = useMemo(() => {
+    if (!qaRunDetail) return qaState;
+    return {
+      ...qaState,
+      latestBrowserRun: qaRunDetail,
+      browserRuns: [qaRunDetail, ...(qaState.browserRuns || []).filter((entry) => entry?.id !== qaRunDetail.id)],
+    };
+  }, [qaState, qaRunDetail]);
+
   const agentSnapshots = useMemo(() => buildAgentSnapshots({
     workspace: workspacePayload,
     dashboardState,
     runs: recentRuns,
     agentComments,
     recentHistory,
-  }), [workspacePayload, dashboardState, recentRuns, agentComments, recentHistory]);
+    qaState: qaStateForSnapshots,
+  }), [workspacePayload, dashboardState, recentRuns, agentComments, recentHistory, qaStateForSnapshots]);
 
   const selectedAgent = agentSnapshots.find((agent) => agent.id === selectedAgentId) || agentSnapshots[0] || null;
   const latestRun = recentRuns[0] || null;
@@ -938,9 +1229,206 @@ function SpatialNotebook() {
       setDeskPanelTab('agents');
       if (deskId === 'cto-architect') loadDeskPanel(ctoEditTargetDeskId);
     } else {
+      setDeskPanelTab(deskId === 'qa-lead' ? 'qa' : 'agents');
       loadDeskPanel(deskId);
     }
   }
+
+  const computeDaveContextAlignment = useCallback(() => {
+    const summary = (workspacePayload.intentState?.summary || '').toLowerCase();
+    const anchors = workspacePayload.studio?.handoffs?.contextToPlanner?.anchorRefs || [];
+    const keywords = ['context', 'memory', 'ledger', 'learning', 'intent'];
+    const matchedKeywords = keywords.filter((keyword) => summary.includes(keyword)).length;
+    const anchorScore = Math.min(1, anchors.length / 4);
+    const keywordScore = Math.min(0.4, matchedKeywords * 0.1);
+    const score = Math.min(1, anchorScore + keywordScore);
+    const reasonParts = [];
+    if (anchors.length) reasonParts.push(`${anchors.length} anchors referenced`);
+    if (matchedKeywords) reasonParts.push(`${matchedKeywords} keywords matched`);
+    const reason = reasonParts.join(', ') || 'No anchors or keywords matched yet';
+    return { score: Math.round(score * 100) / 100, reason };
+  }, [workspacePayload]);
+  const daveContextAlignment = useMemo(() => computeDaveContextAlignment(), [computeDaveContextAlignment]);
+
+  const loadModelOptions = useCallback(async () => {
+    try {
+      const payload = await ace.listModelOptions();
+      setDaveModelOptions(Array.isArray(payload.models) ? payload.models : []);
+    } catch (error) {
+      console.debug('[Dave] model options load failed', error);
+    }
+  }, [ace]);
+
+  useEffect(() => {
+    loadModelOptions();
+  }, [loadModelOptions]);
+
+  const loadSimLauncher = useCallback(async () => {
+    try {
+      const payload = await ace.getProjects();
+      const project = (payload.projects || []).find((entry) => entry?.key === 'topdown-slice') || null;
+      setSimLauncher((current) => ({
+        ...current,
+        project,
+        busy: false,
+        error: '',
+        supportedOrigin: project?.supportedOrigin || current.supportedOrigin,
+        status: project
+          ? (project.launchable
+            ? 'Ready to launch from the canvas layer.'
+            : 'Sim launch is listed but not launchable.')
+          : 'topdown-slice is not registered in the project list.',
+      }));
+    } catch (error) {
+      setSimLauncher((current) => ({
+        ...current,
+        project: null,
+        busy: false,
+        error: '',
+        status: `Sim launcher unavailable: ${error.message}`,
+      }));
+    }
+  }, [ace]);
+
+  useEffect(() => {
+    loadSimLauncher();
+  }, [loadSimLauncher]);
+
+  const runSimLaunch = useCallback(async () => {
+    const project = simLauncher.project;
+    if (!project?.launchable) {
+      const fallbackStatus = project
+        ? 'topdown-slice is registered but not launchable.'
+        : 'topdown-slice is not available to launch yet.';
+      setSimLauncher((current) => ({
+        ...current,
+        error: '',
+        status: fallbackStatus,
+      }));
+      setStatus(fallbackStatus);
+      return;
+    }
+    setSimLauncher((current) => ({
+      ...current,
+      busy: true,
+      error: '',
+      status: `Launching ${project.name || project.key} from the canvas layer...`,
+    }));
+    try {
+      const payload = await ace.runProject(project.key);
+      const nextUrl = payload.url || '';
+      const nextSupportedOrigin = payload.supportedOrigin || project.supportedOrigin || simLauncher.supportedOrigin;
+      const nextStatus = payload.reused
+        ? `${project.name || project.key} is already running locally.`
+        : `${project.name || project.key} launched successfully.`;
+      setSimLauncher((current) => ({
+        ...current,
+        busy: false,
+        error: '',
+        launchedUrl: nextUrl,
+        supportedOrigin: nextSupportedOrigin,
+        status: nextStatus,
+      }));
+      setStatus(nextStatus);
+    } catch (error) {
+      const message = `Sim launch failed: ${error.message}`;
+      setSimLauncher((current) => ({
+        ...current,
+        busy: false,
+        error: message,
+        status: message,
+      }));
+      setStatus(message);
+    }
+  }, [ace, setStatus, simLauncher.project, simLauncher.supportedOrigin]);
+
+  const loadDaveLedger = useCallback(async () => {
+    setDaveLedgerLoading(true);
+    setDaveLedgerError(null);
+    try {
+      const payload = await ace.getAgentLedger('dave');
+      setDaveLedger({
+        entries: Array.isArray(payload.entries) ? payload.entries : [],
+        stats: payload.stats || {},
+      });
+    } catch (error) {
+      setDaveLedgerError(error.message);
+    } finally {
+      setDaveLedgerLoading(false);
+    }
+  }, [ace]);
+
+  useEffect(() => {
+    if (selectedAgentId === 'dave') loadDaveLedger();
+  }, [selectedAgentId, loadDaveLedger]);
+
+  const saveDaveProperties = useCallback(async () => {
+    setStatus('Saving Dave properties...');
+    try {
+      await ace.updateAgentProperties('dave', davePropertiesForm);
+      setStatus('Dave properties saved.');
+    } catch (error) {
+      setStatus(error.message || 'Failed to save Dave properties');
+    }
+  }, [ace, davePropertiesForm]);
+
+  useEffect(() => {
+    if (selectedAgentId !== 'dave' || !selectedAgent) return;
+    const workerState = selectedAgent.workerState || {};
+    setDavePropertiesForm((previous) => ({
+      ...previous,
+      name: workerState.name || selectedAgent.name || 'Dave',
+      role: workerState.role || selectedAgent.role || 'Practical learning companion',
+      model: workerState.model || previous.model || DAVE_DEFAULT_MODEL,
+      status: workerState.status || selectedAgent.status || 'idle',
+      responseStatus: workerState.responseStatus || previous.responseStatus || 'idle',
+      backend: workerState.backend || previous.backend || 'ollama',
+    }));
+  }, [selectedAgentId, selectedAgent]);
+
+  const submitDaveLedgerEntry = useCallback(async () => {
+    setDaveLedgerLoading(true);
+    try {
+      await ace.createAgentLedgerEntry('dave', {
+        ...daveLedgerDraft,
+        backend: davePropertiesForm.backend,
+        model: davePropertiesForm.model,
+        contextAlignmentScore: daveContextAlignment.score,
+        contextAlignmentReason: daveContextAlignment.reason,
+      });
+      setStatus('Dave ledger entry saved');
+      setDaveLedgerDraft({
+        taskPrompt: '',
+        generatedOutput: '',
+        responseStatus: 'live',
+        qaOutcome: 'unknown',
+        qaReason: '',
+        datasetReady: false,
+      });
+      await loadDaveLedger();
+    } catch (error) {
+      setStatus(error.message || 'Failed to save ledger entry');
+    } finally {
+      setDaveLedgerLoading(false);
+    }
+  }, [ace, daveContextAlignment, daveLedgerDraft, davePropertiesForm, loadDaveLedger]);
+
+  const saveDaveLedgerFix = useCallback(async (entryId) => {
+    setDaveLedgerLoading(true);
+    try {
+      const draft = daveFixDrafts[entryId] || {};
+      await ace.updateAgentLedgerEntry('dave', entryId, {
+        approvedFix: draft.text || '',
+        datasetReady: Boolean(draft.datasetReady),
+      });
+      setStatus('Learning ledger entry updated');
+      await loadDaveLedger();
+    } catch (error) {
+      setStatus(error.message || 'Failed to update ledger entry');
+    } finally {
+      setDaveLedgerLoading(false);
+    }
+  }, [ace, daveFixDrafts, loadDaveLedger]);
 
   async function runDeskPanelAction(action, payload = {}, targetDeskId = null) {
     const deskId = targetDeskId || deskPanelState.deskId;
@@ -984,6 +1472,7 @@ function SpatialNotebook() {
         ...withoutCurrent,
       ].slice(0, TRACE_HISTORY_LIMIT);
     });
+    setOpenTraceId(trace.trace_id);
     return trace;
   }
 
@@ -1002,7 +1491,7 @@ function SpatialNotebook() {
   function centerStudioOnRoom(nextStatus = null) {
     const container = studioRef.current;
     if (!container) return;
-    const zoom = 0.94;
+    const zoom = resolveStudioRoomZoom(container, studioRoom);
     setStudioViewport({
       zoom,
       x: container.clientWidth / 2 - (studioRoom.x + studioRoom.width / 2) * zoom,
@@ -1051,6 +1540,7 @@ function SpatialNotebook() {
       setStudioViewport(storedStudio.studioViewport || createDefaultStudioViewport());
       setScene(storedStudio.scene || SCENES.CANVAS);
       setSelectedAgentId(storedStudio.selectedAgentId || 'context-manager');
+      setDeskPanelTab(storedStudio.selectedTab || workspace.selectedTab || 'agents');
       const notebook = normalizeNotebookState({
         graph: graphs.system || buildStarterGraph(),
         graphs,
@@ -1089,6 +1579,9 @@ function SpatialNotebook() {
         byNode: storedIntentState.byNode || {},
         reports: Array.isArray(storedIntentState.reports) ? storedIntentState.reports : [],
       });
+      setOpenTraceId(workspace.openTraceId || storedStudio.ui?.openTraceId || null);
+      setOpenReportId(workspace.openReportId || storedStudio.ui?.openReportId || null);
+      setOpenTaskId(workspace.openTaskId || storedStudio.ui?.openTaskId || null);
       setRsgMeta(workspace.rsg || createDefaultRsgState());
       setContextDraft(contextNode?.content || '');
       setScanPreview(storedIntentState.contextReport || null);
@@ -1103,6 +1596,7 @@ function SpatialNotebook() {
 
   useEffect(() => {
     memory.syncFromGraph(graphBundle);
+    setArchitectureDirty((value) => value + 1);
     drawCanvasScene(
       canvasRef.current,
       graph,
@@ -1273,15 +1767,59 @@ function SpatialNotebook() {
   ]);
 
   useEffect(() => {
+    setOpenReportId(reviewPanelOpen ? 'problem-report' : null);
+  }, [reviewPanelOpen]);
+
+  useEffect(() => {
+    setOpenTraceId(traceLog?.[0]?.trace_id || null);
+  }, [traceLog]);
+
+  useEffect(() => {
     if (!hasLoadedWorkspace.current) return undefined;
     clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
-      saveWorkspace(workspacePayload)
+      saveWorkspace(lightweightWorkspacePayload)
         .then(() => setStatus(`autosaved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`))
         .catch((error) => setStatus(`save failed: ${error.message}`));
     }, 700);
     return () => clearTimeout(autosaveTimer.current);
-  }, [workspacePayload]);
+  }, [lightweightWorkspacePayload]);
+
+  useEffect(() => {
+    if (!hasLoadedWorkspace.current) return undefined;
+    clearTimeout(pagesSaveTimer.current);
+    pagesSaveTimer.current = setTimeout(() => {
+      savePages({ pages, activePageId }).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(pagesSaveTimer.current);
+  }, [pages, activePageId]);
+
+  useEffect(() => {
+    if (!hasLoadedWorkspace.current) return undefined;
+    clearTimeout(intentSaveTimer.current);
+    intentSaveTimer.current = setTimeout(() => {
+      saveIntentState({ intentState: slimIntentStatePayload }).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(intentSaveTimer.current);
+  }, [slimIntentStatePayload]);
+
+  useEffect(() => {
+    if (!hasLoadedWorkspace.current) return undefined;
+    clearTimeout(studioStateTimer.current);
+    studioStateTimer.current = setTimeout(() => {
+      saveStudioState({ handoffs, teamBoard }).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(studioStateTimer.current);
+  }, [handoffs, teamBoard]);
+
+  useEffect(() => {
+    if (!hasLoadedWorkspace.current) return undefined;
+    clearTimeout(architectureSaveTimer.current);
+    architectureSaveTimer.current = setTimeout(() => {
+      saveArchitectureMemory({ architectureMemory: memory.model }).catch(() => {});
+    }, 1800);
+    return () => clearTimeout(architectureSaveTimer.current);
+  }, [architectureDirty]);
 
   useEffect(() => {
     if (!hasLoadedWorkspace.current) return;
@@ -1358,14 +1896,14 @@ function SpatialNotebook() {
   useInterval(refreshFeeds, 15000);
 
   useEffect(() => {
-    const latestRunId = qaDebug.latestRun?.id || qaDebug.runs?.[0]?.id || null;
+    const latestRunId = qaState.latestBrowserRun?.id || qaState.browserRuns?.[0]?.id || null;
     if (!latestRunId) {
       setQaRunDetail(null);
       return;
     }
     if (qaRunDetail?.id === latestRunId) return;
     loadQARunDetails(latestRunId);
-  }, [qaDebug.latestRun?.id, qaDebug.runs, qaRunDetail?.id]);
+  }, [qaState.latestBrowserRun?.id, qaState.browserRuns, qaRunDetail?.id]);
 
   async function runSelfUpgradePreflight() {
     const taskId = String(selfUpgradeTaskId || '').trim();
@@ -1443,6 +1981,7 @@ function SpatialNotebook() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'unable to open task folder');
       setStatus(`opened task folder ${taskId}`);
+      setOpenTaskId(taskId);
     } catch (error) {
       setStatus(`open task folder failed: ${error.message}`);
     }
@@ -1507,8 +2046,42 @@ function SpatialNotebook() {
     }
   }
 
+  async function runStructuredQA() {
+    setQaState((current) => ({
+      ...current,
+      structuredBusy: true,
+    }));
+    try {
+      const payload = await ace.runStructuredQA();
+      if (payload.runtime) {
+        applyRuntimePayload(payload.runtime);
+      } else {
+        setQaState((current) => ({
+          ...current,
+          structuredReport: payload,
+          structuredBusy: false,
+        }));
+      }
+      setSelectedAgentId('qa-lead');
+      setScene(SCENES.STUDIO);
+      setStatus(payload.summary || `structured QA ${payload.status || 'completed'}`);
+      if (deskPanelState.open && deskPanelState.deskId === 'qa-lead') {
+        loadDeskPanel('qa-lead');
+      }
+    } catch (error) {
+      setQaState((current) => ({
+        ...current,
+        structuredBusy: false,
+      }));
+      setStatus(`structured QA failed: ${error.message}`);
+    }
+  }
+
   async function runBrowserPass() {
-    setQaBusy(true);
+    setQaState((current) => ({
+      ...current,
+      browserBusy: true,
+    }));
     try {
       const payload = await ace.runBrowserPass({
         scenario: qaScenario,
@@ -1519,15 +2092,21 @@ function SpatialNotebook() {
         applyRuntimePayload(payload.runtime);
       }
       setQaRunDetail(payload.run || null);
-      setSelectedAgentId('cto-architect');
+      setSelectedAgentId('qa-lead');
       setScene(SCENES.STUDIO);
       setStatus(payload.run?.verdict === 'pass'
         ? `browser pass ${payload.run.scenario} passed`
         : `browser pass ${payload.run?.scenario || qaScenario} ${payload.run?.verdict || 'completed'}`);
+      if (deskPanelState.open && deskPanelState.deskId === 'qa-lead') {
+        loadDeskPanel('qa-lead');
+      }
     } catch (error) {
       setStatus(`browser pass failed: ${error.message}`);
     } finally {
-      setQaBusy(false);
+      setQaState((current) => ({
+        ...current,
+        browserBusy: false,
+      }));
     }
   }
 
@@ -1567,6 +2146,7 @@ function SpatialNotebook() {
       position,
       metadata: {
         ...metadata,
+        origin: metadata.origin || 'user_input',
         graphLayer: activeGraphLayer,
       },
     });
@@ -1582,7 +2162,7 @@ function SpatialNotebook() {
     if (!content.trim()) return null;
     const existing = findContextNode();
     if (existing) {
-      graphEngine.updateNode(existing.id, { content, type: 'text', metadata: { ...existing.metadata, role: 'context', agentId: 'context-manager' } });
+      graphEngine.updateNode(existing.id, { content, type: 'text', metadata: { ...existing.metadata, role: 'context', agentId: 'context-manager', origin: 'user_input' } });
       setGraph({ ...graphEngine.getState() });
       setSelectedId(existing.id);
       return existing;
@@ -1595,7 +2175,7 @@ function SpatialNotebook() {
       type: 'text',
       content,
       position,
-      metadata: { role: 'context', agentId: 'context-manager' },
+      metadata: { role: 'context', agentId: 'context-manager', origin: 'user_input' },
     });
     graphEngine.addNode(node);
     setGraph({ ...graphEngine.getState() });
@@ -1625,6 +2205,7 @@ function SpatialNotebook() {
     orchestrator: workspace.studio?.orchestrator || EMPTY_ORCHESTRATOR_STATE,
     selfUpgrade: workspace.studio?.selfUpgrade || EMPTY_SELF_UPGRADE,
     rsg: workspace.rsg || createDefaultRsgState(),
+    qaState,
   });
 
   const syncGraphState = () => setGraph({ ...graphEngine.getState() });
@@ -1688,14 +2269,25 @@ function SpatialNotebook() {
 
   const handleNodeContentChange = (node, content) => {
     const patch = { content };
-    if (isLinkedDraftNode(node) && content !== node.content) {
-      patch.metadata = {
-        ...(node.metadata || {}),
-        rsg: {
-          ...(node.metadata?.rsg || {}),
+    const contentChanged = content !== node.content;
+    const nextMetadata = { ...(node.metadata || {}) };
+    let metadataChanged = false;
+    if (contentChanged) {
+      if (isLinkedDraftNode(node)) {
+        nextMetadata.rsg = {
+          ...(nextMetadata.rsg || {}),
           state: 'adopted',
-        },
-      };
+        };
+        metadataChanged = true;
+      }
+      const currentOrigin = nextMetadata.origin || resolveNodeOrigin(node);
+      if (['agent_generated', 'system_generated'].includes(currentOrigin) && currentOrigin !== 'agent_edited') {
+        nextMetadata.origin = 'agent_edited';
+        metadataChanged = true;
+      }
+    }
+    if (metadataChanged) {
+      patch.metadata = nextMetadata;
     }
     graphEngine.updateNode(node.id, patch);
     syncGraphState();
@@ -1714,6 +2306,11 @@ function SpatialNotebook() {
       ...intentState,
       latest: report,
       contextReport: report,
+    };
+    const nextSlimIntentStatePayload = {
+      currentIntentId: report?.currentIntentId || report?.id || null,
+      summary: report?.summary || '',
+      status: report?.status || 'idle',
     };
     const previousHandoff = handoffs.contextToPlanner;
     const nextHandoff = createPlannerHandoff(report, dashboardState, previousHandoff);
@@ -1742,25 +2339,31 @@ function SpatialNotebook() {
     setPages(nextPages);
     setActivePageId(notebook.activePageId);
     const workspace = await saveWorkspace({
-      ...workspacePayload,
-      intentState: nextIntentState,
-      pages: nextPages,
+      ...lightweightWorkspacePayload,
       activePageId: notebook.activePageId,
-      studio: {
-        ...workspacePayload.studio,
-        handoffs: nextHandoffs,
-        teamBoard,
-      },
     });
+    await Promise.all([
+      savePages({ pages: nextPages, activePageId: notebook.activePageId }),
+      saveStudioState({ handoffs: nextHandoffs, teamBoard }),
+      saveIntentState({ intentState: nextSlimIntentStatePayload }),
+    ]);
     applyRuntimePayload(buildRuntimePayloadFromWorkspace(workspace, teamBoard));
     return nextHandoff;
   };
 
   function applyRuntimePayload(runtime, intentOverride = null) {
+    const runtimeGraphs = runtime?.graphs ? normalizeGraphBundle({ graphs: runtime.graphs }) : graphBundle;
+    const runtimeSystemGraph = runtimeGraphs.system || buildStarterGraph();
+    if (runtime?.graphs) {
+      const nextActiveGraph = runtimeGraphs[activeGraphLayer] || runtimeSystemGraph;
+      graphEngine.setState(nextActiveGraph);
+      setGraphLayers(runtimeGraphs);
+      setGraph({ ...nextActiveGraph });
+    }
     const runtimeIntentState = intentOverride || runtime.intentState || intentState;
     const notebook = normalizeNotebookState({
-      graph: systemGraph,
-      graphs: graphBundle,
+      graph: runtimeSystemGraph,
+      graphs: runtimeGraphs,
       intentState: runtimeIntentState,
       pages: runtime.pages,
       activePageId: runtime.activePageId,
@@ -1796,10 +2399,16 @@ function SpatialNotebook() {
         ...(runtime.throughputDebug || {}),
       });
     }
-    if (runtime.qaDebug) {
-      setQaDebug({
-        ...EMPTY_QA_DEBUG,
-        ...(runtime.qaDebug || {}),
+    if (runtime.qaState || runtime.qaDebug) {
+      setQaState({
+        ...EMPTY_QA_STATE,
+        ...(runtime.qaState || {}),
+        latestBrowserRun: runtime.qaState?.latestBrowserRun || runtime.qaDebug?.latestRun || null,
+        browserRuns: runtime.qaState?.browserRuns || runtime.qaDebug?.runs || [],
+        localGate: {
+          ...EMPTY_QA_STATE.localGate,
+          ...(runtime.qaState?.localGate || runtime.qaDebug?.localGate || {}),
+        },
       });
     }
     if (!selfUpgradeTaskId && runtime.selfUpgrade?.taskId) {
@@ -2061,6 +2670,7 @@ function SpatialNotebook() {
       content,
       metadata: {
         ...(current.metadata || {}),
+        origin: 'user_input',
         intentStatus: content ? 'processing' : 'idle',
         lastCommittedContent: content,
       },
@@ -2535,7 +3145,13 @@ function SpatialNotebook() {
 
   const saveNow = async () => {
     memory.snapshot('manual-save', { nodes: graph.nodes.length, edges: graph.edges.length });
-    await saveWorkspace({ ...workspacePayload, architectureMemory: memory.model });
+    await Promise.all([
+      saveWorkspace(lightweightWorkspacePayload),
+      savePages({ pages, activePageId }),
+      saveIntentState({ intentState: slimIntentStatePayload }),
+      saveStudioState({ handoffs, teamBoard }),
+      saveArchitectureMemory({ architectureMemory: memory.model }),
+    ]);
     setStatus('workspace saved');
   };
 
@@ -2582,13 +3198,28 @@ function SpatialNotebook() {
       summary: preview?.summary || [],
     });
     addTraceStep(trace, 'executor_input', preview?.mutations || []);
-    await ace.applyMutation(preview.mutations);
-    addTraceStep(trace, 'executor_output', { ok: true, applied: preview.mutations.length });
-    mutationEngine.applyMutations(preview.mutations);
-    addTraceStep(trace, 'engine_result', { nodes: graphEngine.getState().nodes.length, edges: graphEngine.getState().edges.length });
-    setGraph({ ...graphEngine.getState() });
-    setPreview(null);
-    setStatus('ACE suggestions applied');
+    try {
+      const response = await ace.applyMutation(preview.mutations);
+      addTraceStep(trace, 'executor_output', response.mutationResult || response);
+      if (response.runtime) {
+        applyRuntimePayload(response.runtime);
+      }
+      addTraceStep(trace, 'engine_result', {
+        nodes: response.runtime?.graphs?.[activeGraphLayer]?.nodes?.length ?? graphEngine.getState().nodes.length,
+        edges: response.runtime?.graphs?.[activeGraphLayer]?.edges?.length ?? graphEngine.getState().edges.length,
+        confirmed: Boolean(response.confirmed),
+        status: response.status || response.mutationResult?.status || 'unknown',
+      });
+      setPreview(null);
+      if (response.confirmed) {
+        setStatus(`ACE suggestions applied | ${response.mutationResult?.applied || 0} canonical changes confirmed`);
+        return;
+      }
+      setStatus(response.mutationResult?.reason || 'ACE suggestions were not applied to canonical state');
+    } catch (error) {
+      addTraceStep(trace, 'executor_output', error?.payload?.mutationResult || { ok: false, error: error.message });
+      setStatus(error?.payload?.mutationResult?.reason || error.message || 'Mutation apply failed');
+    }
   };
 
   const addComment = () => {
@@ -2628,7 +3259,10 @@ function SpatialNotebook() {
     || null
   ), [teamBoard]);
   const latestThroughputSession = throughputDebug.latestSession || throughputDebug.sessions?.[0] || null;
-  const latestQARun = qaRunDetail || qaDebug.latestRun || qaDebug.runs?.[0] || null;
+  useEffect(() => {
+    setOpenTaskId(latestThroughputSession?.runnerTaskId || null);
+  }, [latestThroughputSession]);
+  const latestQARun = qaRunDetail || qaState.latestBrowserRun || qaState.browserRuns?.[0] || null;
   const teamBoardColumnMeta = {
     plan: { title: 'Plan', empty: 'Planner tasks land here.' },
     active: { title: 'Active', empty: 'Agents are not advancing anything right now.' },
@@ -2649,6 +3283,17 @@ function SpatialNotebook() {
       : deskPanelState.deskId;
     loadDeskPanel(sourceDeskId);
   }, [deskPanelState.open, deskPanelState.deskId, deskPanelState.mode, ctoEditTargetDeskId]);
+
+  useEffect(() => {
+    if (!deskPanelState.open || !deskPanelState.deskId) return;
+    const sourceDeskId = deskPanelState.mode === 'edit' && deskPanelState.deskId === 'cto-architect'
+      ? ctoEditTargetDeskId
+      : deskPanelState.deskId;
+    const availableTabs = getDeskPropertyTabs(sourceDeskId);
+    if (!availableTabs.some((tab) => tab.id === deskPanelTab)) {
+      setDeskPanelTab(availableTabs[0]?.id || 'agents');
+    }
+  }, [deskPanelState.open, deskPanelState.deskId, deskPanelState.mode, ctoEditTargetDeskId, deskPanelTab]);
 
   const resolvePageTitle = (pageId) => {
     if (!pageId) return 'Unknown page';
@@ -2798,8 +3443,19 @@ function SpatialNotebook() {
     ),
   );
 
-  const renderBrowserPassPanel = () => h('div', { className: 'inspector-block panel-card review-panel browser-pass-panel' },
-    h('div', { className: 'inspector-label' }, 'Browser Pass'),
+  const renderQAWorkbenchPanel = () => h('div', { className: 'inspector-block panel-card review-panel browser-pass-panel', 'data-qa': 'qa-desk-summary' },
+    h('div', { className: 'inspector-label' }, 'QA Workbench'),
+    h('div', { className: 'signal-summary' }, qaState.structuredBusy
+      ? 'Structured QA suite is running...'
+      : qaState.browserBusy
+        ? 'Browser QA is running...'
+        : (qaState.structuredReport?.summary || qaState.localGate?.unit?.summary || latestQARun?.summary || 'Run structured QA or a browser pass to refresh QA truth.')),
+    h('div', { className: 'signal-meta muted' }, qaState.localGate?.unit
+      ? `Unit gate: ${qaState.localGate.unit.status || 'pending'} | ${qaState.localGate.unit.passedCount || 0}/${qaState.localGate.unit.totalChecks || 0} checks passed`
+      : 'No local unit gate summary recorded yet.'),
+    h('div', { className: 'signal-meta muted' }, qaState.localGate?.studioBoot
+      ? `Studio boot: ${qaState.localGate.studioBoot.verdict || qaState.localGate.studioBoot.status || 'pending'} | findings ${qaState.localGate.studioBoot.findingCount || 0}`
+      : 'No studio boot guardrail result recorded yet.'),
     h('div', { className: 'self-upgrade-grid' },
       h('label', { className: 'muted', htmlFor: 'browser-pass-scenario' }, 'Scenario'),
       h('select', {
@@ -2815,7 +3471,9 @@ function SpatialNotebook() {
       ),
     ),
     h('div', { className: 'button-row' },
-      h('button', { className: 'mini', type: 'button', disabled: qaBusy, onClick: runBrowserPass }, qaBusy ? 'Running...' : 'Run Browser Pass'),
+      h('button', { className: 'mini', type: 'button', disabled: qaState.structuredBusy, onClick: runStructuredQA }, qaState.structuredBusy ? 'Running...' : 'Run Structured QA'),
+      h('button', { className: 'mini', type: 'button', disabled: qaState.browserBusy, onClick: runBrowserPass }, qaState.browserBusy ? 'Running...' : 'Run Browser Pass'),
+      latestQARun?.id ? h('button', { className: 'mini', type: 'button', onClick: () => loadQARunDetails(latestQARun.id) }, 'Refresh run detail') : null,
     ),
     latestQARun
       ? h(React.Fragment, null,
@@ -2829,8 +3487,8 @@ function SpatialNotebook() {
               })
             : null,
           (latestQARun.findings || []).length
-            ? h('div', { className: 'qa-findings-list' }, latestQARun.findings.slice(0, 6).map((finding) => h('button', {
-              key: finding.id,
+            ? h('div', { className: 'qa-findings-list' }, latestQARun.findings.slice(0, 6).map((finding, index) => h('button', {
+              key: `${finding.id || 'finding'}-${index}`,
               className: `qa-finding severity-${finding.severity || 'info'}`,
               type: 'button',
               onClick: () => {
@@ -2840,8 +3498,8 @@ function SpatialNotebook() {
               title: finding.details || finding.summary,
             }, `${finding.summary}`)))
             : h('div', { className: 'signal-empty muted' }, 'No browser-pass findings recorded yet.'),
-          (latestQARun.steps || []).length
-            ? h('div', { className: 'qa-step-list' }, latestQARun.steps.map((step) => h('div', { key: step.id, className: 'qa-step-row muted' }, `${step.label}: ${step.verdict || step.status}`)))
+          (latestQARun.steps || latestQARun.stepSummary || []).length
+            ? h('div', { className: 'qa-step-list' }, (latestQARun.steps || latestQARun.stepSummary || []).map((step) => h('div', { key: step.id, className: 'qa-step-row muted' }, `${step.label}: ${step.verdict || step.status}`)))
             : null,
         )
       : h('div', { className: 'signal-empty muted' }, 'No browser pass has been recorded yet.'),
@@ -2894,7 +3552,9 @@ function SpatialNotebook() {
     const targetDeskId = isCtoEdit ? ctoEditTargetDeskId : deskId;
     const targetDeskLabel = getStudioAgents().find((entry) => entry.id === targetDeskId)?.name || targetDeskId;
     const panelData = deskPanelData && deskPanelData.deskId === targetDeskId ? deskPanelData : null;
-    return h('div', { className: 'desk-properties-modal' },
+    const availableTabs = getDeskPropertyTabs(targetDeskId);
+    const isQADesk = targetDeskId === 'qa-lead';
+    return h('div', { className: 'desk-properties-modal', 'data-qa': isQADesk ? 'qa-properties-modal' : 'desk-properties-modal', 'data-desk-id': targetDeskId },
       h('div', { className: 'desk-properties-card panel-card' },
         h('div', { className: 'inline review-header' },
           h('div', null,
@@ -2948,7 +3608,7 @@ function SpatialNotebook() {
           ),
         ) : null,
         h('div', { className: 'scene-switcher desk-tabs' },
-          DESK_PROPERTY_TABS.map((tab) => h('button', {
+          availableTabs.map((tab) => h('button', {
             key: tab.id,
             className: `mini ${deskPanelTab === tab.id ? 'active' : ''}`,
             type: 'button',
@@ -2959,6 +3619,81 @@ function SpatialNotebook() {
           ? h('div', { className: 'signal-empty muted' }, 'Loading desk properties...')
           : null,
         !deskPanelBusy && !panelData ? h('div', { className: 'signal-empty muted' }, 'No desk properties available.') : null,
+        !deskPanelBusy && panelData && deskPanelTab === 'qa' ? h('div', { className: 'desk-panel-list', 'data-qa': 'qa-properties-panel' },
+          panelData.qa
+            ? h(React.Fragment, null,
+                h('div', { className: 'desk-panel-item' },
+                  h('div', { className: 'signal-summary' }, panelData.qa.structuredSummary?.summary || 'Structured QA'),
+                  h('div', { className: 'signal-meta muted' }, `Status: ${panelData.qa.structuredSummary?.status || 'idle'} | Desks ${panelData.qa.structuredSummary?.deskCount || 0} | Tests ${panelData.qa.structuredSummary?.testCount || 0}`),
+                  (panelData.qa.structuredReport?.failures || []).length
+                    ? h('ul', { className: 'signal-list compact' }, panelData.qa.structuredReport.failures.slice(0, 4).map((failure, index) => h('li', { key: `qa-structured-failure-${index}` }, `${failure.desk || 'desk'}: ${failure.test || failure.id || 'test'} | ${failure.reason || 'Needs review'}`)))
+                    : h('div', { className: 'signal-meta muted' }, 'No structured QA failures are recorded in the latest suite.'),
+                ),
+                h('div', { className: 'button-row' },
+                  h('button', { className: 'mini', type: 'button', disabled: qaState.structuredBusy, onClick: runStructuredQA }, qaState.structuredBusy ? 'Running...' : 'Run Structured QA'),
+                  h('button', { className: 'mini', type: 'button', disabled: qaState.browserBusy, onClick: runBrowserPass }, qaState.browserBusy ? 'Running...' : 'Run Browser Pass'),
+                ),
+                (panelData.qa.scorecards || []).length
+                  ? h('div', { className: 'desk-panel-item' },
+                      h('div', { className: 'signal-summary' }, `Scorecards (${panelData.qa.scorecards.length})`),
+                      h('div', { className: 'desk-panel-list' }, panelData.qa.scorecards.slice(0, 6).map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item' },
+                        h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
+                        h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+                        card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
+                      ))),
+                    )
+                  : h('div', { className: 'signal-empty muted' }, 'No structured QA scorecards are recorded yet.'),
+                panelData.qa.latestBrowserRun
+                  ? h('div', { className: 'desk-panel-item' },
+                      h('div', { className: 'signal-summary' }, `Browser: ${panelData.qa.latestBrowserRun.scenario || 'layout-pass'} | ${panelData.qa.latestBrowserRun.verdict || panelData.qa.latestBrowserRun.status || 'pending'}`),
+                      h('div', { className: 'signal-meta muted' }, `Findings ${panelData.qa.latestBrowserRun.findingCount || 0}`),
+                      panelData.qa.latestBrowserRun.id
+                        ? h('div', { className: 'button-row' },
+                            h('button', { className: 'mini', type: 'button', onClick: () => loadQARunDetails(panelData.qa.latestBrowserRun.id) }, 'Open latest browser run'),
+                          )
+                        : null,
+                    )
+                  : h('div', { className: 'signal-empty muted' }, 'No browser QA run is recorded yet.'),
+                (panelData.qa.browserRuns || []).length
+                  ? h('div', { className: 'desk-panel-item' },
+                      h('div', { className: 'signal-summary' }, `Recent Browser Runs (${panelData.qa.browserRuns.length})`),
+                      h('div', { className: 'desk-panel-list' }, panelData.qa.browserRuns.slice(0, 4).map((run) => h('div', { key: run.id || `${run.scenario}-${run.finishedAt || run.createdAt || 'latest'}`, className: 'desk-panel-item' },
+                        h('div', { className: 'signal-summary' }, `${run.scenario || 'layout-pass'} | ${run.verdict || run.status || 'pending'}`),
+                        h('div', { className: 'signal-meta muted' }, `Trigger ${run.trigger || 'manual'} | Findings ${run.findingCount || 0}`),
+                        run.id ? h('div', { className: 'button-row' },
+                          h('button', { className: 'mini', type: 'button', onClick: () => loadQARunDetails(run.id) }, 'Open run'),
+                        ) : null,
+                      ))),
+                    )
+                  : h('div', { className: 'signal-empty muted' }, 'No browser QA history is recorded yet.'),
+                panelData.qa.localGate?.unit || panelData.qa.localGate?.studioBoot
+                  ? h('div', { className: 'desk-panel-item' },
+                      h('div', { className: 'signal-summary' }, 'Local Gate'),
+                      panelData.qa.localGate?.unit ? h('div', { className: 'desk-panel-item' },
+                        h('div', { className: 'signal-summary' }, 'Fast Unit Gate'),
+                        h('div', { className: 'signal-meta muted' }, `Status ${panelData.qa.localGate.unit.status || 'pending'} | ${panelData.qa.localGate.unit.passedCount || 0}/${panelData.qa.localGate.unit.totalChecks || 0} checks passed`),
+                        (panelData.qa.localGate.unit.failures || []).length
+                          ? h('ul', { className: 'signal-list compact' }, panelData.qa.localGate.unit.failures.slice(0, 3).map((failure) => h('li', { key: failure.name || failure.path || failure.error }, `${failure.name || failure.path || 'check'}: ${failure.error || 'failed'}`)))
+                          : h('div', { className: 'signal-meta muted' }, 'No failing fast UI checks in the latest run.'),
+                      ) : null,
+                      panelData.qa.localGate?.studioBoot ? h('div', { className: 'desk-panel-item' },
+                        h('div', { className: 'signal-summary' }, 'Studio Boot Guardrail'),
+                        h('div', { className: 'signal-meta muted' }, `Status ${panelData.qa.localGate.studioBoot.verdict || panelData.qa.localGate.studioBoot.status || 'pending'} | findings ${panelData.qa.localGate.studioBoot.findingCount || 0}`),
+                        (panelData.qa.localGate.studioBoot.failedSteps || []).length
+                          ? h('ul', { className: 'signal-list compact' }, panelData.qa.localGate.studioBoot.failedSteps.map((step) => h('li', { key: step.id }, `${step.label}: ${step.verdict}`)))
+                          : h('div', { className: 'signal-meta muted' }, 'No failing Studio boot steps in the latest guardrail run.'),
+                      ) : null,
+                    )
+                  : h('div', { className: 'signal-empty muted' }, 'No local gate evidence is recorded yet.'),
+                (panelData.qa.availableTests || []).length
+                  ? h('div', { className: 'desk-panel-item' },
+                      h('div', { className: 'signal-summary' }, 'Runnable Suites'),
+                      h('div', { className: 'signal-meta muted' }, panelData.qa.availableTests.map((suite) => suite.name).join(' | ')),
+                    )
+                  : null,
+              )
+            : h('div', { className: 'signal-empty muted' }, 'No QA properties available.'),
+        ) : null,
         !deskPanelBusy && panelData && deskPanelTab === 'agents' ? h('div', { className: 'desk-panel-list' },
           (panelData.agents || []).length
             ? panelData.agents.map((entry) => h('div', { key: entry.id, className: 'desk-panel-item' },
@@ -2999,7 +3734,15 @@ function SpatialNotebook() {
           h('div', { className: 'comment-thread' },
             deskChatLog.length
               ? deskChatLog.map((entry) => h('div', { key: entry.id, className: 'comment-entry' },
-                  h('div', { className: 'comment-meta muted' }, entry.role),
+                  h('div', { className: 'comment-meta muted' }, `${entry.role}${entry.status ? ` | ${entry.status}` : ''}`),
+                  entry.backend || entry.model || entry.runId || entry.reason
+                    ? h('div', { className: 'signal-meta muted' }, [
+                        entry.backend || null,
+                        entry.model || null,
+                        entry.runId || null,
+                        entry.reason || null,
+                      ].filter(Boolean).join(' | '))
+                    : null,
                   h('div', null, entry.text),
                 ))
               : h('div', { className: 'muted' }, 'Ask about desk state and task coordination.'),
@@ -3020,12 +3763,31 @@ function SpatialNotebook() {
                 if (!prompt) return;
                 setDeskChatBusy(true);
                 setDeskChatDraft('');
-                setDeskChatLog((current) => [{ id: `chat-${Date.now()}-u`, role: 'user', text: prompt }, ...current].slice(0, 10));
+                setDeskChatLog((current) => [{ id: `chat-${Date.now()}-u`, role: 'user', text: prompt, status: null }, ...current].slice(0, 10));
                 try {
                   const response = await ace.askCtoDesk({ text: prompt, source: 'desk-properties-chat' });
-                  setDeskChatLog((current) => [{ id: `chat-${Date.now()}-a`, role: 'ace', text: response?.reply_text || 'No reply text returned.' }, ...current].slice(0, 10));
+                  setDeskChatLog((current) => [{
+                    id: `chat-${Date.now()}-a`,
+                    role: 'ace',
+                    text: response?.reply_text || 'No reply text returned.',
+                    status: response?.status || 'live',
+                    backend: response?.backend || null,
+                    model: response?.model || null,
+                    runId: response?.runId || null,
+                    reason: null,
+                  }, ...current].slice(0, 10));
                 } catch (error) {
-                  setDeskChatLog((current) => [{ id: `chat-${Date.now()}-e`, role: 'error', text: error.message }, ...current].slice(0, 10));
+                  const payload = error?.payload || {};
+                  setDeskChatLog((current) => [{
+                    id: `chat-${Date.now()}-e`,
+                    role: 'ace',
+                    text: payload?.error || error.message,
+                    status: payload?.status || 'model_error',
+                    backend: payload?.backend || null,
+                    model: payload?.model || null,
+                    runId: payload?.runId || null,
+                    reason: payload?.reason || null,
+                  }, ...current].slice(0, 10));
                 } finally {
                   setDeskChatBusy(false);
                 }
@@ -3060,6 +3822,12 @@ function SpatialNotebook() {
               }, GRAPH_LAYER_TITLES[layer] || layer)),
             ),
             h('select', {
+              className: 'mini origin-filter-select',
+              value: originFilter,
+              onChange: (event) => setOriginFilter(event.target.value),
+              'data-qa': 'origin-filter',
+            }, NODE_ORIGIN_FILTER_OPTIONS.map((option) => h('option', { key: option.value, value: option.value }, option.label))),
+            h('select', {
               className: 'mini recent-select',
               'data-qa': 'page-select',
               value: notebookState.activePageId || '',
@@ -3083,6 +3851,15 @@ function SpatialNotebook() {
             scene === SCENES.STUDIO ? h('button', { className: 'mini', 'data-qa': 'reset-view-button', type: 'button', onClick: () => resetStudioView() }, 'Reset View') : null,
             h('span', { className: 'toolbar-status' }, `${sceneLabel} | ${activeGraphLabel} | Page ${activePage?.title || 'Current Page'} | Canvas ${Math.round(canvasViewport.zoom * 100)}% | Studio ${Math.round(studioViewport.zoom * 100)}% | ${status}`),
           ),
+          renderSimLaunchOverlay({
+            project: simLauncher.project,
+            status: simLauncher.status,
+            launchedUrl: simLauncher.launchedUrl,
+            supportedOrigin: simLauncher.supportedOrigin,
+            busy: simLauncher.busy,
+            error: simLauncher.error,
+            onLaunch: runSimLaunch,
+          }),
           h('div', { className: 'canvas-control-dock toolbar-meta toolbar-meta-bottom' },
             h('div', { className: 'button-row' },
               h('button', { className: 'mini', onClick: newCanvas, type: 'button' }, 'New Canvas'),
@@ -3146,8 +3923,11 @@ function SpatialNotebook() {
               );
             }),
             graph.nodes.map((node) => {
+              const nodeOrigin = resolveNodeOrigin(node);
+              if (originFilter !== 'all' && nodeOrigin !== originFilter) return null;
               const x = node.position.x * canvasViewport.zoom + canvasViewport.x;
               const y = node.position.y * canvasViewport.zoom + canvasViewport.y;
+              const originLabel = NODE_ORIGIN_LABELS[nodeOrigin] || nodeOrigin;
               const classified = classifyNode(node, graph, activeGraphLayer);
               const labels = classified.metadata.labels || [];
               const rsgNodeState = node.metadata?.rsg?.state || null;
@@ -3161,15 +3941,23 @@ function SpatialNotebook() {
                 const targetLabel = (extractedIntent?.candidateNodes || []).find((entry) => entry.id === edge.targetCandidateId)?.label || edge.targetCandidateId;
                 return `${sourceLabel} -> ${targetLabel} | ${edge.kind}${edge.rationale ? ` | ${edge.rationale}` : ''}`;
               });
-              const rsgSummary = String(node.metadata?.rsg?.summary || '').trim();
+              const rsg = node.metadata?.rsg || null;
+              const rsgSummary = String(rsg?.summary || '').trim();
+              const rsgSourceLabel = rsg?.sourceNodeId ? `node ${String(rsg.sourceNodeId).slice(-4)}` : 'manual input';
+              const rsgConfidenceLabel = Number.isFinite(Number(rsg?.confidence)) ? `${Math.round(Number(rsg.confidence) * 100)}% confidence` : null;
+              const rsgFallbackLabel = rsg?.usedFallback ? 'fallback' : null;
+              const rsgGenerationLabel = rsg?.state === 'linked-draft' ? 'Generated' : 'Adopted';
+              const rsgAttribution = rsg
+                ? [rsgGenerationLabel, `from ${rsgSourceLabel}`, rsgConfidenceLabel, rsgFallbackLabel].filter(Boolean).join(' | ')
+                : null;
               const intentFooterText = node.metadata?.intentAnalysis
                 ? summarizeIntentReport(node.metadata.intentAnalysis)
-                : (node.metadata?.rsg
+                : (rsg
                     ? (rsgNodeState === 'linked-draft' ? 'Linked draft ready for edit' : 'Adopted draft stays in place on rerun')
                     : 'press Enter to classify');
               return h('div', {
                 key: node.id,
-                className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} ${selectedId === node.id ? 'selected' : ''} ${isLinkedDraftNode(node) ? 'rsg-linked-draft' : ''} ${isAdoptedDraftNode(node) ? 'rsg-adopted' : ''} ${lowConfidenceDraft ? 'rsg-low-confidence' : ''} ${expandedGenerated ? 'expanded' : ''}`,
+                className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} origin-${nodeOrigin} ${selectedId === node.id ? 'selected' : ''} ${isLinkedDraftNode(node) ? 'rsg-linked-draft' : ''} ${isAdoptedDraftNode(node) ? 'rsg-adopted' : ''} ${lowConfidenceDraft ? 'rsg-low-confidence' : ''} ${expandedGenerated ? 'expanded' : ''}`,
                 style: {
                   left: `${x}px`,
                   top: `${y}px`,
@@ -3203,6 +3991,7 @@ function SpatialNotebook() {
                 h('div', { className: 'node-header-row' },
                   h('div', { className: 'node-header' }, `${activeGraphLayer.toUpperCase()} | ${classified.metadata.proposalTarget || classified.metadata.role}`),
                   h('div', { className: 'node-header-tags' },
+                    h('div', { className: `node-origin-badge origin-${nodeOrigin}` }, originLabel),
                     rsgNodeState ? h('div', { className: `node-rsg-chip ${rsgNodeState}` }, rsgNodeState === 'linked-draft' ? 'RSG draft' : 'Adopted') : null,
                     generatedInspection?.basis ? h('div', { className: `node-rsg-chip basis-${generatedInspection.basis}` }, generatedInspection.basis) : null,
                     lowConfidenceDraft ? h('div', { className: 'node-rsg-chip low-confidence' }, 'Low confidence') : null,
@@ -3227,7 +4016,7 @@ function SpatialNotebook() {
                 h('div', { className: 'node-footer' },
                   h('div', { className: 'node-labels' }, labels.length ? labels.join(' - ') : 'press Enter to classify'),
                   h('div', { className: 'node-intent-summary muted' }, `${node.id.slice(-4)} | ${classified.metadata.role}`),
-                  node.metadata?.rsg ? h('div', { className: 'node-intent-summary muted' }, `${node.metadata.rsg.state === 'linked-draft' ? 'Generated from' : 'Adopted from'} ${String(node.metadata.rsg.sourceNodeId || '').slice(-4) || 'note'}${Number.isFinite(Number(node.metadata.rsg.confidence)) ? ` | ${Math.round(Number(node.metadata.rsg.confidence) * 100)}%` : ''}${node.metadata.rsg.usedFallback ? ' | fallback' : ''}`) : null,
+                  rsgAttribution ? h('div', { className: 'node-intent-summary muted' }, rsgAttribution) : null,
                   rsgSummary ? h('div', { className: 'node-intent-summary muted' }, rsgSummary) : null,
                   h('div', { className: 'node-intent-summary' }, intentFooterText),
                   generatedInspection?.candidate ? h('div', { className: 'node-generated-controls' },
@@ -3369,7 +4158,7 @@ function SpatialNotebook() {
                 const pageBadge = orchestratorState.activeDeskIds?.includes(agent.id)
                   ? buildDeskBadge(agent.id, orchestratorState, activePage)
                   : null;
-                return h('button', {
+                return h('div', {
                   key: agent.id,
                   className: `agent-station ${selectedAgentId === agent.id ? 'selected' : ''} ${agent.isOversight ? 'oversight' : ''}`,
                   'data-qa': `desk-${agent.id}`,
@@ -3383,8 +4172,15 @@ function SpatialNotebook() {
                     '--agent-accent': agent.theme.accent,
                     '--agent-shadow': agent.theme.shadow,
                   },
-                  type: 'button',
+                  role: 'button',
+                  tabIndex: 0,
                   onClick: () => focusStudioAgent(agent.id),
+                  onKeyDown: (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      focusStudioAgent(agent.id);
+                    }
+                  },
                   title: `${agent.name} | ${orchestratorState.desks?.[agent.id]?.currentGoal || agent.role}`,
                 },
                   h(DeskThoughtBubble, { text: thoughtBubble, tone: meta.tone }),
@@ -3398,6 +4194,7 @@ function SpatialNotebook() {
                   }, 'Move'),
                   h('button', {
                     className: 'mini desk-properties-trigger',
+                    'data-qa': `desk-props-${agent.id}`,
                     type: 'button',
                     onClick: (event) => {
                       event.preventDefault();
@@ -3615,6 +4412,164 @@ function SpatialNotebook() {
             h('div', { className: 'signal-meta muted' }, `Run state: ${selectedAgent.latestRunStatus || 'idle'}`),
             h('div', { className: 'signal-meta muted' }, selectedAgent.latestRunSummary || 'No recent run logs surfaced for this station yet.'),
           ),
+          selectedAgent.id === 'dave' ? h('div', { className: 'inspector-block panel-card' },
+            h('div', { className: 'inspector-label' }, 'Dave Learning Profile'),
+            h('div', { className: 'criteria-list desk-metric-list' },
+              ['Tokens', 'Duration', 'Status', 'Last run'].map((label) => {
+                let value = '—';
+                const worker = selectedAgent.workerState || {};
+                if (label === 'Tokens') value = worker.tokensUsed ?? 0;
+                if (label === 'Duration') value = worker.durationMs ? `${worker.durationMs} ms` : '—';
+                if (label === 'Status') value = worker.responseStatus || 'idle';
+                if (label === 'Last run') value = worker.lastRunId || 'none';
+                return h('div', { key: label, className: 'criteria-row' },
+                  h('span', null, label),
+                  h('span', { className: 'muted' }, value),
+                );
+              }),
+            ),
+            h('div', { className: 'inspector-label' }, 'Context Alignment (heuristic)'),
+            h('div', { className: 'signal-summary' }, `${Math.round((daveContextAlignment.score || 0) * 100)}%`),
+            h('div', { className: 'signal-meta muted' }, daveContextAlignment.reason),
+            h('div', { className: 'inspector-label' }, 'Editable Properties'),
+            h('div', { className: 'form-grid' },
+              h('label', { className: 'muted' }, 'Name'),
+              h('input', {
+                className: 'comment-box',
+                value: davePropertiesForm.name,
+                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, name: event.target.value })),
+              }),
+              h('label', { className: 'muted' }, 'Role'),
+              h('input', {
+                className: 'comment-box',
+                value: davePropertiesForm.role,
+                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, role: event.target.value })),
+              }),
+              h('label', { className: 'muted' }, 'Model'),
+              h('select', {
+                className: 'comment-box',
+                value: davePropertiesForm.model,
+                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, model: event.target.value })),
+              },
+                (daveModelOptions.length ? daveModelOptions : [DAVE_DEFAULT_MODEL]).map((option) => h('option', { key: option, value: option }, option)),
+              ),
+              h('label', { className: 'muted' }, 'Status'),
+              h('select', {
+                className: 'comment-box',
+                value: davePropertiesForm.status,
+                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, status: event.target.value })),
+              }, DAVE_STATUS_OPTIONS.map((option) => h('option', { key: option, value: option }, option))),
+              h('label', { className: 'muted' }, 'Response State'),
+              h('select', {
+                className: 'comment-box',
+                value: davePropertiesForm.responseStatus,
+                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, responseStatus: event.target.value })),
+              }, DAVE_RESPONSE_STATUSES.map((option) => h('option', { key: option, value: option }, option))),
+              h('label', { className: 'muted' }, 'Backend'),
+              h('input', {
+                className: 'comment-box',
+                value: davePropertiesForm.backend,
+                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, backend: event.target.value })),
+              }),
+            ),
+            h('div', { className: 'button-row' },
+              h('button', { className: 'mini', type: 'button', onClick: saveDaveProperties }, 'Save'),
+            ),
+            h('div', { className: 'inspector-label' }, 'Learning Ledger'),
+            h('div', { className: 'criteria-list desk-metric-list' },
+              Object.entries({
+                Attempts: daveLedger.stats.attemptCount || 0,
+                Failed: daveLedger.stats.failedCount || 0,
+                Approvals: daveLedger.stats.approvedFixCount || 0,
+                'Dataset ready': daveLedger.stats.datasetReadyCount || 0,
+              }).map(([label, value]) => h('div', { key: label, className: 'criteria-row' },
+                h('span', null, label),
+                h('span', { className: 'muted' }, value),
+              )),
+            ),
+            h('textarea', {
+              className: 'comment-box',
+              placeholder: 'Describe the prompt, context, and generated output for this attempt.',
+              value: daveLedgerDraft.taskPrompt,
+              onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, taskPrompt: event.target.value })),
+            }),
+            h('textarea', {
+              className: 'comment-box',
+              placeholder: 'Paste the generated output to capture what ran.',
+              value: daveLedgerDraft.generatedOutput,
+              onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, generatedOutput: event.target.value })),
+            }),
+            h('div', { className: 'button-row' },
+              h('button', { className: 'mini', type: 'button', onClick: submitDaveLedgerEntry, disabled: daveLedgerLoading }, daveLedgerLoading ? 'Saving...' : 'Record attempt'),
+              h('label', { className: 'muted inline' },
+                h('input', {
+                  type: 'checkbox',
+                  checked: Boolean(daveLedgerDraft.datasetReady),
+                  onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, datasetReady: event.target.checked })),
+                }),
+                'Mark dataset ready',
+              ),
+              h('select', {
+                className: 'comment-box',
+                value: daveLedgerDraft.responseStatus,
+                onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, responseStatus: event.target.value })),
+              }, DAVE_RESPONSE_STATUSES.map((option) => h('option', { key: option, value: option }, option))),
+              h('select', {
+                className: 'comment-box',
+                value: daveLedgerDraft.qaOutcome,
+                onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, qaOutcome: event.target.value })),
+              }, ['unknown', 'passed', 'failed'].map((option) => h('option', { key: option, value: option }, option))),
+            ),
+            (daveLedgerError || (daveLedger.entries || []).length === 0)
+              ? h('div', { className: 'signal-empty muted' }, daveLedgerError || 'No ledger entries yet.')
+              : h('div', { className: 'ledger-list' },
+                  (daveLedger.entries || []).slice(0, 5).map((entry) => {
+                    const draft = daveFixDrafts[entry.entryId] || {};
+                    return h('div', { key: entry.entryId, className: 'ledger-entry' },
+                      h('div', { className: 'signal-summary' }, entry.taskPrompt || 'Untitled attempt'),
+                      h('div', { className: 'signal-meta muted' }, `${formatTimestamp(entry.timestamp)} | ${entry.responseStatus}`),
+                      h('div', { className: 'muted' }, entry.qaReason || 'No QA reason provided.'),
+                      h('div', { className: 'button-row' },
+                        h('textarea', {
+                          className: 'comment-box',
+                          placeholder: 'Approved fix or note',
+                          value: draft.text || entry.approvedFix || '',
+                          onChange: (event) => setDaveFixDrafts((current) => ({
+                            ...current,
+                            [entry.entryId]: {
+                              ...current[entry.entryId],
+                              text: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                      h('div', { className: 'button-row' },
+                        h('label', { className: 'muted inline' },
+                          h('input', {
+                            type: 'checkbox',
+                            checked: Boolean(draft.datasetReady ?? entry.datasetReady),
+                            onChange: (event) => setDaveFixDrafts((current) => ({
+                              ...current,
+                              [entry.entryId]: {
+                                ...current[entry.entryId],
+                                datasetReady: event.target.checked,
+                              },
+                            })),
+                          }),
+                          'Dataset ready',
+                        ),
+                        h('button', {
+                          className: 'mini',
+                          type: 'button',
+                          onClick: () => saveDaveLedgerFix(entry.entryId),
+                          disabled: daveLedgerLoading,
+                        }, 'Attach fix'),
+                      ),
+                      entry.approvedFix ? h('div', { className: 'signal-meta muted' }, `Approved fix: ${entry.approvedFix}`) : null,
+                    );
+                  }),
+                ),
+          ) : null,
           selectedAgent.id === 'cto-architect' && orchestratorState.desks?.['cto-architect']?.thoughtBubble ? h('div', { className: 'inspector-block panel-card review-panel' },
             h('div', { className: 'inspector-label' }, 'Orchestrator Thought Bubble'),
             h('div', { className: 'signal-summary' }, orchestratorState.desks['cto-architect'].thoughtBubble),
@@ -3670,8 +4625,8 @@ function SpatialNotebook() {
             ),
           selfUpgrade.apply?.ok ? h('div', { className: 'signal-meta muted' }, `Applied commit ${selfUpgrade.apply.commit || 'pending'} on ${selfUpgrade.apply.branch || 'apply branch'}`) : null,
         ) : null,
-        selectedAgent.id === 'cto-architect' ? renderBrowserPassPanel() : null,
         selectedAgent.id === 'cto-architect' ? renderThroughputDebugPanel() : null,
+        selectedAgent.id === 'qa-lead' ? renderQAWorkbenchPanel() : null,
         selectedAgent.id === 'context-manager'
             ? h(React.Fragment, null,
                 reviewPanelOpen && contextDeskSnapshot?.handoff ? h('div', { className: 'inspector-block panel-card review-panel' },
@@ -3755,7 +4710,11 @@ function SpatialNotebook() {
                 ),
               )
             : h(React.Fragment, null,
-                (selectedAgent.deskSnapshot?.sections || []).map((section) => renderDeskSection(section)),
+                (selectedAgent.deskSnapshot?.sections || []).map((section) => renderDeskSection(section, {
+                  openQARun: loadQARunDetails,
+                  runStructuredQA: selectedAgent.id === 'qa-lead' ? runStructuredQA : null,
+                  runBrowserPass: selectedAgent.id === 'qa-lead' ? runBrowserPass : null,
+                })),
                 selectedAgent.id === 'executor' ? h('div', { className: 'inspector-block panel-card' },
                   h('div', { className: 'inspector-label' }, 'Worker Controls'),
                   selectedExecutionCard
@@ -3824,7 +4783,7 @@ function SpatialNotebook() {
                 })
               : h('div', { className: 'signal-empty muted' }, 'No traces yet. Run context intake or executor actions.'),
           ),
-        ),
+          ),
       ),
     ),
     renderDeskPropertiesPanel(),

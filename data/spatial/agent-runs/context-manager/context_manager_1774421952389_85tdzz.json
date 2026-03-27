@@ -1,0 +1,911 @@
+{
+  "id": "context_manager_1774421952389_85tdzz",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-25T06:59:12.396Z",
+  "startedAt": "2026-03-25T06:59:12.396Z",
+  "completedAt": "2026-03-25T06:59:26.424Z",
+  "durationMs": 14028,
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility",
+  "reason": null,
+  "sourceNodeId": "node_1774421852193_j79ed",
+  "sourceText": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility",
+    "statement": "The LLM is interacting with a slice in the 'Emergence' project brain, which serves as the source of truth for ACE manager and context behavior. The goal is to maintain compatibility while transitioning to using `targets.json` for external repo configuration and avoiding unanchored execution.",
+    "goal": "The LLM is interacting with a slice in the 'Emergence' project brain, which serves as the source of truth for ACE manager and context behavior. The goal is to maintain compatibilit",
+    "requestedOutcomes": [
+      "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+    ],
+    "tasks": [
+      "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+    ],
+    "targets": [],
+    "constraints": [
+      "Maintain compatibility with existing configurations"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "signals": {},
+    "clarifications": [
+      "What specific actions need to be taken for the LLM to interact correctly with `brain/emergence`?"
+    ],
+    "focusTerms": [
+      "LLM",
+      "brain/emergence",
+      "targets.json"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/plan.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1774421952389_85tdzz",
+    "sourceNodeId": "node_1774421852193_j79ed",
+    "sourceText": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria",
+    "summary": "Determine how the LLM interprets data from `brain/emergence` to avoid self-deception",
+    "explicitClaims": [
+      "The LLM interacts with `brain/emergence`"
+    ],
+    "inferredClaims": [
+      "The LLM may trick itself into thinking it has performed actions or that something works when it doesn't"
+    ],
+    "candidateNodes": [
+      {
+        "id": "llm-interpretation",
+        "label": "LLM Interpretation Mechanism",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "The LLM interacts with the brain/emergence module, which could involve a mechanism for interpretation.",
+        "confidence": 0.85
+      },
+      {
+        "id": "self-deception-mechanism",
+        "label": "Self-Deception Mechanism in LLM",
+        "kind": "module",
+        "basis": "inferred",
+        "rationale": "The text suggests the possibility of self-deception in the LLM's behavior, implying a potential mechanism behind it.",
+        "confidence": 0.65
+      }
+    ],
+    "candidateEdges": [
+      {
+        "sourceCandidateId": "llm-interpretation",
+        "targetCandidateId": "self-deception-mechanism",
+        "kind": "contains_submodule",
+        "basis": "explicit",
+        "rationale": ""
+      }
+    ],
+    "gaps": [
+      "The specific actions the LLM takes to deceive itself are still unclear"
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774421952389_85tdzz",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.59,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 1,
+          "reason": "Matched project terms: brain, emergence, compatibility, ace, manager"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.5,
+          "reason": "Detected 1 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.4444444444444444,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context",
+          "governance"
+        ]
+      },
+      "matchedTerms": [
+        "brain",
+        "emergence",
+        "compatibility",
+        "ace",
+        "manager",
+        "context",
+        "json",
+        "external"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility",
+    "confidence": 0.59,
+    "legacyConfidence": 0.68,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: brain, emergence, compatibility, ace, manager"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.5,
+        "reason": "Detected 1 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.4444444444444444,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: brain, emergence, compatibility, ace, manager"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.8333333333333334,
+        "reason": "Detected 1 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.5714285714285714,
+        "reason": "References ACE system structure, agents, or implementation surfaces."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.59,
+      "executionReadiness": 0.63,
+      "plannerUsefulness": 0.86,
+      "deployReadiness": 0.11
+    },
+    "truth": {
+      "rawSource": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria",
+      "rawInput": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria",
+      "statement": "Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility",
+      "goal": "Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility",
+      "intentType": "Constraint / guardrail request",
+      "requestType": "constraint_request",
+      "requestedOutcomes": [
+        "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+      ],
+      "tasks": [
+        "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+      ],
+      "targets": [
+        "brain",
+        "emergence",
+        "compatibility",
+        "ace",
+        "manager",
+        "context",
+        "json",
+        "external"
+      ],
+      "constraints": [
+        "Actionability: Detected 1 implementation/planning verb signals.",
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "urgency": "normal",
+      "signals": {
+        "actionSignals": 0,
+        "constraintSignals": 0,
+        "architectureSignals": 0,
+        "executionSignals": 0,
+        "featureSignals": 0,
+        "matchedProjectTerms": 8,
+        "anchorRefs": 6,
+        "lowConfidenceCriteria": 3,
+        "plannerUsefulness": 0.86,
+        "executionReadiness": 0.63,
+        "deployReadiness": 0.11,
+        "labels": [
+          "context",
+          "governance"
+        ],
+        "role": "constraint",
+        "requestedOutcomeCount": 1
+      },
+      "unresolved": [
+        "Actionability: Detected 1 implementation/planning verb signals.",
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Project alignment: Matched project terms: brain, emergence, compatibility, ace, manager",
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Actionability: Detected 1 implementation/planning verb signals."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/roadmap.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Update LLM to read from `brain/emergence` and prefer `targets.json`",
+      "readiness": {
+        "intentConfidence": 0.59,
+        "plannerUsefulness": 0.86,
+        "executionReadiness": 0.63,
+        "deployReadiness": 0.11
+      }
+    },
+    "goal": "The LLM is interacting with a slice in the 'Emergence' project brain, which serves as the source of truth for ACE manager and context behavior. The goal is to maintain compatibilit",
+    "targets": [
+      "brain",
+      "emergence",
+      "compatibility",
+      "ace",
+      "manager",
+      "context",
+      "json",
+      "external"
+    ],
+    "constraints": [
+      "Maintain compatibility with existing configurations"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "requestedOutcomes": [
+      "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+    ],
+    "tasks": [
+      "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+    ],
+    "signals": {},
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "ace",
+            "brain",
+            "emergence",
+            "context",
+            "manager",
+            "repo",
+            "external",
+            "json"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "brain",
+            "compatibility",
+            "context",
+            "emergence",
+            "json",
+            "manager",
+            "repo"
+          ],
+          "score": 29
+        },
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "brain",
+            "emergence",
+            "json",
+            "targets",
+            "compatibility",
+            "external",
+            "repo",
+            "ace"
+          ],
+          "score": 25
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "json",
+            "compatibility",
+            "manager",
+            "brain",
+            "emergence",
+            "external"
+          ],
+          "score": 25
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "brain",
+            "json",
+            "external",
+            "manager"
+          ],
+          "score": 13
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "emergence",
+            "manager",
+            "compatibility"
+          ],
+          "score": 13
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "governance"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 77,
+      "sentenceCount": 20,
+      "matchedProjectTerms": [
+        "brain",
+        "emergence",
+        "compatibility",
+        "ace",
+        "manager",
+        "context",
+        "json",
+        "external",
+        "repo"
+      ],
+      "actionSignals": 1,
+      "featureRequestSignals": 0,
+      "architectureSignals": 2,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "brain",
+        "emergence",
+        "compatibility",
+        "ace",
+        "manager",
+        "context",
+        "json",
+        "external"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "brain",
+        "the",
+        "anchor",
+        "runtime",
+        "for",
+        "legacy"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/roadmap.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-25T06:59:18.017Z",
+    "nodeId": "node_1774421852193_j79ed",
+    "source": "node-idle",
+    "createdAt": "2026-03-25T06:59:26.424Z",
+    "contextPacket": {
+      "summary": "Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility",
+      "statement": "The LLM is interacting with a slice in the 'Emergence' project brain, which serves as the source of truth for ACE manager and context behavior. The goal is to maintain compatibility while transitioning to using `targets.json` for external repo configuration and avoiding unanchored execution.",
+      "goal": "The LLM is interacting with a slice in the 'Emergence' project brain, which serves as the source of truth for ACE manager and context behavior. The goal is to maintain compatibilit",
+      "requestedOutcomes": [
+        "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+      ],
+      "tasks": [
+        "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+      ],
+      "targets": [],
+      "constraints": [
+        "Maintain compatibility with existing configurations"
+      ],
+      "urgency": "normal",
+      "requestType": "context_request",
+      "signals": {},
+      "clarifications": [
+        "What specific actions need to be taken for the LLM to interact correctly with `brain/emergence`?"
+      ],
+      "focusTerms": [
+        "LLM",
+        "brain/emergence",
+        "targets.json"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/plan.md"
+      ],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1774421952389_85tdzz",
+      "sourceNodeId": "node_1774421852193_j79ed",
+      "sourceText": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria",
+      "summary": "Determine how the LLM interprets data from `brain/emergence` to avoid self-deception",
+      "explicitClaims": [
+        "The LLM interacts with `brain/emergence`"
+      ],
+      "inferredClaims": [
+        "The LLM may trick itself into thinking it has performed actions or that something works when it doesn't"
+      ],
+      "candidateNodes": [
+        {
+          "id": "llm-interpretation",
+          "label": "LLM Interpretation Mechanism",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "The LLM interacts with the brain/emergence module, which could involve a mechanism for interpretation.",
+          "confidence": 0.85
+        },
+        {
+          "id": "self-deception-mechanism",
+          "label": "Self-Deception Mechanism in LLM",
+          "kind": "module",
+          "basis": "inferred",
+          "rationale": "The text suggests the possibility of self-deception in the LLM's behavior, implying a potential mechanism behind it.",
+          "confidence": 0.65
+        }
+      ],
+      "candidateEdges": [
+        {
+          "sourceCandidateId": "llm-interpretation",
+          "targetCandidateId": "self-deception-mechanism",
+          "kind": "contains_submodule",
+          "basis": "explicit",
+          "rationale": ""
+        }
+      ],
+      "gaps": [
+        "The specific actions the LLM takes to deceive itself are still unclear"
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1774421952389_85tdzz",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.59,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: brain, emergence, compatibility, ace, manager"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.5,
+            "reason": "Detected 1 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.4444444444444444,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "governance"
+          ]
+        },
+        "matchedTerms": [
+          "brain",
+          "emergence",
+          "compatibility",
+          "ace",
+          "manager",
+          "context",
+          "json",
+          "external"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774421952389_85tdzz",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1774421869569_s50lfc",
+  "handoff": {
+    "id": "handoff_1774421869569_s50lfc",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-25T06:59:26.424Z",
+    "sourceNodeId": "node_1774421852193_j79ed",
+    "summary": "Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility",
+    "goal": "The LLM is interacting with a slice in the 'Emergence' project brain, which serves as the source of truth for ACE manager and context behavior. The goal is to maintain compatibilit",
+    "problemStatement": "Goal: Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility\nRequested outcomes: Update LLM to read from `brain/emergence` and prefer `targets.json`.\nWhy ACE believes this: Project alignment 100%, Actionability 50%, Architecture fit 44%.\nConstraints and review signals: Maintain compatibility with existing configurations | Actionability: Detected 1 implementation/planning verb signals. | Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow. | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: What specific actions need to be taken for the LLM to interact correctly with `brain/emergence`?",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "requestedOutcomes": [
+      "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+    ],
+    "tasks": [
+      "Update LLM to read from `brain/emergence` and prefer `targets.json`"
+    ],
+    "constraints": [
+      "Maintain compatibility with existing configurations",
+      "Actionability: Detected 1 implementation/planning verb signals.",
+      "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.59,
+    "legacyConfidence": 0.68,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: brain, emergence, compatibility, ace, manager"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.5,
+        "reason": "Detected 1 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.4444444444444444,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.59,
+      "executionReadiness": 0.63,
+      "plannerUsefulness": 0.86,
+      "deployReadiness": 0.11
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "governance"
+      ]
+    },
+    "requestType": "context_request",
+    "urgency": "normal",
+    "targets": [
+      "brain",
+      "emergence",
+      "compatibility",
+      "ace",
+      "manager",
+      "context",
+      "json",
+      "external"
+    ],
+    "signals": {},
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "llmStatus": "live",
+  "rawResponse": "{\n  \"summary\": \"Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility\",\n  \"statement\": \"The LLM is interacting with a slice in the 'Emergence' project brain, which serves as the source of truth for ACE manager and context behavior. The goal is to maintain compatibility while transitioning to using `targets.json` for external repo configuration and avoiding unanchored execution.\",\n  \"tasks\": [\"Update LLM to read from `brain/emergence` and prefer `targets.json`\"],\n  \"constraints\": [\"Maintain compatibility with existing configurations\"],\n  \"clarifications\": [\"What specific actions need to be taken for the LLM to interact correctly with `brain/emergence`?\"],\n  \"focusTerms\": [\"LLM\", \"brain/emergence\", \"targets.json\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/plan.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1774421952389_85tdzz",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T06:59:12.396Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T06:59:18.015Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Determine the appropriate behavior for LLM when reading from `brain/emergence` to ensure compatibility\",\n  \"statement\": \"The LLM is interacting with a slice in the 'Emergence' project brain, which serves as the source of truth for ACE manager and context behavior. The goal is to main"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T06:59:18.017Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T06:59:26.424Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Determine how the LLM interprets data from `brain/emergence` to avoid self-deception\",\n  \"explicitClaims\": [\"The LLM interacts with `brain/emergence`\"],\n  \"inferredClaims\": [\"The LLM may trick itself into thinking it has performed actions or that something works when it doesn't\"],\n  "
+      }
+    ]
+  }
+}

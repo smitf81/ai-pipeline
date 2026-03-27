@@ -1,0 +1,1364 @@
+{
+  "capturedAt": "2026-03-19T15:06:43.227Z",
+  "runtime": {
+    "activePageId": "page_1773932803171_lssu",
+    "pages": [
+      {
+        "outputs": [],
+        "handoffs": [],
+        "artifactRefs": [],
+        "id": "page_1773932803171_lssu",
+        "title": "Current Page",
+        "status": "active",
+        "sourceNodeId": null,
+        "summary": "Notebook page for current studio work.",
+        "createdAt": "2026-03-19T15:06:43.171Z",
+        "updatedAt": "2026-03-19T15:06:43.216Z"
+      }
+    ],
+    "handoffs": {},
+    "agentWorkers": {
+      "context-manager": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mixtral",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastSourceNodeId": null,
+        "lastHandoffId": null,
+        "lastReportNodeId": null,
+        "lastBlockedReason": null,
+        "lastUsedFallback": false,
+        "lastPlannerFeedbackAction": null,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "executor": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mixtral",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastBlockedReason": null,
+        "lastCardId": null,
+        "lastTaskId": null,
+        "lastDecision": null,
+        "lastAssessmentSummary": null,
+        "lastAssessmentBlockers": [],
+        "lastVerifiedCardId": null,
+        "lastAppliedCardId": null,
+        "lastDeployCardId": null,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "planner": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "auto",
+        "backend": "ollama",
+        "model": "mixtral",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastSourceHandoffId": null,
+        "lastBlockedReason": null,
+        "lastProducedCardIds": [],
+        "proposalArtifactRefs": [],
+        "startedAt": null,
+        "completedAt": null
+      }
+    },
+    "selfUpgrade": {
+      "status": "idle",
+      "targetProjectKey": "ace-self",
+      "taskId": "",
+      "patchReview": null,
+      "preflight": {
+        "status": "idle",
+        "ok": null,
+        "checkedAt": null,
+        "checks": [],
+        "summary": "Run preflight before applying a self patch."
+      },
+      "apply": {
+        "status": "idle",
+        "ok": null,
+        "appliedAt": null,
+        "branch": null,
+        "commit": null,
+        "taskId": ""
+      },
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": 26296,
+          "startedAt": "2026-03-19T08:21:36.902Z"
+        }
+      },
+      "requiresPermission": "none"
+    },
+    "teamBoard": {
+      "cards": [],
+      "selectedCardId": null,
+      "updatedAt": "2026-03-19T15:06:43.218Z",
+      "summary": {
+        "plan": 0,
+        "active": 0,
+        "complete": 0,
+        "review": 0,
+        "binned": 0,
+        "idleWorkers": 2
+      }
+    },
+    "orchestrator": {
+      "status": "running",
+      "lastTickAt": "2026-03-19T15:06:43.216Z",
+      "activeDeskIds": [],
+      "conflicts": [
+        {
+          "id": "low-confidence-context",
+          "kind": "low-confidence-context",
+          "severity": "medium",
+          "desks": [
+            "context-manager",
+            "planner",
+            "executor"
+          ],
+          "summary": "Planner and Executor are sharing work against a low-confidence context packet."
+        }
+      ],
+      "pendingUserActions": [
+        "Clarify the active page goal before execution advances further."
+      ],
+      "desks": {
+        "context-manager": {
+          "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
+          "localState": "waiting",
+          "statusLabel": "Idle",
+          "statusDetail": "Waiting for the next source context input.",
+          "currentGoal": "Waiting for source context",
+          "allowedActions": [
+            "set-active-page",
+            "slice-context",
+            "publish-handoff",
+            "flag-ambiguity"
+          ],
+          "workItems": [
+            {
+              "id": "page_1773932803171_lssu-context-watch",
+              "pageId": "page_1773932803171_lssu",
+              "deskId": "context-manager",
+              "kind": "context-watch",
+              "status": "waiting",
+              "dependsOn": [],
+              "conflictTags": [
+                "context"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [],
+              "title": "Waiting for source context"
+            }
+          ],
+          "lastOutput": null,
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1773932803171_lssu",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-19T15:06:43.216Z",
+          "thoughtBubble": "Context status: idle. Waiting for source context."
+        },
+        "planner": {
+          "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
+          "localState": "waiting",
+          "statusLabel": "Idle",
+          "statusDetail": "Planner is waiting for the next context handoff.",
+          "currentGoal": "Planner is waiting for a context handoff.",
+          "allowedActions": [
+            "expand-plan",
+            "prioritise-work",
+            "publish-plan"
+          ],
+          "workItems": [
+            {
+              "id": "page_1773932803171_lssu-planner-awaiting-handoff",
+              "pageId": "page_1773932803171_lssu",
+              "deskId": "planner",
+              "kind": "planner-awaiting-handoff",
+              "status": "waiting",
+              "dependsOn": [],
+              "conflictTags": [
+                "plan",
+                "handoff"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [],
+              "title": "Planner is waiting for a context handoff."
+            }
+          ],
+          "lastOutput": "Planner is waiting for a context handoff.",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1773932803171_lssu",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-19T15:06:43.216Z",
+          "thoughtBubble": "Planner status: idle. Waiting for context handoff."
+        },
+        "executor": {
+          "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
+          "localState": "waiting",
+          "statusLabel": "Idle",
+          "statusDetail": "Executor is idle.",
+          "currentGoal": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
+          "allowedActions": [
+            "apply-package",
+            "run-preflight",
+            "deploy-runtime",
+            "report-blocker"
+          ],
+          "workItems": [],
+          "lastOutput": null,
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1773932803171_lssu",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-19T15:06:43.216Z",
+          "thoughtBubble": "Executor status: idle. Waiting for approved work."
+        },
+        "memory-archivist": {
+          "mission": "Persist useful summaries, artifact references, and history for active work.",
+          "localState": "waiting",
+          "statusLabel": "Idle",
+          "statusDetail": "Desk is waiting for the next assignment.",
+          "currentGoal": "Capture notes, handoffs, and artifact history",
+          "allowedActions": [
+            "archive-summary",
+            "record-artifact",
+            "snapshot-history"
+          ],
+          "workItems": [
+            {
+              "id": "page_1773932803171_lssu-memory-sync",
+              "pageId": "page_1773932803171_lssu",
+              "deskId": "memory-archivist",
+              "kind": "memory-sync",
+              "status": "waiting",
+              "dependsOn": [],
+              "conflictTags": [
+                "memory"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [],
+              "title": "Capture notes, handoffs, and artifact history"
+            }
+          ],
+          "lastOutput": "Capture notes, handoffs, and artifact history",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1773932803171_lssu",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-19T15:06:43.216Z",
+          "thoughtBubble": "Archivist status: idle. Waiting to archive changes."
+        },
+        "cto-architect": {
+          "mission": "Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.",
+          "localState": "waiting",
+          "statusLabel": "Idle",
+          "statusDetail": "Governance is monitoring active desks and mutation risk.",
+          "currentGoal": "Review desk overlap, approval state, and guardrails",
+          "allowedActions": [
+            "raise-conflict",
+            "approve-apply",
+            "reject-risky-change"
+          ],
+          "workItems": [
+            {
+              "id": "page_1773932803171_lssu-governance-check",
+              "pageId": "page_1773932803171_lssu",
+              "deskId": "cto-architect",
+              "kind": "governance-check",
+              "status": "waiting",
+              "dependsOn": [],
+              "conflictTags": [
+                "review",
+                "governance"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [],
+              "title": "Review desk overlap, approval state, and guardrails"
+            }
+          ],
+          "lastOutput": "Review desk overlap, approval state, and guardrails",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1773932803171_lssu",
+            "activePageTitle": "Current Page",
+            "pageGoal": "Notebook page for current studio work.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-03-19T15:06:43.216Z",
+          "thoughtBubble": "Governance status: queued. Reviewing governance signals."
+        }
+      },
+      "activePageId": "page_1773932803171_lssu"
+    },
+    "graphs": {
+      "system": {
+        "nodes": [],
+        "edges": []
+      },
+      "world": {
+        "nodes": [],
+        "edges": []
+      }
+    },
+    "rsg": {
+      "mode": "dual-layer",
+      "worldDomain": "gameplay-systems",
+      "approvalPolicy": {
+        "system-structure": "auto-record",
+        "world-structure": "auto-record",
+        "adapter-translation": "auto-record",
+        "code-runtime-mutation": "risk-gated-review"
+      },
+      "proposals": [],
+      "summary": {
+        "systemStructure": 0,
+        "worldStructure": 0,
+        "adapterTranslation": 0,
+        "codeRuntimeMutation": 0
+      },
+      "activity": [],
+      "lastSourceNodeId": null,
+      "lastGenerationAt": null,
+      "lastStatus": "idle",
+      "lastEvaluatedAt": "2026-03-19T15:06:43.218Z"
+    },
+    "manager": {
+      "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "active_plan_slice": [
+        "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "Add a shared anchor resolver and bundle builder.",
+        "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+        "Rename external target config to `targets.json` with `projects.json` fallback."
+      ],
+      "next_actions": [
+        "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "Add a shared anchor resolver and bundle builder.",
+        "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+        "Rename external target config to `targets.json` with `projects.json` fallback.",
+        "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+        "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+        "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+      ],
+      "blockers": [],
+      "drift_flags": [],
+      "last_manager_sync": "2026-03-15T12:00:00Z"
+    },
+    "truthSources": [
+      {
+        "id": "project_brain",
+        "relativePath": "brain/emergence/project_brain.md",
+        "sourceRelativePath": "brain/emergence/project_brain.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/project_brain.md",
+        "legacyRelativePaths": [
+          "projects/emergence/project_brain.md"
+        ]
+      },
+      {
+        "id": "roadmap",
+        "relativePath": "brain/emergence/roadmap.md",
+        "sourceRelativePath": "brain/emergence/roadmap.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/roadmap.md",
+        "legacyRelativePaths": [
+          "projects/emergence/roadmap.md"
+        ]
+      },
+      {
+        "id": "plan",
+        "relativePath": "brain/emergence/plan.md",
+        "sourceRelativePath": "brain/emergence/plan.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/plan.md",
+        "legacyRelativePaths": [
+          "projects/emergence/plan.md"
+        ]
+      },
+      {
+        "id": "tasks",
+        "relativePath": "brain/emergence/tasks.md",
+        "sourceRelativePath": "brain/emergence/tasks.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/tasks.md",
+        "legacyRelativePaths": [
+          "projects/emergence/tasks.md"
+        ]
+      },
+      {
+        "id": "decisions",
+        "relativePath": "brain/emergence/decisions.md",
+        "sourceRelativePath": "brain/emergence/decisions.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/decisions.md",
+        "legacyRelativePaths": [
+          "projects/emergence/decisions.md"
+        ]
+      },
+      {
+        "id": "changelog",
+        "relativePath": "brain/emergence/changelog.md",
+        "sourceRelativePath": "brain/emergence/changelog.md",
+        "source": "canonical",
+        "authority": "canonical-anchor",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/changelog.md",
+        "legacyRelativePaths": [
+          "projects/emergence/changelog.md"
+        ]
+      },
+      {
+        "id": "state",
+        "relativePath": "brain/emergence/state.json",
+        "sourceRelativePath": "brain/emergence/state.json",
+        "source": "canonical",
+        "authority": "derived-state",
+        "exists": true,
+        "required": true,
+        "canonicalRelativePath": "brain/emergence/state.json",
+        "legacyRelativePaths": [
+          "projects/emergence/state.json"
+        ]
+      }
+    ],
+    "drift": [],
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/state.json"
+    ],
+    "throughputDebug": {
+      "latestSession": {
+        "id": "throughput_1773765740802_vjofq8",
+        "prompt": "I think we should add a desk to the studio for a QA agent",
+        "status": "completed",
+        "verdict": "pass",
+        "targetProjectKey": "ace-self",
+        "mode": "live",
+        "createdAt": "2026-03-17T16:42:20.802Z",
+        "finishedAt": "2026-03-17T16:42:51.218Z",
+        "pageId": "page_debug_1773765740818_66iawr",
+        "nodeId": "node_debug_1773765740818_nku99b",
+        "runnerTaskId": "10000",
+        "qaRunId": "qa_1773765771223_mzya4z",
+        "anchorRefs": [
+          "brain/emergence/roadmap.md",
+          "brain/emergence/tasks.md"
+        ],
+        "stageSummary": [
+          {
+            "id": "seed",
+            "label": "Seed Debug Page",
+            "verdict": "pass",
+            "status": "completed"
+          },
+          {
+            "id": "intent",
+            "label": "Context Analysis",
+            "verdict": "pass",
+            "status": "completed"
+          },
+          {
+            "id": "handoff",
+            "label": "Planner Handoff",
+            "verdict": "pass",
+            "status": "completed"
+          },
+          {
+            "id": "team-board",
+            "label": "Team Board Progression",
+            "verdict": "pass",
+            "status": "completed"
+          },
+          {
+            "id": "runner-task",
+            "label": "Runner Task Mapping",
+            "verdict": "pass",
+            "status": "completed"
+          },
+          {
+            "id": "scan",
+            "label": "Runner Scan",
+            "verdict": "failed",
+            "status": "failed"
+          },
+          {
+            "id": "manage",
+            "label": "Runner Manage",
+            "verdict": "pending",
+            "status": "pending"
+          },
+          {
+            "id": "build",
+            "label": "Runner Build",
+            "verdict": "pending",
+            "status": "pending"
+          },
+          {
+            "id": "apply",
+            "label": "Runner Apply",
+            "verdict": "pending",
+            "status": "pending"
+          },
+          {
+            "id": "preflight",
+            "label": "Self-Upgrade Preflight",
+            "verdict": "blocked",
+            "status": "blocked"
+          },
+          {
+            "id": "deploy",
+            "label": "Self-Upgrade Deploy",
+            "verdict": "blocked",
+            "status": "blocked"
+          },
+          {
+            "id": "archives",
+            "label": "Archive Verification",
+            "verdict": "pass",
+            "status": "completed"
+          },
+          {
+            "id": "final",
+            "label": "Final Comparison",
+            "verdict": "pass",
+            "status": "completed"
+          }
+        ]
+      },
+      "sessions": [
+        {
+          "id": "throughput_1773765740802_vjofq8",
+          "prompt": "I think we should add a desk to the studio for a QA agent",
+          "status": "completed",
+          "verdict": "pass",
+          "targetProjectKey": "ace-self",
+          "mode": "live",
+          "createdAt": "2026-03-17T16:42:20.802Z",
+          "finishedAt": "2026-03-17T16:42:51.218Z",
+          "pageId": "page_debug_1773765740818_66iawr",
+          "nodeId": "node_debug_1773765740818_nku99b",
+          "runnerTaskId": "10000",
+          "qaRunId": "qa_1773765771223_mzya4z",
+          "anchorRefs": [
+            "brain/emergence/roadmap.md",
+            "brain/emergence/tasks.md"
+          ],
+          "stageSummary": [
+            {
+              "id": "seed",
+              "label": "Seed Debug Page",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "intent",
+              "label": "Context Analysis",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "handoff",
+              "label": "Planner Handoff",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "team-board",
+              "label": "Team Board Progression",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "runner-task",
+              "label": "Runner Task Mapping",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "scan",
+              "label": "Runner Scan",
+              "verdict": "failed",
+              "status": "failed"
+            },
+            {
+              "id": "manage",
+              "label": "Runner Manage",
+              "verdict": "pending",
+              "status": "pending"
+            },
+            {
+              "id": "build",
+              "label": "Runner Build",
+              "verdict": "pending",
+              "status": "pending"
+            },
+            {
+              "id": "apply",
+              "label": "Runner Apply",
+              "verdict": "pending",
+              "status": "pending"
+            },
+            {
+              "id": "preflight",
+              "label": "Self-Upgrade Preflight",
+              "verdict": "blocked",
+              "status": "blocked"
+            },
+            {
+              "id": "deploy",
+              "label": "Self-Upgrade Deploy",
+              "verdict": "blocked",
+              "status": "blocked"
+            },
+            {
+              "id": "archives",
+              "label": "Archive Verification",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "final",
+              "label": "Final Comparison",
+              "verdict": "pass",
+              "status": "completed"
+            }
+          ]
+        },
+        {
+          "id": "throughput_1773762539013_rk45gm",
+          "prompt": "I think we should add a desk to the studio for a QA agent",
+          "status": "completed",
+          "verdict": "pass",
+          "targetProjectKey": "ace-self",
+          "mode": "fixture",
+          "createdAt": "2026-03-17T15:48:59.013Z",
+          "finishedAt": "2026-03-17T15:49:29.473Z",
+          "pageId": "page_debug_1773762539026_gf289j",
+          "nodeId": "node_debug_1773762539026_xmsfpq",
+          "runnerTaskId": "10000",
+          "qaRunId": "qa_1773762569479_ffaa1l",
+          "anchorRefs": [
+            "brain/emergence/roadmap.md",
+            "brain/emergence/tasks.md"
+          ],
+          "stageSummary": [
+            {
+              "id": "seed",
+              "label": "Seed Debug Page",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "intent",
+              "label": "Context Analysis",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "handoff",
+              "label": "Planner Handoff",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "team-board",
+              "label": "Team Board Progression",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "runner-task",
+              "label": "Runner Task Mapping",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "scan",
+              "label": "Runner Scan",
+              "verdict": "failed",
+              "status": "failed"
+            },
+            {
+              "id": "manage",
+              "label": "Runner Manage",
+              "verdict": "pending",
+              "status": "pending"
+            },
+            {
+              "id": "build",
+              "label": "Runner Build",
+              "verdict": "pending",
+              "status": "pending"
+            },
+            {
+              "id": "apply",
+              "label": "Runner Apply",
+              "verdict": "pending",
+              "status": "pending"
+            },
+            {
+              "id": "preflight",
+              "label": "Self-Upgrade Preflight",
+              "verdict": "blocked",
+              "status": "blocked"
+            },
+            {
+              "id": "deploy",
+              "label": "Self-Upgrade Deploy",
+              "verdict": "blocked",
+              "status": "blocked"
+            },
+            {
+              "id": "archives",
+              "label": "Archive Verification",
+              "verdict": "pass",
+              "status": "completed"
+            },
+            {
+              "id": "final",
+              "label": "Final Comparison",
+              "verdict": "pass",
+              "status": "completed"
+            }
+          ]
+        }
+      ]
+    },
+    "qaDebug": {
+      "latestRun": {
+        "id": "qa_1773932801395_6lka1w",
+        "scenario": "studio-smoke",
+        "mode": "interactive",
+        "trigger": "manual",
+        "status": "running",
+        "verdict": "pending",
+        "createdAt": "2026-03-19T15:06:41.395Z",
+        "finishedAt": null,
+        "findingCount": 0,
+        "highestSeverity": "info",
+        "primaryScreenshot": {
+          "name": "01-initial.png",
+          "label": "Initial ACE render",
+          "url": "/api/spatial/qa/runs/qa_1773932801395_6lka1w/artifacts/01-initial.png"
+        },
+        "stepSummary": [
+          {
+            "id": "health",
+            "label": "Wait for ACE runtime",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "launch",
+            "label": "Launch browser",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "open",
+            "label": "Open ACE",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "studio",
+            "label": "Enter ACE Studio",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "scenario",
+            "label": "Run QA scenario actions",
+            "status": "completed",
+            "verdict": "pass"
+          },
+          {
+            "id": "capture",
+            "label": "Capture artifacts",
+            "status": "pending",
+            "verdict": "pending"
+          },
+          {
+            "id": "analyze",
+            "label": "Analyze layout and runtime",
+            "status": "pending",
+            "verdict": "pending"
+          }
+        ],
+        "linked": {}
+      },
+      "runs": [
+        {
+          "id": "qa_1773932801395_6lka1w",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "running",
+          "verdict": "pending",
+          "createdAt": "2026-03-19T15:06:41.395Z",
+          "finishedAt": null,
+          "findingCount": 0,
+          "highestSeverity": "info",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773932801395_6lka1w/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "pending",
+              "verdict": "pending"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "pending",
+              "verdict": "pending"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773932794281_cy62r8",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-19T15:06:34.281Z",
+          "finishedAt": "2026-03-19T15:06:37.332Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773932794281_cy62r8/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773842489928_7ar2ej",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-18T14:01:29.928Z",
+          "finishedAt": "2026-03-18T14:01:33.989Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773842489928_7ar2ej/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773765771223_mzya4z",
+          "scenario": "throughput-visual-pass",
+          "mode": "interactive",
+          "trigger": "throughput-debug",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-17T16:42:51.223Z",
+          "finishedAt": "2026-03-17T16:42:55.509Z",
+          "findingCount": 2,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773765771223_mzya4z/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {
+            "throughputSessionId": "throughput_1773765740802_vjofq8"
+          }
+        },
+        {
+          "id": "qa_1773762569479_ffaa1l",
+          "scenario": "throughput-visual-pass",
+          "mode": "interactive",
+          "trigger": "throughput-debug",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-17T15:49:29.479Z",
+          "finishedAt": "2026-03-17T15:49:34.610Z",
+          "findingCount": 2,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773762569479_ffaa1l/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {
+            "throughputSessionId": "throughput_1773762539013_rk45gm"
+          }
+        },
+        {
+          "id": "qa_1773599019841_41vddx",
+          "scenario": "layout-pass",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "failed",
+          "verdict": "failed",
+          "createdAt": "2026-03-15T18:23:39.841Z",
+          "finishedAt": "2026-03-15T18:23:40.578Z",
+          "findingCount": 0,
+          "highestSeverity": "info",
+          "primaryScreenshot": null,
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "failed",
+              "verdict": "failed"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "pending",
+              "verdict": "pending"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "pending",
+              "verdict": "pending"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "pending",
+              "verdict": "pending"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "pending",
+              "verdict": "pending"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "pending",
+              "verdict": "pending"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773493275620_apfpwj",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "pass",
+          "createdAt": "2026-03-14T13:01:15.620Z",
+          "finishedAt": "2026-03-14T13:01:17.935Z",
+          "findingCount": 0,
+          "highestSeverity": "info",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773493275620_apfpwj/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "pass"
+            }
+          ],
+          "linked": {}
+        },
+        {
+          "id": "qa_1773493186546_zi9wq0",
+          "scenario": "studio-smoke",
+          "mode": "interactive",
+          "trigger": "manual",
+          "status": "completed",
+          "verdict": "failed",
+          "createdAt": "2026-03-14T12:59:46.546Z",
+          "finishedAt": "2026-03-14T12:59:48.848Z",
+          "findingCount": 1,
+          "highestSeverity": "error",
+          "primaryScreenshot": {
+            "name": "01-initial.png",
+            "label": "Initial ACE render",
+            "url": "/api/spatial/qa/runs/qa_1773493186546_zi9wq0/artifacts/01-initial.png"
+          },
+          "stepSummary": [
+            {
+              "id": "health",
+              "label": "Wait for ACE runtime",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "launch",
+              "label": "Launch browser",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "open",
+              "label": "Open ACE",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "studio",
+              "label": "Enter ACE Studio",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "scenario",
+              "label": "Run QA scenario actions",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "capture",
+              "label": "Capture artifacts",
+              "status": "completed",
+              "verdict": "pass"
+            },
+            {
+              "id": "analyze",
+              "label": "Analyze layout and runtime",
+              "status": "completed",
+              "verdict": "weak"
+            }
+          ],
+          "linked": {}
+        }
+      ]
+    }
+  },
+  "health": {
+    "ok": true,
+    "pid": 26296,
+    "startedAt": "2026-03-19T08:21:36.902Z",
+    "selfUpgrade": {
+      "status": "idle",
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": 26296,
+          "startedAt": "2026-03-19T08:21:36.902Z"
+        }
+      }
+    }
+  }
+}

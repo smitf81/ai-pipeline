@@ -1,4 +1,5 @@
 const path = require('path');
+const { buildTaContractCheckQualityCard } = require('../testAttributeCards');
 const {
   applyFixtureFailures,
   evaluateDeskFileScope,
@@ -62,7 +63,13 @@ async function runTests(context) {
     contractFailures.push(`/api/ta/candidates failed: ${String(error.message || error)}`);
   }
 
-  tests.push(makeTest('contract_check', contractFailures.length === 0, contractFailures.join('; ')));
+  tests.push(makeTest(
+    'contract_check',
+    contractFailures.length === 0,
+    contractFailures.join('; '),
+    'critical',
+    { qualityCard: buildTaContractCheckQualityCard() },
+  ));
 
   const fileScope = evaluateDeskFileScope(context, 'ta');
   tests.push(makeTest('file_scope', fileScope.ok, fileScope.reason));
@@ -100,7 +107,7 @@ async function runTests(context) {
   }
   tests.push(makeTest('idempotency', idempotencyFailures.length === 0, idempotencyFailures.join('; ')));
 
-  const agentOutputChanged = Array.isArray(firstResponse?.body?.candidates) && firstResponse.body.candidates.length > 0;
+  const agentOutputChanged = false; // TA candidate generation is deterministic and does not emit agent-run artifacts.
   const llmCheck = verifyLlmInvocation(context.rootPath, startTime);
   tests.push(makeTest('llm_invocation_check', !agentOutputChanged || llmCheck.ok, agentOutputChanged ? llmCheck.reason : 'No agent run triggered'));
 

@@ -17,6 +17,32 @@ python3 -m http.server 4173
 
 Open `http://localhost:4173`.
 
+## Tests
+- Default Node test isolation can fail in the Codex sandbox with `spawn EPERM` because the built-in runner attempts per-file subprocess isolation.
+- For in-process execution, run:
+
+```bash
+cd projects/topdown-slice
+node --experimental-default-type=module tests/runInProcessTests.mjs
+```
+
+- To run targeted files in-process, pass one or more test paths or filenames:
+
+```bash
+node --experimental-default-type=module tests/runInProcessTests.mjs tests/builderSpawner.test.mjs adaptiveResolverWeights.test.mjs
+```
+
+- If you want to keep the built-in runner, this environment also works with:
+
+```bash
+node --experimental-default-type=module --test --experimental-test-isolation=none ./tests/builderSpawner.test.mjs
+```
+
+- Current diagnosis:
+  Default `node --test` reproduces `spawn EPERM` in this sandbox even for a single trivial file, and the failure stack points into `node:internal/test_runner/runner` rather than repo code.
+  Inference: the EPERM is caused by sandbox restrictions on Node's default child-process test isolation, not by a project-specific subprocess harness.
+  Local unsandboxed reproduction has not been confirmed from this environment, so treat it as sandbox-specific unless the same command fails on your machine.
+
 ## Controls
 - Tool dropdown:
   - **Select**: click building to inspect/edit/delete.

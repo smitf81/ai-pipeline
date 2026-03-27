@@ -36,3 +36,9 @@ Preferred mappings:
 - `repo-change-digest` -> `brain/context/recent_change_digest.md`
 - `ui-backend-gap-audit` -> `brain/context/ui_backend_drift.md`
 - `task-scope-compressor` -> `brain/context/next_slice.md`
+
+## UI Completion Gate
+
+Any change touching `ui/public/spatial/*`, `ui/public/style.css`, or browser-loaded UI shell code is not complete until `npm test` passes from `ui/`.
+
+Treat that local `ui` test run as a required completion gate, not an optional spot check.

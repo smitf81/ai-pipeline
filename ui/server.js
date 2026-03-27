@@ -1,5 +1,8 @@
 const express = require('express');
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
+const net = require('net');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
@@ -7,6 +10,7 @@ const {
   advanceOrchestratorWorkspace,
   buildRuntimePayload,
   createTeamBoardCard,
+  createDefaultTeamBoard,
   normalizeGraphBundle,
   createDefaultRsgState,
   buildRsgState,
@@ -26,9 +30,12 @@ const {
   getSelfUpgradePreflightSpecs,
 } = require('./selfUpgrade');
 const {
+  classifyExecutionProvenance,
+  createExecutionProvenance,
   createPlannerHandoff,
   listThroughputSessions,
   readThroughputSession,
+  mergeExecutionProvenance,
   summarizeSession,
   updateThroughputSession,
   runThroughputSession,
@@ -37,9 +44,12 @@ const {
 const {
   ensureQAStorage,
   listQARuns,
+  readLocalGateReport,
   readQARun,
+  readStructuredQAReport,
   runQARun,
   summarizeQARun,
+  writeStructuredQAReport,
 } = require('./qaRunner');
 const {
   createDefaultAgentWorkersState,
@@ -66,6 +76,15 @@ const {
   resolveTargetsConfig,
 } = require('./anchorResolver');
 const {
+  buildSliceStoreFromCards,
+  projectBoardFromSlices,
+  readSliceStore,
+  writeSliceArtifacts,
+} = require('./sliceRepository');
+const {
+  applyArchivistWriteback,
+} = require('./archivistWriteback');
+const {
   generateCandidates,
   validateGap,
 } = require('../ta/generateCandidates');
@@ -79,14 +98,25 @@ const {
   runLegacyFallbackStream,
 } = require('./legacyRunnerAdapter');
 const {
+  callOllamaGenerate,
+} = require('./llmAdapter');
+const {
   runAll: runStructuredQA,
 } = require('../qa/qaLead');
+const {
+  AGENTS_ROOT,
+  normalizeAgentId,
+} = require('./agentRegistry');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+
+app.get(['/qa', '/qa/'], (req, res) => {
+  res.redirect(302, '/?mode=qa');
+});
 
 const ROOT = path.join(__dirname, '..');
 const COMMANDS_FILE = path.join(ROOT, 'ace_commands.json');
@@ -95,18 +125,32 @@ const REFRESH_MS_DEFAULT = 10000;
 const MAX_RUN_HISTORY = 20;
 const SPATIAL_WORKSPACE_FILE = path.join(ROOT, 'data', 'spatial', 'workspace.json');
 const SPATIAL_HISTORY_FILE = path.join(ROOT, 'data', 'spatial', 'history.json');
+const SPATIAL_PAGES_FILE = path.join(ROOT, 'data', 'spatial', 'pages.json');
+const SPATIAL_INTENT_STATE_FILE = path.join(ROOT, 'data', 'spatial', 'intent-state.json');
+const SPATIAL_STUDIO_STATE_FILE = path.join(ROOT, 'data', 'spatial', 'studio-state.json');
+const SPATIAL_ARCHITECTURE_MEMORY_FILE = path.join(ROOT, 'data', 'spatial', 'architecture-memory.json');
 const SERVER_STARTED_AT = nowIso();
 const DOMAIN_KEY = DEFAULT_DOMAIN_KEY;
 const dashboardFiles = listCanonicalAnchorPaths(DOMAIN_KEY);
 
 const runStore = new Map();
 const runOrder = [];
+const projectRunStore = new Map();
+const QA_LEAD_DESK_ID = 'qa-lead';
+const STATIC_WEB_PROJECT_KEY = 'topdown-slice';
+const STATIC_WEB_HOST = '127.0.0.1';
+const STATIC_WEB_DEFAULT_PORT = 4173;
+const STATIC_WEB_SUPPORTED_ORIGIN = `http://${STATIC_WEB_HOST}:${STATIC_WEB_DEFAULT_PORT}/`;
+const STATIC_WEB_SHELL_MARKER = 'Top-Down Thin Slice';
+const STATIC_WEB_BOOT_ENTRY_PATHS = ['/src/main.js', '/src/editor/ui.js'];
+const PROJECT_RUN_START_TIMEOUT_MS = 4000;
 const DESK_AGENT_DEFAULTS = {
   'context-manager': ['context-manager'],
   planner: ['planner'],
   executor: ['executor'],
-  'memory-archivist': ['memory-archivist'],
+  'memory-archivist': ['memory-archivist', 'dave'],
   'cto-architect': ['cto-architect'],
+  [QA_LEAD_DESK_ID]: [QA_LEAD_DESK_ID],
 };
 const TEAM_BOARD_DESK_TO_STUDIO_DESK = {
   Planner: 'planner',
@@ -115,6 +159,10 @@ const TEAM_BOARD_DESK_TO_STUDIO_DESK = {
 };
 const EXECUTIVE_ENVELOPE_VERSION = 'ace/studio-envelope.v1';
 const EXECUTIVE_EXPORT_DIR = path.join(ROOT, 'data', 'spatial', 'exports');
+const LEARNING_LEDGER_ROOT = path.join(ROOT, 'data', 'spatial', 'learning-ledger');
+const AGENTS_DIR = path.join(ROOT, AGENTS_ROOT);
+const DEFAULT_CONTEXT_MANAGER_MODEL = 'mistral:latest';
+const DEFAULT_CONTEXT_MANAGER_BACKEND = 'ollama';
 
 
 function ensureSpatialStorage() {
@@ -124,7 +172,16 @@ function ensureSpatialStorage() {
   if (!fs.existsSync(SPATIAL_WORKSPACE_FILE)) {
     writeJson(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace());
   }
+  if (!fs.existsSync(SPATIAL_PAGES_FILE)) writeJson(SPATIAL_PAGES_FILE, { pages: [], activePageId: null });
+  if (!fs.existsSync(SPATIAL_INTENT_STATE_FILE)) writeJson(SPATIAL_INTENT_STATE_FILE, { intentState: { currentIntentId: null, summary: '', status: 'idle' } });
+  if (!fs.existsSync(SPATIAL_STUDIO_STATE_FILE)) writeJson(SPATIAL_STUDIO_STATE_FILE, { handoffs: {}, teamBoard: createDefaultTeamBoard() });
+  if (!fs.existsSync(SPATIAL_ARCHITECTURE_MEMORY_FILE)) writeJson(SPATIAL_ARCHITECTURE_MEMORY_FILE, { architectureMemory: {} });
   if (!fs.existsSync(SPATIAL_HISTORY_FILE)) fs.writeFileSync(SPATIAL_HISTORY_FILE, '[]\n');
+  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const sliceSnapshot = readSliceStore(ROOT, DOMAIN_KEY);
+  if (!sliceSnapshot.exists) {
+    persistCanonicalSlices(buildSliceStoreFromCards(normalizeTeamBoardState(workspace).cards));
+  }
 }
 
 function writeJson(file, payload) {
@@ -135,6 +192,287 @@ function appendArchitectureHistory(entry) {
   const history = readJsonSafe(SPATIAL_HISTORY_FILE, []) || [];
   history.push(entry);
   writeJson(SPATIAL_HISTORY_FILE, history.slice(-80));
+}
+
+const SPATIAL_GRAPH_LAYERS = ['system', 'world'];
+
+function cloneJsonValue(value, fallback) {
+  if (value === undefined) return fallback;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return fallback;
+  }
+}
+
+function cloneSpatialGraph(graph = {}) {
+  return {
+    nodes: cloneJsonValue(graph.nodes, []),
+    edges: cloneJsonValue(graph.edges, []),
+  };
+}
+
+function findSpatialNodeLayer(graphs = {}, nodeId = '') {
+  const targetId = String(nodeId || '').trim();
+  if (!targetId) return null;
+  return SPATIAL_GRAPH_LAYERS.find((layer) => Array.isArray(graphs?.[layer]?.nodes) && graphs[layer].nodes.some((node) => node?.id === targetId)) || null;
+}
+
+function resolveSpatialMutationLayer(graphs = {}, mutation = {}) {
+  const requestedLayer = String(mutation?.layer || mutation?.graphLayer || mutation?.node?.metadata?.graphLayer || mutation?.patch?.metadata?.graphLayer || '').trim().toLowerCase();
+  if (SPATIAL_GRAPH_LAYERS.includes(requestedLayer)) return requestedLayer;
+  if (mutation?.type === 'modify_node') {
+    return findSpatialNodeLayer(graphs, mutation.id) || 'system';
+  }
+  if (mutation?.type === 'create_edge') {
+    return findSpatialNodeLayer(graphs, mutation?.edge?.source) || findSpatialNodeLayer(graphs, mutation?.edge?.target) || 'system';
+  }
+  return 'system';
+}
+
+function applySingleSpatialMutation(graph = {}, mutation = {}) {
+  const type = String(mutation?.type || '').trim().toLowerCase();
+  if (!type) {
+    const error = new Error('Mutation type is required.');
+    error.code = 'missing-type';
+    throw error;
+  }
+
+  if (type === 'create_node') {
+    const node = cloneJsonValue(mutation.node, null);
+    if (!node || typeof node !== 'object') {
+      const error = new Error('create_node requires a node payload.');
+      error.code = 'missing-node';
+      throw error;
+    }
+    const nodeId = String(node.id || '').trim();
+    if (!nodeId) {
+      const error = new Error('create_node requires node.id.');
+      error.code = 'missing-node-id';
+      throw error;
+    }
+    const existingNode = graph.nodes.find((entry) => entry?.id === nodeId);
+    if (existingNode) {
+      if (JSON.stringify(existingNode) === JSON.stringify(node)) {
+        return { changed: false, appliedCount: 0, reason: 'node-already-exists' };
+      }
+      const error = new Error(`Cannot create node "${nodeId}" because it already exists with different content.`);
+      error.code = 'node-conflict';
+      throw error;
+    }
+    graph.nodes.push(node);
+    return { changed: true, appliedCount: 1, reason: '' };
+  }
+
+  if (type === 'modify_node') {
+    const nodeId = String(mutation.id || '').trim();
+    if (!nodeId) {
+      const error = new Error('modify_node requires id.');
+      error.code = 'missing-node-id';
+      throw error;
+    }
+    const node = graph.nodes.find((entry) => entry?.id === nodeId);
+    if (!node) {
+      const error = new Error(`Cannot modify missing node "${nodeId}".`);
+      error.code = 'node-not-found';
+      throw error;
+    }
+    const patch = cloneJsonValue(mutation.patch, {});
+    const before = JSON.stringify(node);
+    Object.assign(node, patch);
+    return {
+      changed: JSON.stringify(node) !== before,
+      appliedCount: JSON.stringify(node) !== before ? 1 : 0,
+      reason: JSON.stringify(node) !== before ? '' : 'node-unchanged',
+    };
+  }
+
+  if (type === 'create_edge') {
+    const edge = cloneJsonValue(mutation.edge, null);
+    if (!edge || typeof edge !== 'object') {
+      const error = new Error('create_edge requires an edge payload.');
+      error.code = 'missing-edge';
+      throw error;
+    }
+    const source = String(edge.source || '').trim();
+    const target = String(edge.target || '').trim();
+    if (!source || !target) {
+      const error = new Error('create_edge requires source and target.');
+      error.code = 'missing-edge-endpoints';
+      throw error;
+    }
+    if (!graph.nodes.some((node) => node?.id === source) || !graph.nodes.some((node) => node?.id === target)) {
+      const error = new Error(`Cannot create edge "${source}" -> "${target}" without both endpoint nodes.`);
+      error.code = 'edge-node-missing';
+      throw error;
+    }
+    if (source === target) {
+      return { changed: false, appliedCount: 0, reason: 'self-edge-skipped' };
+    }
+    if (graph.edges.some((entry) => entry?.source === source && entry?.target === target)) {
+      return { changed: false, appliedCount: 0, reason: 'edge-already-exists' };
+    }
+    graph.edges.push(edge);
+    return { changed: true, appliedCount: 1, reason: '' };
+  }
+
+  const error = new Error(`Unsupported mutation type "${type}".`);
+  error.code = 'unsupported-type';
+  throw error;
+}
+
+function applySpatialMutationsToWorkspace(workspace = {}, mutations = []) {
+  const normalizedWorkspace = normalizeSpatialWorkspaceShape(workspace);
+  const requestedMutations = Array.isArray(mutations) ? mutations : [];
+  const graphs = normalizeGraphBundle(normalizedWorkspace);
+  const nextGraphs = {
+    system: cloneSpatialGraph(graphs.system),
+    world: cloneSpatialGraph(graphs.world),
+  };
+  const requested = requestedMutations.length;
+
+  if (!requested) {
+    return {
+      ok: true,
+      status: 'no-op',
+      confirmed: false,
+      requested: 0,
+      applied: 0,
+      changedLayers: [],
+      reason: 'No mutations requested.',
+      workspace: normalizedWorkspace,
+    };
+  }
+
+  const changedLayers = new Set();
+  let applied = 0;
+  const opReasons = [];
+
+  requestedMutations.forEach((mutation) => {
+    const layer = resolveSpatialMutationLayer(nextGraphs, mutation);
+    const targetGraph = nextGraphs[layer] || nextGraphs.system;
+    const result = applySingleSpatialMutation(targetGraph, mutation);
+    if (result.changed) changedLayers.add(layer);
+    applied += Number(result.appliedCount || 0);
+    if (result.reason) opReasons.push(result.reason);
+  });
+
+  const nextWorkspace = normalizeSpatialWorkspaceShape({
+    ...normalizedWorkspace,
+    graphs: nextGraphs,
+    graph: nextGraphs.system,
+  });
+  const status = changedLayers.size ? 'applied' : 'no-op';
+
+  return {
+    ok: true,
+    status,
+    confirmed: changedLayers.size > 0,
+    requested,
+    applied,
+    changedLayers: Array.from(changedLayers),
+    reason: changedLayers.size ? '' : (opReasons[0] || 'No canonical graph change detected.'),
+    workspace: nextWorkspace,
+  };
+}
+
+function ensureLearningLedgerDir(agentId) {
+  const normalized = normalizeAgentId(agentId || 'dave');
+  const dir = path.join(LEARNING_LEDGER_ROOT, normalized);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function learningLedgerFilePath(agentId, entryId) {
+  const id = String(entryId || `entry_${Date.now()}`).trim();
+  return path.join(ensureLearningLedgerDir(agentId), `${id}.json`);
+}
+
+function normalizeLearningLedgerEntry(rawEntry, filePath = null) {
+  if (!rawEntry || typeof rawEntry !== 'object') return null;
+  const entryId = String(rawEntry.entryId || rawEntry.id || (filePath ? path.basename(filePath, '.json') : '')).trim() || `entry_${Date.now()}`;
+  const timestamp = rawEntry.timestamp || rawEntry.createdAt || nowIso();
+  return {
+    entryId,
+    agentId: normalizeAgentId(rawEntry.agentId || 'dave'),
+    timestamp,
+    taskPrompt: String(rawEntry.taskPrompt || rawEntry.prompt || '').trim(),
+    contextRefs: Array.isArray(rawEntry.contextRefs) ? rawEntry.contextRefs.filter(Boolean) : [],
+    generatedOutput: String(rawEntry.generatedOutput || rawEntry.output || '').trim(),
+    responseStatus: String(rawEntry.responseStatus || rawEntry.status || 'live').trim(),
+    qaOutcome: String(rawEntry.qaOutcome || 'unknown').trim(),
+    qaReason: String(rawEntry.qaReason || rawEntry.reason || '').trim(),
+    approvedFix: rawEntry.approvedFix || null,
+    datasetReady: Boolean(rawEntry.datasetReady),
+    runId: rawEntry.runId || rawEntry.lastRunId || null,
+    backend: rawEntry.backend || null,
+    model: rawEntry.model || null,
+    tokensUsed: Number(rawEntry.tokensUsed || 0),
+    durationMs: Number(rawEntry.durationMs || 0),
+    contextAlignmentScore: Number(rawEntry.contextAlignmentScore || 0),
+    contextAlignmentReason: rawEntry.contextAlignmentReason || null,
+  };
+}
+
+function listLearningLedgerEntries(agentId) {
+  const dir = ensureLearningLedgerDir(agentId);
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => normalizeLearningLedgerEntry(readJsonSafe(path.join(dir, entry.name), null), path.join(dir, entry.name)))
+    .filter(Boolean)
+    .sort((left, right) => String(right.timestamp || '').localeCompare(String(left.timestamp || '')));
+}
+
+function writeLearningLedgerEntry(agentId, payload = {}) {
+  const entryId = payload.entryId || `entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const filePath = learningLedgerFilePath(agentId, entryId);
+  const nextEntry = {
+    entryId,
+    timestamp: payload.timestamp || nowIso(),
+    agentId: normalizeAgentId(agentId),
+    ...payload,
+  };
+  writeJson(filePath, nextEntry);
+  return normalizeLearningLedgerEntry(nextEntry, filePath);
+}
+
+function updateLearningLedgerEntry(agentId, entryId, patch = {}) {
+  const filePath = learningLedgerFilePath(agentId, entryId);
+  const current = readJsonSafe(filePath, null);
+  if (!current) return null;
+  const nextEntry = {
+    ...current,
+    ...patch,
+    entryId,
+    timestamp: nowIso(),
+  };
+  writeJson(filePath, nextEntry);
+  return normalizeLearningLedgerEntry(nextEntry, filePath);
+}
+
+function computeLearningLedgerStats(entries = []) {
+  const attemptCount = entries.length;
+  const failedCount = entries.filter((entry) => entry.responseStatus !== 'live').length;
+  const approvedFixCount = entries.filter((entry) => entry.approvedFix).length;
+  const datasetReadyCount = entries.filter((entry) => entry.datasetReady).length;
+  return {
+    attemptCount,
+    failedCount,
+    approvedFixCount,
+    datasetReadyCount,
+  };
+}
+
+function listAgentModelOptions() {
+  if (!fs.existsSync(AGENTS_DIR)) return [DEFAULT_CONTEXT_MANAGER_MODEL];
+  const models = new Set();
+  fs.readdirSync(AGENTS_DIR, { withFileTypes: true }).forEach((entry) => {
+    if (!entry.isDirectory()) return;
+    const manifest = readJsonSafe(path.join(AGENTS_DIR, entry.name, 'agent.json'), null);
+    if (manifest?.model) models.add(String(manifest.model).trim());
+  });
+  models.add(DEFAULT_CONTEXT_MANAGER_MODEL);
+  return Array.from(models).sort();
 }
 
 function detectMaterialGenerationIntent(text) {
@@ -206,6 +544,32 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function classifyLlmFailureStatus(reason = '', usedFallback = false) {
+  const message = String(reason || '').toLowerCase();
+  if (message.includes('timed out')) return 'timed_out';
+  if (message.includes('econnrefused') || message.includes('fetch failed') || message.includes('no fetch implementation') || message.includes('ollama unavailable')) {
+    return 'model_unavailable';
+  }
+  return usedFallback ? 'degraded_fallback' : 'model_error';
+}
+
+function buildAgentFailurePayload(result, extras = {}) {
+  const run = extras.run || result?.run || result?.worker || null;
+  const reason = String(result?.reason || run?.reason || extras.error || 'Agent model call failed.').trim();
+  return {
+    ok: false,
+    status: classifyLlmFailureStatus(reason, Boolean(result?.usedFallback || run?.usedFallback)),
+    error: reason,
+    reason,
+    usedFallback: Boolean(result?.usedFallback || run?.usedFallback),
+    backend: run?.backend || extras.backend || null,
+    model: run?.model || extras.model || null,
+    runId: run?.id || run?.runId || extras.runId || null,
+    worker: run || null,
+    ...extras,
+  };
+}
+
 function slugify(value) {
   return String(value || '')
     .toLowerCase()
@@ -221,6 +585,106 @@ function readJsonSafe(filePath, fallback = null) {
   } catch {
     return fallback;
   }
+}
+
+function normalizeStoredIntentState(rawIntentState = {}) {
+  const intentState = rawIntentState?.intentState && typeof rawIntentState.intentState === 'object'
+    ? rawIntentState.intentState
+    : rawIntentState || {};
+  const currentIntentId = intentState.currentIntentId || intentState.latest?.id || intentState.contextReport?.id || null;
+  const summary = String(intentState.summary || intentState.latest?.summary || intentState.contextReport?.summary || '').trim();
+  const status = String(intentState.status || intentState.latest?.status || intentState.contextReport?.status || 'idle').trim() || 'idle';
+  const derived = currentIntentId || summary || status ? {
+    id: currentIntentId || 'intent-current',
+    currentIntentId,
+    summary,
+    status,
+    createdAt: intentState.createdAt || rawIntentState?.createdAt || null,
+  } : null;
+  return {
+    latest: intentState.latest || derived,
+    contextReport: intentState.contextReport || derived,
+    byNode: intentState.byNode || {},
+    reports: Array.isArray(intentState.reports) ? intentState.reports : [],
+    currentIntentId,
+    summary,
+    status,
+  };
+}
+
+function mergeWorkspacePatch(workspace, patch = {}) {
+  const nextStudio = {
+    ...(workspace?.studio || {}),
+  };
+  if (patch.scene !== undefined) nextStudio.scene = patch.scene;
+  if (patch.selectedDeskId !== undefined) nextStudio.selectedAgentId = patch.selectedDeskId;
+  if (patch.selectedTab !== undefined) nextStudio.selectedTab = patch.selectedTab;
+  if (patch.camera !== undefined) {
+    nextStudio.canvasViewport = {
+      ...(workspace?.studio?.canvasViewport || {}),
+      ...patch.camera,
+      ...(patch.zoom !== undefined ? { zoom: patch.zoom } : {}),
+    };
+    nextStudio.studioViewport = {
+      ...(workspace?.studio?.studioViewport || {}),
+      ...patch.camera,
+    };
+  } else if (patch.zoom !== undefined) {
+    nextStudio.canvasViewport = {
+      ...(workspace?.studio?.canvasViewport || {}),
+      zoom: patch.zoom,
+    };
+  }
+  if (patch.handoffs) {
+    nextStudio.handoffs = {
+      ...(workspace?.studio?.handoffs || {}),
+      ...patch.handoffs,
+    };
+  }
+  if (patch.teamBoard) {
+    nextStudio.teamBoard = {
+      ...(workspace?.studio?.teamBoard || {}),
+      ...patch.teamBoard,
+    };
+  }
+  if (patch.studio && typeof patch.studio === 'object') {
+    nextStudio.layout = patch.studio.layout !== undefined ? patch.studio.layout : nextStudio.layout;
+    nextStudio.sidebar = patch.studio.sidebar !== undefined ? patch.studio.sidebar : nextStudio.sidebar;
+    nextStudio.orchestrator = patch.studio.orchestrator !== undefined ? patch.studio.orchestrator : nextStudio.orchestrator;
+    nextStudio.selfUpgrade = patch.studio.selfUpgrade !== undefined ? patch.studio.selfUpgrade : nextStudio.selfUpgrade;
+    if (patch.studio.handoffs) {
+      nextStudio.handoffs = {
+        ...(nextStudio.handoffs || {}),
+        ...patch.studio.handoffs,
+      };
+    }
+    if (patch.studio.teamBoard) {
+      nextStudio.teamBoard = {
+        ...(nextStudio.teamBoard || {}),
+        ...patch.studio.teamBoard,
+      };
+    }
+  }
+
+  return {
+    ...workspace,
+    ...patch,
+    pages: Array.isArray(patch.pages) ? patch.pages : workspace?.pages,
+    activePageId: patch.activePageId !== undefined ? patch.activePageId : workspace?.activePageId,
+    architectureMemory: patch.architectureMemory
+      ? {
+          ...(workspace?.architectureMemory || {}),
+          ...patch.architectureMemory,
+        }
+      : workspace?.architectureMemory,
+    intentState: patch.intentState
+      ? {
+          ...(workspace?.intentState || {}),
+          ...patch.intentState,
+        }
+      : workspace?.intentState,
+    studio: nextStudio,
+  };
 }
 
 function normalizeDeskPropertiesState(workspace = {}) {
@@ -369,11 +833,130 @@ function collectDeskReports(workspace, deskId) {
   return [...taskReports, ...qaReports, ...manualReports];
 }
 
-function buildDeskPropertiesPayload(workspace, deskId) {
+const QA_SUITE_ORDER = ['planner', 'runner', 'ui', 'ta'];
+
+function formatQASuiteLabel(suiteId) {
+  const normalized = String(suiteId || '').trim();
+  if (!normalized) return 'QA Suite';
+  const title = normalized.length <= 3
+    ? normalized.toUpperCase()
+    : normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  return `${title} QA`;
+}
+
+function listRunnableQASuites() {
+  const dir = path.join(ROOT, 'qa', 'desks');
+  if (!fs.existsSync(dir)) return [];
+  const suiteOrder = new Map(QA_SUITE_ORDER.map((suiteId, index) => [suiteId, index]));
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /QA\.js$/i.test(entry.name))
+    .map((entry) => {
+      const id = String(entry.name).replace(/QA\.js$/i, '').toLowerCase();
+      return {
+        id,
+        name: formatQASuiteLabel(id),
+        file: path.relative(ROOT, path.join(dir, entry.name)).replace(/\\/g, '/'),
+      };
+    })
+    .sort((left, right) => {
+      const leftIndex = suiteOrder.has(left.id) ? suiteOrder.get(left.id) : Number.MAX_SAFE_INTEGER;
+      const rightIndex = suiteOrder.has(right.id) ? suiteOrder.get(right.id) : Number.MAX_SAFE_INTEGER;
+      if (leftIndex !== rightIndex) return leftIndex - rightIndex;
+      return left.name.localeCompare(right.name);
+    });
+}
+
+function collectStructuredQAScorecards(qaReport = null) {
+  const cards = [];
+  for (const desk of qaReport?.desks || []) {
+    for (const test of desk?.tests || []) {
+      if (!test?.qualityCard) continue;
+      cards.push({
+        ...test.qualityCard,
+        desk: test.qualityCard.desk || desk.desk || null,
+        status: test.status || test.qualityCard.status || 'pass',
+        testId: test.qualityCard.testId || test.name || null,
+        testName: test.qualityCard.testName || test.name || 'Unnamed QA test',
+      });
+    }
+  }
+  return cards;
+}
+
+function buildStructuredQASummary(qaReport = null) {
+  const desks = Array.isArray(qaReport?.desks) ? qaReport.desks : [];
+  return {
+    status: qaReport?.status || 'idle',
+    summary: qaReport?.summary || '',
+    deskCount: desks.length,
+    testCount: desks.reduce((total, desk) => total + (Array.isArray(desk?.tests) ? desk.tests.length : 0), 0),
+    startedAt: qaReport?.startedAt || null,
+    finishedAt: qaReport?.finishedAt || null,
+    durationMs: Number.isFinite(Number(qaReport?.durationMs)) ? Number(qaReport.durationMs) : null,
+  };
+}
+
+function listInteractiveBrowserRuns(rootPath = ROOT) {
+  return listQARuns(rootPath).filter((run) => String(run?.trigger || '').toLowerCase() !== 'guardrail');
+}
+
+function findLatestStudioBootGuardrailRun(rootPath = ROOT) {
+  return listQARuns(rootPath).find((run) => (
+    String(run?.trigger || '').toLowerCase() === 'guardrail'
+    && String(run?.scenario || '').toLowerCase() === 'studio-smoke'
+  )) || null;
+}
+
+function summarizeGuardrailRun(run = null) {
+  const summary = summarizeQARun(run);
+  if (!summary) return null;
+  const consoleErrors = Array.isArray(run?.console)
+    ? run.console.filter((entry) => entry.type === 'error' || entry.type === 'pageerror')
+    : [];
+  const networkFailures = Array.isArray(run?.network) ? run.network : [];
+  return {
+    ...summary,
+    source: 'studio-boot-guardrail',
+    consoleErrorCount: consoleErrors.length,
+    networkFailureCount: networkFailures.length,
+    failedSteps: (run?.steps || [])
+      .filter((step) => !['pass', 'pending'].includes(String(step?.verdict || 'pending')))
+      .map((step) => ({
+        id: step.id,
+        label: step.label,
+        verdict: step.verdict || step.status || 'unknown',
+      })),
+  };
+}
+
+function buildLocalGatePayload(rootPath = ROOT) {
+  return {
+    unit: readLocalGateReport(rootPath, 'test-unit-latest'),
+    studioBoot: summarizeGuardrailRun(findLatestStudioBootGuardrailRun(rootPath)),
+  };
+}
+
+function buildQAStatePayload(rootPath = ROOT) {
+  const structuredReport = readStructuredQAReport(rootPath, 'latest');
+  const interactiveRuns = listInteractiveBrowserRuns(rootPath);
+  return {
+    structuredReport,
+    structuredBusy: false,
+    latestBrowserRun: summarizeQARun(interactiveRuns[0] || null),
+    browserRuns: interactiveRuns.slice(0, 8).map((run) => summarizeQARun(run)),
+    browserBusy: false,
+    localGate: buildLocalGatePayload(rootPath),
+  };
+}
+
+function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
   const desk = workspace?.studio?.orchestrator?.desks?.[deskId] || {};
   const deskProperties = normalizeDeskPropertiesState(workspace)?.[deskId] || { managedAgents: [], moduleIds: [], manualTests: [] };
   const modules = listModuleManifests();
   const tasks = collectDeskTasks(workspace, deskId);
+  const resolvedQAState = deskId === QA_LEAD_DESK_ID ? (qaState || buildQAStatePayload()) : null;
+  const structuredReport = resolvedQAState?.structuredReport || null;
+  const qaScorecards = collectStructuredQAScorecards(structuredReport);
   const primaryAgentIds = DESK_AGENT_DEFAULTS[deskId] || [];
   const agents = [...new Set([...primaryAgentIds, ...deskProperties.managedAgents])]
     .map((agentId) => {
@@ -406,11 +989,23 @@ function buildDeskPropertiesPayload(workspace, deskId) {
       assigned: deskProperties.moduleIds.includes(module.id),
     })),
     reports: collectDeskReports(workspace, deskId),
+    qa: deskId === QA_LEAD_DESK_ID
+      ? {
+          availableTests: listRunnableQASuites(),
+          structuredReport,
+          structuredSummary: buildStructuredQASummary(structuredReport),
+          scorecards: qaScorecards,
+          latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
+          browserRuns: Array.isArray(resolvedQAState?.browserRuns) ? resolvedQAState.browserRuns : [],
+          localGate: resolvedQAState?.localGate || { unit: null, studioBoot: null },
+        }
+      : undefined,
     sources: {
       tasks: ['studio.orchestrator.desks.*.workItems', 'studio.teamBoard.cards'],
       modules: ['modules/**/*.module.json'],
       reports: ['studio.teamBoard.cards.verifyStatus/applyStatus/deployStatus', 'data/spatial/qa/runs/*.json', 'studio.deskProperties.manualTests'],
       agents: ['studio.agentWorkers', 'studio.deskProperties.managedAgents'],
+      ...(deskId === QA_LEAD_DESK_ID ? { qa: ['qa/desks/*.js', 'data/spatial/qa/structured/*.json', 'data/spatial/qa/local-gates/*.json', 'data/spatial/qa/*.json'] } : {}),
     },
   };
 }
@@ -422,9 +1017,467 @@ function getAnchorBundle() {
   });
 }
 
+function getCanonicalSliceStore() {
+  return readSliceStore(ROOT, DOMAIN_KEY).store;
+}
+
+function persistCanonicalSlices(store) {
+  return writeSliceArtifacts(ROOT, store, DOMAIN_KEY);
+}
+
+function persistCanonicalSlicesForWorkspace(workspace) {
+  const board = normalizeTeamBoardState(workspace || {});
+  return persistCanonicalSlices(buildSliceStoreFromCards(board.cards));
+}
+
+function runArchivistWriteback(options = {}) {
+  return applyArchivistWriteback(ROOT, {
+    domainKey: DOMAIN_KEY,
+    workspace: options.workspace || readSpatialWorkspace(),
+    dryRun: Boolean(options.dryRun),
+    includeTasks: options.includeTasks !== false,
+    now: options.now,
+  });
+}
+
+function projectCanonicalSlicesIntoWorkspace(workspace) {
+  const sliceStore = getCanonicalSliceStore();
+  if (!sliceStore.slices.length) return workspace;
+  const currentStudio = workspace?.studio || {};
+  const currentBoard = currentStudio.teamBoard || createDefaultTeamBoard();
+  return {
+    ...workspace,
+    studio: {
+      ...currentStudio,
+      teamBoard: projectBoardFromSlices(sliceStore, currentBoard, workspace?.activePageId || null),
+    },
+  };
+}
+
 function loadProjectsMap() {
   const config = resolveTargetsConfig(ROOT);
   return ensureSelfProject(config.targets || {}, ROOT);
+}
+
+function normalizeProjectPath(projectPath = '') {
+  const trimmed = String(projectPath || '').trim();
+  if (!trimmed) return '';
+  return path.isAbsolute(trimmed) ? trimmed : path.resolve(ROOT, trimmed);
+}
+
+function detectRunnableProjectType(projectKey, projectPath) {
+  const resolvedPath = normalizeProjectPath(projectPath);
+  if (!resolvedPath || !fs.existsSync(path.join(resolvedPath, 'index.html'))) {
+    return null;
+  }
+  const normalizedKey = String(projectKey || '').trim().toLowerCase();
+  const baseName = path.basename(resolvedPath).toLowerCase();
+  if (normalizedKey === STATIC_WEB_PROJECT_KEY || baseName === STATIC_WEB_PROJECT_KEY) {
+    return 'static-web';
+  }
+  return null;
+}
+
+function buildProjectRecord(projectKey, projectPath) {
+  const resolvedPath = normalizeProjectPath(projectPath);
+  const projectType = detectRunnableProjectType(projectKey, resolvedPath);
+  return {
+    key: projectKey,
+    name: projectKey,
+    path: resolvedPath,
+    projectType,
+    launchable: Boolean(projectType),
+    supportedOrigin: projectType === 'static-web' ? STATIC_WEB_SUPPORTED_ORIGIN : null,
+  };
+}
+
+function listProjectsForUi() {
+  const projects = loadProjectsMap();
+  return Object.entries(projects).map(([key, projectPath]) => buildProjectRecord(key, projectPath));
+}
+
+function resolveProjectRecord(projectKey) {
+  const projects = loadProjectsMap();
+  const normalizedKey = String(projectKey || '').trim();
+  if (!normalizedKey || !projects[normalizedKey]) return null;
+  return buildProjectRecord(normalizedKey, projects[normalizedKey]);
+}
+
+function commandAvailable(command, probeArgs = ['--version']) {
+  return spawnSyncSafe(command, probeArgs, ROOT).code === 0;
+}
+
+function resolveStaticWebLaunchCommand(port) {
+  const portValue = String(port);
+  const candidates = process.platform === 'win32'
+    ? [
+        { command: 'py', probeArgs: ['-3', '--version'], args: ['-3', '-m', 'http.server', portValue] },
+        { command: 'python', probeArgs: ['--version'], args: ['-m', 'http.server', portValue] },
+        { command: 'python3', probeArgs: ['--version'], args: ['-m', 'http.server', portValue] },
+      ]
+    : [
+        { command: 'python3', probeArgs: ['--version'], args: ['-m', 'http.server', portValue] },
+        { command: 'python', probeArgs: ['--version'], args: ['-m', 'http.server', portValue] },
+      ];
+  const selected = candidates.find((candidate) => commandAvailable(candidate.command, candidate.probeArgs));
+  if (!selected) {
+    throw new Error('No Python runtime is available to launch static web projects.');
+  }
+  return {
+    command: selected.command,
+    args: selected.args,
+    commandLine: [selected.command, ...selected.args].join(' '),
+  };
+}
+
+function checkPortAvailable(port, host = '127.0.0.1') {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.unref?.();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => {
+      server.close(() => resolve(true));
+    });
+    server.listen(port, host);
+  });
+}
+
+function waitForPortOpen(port, { host = STATIC_WEB_HOST, timeoutMs = PROJECT_RUN_START_TIMEOUT_MS } = {}) {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + timeoutMs;
+    const attempt = () => {
+      const socket = net.connect({ host, port });
+      socket.once('connect', () => {
+        socket.end();
+        resolve();
+      });
+      socket.once('error', () => {
+        socket.destroy();
+        if (Date.now() >= deadline) {
+          reject(new Error(`Project server did not start on port ${port}.`));
+          return;
+        }
+        const timer = setTimeout(attempt, 120);
+        timer.unref?.();
+      });
+    };
+    attempt();
+  });
+}
+
+function normalizeStaticWebOrigin(origin = STATIC_WEB_SUPPORTED_ORIGIN) {
+  const value = String(origin || '').trim() || STATIC_WEB_SUPPORTED_ORIGIN;
+  return value.endsWith('/') ? value : `${value}/`;
+}
+
+function displayProjectUrlPath(targetUrl = '') {
+  try {
+    return new URL(targetUrl).pathname || '/';
+  } catch (error) {
+    return String(targetUrl || '');
+  }
+}
+
+function normalizeTextResponse(targetUrl, response) {
+  if (typeof response === 'string') {
+    return {
+      url: targetUrl,
+      status: 200,
+      body: response,
+    };
+  }
+  return {
+    url: String(response?.url || targetUrl),
+    status: Number(response?.status ?? response?.statusCode ?? 0),
+    body: String(response?.body ?? response?.text ?? ''),
+  };
+}
+
+function requestTextFromUrl(targetUrl, { timeoutMs = PROJECT_RUN_START_TIMEOUT_MS } = {}) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(targetUrl);
+    const client = parsedUrl.protocol === 'https:' ? https : http;
+    const request = client.get(parsedUrl, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      response.on('end', () => {
+        resolve({
+          url: targetUrl,
+          status: Number(response.statusCode || 0),
+          body: Buffer.concat(chunks).toString('utf8'),
+        });
+      });
+    });
+    request.once('error', (error) => reject(error));
+    request.setTimeout(timeoutMs, () => {
+      request.destroy(new Error(`Timed out fetching ${targetUrl}.`));
+    });
+  });
+}
+
+function parseDirectNamedImports(source = '') {
+  const imports = [];
+  const importPattern = /import\s*\{([\s\S]*?)\}\s*from\s*['"]([^'"]+)['"]/g;
+  let match = importPattern.exec(source);
+  while (match) {
+    const specifier = String(match[2] || '').trim();
+    if (specifier.startsWith('.')) {
+      const symbols = String(match[1] || '')
+        .split(',')
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .map((item) => item.split(/\s+as\s+/i)[0]?.trim())
+        .filter(Boolean);
+      if (symbols.length) {
+        imports.push({ specifier, symbols });
+      }
+    }
+    match = importPattern.exec(source);
+  }
+  return imports;
+}
+
+function parseNamedExports(source = '') {
+  const exportedNames = new Set();
+  const functionPattern = /export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g;
+  const classPattern = /export\s+class\s+([A-Za-z_$][\w$]*)/g;
+  const valuePattern = /export\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/g;
+  const exportListPattern = /export\s*\{([\s\S]*?)\}(?:\s*from\s*['"][^'"]+['"])?/g;
+
+  [functionPattern, classPattern, valuePattern].forEach((pattern) => {
+    let match = pattern.exec(source);
+    while (match) {
+      exportedNames.add(String(match[1] || '').trim());
+      match = pattern.exec(source);
+    }
+  });
+
+  let exportListMatch = exportListPattern.exec(source);
+  while (exportListMatch) {
+    String(exportListMatch[1] || '')
+      .split(',')
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .forEach((item) => {
+        const aliasParts = item.split(/\s+as\s+/i).map((part) => part.trim()).filter(Boolean);
+        const exportedName = aliasParts[1] || aliasParts[0];
+        if (exportedName) exportedNames.add(exportedName);
+      });
+    exportListMatch = exportListPattern.exec(source);
+  }
+
+  return exportedNames;
+}
+
+async function smokeCheckStaticWebBoot({
+  baseUrl = STATIC_WEB_SUPPORTED_ORIGIN,
+  requestText = requestTextFromUrl,
+  entryPaths = STATIC_WEB_BOOT_ENTRY_PATHS,
+} = {}) {
+  const supportedOrigin = normalizeStaticWebOrigin(baseUrl);
+  const responseCache = new Map();
+  const loadText = async (targetUrl) => {
+    if (responseCache.has(targetUrl)) return responseCache.get(targetUrl);
+    let response;
+    try {
+      response = normalizeTextResponse(targetUrl, await requestText(targetUrl));
+    } catch (error) {
+      throw new Error(`Failed to fetch ${displayProjectUrlPath(targetUrl)}: ${String(error.message || error)}`);
+    }
+    responseCache.set(targetUrl, response);
+    return response;
+  };
+
+  const shellCandidates = [
+    new URL('/', supportedOrigin).toString(),
+    new URL('/index.html', supportedOrigin).toString(),
+  ];
+  const shellErrors = [];
+  let shellResponse = null;
+  for (const candidateUrl of shellCandidates) {
+    const response = await loadText(candidateUrl);
+    if (response.status === 200 && response.body.includes(STATIC_WEB_SHELL_MARKER)) {
+      shellResponse = response;
+      break;
+    }
+    shellErrors.push(`${displayProjectUrlPath(candidateUrl)} returned ${response.status || 'no status'} without the ${STATIC_WEB_SHELL_MARKER} shell marker.`);
+  }
+  if (!shellResponse) {
+    throw new Error(shellErrors.join(' '));
+  }
+
+  for (const entryPath of entryPaths) {
+    const entryUrl = new URL(entryPath, supportedOrigin).toString();
+    const entryResponse = await loadText(entryUrl);
+    if (entryResponse.status !== 200) {
+      throw new Error(`${displayProjectUrlPath(entryUrl)} returned ${entryResponse.status || 'no status'}.`);
+    }
+    const directImports = parseDirectNamedImports(entryResponse.body);
+    for (const directImport of directImports) {
+      const dependencyUrl = new URL(directImport.specifier, entryUrl).toString();
+      const dependencyResponse = await loadText(dependencyUrl);
+      if (dependencyResponse.status !== 200) {
+        throw new Error(`${displayProjectUrlPath(entryUrl)} depends on ${displayProjectUrlPath(dependencyUrl)}, which returned ${dependencyResponse.status || 'no status'}.`);
+      }
+      const exportedNames = parseNamedExports(dependencyResponse.body);
+      for (const symbol of directImport.symbols) {
+        if (!exportedNames.has(symbol)) {
+          throw new Error(`${displayProjectUrlPath(entryUrl)} imports "${symbol}" from ${displayProjectUrlPath(dependencyUrl)}, but that export was not found.`);
+        }
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    baseUrl: supportedOrigin,
+    shellUrl: shellResponse.url,
+    checkedEntries: entryPaths.length,
+  };
+}
+
+function isProcessAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code === 'EPERM';
+  }
+}
+
+function getActiveProjectRun(projectKey) {
+  const normalizedKey = String(projectKey || '').trim();
+  const launch = projectRunStore.get(normalizedKey);
+  if (!launch) return null;
+  if (!isProcessAlive(launch.pid)) {
+    projectRunStore.delete(normalizedKey);
+    return null;
+  }
+  return {
+    ...launch,
+    reused: true,
+  };
+}
+
+async function launchProject(projectKey, options = {}) {
+  const project = resolveProjectRecord(projectKey);
+  if (!project) {
+    throw new Error(`Unknown project: ${String(projectKey || '').trim() || '(missing)'}`);
+  }
+  if (project.projectType !== 'static-web') {
+    throw new Error('Only the topdown-slice static web prototype is launchable in this slice.');
+  }
+
+  const supportedOrigin = normalizeStaticWebOrigin(project.supportedOrigin || STATIC_WEB_SUPPORTED_ORIGIN);
+  const smokeCheck = options.smokeCheck || smokeCheckStaticWebBoot;
+  const checkPort = options.checkPortAvailable || checkPortAvailable;
+  const spawnChild = options.spawnChild || ((command, args, spawnOptions) => spawn(command, args, spawnOptions));
+  const waitForPort = options.waitForPortOpen || waitForPortOpen;
+  const killProcess = options.killProcess || ((pid) => process.kill(pid));
+  const resolveLaunchCommand = options.resolveLaunchCommand || resolveStaticWebLaunchCommand;
+
+  const existing = getActiveProjectRun(project.key);
+  if (existing) {
+    if (existing.port !== STATIC_WEB_DEFAULT_PORT) {
+      projectRunStore.delete(project.key);
+    } else {
+      try {
+        await smokeCheck({
+          baseUrl: supportedOrigin,
+          requestText: options.requestText,
+        });
+      } catch (error) {
+        projectRunStore.delete(project.key);
+        throw new Error(`Tracked ACE launch for ${project.key} on ${supportedOrigin} failed the boot smoke check: ${String(error.message || error)}`);
+      }
+      return {
+        ...existing,
+        url: supportedOrigin,
+        supportedOrigin,
+        project,
+      };
+    }
+  }
+
+  const portIsAvailable = await checkPort(STATIC_WEB_DEFAULT_PORT, STATIC_WEB_HOST);
+  if (!portIsAvailable) {
+    try {
+      await smokeCheck({
+        baseUrl: supportedOrigin,
+        requestText: options.requestText,
+      });
+    } catch (error) {
+      throw new Error(`${project.key} requires ${supportedOrigin}, but the service currently bound there did not pass the boot smoke check: ${String(error.message || error)}`);
+    }
+    return {
+      projectKey: project.key,
+      projectPath: project.path,
+      projectType: project.projectType,
+      pid: null,
+      port: STATIC_WEB_DEFAULT_PORT,
+      url: supportedOrigin,
+      supportedOrigin,
+      command: 'external static web server',
+      launchedAt: null,
+      project,
+      reused: true,
+    };
+  }
+
+  const launchCommand = resolveLaunchCommand(STATIC_WEB_DEFAULT_PORT);
+  const child = spawnChild(launchCommand.command, launchCommand.args, {
+    cwd: project.path,
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+  });
+
+  try {
+    await waitForPort(STATIC_WEB_DEFAULT_PORT, { host: STATIC_WEB_HOST });
+    await smokeCheck({
+      baseUrl: supportedOrigin,
+      requestText: options.requestText,
+    });
+  } catch (error) {
+    try {
+      killProcess(child.pid);
+    } catch (killError) {
+      // Child may have already exited; nothing else to do here.
+    }
+    throw error;
+  }
+
+  child.unref();
+
+  const launch = {
+    projectKey: project.key,
+    projectPath: project.path,
+    projectType: project.projectType,
+    pid: child.pid,
+    port: STATIC_WEB_DEFAULT_PORT,
+    url: supportedOrigin,
+    supportedOrigin,
+    command: launchCommand.commandLine,
+    launchedAt: nowIso(),
+  };
+  projectRunStore.set(project.key, launch);
+  return { ...launch, project, reused: false };
+}
+
+function stopProjectRun(projectKey, options = {}) {
+  const normalizedKey = String(projectKey || '').trim();
+  const launch = projectRunStore.get(normalizedKey);
+  if (!launch) return false;
+  projectRunStore.delete(normalizedKey);
+  if (!Number.isInteger(launch.pid) || launch.pid <= 0) return false;
+  try {
+    const killProcess = options.killProcess || ((pid) => process.kill(pid));
+    killProcess(launch.pid);
+    return true;
+  } catch (error) {
+    return error.code === 'ESRCH';
+  }
 }
 
 function getDashboardStateSnapshot() {
@@ -509,8 +1562,14 @@ function updateSpatialWorkspace(mutator) {
   ensureSpatialStorage();
   const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
   const nextWorkspace = normalizeSpatialWorkspaceShape(mutator(workspace) || workspace);
-  writeJson(SPATIAL_WORKSPACE_FILE, nextWorkspace);
-  return nextWorkspace;
+  return persistSpatialWorkspace(nextWorkspace);
+}
+
+function persistWorkspacePatch(patcher) {
+  ensureSpatialStorage();
+  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const nextWorkspace = normalizeSpatialWorkspaceShape(patcher(workspace) || workspace);
+  return persistSpatialWorkspace(nextWorkspace);
 }
 
 function updateSelfUpgradeState(mutator) {
@@ -529,6 +1588,7 @@ function persistSpatialWorkspace(nextWorkspace) {
     dashboardState: getDashboardStateSnapshot(),
     runs: getRunsSnapshot(),
   });
+  persistCanonicalSlicesForWorkspace(advancedWorkspace);
   writeJson(SPATIAL_WORKSPACE_FILE, advancedWorkspace);
   return advancedWorkspace;
 }
@@ -565,7 +1625,7 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
     handoff?.summary ? `- ${handoff.summary}` : '-',
     '',
     '## MVP scope (must-haves)',
-    ...((handoff?.tasks || []).length ? handoff.tasks.map((task) => `- ${task}`) : ['-']),
+    ...(((handoff?.requestedOutcomes || handoff?.tasks) || []).length ? (handoff.requestedOutcomes || handoff.tasks).map((task) => `- ${task}`) : ['-']),
     '',
     '## Out of scope (not now)',
     '-',
@@ -608,8 +1668,12 @@ async function analyzeIntentWithContextWorker(text, workspace, options = {}) {
     previousHandoff,
     plannerFeedback: options.plannerFeedback,
     mode: options.mode || 'manual',
+    backend: options.backend || null,
+    model: options.model || null,
+    host: options.host || null,
+    timeoutMs: Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : null,
   });
-  if (!result.ok || !result.report) {
+  if (!result.report) {
     throw new Error(result.reason || 'Context Manager could not produce an intent report.');
   }
   return result;
@@ -709,11 +1773,12 @@ function refreshSpatialOrchestrator({ persist = true, workspace = null } = {}) {
   return nextWorkspace;
 }
 
-function buildQADebugPayload() {
-  const runs = listQARuns(ROOT);
+function buildQADebugPayload(qaState = null) {
+  const resolvedQAState = qaState || buildQAStatePayload();
   return {
-    latestRun: summarizeQARun(runs[0] || null),
-    runs: runs.slice(0, 8).map((run) => summarizeQARun(run)),
+    latestRun: resolvedQAState.latestBrowserRun || null,
+    runs: Array.isArray(resolvedQAState.browserRuns) ? resolvedQAState.browserRuns : [],
+    localGate: resolvedQAState.localGate || { unit: null, studioBoot: null },
   };
 }
 
@@ -733,15 +1798,18 @@ function buildRuntimeDrift(anchorBundle, workspace) {
   return drift;
 }
 
-function buildSpatialRuntimePayload(workspace) {
-  const anchorBundle = getAnchorBundle();
+function buildSpatialRuntimePayload(workspace, options = {}) {
+  const anchorBundle = options.anchorBundle || getAnchorBundle();
   const drift = buildRuntimeDrift(anchorBundle, workspace);
+  const qaState = options.qaState || buildQAStatePayload();
+  const canonicalSlices = getCanonicalSliceStore();
   return {
     ...buildRuntimePayload(workspace),
     manager: {
       ...anchorBundle.managerSummary,
       drift_flags: drift.map((flag) => flag.id),
     },
+    canonicalSlices,
     truthSources: anchorBundle.truthSources,
     drift,
     anchorRefs: anchorBundle.anchorRefs,
@@ -749,7 +1817,8 @@ function buildSpatialRuntimePayload(workspace) {
       latestSession: summarizeSession(listThroughputSessions(ROOT)[0] || null),
       sessions: listThroughputSessions(ROOT).slice(0, 8).map((session) => summarizeSession(session)),
     },
-    qaDebug: buildQADebugPayload(),
+    qaState,
+    qaDebug: buildQADebugPayload(qaState),
   };
 }
 
@@ -815,7 +1884,25 @@ let executorWorkerAutomationRunning = false;
 
 function readSpatialWorkspace() {
   ensureSpatialStorage();
-  return normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const pagesState = readJsonSafe(SPATIAL_PAGES_FILE, null);
+  const intentState = readJsonSafe(SPATIAL_INTENT_STATE_FILE, null);
+  const studioState = readJsonSafe(SPATIAL_STUDIO_STATE_FILE, null);
+  const architectureState = readJsonSafe(SPATIAL_ARCHITECTURE_MEMORY_FILE, null);
+  return normalizeSpatialWorkspaceShape(projectCanonicalSlicesIntoWorkspace({
+    ...workspace,
+    pages: Array.isArray(pagesState?.pages) ? pagesState.pages : workspace.pages,
+    activePageId: pagesState && Object.prototype.hasOwnProperty.call(pagesState, 'activePageId')
+      ? pagesState.activePageId
+      : workspace.activePageId,
+    intentState: normalizeStoredIntentState(intentState || workspace.intentState),
+    architectureMemory: architectureState?.architectureMemory || architectureState || workspace.architectureMemory,
+    studio: {
+      ...(workspace.studio || {}),
+      ...(studioState?.handoffs ? { handoffs: { ...(workspace.studio?.handoffs || {}), ...studioState.handoffs } } : {}),
+      ...(studioState?.teamBoard ? { teamBoard: { ...(workspace.studio?.teamBoard || {}), ...studioState.teamBoard } } : {}),
+    },
+  }));
 }
 
 function relativeToRoot(targetPath) {
@@ -968,6 +2055,17 @@ function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
         summary: plannerCard.summary || existingCard.summary || '',
         targetProjectKey: plannerCard.targetProjectKey || existingCard.targetProjectKey || SELF_TARGET_KEY,
         sourceAnchorRefs: mergeUnique([...(existingCard.sourceAnchorRefs || []), ...(plannerCard.anchorRefs || [])]),
+        taskFlow: existingCard.taskFlow || {
+          phase: 'planned',
+          assignmentState: 'unassigned',
+          ownerDeskId: 'planner',
+          assigneeDeskId: 'executor',
+          sourceIntentId: handoff?.sourceNodeId || null,
+          sourceHandoffId: handoff?.id || null,
+          lastTransitionAt: handoff?.createdAt || nowIso(),
+          lastTransitionLabel: 'Moved to planner board',
+          history: [],
+        },
         updatedAt: nowIso(),
       };
       producedCardIds.push(existingCard.id);
@@ -1211,6 +2309,29 @@ function applyExecutorRunResult(workspace, card, result, { mode }) {
     });
   }
 
+  if (!result.ok) {
+    return applyExecutorRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'degraded',
+        statusReason: result.reason || runRecord.reason || 'Executor degraded while assessing readiness.',
+        mode,
+        backend: executorConfig.backend,
+        model: executorConfig.model,
+        currentRunId: null,
+        lastRunId: runRecord.id,
+        lastOutcome: runRecord.outcome || 'degraded',
+        lastOutcomeAt: completedAt,
+        lastCardId: card?.id || null,
+        lastTaskId: executorTaskIdFromCard(card),
+        lastDecision: result.report?.decision || null,
+        lastAssessmentSummary: result.report?.summary || null,
+        lastAssessmentBlockers: Array.isArray(result.report?.blockers) ? result.report.blockers : [],
+        lastBlockedReason: result.reason || runRecord.reason || null,
+        completedAt,
+      },
+    });
+  }
+
   return applyExecutorRuntimeState(baseWorkspace, {
     worker: {
       status: 'idle',
@@ -1323,6 +2444,10 @@ async function maybeRunContextManagerWorker(workspace = null, {
   source = 'context-intake',
   mode = 'manual',
   plannerFeedback = null,
+  backend = null,
+  model = null,
+  host = null,
+  timeoutMs = null,
 } = {}) {
   const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
   const rawText = String(text || '').trim();
@@ -1385,6 +2510,10 @@ async function maybeRunContextManagerWorker(workspace = null, {
       previousHandoff,
       plannerFeedback: activePlannerFeedback,
       mode,
+      backend,
+      model,
+      host,
+      timeoutMs: Number(timeoutMs) > 0 ? Number(timeoutMs) : null,
       runId,
     });
     const nextWorkspace = persistSpatialWorkspace(applyContextManagerRunResult(
@@ -1761,6 +2890,7 @@ function buildExecutionPackage({
   changedFiles,
   preflight,
   risk,
+  provenance = null,
 }) {
   const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
   const relativePatchPath = relativeToRoot(patchPath);
@@ -1782,6 +2912,8 @@ function buildExecutionPackage({
     summary: `${changedFiles.length} changed file${changedFiles.length === 1 ? '' : 's'} ready for ${targetProjectKey}`,
     preflightStatus: preflight?.status || 'idle',
     verificationPlan,
+    provenance: provenance || createExecutionProvenance(),
+    provenanceSummary: summarizeExecutionProvenance(provenance),
     builtAt: nowIso(),
   };
 }
@@ -1839,6 +2971,54 @@ function syncTeamBoardWithSelfUpgrade(workspace) {
 
 function mergeUnique(values = []) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function buildLegacyFallbackProvenance({ action, commandLine = null, stageId = null } = {}) {
+  const normalizedAction = String(action || stageId || '').trim();
+  return createExecutionProvenance({
+    classification: 'legacy-fallback',
+    orchestration: 'unknown',
+    execution: 'legacy-fallback',
+    engine: 'legacy-runner',
+    stageIds: stageId ? [stageId] : [],
+    legacyActions: normalizedAction ? [normalizedAction] : [],
+    evidence: ['route:legacy-fallback', normalizedAction ? `action:${normalizedAction}` : null, commandLine ? `command:${commandLine}` : null].filter(Boolean),
+  });
+}
+
+function buildMixedStudioProvenance({
+  engine,
+  stageIds = [],
+  legacyActions = [],
+  evidence = [],
+  notes = [],
+} = {}) {
+  const mergedEvidence = ['route:studio', 'route:legacy-fallback', ...evidence];
+  return createExecutionProvenance({
+    classification: classifyExecutionProvenance({
+      usesLegacyFallback: legacyActions.length > 0,
+      usesStudioNative: true,
+      evidence: mergedEvidence,
+    }),
+    orchestration: 'studio',
+    execution: legacyActions.length > 0 ? 'hybrid' : 'studio-native',
+    engine: engine || 'ace-studio',
+    stageIds,
+    legacyActions,
+    nativeActions: ['studio-orchestration'],
+    evidence: mergedEvidence,
+    notes,
+  });
+}
+
+function summarizeExecutionProvenance(provenance) {
+  const normalized = provenance || createExecutionProvenance();
+  const actions = (normalized.legacyActions || []).join(', ');
+  const route = normalized.classification || 'unknown';
+  if (route === 'mixed') return `mixed | Studio orchestrates, legacy runs ${actions || 'legacy stages'}`;
+  if (route === 'legacy-fallback') return `legacy-fallback | ${actions || 'legacy runner'}`;
+  if (route === 'studio-native') return 'studio-native | no legacy fallback observed';
+  return 'unknown | provenance evidence incomplete';
 }
 
 function collectTaskArtifacts(taskDir, existingArtifacts = []) {
@@ -1932,6 +3112,12 @@ function runCardBuilderPipeline(cardId) {
 
   const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
   const { projectKey, projectPath } = resolveProjectTarget(targetProjectKey);
+  const builderProvenance = buildMixedStudioProvenance({
+    engine: 'ace-studio-builder-pipeline',
+    stageIds: ['builder', 'scan', 'manage', 'build'],
+    legacyActions: ['scan', 'manage', 'build'],
+    evidence: ['source:team-board-builder'],
+  });
   const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
   let taskId = String(card.builderTaskId || card.runnerTaskId || '').trim();
   let taskDir = null;
@@ -1957,7 +3143,10 @@ function runCardBuilderPipeline(cardId) {
         taskDir: relativeToRoot(task.taskDir),
         patchPath: relativeToRoot(path.join(task.taskDir, 'patch.diff')),
         targetProjectKey,
+        provenance: builderProvenance,
+        provenanceSummary: summarizeExecutionProvenance(builderProvenance),
       },
+      executionProvenance: builderProvenance,
       verifyRequired: false,
       verifyStatus: 'idle',
       verifyRunIds: [],
@@ -1976,6 +3165,46 @@ function runCardBuilderPipeline(cardId) {
   } else {
     taskDir = path.join(TASKS_DIR, findTaskFolderByTaskId(taskId));
   }
+
+  workspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => {
+    const currentTaskFlow = currentCard.taskFlow || {
+      phase: 'active',
+      assignmentState: 'assigned',
+      ownerDeskId: 'planner',
+      assigneeDeskId: 'executor',
+      sourceIntentId: currentCard.sourceIntentId || currentCard.sourceNodeId || null,
+      sourceHandoffId: currentCard.sourceHandoffId || handoff?.id || null,
+      lastTransitionAt: nowIso(),
+      lastTransitionLabel: 'Placed into active',
+      history: [],
+    };
+    return {
+      ...currentCard,
+      taskFlow: {
+        ...currentTaskFlow,
+        phase: 'handed_off',
+        assignmentState: 'claimed',
+        ownerDeskId: 'executor',
+        assigneeDeskId: 'executor',
+        lastTransitionAt: nowIso(),
+        lastTransitionLabel: 'Executor claimed task',
+        history: [
+          {
+            phase: 'handed_off',
+            assignmentState: 'claimed',
+            ownerDeskId: 'executor',
+            assigneeDeskId: 'executor',
+            label: 'Executor claimed task',
+            note: currentCard.title,
+            at: nowIso(),
+          },
+          ...(Array.isArray(currentTaskFlow.history) ? currentTaskFlow.history : []),
+        ].slice(0, 8),
+      },
+      updatedAt: nowIso(),
+    };
+  });
+  workspace = persistBoardWorkspace(workspace, 'team-board-builder-hand-off', { cardId, taskId, title: card.title });
 
   const results = [];
   let failedResult = null;
@@ -2006,7 +3235,10 @@ function runCardBuilderPipeline(cardId) {
         taskDir: relativeToRoot(taskDir),
         targetProjectKey,
         summary: failedResult.error || failedResult.summary || 'Builder pipeline failed.',
+        provenance: builderProvenance,
+        provenanceSummary: summarizeExecutionProvenance(builderProvenance),
       },
+      executionProvenance: builderProvenance,
       verifyRequired: false,
       verifyStatus: 'idle',
       verifyRunIds: [],
@@ -2053,6 +3285,7 @@ function runCardBuilderPipeline(cardId) {
     changedFiles: validation.changedFiles || [],
     preflight,
     risk,
+    provenance: builderProvenance,
   });
 
   if (isSelfTarget(projectKey, projectPath, ROOT)) {
@@ -2071,6 +3304,7 @@ function runCardBuilderPipeline(cardId) {
     targetProjectKey,
     status: requiresReview ? 'review' : 'complete',
     executionPackage: nextExecutionPackage,
+    executionProvenance: builderProvenance,
     runIds: mergeUnique([...(currentCard.runIds || []), ...runIds]),
     artifactRefs: collectTaskArtifacts(validation.taskDir || taskDir, [...(currentCard.artifactRefs || []), ...runArtifacts]),
     riskLevel: nextRiskLevel || 'medium',
@@ -2253,6 +3487,15 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
     return { ok: false, error: gate.message, workspace: blockedWorkspace };
   }
   const taskId = gate.taskId;
+  const applyProvenance = mergeExecutionProvenance(
+    card.executionPackage?.provenance || card.executionProvenance || null,
+    buildMixedStudioProvenance({
+      engine: 'ace-studio-apply-pipeline',
+      stageIds: ['apply'],
+      legacyActions: ['apply'],
+      evidence: ['source:team-board-apply'],
+    }),
+  );
 
   const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
   const applyingWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
@@ -2279,6 +3522,7 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
       status: 'review',
       approvalState: 'pending',
       applyStatus: 'failed',
+      executionProvenance: applyProvenance,
       executorBlocker: createExecutorBlocker('apply-failed', result.error || 'Apply failed.'),
       riskLevel: 'high',
       riskReasons: mergeUnique([...(currentCard.riskReasons || []), result.error || 'Apply failed.']),
@@ -2301,6 +3545,14 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
     approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : 'auto-approved'),
     applyStatus: 'applied',
     deployStatus: nextDeployStatus,
+    executionProvenance: applyProvenance,
+    executionPackage: currentCard.executionPackage
+      ? {
+          ...currentCard.executionPackage,
+          provenance: applyProvenance,
+          provenanceSummary: summarizeExecutionProvenance(applyProvenance),
+        }
+      : currentCard.executionPackage,
     executorBlocker: clearExecutorBlocker(),
     branch: result.meta?.branch || currentCard.branch || null,
     commit: result.meta?.commit || currentCard.commit || null,
@@ -2521,6 +3773,11 @@ function executeActionSync(action, body) {
     status: run.status,
     meta: run.meta,
     artifacts: run.artifacts,
+    provenance: buildLegacyFallbackProvenance({
+      action,
+      stageId: action,
+      commandLine: command.commandLine,
+    }),
     summary: summarizeCommandOutput(combinedOutput || run.logs.map((entry) => entry.message || entry.text || '').join('\n')),
     error: (result.code || 0) === 0 ? null : summarizeCommandOutput(combinedOutput || 'Command failed.'),
   };
@@ -2730,12 +3987,43 @@ app.get('/api/dashboard', (req, res) => {
 });
 
 app.get('/api/projects', (req, res) => {
-  const projects = loadProjectsMap();
-  const rows = Object.entries(projects).map(([key, projectPath]) => ({ key, name: key, path: projectPath }));
   res.json({
-    projects: rows,
+    projects: listProjectsForUi(),
     config: resolveTargetsConfig(ROOT),
   });
+});
+
+app.post('/api/projects/run', async (req, res) => {
+  const body = req.body || {};
+  const projectKey = String(body.project || body.name || '').trim();
+  if (!projectKey) {
+    return res.status(400).json({ error: 'project is required.' });
+  }
+  try {
+    const launch = await launchProject(projectKey);
+    return res.json({
+      ok: true,
+      project: launch.project,
+      projectType: launch.projectType,
+      url: launch.url,
+      supportedOrigin: launch.supportedOrigin || launch.project?.supportedOrigin || null,
+      reused: Boolean(launch.reused),
+      runtime: {
+        pid: launch.pid,
+        port: launch.port,
+        command: launch.command,
+        launchedAt: launch.launchedAt,
+      },
+    });
+  } catch (error) {
+    const message = String(error.message || error);
+    const status = /Unknown project/i.test(message)
+      ? 404
+      : /Only the topdown-slice static web prototype/i.test(message)
+        ? 400
+        : 500;
+    return res.status(status).json({ error: message });
+  }
 });
 
 app.get('/api/tasks', (req, res) => {
@@ -2776,7 +4064,11 @@ app.post('/api/qa/run', async (req, res) => {
       allowedPaths: body.allowedPaths,
       fixture: body.fixture,
     });
-    res.json(report);
+    writeStructuredQAReport(ROOT, report, 'latest');
+    res.json({
+      ...report,
+      runtime: await refreshSpatialRuntime({ persist: true }),
+    });
   } catch (error) {
     res.status(500).json({
       status: 'fail',
@@ -2798,24 +4090,31 @@ app.post('/api/llm/test', async (req, res) => {
   if (!prompt) {
     return res.status(400).json({ error: 'prompt is required.' });
   }
+  const requestedModel = String(body.model || 'mistral:latest').trim() || 'mistral:latest';
   try {
     const result = await callOllamaGenerate({
       prompt,
-      model: String(body.model || 'mixtral').trim() || 'mixtral',
+      model: requestedModel,
       host: String(body.host || '').trim() || undefined,
       timeoutMs: Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : undefined,
       expectJson: false,
     });
     return res.json({
       ok: true,
-      model: String(body.model || 'mixtral').trim() || 'mixtral',
+      status: 'live',
+      backend: 'ollama',
+      model: requestedModel,
       prompt,
       text: result.text,
     });
   } catch (error) {
+    const reason = String(error.message || error);
     return res.status(500).json({
       ok: false,
-      error: String(error.message || error),
+      status: classifyLlmFailureStatus(reason, false),
+      backend: 'ollama',
+      model: requestedModel,
+      error: reason,
     });
   }
 });
@@ -3061,9 +4360,27 @@ app.post('/api/spatial/desks/:deskId/actions', (req, res) => {
     res.status(404).json({ error: 'Unknown desk id' });
     return;
   }
+  if (deskId === QA_LEAD_DESK_ID) {
+    res.status(403).json({ error: 'QA desk properties are read-only.' });
+    return;
+  }
   const action = String(req.body?.action || '').trim();
   if (!action) {
     res.status(400).json({ error: 'action is required' });
+    return;
+  }
+  if (deskId === 'memory-archivist' && (action === 'archive-summary' || action === 'snapshot-history')) {
+    try {
+      const writeback = runArchivistWriteback({
+        workspace: readSpatialWorkspace(),
+        dryRun: Boolean(req.body?.dryRun),
+        includeTasks: action !== 'snapshot-history',
+      });
+      const payload = buildDeskPropertiesPayload(readSpatialWorkspace(), deskId);
+      res.json({ ok: true, action, deskId, payload, writeback });
+    } catch (error) {
+      res.status(500).json({ error: String(error.message || error) });
+    }
     return;
   }
   try {
@@ -3113,6 +4430,140 @@ app.post('/api/spatial/desks/:deskId/actions', (req, res) => {
   }
 });
 
+app.get('/api/spatial/models', (req, res) => {
+  res.json({ models: listAgentModelOptions() });
+});
+
+app.post('/api/spatial/archive/writeback', (req, res) => {
+  try {
+    res.json(runArchivistWriteback({
+      workspace: readSpatialWorkspace(),
+      dryRun: Boolean(req.body?.dryRun),
+      includeTasks: req.body?.includeTasks !== false,
+    }));
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/spatial/agents/:agentId/ledger', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  if (agentId !== 'dave') {
+    res.status(404).json({ error: 'Learning ledger is available for Dave only.' });
+    return;
+  }
+  const entries = listLearningLedgerEntries(agentId);
+  res.json({
+    agentId,
+    entries,
+    stats: computeLearningLedgerStats(entries),
+  });
+});
+
+app.post('/api/spatial/agents/:agentId/ledger', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  if (agentId !== 'dave') {
+    res.status(404).json({ error: 'Learning ledger is available for Dave only.' });
+    return;
+  }
+  const body = req.body || {};
+  try {
+    const entry = writeLearningLedgerEntry(agentId, {
+      taskPrompt: String(body.taskPrompt || body.prompt || '').trim(),
+      contextRefs: Array.isArray(body.contextRefs) ? body.contextRefs.filter(Boolean) : [],
+      generatedOutput: String(body.generatedOutput || body.output || '').trim(),
+      responseStatus: String(body.responseStatus || 'live').trim(),
+      qaOutcome: String(body.qaOutcome || 'unknown').trim(),
+      qaReason: String(body.qaReason || '').trim(),
+      datasetReady: Boolean(body.datasetReady),
+      runId: String(body.runId || '').trim() || null,
+      backend: String(body.backend || DEFAULT_CONTEXT_MANAGER_BACKEND).trim() || DEFAULT_CONTEXT_MANAGER_BACKEND,
+      model: String(body.model || DEFAULT_CONTEXT_MANAGER_MODEL).trim() || DEFAULT_CONTEXT_MANAGER_MODEL,
+      tokensUsed: Number.isFinite(Number(body.tokensUsed || 0)) ? Number(body.tokensUsed) : 0,
+      durationMs: Number.isFinite(Number(body.durationMs || 0)) ? Number(body.durationMs) : 0,
+      contextAlignmentScore: Number.isFinite(Number(body.contextAlignmentScore || 0)) ? Number(body.contextAlignmentScore) : 0,
+      contextAlignmentReason: String(body.contextAlignmentReason || '').trim() || null,
+    });
+    res.status(201).json({ entry, stats: computeLearningLedgerStats(listLearningLedgerEntries(agentId)) });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.patch('/api/spatial/agents/:agentId/ledger/:entryId', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  const entryId = String(req.params.entryId || '').trim();
+  if (agentId !== 'dave') {
+    res.status(404).json({ error: 'Learning ledger is available for Dave only.' });
+    return;
+  }
+  if (!entryId) {
+    res.status(400).json({ error: 'entryId is required.' });
+    return;
+  }
+  const body = req.body || {};
+  const patch = {
+    approvedFix: body.approvedFix ?? body.fix ?? null,
+    datasetReady: body.datasetReady ?? Boolean(body.datasetReady),
+    qaOutcome: body.qaOutcome ? String(body.qaOutcome).trim() : undefined,
+    qaReason: body.qaReason ? String(body.qaReason).trim() : undefined,
+    responseStatus: body.responseStatus ? String(body.responseStatus).trim() : undefined,
+  };
+  Object.keys(patch).forEach((key) => {
+    if (patch[key] === undefined) delete patch[key];
+  });
+  try {
+    const updated = updateLearningLedgerEntry(agentId, entryId, patch);
+    if (!updated) {
+      res.status(404).json({ error: 'Ledger entry not found.' });
+      return;
+    }
+    res.json({ entry: updated, stats: computeLearningLedgerStats(listLearningLedgerEntries(agentId)) });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.post('/api/spatial/agents/dave/properties', (req, res) => {
+  const body = req.body || {};
+  const agentId = 'dave';
+  try {
+    const nextWorkspace = updateSpatialWorkspace((workspace) => {
+      const currentAgents = workspace?.studio?.agentWorkers || {};
+      const currentDave = normalizeAgentWorkersState(currentAgents).dave || {};
+      const allowed = {
+        name: String(body.name || currentDave.name || 'Dave').trim() || 'Dave',
+        role: String(body.role || currentDave.role || 'Practical learning companion').trim(),
+        model: String(body.model || currentDave.model || DEFAULT_CONTEXT_MANAGER_MODEL).trim() || DEFAULT_CONTEXT_MANAGER_MODEL,
+        status: String(body.status || currentDave.status || 'idle').trim() || 'idle',
+        backend: String(body.backend || currentDave.backend || DEFAULT_CONTEXT_MANAGER_BACKEND).trim() || DEFAULT_CONTEXT_MANAGER_BACKEND,
+        responseStatus: String(body.responseStatus || currentDave.responseStatus || 'idle').trim(),
+        lastRunId: body.lastRunId ? String(body.lastRunId).trim() : null,
+        tokensUsed: Number.isFinite(Number(body.tokensUsed ?? currentDave.tokensUsed ?? 0)) ? Number(body.tokensUsed ?? currentDave.tokensUsed ?? 0) : 0,
+        durationMs: Number.isFinite(Number(body.durationMs ?? currentDave.durationMs ?? 0)) ? Number(body.durationMs ?? currentDave.durationMs ?? 0) : 0,
+        contextAlignmentScore: Number.isFinite(Number(body.contextAlignmentScore ?? currentDave.contextAlignmentScore ?? 0)) ? Number(body.contextAlignmentScore ?? currentDave.contextAlignmentScore ?? 0) : 0,
+        contextAlignmentReason: String(body.contextAlignmentReason || currentDave.contextAlignmentReason || '').trim() || null,
+      };
+      return {
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          agentWorkers: {
+            ...(workspace.studio?.agentWorkers || {}),
+            dave: {
+              ...currentDave,
+              ...allowed,
+            },
+          },
+        },
+      };
+    });
+    res.json({ ok: true, agent: nextWorkspace.studio.agentWorkers.dave });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
 app.get('/api/spatial/runtime', async (req, res) => {
   res.json(await refreshSpatialRuntime({ persist: true }));
 });
@@ -3131,6 +4582,18 @@ app.post('/api/spatial/agents/context-manager/run', async (req, res) => {
     mode,
   });
   if (!cycle.skipped && cycle.result?.run) {
+    if (!cycle.ok) {
+      return res.status(503).json({
+        ...buildAgentFailurePayload(cycle.result, {
+          report: cycle.result.report || null,
+          handoff: cycle.result.handoff || null,
+          runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+            persist: true,
+            workspace: cycle.workspace,
+          })),
+        }),
+      });
+    }
     return res.json({
       ok: cycle.ok,
       worker: summarizeContextManagerRun(cycle.result.run),
@@ -3159,6 +4622,17 @@ app.post('/api/spatial/agents/planner/run', async (req, res) => {
   const handoffId = String(body.handoffId || '').trim() || null;
   const cycle = await maybeRunPlannerWorker(readSpatialWorkspace(), { mode, handoffId });
   if (!cycle.skipped && cycle.result?.run) {
+    if (!cycle.ok) {
+      return res.status(503).json({
+        ...buildAgentFailurePayload(cycle.result, {
+          run: summarizePlannerRun(cycle.result.run),
+          runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+            persist: true,
+            workspace: cycle.workspace,
+          })),
+        }),
+      });
+    }
     return res.json({
       ok: cycle.ok,
       run: summarizePlannerRun(cycle.result.run),
@@ -3185,6 +4659,18 @@ app.post('/api/spatial/agents/executor/run', async (req, res) => {
   const cardId = String(body.cardId || '').trim() || null;
   const cycle = await maybeRunExecutorWorker(readSpatialWorkspace(), { mode, cardId });
   if (!cycle.skipped && cycle.result?.run) {
+    if (!cycle.ok) {
+      return res.status(503).json({
+        ...buildAgentFailurePayload(cycle.result, {
+          run: summarizeExecutorRun(cycle.result.run),
+          report: cycle.result.report || null,
+          runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+            persist: true,
+            workspace: cycle.workspace,
+          })),
+        }),
+      });
+    }
     return res.json({
       ok: cycle.ok,
       run: summarizeExecutorRun(cycle.result.run),
@@ -3307,12 +4793,8 @@ app.post('/api/spatial/team-board/action', async (req, res) => {
 app.put('/api/spatial/workspace', async (req, res) => {
   ensureSpatialStorage();
   const body = req.body || {};
-  const previousWorkspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
-  const nextWorkspace = advanceOrchestratorWorkspace(normalizeSpatialWorkspaceShape(body), {
-    dashboardState: getDashboardStateSnapshot(),
-    runs: getRunsSnapshot(),
-  });
-  writeJson(SPATIAL_WORKSPACE_FILE, nextWorkspace);
+  const previousWorkspace = readSpatialWorkspace();
+  const nextWorkspace = persistSpatialWorkspace(mergeWorkspacePatch(previousWorkspace, body));
   const automatedWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
   appendNewRsgHistoryEntries(previousWorkspace, automatedWorkspace);
   appendArchitectureHistory({
@@ -3327,6 +4809,71 @@ app.put('/api/spatial/workspace', async (req, res) => {
     },
   });
   res.json({ ok: true, workspace: automatedWorkspace });
+});
+
+app.put('/api/spatial/pages', (req, res) => {
+  const body = req.body || {};
+  (async () => {
+    await fs.promises.mkdir(path.dirname(SPATIAL_PAGES_FILE), { recursive: true });
+    await fs.promises.writeFile(SPATIAL_PAGES_FILE, JSON.stringify(body, null, 2));
+    const nextWorkspace = persistWorkspacePatch((workspace) => ({
+      ...workspace,
+      pages: Array.isArray(body.pages) ? body.pages : workspace.pages,
+      activePageId: body.activePageId !== undefined ? body.activePageId : workspace.activePageId,
+    }));
+    return res.json({ ok: true, pages: nextWorkspace.pages, activePageId: nextWorkspace.activePageId });
+  })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
+});
+
+app.put('/api/spatial/intent-state', (req, res) => {
+  const body = req.body || {};
+  (async () => {
+    await fs.promises.mkdir(path.dirname(SPATIAL_INTENT_STATE_FILE), { recursive: true });
+    const nextIntentState = normalizeStoredIntentState(body);
+    await fs.promises.writeFile(SPATIAL_INTENT_STATE_FILE, JSON.stringify({ intentState: {
+      currentIntentId: nextIntentState.currentIntentId || null,
+      summary: nextIntentState.summary || '',
+      status: nextIntentState.status || 'idle',
+    } }, null, 2));
+    const nextWorkspace = persistWorkspacePatch((workspace) => ({
+      ...workspace,
+      intentState: nextIntentState,
+    }));
+    res.json({ ok: true, intentState: nextWorkspace.intentState });
+  })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
+});
+
+app.put('/api/spatial/studio-state', (req, res) => {
+  const body = req.body || {};
+  (async () => {
+    await fs.promises.mkdir(path.dirname(SPATIAL_STUDIO_STATE_FILE), { recursive: true });
+    await fs.promises.writeFile(SPATIAL_STUDIO_STATE_FILE, JSON.stringify(body, null, 2));
+    persistWorkspacePatch((workspace) => ({
+      ...workspace,
+      studio: {
+        ...(workspace.studio || {}),
+        handoffs: body.handoffs ? { ...(workspace.studio?.handoffs || {}), ...body.handoffs } : workspace.studio?.handoffs,
+        teamBoard: body.teamBoard ? { ...(workspace.studio?.teamBoard || {}), ...body.teamBoard } : workspace.studio?.teamBoard,
+      },
+    }));
+    res.json({ ok: true });
+  })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
+});
+
+app.put('/api/spatial/architecture-memory', (req, res) => {
+  const body = req.body || {};
+  (async () => {
+    await fs.promises.mkdir(path.dirname(SPATIAL_ARCHITECTURE_MEMORY_FILE), { recursive: true });
+    await fs.promises.writeFile(SPATIAL_ARCHITECTURE_MEMORY_FILE, JSON.stringify(body, null, 2));
+    persistWorkspacePatch((workspace) => ({
+      ...workspace,
+      architectureMemory: {
+        ...(workspace.architectureMemory || {}),
+        ...body.architectureMemory,
+      },
+    }));
+    res.json({ ok: true });
+  })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
 });
 
 app.get('/api/spatial/history', (req, res) => {
@@ -3804,17 +5351,44 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
       return res.json({ reply_text: 'I cannot reply to an empty message.' });
     }
 
-    const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace());
-    const result = await analyzeIntentWithContextWorker(text, workspace, { source: source || 'cto-chat' });
+    const workspace = readSpatialWorkspace();
+    const result = await analyzeIntentWithContextWorker(text, workspace, {
+      source: source || 'cto-chat',
+      backend: String(req.body?.backend || '').trim() || null,
+      model: String(req.body?.model || '').trim() || null,
+      host: String(req.body?.host || '').trim() || null,
+      timeoutMs: Number(req.body?.timeoutMs) > 0 ? Number(req.body.timeoutMs) : null,
+    });
     
     console.log('[DEBUG] Context Manager Raw Response:', typeof result.run?.rawResponse === 'string' ? result.run.rawResponse.slice(0, 100) + '...' : result.run?.rawResponse);
     console.log('[DEBUG] Context Manager Extracted Report Summary:', result.report?.summary);
     
-    const reply_text = `[LLM LIVE REPLY] ${result.report?.summary || result.run?.summary || 'No text generated.'}`;
-    return res.json({ reply_text });
+    if (!result.ok || result.run?.usedFallback) {
+      const payload = buildAgentFailurePayload(result, {
+        reply_text: null,
+        report: result.report || null,
+      });
+      return res.status(503).json(payload);
+    }
+
+    const reply_text = result.report?.summary || result.run?.summary || 'No text generated.';
+    return res.json({
+      ok: true,
+      status: 'live',
+      reply_text,
+      backend: result.run?.backend || 'ollama',
+      model: result.run?.model || null,
+      runId: result.run?.id || null,
+    });
   } catch (error) {
     console.error('[ERROR] /api/spatial/cto/chat failed:', error);
-    return res.json({ reply_text: `[LLM LIVE REPLY] Error generating reply: ${error.message}` });
+    const reason = String(error.message || error);
+    return res.status(500).json({
+      ok: false,
+      status: classifyLlmFailureStatus(reason, false),
+      error: reason,
+      reply_text: null,
+    });
   }
 });
 
@@ -3857,9 +5431,19 @@ app.post('/api/spatial/intent', async (req, res) => {
       sourceNodeId,
       source: String(body.source || 'context-intake').trim() || 'context-intake',
       mode: 'manual',
+      backend: String(body.backend || '').trim() || null,
+      model: String(body.model || '').trim() || null,
+      host: String(body.host || '').trim() || null,
+      timeoutMs: Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : null,
     });
     if (!cycle.result?.report) {
       return res.status(500).json({ error: cycle.reason || 'Context Manager could not produce an intent report.' });
+    }
+    if (!cycle.ok || cycle.result?.usedFallback) {
+      return res.status(503).json(buildAgentFailurePayload(cycle.result, {
+        report: cycle.result.report,
+        handoff: cycle.result.handoff,
+      }));
     }
     const runtime = buildSpatialRuntimePayload(refreshSpatialOrchestrator({
       persist: true,
@@ -3891,8 +5475,53 @@ app.post('/api/spatial/mutations/preview', (req, res) => {
 
 app.post('/api/spatial/mutations/apply', (req, res) => {
   const mutations = (req.body || {}).mutations || [];
-  appendArchitectureHistory({ at: nowIso(), type: 'mutation-apply', count: mutations.length });
-  res.json({ ok: true, applied: mutations.length });
+  try {
+    const previousWorkspace = readSpatialWorkspace();
+    const result = applySpatialMutationsToWorkspace(previousWorkspace, mutations);
+    const mutationSummary = {
+      status: result.status,
+      confirmed: result.confirmed,
+      requested: result.requested,
+      applied: result.applied,
+      changedLayers: result.changedLayers,
+      reason: result.reason || '',
+    };
+    const nextWorkspace = result.confirmed ? persistSpatialWorkspace(result.workspace) : previousWorkspace;
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'mutation-apply',
+      summary: mutationSummary,
+    });
+    res.json({
+      ok: true,
+      status: result.status,
+      confirmed: result.confirmed,
+      mutationResult: mutationSummary,
+      runtime: buildSpatialRuntimePayload(nextWorkspace),
+    });
+  } catch (error) {
+    const requested = Array.isArray(mutations) ? mutations.length : 0;
+    const mutationSummary = {
+      status: 'failed',
+      confirmed: false,
+      requested,
+      applied: 0,
+      changedLayers: [],
+      reason: String(error.message || error),
+    };
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'mutation-apply',
+      summary: mutationSummary,
+    });
+    res.status(422).json({
+      ok: false,
+      status: 'failed',
+      confirmed: false,
+      error: mutationSummary.reason,
+      mutationResult: mutationSummary,
+    });
+  }
 });
 
 function startServer() {
@@ -3930,17 +5559,31 @@ if (require.main === module) {
 module.exports = {
   app,
   startServer,
+  buildDeskPropertiesPayload,
+  buildQAStatePayload,
+  buildProjectRecord,
+  buildSpatialRuntimePayload,
+  detectRunnableProjectType,
   evaluateApplyGate,
   evaluateVerifyGate,
   evaluateDeployGate,
   buildVerificationPlan,
+  buildLegacyFallbackProvenance,
+  buildMixedStudioProvenance,
+  applySpatialMutationsToWorkspace,
   createExecutorBlocker,
   generateCandidates,
   executeModuleAction,
+  launchProject,
+  listProjectsForUi,
+  smokeCheckStaticWebBoot,
   detectMaterialGenerationIntent,
   buildMaterialIntentModuleEnvelope,
   normalizeExecutiveEnvelope,
   mapEnvelopeToMaterialModule,
   buildModulePreview,
   resolveLegacyFallbackPayload,
+  stopProjectRun,
+  runArchivistWriteback,
+  summarizeExecutionProvenance,
 };

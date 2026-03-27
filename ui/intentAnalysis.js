@@ -36,6 +36,10 @@ function countMatches(text, pattern) {
   return (String(text || '').match(pattern) || []).length;
 }
 
+function uniqueStrings(values = []) {
+  return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
 function tokenizeIntentText(text) {
   return [...new Set((String(text || '').toLowerCase().match(/[a-z][a-z0-9_-]{2,}/g) || []).filter((token) => !INTENT_STOPWORDS.has(token)))];
 }
@@ -64,6 +68,75 @@ function inferIntentRole(text, labels) {
   if (/file|patch|fix|implement|build|wire|deploy|restart|compile/.test(value) || labels.includes('execution')) return 'task';
   if (/ux|ui|screen|flow|overlay|panel/.test(value)) return 'ux';
   return 'thought';
+}
+
+function inferRequestType(classification = {}, labels = [], source = '') {
+  const role = String(classification?.role || '').trim().toLowerCase();
+  if (role === 'task') return 'execution_request';
+  if (role === 'module') return 'architecture_request';
+  if (role === 'constraint') return 'constraint_request';
+  if (labels.includes('plan') || /\b(plan|task|roadmap|sequence|queue)\b/i.test(source)) return 'planning_request';
+  if (/ui|ux|screen|flow|overlay|panel/i.test(source)) return 'ui_request';
+  if (/build|fix|implement|wire|connect|deploy|restart|compile|test/i.test(source) || labels.includes('execution')) return 'execution_request';
+  return 'context_request';
+}
+
+function inferUrgency(source, scores = {}, requestedOutcomes = []) {
+  const value = String(source || '').toLowerCase();
+  if (/\b(urgent|asap|now|blocker|blocked|critical|immediately|today)\b/.test(value)) return 'high';
+  if (Number(scores?.executionReadiness || 0) < 0.25) return 'high';
+  if (requestedOutcomes.length > 2) return 'medium';
+  return 'normal';
+}
+
+function buildIntentTargets(projectContext = {}, requestedOutcomes = [], source = '') {
+  const targets = uniqueStrings([
+    ...(Array.isArray(projectContext?.matchedTerms) ? projectContext.matchedTerms : []),
+    ...(Array.isArray(projectContext?.referenceKeywords) ? projectContext.referenceKeywords : []),
+    ...(Array.isArray(projectContext?.anchorRefs) ? projectContext.anchorRefs : []),
+    ...(String(projectContext?.currentFocus || '').trim() ? [projectContext.currentFocus] : []),
+    ...requestedOutcomes,
+  ]).slice(0, 8);
+  if (targets.length) return targets;
+  return tokenizeIntentText(source).slice(0, 8);
+}
+
+function buildIntentSignals({
+  source,
+  criteria = [],
+  scores = {},
+  projectContext = {},
+  labels = [],
+  classification = {},
+  requestedOutcomes = [],
+}) {
+  return {
+    actionSignals: countMatches(source, CURRENT_ACTION_PATTERN),
+    constraintSignals: countMatches(source, CONSTRAINT_PATTERN),
+    architectureSignals: countMatches(source, ARCHITECTURE_PATTERN),
+    executionSignals: countMatches(source, EXECUTION_HINT_PATTERN),
+    featureSignals: countMatches(source, FEATURE_REQUEST_PATTERN),
+    matchedProjectTerms: Array.isArray(projectContext?.matchedTerms) ? projectContext.matchedTerms.length : 0,
+    anchorRefs: Array.isArray(projectContext?.anchorRefs) ? projectContext.anchorRefs.length : 0,
+    lowConfidenceCriteria: (criteria || []).filter((criterion) => Number(criterion.score || 0) < 0.55).length,
+    plannerUsefulness: Number(scores?.plannerUsefulness || 0),
+    executionReadiness: Number(scores?.executionReadiness || 0),
+    deployReadiness: Number(scores?.deployReadiness || 0),
+    labels: uniqueStrings(labels).slice(0, 4),
+    role: classification?.role || 'thought',
+    requestedOutcomeCount: uniqueStrings(requestedOutcomes).length,
+  };
+}
+
+function buildIntentConstraints(criteria = [], projectContext = {}, source = '', requestedOutcomes = []) {
+  return uniqueStrings([
+    ...(Array.isArray(projectContext?.blockers) ? projectContext.blockers : []),
+    ...(criteria || [])
+      .filter((criterion) => Number(criterion.score || 0) < 0.55)
+      .map((criterion) => `${criterion.label}: ${criterion.reason || 'Needs clarification.'}`),
+    !requestedOutcomes.length ? 'No concrete requested outcomes were extracted yet.' : '',
+    /\b(blocker|blocked|guardrail|approval|permission|review)\b/i.test(source) ? 'Request includes a constraint or review gate.' : '',
+  ]).slice(0, 8);
 }
 
 function buildIntentTasksFromPattern(text, pattern) {
@@ -303,13 +376,36 @@ function buildIntentReadinessScores({ confidence, criteria, tasks, source, label
   };
 }
 
-function buildIntentTruth({ source, summary, tasks, criteria, classification, projectContext, scores }) {
-  const requestedOutcomes = (tasks || []).slice(0, 4);
+function buildIntentTruth({
+  source,
+  summary,
+  requestedOutcomes = [],
+  tasks = [],
+  criteria,
+  classification,
+  projectContext,
+  scores,
+}) {
+  const requestedOutcomesList = uniqueStrings(requestedOutcomes.length ? requestedOutcomes : tasks).slice(0, 4);
   const anchorRefs = Array.isArray(projectContext?.anchorRefs) ? projectContext.anchorRefs.slice(0, 8) : [];
+  const goal = String(summary || requestedOutcomesList[0] || source || 'Intent capture is empty.').trim();
+  const requestType = inferRequestType(classification, classification?.labels || [], source);
+  const urgency = inferUrgency(source, scores, requestedOutcomesList);
+  const targets = buildIntentTargets(projectContext || {}, requestedOutcomesList, source);
+  const constraints = buildIntentConstraints(criteria || [], projectContext || {}, source, requestedOutcomesList);
+  const signals = buildIntentSignals({
+    source,
+    criteria,
+    scores,
+    projectContext,
+    labels: classification?.labels || [],
+    classification,
+    requestedOutcomes: requestedOutcomesList,
+  });
   const unresolved = (criteria || [])
     .filter((criterion) => Number(criterion.score || 0) < 0.55)
     .map((criterion) => `${criterion.label}: ${criterion.reason || 'Needs clarification.'}`);
-  if (!requestedOutcomes.length) unresolved.push('No concrete requested outcomes were extracted yet.');
+  if (!requestedOutcomesList.length) unresolved.push('No concrete requested outcomes were extracted yet.');
   if (!(projectContext?.matchedTerms || []).length) unresolved.push('Project alignment is weak, so the request may still need anchoring to current ACE work.');
   const evidence = (criteria || [])
     .slice()
@@ -324,15 +420,23 @@ function buildIntentTruth({ source, summary, tasks, criteria, classification, pr
         ? 'Constraint / guardrail request'
         : 'General context signal';
   return {
+    rawSource: source,
     rawInput: source,
-    statement: summary || source || 'Intent capture is empty.',
+    statement: goal,
+    goal,
     intentType,
-    requestedOutcomes,
+    requestType,
+    requestedOutcomes: requestedOutcomesList,
+    tasks: requestedOutcomesList,
+    targets,
+    constraints,
+    urgency,
+    signals,
     unresolved,
     evidence,
     anchorRefs,
-    plannerBrief: requestedOutcomes.length
-      ? `Planner should treat this as: ${requestedOutcomes.join('; ')}`
+    plannerBrief: requestedOutcomesList.length
+      ? `Planner should treat this as: ${requestedOutcomesList.join('; ')}`
       : 'Planner should clarify the request before expanding execution.',
     readiness: {
       intentConfidence: Number(scores?.intentConfidence || 0),
@@ -384,10 +488,11 @@ function analyzeSpatialIntent(text, project) {
   const legacyConfidence = averageScores(legacyCriteria);
   const confidence = averageScores(criteria);
   const summary = source.length > 140 ? `${source.slice(0, 137).trim()}...` : (source || 'Intent capture is empty.');
+  const requestedOutcomes = buildIntentTasks(source);
   const scores = buildIntentReadinessScores({
     confidence,
     criteria,
-    tasks,
+    tasks: requestedOutcomes,
     source,
     labels,
     projectContext: {
@@ -399,7 +504,7 @@ function analyzeSpatialIntent(text, project) {
   const truth = buildIntentTruth({
     source,
     summary,
-    tasks,
+    requestedOutcomes,
     criteria,
     classification: { role, labels },
     projectContext: {
@@ -426,7 +531,14 @@ function analyzeSpatialIntent(text, project) {
     legacyCriteria,
     scores,
     truth,
-    tasks,
+    goal: truth.goal,
+    targets: truth.targets,
+    constraints: truth.constraints,
+    urgency: truth.urgency,
+    requestType: truth.requestType,
+    requestedOutcomes,
+    tasks: requestedOutcomes,
+    signals: truth.signals,
     anchorRefs,
     provenance: {
       anchors: anchorMatches,

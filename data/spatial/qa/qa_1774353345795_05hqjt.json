@@ -1,0 +1,170 @@
+{
+  "id": "qa_1774353345795_05hqjt",
+  "scenario": "layout-pass",
+  "mode": "interactive",
+  "trigger": "manual",
+  "prompt": "I think we should add a desk to the studio for a QA agent",
+  "baseUrl": "http://localhost:3000",
+  "status": "completed",
+  "verdict": "failed",
+  "createdAt": "2026-03-24T11:55:45.795Z",
+  "finishedAt": "2026-03-24T11:55:48.722Z",
+  "linked": {},
+  "browser": {
+    "executablePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "engine": "chromium"
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-24T11:55:45.796Z",
+      "finishedAt": "2026-03-24T11:55:45.807Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-24T11:55:45.807Z",
+      "finishedAt": "2026-03-24T11:55:46.907Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-24T11:55:46.908Z",
+      "finishedAt": "2026-03-24T11:55:47.644Z",
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-24T11:55:47.645Z",
+      "finishedAt": "2026-03-24T11:55:47.974Z",
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-24T11:55:47.975Z",
+      "finishedAt": "2026-03-24T11:55:48.693Z",
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-24T11:55:48.693Z",
+      "finishedAt": "2026-03-24T11:55:48.710Z",
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "weak",
+      "startedAt": "2026-03-24T11:55:48.711Z",
+      "finishedAt": "2026-03-24T11:55:48.722Z",
+      "error": null
+    }
+  ],
+  "findings": [
+    {
+      "id": "console-1",
+      "severity": "error",
+      "kind": "console",
+      "summary": "Console errors were captured during the browser pass.",
+      "details": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <button> button \n    at button\n    at button\n    at div\n    at div\n    at div\n    at div\n    at div\n    at section\n    at SpatialNotebook (http://localhost:3000/spatial/spatialApp.js:1140:25)"
+    }
+  ],
+  "artifacts": {
+    "screenshots": [
+      {
+        "name": "01-initial.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774353345795_05hqjt\\01-initial.png",
+        "url": "/api/spatial/qa/runs/qa_1774353345795_05hqjt/artifacts/01-initial.png",
+        "label": "Initial ACE render"
+      },
+      {
+        "name": "02-layout-pass.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774353345795_05hqjt\\02-layout-pass.png",
+        "url": "/api/spatial/qa/runs/qa_1774353345795_05hqjt/artifacts/02-layout-pass.png",
+        "label": "Scenario layout-pass"
+      }
+    ],
+    "domSnapshot": {
+      "name": "dom.html",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774353345795_05hqjt\\dom.html",
+      "url": "/api/spatial/qa/runs/qa_1774353345795_05hqjt/artifacts/dom.html"
+    },
+    "consoleLog": {
+      "name": "console.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774353345795_05hqjt\\console.json",
+      "url": "/api/spatial/qa/runs/qa_1774353345795_05hqjt/artifacts/console.json"
+    },
+    "networkSummary": {
+      "name": "network.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774353345795_05hqjt\\network.json",
+      "url": "/api/spatial/qa/runs/qa_1774353345795_05hqjt/artifacts/network.json"
+    },
+    "runtimeSnapshot": {
+      "name": "runtime.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774353345795_05hqjt\\runtime.json",
+      "url": "/api/spatial/qa/runs/qa_1774353345795_05hqjt/artifacts/runtime.json"
+    },
+    "layoutFindings": {
+      "name": "layout-findings.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774353345795_05hqjt\\layout-findings.json",
+      "url": "/api/spatial/qa/runs/qa_1774353345795_05hqjt/artifacts/layout-findings.json"
+    }
+  },
+  "console": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "type": "error",
+      "text": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <button> button \n    at button\n    at button\n    at div\n    at div\n    at div\n    at div\n    at div\n    at section\n    at SpatialNotebook (http://localhost:3000/spatial/spatialApp.js:1140:25)",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+        "lineNumber": 72,
+        "columnNumber": 31
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://localhost:3000/favicon.ico",
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    }
+  ],
+  "network": [],
+  "error": null
+}

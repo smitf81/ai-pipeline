@@ -7,49 +7,46 @@ Use it as scoping input, not as canonical truth.
 
 ## Interpreted Task
 
-Add a deterministic QA layer that makes planner, runner, UI, and TA desks answerable for wiring mistakes, syntax breakage, scope drift, smoke regressions, and repeated-run instability.
+The canonical backlog is empty, so the next useful pass is to harden one canonical anchor-resolution path end to end: keep `brain/emergence` as the source of truth and preserve compatibility fallback for the legacy path/config lookup.
 
 ## Scope Risks
 
-- The request spans CLI, API, multiple desk surfaces, and optional UI, so a one-pass testing framework build would overrun the repo quickly.
-- Existing browser QA already exists, which creates a high risk of duplicating or muddying the contract unless the new pass stays separate and minimal.
-- The repo is already dirty, so file-scope checks need guardrails that do not immediately collapse into false positives from runtime data or task artifacts.
+- `brain/emergence/slices.md` currently reports no active slices, so carrying forward the old context-weighting slice would be stale.
+- Anchor resolution, config lookup, and legacy path cleanup can easily expand into a full runtime migration if not bounded to one verified lookup path.
+- Spatial/runtime changes and planner-context work are adjacent but separate; mixing them would reduce trust in the next slice.
 
 ## Best Next Slice
 
 - Objective:
-  Land a small shared QA suite under `qa/` with four desk-owned modules and one QA lead aggregator.
+  Verify one end-to-end anchor-resolution path so canonical reads stay rooted in `brain/emergence` and compatibility fallback remains intact.
 - Exact focus:
-  `qa/qaLead.js`
-  `qa/desks/*.js`
-  `qa/shared/debugSuite.js`
-  root `package.json`
+  `ui/anchorResolver.js`
   `ui/server.js`
-  optional light trigger in `ui/public/*`
+  `ui/tests/anchorResolver.test.mjs`
+  `ui/tests/server.test.mjs`
 - Why this slice comes first:
-  It gives ACE one enforceable place to answer "which desk broke?" before any broader observability or fixture expansion.
+  It protects the remaining canonical foundation before any broader spatial or intent-driven work, and it is small enough to prove with existing tests.
 - Explicitly leave out:
-  New frameworks
-  Deep refactors
-  Browser-heavy test flows
-  LLM-backed validation
+  New spatial features
+  Intent-weighting changes
+  Agent/persona changes
+  UI styling or dashboard cleanup
 
 ## Definition Of Done
 
-- `npm run qa` prints a single structured report and exits non-zero on failure.
-- `POST /api/qa/run` returns the same report shape.
-- Each desk returns named tests with pass/fail and concrete reasons.
-- The suite checks contract wiring, file scope, syntax/load, smoke, and idempotency using deterministic logic only.
-- An included fixture can intentionally force at least one desk failure for demonstration.
+- One canonical anchor path is confirmed to resolve from `brain/emergence`.
+- Compatibility fallback behavior remains correct for the legacy path or target config.
+- Tests cover the expected lookup order and fail if the resolution contract regresses.
+- No unrelated runtime or UI behavior changes are introduced.
 
 ## Likely Follow-up Slices
 
-- Add more reproducible failure fixtures under `qa/fixtures/`.
-- Tighten file-scope policy with task-specific allowed paths from planner/runtime context.
-- Surface the structured QA report inside Studio, not only the legacy drawer.
+- Audit the next runtime entrypoint that still depends on legacy path assumptions.
+- Promote any confirmed path-drift fix into the canonical brain notes.
+- Revisit spatial/runtime cleanup only after anchor resolution is stable.
 
 ## Confidence / Uncertainty
 
-- High confidence on CLI/API aggregation and deterministic checks.
-- Medium confidence on file-scope strictness because the current repo has live runtime artifacts and a dirty worktree.
-- Medium confidence on planner runtime smoke because planner execution itself is LLM-backed, so this slice should validate planner wiring and payload shape, not live planner reasoning.
+- High confidence that the old weighting slice is stale because the canonical backlog now shows zero active slices.
+- Medium confidence on the exact file boundary, because the current focus is architecture-level and the resolution code should be confirmed before editing.
+- Low confidence that a functional code change is needed at all until the next implementation pass inspects the actual lookup behavior.

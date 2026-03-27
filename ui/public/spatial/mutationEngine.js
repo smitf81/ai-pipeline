@@ -94,8 +94,19 @@ function resolveDraftPosition(parentNode, existingNodes, total, index) {
 function buildDraftMetadata(parentNode, report, extractedIntent, candidateNode, generationId, createdAt, layer = 'system') {
   return {
     role: candidateNode.kind === 'text' ? 'thought' : candidateNode.kind,
+    origin: 'ai',
+    sourceNodeId: parentNode?.id || null,
+    intentRef: {
+      sourceNodeId: parentNode?.id || null,
+      extractedIntentId: extractedIntent?.id || null,
+      candidateNodeId: candidateNode.id,
+      basis: candidateNode.basis,
+    },
+    basis: candidateNode.basis,
+    confidence: candidateNode.confidence ?? normalizeCandidateConfidence(report?.confidence),
+    usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || report?.usedFallback),
     graphLayer: layer,
-    labels: ['proposal', 'generated', candidateNode.basis],
+    labels: ['proposal', 'generated', 'ai', candidateNode.basis],
     proposalTarget: 'system-structure',
     approvalPolicy: 'auto-record',
     intentStatus: 'ready',

@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 const QA_RELATIVE_DIR = path.join('data', 'spatial', 'qa');
+const STRUCTURED_QA_RELATIVE_DIR = path.join(QA_RELATIVE_DIR, 'structured');
+const LOCAL_GATE_RELATIVE_DIR = path.join(QA_RELATIVE_DIR, 'local-gates');
 const BROWSER_CANDIDATES = [
   process.env.ACE_QA_BROWSER || null,
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
@@ -42,6 +44,18 @@ function ensureQAStorage(rootPath) {
   return dir;
 }
 
+function ensureStructuredQAStorage(rootPath) {
+  const dir = path.join(rootPath, STRUCTURED_QA_RELATIVE_DIR);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function ensureLocalGateStorage(rootPath) {
+  const dir = path.join(rootPath, LOCAL_GATE_RELATIVE_DIR);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
 function qaRunFilePath(rootPath, runId) {
   return path.join(ensureQAStorage(rootPath), `${runId}.json`);
 }
@@ -54,6 +68,38 @@ function qaArtifactDir(rootPath, runId) {
 
 function readQARun(rootPath, runId) {
   return readJson(qaRunFilePath(rootPath, runId), null);
+}
+
+function structuredQAFilePath(rootPath, reportId = 'latest') {
+  return path.join(ensureStructuredQAStorage(rootPath), `${String(reportId || 'latest').trim() || 'latest'}.json`);
+}
+
+function readStructuredQAReport(rootPath, reportId = 'latest') {
+  return readJson(structuredQAFilePath(rootPath, reportId), null);
+}
+
+function writeStructuredQAReport(rootPath, report, reportId = 'latest') {
+  writeJson(structuredQAFilePath(rootPath, reportId), report || {});
+  return report;
+}
+
+function localGateFilePath(rootPath, gateId) {
+  return path.join(ensureLocalGateStorage(rootPath), `${String(gateId || '').trim()}.json`);
+}
+
+function readLocalGateReport(rootPath, gateId) {
+  const normalizedGateId = String(gateId || '').trim();
+  if (!normalizedGateId) return null;
+  return readJson(localGateFilePath(rootPath, normalizedGateId), null);
+}
+
+function writeLocalGateReport(rootPath, gateId, report) {
+  const normalizedGateId = String(gateId || '').trim();
+  if (!normalizedGateId) {
+    throw new Error('gateId is required to persist a local QA gate report.');
+  }
+  writeJson(localGateFilePath(rootPath, normalizedGateId), report || {});
+  return report;
 }
 
 function listQARuns(rootPath) {
@@ -414,6 +460,13 @@ async function performAction(page, action) {
     await page.locator(action.selector).fill(action.text || '');
     return;
   }
+  if (action.type === 'wait-visible') {
+    await page.locator(action.selector).waitFor({
+      state: 'visible',
+      timeout: Number(action.timeoutMs || 10000),
+    });
+    return;
+  }
   if (action.type === 'drag') {
     const locator = page.locator(action.selector);
     const box = await locator.boundingBox();
@@ -724,12 +777,20 @@ async function runQARun(options = {}) {
 
 module.exports = {
   QA_RELATIVE_DIR,
+  STRUCTURED_QA_RELATIVE_DIR,
+  LOCAL_GATE_RELATIVE_DIR,
   analyzeStudioSnapshot,
   artifactRoute,
+  ensureLocalGateStorage,
   ensureQAStorage,
+  ensureStructuredQAStorage,
   listQARuns,
+  readLocalGateReport,
   readQARun,
+  readStructuredQAReport,
   runQARun,
   summarizeQARun,
   updateQARun,
+  writeLocalGateReport,
+  writeStructuredQAReport,
 };

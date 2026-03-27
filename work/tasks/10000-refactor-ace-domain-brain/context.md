@@ -1,0 +1,16 @@
+# Task 10000: Refactor ACE domain brain
+
+## Context
+Goal: Make `brain/emergence` the canonical source of truth for ACE manager and context behavior
+Requested outcomes: Refactor ACE domain brain; Establish shared anchor resolver; Update runtime and dashboard configurations.
+Why ACE believes this: Project alignment 100%, Actionability 50%, Architecture fit 100%.
+Constraints and review signals: Ensure compatibility with existing `projects/emergence` during migration | Maintain active runtime resolution independence from `legacy/` | Actionability: Detected 1 implementation/planning verb signals. | Constraint coverage: Includes guardrails, blockers, or review-oriented language..
+Still unclear: Need clarification on the scope of 'New desk/agent roles' and 'Removing compatibility aliases in the same pass'
+
+## Anchor refs
+- brain/emergence/project_brain.md
+- brain/emergence/roadmap.md
+- brain/emergence/plan.md
+- brain/emergence/tasks.md
+- brain/emergence/decisions.md
+- brain/emergence/changelog.md

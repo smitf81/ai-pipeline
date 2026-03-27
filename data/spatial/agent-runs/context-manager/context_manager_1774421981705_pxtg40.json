@@ -1,0 +1,859 @@
+{
+  "id": "context_manager_1774421981705_pxtg40",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-25T06:59:41.710Z",
+  "startedAt": "2026-03-25T06:59:41.710Z",
+  "completedAt": "2026-03-25T06:59:56.012Z",
+  "durationMs": 14302,
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`",
+  "reason": null,
+  "sourceNodeId": "node_1774421852193_j79ed",
+  "sourceText": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria - see i did what you asked\" \n-\"but it doesn't work\"\n-\"but i did what you asked\"",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`",
+    "statement": "The LLM is mistakenly reading from an incorrect or outdated source, leading to erroneous interpretations and actions. We need to update its configuration to correctly read from `brain/emergence` to prevent this issue.",
+    "goal": "The LLM is mistakenly reading from an incorrect or outdated source, leading to erroneous interpretations and actions. We need to update its configuration to correctly read from `br",
+    "requestedOutcomes": [
+      "Update LLM to read from correct source in `brain/emergence`"
+    ],
+    "tasks": [
+      "Update LLM to read from correct source in `brain/emergence`"
+    ],
+    "targets": [],
+    "constraints": [
+      "Ensure that the LLM does not continue reading from old sources"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "signals": {},
+    "clarifications": [
+      "Confirm if there are any specific paths or files within `brain/emergence` that the LLM is currently reading from"
+    ],
+    "focusTerms": [
+      "LLM",
+      "source of truth",
+      "read",
+      "brain/emergence"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/plan.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1774421981705_pxtg40",
+    "sourceNodeId": "node_1774421852193_j79ed",
+    "sourceText": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria - see i did what you asked\" \n-\"but it doesn't work\"\n-\"but i did what you asked\"",
+    "summary": "Update LLM configuration to correctly read from `brain/emergence`",
+    "explicitClaims": [
+      "Update LLM to read from correct source in `brain/emergence`"
+    ],
+    "inferredClaims": [
+      "The current source being read by the LLM is incorrect or outdated, leading to erroneous interpretations and actions"
+    ],
+    "candidateNodes": [
+      {
+        "id": "llm_config",
+        "label": "LLM Configuration",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Configuration is needed to update the LLM's source of truth",
+        "confidence": 0.72
+      },
+      {
+        "id": "brain_emergence_source",
+        "label": "Source in `brain/emergence`",
+        "kind": "module",
+        "basis": "inferred",
+        "rationale": "The correct source of truth for the LLM's interpretations and actions is within `brain/emergence`",
+        "confidence": 0.65
+      }
+    ],
+    "candidateEdges": [
+      {
+        "sourceCandidateId": "llm_config",
+        "targetCandidateId": "brain_emergence_source",
+        "kind": "reads_from",
+        "basis": "explicit",
+        "rationale": "The LLM needs to read from the correct source in `brain/emergence`"
+      }
+    ],
+    "gaps": [
+      "Detailed information on the current source being used by the LLM"
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774421981705_pxtg40",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.43,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0.2857142857142857,
+          "reason": "Matched project terms: brain, emergence"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.75,
+          "reason": "Detected 3 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.1111111111111111,
+          "reason": "Little direct architecture language found."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context"
+        ]
+      },
+      "matchedTerms": [
+        "brain",
+        "emergence"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`",
+    "confidence": 0.43,
+    "legacyConfidence": 0.5,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.2857142857142857,
+        "reason": "Matched project terms: brain, emergence"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.75,
+        "reason": "Detected 3 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.1111111111111111,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.3333333333333333,
+        "reason": "Matched project terms: brain, emergence"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 3 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.14285714285714285,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.43,
+      "executionReadiness": 0.69,
+      "plannerUsefulness": 0.6,
+      "deployReadiness": 0.17
+    },
+    "truth": {
+      "rawSource": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria - see i did what you asked\" \n-\"but it doesn't work\"\n-\"but i did what you asked\"",
+      "rawInput": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria - see i did what you asked\" \n-\"but it doesn't work\"\n-\"but i did what you asked\"",
+      "statement": "Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`",
+      "goal": "Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`",
+      "intentType": "Constraint / guardrail request",
+      "requestType": "constraint_request",
+      "requestedOutcomes": [
+        "Update LLM to read from correct source in `brain/emergence`"
+      ],
+      "tasks": [
+        "Update LLM to read from correct source in `brain/emergence`"
+      ],
+      "targets": [
+        "brain",
+        "emergence",
+        "and",
+        "ace",
+        "the",
+        "anchor",
+        "runtime",
+        "for"
+      ],
+      "constraints": [
+        "Project alignment: Matched project terms: brain, emergence",
+        "Architecture fit: Little direct architecture language found.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "urgency": "normal",
+      "signals": {
+        "actionSignals": 0,
+        "constraintSignals": 0,
+        "architectureSignals": 0,
+        "executionSignals": 0,
+        "featureSignals": 0,
+        "matchedProjectTerms": 2,
+        "anchorRefs": 6,
+        "lowConfidenceCriteria": 3,
+        "plannerUsefulness": 0.6,
+        "executionReadiness": 0.69,
+        "deployReadiness": 0.17,
+        "labels": [
+          "context"
+        ],
+        "role": "constraint",
+        "requestedOutcomeCount": 1
+      },
+      "unresolved": [
+        "Project alignment: Matched project terms: brain, emergence",
+        "Architecture fit: Little direct architecture language found.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Actionability: Detected 3 implementation/planning verb signals.",
+        "Project alignment: Matched project terms: brain, emergence"
+      ],
+      "anchorRefs": [
+        "brain/emergence/decisions.md",
+        "brain/emergence/project_brain.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/roadmap.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Update LLM to read from correct source in `brain/emergence`",
+      "readiness": {
+        "intentConfidence": 0.43,
+        "plannerUsefulness": 0.6,
+        "executionReadiness": 0.69,
+        "deployReadiness": 0.17
+      }
+    },
+    "goal": "The LLM is mistakenly reading from an incorrect or outdated source, leading to erroneous interpretations and actions. We need to update its configuration to correctly read from `br",
+    "targets": [
+      "brain",
+      "emergence",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md"
+    ],
+    "constraints": [
+      "Ensure that the LLM does not continue reading from old sources"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "requestedOutcomes": [
+      "Update LLM to read from correct source in `brain/emergence`"
+    ],
+    "tasks": [
+      "Update LLM to read from correct source in `brain/emergence`"
+    ],
+    "signals": {},
+    "anchorRefs": [
+      "brain/emergence/decisions.md",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "brain",
+            "emergence",
+            "are"
+          ],
+          "score": 10
+        },
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "brain",
+            "emergence"
+          ],
+          "score": 9
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "brain",
+            "emergence"
+          ],
+          "score": 9
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "brain",
+            "emergence"
+          ],
+          "score": 9
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "brain",
+            "paths"
+          ],
+          "score": 7
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "emergence"
+          ],
+          "score": 5
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 80,
+      "sentenceCount": 19,
+      "matchedProjectTerms": [
+        "brain",
+        "emergence"
+      ],
+      "actionSignals": 3,
+      "featureRequestSignals": 0,
+      "architectureSignals": 0,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "brain",
+        "emergence"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "brain",
+        "the",
+        "anchor",
+        "runtime",
+        "for",
+        "legacy"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/decisions.md",
+        "brain/emergence/project_brain.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/roadmap.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-25T06:59:47.276Z",
+    "nodeId": "node_1774421852193_j79ed",
+    "source": "node-idle",
+    "createdAt": "2026-03-25T06:59:56.012Z",
+    "contextPacket": {
+      "summary": "Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`",
+      "statement": "The LLM is mistakenly reading from an incorrect or outdated source, leading to erroneous interpretations and actions. We need to update its configuration to correctly read from `brain/emergence` to prevent this issue.",
+      "goal": "The LLM is mistakenly reading from an incorrect or outdated source, leading to erroneous interpretations and actions. We need to update its configuration to correctly read from `br",
+      "requestedOutcomes": [
+        "Update LLM to read from correct source in `brain/emergence`"
+      ],
+      "tasks": [
+        "Update LLM to read from correct source in `brain/emergence`"
+      ],
+      "targets": [],
+      "constraints": [
+        "Ensure that the LLM does not continue reading from old sources"
+      ],
+      "urgency": "normal",
+      "requestType": "context_request",
+      "signals": {},
+      "clarifications": [
+        "Confirm if there are any specific paths or files within `brain/emergence` that the LLM is currently reading from"
+      ],
+      "focusTerms": [
+        "LLM",
+        "source of truth",
+        "read",
+        "brain/emergence"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/plan.md"
+      ],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1774421981705_pxtg40",
+      "sourceNodeId": "node_1774421852193_j79ed",
+      "sourceText": "what does an LLM \"look at\" to determine what a slice does as it seems very easy for it to trick itself into thinking it's done something or that something works that doesn't. I think delusions is a better word for them than hallucinations.\n\"I did the minimum to cover the criteria - see i did what you asked\" \n-\"but it doesn't work\"\n-\"but i did what you asked\"",
+      "summary": "Update LLM configuration to correctly read from `brain/emergence`",
+      "explicitClaims": [
+        "Update LLM to read from correct source in `brain/emergence`"
+      ],
+      "inferredClaims": [
+        "The current source being read by the LLM is incorrect or outdated, leading to erroneous interpretations and actions"
+      ],
+      "candidateNodes": [
+        {
+          "id": "llm_config",
+          "label": "LLM Configuration",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Configuration is needed to update the LLM's source of truth",
+          "confidence": 0.72
+        },
+        {
+          "id": "brain_emergence_source",
+          "label": "Source in `brain/emergence`",
+          "kind": "module",
+          "basis": "inferred",
+          "rationale": "The correct source of truth for the LLM's interpretations and actions is within `brain/emergence`",
+          "confidence": 0.65
+        }
+      ],
+      "candidateEdges": [
+        {
+          "sourceCandidateId": "llm_config",
+          "targetCandidateId": "brain_emergence_source",
+          "kind": "reads_from",
+          "basis": "explicit",
+          "rationale": "The LLM needs to read from the correct source in `brain/emergence`"
+        }
+      ],
+      "gaps": [
+        "Detailed information on the current source being used by the LLM"
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1774421981705_pxtg40",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.43,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.2857142857142857,
+            "reason": "Matched project terms: brain, emergence"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.75,
+            "reason": "Detected 3 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.1111111111111111,
+            "reason": "Little direct architecture language found."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context"
+          ]
+        },
+        "matchedTerms": [
+          "brain",
+          "emergence"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774421981705_pxtg40",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1774421869569_s50lfc",
+  "handoff": {
+    "id": "handoff_1774421869569_s50lfc",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-25T06:59:56.012Z",
+    "sourceNodeId": "node_1774421852193_j79ed",
+    "summary": "Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`",
+    "goal": "The LLM is mistakenly reading from an incorrect or outdated source, leading to erroneous interpretations and actions. We need to update its configuration to correctly read from `br",
+    "problemStatement": "Goal: Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`\nRequested outcomes: Update LLM to read from correct source in `brain/emergence`.\nWhy ACE believes this: Project alignment 29%, Actionability 75%, Architecture fit 11%.\nConstraints and review signals: Ensure that the LLM does not continue reading from old sources | Project alignment: Matched project terms: brain, emergence | Architecture fit: Little direct architecture language found. | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Confirm if there are any specific paths or files within `brain/emergence` that the LLM is currently reading from",
+    "anchorRefs": [
+      "brain/emergence/decisions.md",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "requestedOutcomes": [
+      "Update LLM to read from correct source in `brain/emergence`"
+    ],
+    "tasks": [
+      "Update LLM to read from correct source in `brain/emergence`"
+    ],
+    "constraints": [
+      "Ensure that the LLM does not continue reading from old sources",
+      "Project alignment: Matched project terms: brain, emergence",
+      "Architecture fit: Little direct architecture language found.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.43,
+    "legacyConfidence": 0.5,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.2857142857142857,
+        "reason": "Matched project terms: brain, emergence"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.75,
+        "reason": "Detected 3 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.1111111111111111,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.43,
+      "executionReadiness": 0.69,
+      "plannerUsefulness": 0.6,
+      "deployReadiness": 0.17
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context"
+      ]
+    },
+    "requestType": "context_request",
+    "urgency": "normal",
+    "targets": [
+      "brain",
+      "emergence",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md"
+    ],
+    "signals": {},
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "llmStatus": "live",
+  "rawResponse": "{\n  \"summary\": \"Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`\",\n  \"statement\": \"The LLM is mistakenly reading from an incorrect or outdated source, leading to erroneous interpretations and actions. We need to update its configuration to correctly read from `brain/emergence` to prevent this issue.\",\n  \"tasks\": [\"Update LLM to read from correct source in `brain/emergence`\"],\n  \"constraints\": [\"Ensure that the LLM does not continue reading from old sources\"],\n  \"clarifications\": [\"Confirm if there are any specific paths or files within `brain/emergence` that the LLM is currently reading from\"],\n  \"focusTerms\": [\"LLM\", \"source of truth\", \"read\", \"brain/emergence\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/plan.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1774421981705_pxtg40",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T06:59:41.710Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T06:59:47.274Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Address LLM delusions by ensuring it reads from the correct source of truth in `brain/emergence`\",\n  \"statement\": \"The LLM is mistakenly reading from an incorrect or outdated source, leading to erroneous interpretations and actions. We need to update its configuration to correctly re"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T06:59:47.276Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T06:59:56.012Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Update LLM configuration to correctly read from `brain/emergence`\",\n  \"explicitClaims\": [\"Update LLM to read from correct source in `brain/emergence`\"],\n  \"inferredClaims\": [\"The current source being read by the LLM is incorrect or outdated, leading to erroneous interpretations and a"
+      }
+    ]
+  }
+}

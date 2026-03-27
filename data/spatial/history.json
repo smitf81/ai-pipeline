@@ -1,802 +1,875 @@
 [
   {
-    "at": "2026-03-19T10:47:03.244Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T13:41:55.893Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:03.358Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T13:41:57.080Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917223247-y9hlya"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:07.251Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T13:41:58.498Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:07.378Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T13:41:59.720Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917227255-mde8d3"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:11.253Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T13:42:00.614Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:11.366Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T13:42:24.952Z",
+    "type": "context-manager-worker-start",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917231258-fkg1q6"
-      ]
+      "sourceNodeId": "prompt-1",
+      "runId": "context_manager_1774446144947_0t37j9",
+      "mode": "manual",
+      "source": "qa-test"
     }
   },
   {
-    "at": "2026-03-19T10:47:14.488Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T13:42:24.974Z",
+    "type": "context-manager-worker-degraded",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "sourceNodeId": "prompt-1",
+      "runId": "context_manager_1774446144947_0t37j9",
+      "reason": "Ollama generate timed out after 1ms. | Ollama generate timed out after 1ms.",
+      "handoffId": null,
+      "usedFallback": true
     }
   },
   {
-    "at": "2026-03-19T10:47:14.607Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917234491-h91oji"
-      ]
-    }
+    "at": "2026-03-25T13:42:24.978Z",
+    "type": "mutation-apply",
+    "count": 0
   },
   {
-    "at": "2026-03-19T10:47:15.254Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T13:42:30.648Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:15.364Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T13:42:33.466Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917235256-i285cp"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:19.265Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:48:16.522Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:19.371Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:48:18.905Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917239267-ely4ht"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:23.271Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:48:22.968Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:23.381Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:49:15.469Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917243273-w6mtwa"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:27.289Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:49:31.493Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:27.396Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:49:34.402Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917247291-hxwo8w"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:29.857Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:49:44.967Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:29.981Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:49:58.317Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917249861-o97kv2"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:31.307Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:50:05.881Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:31.475Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:50:09.097Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917251310-382q6e"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:35.304Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:50:11.067Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:35.442Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:50:41.259Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917255306-p480ws"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:39.309Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:50:42.027Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:39.461Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:51:06.698Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917259312-uj35yq"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:43.316Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:52:15.484Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:43.466Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:52:18.471Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917263319-as7ocp"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:45.195Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:52:43.670Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:45.335Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:52:52.621Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917265200-d6ucu4"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:47.322Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:53:00.558Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:47.474Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:53:03.206Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917267326-1250us"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:51.330Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:53:07.102Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:51.473Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T16:53:11.439Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917271332-oosp7w"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:55.337Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T16:53:12.833Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:55.481Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T20:19:57.745Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917275339-5slg2e"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:59.341Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T20:20:02.837Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:47:59.489Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T20:20:04.271Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917279343-grpycg"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:00.557Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T20:21:12.694Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:00.689Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T20:21:14.278Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917280559-m68ak1"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:03.342Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T20:21:18.076Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:03.485Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T22:30:45.187Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917283345-9ljyu1"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:07.351Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T22:30:51.608Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:07.495Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T22:30:53.039Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917287368-ifdgv5"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:11.363Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T22:31:00.424Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:11.493Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T22:31:02.435Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917291367-p35jdh"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:15.368Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-25T22:31:03.302Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:15.502Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-25T22:31:04.459Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917295372-f41nk5"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:15.900Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T07:08:34.245Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:16.022Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T07:08:35.577Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917295902-wv3ctx"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:19.377Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T07:10:42.174Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:19.507Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T07:10:43.081Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917299380-5ewcmp"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:23.377Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T07:16:08.066Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:23.514Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T07:16:48.975Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917303383-8hlu0i"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:27.387Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T07:16:50.700Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:27.517Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T07:16:51.893Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917307390-z9qr1k"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:31.242Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T07:16:54.731Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:31.366Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T07:20:04.800Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917311244-ox3e6x"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:31.473Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T07:20:06.561Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:31.595Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T07:27:37.692Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917311475-ynh6nz"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:35.487Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T07:28:15.106Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:35.631Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T07:28:16.314Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917315489-xbyjt1"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:39.490Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T07:28:20.166Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:39.619Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T10:32:14.856Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917319491-wbn0fy"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:43.492Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T10:32:15.807Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:43.618Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T11:10:22.672Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917323493-x69hd0"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:46.772Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T11:11:09.650Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:46.896Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T11:11:11.389Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917326775-dvmmiy"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:47.513Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T11:13:10.961Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:47.642Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-26T11:13:11.815Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917327514-l8x4n5"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:51.528Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-26T23:58:18.954Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:51.657Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-27T00:11:29.220Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917331532-qd586q"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:55.537Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-27T00:11:31.567Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:55.670Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-27T00:11:34.563Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917335539-ve0plz"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:59.539Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-27T00:11:36.071Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:48:59.669Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-27T06:15:20.412Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917339545-gqv1xf"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:49:02.126Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-27T06:15:22.928Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:49:02.246Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-27T06:15:28.796Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917342129-95p38g"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:49:03.538Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-27T06:15:39.670Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:49:03.670Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-27T06:15:43.368Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917343540-bet90s"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:49:07.551Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-27T06:15:44.376Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "title": "Clarify what the planner should do next and make the desk state readable in Studio"
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-19T10:49:07.693Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-27T06:15:45.512Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "runIds": [
-        "1773917347555-6zsrh4"
-      ]
+      "nodes": 6,
+      "edges": 4,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   }
 ]

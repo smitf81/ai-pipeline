@@ -1,20 +1,27 @@
+import { getInitialActorEnergyState } from '../units/energy.js';
+import { withWorldPosition } from '../world/coordinates.js';
+
 function makeId(prefix, n) {
   return `${prefix}-${String(n).padStart(3, '0')}`;
 }
 
-export function createTaskActorBase({ id, type, x, y }) {
-  return {
+export function createTaskActorBase({ id, type, x, y, z = 0, position = null }) {
+  const energyState = getInitialActorEnergyState(type);
+  const actor = withWorldPosition({
     id,
     type,
-    x,
-    y,
     state: 'idle',
     currentTask: null,
     taskQueue: [],
     failedTasks: [],
     taskHistory: [],
-    moveCooldownFrames: 0
-  };
+    moveCooldownFrames: 0,
+    rechargeCooldownFrames: 0,
+    rechargeBuildingId: null,
+    ...energyState
+  }, position ?? { x, y, z });
+
+  return actor;
 }
 
 export function createEntityStore() {

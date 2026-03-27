@@ -33,7 +33,7 @@ function parseJsonResponse(text = '') {
 
 async function requestOllamaJson({
   prompt,
-  model = 'mixtral',
+  model = 'mistral:latest',
   host = DEFAULT_OLLAMA_HOST,
   timeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
   fetchImpl = globalThis.fetch,

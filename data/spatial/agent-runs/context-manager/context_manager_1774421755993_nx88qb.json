@@ -1,0 +1,971 @@
+{
+  "id": "context_manager_1774421755993_nx88qb",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-25T06:55:55.999Z",
+  "startedAt": "2026-03-25T06:55:55.999Z",
+  "completedAt": "2026-03-25T06:56:12.314Z",
+  "durationMs": 16315,
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior",
+  "reason": null,
+  "sourceNodeId": "node_1774421754783_019kz",
+  "sourceText": "new note",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior",
+    "statement": "The goal is to make `brain/emergence` the authoritative source for ACE manager behavior, context flow, and repo configuration. This involves migrating from the current `projects/emergence` setup and ensuring compatibility during the transition.",
+    "goal": "The goal is to make `brain/emergence` the authoritative source for ACE manager behavior, context flow, and repo configuration. This involves migrating from the current `projects/em",
+    "requestedOutcomes": [
+      "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+      "Sync relevant files in both directories for consistency",
+      "Block unanchored execution work from moving through builder, apply, or deploy"
+    ],
+    "tasks": [
+      "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+      "Sync relevant files in both directories for consistency",
+      "Block unanchored execution work from moving through builder, apply, or deploy"
+    ],
+    "targets": [],
+    "constraints": [
+      "Ensure legacy compatibility during the migration",
+      "Maintain alignment between canonical docs and runtime fields to avoid drift warnings becoming noise",
+      "Keep archived content under `legacy/` out of active runtime resolution"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "signals": {},
+    "clarifications": [
+      "What is the timeline for removing compatibility aliases?",
+      "How will the manager orchestration be deepened for anchor-driven desk activation and team-board seeding?"
+    ],
+    "focusTerms": [
+      "brain/emergence",
+      "projects/emergence",
+      "runtime",
+      "manager behavior",
+      "context flow"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/plan.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1774421755993_nx88qb",
+    "sourceNodeId": "node_1774421754783_019kz",
+    "sourceText": "new note",
+    "summary": "Update ACE runtime to use `brain/emergence` as the authoritative source for manager and context behavior",
+    "explicitClaims": [
+      "Update ACE runtime"
+    ],
+    "inferredClaims": [
+      "Use `brain/emergence` as the canonical source of truth"
+    ],
+    "candidateNodes": [
+      {
+        "id": "ace_runtime",
+        "label": "ACE Runtime",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Target of the update action",
+        "confidence": 1
+      },
+      {
+        "id": "brain_emergence",
+        "label": "brain/emergence",
+        "kind": "module",
+        "basis": "inferred",
+        "rationale": "Inferred as the new source of truth for runtime",
+        "confidence": 0.95
+      }
+    ],
+    "candidateEdges": [
+      {
+        "sourceCandidateId": "ace_runtime",
+        "targetCandidateId": "brain_emergence",
+        "kind": "uses_as_authority",
+        "basis": "explicit",
+        "rationale": "Explicit mention of updating the runtime"
+      }
+    ],
+    "gaps": [
+      "The specific actions needed to update the runtime and ensure compatibility"
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774421755993_nx88qb",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.88,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 1,
+          "reason": "Matched project terms: ace, runtime, brain, emergence, canonical"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.875,
+          "reason": "Detected 2 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 1,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0.5,
+          "reason": "Includes guardrails, blockers, or review-oriented language."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context",
+          "plan",
+          "execution",
+          "ux",
+          "governance"
+        ]
+      },
+      "matchedTerms": [
+        "ace",
+        "runtime",
+        "brain",
+        "emergence",
+        "canonical",
+        "manager",
+        "context",
+        "repo"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior",
+    "confidence": 0.88,
+    "legacyConfidence": 0.88,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: ace, runtime, brain, emergence, canonical"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.875,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 1,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0.5,
+        "reason": "Includes guardrails, blockers, or review-oriented language."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: ace, runtime, brain, emergence, canonical"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 1,
+        "reason": "References ACE system structure, agents, or implementation surfaces."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0.4,
+        "reason": "Includes guardrails, blockers, or review-oriented language."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.88,
+      "executionReadiness": 0.97,
+      "plannerUsefulness": 1,
+      "deployReadiness": 0.58
+    },
+    "truth": {
+      "rawSource": "new note",
+      "rawInput": "new note",
+      "statement": "Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior",
+      "goal": "Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior",
+      "intentType": "Constraint / guardrail request",
+      "requestType": "constraint_request",
+      "requestedOutcomes": [
+        "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+        "Sync relevant files in both directories for consistency",
+        "Block unanchored execution work from moving through builder, apply, or deploy"
+      ],
+      "tasks": [
+        "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+        "Sync relevant files in both directories for consistency",
+        "Block unanchored execution work from moving through builder, apply, or deploy"
+      ],
+      "targets": [
+        "ace",
+        "runtime",
+        "brain",
+        "emergence",
+        "canonical",
+        "manager",
+        "context",
+        "repo"
+      ],
+      "constraints": [
+        "Constraint coverage: Includes guardrails, blockers, or review-oriented language."
+      ],
+      "urgency": "medium",
+      "signals": {
+        "actionSignals": 0,
+        "constraintSignals": 0,
+        "architectureSignals": 0,
+        "executionSignals": 0,
+        "featureSignals": 0,
+        "matchedProjectTerms": 8,
+        "anchorRefs": 6,
+        "lowConfidenceCriteria": 1,
+        "plannerUsefulness": 1,
+        "executionReadiness": 0.97,
+        "deployReadiness": 0.58,
+        "labels": [
+          "context",
+          "plan",
+          "execution",
+          "ux"
+        ],
+        "role": "constraint",
+        "requestedOutcomeCount": 3
+      },
+      "unresolved": [
+        "Constraint coverage: Includes guardrails, blockers, or review-oriented language."
+      ],
+      "evidence": [
+        "Project alignment: Matched project terms: ace, runtime, brain, emergence, canonical",
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow.",
+        "Clarity: Input includes enough detail to classify intent reliably."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`; Sync relevant files in both directories for consistency; Block unanchored execution work from moving through builder, apply, or deploy",
+      "readiness": {
+        "intentConfidence": 0.88,
+        "plannerUsefulness": 1,
+        "executionReadiness": 0.97,
+        "deployReadiness": 0.58
+      }
+    },
+    "goal": "The goal is to make `brain/emergence` the authoritative source for ACE manager behavior, context flow, and repo configuration. This involves migrating from the current `projects/em",
+    "targets": [
+      "ace",
+      "runtime",
+      "brain",
+      "emergence",
+      "canonical",
+      "manager",
+      "context",
+      "repo"
+    ],
+    "constraints": [
+      "Ensure legacy compatibility during the migration",
+      "Maintain alignment between canonical docs and runtime fields to avoid drift warnings becoming noise",
+      "Keep archived content under `legacy/` out of active runtime resolution"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "requestedOutcomes": [
+      "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+      "Sync relevant files in both directories for consistency",
+      "Block unanchored execution work from moving through builder, apply, or deploy"
+    ],
+    "tasks": [
+      "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+      "Sync relevant files in both directories for consistency",
+      "Block unanchored execution work from moving through builder, apply, or deploy"
+    ],
+    "signals": {},
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "ace",
+            "brain",
+            "emergence",
+            "runtime",
+            "canonical",
+            "context",
+            "current",
+            "legacy"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "emergence",
+            "keep",
+            "manager",
+            "projects",
+            "compatibility",
+            "drift",
+            "runtime",
+            "activation"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "runtime",
+            "canonical",
+            "legacy",
+            "compatibility",
+            "manager",
+            "active",
+            "brain",
+            "drift"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 4,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "brain",
+            "compatibility",
+            "context",
+            "emergence",
+            "keep",
+            "legacy",
+            "manager",
+            "repo"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "legacy",
+            "brain",
+            "emergence",
+            "canonical",
+            "compatibility",
+            "migration",
+            "projects",
+            "repo"
+          ],
+          "score": 25
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "legacy",
+            "brain",
+            "canonical",
+            "runtime",
+            "drift",
+            "flow",
+            "manager",
+            "projects"
+          ],
+          "score": 25
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "plan",
+        "execution",
+        "ux",
+        "governance"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 89,
+      "sentenceCount": 20,
+      "matchedProjectTerms": [
+        "ace",
+        "runtime",
+        "brain",
+        "emergence",
+        "canonical",
+        "manager",
+        "context",
+        "repo",
+        "projects",
+        "compatibility",
+        "legacy",
+        "drift",
+        "keep",
+        "archived",
+        "active"
+      ],
+      "actionSignals": 2,
+      "featureRequestSignals": 0,
+      "architectureSignals": 6,
+      "constraintSignals": 2,
+      "executionSignals": 2
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "ace",
+        "runtime",
+        "brain",
+        "emergence",
+        "canonical",
+        "manager",
+        "context",
+        "repo"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "brain",
+        "the",
+        "anchor",
+        "runtime",
+        "for",
+        "legacy"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback."
+        ],
+        "next_actions": [
+          "Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.",
+          "Add a shared anchor resolver and bundle builder.",
+          "Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.",
+          "Rename external target config to `targets.json` with `projects.json` fallback.",
+          "Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.",
+          "Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.",
+          "[x] Keep `brain/emergence` canonical and keep compatibility reads for `projects/emergence`."
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-25T06:56:04.799Z",
+    "nodeId": "node_1774421754783_019kz",
+    "source": "node-idle",
+    "createdAt": "2026-03-25T06:56:12.314Z",
+    "contextPacket": {
+      "summary": "Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior",
+      "statement": "The goal is to make `brain/emergence` the authoritative source for ACE manager behavior, context flow, and repo configuration. This involves migrating from the current `projects/emergence` setup and ensuring compatibility during the transition.",
+      "goal": "The goal is to make `brain/emergence` the authoritative source for ACE manager behavior, context flow, and repo configuration. This involves migrating from the current `projects/em",
+      "requestedOutcomes": [
+        "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+        "Sync relevant files in both directories for consistency",
+        "Block unanchored execution work from moving through builder, apply, or deploy"
+      ],
+      "tasks": [
+        "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+        "Sync relevant files in both directories for consistency",
+        "Block unanchored execution work from moving through builder, apply, or deploy"
+      ],
+      "targets": [],
+      "constraints": [
+        "Ensure legacy compatibility during the migration",
+        "Maintain alignment between canonical docs and runtime fields to avoid drift warnings becoming noise",
+        "Keep archived content under `legacy/` out of active runtime resolution"
+      ],
+      "urgency": "normal",
+      "requestType": "context_request",
+      "signals": {},
+      "clarifications": [
+        "What is the timeline for removing compatibility aliases?",
+        "How will the manager orchestration be deepened for anchor-driven desk activation and team-board seeding?"
+      ],
+      "focusTerms": [
+        "brain/emergence",
+        "projects/emergence",
+        "runtime",
+        "manager behavior",
+        "context flow"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/plan.md"
+      ],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1774421755993_nx88qb",
+      "sourceNodeId": "node_1774421754783_019kz",
+      "sourceText": "new note",
+      "summary": "Update ACE runtime to use `brain/emergence` as the authoritative source for manager and context behavior",
+      "explicitClaims": [
+        "Update ACE runtime"
+      ],
+      "inferredClaims": [
+        "Use `brain/emergence` as the canonical source of truth"
+      ],
+      "candidateNodes": [
+        {
+          "id": "ace_runtime",
+          "label": "ACE Runtime",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Target of the update action",
+          "confidence": 1
+        },
+        {
+          "id": "brain_emergence",
+          "label": "brain/emergence",
+          "kind": "module",
+          "basis": "inferred",
+          "rationale": "Inferred as the new source of truth for runtime",
+          "confidence": 0.95
+        }
+      ],
+      "candidateEdges": [
+        {
+          "sourceCandidateId": "ace_runtime",
+          "targetCandidateId": "brain_emergence",
+          "kind": "uses_as_authority",
+          "basis": "explicit",
+          "rationale": "Explicit mention of updating the runtime"
+        }
+      ],
+      "gaps": [
+        "The specific actions needed to update the runtime and ensure compatibility"
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1774421755993_nx88qb",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.88,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: ace, runtime, brain, emergence, canonical"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.875,
+            "reason": "Detected 2 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 1,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0.5,
+            "reason": "Includes guardrails, blockers, or review-oriented language."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "plan",
+            "execution",
+            "ux",
+            "governance"
+          ]
+        },
+        "matchedTerms": [
+          "ace",
+          "runtime",
+          "brain",
+          "emergence",
+          "canonical",
+          "manager",
+          "context",
+          "repo"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774421755993_nx88qb",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1774421772314_nvafp5",
+  "handoff": {
+    "id": "handoff_1774421772314_nvafp5",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-25T06:56:12.314Z",
+    "sourceNodeId": "node_1774421754783_019kz",
+    "summary": "Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior",
+    "goal": "The goal is to make `brain/emergence` the authoritative source for ACE manager behavior, context flow, and repo configuration. This involves migrating from the current `projects/em",
+    "problemStatement": "Goal: Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior\nRequested outcomes: Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`; Sync relevant files in both directories for consistency; Block unanchored execution work from moving through builder, apply, or deploy.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 100%.\nConstraints and review signals: Ensure legacy compatibility during the migration | Maintain alignment between canonical docs and runtime fields to avoid drift warnings becoming noise | Keep archived content under `legacy/` out of active runtime resolution | Constraint coverage: Includes guardrails, blockers, or review-oriented language..\nStill unclear: What is the timeline for removing compatibility aliases? How will the manager orchestration be deepened for anchor-driven desk activation and team-board seeding?",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md"
+    ],
+    "requestedOutcomes": [
+      "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+      "Sync relevant files in both directories for consistency",
+      "Block unanchored execution work from moving through builder, apply, or deploy"
+    ],
+    "tasks": [
+      "Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`",
+      "Sync relevant files in both directories for consistency",
+      "Block unanchored execution work from moving through builder, apply, or deploy"
+    ],
+    "constraints": [
+      "Ensure legacy compatibility during the migration",
+      "Maintain alignment between canonical docs and runtime fields to avoid drift warnings becoming noise",
+      "Keep archived content under `legacy/` out of active runtime resolution",
+      "Constraint coverage: Includes guardrails, blockers, or review-oriented language."
+    ],
+    "confidence": 0.88,
+    "legacyConfidence": 0.88,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: ace, runtime, brain, emergence, canonical"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.875,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 1,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0.5,
+        "reason": "Includes guardrails, blockers, or review-oriented language."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.88,
+      "executionReadiness": 0.97,
+      "plannerUsefulness": 1,
+      "deployReadiness": 0.58
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "plan",
+        "execution",
+        "ux",
+        "governance"
+      ]
+    },
+    "requestType": "context_request",
+    "urgency": "normal",
+    "targets": [
+      "ace",
+      "runtime",
+      "brain",
+      "emergence",
+      "canonical",
+      "manager",
+      "context",
+      "repo"
+    ],
+    "signals": {},
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "llmStatus": "live",
+  "rawResponse": "{\n  \"summary\": \"Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior\",\n  \"statement\": \"The goal is to make `brain/emergence` the authoritative source for ACE manager behavior, context flow, and repo configuration. This involves migrating from the current `projects/emergence` setup and ensuring compatibility during the transition.\",\n  \"tasks\": [\"Update runtime to read from `brain/emergence`, ensure compatibility reads for `projects/emergence`\", \"Sync relevant files in both directories for consistency\", \"Block unanchored execution work from moving through builder, apply, or deploy\"],\n  \"constraints\": [\"Ensure legacy compatibility during the migration\", \"Maintain alignment between canonical docs and runtime fields to avoid drift warnings becoming noise\", \"Keep archived content under `legacy/` out of active runtime resolution\"],\n  \"clarifications\": [\"What is the timeline for removing compatibility aliases?\", \"How will the manager orchestration be deepened for anchor-driven desk activation and team-board seeding?\"],\n  \"focusTerms\": [\"brain/emergence\", \"projects/emergence\", \"runtime\", \"manager behavior\", \"context flow\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/plan.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1774421755993_nx88qb",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T06:55:55.999Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-25T06:56:04.798Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Update ACE runtime to use `brain/emergence` as the canonical source of truth for manager and context behavior\",\n  \"statement\": \"The goal is to make `brain/emergence` the authoritative source for ACE manager behavior, context flow, and repo configuration. This involves migrating from "
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T06:56:04.799Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-25T06:56:12.314Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Update ACE runtime to use `brain/emergence` as the authoritative source for manager and context behavior\",\n  \"explicitClaims\": [\"Update ACE runtime\"],\n  \"inferredClaims\": [\"Use `brain/emergence` as the canonical source of truth\"],\n  \"candidateNodes\": [\n    {\n      \"id\": \"ace_runtime\""
+      }
+    ]
+  }
+}

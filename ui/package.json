@@ -4,7 +4,9 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "node tests/run-ui-tests.mjs",
+    "test": "npm run test:unit && npm run test:studio-boot",
+    "test:unit": "node tests/run-ui-tests.mjs",
+    "test:studio-boot": "node tests/run-studio-boot-check.mjs",
     "test:watch": "node --watch tests/run-ui-tests.mjs",
     "start": "node server.js",
     "mcp:ace": "node aceRuntimeMcp.js"

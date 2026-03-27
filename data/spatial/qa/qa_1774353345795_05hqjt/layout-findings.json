@@ -1,0 +1,240 @@
+{
+  "snapshot": {
+    "viewport": {
+      "width": 1600,
+      "height": 1100
+    },
+    "room": {
+      "x": 72,
+      "y": 86,
+      "width": 1056,
+      "height": 642
+    },
+    "roomRect": {
+      "left": 113.68000030517578,
+      "top": 365.260009765625,
+      "width": 992.6399536132812,
+      "height": 603.47998046875
+    },
+    "shellRect": {
+      "left": 0,
+      "top": 234,
+      "width": 1220,
+      "height": 866
+    },
+    "desks": [
+      {
+        "id": "context-manager",
+        "label": "Context Manager",
+        "x": 158,
+        "y": 449.8723404255319,
+        "rect": {
+          "left": 113.68000030517578,
+          "top": 641.48779296875,
+          "width": 161.67999267578125,
+          "height": 131.60003662109375
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "planner",
+        "label": "Planner",
+        "x": 998.7234042553191,
+        "y": 393.48936170212767,
+        "rect": {
+          "left": 903.9556274414062,
+          "top": 588.4953002929688,
+          "width": 161.67999267578125,
+          "height": 131.60003662109375
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "executor",
+        "label": "Executor",
+        "x": 158.59574468085106,
+        "y": 642.4468085106383,
+        "rect": {
+          "left": 114.23812103271484,
+          "top": 822.51123046875,
+          "width": 161.67999267578125,
+          "height": 131.5999755859375
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "memory-archivist",
+        "label": "Memory Archivist",
+        "x": 620,
+        "y": 595,
+        "rect": {
+          "left": 547.9599609375,
+          "top": 777.9199829101562,
+          "width": 161.6800537109375,
+          "height": 131.5999755859375
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "qa-lead",
+        "label": "QA / Test Lead",
+        "x": 422.5598404255319,
+        "y": 658,
+        "rect": {
+          "left": 362.35406494140625,
+          "top": 837.1399536132812,
+          "width": 161.67999267578125,
+          "height": 131.60003662109375
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "cto-architect",
+        "label": "CTO / Architect",
+        "x": 983.1914893617022,
+        "y": 632.6382978723404,
+        "rect": {
+          "left": 889.3562622070312,
+          "top": 813.2874755859375,
+          "width": 161.67999267578125,
+          "height": 131.5999755859375
+        },
+        "width": 172,
+        "height": 140
+      }
+    ],
+    "whiteboards": [
+      {
+        "id": "teamBoard",
+        "label": "Team Board",
+        "x": 320,
+        "y": 102,
+        "width": 560,
+        "height": 164,
+        "rect": {
+          "left": 346.79998779296875,
+          "top": 380.29998779296875,
+          "width": 526.4000244140625,
+          "height": 357.170654296875
+        }
+      }
+    ],
+    "links": [
+      {
+        "id": "planner-executor",
+        "label": "1 plan item",
+        "kind": "workflow",
+        "fromDeskId": "planner",
+        "toDeskId": "executor",
+        "startX": 924.7234042553191,
+        "startY": 389.48936170212767,
+        "endX": 230.59574468085106,
+        "endY": 638.4468085106383
+      },
+      {
+        "id": "work-to-memory",
+        "label": "Artifacts",
+        "kind": "memory",
+        "fromDeskId": "executor",
+        "toDeskId": "memory-archivist",
+        "startX": 232.59574468085106,
+        "startY": 638.4468085106383,
+        "endX": 548,
+        "endY": 591
+      },
+      {
+        "id": "conflict-0-context-manager",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "context-manager",
+        "startX": 915.1914893617022,
+        "startY": 628.6382978723404,
+        "endX": 224,
+        "endY": 445.8723404255319
+      },
+      {
+        "id": "conflict-0-planner",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "planner",
+        "startX": 983.1914893617022,
+        "startY": 580.6382978723404,
+        "endX": 998.7234042553191,
+        "endY": 443.48936170212767
+      },
+      {
+        "id": "conflict-0-executor",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "executor",
+        "startX": 915.1914893617022,
+        "startY": 628.6382978723404,
+        "endX": 224.59574468085106,
+        "endY": 638.4468085106383
+      }
+    ],
+    "controls": [
+      {
+        "id": "scene-canvas-button",
+        "label": "Canvas button",
+        "visible": true,
+        "rect": {
+          "left": 497.984375,
+          "top": 86,
+          "width": 59.078125,
+          "height": 30
+        }
+      },
+      {
+        "id": "scene-studio-button",
+        "label": "ACE Studio button",
+        "visible": true,
+        "rect": {
+          "left": 567.0625,
+          "top": 86,
+          "width": 79.9375,
+          "height": 30
+        }
+      },
+      {
+        "id": "recent-saves-select",
+        "label": "Recent Saves",
+        "visible": true,
+        "rect": {
+          "left": 1041,
+          "top": 85,
+          "width": 152,
+          "height": 32
+        }
+      },
+      {
+        "id": "reset-view-button",
+        "label": "Reset View",
+        "visible": true,
+        "rect": {
+          "left": 720.453125,
+          "top": 125,
+          "width": 80.546875,
+          "height": 30
+        }
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "console-1",
+      "severity": "error",
+      "kind": "console",
+      "summary": "Console errors were captured during the browser pass.",
+      "details": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <button> button \n    at button\n    at button\n    at div\n    at div\n    at div\n    at div\n    at div\n    at section\n    at SpatialNotebook (http://localhost:3000/spatial/spatialApp.js:1140:25)"
+    }
+  ]
+}

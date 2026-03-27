@@ -1,0 +1,108 @@
+{
+  "id": "qa_1774445748770_jxtj94",
+  "scenario": "studio-smoke",
+  "mode": "interactive",
+  "trigger": "guardrail",
+  "prompt": "Local Studio boot guardrail",
+  "baseUrl": "http://127.0.0.1:3107",
+  "status": "failed",
+  "verdict": "failed",
+  "createdAt": "2026-03-25T13:35:48.770Z",
+  "finishedAt": "2026-03-25T13:35:51.903Z",
+  "linked": {},
+  "browser": {
+    "executablePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "engine": "chromium"
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T13:35:48.771Z",
+      "finishedAt": "2026-03-25T13:35:48.775Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T13:35:48.776Z",
+      "finishedAt": "2026-03-25T13:35:49.921Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T13:35:49.952Z",
+      "finishedAt": "2026-03-25T13:35:51.058Z",
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-25T13:35:51.059Z",
+      "finishedAt": "2026-03-25T13:35:51.376Z",
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "failed",
+      "verdict": "failed",
+      "startedAt": "2026-03-25T13:35:51.377Z",
+      "finishedAt": "2026-03-25T13:35:51.903Z",
+      "error": "locator.waitFor: Error: strict mode violation: locator('[data-qa=\"qa-desk-summary\"]') resolved to 2 elements:\n    1) <div data-qa=\"qa-desk-summary\" class=\"inspector-block panel-card review-panel browser-pass-panel\">…</div> aka getByText('QA WorkbenchAll 22 UI checks')\n    2) <div data-qa=\"qa-desk-summary\" class=\"inspector-block panel-card\">…</div> aka getByText('Local UI GateUnit gate pass')\n\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"qa-desk-summary\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    }
+  ],
+  "findings": [],
+  "artifacts": {
+    "screenshots": [
+      {
+        "name": "01-initial.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774445748770_jxtj94\\01-initial.png",
+        "url": "/api/spatial/qa/runs/qa_1774445748770_jxtj94/artifacts/01-initial.png",
+        "label": "Initial ACE render"
+      }
+    ],
+    "domSnapshot": null,
+    "consoleLog": null,
+    "networkSummary": null,
+    "runtimeSnapshot": null,
+    "layoutFindings": null
+  },
+  "console": [],
+  "network": [],
+  "error": "locator.waitFor: Error: strict mode violation: locator('[data-qa=\"qa-desk-summary\"]') resolved to 2 elements:\n    1) <div data-qa=\"qa-desk-summary\" class=\"inspector-block panel-card review-panel browser-pass-panel\">…</div> aka getByText('QA WorkbenchAll 22 UI checks')\n    2) <div data-qa=\"qa-desk-summary\" class=\"inspector-block panel-card\">…</div> aka getByText('Local UI GateUnit gate pass')\n\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"qa-desk-summary\"]') to be visible\u001b[22m\n"
+}

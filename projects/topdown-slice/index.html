@@ -4,114 +4,360 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Top-Down Thin Slice</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="./styles/main.css" />
   </head>
   <body>
     <main class="layout">
       <section class="world-pane">
         <canvas id="game-canvas" width="800" height="576"></canvas>
-        <div class="toolbar">
-          <label>Tool
-            <select id="tool-select">
-              <option value="select">Select</option>
-              <option value="place-building">Place Building</option>
-              <option value="spawn-unit">Spawn Unit</option>
-            </select>
-          </label>
-          <label>Building
-            <select id="building-type-select">
-              <option value="house">House</option>
-              <option value="workshop">Workshop</option>
-            </select>
-          </label>
-          <button id="clear-selection-btn">Clear Selection</button>
+        <div class="hud-overlay">
+          <section class="hud-card hud-operator-card">
+            <div class="hud-card-header">
+              <div>
+                <div class="hud-eyebrow">Operator View</div>
+                <h1 class="hud-title">Simulation Harness</h1>
+              </div>
+              <div id="simulation-status" class="hud-chip">Running | 1x | frame 0</div>
+            </div>
+            <div class="toolbar hud-toolbar-grid">
+              <label>Tool
+                <select id="tool-select">
+                  <option value="select">Select</option>
+                  <option value="place-building">Place Building</option>
+                  <option value="spawn-unit">Spawn Unit</option>
+                </select>
+              </label>
+              <label>Building
+                <select id="building-type-select">
+                  <option value="house">House</option>
+                  <option value="workshop">Workshop</option>
+                  <option value="builder-spawner">Builder Spawner</option>
+                  <option value="relay">Relay</option>
+                </select>
+              </label>
+              <label>
+                <input id="debug-overlay-toggle" type="checkbox" checked />
+                Field Overlay
+              </label>
+              <label>View
+                <select id="debug-view-mode">
+                  <option value="isolated">Isolated</option>
+                  <option value="combined">Combined</option>
+                </select>
+              </label>
+              <label>Focus
+                <select id="debug-field-select">
+                  <option value="cover">Cover</option>
+                  <option value="defensibility">Defensibility</option>
+                  <option value="visibility">Visibility</option>
+                  <option value="traversal">Traversal</option>
+                  <option value="reinforcement">Reinforcement</option>
+                  <option value="heat">Heat</option>
+                  <option value="moisture">Moisture</option>
+                  <option value="condensation">Condensation</option>
+                  <option value="clouds">Clouds</option>
+                  <option value="defensibilityPressure">Defensibility Pressure</option>
+                  <option value="flowPressure">Flow Pressure</option>
+                  <option value="threat">Threat</option>
+                </select>
+              </label>
+              <label>Sim Speed
+                <select id="simulation-speed-select">
+                  <option value="1">Normal (1x)</option>
+                  <option value="10">Fast (10x)</option>
+                  <option value="100">Fast (100x)</option>
+                </select>
+              </label>
+            </div>
+            <div class="actions hud-primary-actions">
+              <button id="toggle-simulation-pause-btn" type="button">Pause</button>
+              <button id="step-simulation-btn" type="button">Step</button>
+              <button id="reset-scenario-btn" type="button">Reset Scenario</button>
+              <button id="run-checks-btn" type="button">Run Checks</button>
+              <button id="clear-selection-btn" type="button">Clear Selection</button>
+            </div>
+            <div class="hud-summary-grid">
+              <div class="hud-stat-card">
+                <div class="hud-stat-label">World</div>
+                <div id="hud-world-summary" class="hud-stat-value">Loading world state…</div>
+              </div>
+              <div class="hud-stat-card">
+                <div class="hud-stat-label">Conflict</div>
+                <div id="hud-conflict-summary" class="hud-stat-value">Conflict summary pending…</div>
+              </div>
+              <div class="hud-stat-card">
+                <div class="hud-stat-label">Weather</div>
+                <div id="hud-weather-summary" class="hud-stat-value">Weather summary pending…</div>
+              </div>
+              <div class="hud-stat-card">
+                <div class="hud-stat-label">Focus</div>
+                <div id="hud-selection-summary" class="hud-stat-value">Nothing selected</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="hud-card hud-inspector-card">
+            <div class="hud-card-header">
+              <div>
+                <div class="hud-eyebrow">Inspect</div>
+                <div id="hud-inspect-title" class="hud-section-title">No active selection</div>
+              </div>
+              <div id="hud-inspect-mode" class="hud-chip hud-chip-muted">Hover or click a tile</div>
+            </div>
+            <div id="hud-inspect-subtitle" class="helper-text hud-inspect-subtitle">Selected entities and pinned tiles will surface here.</div>
+            <ul id="hud-inspect-list" class="hud-inspect-list"></ul>
+            <div id="resolver-inspector-detail" class="resolver-inspector-card"></div>
+          </section>
+
+          <aside class="side-pane hud-dock">
+            <details class="hud-drawer" open>
+              <summary>Selection</summary>
+              <div class="hud-drawer-body">
+                <section class="panel panel-embedded">
+                  <h2>Building Inspector</h2>
+                  <div id="inspector-empty">Select a building.</div>
+                  <form id="building-form" class="hidden">
+                    <div class="field-row">
+                      <label for="building-id">ID</label>
+                      <input id="building-id" readonly />
+                    </div>
+                    <div class="field-row">
+                      <label for="building-name">Name</label>
+                      <input id="building-name" />
+                    </div>
+                    <div class="field-row">
+                      <label for="building-type">Type</label>
+                      <select id="building-type">
+                        <option value="house">House</option>
+                        <option value="workshop">Workshop</option>
+                        <option value="builder-spawner">Builder Spawner</option>
+                        <option value="relay">Relay</option>
+                      </select>
+                    </div>
+                    <div class="field-row">
+                      <label for="building-owner">Owner</label>
+                      <input id="building-owner" />
+                    </div>
+                    <div class="meta-block">
+                      <div><strong>State:</strong> <span id="building-state">-</span></div>
+                      <div><strong>Progress:</strong> <span id="building-progress">-</span></div>
+                      <div><strong>Builder:</strong> <span id="building-builder">-</span></div>
+                    </div>
+                    <div id="builder-spawner-panel" class="meta-block hidden">
+                      <div><strong>Spawner:</strong> <span id="builder-spawner-status">-</span></div>
+                      <div><strong>Active:</strong> <span id="builder-spawner-active">-</span></div>
+                      <div><strong>Cooldown:</strong> <span id="builder-spawner-cooldown">-</span></div>
+                      <div><strong>Pending:</strong> <span id="builder-spawner-pending">-</span></div>
+                      <div><strong>Exit Tile:</strong> <span id="builder-spawner-exit">-</span></div>
+                      <div class="actions">
+                        <button type="button" id="activate-builder-spawner-btn">Spawn Builder</button>
+                      </div>
+                    </div>
+                    <div class="actions">
+                      <button type="submit">Save</button>
+                      <button type="button" id="delete-building-btn" class="danger">Delete</button>
+                    </div>
+                  </form>
+                </section>
+
+                <section class="panel panel-embedded">
+                  <h2>Selected Worker</h2>
+                  <div id="worker-details-empty">Select a worker to inspect task state.</div>
+                  <div id="worker-details" class="hidden">
+                    <div><strong>ID:</strong> <span id="selected-worker-id">-</span></div>
+                    <div><strong>State:</strong> <span id="selected-worker-state">idle</span></div>
+                    <div><strong>Energy:</strong> <span id="selected-worker-energy">-</span></div>
+                    <div><strong>Current:</strong> <span id="selected-worker-current-task">Idle</span></div>
+                    <div class="subhead">Queued</div>
+                    <ul id="selected-worker-queue"></ul>
+                    <div class="subhead">Failed</div>
+                    <ul id="selected-worker-failed"></ul>
+                  </div>
+                </section>
+              </div>
+            </details>
+
+            <details class="hud-drawer">
+              <summary>Tasks And Crew</summary>
+              <div class="hud-drawer-body hud-drawer-grid">
+                <section class="panel panel-embedded">
+                  <h2>God-Agent Queue</h2>
+                  <div><strong>Current:</strong> <span id="current-task">Idle</span></div>
+                  <div class="actions">
+                    <button id="cancel-current-task-btn" type="button">Cancel Current</button>
+                    <button id="clear-task-queue-btn" type="button">Clear Queue</button>
+                  </div>
+                  <div class="subhead">Queued</div>
+                  <ul id="queued-tasks"></ul>
+                  <div class="subhead">Failed</div>
+                  <ul id="failed-tasks"></ul>
+                </section>
+
+                <section class="panel panel-embedded">
+                  <h2>Workers</h2>
+                  <ul id="worker-list"></ul>
+                </section>
+              </div>
+            </details>
+
+            <details class="hud-drawer">
+              <summary>Field And Resolver</summary>
+              <div class="hud-drawer-body hud-drawer-grid">
+                <section class="panel panel-embedded">
+                  <h2>Field Layers</h2>
+                  <div class="helper-text">Toggle layers, solo a field, switch combined or isolated view, and tune per-field opacity without mutating world state.</div>
+                  <div id="field-layer-list" class="field-layer-list"></div>
+                </section>
+
+                <section class="panel panel-embedded">
+                  <label class="debug-toggle">
+                    <input id="score-summary-toggle" type="checkbox" checked />
+                    Score Summary
+                  </label>
+                  <ul id="score-summary"></ul>
+                  <div class="subhead">Top Ranked Tiles</div>
+                  <ul id="resolver-top-candidates"></ul>
+                </section>
+              </div>
+            </details>
+
+            <details class="hud-drawer">
+              <summary>Control Lab</summary>
+              <div class="hud-drawer-body hud-drawer-grid">
+                <section class="panel panel-embedded">
+                  <h2>Influence Controls</h2>
+                  <div class="field-row">
+                    <label for="intent-select">Intent</label>
+                    <select id="intent-select"></select>
+                  </div>
+                  <div class="field-row">
+                    <label for="intent-type">Type</label>
+                    <select id="intent-type">
+                      <option value="defensibility">Defensibility</option>
+                      <option value="flow">Flow</option>
+                      <option value="threat">Threat</option>
+                    </select>
+                  </div>
+                  <div class="field-row">
+                    <label for="intent-label">Label</label>
+                    <input id="intent-label" type="text" maxlength="48" placeholder="optional label" />
+                  </div>
+                  <div class="field-row">
+                    <label for="intent-x">Position</label>
+                    <div class="inline-fields">
+                      <input id="intent-x" type="number" min="0" />
+                      <input id="intent-y" type="number" min="0" />
+                      <button id="intent-pick-position-btn" type="button">Move On Map</button>
+                    </div>
+                  </div>
+                  <div class="actions">
+                    <button id="intent-create-btn" type="button">Add On Map</button>
+                    <button id="intent-delete-btn" type="button" class="danger">Remove Influence</button>
+                  </div>
+                  <div id="intent-pick-hint" class="helper-text hidden">Click a tile on the map to move the selected influence.</div>
+                  <div id="intent-create-hint" class="helper-text hidden">Click a tile on the map to place a new influence from the current draft.</div>
+                  <div class="field-row">
+                    <label for="intent-radius">Radius</label>
+                    <input id="intent-radius" type="number" min="0" step="1" />
+                  </div>
+                  <div class="field-row">
+                    <label for="intent-weight">Weight</label>
+                    <input id="intent-weight" type="number" min="0" step="0.1" />
+                  </div>
+                  <div class="subhead">Natural-Language Intent</div>
+                  <div class="field-row field-row-stack">
+                    <label for="intent-prompt-input">Prompt</label>
+                    <textarea
+                      id="intent-prompt-input"
+                      rows="3"
+                      placeholder="make this east opening more open"
+                    ></textarea>
+                  </div>
+                  <div class="helper-text">Use current sim types only. Example anchors: east opening, east ridge, or coordinates like (17, 8).</div>
+                  <div class="actions">
+                    <button id="translate-intent-btn" type="button">Translate</button>
+                    <button id="apply-translated-intent-btn" type="button">Inject Intent</button>
+                  </div>
+                  <div id="intent-translation-status" class="helper-text intent-translation-status">Translator idle.</div>
+                  <pre id="intent-translation-preview" class="intent-translation-preview">Type a request, translate it, then inject the validated intent.</pre>
+                </section>
+
+                <section class="panel panel-embedded">
+                  <h2>Simulation Controls</h2>
+                  <div class="field-row">
+                    <label for="post-reset-cycles">Post Step</label>
+                    <input id="post-reset-cycles" type="number" min="0" max="20" step="1" value="0" />
+                  </div>
+                  <div class="actions">
+                    <button id="reset-worker-energy-btn" type="button">Reset Worker Energy</button>
+                  </div>
+                  <div class="subhead">QA Scorecard</div>
+                  <ul id="qa-scorecard"></ul>
+                  <div class="subhead">Adaptive Resolver</div>
+                  <div id="adaptive-status" class="adaptive-summary steady">Cycle 0 | steady | base resolver weights</div>
+                  <div class="actions">
+                    <button id="reset-adaptive-weights-btn" type="button">Reset Adaptive Weights</button>
+                  </div>
+                  <div class="subhead">Adaptive Weights</div>
+                  <ul id="adaptive-weight-list"></ul>
+                  <div class="subhead">Last QA Inputs</div>
+                  <ul id="adaptive-qa-inputs"></ul>
+                  <div class="subhead">Tuning Trends</div>
+                  <ul id="adaptive-trend-list"></ul>
+                  <div class="subhead">Weight History</div>
+                  <ul id="adaptive-history-list"></ul>
+                  <div class="subhead">Plateau Guard</div>
+                  <ul id="adaptive-plateau-list"></ul>
+                  <div class="subhead">Adaptive Reasons</div>
+                  <ul id="adaptive-reasons"></ul>
+                </section>
+              </div>
+            </details>
+
+            <details class="hud-drawer">
+              <summary>Diagnostics And Logs</summary>
+              <div class="hud-drawer-body hud-drawer-grid">
+                <section class="panel panel-embedded">
+                  <h2>Resolver</h2>
+                  <label class="debug-toggle">
+                    <input id="resolver-inspector-toggle" type="checkbox" checked />
+                    Resolver Inspector
+                  </label>
+                  <div class="actions">
+                    <button id="clear-resolver-pin-btn" type="button">Clear Pin</button>
+                  </div>
+                  <div class="helper-text">Hover a tile to inspect it. Click a tile in select mode to pin the explanation.</div>
+                  <label class="debug-toggle">
+                    <input id="resolver-log-toggle" type="checkbox" checked />
+                    Resolver Log
+                  </label>
+                  <ul id="resolver-log"></ul>
+                </section>
+
+                <section class="panel panel-embedded">
+                  <h2>Command Console</h2>
+                  <form id="command-form">
+                    <input id="command-input" placeholder="spawn worker at 5 5" />
+                    <button type="submit">Run</button>
+                  </form>
+                  <ul id="command-log"></ul>
+                </section>
+
+                <section class="panel panel-embedded">
+                  <h2>Event Log</h2>
+                  <ul id="event-log"></ul>
+                </section>
+
+                <section class="panel panel-embedded">
+                  <h2>Debug Log</h2>
+                  <ul id="debug-log"></ul>
+                </section>
+              </div>
+            </details>
+          </aside>
         </div>
       </section>
-
-      <aside class="side-pane">
-        <section class="panel">
-          <h2>God-Agent Queue</h2>
-          <div><strong>Current:</strong> <span id="current-task">Idle</span></div>
-          <div class="actions">
-            <button id="cancel-current-task-btn" type="button">Cancel Current</button>
-            <button id="clear-task-queue-btn" type="button">Clear Queue</button>
-          </div>
-          <div class="subhead">Queued</div>
-          <ul id="queued-tasks"></ul>
-          <div class="subhead">Failed</div>
-          <ul id="failed-tasks"></ul>
-        </section>
-
-        <section class="panel">
-          <h2>Workers</h2>
-          <ul id="worker-list"></ul>
-          <div id="worker-details-empty">Select a worker to inspect task state.</div>
-          <div id="worker-details" class="hidden">
-            <div><strong>ID:</strong> <span id="selected-worker-id">-</span></div>
-            <div><strong>State:</strong> <span id="selected-worker-state">idle</span></div>
-            <div><strong>Current:</strong> <span id="selected-worker-current-task">Idle</span></div>
-            <div class="subhead">Queued</div>
-            <ul id="selected-worker-queue"></ul>
-            <div class="subhead">Failed</div>
-            <ul id="selected-worker-failed"></ul>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h2>Building Inspector</h2>
-          <div id="inspector-empty">Select a building.</div>
-          <form id="building-form" class="hidden">
-            <div class="field-row">
-              <label for="building-id">ID</label>
-              <input id="building-id" readonly />
-            </div>
-            <div class="field-row">
-              <label for="building-name">Name</label>
-              <input id="building-name" />
-            </div>
-            <div class="field-row">
-              <label for="building-type">Type</label>
-              <select id="building-type">
-                <option value="house">House</option>
-                <option value="workshop">Workshop</option>
-              </select>
-            </div>
-            <div class="field-row">
-              <label for="building-owner">Owner</label>
-              <input id="building-owner" />
-            </div>
-            <div class="meta-block">
-              <div><strong>State:</strong> <span id="building-state">-</span></div>
-              <div><strong>Progress:</strong> <span id="building-progress">-</span></div>
-              <div><strong>Builder:</strong> <span id="building-builder">-</span></div>
-            </div>
-            <div class="actions">
-              <button type="submit">Save</button>
-              <button type="button" id="delete-building-btn" class="danger">Delete</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="panel">
-          <h2>Command Console</h2>
-          <form id="command-form">
-            <input id="command-input" placeholder="spawn worker at 5 5" />
-            <button type="submit">Run</button>
-          </form>
-          <ul id="command-log"></ul>
-        </section>
-
-        <section class="panel">
-          <h2>Event Log</h2>
-          <ul id="event-log"></ul>
-        </section>
-
-        <section class="panel">
-          <h2>Debug Checks</h2>
-          <button id="run-checks-btn">Run Checks</button>
-          <ul id="debug-log"></ul>
-        </section>
-      </aside>
     </main>
 
     <script type="module" src="./src/main.js"></script>

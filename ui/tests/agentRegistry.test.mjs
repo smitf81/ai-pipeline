@@ -25,7 +25,7 @@ export default async function runAgentRegistryTests() {
     id: 'planner',
     name: 'Planner',
     backend: 'ollama',
-    model: 'mixtral',
+    model: 'mistral:latest',
     timeoutMs: 30000,
   }, null, 2));
   writeFile(rootPath, 'agents/planner/prompt.md', 'Planner prompt');
@@ -33,7 +33,7 @@ export default async function runAgentRegistryTests() {
     id: 'context-manager',
     name: 'Context Manager',
     backend: 'ollama',
-    model: 'mixtral',
+    model: 'mistral:latest',
     timeoutMs: 30000,
   }, null, 2));
   writeFile(rootPath, 'agents/context-manager/prompt.md', 'Context prompt');
@@ -41,7 +41,7 @@ export default async function runAgentRegistryTests() {
     id: 'executor',
     name: 'Executor',
     backend: 'ollama',
-    model: 'mixtral',
+    model: 'mistral:latest',
     timeoutMs: 30000,
   }, null, 2));
   writeFile(rootPath, 'agents/executor/prompt.md', 'Executor prompt');
@@ -77,12 +77,12 @@ export default async function runAgentRegistryTests() {
       id: 'missing',
       name: 'Missing',
       backend: 'ollama',
-      model: 'mixtral',
+      model: 'mistral:latest',
       timeoutMs: 30000,
     },
     fallbackPrompt: 'Fallback prompt',
   });
   assert.equal(missingResolved.valid, false);
-  assert.equal(missingResolved.manifest.model, 'mixtral');
+  assert.equal(missingResolved.manifest.model, 'mistral:latest');
   assert.equal(missingResolved.prompt, 'Fallback prompt');
 }
