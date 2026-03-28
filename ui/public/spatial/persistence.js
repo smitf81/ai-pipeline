@@ -1,7 +1,50 @@
+import { normalizeStudioLayout } from './studioLayoutModel.js';
+
+export function normalizeLoadedWorkspace(workspace = {}) {
+  const source = workspace && typeof workspace === 'object' ? workspace : {};
+  const studio = source.studio && typeof source.studio === 'object' ? source.studio : {};
+  return {
+    ...source,
+    studio: {
+      ...studio,
+      layout: normalizeStudioLayout(studio.layout || {}),
+    },
+  };
+}
+
 export async function loadWorkspace() {
   const res = await fetch('/api/spatial/workspace');
   if (!res.ok) throw new Error('Failed to load workspace');
-  return res.json();
+  return normalizeLoadedWorkspace(await res.json());
+}
+
+function normalizeStudioStateHandoffs(handoffs = null) {
+  if (!handoffs || typeof handoffs !== 'object') return null;
+  const next = {};
+  if (Object.prototype.hasOwnProperty.call(handoffs, 'contextToPlanner')) {
+    next.contextToPlanner = handoffs.contextToPlanner || null;
+  }
+  if (Object.prototype.hasOwnProperty.call(handoffs, 'history')) {
+    next.history = Array.isArray(handoffs.history) ? handoffs.history.filter(Boolean).slice(0, 12) : [];
+  }
+  return Object.keys(next).length ? next : null;
+}
+
+function normalizeStudioStateTeamBoard(teamBoard = null) {
+  if (!teamBoard || typeof teamBoard !== 'object') return null;
+  if (!Object.prototype.hasOwnProperty.call(teamBoard, 'selectedCardId')) return null;
+  return {
+    selectedCardId: teamBoard.selectedCardId || null,
+  };
+}
+
+export function buildStudioStatePayload(payload = {}) {
+  const next = {};
+  const handoffs = normalizeStudioStateHandoffs(payload?.handoffs);
+  const teamBoard = normalizeStudioStateTeamBoard(payload?.teamBoard);
+  if (handoffs) next.handoffs = handoffs;
+  if (teamBoard) next.teamBoard = teamBoard;
+  return next;
 }
 
 function logPayloadSizes(payload = {}, label = 'workspace') {
@@ -45,7 +88,7 @@ export async function saveIntentState(payload) {
 }
 
 export async function saveStudioState(payload) {
-  return sendSave('/api/spatial/studio-state', 'studio-state', payload);
+  return sendSave('/api/spatial/studio-state', 'studio-state', buildStudioStatePayload(payload));
 }
 
 export async function saveArchitectureMemory(payload) {

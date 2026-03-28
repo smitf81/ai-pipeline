@@ -1,0 +1,108 @@
+{
+  "id": "qa_1774684020206_xmrq1s",
+  "scenario": "studio-smoke",
+  "mode": "interactive",
+  "trigger": "guardrail",
+  "prompt": "Local Studio boot guardrail for canonical Canvas Intent routing",
+  "baseUrl": "http://127.0.0.1:3107",
+  "status": "failed",
+  "verdict": "failed",
+  "createdAt": "2026-03-28T07:47:00.207Z",
+  "finishedAt": "2026-03-28T07:47:14.700Z",
+  "linked": {},
+  "browser": {
+    "executablePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "engine": "chromium"
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-28T07:47:00.208Z",
+      "finishedAt": "2026-03-28T07:47:00.218Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-28T07:47:00.219Z",
+      "finishedAt": "2026-03-28T07:47:01.277Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-28T07:47:01.278Z",
+      "finishedAt": "2026-03-28T07:47:03.229Z",
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-28T07:47:03.230Z",
+      "finishedAt": "2026-03-28T07:47:03.554Z",
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "failed",
+      "verdict": "failed",
+      "startedAt": "2026-03-28T07:47:03.555Z",
+      "finishedAt": "2026-03-28T07:47:14.700Z",
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"canvas-intent-panel\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    }
+  ],
+  "findings": [],
+  "artifacts": {
+    "screenshots": [
+      {
+        "name": "01-initial.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774684020206_xmrq1s\\01-initial.png",
+        "url": "/api/spatial/qa/runs/qa_1774684020206_xmrq1s/artifacts/01-initial.png",
+        "label": "Initial ACE render"
+      }
+    ],
+    "domSnapshot": null,
+    "consoleLog": null,
+    "networkSummary": null,
+    "runtimeSnapshot": null,
+    "layoutFindings": null
+  },
+  "console": [],
+  "network": [],
+  "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"canvas-intent-panel\"]') to be visible\u001b[22m\n"
+}

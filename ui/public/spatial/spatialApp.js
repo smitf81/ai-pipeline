@@ -6,6 +6,7 @@ import {
   GRAPH_LAYERS,
   getNodeTypesForLayer,
   createDefaultRsgState,
+  deriveRelationshipVisual,
   normalizeGraphBundle,
   buildRsgState,
 } from './graphEngine.js';
@@ -13,6 +14,7 @@ import { AceConnector } from './aceConnector.js';
 import { MutationEngine } from './mutationEngine.js';
 import { ArchitectureMemory } from './architectureMemory.js';
 import {
+  buildStudioStatePayload,
   loadWorkspace,
   saveWorkspace,
   savePages,
@@ -20,6 +22,14 @@ import {
   saveStudioState,
   saveArchitectureMemory,
 } from './persistence.js';
+import { buildRosterSurfaceModel } from './rosterSurface.js';
+import {
+  clampUtilityWindowPosition,
+  createDefaultUtilityWindowState,
+  getDefaultUtilityWindowPosition,
+  loadUtilityWindowsState,
+  saveUtilityWindowsState,
+} from './windowState.js';
 import {
   SCENES,
   STUDIO_ZOOM_THRESHOLD,
@@ -33,21 +43,65 @@ import {
   sceneFromCanvasZoom,
 } from './sceneState.js';
 import {
+  DEFAULT_WORLD_VIEW_MODE,
+  WORLD_VIEW_MODES,
+  describeWorldScaffoldNode,
+  describeWorldScaffoldField,
+  drawWorldScaffolds,
+  findWorldScaffoldNodes,
+  normalizeWorldViewMode,
+} from './worldScaffoldView.js';
+import {
+  describeScaffoldFieldLayer,
+  normalizeScaffoldFieldBundle,
+} from './spatialFieldBridge.js';
+import {
+  STUDIO_SIZE,
+  STUDIO_ROOM,
+  STUDIO_DESK_SIZE,
+  STUDIO_TEAM_BOARD_SIZE,
+  CONTROL_CENTRE_DESK_ID,
+  DEFAULT_STUDIO_WHITEBOARDS,
+  clampDeskPosition,
+  clampWhiteboardPosition,
+  createDefaultStudioLayout,
+  resolveStudioRoomZoom,
+  normalizeStudioLayout,
+  buildStudioRenderModel,
+  deskStagePoint,
+  snapDeskPositionToDepartment,
+  resolveDeskAnchor,
+  hasStudioDesk,
+} from './studioLayoutModel.js';
+import {
   advanceOrchestratorState,
   buildAgentSnapshots,
   createDefaultPage,
   createDefaultTeamBoard,
   createInitialComments,
   createPlannerHandoff,
-  getStudioAgents,
   normalizeNotebookState,
   normalizeTeamBoardState,
 } from './studioData.js';
+import {
+  ActionButton,
+  buildActionPayload,
+  runUiAction,
+} from './uiActionRegistry.js';
+import {
+  buildMutationFeedback,
+} from './studioMutationFeedback.js';
+import {
+  buildStudioQuickAccessStrip,
+} from './studioQuickAccess.js';
+import {
+  buildResourceSignalModel,
+  listDepartmentsByPriority,
+} from './resourceSignalModel.js';
 
 const { useEffect, useMemo, useRef, useState, useCallback } = React;
 const h = React.createElement;
 
-const STUDIO_SIZE = { width: 1200, height: 800 };
 const STATUS_META = {
   idle: { badge: 'IDLE', tone: 'idle' },
   queued: { badge: 'QUEUE', tone: 'thinking' },
@@ -57,6 +111,16 @@ const STATUS_META = {
   review: { badge: 'REVIEW', tone: 'review' },
   thinking: { badge: 'THINK', tone: 'thinking' },
   'needs review': { badge: 'REVIEW', tone: 'review' },
+};
+const ORG_STATUS_META = {
+  active: { badge: 'ACTIVE', tone: 'good' },
+  draft: { badge: 'DRAFT', tone: 'thinking' },
+  'support-only': { badge: 'SUPPORT ONLY', tone: 'review' },
+  understaffed: { badge: 'UNDERSTAFFED', tone: 'review' },
+  blocked: { badge: 'BLOCKED', tone: 'blocked' },
+  ready: { badge: 'READY', tone: 'good' },
+  'optional hire': { badge: 'OPTIONAL HIRE', tone: 'review' },
+  'missing lead': { badge: 'MISSING LEAD', tone: 'blocked' },
 };
 const DAVE_DEFAULT_MODEL = 'mistral:latest';
 const DAVE_STATUS_OPTIONS = ['idle', 'queued', 'processing', 'blocked', 'degraded', 'review'];
@@ -94,27 +158,129 @@ const NODE_ORIGIN_FILTER_OPTIONS = [
 export const RSG_IDLE_DELAY_MS = 1200;
 const RSG_LOW_CONFIDENCE_THRESHOLD = 0.55;
 const RSG_ACTIVITY_LIMIT = 24;
+const PRIMARY_INTENT_ROUTE_SUMMARY = 'Canvas Intent -> interpretation -> evaluation -> mutation gate -> world state';
+const PRIMARY_INTENT_REDIRECT_HINT = 'Primary world routing lives in Canvas Intent. Use Route Intent there.';
+const SECONDARY_DRAFT_HINT = 'Secondary drafting only. Canvas Intent owns live world routing.';
 
-const STUDIO_ROOM = { x: 56, y: 72, width: 1088, height: 664 };
-const STUDIO_DESK_SIZE = { width: 172, height: 140 };
-const STUDIO_TEAM_BOARD_SIZE = { width: 584, height: 208 };
-const STUDIO_ROOM_FIT_PADDING = 56;
-const DEFAULT_STUDIO_DESK_LAYOUT = {
-  'context-manager': { x: 182, y: 252 },
-  planner: { x: 970, y: 252 },
-  executor: { x: 182, y: 585 },
-  'memory-archivist': { x: 620, y: 595 },
-  'cto-architect': { x: 930, y: 422 },
-};
-const DEFAULT_STUDIO_WHITEBOARDS = {
-  teamBoard: { x: 284, y: 88 },
-};
 const DESK_PROPERTY_BASE_TABS = [
+  { id: 'hierarchy', label: 'Hierarchy' },
   { id: 'agents', label: 'Agents' },
   { id: 'tasks', label: 'Tasks' },
   { id: 'tools', label: 'Tools (Modules)' },
   { id: 'reports', label: 'Reports (Tests)' },
 ];
+const UTILITY_WINDOW_ORDER = ['environment', 'qa', 'context', 'reports', 'relationship', 'roster', 'studio-map', 'scorecards'];
+const UTILITY_WINDOW_META = {
+  environment: { title: 'Environment', deskId: 'cto-architect' },
+  qa: { title: 'QA Workbench', deskId: 'qa-lead' },
+  context: { title: 'Context Archive', deskId: 'memory-archivist' },
+  reports: { title: 'Desk Reports', deskId: null },
+  relationship: { title: 'Relationship Inspector', deskId: null },
+  roster: { title: 'People Plan', deskId: null },
+  'studio-map': { title: 'Studio Map', deskId: null },
+  scorecards: { title: 'Scorecards', deskId: 'qa-lead' },
+};
+
+function describeDeskValue(value) {
+  if (value == null || value === false) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map((entry) => describeDeskValue(entry)).filter(Boolean).join(' | ');
+  if (typeof value === 'object') {
+    if (typeof value.summary === 'string' && value.summary.trim()) return value.summary;
+    if (typeof value.detail === 'string' && value.detail.trim()) return value.detail;
+    if (typeof value.label === 'string' && value.label.trim()) return value.label;
+    if (typeof value.title === 'string' && value.title.trim()) return value.title;
+    if (Array.isArray(value.slices) && value.slices.length) {
+      return value.slices.map((entry) => describeDeskValue(entry)).filter(Boolean).join(' | ');
+    }
+  }
+  return '';
+}
+
+function normalizeDeskEntries(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function normalizeDeskStatus(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getOrgStatusMeta(status = '') {
+  return ORG_STATUS_META[String(status || 'ready').trim().toLowerCase()] || ORG_STATUS_META.ready;
+}
+
+function getOrgStatusClass(status = '') {
+  return `org-${String(status || 'ready').trim().toLowerCase().replace(/\s+/g, '-')}`;
+}
+
+function buildDeskUtilityWindows(deskId = '') {
+  const windows = [
+    { id: 'reports', label: 'Desk Reports' },
+  ];
+  if (deskId === 'cto-architect') {
+    windows.unshift({ id: 'environment', label: 'Environment' });
+  }
+  if (deskId === 'qa-lead') {
+    windows.unshift({ id: 'scorecards', label: 'Scorecards' });
+    windows.unshift({ id: 'qa', label: 'QA Workbench' });
+  }
+  if (deskId === 'memory-archivist' || deskId === 'context-manager') {
+    windows.unshift({ id: 'context', label: 'Context Archive' });
+  }
+  return windows;
+}
+
+function buildDeskFocusSummary({
+  deskId = '',
+  deskLabel = '',
+  panelData = null,
+} = {}) {
+  const truth = panelData?.truth && typeof panelData.truth === 'object' ? panelData.truth : {};
+  const agents = normalizeDeskEntries(panelData?.agents);
+  const tasks = normalizeDeskEntries(panelData?.tasks);
+  const reports = normalizeDeskEntries(panelData?.reports);
+  const liveAgents = Number.isFinite(truth.liveAgents)
+    ? truth.liveAgents
+    : agents.filter((agent) => {
+        const status = normalizeDeskStatus(agent?.status || agent?.lifecycle);
+        return Boolean(agent?.id) && !['idle', 'unknown', 'offline', 'paused'].includes(status);
+      }).length;
+  const assignedAgents = Number.isFinite(truth.assignedAgents)
+    ? truth.assignedAgents
+    : agents.length;
+  const activeWork = Number.isFinite(truth.activeWork)
+    ? truth.activeWork
+    : tasks.filter((task) => normalizeDeskStatus(task?.lifecycle) === 'in_progress').length;
+  const queueCount = Number.isFinite(truth.queueCount)
+    ? truth.queueCount
+    : Number.isFinite(truth.workload?.queueSize)
+      ? truth.workload.queueSize
+      : tasks.filter((task) => normalizeDeskStatus(task?.lifecycle) !== 'complete').length;
+  const blockerEntries = normalizeDeskEntries(truth.blockers || truth.blockerList || []);
+  const taskBlockers = tasks
+    .filter((task) => normalizeDeskStatus(task?.lifecycle) === 'blocked')
+    .map((task) => task?.title || task?.id || 'blocked task');
+  const blockers = blockerEntries.length
+    ? blockerEntries.map((entry) => describeDeskValue(entry)).filter(Boolean)
+    : taskBlockers;
+  const linkedWindows = buildDeskUtilityWindows(deskId);
+  const reportCount = reports.length;
+  const focusLabel = deskLabel || deskId || 'Desk';
+  const blockerSummary = blockers.length ? blockers.slice(0, 3).join(' | ') : 'none';
+  return {
+    liveAgents,
+    assignedAgents,
+    activeWork,
+    queueCount,
+    blockers,
+    blockerCount: blockers.length,
+    linkedReports: reportCount,
+    linkedWindows,
+    summary: `Agents ${liveAgents}/${assignedAgents} | Active ${activeWork} | Queue ${queueCount} | Blockers ${blockerSummary} | Reports ${reportCount} | Windows ${linkedWindows.map((window) => window.label).join(' / ') || 'none'}`,
+    detail: `${focusLabel} focus | ${blockers.length ? `${blockers.length} blocker${blockers.length === 1 ? '' : 's'} surfaced` : 'no blockers surfaced'} | ${reportCount} report${reportCount === 1 ? '' : 's'} linked`,
+  };
+}
 
 function getDeskPropertyTabs(deskId = null) {
   return deskId === 'qa-lead'
@@ -122,58 +288,185 @@ function getDeskPropertyTabs(deskId = null) {
     : DESK_PROPERTY_BASE_TABS;
 }
 
-function clampDeskPosition(position = {}, room = STUDIO_ROOM, fallbackPosition = DEFAULT_STUDIO_DESK_LAYOUT['context-manager']) {
+function normalizeDeskHierarchyDraft(draft = {}) {
   return {
-    x: clamp(Number(position.x) || fallbackPosition.x, room.x + STUDIO_DESK_SIZE.width / 2, room.x + room.width - STUDIO_DESK_SIZE.width / 2),
-    y: clamp(Number(position.y) || fallbackPosition.y, room.y + STUDIO_DESK_SIZE.height / 2, room.y + room.height - STUDIO_DESK_SIZE.height / 2),
+    departments: Array.isArray(draft.departments) ? draft.departments.filter(Boolean) : [],
+    desks: Array.isArray(draft.desks) ? draft.desks.filter(Boolean) : [],
+    recruits: Array.isArray(draft.recruits) ? draft.recruits.filter(Boolean) : [],
+    assessments: Array.isArray(draft.assessments) ? draft.assessments.filter(Boolean) : [],
+    contexts: Array.isArray(draft.contexts) ? draft.contexts.filter(Boolean) : [],
+    guardrails: Array.isArray(draft.guardrails) ? draft.guardrails.filter(Boolean) : [],
   };
 }
 
-function clampWhiteboardPosition(position = {}, room = STUDIO_ROOM) {
-  return {
-    x: clamp(Number(position.x) || DEFAULT_STUDIO_WHITEBOARDS.teamBoard.x, room.x + 16, room.x + room.width - STUDIO_TEAM_BOARD_SIZE.width - 16),
-    y: clamp(Number(position.y) || DEFAULT_STUDIO_WHITEBOARDS.teamBoard.y, room.y + 16, room.y + room.height - STUDIO_TEAM_BOARD_SIZE.height - 16),
-  };
-}
+const EMPTY_DESK_MANAGEMENT_DRAFT = {
+  recruit: {
+    agentId: '',
+    traits: '',
+    role: '',
+  },
+  assessment: {
+    testId: '',
+    notes: '',
+  },
+  context: {
+    summary: '',
+    detail: '',
+  },
+  guardrails: {
+    summary: '',
+    detail: '',
+  },
+};
 
-function createDefaultStudioLayout() {
+export function normalizeDeskManagementDraft(draft = {}) {
+  const source = draft && typeof draft === 'object' ? draft : {};
   return {
-    room: { ...STUDIO_ROOM },
-    desks: Object.fromEntries(Object.entries(DEFAULT_STUDIO_DESK_LAYOUT).map(([deskId, position]) => [deskId, { ...position }])),
-    whiteboards: {
-      teamBoard: { ...DEFAULT_STUDIO_WHITEBOARDS.teamBoard },
+    recruit: {
+      ...EMPTY_DESK_MANAGEMENT_DRAFT.recruit,
+      ...(source.recruit && typeof source.recruit === 'object' ? source.recruit : {}),
+    },
+    assessment: {
+      ...EMPTY_DESK_MANAGEMENT_DRAFT.assessment,
+      ...(source.assessment && typeof source.assessment === 'object' ? source.assessment : {}),
+    },
+    context: {
+      ...EMPTY_DESK_MANAGEMENT_DRAFT.context,
+      ...(source.context && typeof source.context === 'object' ? source.context : {}),
+    },
+    guardrails: {
+      ...EMPTY_DESK_MANAGEMENT_DRAFT.guardrails,
+      ...(source.guardrails && typeof source.guardrails === 'object' ? source.guardrails : {}),
     },
   };
 }
 
-function resolveStudioRoomZoom(container, room = STUDIO_ROOM, padding = STUDIO_ROOM_FIT_PADDING) {
-  if (!container) return 0.94;
-  const availableWidth = Math.max(320, container.clientWidth - (padding * 2));
-  const availableHeight = Math.max(240, container.clientHeight - (padding * 2));
-  const fittedZoom = Math.min(
-    availableWidth / Math.max(1, room.width),
-    availableHeight / Math.max(1, room.height),
-  );
-  return clamp(Number(fittedZoom.toFixed(2)), MIN_STUDIO_ZOOM, MAX_STUDIO_ZOOM);
+export function updateDeskManagementDraft(setter, deskId, updater) {
+  if (!deskId) return;
+  setter((current) => {
+    const existing = normalizeDeskManagementDraft(current?.[deskId]);
+    const nextValue = typeof updater === 'function' ? updater(existing) : updater;
+    const nextDraft = normalizeDeskManagementDraft(nextValue || existing);
+    return {
+      ...current,
+      [deskId]: nextDraft,
+    };
+  });
 }
 
-function normalizeStudioLayout(layout = {}) {
-  const defaults = createDefaultStudioLayout();
-  const room = {
-    ...defaults.room,
-    ...(layout.room || {}),
-  };
-  const desks = Object.fromEntries(getStudioAgents().map((agent) => [
-    agent.id,
-    clampDeskPosition(layout.desks?.[agent.id] || defaults.desks[agent.id], room, defaults.desks[agent.id]),
-  ]));
+export function clearDeskManagementDraft(setter, deskId) {
+  if (!deskId) return;
+  setter((current) => {
+    if (!current?.[deskId]) return current;
+    const next = { ...current };
+    delete next[deskId];
+    return next;
+  });
+}
+
+export function clearDeskManagementDraftSection(setter, deskId, section) {
+  if (!deskId || !section) return;
+  setter((current) => {
+    const existing = normalizeDeskManagementDraft(current?.[deskId]);
+    if (section !== 'recruit' && section !== 'assessment' && section !== 'context' && section !== 'guardrails') return current;
+    const nextDraft = {
+      ...existing,
+      [section]: { ...EMPTY_DESK_MANAGEMENT_DRAFT[section] },
+    };
+    const next = { ...current, [deskId]: nextDraft };
+    return next;
+  });
+}
+
+export function buildDeskHierarchyModel({
+  deskId = '',
+  deskLabel = '',
+  targetDeskId = '',
+  targetDeskLabel = '',
+  panelData = null,
+  isCtoEdit = false,
+  draft = {},
+} = {}) {
+  const normalizedDraft = normalizeDeskHierarchyDraft(draft);
+  const desk = panelData?.desk || {};
+  const agents = Array.isArray(panelData?.agents) ? panelData.agents : [];
+  const tasks = Array.isArray(panelData?.tasks) ? panelData.tasks : [];
+  const modules = Array.isArray(panelData?.modules) ? panelData.modules : [];
+  const reports = Array.isArray(panelData?.reports) ? panelData.reports : [];
+  const truth = panelData?.truth || {};
+  const activeDeskLabel = targetDeskLabel || deskLabel || targetDeskId || deskId || 'Desk';
+  const departmentLabel = isCtoEdit ? 'CTO Desk' : `${activeDeskLabel} Department`;
+  const focusSummary = buildDeskFocusSummary({
+    deskId: targetDeskId || deskId,
+    deskLabel: activeDeskLabel,
+    panelData,
+  });
   return {
-    room,
-    desks,
-    whiteboards: {
-      teamBoard: clampWhiteboardPosition(layout.whiteboards?.teamBoard || defaults.whiteboards.teamBoard, room),
+    managedDeskId: targetDeskId || deskId,
+    managedDeskLabel: activeDeskLabel,
+    departmentLabel,
+    departmentDetail: isCtoEdit
+      ? 'Cross-desk governance, scoped edits, and managed desk selection.'
+      : `Scoped local context for ${activeDeskLabel}.`,
+    deskLabel: activeDeskLabel,
+    deskDetail: `State ${desk.localState || 'idle'} | Goal ${desk.currentGoal || 'No current goal'} | Workload ${truth.workload ? `${truth.workload.assignedTasks || 0}/${truth.workload.queueSize || 0}` : 'n/a'}`,
+    deskMission: describeDeskValue(desk.mission || truth.context || null) || null,
+    focusSummary,
+    managementSummary: isCtoEdit
+      ? `Managing ${activeDeskLabel} from CTO Desk`
+      : `Managing ${activeDeskLabel}`,
+    managementDetail: isCtoEdit
+      ? `Drafts and actions stay scoped to ${activeDeskLabel}.`
+      : `This panel only affects ${activeDeskLabel}.`,
+    counts: {
+      departments: normalizedDraft.departments.length,
+      desks: normalizedDraft.desks.length,
+      recruits: normalizedDraft.recruits.length,
+      assessments: normalizedDraft.assessments.length,
+      agents: agents.length,
+      tasks: tasks.length,
+      modules: modules.filter((module) => module?.assigned).length,
+      reports: reports.length,
+      contexts: Array.isArray(truth.context?.slices) ? truth.context.slices.length : 0,
+      guardrails: Array.isArray(truth.guardrails) ? truth.guardrails.length : 0,
     },
+    departments: normalizedDraft.departments,
+    desks: normalizedDraft.desks,
+    recruits: normalizedDraft.recruits,
+    assessments: normalizedDraft.assessments,
+    contexts: normalizedDraft.contexts,
+    guardrails: normalizedDraft.guardrails,
+    truth,
+    agents: agents.map((entry) => ({
+      ...entry,
+      summary: `${entry.id} | Status: ${entry.status || 'idle'} | ${entry.backend || 'backend n/a'} ${entry.model || ''}`.trim(),
+      currentTaskSummary: entry.currentTask
+        ? `${entry.currentTask.title} | ${entry.currentTask.lifecycle} | ${entry.currentTask.progress?.label || 'n/a'}`
+        : 'No current task assigned',
+    })),
+    tasks: tasks.map((task) => ({
+      ...task,
+      summary: `${task.lifecycle || 'planned'} | ${task.progress?.label || 'n/a'} | source ${task.source || 'n/a'}`,
+    })),
+    modules: modules.map((module) => ({
+      ...module,
+      summary: `${module.version || 'unknown'} | ${module.manifestPath || 'n/a'}`,
+    })),
+    reports: reports.map((report) => ({
+      ...report,
+      summary: `${report.type || 'report'} | ${report.source || 'local'}${report.detail ? ` | ${report.detail}` : ''}`,
+    })),
   };
+}
+
+function updateDeskHierarchyDraft(setter, targetDeskId, updater) {
+  setter((current) => {
+    const existing = normalizeDeskHierarchyDraft(current?.[targetDeskId] || {});
+    return {
+      ...current,
+      [targetDeskId]: normalizeDeskHierarchyDraft(updater(existing) || existing),
+    };
+  });
 }
 
 const EMPTY_HANDOFFS = {
@@ -260,6 +553,11 @@ const EMPTY_QA_STATE = {
   },
 };
 
+const EMPTY_MUTATION_GATE = {
+  activity: [],
+  approvalQueue: [],
+};
+
 const EMPTY_SIM_LAUNCHER = {
   project: null,
   status: 'Checking sim launcher availability...',
@@ -270,6 +568,439 @@ const EMPTY_SIM_LAUNCHER = {
 };
 
 const TRACE_HISTORY_LIMIT = 5;
+const EMPTY_CANVAS_INTENT_RUN_STATE = {
+  traceId: null,
+  submittedInput: '',
+  phase: 'idle',
+  route: null,
+  forceIntentScan: false,
+};
+
+function createCanvasIntentRunState(state = null) {
+  return {
+    ...EMPTY_CANVAS_INTENT_RUN_STATE,
+    ...(state && typeof state === 'object' ? state : {}),
+  };
+}
+
+function attachTraceId(record = null, traceId = null) {
+  if (!record || typeof record !== 'object') return record;
+  const resolvedTraceId = String(record.trace_id || traceId || '').trim();
+  return resolvedTraceId
+    ? { ...record, trace_id: resolvedTraceId }
+    : { ...record };
+}
+
+function resolveCanvasIntentTraceId(canvasIntentRunState = null) {
+  const traceId = String(canvasIntentRunState?.traceId || '').trim();
+  return traceId || null;
+}
+
+function resolveCurrentExecutiveResult(executiveResult = null, canvasIntentRunState = null) {
+  if (!executiveResult || typeof executiveResult !== 'object') return null;
+  const activeTraceId = resolveCanvasIntentTraceId(canvasIntentRunState);
+  if (!activeTraceId) return executiveResult;
+  return executiveResult.trace_id === activeTraceId ? executiveResult : null;
+}
+
+export function resolveIntentTraceReport({
+  scanPreview = null,
+  latestIntentReport = null,
+  canvasIntentRunState = null,
+} = {}) {
+  const activeTraceId = resolveCanvasIntentTraceId(canvasIntentRunState);
+  const currentPreview = scanPreview && typeof scanPreview === 'object' ? scanPreview : null;
+  const historicalPreview = latestIntentReport && typeof latestIntentReport === 'object' ? latestIntentReport : null;
+  if (!activeTraceId) {
+    return currentPreview || historicalPreview || null;
+  }
+  return currentPreview?.trace_id === activeTraceId ? currentPreview : null;
+}
+
+export function buildMutationTraceEmptyReason({
+  canvasIntentRunState = null,
+  executiveResult = null,
+  latestTracePlannerOutput = null,
+  latestTraceEngineResult = null,
+} = {}) {
+  const phase = String(canvasIntentRunState?.phase || 'idle').trim().toLowerCase();
+  const route = String(
+    executiveResult?.route
+    || canvasIntentRunState?.route
+    || latestTracePlannerOutput?.route
+    || latestTraceEngineResult?.route
+    || '',
+  ).trim().toLowerCase();
+  if (phase === 'routing') {
+    return 'Waiting for the current route to produce a mutation package.';
+  }
+  if (route === 'debug-intent-scan' || canvasIntentRunState?.forceIntentScan) {
+    return 'Debug scan only. The current run did not request world mutations.';
+  }
+  if (route === 'world-edit') {
+    return executiveResult?.mutationGeneration?.reason
+      || executiveResult?.validation?.reason
+      || executiveResult?.error
+      || 'Existing-world tile edits are not implemented yet.';
+  }
+  if (route === 'module') {
+    return 'Module routes do not generate world mutations.';
+  }
+  if (route === 'legacy-fallback') {
+    return 'Legacy fallback routes do not generate canonical world mutations.';
+  }
+  if (route === 'primary-intent-route') {
+    return 'Interpretation only. The current run did not request world mutations.';
+  }
+  if (route === 'world-scaffold') {
+    return executiveResult?.mutationGeneration?.reason
+      || latestTracePlannerOutput?.mutation_generation?.reason
+      || latestTraceEngineResult?.reason
+      || executiveResult?.error
+      || 'The current scaffold run did not produce a mutation package.';
+  }
+  if (phase === 'error') {
+    return latestTraceEngineResult?.reason || 'The current run ended before a mutation package was produced.';
+  }
+  return 'No mutation package has been proposed yet.';
+}
+
+function normalizeMutationGateState(state = null) {
+  const source = state && typeof state === 'object' ? state : {};
+  return {
+    ...EMPTY_MUTATION_GATE,
+    ...source,
+    activity: Array.isArray(source.activity) ? source.activity.filter(Boolean) : [],
+    approvalQueue: Array.isArray(source.approvalQueue) ? source.approvalQueue.filter(Boolean) : [],
+  };
+}
+
+function formatMutationGateEntry(entry = null) {
+  if (!entry) return 'No mutation activity yet.';
+  const status = String(entry.status || '').replace(/-/g, ' ');
+  const summary = String(entry.summary || 'Mutation event').trim();
+  const reason = String(entry.reason || '').trim();
+  return reason ? `${status || 'update'} | ${summary} | ${reason}` : `${status || 'update'} | ${summary}`;
+}
+
+function buildMutationApplyStatus(result = {}) {
+  const applied = Number(result.applied || 0);
+  const queued = Number(result.queued || 0);
+  const blocked = Number(result.blocked || 0);
+  if (result.status === 'queued') {
+    return `ACE queued ${queued} risky mutation${queued === 1 ? '' : 's'} for approval`;
+  }
+  if (result.status === 'blocked') {
+    return result.reason || 'ACE blocked the requested mutations.';
+  }
+  if (result.status === 'mixed') {
+    const parts = [];
+    if (applied) parts.push(`auto-applied ${applied}`);
+    if (queued) parts.push(`queued ${queued}`);
+    if (blocked) parts.push(`blocked ${blocked}`);
+    return `ACE ${parts.join(' | ')}`;
+  }
+  if (applied) {
+    return `ACE auto-applied ${applied} safe mutation${applied === 1 ? '' : 's'}`;
+  }
+  return result.reason || 'ACE did not apply a canonical mutation.';
+}
+
+function normalizeRecentWorldCell(cell = null) {
+  if (!cell || typeof cell !== 'object') return null;
+  const x = Number(cell.x);
+  const y = Number(cell.y);
+  const z = Number(cell.z || 0);
+  if (![x, y, z].every((value) => Number.isFinite(value))) return null;
+  return {
+    x: Math.round(x),
+    y: Math.round(y),
+    z: Math.round(z),
+  };
+}
+
+function buildRecentWorldEdgeKey(edge = {}) {
+  const source = String(edge?.source || '').trim();
+  const target = String(edge?.target || '').trim();
+  return `${source}->${target}`;
+}
+
+function normalizeRecentWorldChangeItem(item = null) {
+  if (!item || typeof item !== 'object') return null;
+  const kind = item.kind === 'scaffold'
+    ? 'scaffold'
+    : (item.kind === 'edge' ? 'edge' : 'node');
+  const changeType = item.changeType === 'added' ? 'added' : 'modified';
+  const addedCells = Array.isArray(item.addedCells)
+    ? item.addedCells.map((cell) => normalizeRecentWorldCell(cell)).filter(Boolean)
+    : [];
+  const modifiedCells = Array.isArray(item.modifiedCells)
+    ? item.modifiedCells.map((cell) => normalizeRecentWorldCell(cell)).filter(Boolean)
+    : [];
+  return {
+    ...item,
+    kind,
+    changeType,
+    label: String(item.label || 'Recent world change').trim() || 'Recent world change',
+    detail: String(item.detail || item.summary || '').trim(),
+    summary: String(item.summary || item.label || '').trim(),
+    nodeId: item.nodeId || null,
+    source: item.source || null,
+    target: item.target || null,
+    counts: {
+      addedCells: Number(item?.counts?.addedCells || addedCells.length),
+      modifiedCells: Number(item?.counts?.modifiedCells || modifiedCells.length),
+    },
+    addedCells,
+    modifiedCells,
+  };
+}
+
+function buildRecentWorldCountsLabel(counts = {}) {
+  const parts = [];
+  if (Number(counts.addedNodes || 0) > 0) parts.push(`${counts.addedNodes} node${Number(counts.addedNodes) === 1 ? '' : 's'} added`);
+  if (Number(counts.modifiedNodes || 0) > 0) parts.push(`${counts.modifiedNodes} node${Number(counts.modifiedNodes) === 1 ? '' : 's'} modified`);
+  if (Number(counts.addedEdges || 0) > 0) parts.push(`${counts.addedEdges} edge${Number(counts.addedEdges) === 1 ? '' : 's'} added`);
+  if (Number(counts.addedCells || 0) > 0) parts.push(`${counts.addedCells} cell${Number(counts.addedCells) === 1 ? '' : 's'} added`);
+  if (Number(counts.modifiedCells || 0) > 0) parts.push(`${counts.modifiedCells} cell${Number(counts.modifiedCells) === 1 ? '' : 's'} modified`);
+  return parts.join(' | ') || 'No applied world diff derived.';
+}
+
+export function normalizeRecentWorldChange(change = null) {
+  if (!change || typeof change !== 'object') return null;
+  const items = Array.isArray(change.items)
+    ? change.items.map((item) => normalizeRecentWorldChangeItem(item)).filter(Boolean)
+    : [];
+  if (!items.length) return null;
+  const counts = {
+    addedNodes: Number(change?.counts?.addedNodes || 0),
+    modifiedNodes: Number(change?.counts?.modifiedNodes || 0),
+    addedEdges: Number(change?.counts?.addedEdges || 0),
+    addedCells: Number(change?.counts?.addedCells || 0),
+    modifiedCells: Number(change?.counts?.modifiedCells || 0),
+  };
+  if (!Object.values(counts).some((value) => value > 0)) {
+    items.forEach((item) => {
+      if (item.kind === 'edge') counts.addedEdges += 1;
+      if (item.kind === 'scaffold' || item.kind === 'node') {
+        if (item.changeType === 'added') counts.addedNodes += 1;
+        if (item.changeType === 'modified') counts.modifiedNodes += 1;
+      }
+      if (item.kind === 'scaffold') {
+        counts.addedCells += Number(item?.counts?.addedCells || 0);
+        counts.modifiedCells += Number(item?.counts?.modifiedCells || 0);
+      }
+    });
+  }
+  const highlights = {
+    nodeIds: [...new Set(items.map((item) => item?.nodeId).filter(Boolean))],
+    edgeKeys: [...new Set(items.filter((item) => item.kind === 'edge').map((item) => buildRecentWorldEdgeKey(item)).filter(Boolean))],
+  };
+  return {
+    id: String(change.id || `recent-world-change-${Date.now()}`),
+    at: change.at || null,
+    scope: String(change.scope || 'session-local'),
+    status: String(change.status || 'applied'),
+    summary: String(change.summary || '').trim() || buildRecentWorldCountsLabel(counts),
+    counts,
+    items,
+    highlights,
+    itemByNodeId: Object.fromEntries(items.filter((item) => item?.nodeId).map((item) => [item.nodeId, item])),
+    itemByEdgeKey: Object.fromEntries(items.filter((item) => item.kind === 'edge').map((item) => [buildRecentWorldEdgeKey(item), item])),
+  };
+}
+
+export function formatRecentWorldChangeItem(item = null) {
+  if (!item) return 'Recent world change';
+  return item.detail ? `${item.label} | ${item.detail}` : item.label;
+}
+
+function buildRecentWorldChangeItemKey(item = null, index = 0) {
+  if (!item || typeof item !== 'object') return `recent-world-change-${index}`;
+  if (item.kind === 'edge') {
+    return `recent-world-edge-${buildRecentWorldEdgeKey(item) || index}`;
+  }
+  return `recent-world-${item.kind}-${item.nodeId || item.label || index}`;
+}
+
+function resolveRecentWorldNodeChange(recentWorldChange = null, nodeId = '') {
+  return recentWorldChange?.itemByNodeId?.[nodeId] || null;
+}
+
+function resolveRecentWorldEdgeChange(recentWorldChange = null, edge = {}) {
+  return recentWorldChange?.itemByEdgeKey?.[buildRecentWorldEdgeKey(edge)] || null;
+}
+
+function formatMutationSummary(mutation = null) {
+  if (!mutation || typeof mutation !== 'object') return 'Pending mutation';
+  if (mutation.type === 'create_node') {
+    const node = mutation.node || {};
+    return `create ${node.type || 'node'} ${node.id || 'pending'}`;
+  }
+  if (mutation.type === 'modify_node') {
+    return `modify ${mutation.id || 'node'}`;
+  }
+  if (mutation.type === 'create_edge') {
+    return `connect ${mutation.edge?.source || '?'} -> ${mutation.edge?.target || '?'}`;
+  }
+  return mutation.type || 'mutation';
+}
+
+function formatWorldScaffoldIntent(intent = null) {
+  if (!intent) return 'World scaffold';
+  if (intent.summary) return intent.summary;
+  const dimensions = Number.isFinite(Number(intent.width)) && Number.isFinite(Number(intent.height))
+    ? `${intent.width}x${intent.height}`
+    : 'unparsed';
+  return `${dimensions} ${intent.material || intent.tileType || 'scaffold'} grid`;
+}
+
+function resolveScaffoldExecutiveIntent(result = null) {
+  return result?.evaluation?.finalCandidate || result?.intent || result?.interpretation?.candidate || null;
+}
+
+function formatWorldScaffoldPosition(position = null) {
+  if (!position || typeof position !== 'object') return '0, 0, 0';
+  return `${Number(position.x || 0)}, ${Number(position.y || 0)}, ${Number(position.z || 0)}`;
+}
+
+function formatWorldScaffoldParsedIntent(intent = null) {
+  if (!intent || typeof intent !== 'object') return 'none';
+  return JSON.stringify({
+    type: intent.type || 'world_scaffold',
+    shape: intent.shape || 'grid',
+    width: Number.isFinite(Number(intent.width)) ? Number(intent.width) : null,
+    height: Number.isFinite(Number(intent.height)) ? Number(intent.height) : null,
+    material: intent.material || null,
+    position: intent.position || null,
+  });
+}
+
+function formatWorldScaffoldValidation(validation = null) {
+  if (!validation || typeof validation !== 'object') return 'not evaluated';
+  return validation.ok ? 'valid' : (validation.reason || 'invalid');
+}
+
+function formatWorldScaffoldConfidence(confidence = null) {
+  if (!confidence || typeof confidence !== 'object') return 'not reported';
+  return `${confidence.label || 'unknown'} (${Math.round((confidence.score || 0) * 100)}%)`;
+}
+
+function formatWorldScaffoldMutationGeneration(mutationGeneration = null) {
+  if (!mutationGeneration || typeof mutationGeneration !== 'object') return 'not generated';
+  if (mutationGeneration.ok === false) {
+    return mutationGeneration.reason || 'not generated';
+  }
+  const count = Number(mutationGeneration.mutationCount || 0);
+  const label = count === 1 ? 'mutation' : 'mutations';
+  return `${count} ${label} ready | ${mutationGeneration.mode || 'unknown'}`;
+}
+
+export function formatScaffoldInterpretationLabel(interpretation = null) {
+  if (!interpretation || typeof interpretation !== 'object') return 'no accepted interpretation';
+  return interpretation.label || interpretation.source || 'no accepted interpretation';
+}
+
+function formatScaffoldInterpretationStatus(interpretation = null) {
+  if (!interpretation || typeof interpretation !== 'object') return 'not attempted';
+  return interpretation.status || 'not attempted';
+}
+
+function formatScaffoldInterpretationAttempted(interpretation = null) {
+  return interpretation?.attempted ? 'yes' : 'no';
+}
+
+function formatScaffoldInterpretationAccepted(interpretation = null) {
+  return interpretation?.accepted ? 'yes' : 'no';
+}
+
+function formatScaffoldInterpretationFallback(interpretation = null) {
+  return interpretation?.fallbackUsed ? 'yes' : 'no';
+}
+
+function formatScaffoldInterpretationRoute(interpretation = null) {
+  if (!interpretation?.attempted) return 'not attempted';
+  if (interpretation.backend && interpretation.model) {
+    return `${interpretation.backend} | ${interpretation.model}`;
+  }
+  return 'attempted';
+}
+
+function formatWorldScaffoldScorecardValue(value = null) {
+  if (value === null || value === undefined || value === '') return 'not evaluated';
+  return String(value).replace(/_/g, ' ');
+}
+
+function formatWorldScaffoldEvaluationCues(cues = []) {
+  if (!Array.isArray(cues) || !cues.length) return 'none';
+  return cues.join(', ');
+}
+
+export function formatWorldScaffoldEvaluationSummary(evaluation = null) {
+  if (!evaluation || typeof evaluation !== 'object') return 'not evaluated';
+  const scorecard = evaluation.scorecard && typeof evaluation.scorecard === 'object'
+    ? evaluation.scorecard
+    : {};
+  const suitability = formatWorldScaffoldScorecardValue(scorecard.suitability);
+  const correction = scorecard.correctionApplied ? 'corrected' : 'no correction';
+  const accepted = scorecard.acceptedForMutationGeneration ? 'accepted' : 'rejected';
+  return `${suitability} | ${correction} | ${accepted}`;
+}
+
+function buildListItemKey(prefix, value, index = 0) {
+  const source = typeof value === 'string'
+    ? value
+    : (value && typeof value === 'object' ? JSON.stringify(value) : String(value ?? ''));
+  const normalized = source
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48) || 'item';
+  return `${prefix}-${normalized}-${index}`;
+}
+
+function buildMutationTraceKey(mutation = null, index = 0) {
+  if (!mutation || typeof mutation !== 'object') return `mutation-${index}`;
+  if (mutation.type === 'create_node') {
+    const node = mutation.node || {};
+    return `mutation-create-node-${node.id || node.type || 'pending'}-${index}`;
+  }
+  if (mutation.type === 'modify_node') {
+    return `mutation-modify-node-${mutation.id || 'pending'}-${index}`;
+  }
+  if (mutation.type === 'create_edge') {
+    const edge = mutation.edge || {};
+    return `mutation-create-edge-${edge.source || 'source'}-${edge.target || 'target'}-${index}`;
+  }
+  return `mutation-${mutation.type || 'unknown'}-${index}`;
+}
+
+function buildMutationDecisionKey(decision = null, index = 0) {
+  if (!decision || typeof decision !== 'object') return `decision-${index}`;
+  return `${buildMutationTraceKey(decision.mutation, index)}-${decision.classification || 'unknown'}-${decision.code || 'none'}`;
+}
+
+function getLatestTraceStep(trace = null, stage = '', predicate = null) {
+  const steps = Array.isArray(trace?.steps) ? trace.steps : [];
+  for (let index = steps.length - 1; index >= 0; index -= 1) {
+    const step = steps[index];
+    if (step?.stage !== stage) continue;
+    if (typeof predicate === 'function' && !predicate(step)) continue;
+    return step;
+  }
+  return null;
+}
+
+function buildAgentAttemptSummary(agent = null) {
+  const worker = agent?.workerState || {};
+  return {
+    outcome: worker.lastOutcome || agent?.latestRunStatus || agent?.status || 'idle',
+    at: worker.lastOutcomeAt || null,
+    detail: worker.lastBlockedReason || agent?.latestRunSummary || agent?.latestSignal || agent?.statusDetail || '',
+    blockedReason: worker.lastBlockedReason || null,
+    decision: worker.lastDecision || null,
+  };
+}
 
 const LABEL_MAP = [
   { label: 'context', match: /context|brief|constraint|intent|memory/i },
@@ -369,10 +1100,16 @@ export function shouldRunFocusedRsgLoop({
   if (activeGraphLayer !== 'system') return { ok: false, reason: 'not-system-layer' };
   if (scene !== SCENES.CANVAS) return { ok: false, reason: 'not-canvas' };
   if (trigger === 'idle' && selectedId !== node.id) return { ok: false, reason: 'not-selected' };
+  if (isPrimaryIntentNode(node)) return { ok: false, reason: 'primary-intent-node' };
   if (normalizedNodeContent(rawContent ?? node.content).length === 0) return { ok: false, reason: 'empty-content' };
   if (node?.metadata?.intentStatus === 'processing') return { ok: false, reason: 'processing' };
   if (isLinkedDraftNode(node)) return { ok: false, reason: 'linked-draft' };
   return { ok: true, reason: '' };
+}
+
+export function isPrimaryIntentNode(node = null) {
+  const labels = Array.isArray(node?.metadata?.labels) ? node.metadata.labels : [];
+  return node?.metadata?.agentId === 'context-manager' || labels.includes('primary-input');
 }
 
 export function getExtractedIntent(report = null) {
@@ -487,7 +1224,7 @@ function isEditableTarget(target) {
 }
 
 function summarizeIntentReport(report) {
-  if (!report) return 'Press Enter in a node to judge intent against project context.';
+  if (!report) return SECONDARY_DRAFT_HINT;
   const confidence = typeof report.confidence === 'number' ? `${Math.round(report.confidence * 100)}% confidence` : 'pending confidence';
   return `${report.summary || 'Intent captured'} | ${confidence}`;
 }
@@ -521,6 +1258,130 @@ function formatTimestamp(value) {
   return parsed.toLocaleString();
 }
 
+function describeRelationshipItem(value) {
+  if (value == null || value === false) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object') {
+    return String(value.summary || value.label || value.title || value.name || value.id || '').trim();
+  }
+  return '';
+}
+
+function normalizeRelationshipInspectorList(value = []) {
+  const source = Array.isArray(value) ? value : (value == null ? [] : [value]);
+  return [...new Set(source.map((entry) => describeRelationshipItem(entry)).filter(Boolean))];
+}
+
+function formatRelationshipVisualForm(value = '') {
+  if (value === 'woven-rope') return 'rope';
+  return String(value || '').trim() || 'n/a';
+}
+
+function formatRelationshipListSummary(items = []) {
+  const entries = normalizeRelationshipInspectorList(items);
+  if (!entries.length) return '0';
+  const preview = entries.slice(0, 3).join(' / ');
+  return entries.length > 3 ? `${entries.length} | ${preview} ...` : `${entries.length} | ${preview}`;
+}
+
+export function buildRelationshipInspectorPayload(edge = null) {
+  if (!edge || typeof edge !== 'object') return null;
+  const relationshipType = String(edge.relationshipType || edge.relationship_type || edge.type || 'relates_to').trim() || 'relates_to';
+  const supports = normalizeRelationshipInspectorList(edge.supports);
+  const validatedBy = normalizeRelationshipInspectorList(edge.validatedBy);
+  return {
+    id: String(edge.id || '').trim() || null,
+    source: String(edge.source || '').trim() || null,
+    target: String(edge.target || '').trim() || null,
+    label: String(edge.label || '').trim() || relationshipType.replace(/_/g, ' '),
+    relationshipType,
+    strength: Number.isFinite(Number(edge.strength)) ? Number(edge.strength) : null,
+    strandCount: Number.isFinite(Number(edge.strandCount)) ? Number(edge.strandCount) : null,
+    visualForm: String(edge.visualForm || '').trim() || null,
+    supports,
+    supportsCount: supports.length,
+    validatedBy,
+    validatedByCount: validatedBy.length,
+    health: String(edge.health || '').trim() || null,
+    lastActive: edge.lastActive || null,
+  };
+}
+
+export function resolveSelectedRelationshipInspector(graph = { edges: [] }, selectedRelationshipId = null) {
+  const edge = (Array.isArray(graph?.edges) ? graph.edges : []).find((entry) => entry?.id === selectedRelationshipId) || null;
+  return buildRelationshipInspectorPayload(edge);
+}
+
+export function hitTestRelationshipEdgeAtPoint(graph = { nodes: [], edges: [] }, world = null, viewport = { zoom: 1 }) {
+  if (!graph || !world) return null;
+  const zoom = Math.max(0.0001, Number(viewport?.zoom) || 1);
+  const threshold = 12 / zoom;
+  const nodesById = new Map((Array.isArray(graph.nodes) ? graph.nodes : []).filter((node) => node && node.id).map((node) => [node.id, node]));
+  let bestEdge = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  (Array.isArray(graph.edges) ? graph.edges : []).forEach((edge) => {
+    const source = nodesById.get(edge?.source);
+    const target = nodesById.get(edge?.target);
+    if (!source || !target || !source.position || !target.position) return;
+    const sourcePoint = {
+      x: source.position.x + NODE_LAYOUT.outputAnchorX,
+      y: source.position.y + NODE_LAYOUT.anchorY,
+    };
+    const targetPoint = {
+      x: target.position.x + NODE_LAYOUT.inputAnchorX,
+      y: target.position.y + NODE_LAYOUT.anchorY,
+    };
+    const dx = targetPoint.x - sourcePoint.x;
+    const dy = targetPoint.y - sourcePoint.y;
+    const lengthSquared = (dx * dx) + (dy * dy);
+    if (!lengthSquared) return;
+    const projection = Math.max(0, Math.min(1, (((world.x - sourcePoint.x) * dx) + ((world.y - sourcePoint.y) * dy)) / lengthSquared));
+    const closest = {
+      x: sourcePoint.x + (dx * projection),
+      y: sourcePoint.y + (dy * projection),
+    };
+    const distance = Math.hypot(world.x - closest.x, world.y - closest.y);
+    if (distance <= threshold && distance < bestDistance) {
+      bestDistance = distance;
+      bestEdge = edge;
+    }
+  });
+  return bestEdge;
+}
+
+export function renderRelationshipInspectorPanel(payload = null) {
+  if (!payload) {
+    return h('div', { className: 'utility-window-stack', 'data-qa': 'relationship-inspector-window' },
+      h('div', { className: 'utility-window-section utility-window-hero' },
+        h('div', { className: 'inspector-label' }, 'Relationship Inspector'),
+        h('div', { className: 'signal-summary' }, 'No relationship selected'),
+        h('div', { className: 'signal-meta muted' }, 'Click a line to inspect the relationship entity.'),
+      ),
+      h('div', { className: 'signal-empty muted' }, 'Select a relationship edge to inspect its data.'),
+    );
+  }
+  return h('div', { className: 'utility-window-stack', 'data-qa': 'relationship-inspector-window' },
+    h('div', { className: 'utility-window-section utility-window-hero' },
+      h('div', { className: 'inspector-label' }, 'Relationship Inspector'),
+      h('div', { className: 'signal-summary' }, payload.label || `${payload.source || 'unknown'} -> ${payload.target || 'unknown'}`),
+      h('div', { className: 'signal-meta muted' }, `${payload.source || 'unknown'} -> ${payload.target || 'unknown'}`),
+    ),
+    h('div', { className: 'utility-window-section' },
+      h('div', { className: 'criteria-list desk-metric-list' },
+        h('div', { className: 'criteria-row' }, h('span', null, 'relationshipType'), h('span', { className: 'muted' }, payload.relationshipType || 'n/a')),
+        h('div', { className: 'criteria-row' }, h('span', null, 'strength'), h('span', { className: 'muted' }, payload.strength ?? 'n/a')),
+        h('div', { className: 'criteria-row' }, h('span', null, 'strandCount'), h('span', { className: 'muted' }, payload.strandCount ?? 'n/a')),
+        h('div', { className: 'criteria-row' }, h('span', null, 'visualForm'), h('span', { className: 'muted' }, formatRelationshipVisualForm(payload.visualForm))),
+        h('div', { className: 'criteria-row' }, h('span', null, 'supports'), h('span', { className: 'muted' }, formatRelationshipListSummary(payload.supports))),
+        h('div', { className: 'criteria-row' }, h('span', null, 'validatedBy'), h('span', { className: 'muted' }, formatRelationshipListSummary(payload.validatedBy))),
+        h('div', { className: 'criteria-row' }, h('span', null, 'health'), h('span', { className: 'muted' }, payload.health || 'n/a')),
+        h('div', { className: 'criteria-row' }, h('span', null, 'lastActive'), h('span', { className: 'muted' }, payload.lastActive ? formatTimestamp(payload.lastActive) : 'n/a')),
+      ),
+    ),
+  );
+}
+
 function isStudioViewportOutOfRange(viewport) {
   if (!viewport) return true;
   if (![viewport.x, viewport.y, viewport.zoom].every((value) => Number.isFinite(value))) return true;
@@ -544,6 +1405,58 @@ function renderDeskSection(section, helpers = {}) {
       h('div', { className: 'inspector-label' }, section.label),
       h('div', { className: 'signal-summary' }, section.value || section.emptyState || 'No data.'),
       section.detail ? h('div', { className: 'signal-meta muted' }, section.detail) : null,
+    );
+  }
+  if (section.kind === 'desk-truth') {
+    const truth = section.truth || {};
+    const listValue = (value) => {
+      if (Array.isArray(value)) return value.filter(Boolean);
+      if (value == null || value === false) return [];
+      if (typeof value === 'object') return Object.values(value).filter(Boolean);
+      return [value];
+    };
+    const renderList = (items, emptyState = 'No items surfaced.') => (
+      listValue(items).length
+        ? h('ul', { className: 'signal-list desk-truth-list' }, listValue(items).slice(0, 4).map((entry, index) => h('li', {
+          key: `${section.id}-truth-${index}`,
+        }, typeof entry === 'object'
+          ? `${entry.summary || entry.label || entry.title || 'Item'}${entry.detail ? ` | ${entry.detail}` : ''}`
+          : String(entry))))
+        : h('div', { className: 'signal-empty muted' }, emptyState)
+    );
+    return h('div', { key: section.id, className: 'inspector-block panel-card desk-truth-panel' },
+      h('div', { className: 'inspector-label' }, section.label),
+      h('div', { className: 'signal-summary' }, truth.department || 'Desk truth'),
+      truth.context ? h('div', { className: 'signal-meta muted' }, describeDeskValue(truth.context)) : null,
+      h('div', { className: 'criteria-list desk-metric-list' },
+        h('div', { className: 'criteria-row' }, h('span', null, 'Workload'), h('span', { className: 'muted' }, `${truth.workload?.assignedTasks ?? 0} assigned / ${truth.workload?.queueSize ?? 0} queued / ${truth.workload?.outputs ?? 0} outputs`)),
+        h('div', { className: 'criteria-row' }, h('span', null, 'Throughput'), h('span', { className: 'muted' }, truth.throughput || 'No throughput signal')),
+        h('div', { className: 'criteria-row' }, h('span', null, 'Reports'), h('span', { className: 'muted' }, `${listValue(truth.reports).length} surfaced`)),
+        h('div', { className: 'criteria-row' }, h('span', null, 'Scorecards'), h('span', { className: 'muted' }, `${listValue(truth.scorecards).length} surfaced`)),
+        h('div', { className: 'criteria-row' }, h('span', null, 'Assessments'), h('span', { className: 'muted' }, `${listValue(truth.assessments).length} surfaced`)),
+      ),
+      h('div', { className: 'desk-truth-grid' },
+        h('div', { className: 'desk-truth-column' },
+          h('div', { className: 'inspector-label' }, 'Context'),
+          renderList(truth.context?.slices || truth.context, 'No context slices surfaced.'),
+        ),
+        h('div', { className: 'desk-truth-column' },
+          h('div', { className: 'inspector-label' }, 'Reports'),
+          renderList(truth.reports, 'No reports surfaced.'),
+        ),
+        h('div', { className: 'desk-truth-column' },
+          h('div', { className: 'inspector-label' }, 'Scorecards'),
+          renderList(truth.scorecards, 'No scorecards surfaced.'),
+        ),
+        h('div', { className: 'desk-truth-column' },
+          h('div', { className: 'inspector-label' }, 'Assessments'),
+          renderList(truth.assessments, 'No assessments surfaced.'),
+        ),
+        h('div', { className: 'desk-truth-column' },
+          h('div', { className: 'inspector-label' }, 'Guardrails'),
+          renderList(truth.guardrails, 'No guardrails surfaced.'),
+        ),
+      ),
     );
   }
   if (section.kind === 'handoff') {
@@ -634,6 +1547,50 @@ function renderDeskSection(section, helpers = {}) {
         h('span', null, item.label),
         h('span', { className: 'muted' }, item.value),
       ))),
+    );
+  }
+  if (section.kind === 'task-economy') {
+    const economy = section.economy || section.value || null;
+    const lanes = Array.isArray(economy?.lanes) ? economy.lanes : [];
+    const toneForLane = (lane) => {
+      if (!lane) return 'warn';
+      if (lane.id === 'bottleneck') return 'bad';
+      if (lane.id === 'completion' || lane.id === 'reward') return 'good';
+      if (lane.id === 'shelved') return 'warn';
+      return lane.value > 0 ? 'warn' : 'neutral';
+    };
+    return h('div', { key: section.id, className: 'inspector-block panel-card task-economy-panel' },
+      h('div', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, economy?.headline || section.emptyState || 'No task economy recorded yet.'),
+          economy?.detail ? h('div', { className: 'signal-meta muted' }, economy.detail) : null,
+        ),
+        economy?.selectedLane ? h('div', { className: 'confidence-pill' }, economy.selectedLane.detail || economy.selectedLane.value || 'Selected card') : null,
+      ),
+      economy
+        ? h(React.Fragment, null,
+            h('div', { className: 'qa-metric-pill-row task-economy-pill-row' },
+              h('span', { className: `qa-metric-pill tone-${economy.pressureTone || 'warn'}` }, `Pressure ${economy.backlogPressure ?? 0}%`),
+              h('span', { className: `qa-metric-pill tone-${(economy.momentum || 0) >= 60 ? 'good' : 'warn'}` }, `Momentum ${economy.momentum ?? 0}%`),
+              h('span', { className: `qa-metric-pill tone-${(economy.upgradeReadiness || 0) >= 60 ? 'good' : 'warn'}` }, `Upgrade ${economy.upgradeReadiness ?? 0}%`),
+              h('span', { className: `qa-metric-pill tone-${(economy.rewardYield || 0) >= 40 ? 'good' : 'warn'}` }, `Reward ${economy.rewardYield ?? 0}%`),
+            ),
+            h('div', { className: 'task-economy-grid' }, lanes.map((lane) => h('div', {
+              key: lane.id,
+              className: `task-economy-card tone-${toneForLane(lane)}`,
+            },
+              h('div', { className: 'task-economy-card-label' }, lane.label),
+              h('div', { className: 'task-economy-card-value' }, String(lane.value ?? 0)),
+              h('div', { className: 'task-economy-card-detail muted' }, lane.detail || 'No detail recorded.'),
+            ))),
+            economy.selectedLane ? h('div', { className: 'task-economy-selected panel-card' },
+              h('div', { className: 'inspector-label' }, economy.selectedLane.label || 'Selected Card'),
+              h('div', { className: 'signal-summary' }, economy.selectedLane.value || 'Selected card'),
+              h('div', { className: 'signal-meta muted' }, economy.selectedLane.detail || 'No selected card detail available.'),
+            ) : null,
+          )
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No task economy recorded yet.'),
     );
   }
   if (section.kind === 'qa-summary') {
@@ -819,73 +1776,10 @@ function DeskThoughtBubble({ text, tone = 'idle' }) {
   }, truncateLabel(text, 74));
 }
 
-function deskStagePoint(agentId, studioLayout = null) {
-  const agent = getStudioAgents().find((entry) => entry.id === agentId);
-  if (!agent) return null;
-  if (studioLayout?.desks?.[agentId]) return studioLayout.desks[agentId];
-  return {
-    x: (agent.position.x / 100) * STUDIO_SIZE.width,
-    y: (agent.position.y / 100) * STUDIO_SIZE.height,
-  };
-}
-
 function truncateLabel(text, limit = 26) {
   const value = String(text || '').trim();
   if (!value) return '';
-  return value.length > limit ? `${value.slice(0, limit - 1)}…` : value;
-}
-
-function deskBounds(agentId, studioLayout = null) {
-  const center = deskStagePoint(agentId, studioLayout);
-  if (!center) return null;
-  const width = STUDIO_DESK_SIZE.width;
-  const height = STUDIO_DESK_SIZE.height;
-  return {
-    center,
-    left: center.x - (width / 2),
-    right: center.x + (width / 2),
-    top: center.y - (height / 2),
-    bottom: center.y + (height / 2),
-    width,
-    height,
-  };
-}
-
-function resolveDeskAnchor(agentId, targetId, kind = 'workflow', studioLayout = null) {
-  const source = deskBounds(agentId, studioLayout);
-  const target = deskBounds(targetId, studioLayout);
-  if (!source || !target) return null;
-  const dx = target.center.x - source.center.x;
-  const dy = target.center.y - source.center.y;
-  const horizontal = Math.abs(dx) >= Math.abs(dy);
-  const sourceInset = kind === 'conflict' ? 18 : 12;
-  const targetInset = kind === 'conflict' ? 20 : 14;
-  if (horizontal) {
-    return {
-      from: {
-        x: dx >= 0 ? source.right - sourceInset : source.left + sourceInset,
-        y: source.center.y - 4,
-      },
-      to: {
-        x: dx >= 0 ? target.left + targetInset : target.right - targetInset,
-        y: target.center.y - 4,
-      },
-      bend: Math.max(48, Math.min(160, Math.abs(dx) * 0.35)),
-      labelOffsetY: kind === 'conflict' ? -26 : -18,
-    };
-  }
-  return {
-    from: {
-      x: source.center.x,
-      y: dy >= 0 ? source.bottom - sourceInset : source.top + sourceInset,
-    },
-    to: {
-      x: target.center.x,
-      y: dy >= 0 ? target.top + targetInset : target.bottom - targetInset,
-    },
-    bend: Math.max(48, Math.min(150, Math.abs(dy) * 0.35)),
-    labelOffsetY: kind === 'conflict' ? -30 : -20,
-  };
+  return value.length > limit ? `${value.slice(0, limit - 1)}â€¦` : value;
 }
 
 function buildDeskBadge(agentId, orchestratorState, activePage) {
@@ -899,41 +1793,86 @@ function buildDeskBadge(agentId, orchestratorState, activePage) {
   return null;
 }
 
-function buildStudioLinks(orchestratorState, handoffs) {
+function buildStudioRelationshipLink({
+  id,
+  from,
+  to,
+  kind,
+  label,
+  supports = [],
+  validatedBy = [],
+  lastActive = null,
+  risk = null,
+}) {
+  const relationship = deriveRelationshipVisual({
+    source: from,
+    target: to,
+    relationshipType: kind,
+    supports,
+    validatedBy,
+    lastActive,
+    risk,
+  });
+  return {
+    id,
+    from,
+    to,
+    kind,
+    label,
+    risk,
+    lastActive,
+    ...relationship,
+  };
+}
+
+export function buildStudioLinks(orchestratorState, handoffs) {
   const links = [];
   if (handoffs?.contextToPlanner) {
-    links.push({
-      id: `handoff-${handoffs.contextToPlanner.id || 'context-planner'}`,
+    const handoff = handoffs.contextToPlanner;
+    links.push(buildStudioRelationshipLink({
+      id: `handoff-${handoff.id || 'context-planner'}`,
       from: 'context-manager',
       to: 'planner',
       kind: 'handoff',
       label: 'Problem brief',
-    });
+      supports: [
+        ...(Array.isArray(handoff.anchorRefs) ? handoff.anchorRefs : []),
+        ...(Array.isArray(handoff.requestedOutcomes) ? handoff.requestedOutcomes : []),
+        handoff.status || 'handoff',
+      ],
+      validatedBy: ['context-manager', 'planner'],
+      lastActive: handoff.updatedAt || handoff.createdAt || handoff.id || null,
+      risk: handoff.status === 'needs-clarification' ? 'medium' : 'low',
+    }));
   }
   const plannerItems = orchestratorState?.desks?.planner?.workItems || [];
   if (plannerItems.length) {
-    links.push({
+    links.push(buildStudioRelationshipLink({
       id: 'planner-executor',
       from: 'planner',
       to: 'executor',
       kind: 'workflow',
       label: plannerItems.length > 1 ? `${plannerItems.length} plan items` : '1 plan item',
-    });
+      supports: plannerItems.map((item) => item?.id || item?.title || 'plan-item').slice(0, 4),
+      lastActive: plannerItems[0]?.updatedAt || plannerItems[0]?.createdAt || null,
+    }));
   }
   const executorItems = orchestratorState?.desks?.executor?.workItems || [];
   if (executorItems.length || plannerItems.length) {
-    links.push({
+    links.push(buildStudioRelationshipLink({
       id: 'work-to-memory',
       from: 'executor',
       to: 'memory-archivist',
       kind: 'memory',
       label: executorItems.length ? `${executorItems.length} outputs` : 'Artifacts',
-    });
+      supports: executorItems.map((item) => item?.id || item?.title || 'output').slice(0, 4),
+      lastActive: executorItems[0]?.updatedAt || executorItems[0]?.createdAt || null,
+    }));
   }
   (orchestratorState?.conflicts || []).forEach((conflict, index) => {
     (conflict.desks || []).forEach((deskId) => {
       if (deskId === 'cto-architect') return;
-      links.push({
+      links.push(buildStudioRelationshipLink({
         id: `conflict-${index}-${deskId}`,
         from: 'cto-architect',
         to: deskId,
@@ -943,7 +1882,11 @@ function buildStudioLinks(orchestratorState, handoffs) {
           : conflict.kind === 'parallel-plan-execution'
             ? 'Scope overlap'
             : 'Needs review',
-      });
+        supports: [conflict.kind, ...(Array.isArray(conflict.desks) ? conflict.desks : []), conflict.id || `conflict-${index}`],
+        validatedBy: ['cto-architect'],
+        lastActive: conflict.updatedAt || conflict.createdAt || null,
+        risk: 'high',
+      }));
     });
   });
   return links;
@@ -992,6 +1935,7 @@ function SpatialNotebook() {
   const [activeGraphLayer, setActiveGraphLayer] = useState('system');
   const [graph, setGraph] = useState(graphEngine.getState());
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedRelationship, setSelectedRelationship] = useState(null);
   const [canvasViewport, setCanvasViewport] = useState(createDefaultCanvasViewport());
   const [studioViewport, setStudioViewport] = useState(createDefaultStudioViewport());
   const [scene, setScene] = useState(SCENES.CANVAS);
@@ -1013,12 +1957,13 @@ function SpatialNotebook() {
   const [recentRuns, setRecentRuns] = useState([]);
   const [recentHistory, setRecentHistory] = useState([]);
   const [agentComments, setAgentComments] = useState(createInitialComments());
-  const [selectedAgentId, setSelectedAgentId] = useState('context-manager');
+  const [selectedAgentId, setSelectedAgentId] = useState(null);
   const [commentDraft, setCommentDraft] = useState('');
   const [contextDraft, setContextDraft] = useState('');
   const [scanPreview, setScanPreview] = useState(null);
   const [scannerBusy, setScannerBusy] = useState(false);
   const [executiveResult, setExecutiveResult] = useState(null);
+  const [canvasIntentRunState, setCanvasIntentRunState] = useState(EMPTY_CANVAS_INTENT_RUN_STATE);
   const [intentState, setIntentState] = useState(EMPTY_INTENT_STATE);
   const [rsgMeta, setRsgMeta] = useState(() => createDefaultRsgState());
   const [pages, setPages] = useState([createDefaultPage()]);
@@ -1030,31 +1975,54 @@ function SpatialNotebook() {
   const [handoffs, setHandoffs] = useState(EMPTY_HANDOFFS);
   const [teamBoard, setTeamBoard] = useState(EMPTY_TEAM_BOARD);
   const [orchestratorState, setOrchestratorState] = useState(EMPTY_ORCHESTRATOR_STATE);
+  const [teamBoardWallBoardExpanded, setTeamBoardWallBoardExpanded] = useState(false);
   const [selfUpgrade, setSelfUpgrade] = useState(EMPTY_SELF_UPGRADE);
   const [serverHealth, setServerHealth] = useState(EMPTY_SERVER_HEALTH);
   const [throughputDebug, setThroughputDebug] = useState(EMPTY_THROUGHPUT_DEBUG);
   const [qaState, setQaState] = useState(EMPTY_QA_STATE);
+  const [mutationGate, setMutationGate] = useState(EMPTY_MUTATION_GATE);
+  const [worldViewMode, setWorldViewMode] = useState(DEFAULT_WORLD_VIEW_MODE);
+  const [recentWorldChange, setRecentWorldChange] = useState(null);
+  const [showRecentWorldChanges, setShowRecentWorldChanges] = useState(true);
   const [qaRunDetail, setQaRunDetail] = useState(null);
   const [qaScenario, setQaScenario] = useState('layout-pass');
   const [throughputPrompt, setThroughputPrompt] = useState('I think we should add a desk to the studio for a QA agent');
   const [throughputBusy, setThroughputBusy] = useState(false);
   const [simLauncher, setSimLauncher] = useState(EMPTY_SIM_LAUNCHER);
+  const [workspaceBannerTitle, setWorkspaceBannerTitle] = useState('ACE Overlay Workspace');
+  const [toolbarSectionsOpen, setToolbarSectionsOpen] = useState({
+    view: false,
+    launch: false,
+  });
   const [selfUpgradeTaskId, setSelfUpgradeTaskId] = useState('');
   const [selfUpgradeBusy, setSelfUpgradeBusy] = useState(false);
   const [teamBoardBusy, setTeamBoardBusy] = useState(false);
   const [agentWorkerBusyId, setAgentWorkerBusyId] = useState(null);
   const [studioLayout, setStudioLayout] = useState(() => normalizeStudioLayout());
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(380);
   const [reviewPanelOpen, setReviewPanelOpen] = useState(false);
   const [expandedReviewCardId, setExpandedReviewCardId] = useState(null);
   const [traceLog, setTraceLog] = useState([]);
   const [expandedTraceIds, setExpandedTraceIds] = useState({});
   const [deskPanelState, setDeskPanelState] = useState({ open: false, deskId: null, mode: 'properties' });
-  const [deskPanelTab, setDeskPanelTab] = useState('agents');
+  const [deskPanelTab, setDeskPanelTab] = useState('hierarchy');
   const [deskPanelBusy, setDeskPanelBusy] = useState(false);
   const [deskPanelActionBusy, setDeskPanelActionBusy] = useState(false);
   const [deskPanelData, setDeskPanelData] = useState(null);
+  const [deskPayloadCache, setDeskPayloadCache] = useState({});
+  const [deskManagementDrafts, setDeskManagementDrafts] = useState({});
+  const [layoutCatalog, setLayoutCatalog] = useState({ departmentTemplates: [], deskTemplates: [] });
+  const [layoutMutationDraft, setLayoutMutationDraft] = useState({
+    departmentTemplateId: 'research',
+    deskTemplateId: 'report-node',
+    deskDepartmentId: 'dept-delivery',
+  });
+  const [uiActionStatus, setUiActionStatus] = useState({});
+  const [layoutMutationFeedback, setLayoutMutationFeedback] = useState(null);
+  const [utilityDockOpen, setUtilityDockOpen] = useState(false);
+  const [utilityWindows, setUtilityWindows] = useState(() => loadUtilityWindowsState());
+  const [taDepartmentPayload, setTaDepartmentPayload] = useState(null);
+  const [taDepartmentBusy, setTaDepartmentBusy] = useState(false);
+  const [taDepartmentError, setTaDepartmentError] = useState(null);
   const [daveLedger, setDaveLedger] = useState({ entries: [], stats: {} });
   const [daveLedgerLoading, setDaveLedgerLoading] = useState(false);
   const [daveLedgerError, setDaveLedgerError] = useState(null);
@@ -1091,16 +2059,18 @@ function SpatialNotebook() {
   const activeSketch = useRef(null);
   const studioPanning = useRef(false);
   const studioElementDrag = useRef(null);
+  const activeCanvasIntentTraceId = useRef(null);
   const hasLoadedWorkspace = useRef(false);
   const autosaveTimer = useRef(null);
   const pagesSaveTimer = useRef(null);
   const intentSaveTimer = useRef(null);
   const studioStateTimer = useRef(null);
   const architectureSaveTimer = useRef(null);
+  const utilityWindowSaveTimer = useRef(null);
+  const utilityWindowDrag = useRef(null);
   const lastCanvasViewport = useRef(createDefaultCanvasViewport());
   const lastStudioViewport = useRef(createDefaultStudioViewport());
   const lastScene = useRef(SCENES.CANVAS);
-  const sidebarResize = useRef(null);
 
   const graphBundle = useMemo(() => ({
     ...graphLayers,
@@ -1108,9 +2078,11 @@ function SpatialNotebook() {
   }), [graphLayers, activeGraphLayer, graph]);
   const systemGraph = graphBundle.system || buildStarterGraph();
   const selected = graph.nodes.find((node) => node.id === selectedId) || null;
-  const contextNode = systemGraph.nodes.find((node) => node.metadata?.agentId === 'context-manager') || null;
+  const selectedRelationshipId = selectedRelationship?.id || null;
+  const selectedRelationshipInspector = useMemo(() => buildRelationshipInspectorPayload(selectedRelationship), [selectedRelationship]);
+  const selectedSupportsSecondaryDrafting = Boolean(selected && activeGraphLayer === 'system' && !isPrimaryIntentNode(selected));
+  const contextNode = systemGraph.nodes.find((node) => isPrimaryIntentNode(node)) || null;
   const latestIntentReport = intentState.contextReport || intentState.latest || null;
-  const selectedIntent = selected?.metadata?.intentAnalysis || intentState.byNode?.[selected?.id] || null;
   const notebookState = useMemo(() => normalizeNotebookState({ graph: systemGraph, graphs: graphBundle, intentState, pages, activePageId }), [systemGraph, graphBundle, intentState, pages, activePageId]);
   const activePage = notebookState.activePage;
   const activeLayerNodeTypes = useMemo(() => getNodeTypesForLayer(activeGraphLayer), [activeGraphLayer]);
@@ -1133,6 +2105,69 @@ function SpatialNotebook() {
     },
   }), [systemGraph, graphBundle, teamBoard, rsgMeta]);
   const latestRsgActivity = rsgState.activity?.[0] || null;
+  const latestMutationActivity = mutationGate.activity?.[0] || null;
+  const worldGraph = graphBundle.world || buildStarterGraph();
+  const worldScaffoldNodes = useMemo(() => findWorldScaffoldNodes(graphBundle.world || buildStarterGraph()), [graphBundle]);
+  const latestWorldScaffold = worldScaffoldNodes[0] || null;
+  const worldScaffoldMeta = latestWorldScaffold?.metadata?.scaffold || null;
+  const worldScaffoldField = useMemo(
+    () => normalizeScaffoldFieldBundle(worldScaffoldMeta),
+    [worldScaffoldMeta],
+  );
+  const latestTrace = useMemo(() => {
+    const activeTraceId = resolveCanvasIntentTraceId(canvasIntentRunState);
+    if (!activeTraceId) return traceLog[0] || null;
+    return traceLog.find((entry) => entry?.trace_id === activeTraceId) || traceLog[0] || null;
+  }, [traceLog, canvasIntentRunState]);
+  const latestTraceRawInput = String(
+    getLatestTraceStep(latestTrace, 'raw_input')?.data?.raw_input
+      || contextNode?.content
+      || contextDraft
+      || '',
+  ).trim();
+  const latestTraceIntentObject = getLatestTraceStep(latestTrace, 'intent_object')?.data || null;
+  const latestTracePlannerOutput = getLatestTraceStep(latestTrace, 'planner_output')?.data || null;
+  const latestTraceMutationInput = getLatestTraceStep(
+    latestTrace,
+    'executor_input',
+    (step) => Array.isArray(step?.data),
+  )?.data || [];
+  const latestTraceMutationOutput = getLatestTraceStep(
+    latestTrace,
+    'executor_output',
+    (step) => step?.data
+      && typeof step.data === 'object'
+      && (
+        Object.prototype.hasOwnProperty.call(step.data, 'status')
+        || Object.prototype.hasOwnProperty.call(step.data, 'applied')
+        || Object.prototype.hasOwnProperty.call(step.data, 'queued')
+        || Object.prototype.hasOwnProperty.call(step.data, 'blocked')
+        || Array.isArray(step.data.results)
+      ),
+  )?.data || null;
+  const latestTraceEngineResult = getLatestTraceStep(latestTrace, 'engine_result')?.data || null;
+  const currentExecutiveResult = resolveCurrentExecutiveResult(executiveResult, canvasIntentRunState);
+  const currentIntentTraceReport = resolveIntentTraceReport({
+    scanPreview,
+    latestIntentReport,
+    canvasIntentRunState,
+  });
+  const latestMutationPackage = (Array.isArray(currentExecutiveResult?.mutations) && currentExecutiveResult.mutations.length)
+    ? currentExecutiveResult.mutations
+    : ((Array.isArray(preview?.mutations) && preview.mutations.length) ? preview.mutations : latestTraceMutationInput);
+  const latestMutationResult = currentExecutiveResult?.autoApply || latestTraceMutationOutput || null;
+  const latestMutationDecisionResults = Array.isArray(latestMutationResult?.results) ? latestMutationResult.results : [];
+  const latestMutationEmptyReason = buildMutationTraceEmptyReason({
+    canvasIntentRunState,
+    executiveResult: currentExecutiveResult,
+    latestTracePlannerOutput,
+    latestTraceEngineResult,
+  });
+  const blockedMutationEntries = (mutationGate.activity || []).filter((entry) => entry?.status === 'blocked');
+  const recentWorldChangeItems = recentWorldChange?.items || [];
+  const recentWorldChangeMeta = recentWorldChange
+    ? buildRecentWorldCountsLabel(recentWorldChange.counts || {})
+    : 'No recent applied world diff is active in this session.';
 
   const workspacePayload = useMemo(() => ({
     graph: systemGraph,
@@ -1149,6 +2184,7 @@ function SpatialNotebook() {
       scene,
       selectedAgentId,
       activeGraphLayer,
+      worldViewMode,
       handoffs,
       teamBoard,
       orchestrator: orchestratorState,
@@ -1156,24 +2192,22 @@ function SpatialNotebook() {
       layout: studioLayout,
       canvasViewport,
       studioViewport,
-      sidebar: {
-        collapsed: sidebarCollapsed,
-        width: sidebarWidth,
-      },
     },
-  }), [systemGraph, graphBundle, sketches, annotations, agentComments, intentState, pages, notebookState.activePageId, rsgState, scene, selectedAgentId, activeGraphLayer, handoffs, teamBoard, orchestratorState, selfUpgrade, studioLayout, canvasViewport, studioViewport, sidebarCollapsed, sidebarWidth, memory]);
+  }), [systemGraph, graphBundle, sketches, annotations, agentComments, intentState, pages, notebookState.activePageId, rsgState, scene, selectedAgentId, activeGraphLayer, worldViewMode, handoffs, teamBoard, orchestratorState, selfUpgrade, studioLayout, canvasViewport, studioViewport, memory]);
 
   const lightweightWorkspacePayload = useMemo(() => ({
     activePageId,
     selectedDeskId: selectedAgentId,
     selectedTab: deskPanelTab,
     scene,
+    activeGraphLayer,
+    worldViewMode,
     camera: studioViewport,
     zoom: canvasViewport?.zoom,
     openTraceId,
     openReportId,
     openTaskId,
-  }), [activePageId, selectedAgentId, deskPanelTab, scene, studioViewport, canvasViewport, openTraceId, openReportId, openTaskId]);
+  }), [activePageId, selectedAgentId, deskPanelTab, scene, activeGraphLayer, worldViewMode, studioViewport, canvasViewport, openTraceId, openReportId, openTaskId]);
 
   const slimIntentStatePayload = useMemo(() => {
     const source = intentState.contextReport || intentState.latest || null;
@@ -1183,6 +2217,11 @@ function SpatialNotebook() {
       status: source?.status || 'idle',
     };
   }, [intentState]);
+
+  const slimStudioStatePayload = useMemo(() => buildStudioStatePayload({
+    handoffs,
+    teamBoard,
+  }), [handoffs, teamBoard]);
 
   const qaStateForSnapshots = useMemo(() => {
     if (!qaRunDetail) return qaState;
@@ -1201,10 +2240,16 @@ function SpatialNotebook() {
     recentHistory,
     qaState: qaStateForSnapshots,
   }), [workspacePayload, dashboardState, recentRuns, agentComments, recentHistory, qaStateForSnapshots]);
+  const coreAgentAttempts = agentSnapshots
+    .filter((agent) => ['context-manager', 'planner', 'executor'].includes(agent.id))
+    .map((agent) => ({
+      id: agent.id,
+      name: agent.name,
+      ...buildAgentAttemptSummary(agent),
+    }));
 
-  const selectedAgent = agentSnapshots.find((agent) => agent.id === selectedAgentId) || agentSnapshots[0] || null;
+  const selectedAgent = agentSnapshots.find((agent) => agent.id === selectedAgentId) || null;
   const latestRun = recentRuns[0] || null;
-  const sidebarColumnWidth = sidebarCollapsed ? 74 : sidebarWidth;
   const architectureMemory = useMemo(() => ({
     subsystems: memory.model.subsystems,
     modules: memory.model.modules,
@@ -1214,36 +2259,261 @@ function SpatialNotebook() {
     rules: memory.model.rules,
     layers: memory.model.layers,
   }), [memory, graphBundle]);
-  const studioRoom = studioLayout.room || STUDIO_ROOM;
+  const studioRenderModel = useMemo(() => buildStudioRenderModel(studioLayout, agentSnapshots), [studioLayout, agentSnapshots]);
+  const studioRoom = studioLayout.bounds || studioLayout.room || STUDIO_ROOM;
   const teamBoardFrame = studioLayout.whiteboards?.teamBoard || DEFAULT_STUDIO_WHITEBOARDS.teamBoard;
+  const studioDeskMap = studioRenderModel.deskMap || {};
+  const studioDeskEntries = studioRenderModel.desks || [];
+  const studioDeskOptions = studioDeskEntries.map((desk) => ({
+    id: desk.id,
+    label: desk.name || desk.label || desk.id,
+    departmentLabel: desk.department?.label || 'Department',
+  }));
+  const studioDeskLabelById = Object.fromEntries(studioDeskOptions.map((desk) => [desk.id, desk.label]));
+  const managedDeskOptions = studioDeskOptions.filter((desk) => desk.id !== CONTROL_CENTRE_DESK_ID);
+  const getStudioDeskLabel = useCallback((deskId) => studioDeskLabelById[deskId] || deskId || 'Desk', [studioDeskLabelById]);
+  const rosterSurfaceModel = useMemo(() => buildRosterSurfaceModel(taDepartmentPayload || {}), [taDepartmentPayload]);
+  const resourceSignalModel = useMemo(() => buildResourceSignalModel({
+    orgHealthModel: studioRenderModel.orgHealth,
+    relationshipSignals: rosterSurfaceModel.hiringSignals,
+  }), [studioRenderModel.orgHealth, rosterSurfaceModel.hiringSignals]);
 
-  const loadDeskPanel = async (deskId) => {
+  const getDeskPayload = useCallback((deskId) => {
+    if (!deskId) return null;
+    if (deskPanelData?.deskId === deskId) return deskPanelData;
+    return deskPayloadCache[deskId] || null;
+  }, [deskPanelData, deskPayloadCache]);
+
+  const loadDeskPanel = async (deskId, options = {}) => {
     if (!deskId) return;
-    setDeskPanelBusy(true);
+    const { silent = false } = options;
+    if (!silent) setDeskPanelBusy(true);
     try {
       const payload = await ace.getDeskProperties(deskId);
+      setDeskPayloadCache((current) => ({
+        ...current,
+        [deskId]: payload,
+      }));
       setDeskPanelData(payload);
       setStatus(`desk properties loaded: ${deskId}`);
       console.debug('[desk-properties-panel] sources', payload.sources);
     } catch (error) {
       setStatus(error.message);
     } finally {
-      setDeskPanelBusy(false);
+      if (!silent) setDeskPanelBusy(false);
     }
   };
+
+  const loadLayoutCatalog = useCallback(async () => {
+    try {
+      const payload = await ace.getStudioLayoutCatalog();
+      setLayoutCatalog({
+        departmentTemplates: Array.isArray(payload.departmentTemplates) ? payload.departmentTemplates : [],
+        deskTemplates: Array.isArray(payload.deskTemplates) ? payload.deskTemplates : [],
+      });
+    } catch (error) {
+      console.debug('[studio-layout] catalog load failed', error);
+    }
+  }, [ace]);
+
+  const loadTaDepartmentPanel = useCallback(async (options = {}) => {
+    const { silent = false } = options;
+    if (!silent) setTaDepartmentBusy(true);
+    try {
+      const payload = await ace.getTaDepartment();
+      setTaDepartmentPayload(payload);
+      setTaDepartmentError(null);
+    } catch (error) {
+      setTaDepartmentError(error.message);
+      if (!silent) {
+        setStatus(error.message);
+      }
+    } finally {
+      if (!silent) setTaDepartmentBusy(false);
+    }
+  }, [ace, setStatus]);
+
+  const updateUiActionStatus = useCallback((actionId, nextStatus) => {
+    const id = String(actionId || '').trim();
+    if (!id) return;
+    setUiActionStatus((current) => ({
+      ...current,
+      [id]: nextStatus,
+    }));
+  }, []);
+
+  const reconcileUiActionResult = useCallback(async (actionId, outcome = null) => {
+    const result = outcome?.result || null;
+    if (!result) {
+      return outcome;
+    }
+    if (actionId === 'add_department' || actionId === 'add_desk') {
+      const feedback = buildMutationFeedback(actionId, outcome);
+      setLayoutMutationFeedback(feedback);
+      if (!feedback.shouldCommit) {
+        const blockedMessage = feedback.message || 'Dependency validation blocked the mutation.';
+        setStatus(blockedMessage);
+        console.debug('[studio-layout] action blocked', {
+          action: actionId,
+          blockers: Array.isArray(feedback.validation?.blockers) ? feedback.validation.blockers : [],
+        });
+        return outcome;
+      }
+      const nextLayout = normalizeStudioLayout(result.layout || {});
+      setStudioLayout(nextLayout);
+      if (result.catalog) {
+        setLayoutCatalog({
+          departmentTemplates: Array.isArray(result.catalog.departmentTemplates) ? result.catalog.departmentTemplates : [],
+          deskTemplates: Array.isArray(result.catalog.deskTemplates) ? result.catalog.deskTemplates : [],
+        });
+      } else {
+        await loadLayoutCatalog();
+      }
+      if (result.focusDeskId && hasStudioDesk(nextLayout, result.focusDeskId)) {
+        setSelectedAgentId(result.focusDeskId);
+        if (deskPanelState.open) {
+          setDeskPanelState((current) => (current.open ? { ...current, deskId: result.focusDeskId, mode: 'properties' } : current));
+          await loadDeskPanel(result.focusDeskId, { silent: true });
+        }
+      } else if (deskPanelState.open && deskPanelState.deskId) {
+        await loadDeskPanel(deskPanelState.deskId, { silent: true });
+      }
+      console.debug('[studio-layout] action reconciled', {
+        action: actionId,
+        createdDepartmentId: result.createdDepartmentId || null,
+        createdDeskId: result.createdDeskId || null,
+        focusDeskId: result.focusDeskId || null,
+        validationStatus: feedback.phase,
+      });
+      setStatus(feedback.phase === 'warning' ? feedback.message : (actionId === 'add_department' ? 'department added to studio layout' : 'desk added to studio layout'));
+    } else if (actionId === 'toggle_utility_dock') {
+      setStatus(result.utilityDockOpen ? 'utilities shown' : 'utilities hidden');
+    }
+    return outcome;
+  }, [deskPanelState.deskId, deskPanelState.open, loadDeskPanel, loadLayoutCatalog]);
+
+  const runStudioUiAction = useCallback(async (actionId, overrides = {}) => {
+    const payloadPreview = buildActionPayload(actionId, {
+      ace,
+      layoutMutationDraft,
+      utilityDockOpen,
+      setUtilityDockOpen,
+      ...overrides,
+    });
+    console.debug('[ui-action] dispatch', { action: actionId, payload: payloadPreview });
+    if (actionId === 'add_department' || actionId === 'add_desk') {
+      setLayoutMutationFeedback(null);
+    }
+    const outcome = await runUiAction(actionId, {
+      ace,
+      layoutMutationDraft,
+      utilityDockOpen,
+      setUtilityDockOpen,
+      setActionStatus: updateUiActionStatus,
+      setStatus,
+      ...overrides,
+    });
+    await reconcileUiActionResult(actionId, outcome);
+    return outcome;
+  }, [ace, layoutMutationDraft, reconcileUiActionResult, setStatus, setUtilityDockOpen, updateUiActionStatus, utilityDockOpen]);
+  const layoutMutationBusy = Boolean(uiActionStatus.add_department?.busy || uiActionStatus.add_desk?.busy);
+  const rosterUtilityOpen = Boolean(utilityWindows.roster?.open);
+  const studioMapUtilityOpen = Boolean(utilityWindows['studio-map']?.open);
+  const studioQuickAccessStrip = useMemo(() => buildStudioQuickAccessStrip({
+    selectedAgentId,
+    deskPanelDeskId: deskPanelState.deskId,
+    ctoEditTargetDeskId,
+    utilityDockOpen,
+    rosterUtilityOpen,
+    teamBoardWallBoardExpanded,
+  }), [
+    ctoEditTargetDeskId,
+    deskPanelState.deskId,
+    rosterUtilityOpen,
+    selectedAgentId,
+    teamBoardWallBoardExpanded,
+    utilityDockOpen,
+  ]);
 
   function openDeskPropertiesPanel(deskId, mode = 'properties') {
     if (!deskId) return;
     setSelectedAgentId(deskId);
     setDeskPanelState({ open: true, deskId, mode });
-    if (mode === 'edit') {
-      setDeskPanelTab('agents');
-      if (deskId === 'cto-architect') loadDeskPanel(ctoEditTargetDeskId);
-    } else {
-      setDeskPanelTab(deskId === 'qa-lead' ? 'qa' : 'agents');
-      loadDeskPanel(deskId);
-    }
+    setDeskPanelTab(deskId === 'qa-lead' ? 'qa' : 'hierarchy');
+    loadDeskPanel(deskId);
   }
+
+  const closeDeskInspector = useCallback(({ clearSelection = true } = {}) => {
+    setDeskPanelState({ open: false, deskId: null, mode: 'properties' });
+    setDeskPanelData(null);
+    if (clearSelection) setSelectedAgentId(null);
+  }, []);
+
+  const openUtilityWindow = useCallback((windowId, options = {}) => {
+    if (!windowId) return;
+    const targetDeskId = options.targetDeskId || UTILITY_WINDOW_META[windowId]?.deskId || null;
+    const defaultState = createDefaultUtilityWindowState(windowId);
+    setUtilityDockOpen(true);
+    setUtilityWindows((current) => ({
+      ...current,
+      [windowId]: {
+        ...(current[windowId] || defaultState),
+        open: true,
+        minimized: false,
+        targetDeskId,
+        docked: options.docked ?? current[windowId]?.docked ?? true,
+        position: current[windowId]?.position || defaultState.position,
+      },
+    }));
+  }, []);
+
+  const focusRelationshipEdge = useCallback((edge, selectionSource = 'studio') => {
+    if (!edge) return;
+    setSelectedId(null);
+    setSelectedSketchId(null);
+    setSelectedAnnotationId(null);
+    setSelectedRelationship({
+      ...edge,
+      selectionSource,
+    });
+    openUtilityWindow('relationship');
+    setStatus(`relationship selected: ${edge.label || edge.relationshipType || edge.id || 'edge'}`);
+  }, [openUtilityWindow]);
+
+  const closeUtilityWindow = useCallback((windowId) => {
+    const defaultState = createDefaultUtilityWindowState(windowId);
+    setUtilityWindows((current) => ({
+      ...current,
+      [windowId]: {
+        ...(current[windowId] || defaultState),
+        open: false,
+        minimized: false,
+      },
+    }));
+  }, []);
+
+  const toggleUtilityWindowMinimized = useCallback((windowId) => {
+    const defaultState = createDefaultUtilityWindowState(windowId);
+    setUtilityWindows((current) => ({
+      ...current,
+      [windowId]: {
+        ...(current[windowId] || defaultState),
+        minimized: !current[windowId]?.minimized,
+      },
+    }));
+  }, []);
+
+  const toggleUtilityWindowDocked = useCallback((windowId) => {
+    const defaultState = createDefaultUtilityWindowState(windowId);
+    setUtilityWindows((current) => ({
+      ...current,
+      [windowId]: {
+        ...(current[windowId] || defaultState),
+        docked: !current[windowId]?.docked,
+        position: current[windowId]?.position || defaultState.position,
+      },
+    }));
+  }, []);
 
   const computeDaveContextAlignment = useCallback(() => {
     const summary = (workspacePayload.intentState?.summary || '').toLowerCase();
@@ -1273,6 +2543,41 @@ function SpatialNotebook() {
   useEffect(() => {
     loadModelOptions();
   }, [loadModelOptions]);
+
+  useEffect(() => {
+    if (!rosterUtilityOpen) return;
+    loadTaDepartmentPanel({ silent: false });
+  }, [loadTaDepartmentPanel, rosterUtilityOpen]);
+
+  useEffect(() => {
+    loadLayoutCatalog();
+  }, [loadLayoutCatalog]);
+
+  useEffect(() => {
+    if (managedDeskOptions.some((desk) => desk.id === ctoEditTargetDeskId)) return;
+    if (managedDeskOptions[0]?.id) {
+      setCtoEditTargetDeskId(managedDeskOptions[0].id);
+    }
+  }, [managedDeskOptions, ctoEditTargetDeskId]);
+
+  useEffect(() => {
+    const departmentIds = studioRenderModel.departments.filter((department) => department.id !== 'dept-control').map((department) => department.id);
+    if (departmentIds.includes(layoutMutationDraft.deskDepartmentId)) return;
+    if (departmentIds[0]) {
+      setLayoutMutationDraft((current) => ({ ...current, deskDepartmentId: departmentIds[0] }));
+    }
+  }, [studioRenderModel.departments, layoutMutationDraft.deskDepartmentId]);
+
+  useEffect(() => {
+    const selectedDepartment = studioRenderModel.departments.find((department) => department.id === layoutMutationDraft.deskDepartmentId) || null;
+    const allowedTemplateIds = (layoutCatalog.deskTemplates || [])
+      .filter((entry) => !Array.isArray(entry.allowedDepartmentKinds) || !entry.allowedDepartmentKinds.length || (selectedDepartment && entry.allowedDepartmentKinds.includes(selectedDepartment.kind)))
+      .map((entry) => entry.id);
+    if (allowedTemplateIds.includes(layoutMutationDraft.deskTemplateId)) return;
+    if (allowedTemplateIds[0]) {
+      setLayoutMutationDraft((current) => ({ ...current, deskTemplateId: allowedTemplateIds[0] }));
+    }
+  }, [layoutCatalog.deskTemplates, studioRenderModel.departments, layoutMutationDraft.deskDepartmentId, layoutMutationDraft.deskTemplateId]);
 
   const loadSimLauncher = useCallback(async () => {
     try {
@@ -1352,6 +2657,15 @@ function SpatialNotebook() {
       setStatus(message);
     }
   }, [ace, setStatus, simLauncher.project, simLauncher.supportedOrigin]);
+
+  const toggleToolbarSection = useCallback((sectionId) => {
+    const id = String(sectionId || '').trim();
+    if (!id) return;
+    setToolbarSectionsOpen((current) => ({
+      ...current,
+      [id]: !current[id],
+    }));
+  }, []);
 
   const loadDaveLedger = useCallback(async () => {
     setDaveLedgerLoading(true);
@@ -1487,6 +2801,36 @@ function SpatialNotebook() {
     return trace;
   }
 
+  function isActiveCanvasIntentTrace(traceId) {
+    return Boolean(traceId) && activeCanvasIntentTraceId.current === traceId;
+  }
+
+  function startCanvasIntentRun(trace, rawInput, forceIntentScan = false) {
+    activeCanvasIntentTraceId.current = trace?.trace_id || null;
+    setCanvasIntentRunState(createCanvasIntentRunState({
+      traceId: trace?.trace_id || null,
+      submittedInput: String(rawInput || '').trim(),
+      phase: 'routing',
+      route: null,
+      forceIntentScan,
+    }));
+    setScanPreview(null);
+    setExecutiveResult(null);
+    setPreview(null);
+  }
+
+  function updateCanvasIntentRun(traceId, updates = {}) {
+    if (!isActiveCanvasIntentTrace(traceId)) return false;
+    setCanvasIntentRunState((current) => {
+      if (current.traceId !== traceId) return current;
+      return createCanvasIntentRunState({
+        ...current,
+        ...(typeof updates === 'function' ? updates(current) : updates),
+      });
+    });
+    return true;
+  }
+
   function buildIntentObject(rawInput, report, traceId) {
     const extractedIntent = report?.extractedIntent || null;
     const firstTask = Array.isArray(report?.tasks) && report.tasks.length ? report.tasks[0] : null;
@@ -1513,7 +2857,7 @@ function SpatialNotebook() {
 
   function centerStudioOnDesk(agentId, nextStatus = null) {
     const container = studioRef.current;
-    const position = studioLayout.desks?.[agentId] || deskStagePoint(agentId);
+    const position = studioDeskMap[agentId]?.position || studioLayout.desks?.[agentId] || deskStagePoint(agentId, studioLayout);
     if (!container || !position) return;
     const zoom = agentId === 'cto-architect' ? 1.2 : 1.28;
     setStudioViewport({
@@ -1534,6 +2878,7 @@ function SpatialNotebook() {
       const initialLayer = GRAPH_LAYERS.includes(storedStudio.activeGraphLayer) ? storedStudio.activeGraphLayer : 'system';
       setGraphLayers(graphs);
       setActiveGraphLayer(initialLayer);
+      setWorldViewMode(normalizeWorldViewMode(storedStudio.worldViewMode));
       graphEngine.setState(graphs[initialLayer] || buildStarterGraph());
       setGraph({ ...graphEngine.getState() });
       setSketches(Array.isArray(workspace.sketches) ? workspace.sketches : []);
@@ -1551,8 +2896,8 @@ function SpatialNotebook() {
       setCanvasViewport(storedStudio.canvasViewport || createDefaultCanvasViewport());
       setStudioViewport(storedStudio.studioViewport || createDefaultStudioViewport());
       setScene(storedStudio.scene || SCENES.CANVAS);
-      setSelectedAgentId(storedStudio.selectedAgentId || 'context-manager');
-      setDeskPanelTab(storedStudio.selectedTab || workspace.selectedTab || 'agents');
+      setSelectedAgentId(storedStudio.selectedAgentId || null);
+      setDeskPanelTab(storedStudio.selectedTab || workspace.selectedTab || 'hierarchy');
       const notebook = normalizeNotebookState({
         graph: graphs.system || buildStarterGraph(),
         graphs,
@@ -1581,8 +2926,6 @@ function SpatialNotebook() {
       });
       setSelfUpgradeTaskId(storedStudio.selfUpgrade?.taskId || '');
       setStudioLayout(normalizeStudioLayout(storedStudio.layout));
-      setSidebarCollapsed(Boolean(storedStudio.sidebar?.collapsed));
-      setSidebarWidth(clamp(Number(storedStudio.sidebar?.width) || 380, 300, 520));
       const contextNode = (graphs.system?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
       const storedIntentState = workspace.intentState || EMPTY_INTENT_STATE;
       setIntentState({
@@ -1595,11 +2938,16 @@ function SpatialNotebook() {
       setOpenReportId(workspace.openReportId || storedStudio.ui?.openReportId || null);
       setOpenTaskId(workspace.openTaskId || storedStudio.ui?.openTaskId || null);
       setRsgMeta(workspace.rsg || createDefaultRsgState());
+      setMutationGate(normalizeMutationGateState(workspace.mutationGate));
       setContextDraft(contextNode?.content || '');
       setScanPreview(storedIntentState.contextReport || null);
+      activeCanvasIntentTraceId.current = null;
+      setCanvasIntentRunState(EMPTY_CANVAS_INTENT_RUN_STATE);
       hasLoadedWorkspace.current = true;
     }).catch(() => {
       setNormalizedGraphBundlePresent(false);
+      activeCanvasIntentTraceId.current = null;
+      setCanvasIntentRunState(EMPTY_CANVAS_INTENT_RUN_STATE);
       hasLoadedWorkspace.current = true;
     });
     return () => {
@@ -1614,6 +2962,10 @@ function SpatialNotebook() {
       canvasRef.current,
       graph,
       canvasViewport,
+      activeGraphLayer,
+      worldViewMode,
+      recentWorldChange,
+      showRecentWorldChanges,
       connectState.current,
       pointerWorld,
       simulating && !paused ? simStep : -1,
@@ -1621,8 +2973,17 @@ function SpatialNotebook() {
       annotations,
       selectedSketchId,
       selectedAnnotationId,
+      selectedRelationshipId,
+      selectedAgentId,
+      selectedAgent?.name || '',
     );
-  }, [graph, graphBundle, canvasViewport, memory, pointerWorld, simulating, simStep, paused, sketches, annotations, selectedSketchId, selectedAnnotationId]);
+  }, [graph, graphBundle, canvasViewport, memory, activeGraphLayer, worldViewMode, recentWorldChange, showRecentWorldChanges, pointerWorld, simulating, simStep, paused, sketches, annotations, selectedSketchId, selectedAnnotationId, selectedRelationshipId, selectedAgentId, selectedAgent?.name]);
+
+  useEffect(() => {
+    if (selectedRelationship?.selectionSource === 'graph' && selectedRelationshipId && !graph.edges.some((edge) => edge.id === selectedRelationshipId)) {
+      setSelectedRelationship(null);
+    }
+  }, [graph, selectedRelationship, selectedRelationshipId]);
 
   useEffect(() => {
     setGraphLayers((current) => {
@@ -1658,23 +3019,6 @@ function SpatialNotebook() {
     if (!isStudioViewportOutOfRange(studioViewport)) return;
     centerStudioOnRoom('studio recentered on room');
   }, [scene, studioViewport, selectedAgentId, studioLayout]);
-
-  useEffect(() => {
-    const move = (event) => {
-      if (!sidebarResize.current) return;
-      const delta = sidebarResize.current.startX - event.clientX;
-      setSidebarWidth(clamp(sidebarResize.current.startWidth + delta, 300, 520));
-    };
-    const up = () => {
-      sidebarResize.current = null;
-    };
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
-    return () => {
-      window.removeEventListener('mousemove', move);
-      window.removeEventListener('mouseup', up);
-    };
-  }, []);
 
   useEffect(() => {
     const tick = () => {
@@ -1820,10 +3164,10 @@ function SpatialNotebook() {
     if (!hasLoadedWorkspace.current) return undefined;
     clearTimeout(studioStateTimer.current);
     studioStateTimer.current = setTimeout(() => {
-      saveStudioState({ handoffs, teamBoard }).catch(() => {});
+      saveStudioState(slimStudioStatePayload).catch(() => {});
     }, 1500);
     return () => clearTimeout(studioStateTimer.current);
-  }, [handoffs, teamBoard]);
+  }, [slimStudioStatePayload]);
 
   useEffect(() => {
     if (!hasLoadedWorkspace.current) return undefined;
@@ -1833,6 +3177,14 @@ function SpatialNotebook() {
     }, 1800);
     return () => clearTimeout(architectureSaveTimer.current);
   }, [architectureDirty]);
+
+  useEffect(() => {
+    clearTimeout(utilityWindowSaveTimer.current);
+    utilityWindowSaveTimer.current = setTimeout(() => {
+      saveUtilityWindowsState(utilityWindows);
+    }, 150);
+    return () => clearTimeout(utilityWindowSaveTimer.current);
+  }, [utilityWindows]);
 
   useEffect(() => {
     if (!hasLoadedWorkspace.current) return;
@@ -1993,10 +3345,10 @@ function SpatialNotebook() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'unable to open task folder');
-      setStatus(`opened task folder ${taskId}`);
+      setStatus(`opened legacy task folder ${taskId}`);
       setOpenTaskId(taskId);
     } catch (error) {
-      setStatus(`open task folder failed: ${error.message}`);
+      setStatus(`open legacy task folder failed: ${error.message}`);
     }
   }
 
@@ -2149,6 +3501,7 @@ function SpatialNotebook() {
     setGraph({ ...graphEngine.getState() });
     setActiveGraphLayer(nextLayer);
     setSelectedId(null);
+    setSelectedRelationship(null);
     setStatus(`switched to ${GRAPH_LAYER_TITLES[nextLayer] || nextLayer}`);
   };
 
@@ -2169,13 +3522,33 @@ function SpatialNotebook() {
     return node;
   };
 
-  const findContextNode = () => graphEngine.getState().nodes.find((node) => node.metadata?.agentId === 'context-manager');
+  const buildPrimaryIntentNodeMetadata = (metadata = {}, overrides = {}) => ({
+    ...metadata,
+    role: 'context',
+    agentId: 'context-manager',
+    origin: 'user_input',
+    graphLayer: 'system',
+    labels: ['primary-input'],
+    proposalTarget: 'canvas-intent',
+    intentAnalysis: null,
+    intentStatus: 'idle',
+    rsg: null,
+    ...overrides,
+  });
+
+  const findContextNode = () => graphEngine.getState().nodes.find((node) => isPrimaryIntentNode(node));
 
   const upsertContextNode = (content) => {
     if (!content.trim()) return null;
     const existing = findContextNode();
     if (existing) {
-      graphEngine.updateNode(existing.id, { content, type: 'text', metadata: { ...existing.metadata, role: 'context', agentId: 'context-manager', origin: 'user_input' } });
+      graphEngine.updateNode(existing.id, {
+        content,
+        type: 'text',
+        metadata: buildPrimaryIntentNodeMetadata(existing.metadata, {
+          lastCommittedContent: normalizedNodeContent(content),
+        }),
+      });
       setGraph({ ...graphEngine.getState() });
       setSelectedId(existing.id);
       return existing;
@@ -2188,7 +3561,9 @@ function SpatialNotebook() {
       type: 'text',
       content,
       position,
-      metadata: { role: 'context', agentId: 'context-manager', origin: 'user_input' },
+      metadata: buildPrimaryIntentNodeMetadata({}, {
+        lastCommittedContent: normalizedNodeContent(content),
+      }),
     });
     graphEngine.addNode(node);
     setGraph({ ...graphEngine.getState() });
@@ -2198,15 +3573,16 @@ function SpatialNotebook() {
 
   const captureContextInput = () => {
     if (activeGraphLayer !== 'system') {
-      setStatus('context intake currently writes to the system graph');
+      setStatus('Primary canvas intent only routes from the system layer.');
       return null;
     }
     const node = upsertContextNode(contextDraft);
     if (!node) {
-      setStatus('add context before sending it to ACE');
+      setStatus('Enter primary intent in Canvas Intent before routing.');
       return null;
     }
-    setStatus('context manager intake updated');
+    setScanPreview(null);
+    setStatus('Primary canvas note updated.');
     return graphEngine.getState().nodes.find((entry) => entry.id === node.id) || node;
   };
 
@@ -2217,7 +3593,10 @@ function SpatialNotebook() {
     teamBoard: workspace.studio?.teamBoard || fallbackTeamBoard,
     orchestrator: workspace.studio?.orchestrator || EMPTY_ORCHESTRATOR_STATE,
     selfUpgrade: workspace.studio?.selfUpgrade || EMPTY_SELF_UPGRADE,
+    activeGraphLayer: workspace.studio?.activeGraphLayer || activeGraphLayer,
+    worldViewMode: normalizeWorldViewMode(workspace.studio?.worldViewMode || worldViewMode),
     rsg: workspace.rsg || createDefaultRsgState(),
+    mutationGate: normalizeMutationGateState(workspace.mutationGate || mutationGate),
     qaState,
   });
 
@@ -2357,21 +3736,28 @@ function SpatialNotebook() {
     });
     await Promise.all([
       savePages({ pages: nextPages, activePageId: notebook.activePageId }),
-      saveStudioState({ handoffs: nextHandoffs, teamBoard }),
+      saveStudioState(buildStudioStatePayload({ handoffs: nextHandoffs, teamBoard })),
       saveIntentState({ intentState: nextSlimIntentStatePayload }),
     ]);
     applyRuntimePayload(buildRuntimePayloadFromWorkspace(workspace, teamBoard));
     return nextHandoff;
   };
 
-  function applyRuntimePayload(runtime, intentOverride = null) {
+  function applyRuntimePayload(runtime, intentOverride = null, options = {}) {
     const runtimeGraphs = runtime?.graphs ? normalizeGraphBundle({ graphs: runtime.graphs }) : graphBundle;
     const runtimeSystemGraph = runtimeGraphs.system || buildStarterGraph();
+    const requestedLayer = GRAPH_LAYERS.includes(options.preferredLayer)
+      ? options.preferredLayer
+      : (GRAPH_LAYERS.includes(runtime?.activeGraphLayer) ? runtime.activeGraphLayer : activeGraphLayer);
     if (runtime?.graphs) {
-      const nextActiveGraph = runtimeGraphs[activeGraphLayer] || runtimeSystemGraph;
+      const resolvedLayer = runtimeGraphs[requestedLayer] ? requestedLayer : activeGraphLayer;
+      const nextActiveGraph = runtimeGraphs[resolvedLayer] || runtimeSystemGraph;
       graphEngine.setState(nextActiveGraph);
       setGraphLayers(runtimeGraphs);
       setGraph({ ...nextActiveGraph });
+      if (resolvedLayer !== activeGraphLayer) {
+        setActiveGraphLayer(resolvedLayer);
+      }
     }
     const runtimeIntentState = intentOverride || runtime.intentState || intentState;
     const notebook = normalizeNotebookState({
@@ -2406,6 +3792,8 @@ function SpatialNotebook() {
     if (runtime.rsg) {
       setRsgMeta(runtime.rsg);
     }
+    setMutationGate(normalizeMutationGateState(runtime.mutationGate));
+    setWorldViewMode(normalizeWorldViewMode(options.worldViewMode || runtime.worldViewMode || worldViewMode));
     if (runtime.throughputDebug) {
       setThroughputDebug({
         ...EMPTY_THROUGHPUT_DEBUG,
@@ -2428,6 +3816,15 @@ function SpatialNotebook() {
       setSelfUpgradeTaskId(runtime.selfUpgrade.taskId);
     }
   }
+
+function syncRecentWorldChange(change = null) {
+  const normalized = normalizeRecentWorldChange(change);
+  setRecentWorldChange(normalized);
+  if (normalized) {
+    setShowRecentWorldChanges(true);
+  }
+  return normalized;
+}
 
   async function runTeamBoardAction(action, cardId, statusMessage) {
     setTeamBoardBusy(true);
@@ -2496,17 +3893,20 @@ function SpatialNotebook() {
 
   const scanContextIntent = async ({ forceIntentScan = false } = {}) => {
     if (activeGraphLayer !== 'system') {
-      setStatus('switch to the system graph to run context intake');
+      setStatus('Switch to the system layer to use Canvas Intent.');
       return;
     }
-    if (!contextDraft.trim()) {
-      setStatus('context intake is empty');
+    const rawInput = contextDraft.trim();
+    if (!rawInput) {
+      setStatus('Canvas Intent is empty.');
       return;
     }
-    const trace = beginTrace(contextDraft);
+    const trace = beginTrace(rawInput);
+    startCanvasIntentRun(trace, rawInput, forceIntentScan);
     setScannerBusy(true);
     try {
       const contextNode = captureContextInput();
+      if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
       addTraceStep(trace, 'executor_input', { operation: 'executive_route', nodeId: contextNode?.id || null, forceIntentScan });
       const response = await ace.runExecutiveRoute({
         envelope: {
@@ -2515,7 +3915,7 @@ function SpatialNotebook() {
             {
               type: 'prompt',
               node_id: contextNode?.id || 'prompt-1',
-              content: contextDraft,
+              content: rawInput,
               data: {},
             },
             {
@@ -2543,42 +3943,140 @@ function SpatialNotebook() {
         },
         trace_id: trace.trace_id,
       });
-      setExecutiveResult(response);
-      if (response.route === 'module' && response.preview) {
-        addTraceStep(trace, 'executor_output', response.preview);
-        setStatus(`executive module route complete | ${response.preview.artifact_type || 'artifact'} | ${Math.round((response.preview.confidence || 0) * 100)}% confidence`);
+      if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
+      const tracedResponse = attachTraceId(response, trace.trace_id);
+      setExecutiveResult(tracedResponse);
+      if (tracedResponse.route === 'module' && tracedResponse.preview) {
+        addTraceStep(trace, 'executor_output', tracedResponse.preview);
+        addTraceStep(trace, 'engine_result', {
+          route: 'module',
+          status: 'preview-ready',
+          mutation_count: 0,
+          reason: null,
+        });
+        updateCanvasIntentRun(trace.trace_id, {
+          phase: 'complete',
+          route: 'module',
+          forceIntentScan: false,
+        });
+        setStatus(`executive module route complete | ${tracedResponse.preview.artifact_type || 'artifact'} | ${Math.round((tracedResponse.preview.confidence || 0) * 100)}% confidence`);
         return;
       }
-      if (response.route === 'legacy-fallback') {
-        addTraceStep(trace, 'executor_output', response.legacy || response);
-        const legacyAction = response.legacy?.action || 'legacy';
+      if (tracedResponse.route === 'legacy-fallback') {
+        addTraceStep(trace, 'executor_output', tracedResponse.legacy || tracedResponse);
+        addTraceStep(trace, 'engine_result', {
+          route: 'legacy-fallback',
+          status: 'legacy-action-ran',
+          mutation_count: 0,
+          reason: null,
+        });
+        updateCanvasIntentRun(trace.trace_id, {
+          phase: 'complete',
+          route: 'legacy-fallback',
+          forceIntentScan: false,
+        });
+        const legacyAction = tracedResponse.legacy?.action || 'legacy';
         setStatus(`executive fallback ran legacy ${legacyAction}`);
         return;
       }
-      const report = {
-        ...(response.report || response),
-        nodeId: (response.report || response).nodeId || contextNode?.id || null,
-        source: (response.report || response).source || 'context-intake',
-        createdAt: (response.report || response).createdAt || new Date().toISOString(),
-      };
-      const intentObject = buildIntentObject(contextDraft, { ...report, extractedIntent: response.extractedIntent }, trace.trace_id);
+      if (tracedResponse.route === 'world-scaffold') {
+        addTraceStep(trace, 'intent_object', tracedResponse.intent || null);
+        addTraceStep(trace, 'planner_output', {
+          route: tracedResponse.route,
+          summary: formatWorldScaffoldIntent(tracedResponse.intent),
+          interpretation: tracedResponse.interpretation || null,
+          validation: tracedResponse.validation || tracedResponse.intent?.validation || null,
+          evaluation: tracedResponse.evaluation || null,
+          final_candidate: tracedResponse.evaluation?.finalCandidate || tracedResponse.intent || null,
+          confidence: tracedResponse.intent?.confidence || null,
+          mutation_generation: tracedResponse.mutationGeneration || null,
+          mutation_count: tracedResponse.mutations?.length || 0,
+        });
+        addTraceStep(trace, 'executor_input', tracedResponse.mutations || []);
+        updateCanvasIntentRun(trace.trace_id, {
+          phase: 'routing',
+          route: 'world-scaffold',
+          forceIntentScan: false,
+        });
+        if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
+        try {
+          const applyResponse = await ace.applyMutation(tracedResponse.mutations || []);
+          if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
+          addTraceStep(trace, 'executor_output', applyResponse.mutationResult || applyResponse);
+          const currentRunWorldChange = syncRecentWorldChange(applyResponse.recentWorldChange || null);
+          if (applyResponse.runtime) {
+            applyRuntimePayload(applyResponse.runtime, null, { preferredLayer: 'world' });
+          }
+          addTraceStep(trace, 'engine_result', {
+            route: 'world-scaffold',
+            status: applyResponse.mutationResult?.status || applyResponse.status || 'unknown',
+            applied: applyResponse.mutationResult?.applied || 0,
+            queued: applyResponse.mutationResult?.queued || 0,
+            blocked: applyResponse.mutationResult?.blocked || 0,
+          });
+          setExecutiveResult({
+            ...tracedResponse,
+            recentWorldChange: currentRunWorldChange,
+            autoApply: applyResponse.mutationResult || applyResponse,
+          });
+          updateCanvasIntentRun(trace.trace_id, {
+            phase: 'complete',
+            route: 'world-scaffold',
+            forceIntentScan: false,
+          });
+          setScene(SCENES.CANVAS);
+          setStatus(buildMutationApplyStatus(applyResponse.mutationResult || applyResponse));
+        } catch (error) {
+          if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
+          const currentRunWorldChange = syncRecentWorldChange(error?.payload?.recentWorldChange || null);
+          if (error?.payload?.runtime) {
+            applyRuntimePayload(error.payload.runtime, null, { preferredLayer: 'world' });
+          }
+          addTraceStep(trace, 'executor_output', error?.payload?.mutationResult || { ok: false, error: error.message });
+          addTraceStep(trace, 'engine_result', {
+            route: 'world-scaffold',
+            status: 'blocked',
+            applied: 0,
+            queued: 0,
+            blocked: 1,
+            reason: error?.payload?.mutationResult?.reason || error.message || 'World scaffold apply failed.',
+          });
+          setExecutiveResult({
+            ...tracedResponse,
+            recentWorldChange: currentRunWorldChange,
+            autoApply: error?.payload?.mutationResult || { status: 'blocked', reason: error.message || 'World scaffold apply failed.' },
+          });
+          updateCanvasIntentRun(trace.trace_id, {
+            phase: 'complete',
+            route: 'world-scaffold',
+            forceIntentScan: false,
+          });
+          setScene(SCENES.CANVAS);
+          setStatus(buildMutationApplyStatus(error?.payload?.mutationResult || { status: 'blocked', reason: error.message || 'World scaffold apply failed.' }));
+        }
+        return;
+      }
+      const reportSource = tracedResponse.report || tracedResponse;
+      const report = attachTraceId({
+        ...reportSource,
+        nodeId: reportSource.nodeId || contextNode?.id || null,
+        source: reportSource.source || 'context-intake',
+        createdAt: reportSource.createdAt || new Date().toISOString(),
+      }, trace.trace_id);
+      const intentObject = buildIntentObject(rawInput, { ...report, extractedIntent: tracedResponse.extractedIntent }, trace.trace_id);
       addTraceStep(trace, 'intent_object', intentObject);
-      addTraceStep(trace, 'planner_output', { tasks: report.tasks || [], handoff: response.handoff || null });
+      addTraceStep(trace, 'planner_output', { tasks: report.tasks || [], handoff: tracedResponse.handoff || null });
       addTraceStep(trace, 'executor_output', report);
       setScanPreview(report);
       if (contextNode?.id) {
         const currentNode = graphEngine.getState().nodes.find((node) => node.id === contextNode.id);
         graphEngine.updateNode(contextNode.id, {
-          type: currentNode?.metadata?.manualOverride ? currentNode.type : (response.classification?.role === 'thought' ? 'text' : (response.classification?.role || currentNode?.type || 'text')),
-          metadata: {
-            ...(currentNode?.metadata || {}),
-            role: currentNode?.metadata?.manualOverride ? (currentNode.metadata.role || 'context') : (response.classification?.role || 'context'),
-            labels: [...new Set([...(currentNode?.metadata?.labels || []), ...(response.classification?.labels || [])])],
+          type: 'text',
+          metadata: buildPrimaryIntentNodeMetadata(currentNode?.metadata || {}, {
             intentAnalysis: report,
             intentStatus: 'ready',
-            lastCommittedContent: normalizedNodeContent(contextDraft),
-            agentId: 'context-manager',
-          },
+            lastCommittedContent: normalizedNodeContent(rawInput),
+          }),
         });
         syncGraphState();
       }
@@ -2588,29 +4086,105 @@ function SpatialNotebook() {
         byNode: contextNode?.id ? { ...(intentState.byNode || {}), [contextNode.id]: report } : (intentState.byNode || {}),
         reports: [report, ...((intentState.reports || []).filter((entry) => entry.nodeId !== contextNode?.id))].slice(0, 24),
       };
-      let handoff = response.handoff || (response.runtime ? response.runtime.handoffs?.contextToPlanner : null) || null;
-      if (response.runtime) {
-        applyRuntimePayload(response.runtime, nextIntentState);
+      let handoff = tracedResponse.handoff || (tracedResponse.runtime ? tracedResponse.runtime.handoffs?.contextToPlanner : null) || null;
+      if (tracedResponse.runtime) {
+        applyRuntimePayload(tracedResponse.runtime, nextIntentState);
       } else {
         setIntentState(nextIntentState);
         handoff = await updatePlannerHandoff(report);
       }
-      const rsgResult = contextNode?.id
-        ? applyFocusedRsgLoop(graphEngine.getState().nodes.find((node) => node.id === contextNode.id), report, {
-            trigger: 'context-intake',
-          })
-        : null;
+      if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
       addTraceStep(trace, 'engine_result', {
-        generated_nodes: rsgResult?.generatedNodes?.map((node) => node.id) || [],
-        reason: rsgResult?.reason || null,
+        route: forceIntentScan ? 'debug-intent-scan' : 'primary-intent-route',
+        generated_nodes: [],
+        reason: null,
+      });
+      updateCanvasIntentRun(trace.trace_id, {
+        phase: 'complete',
+        route: forceIntentScan ? 'debug-intent-scan' : 'primary-intent-route',
+        forceIntentScan,
       });
       setSelectedAgentId('context-manager');
-      setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} intent items | planner brief ${handoff?.status || 'updated'}${rsgResult?.entry ? ` | ${formatRsgActivity(rsgResult.entry)}` : ''}`);
+      setStatus(`${forceIntentScan ? 'debug scan' : 'primary route'} | ${Math.round((report.confidence || 0) * 100)}% confidence | ${(report.tasks || []).length} intent items | planner brief ${handoff?.status || 'updated'}`);
     } catch (error) {
+      const routePayload = attachTraceId(error?.payload, trace.trace_id);
+      if (routePayload?.route === 'world-scaffold') {
+        if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
+        addTraceStep(trace, 'intent_object', routePayload.intent || null);
+        addTraceStep(trace, 'planner_output', {
+          route: routePayload.route,
+          summary: formatWorldScaffoldIntent(routePayload.intent),
+          interpretation: routePayload.interpretation || null,
+          validation: routePayload.validation || routePayload.intent?.validation || null,
+          evaluation: routePayload.evaluation || null,
+          final_candidate: routePayload.evaluation?.finalCandidate || routePayload.intent || null,
+          confidence: routePayload.intent?.confidence || null,
+          mutation_generation: routePayload.mutationGeneration || null,
+          mutation_count: routePayload.mutations?.length || 0,
+        });
+        addTraceStep(trace, 'executor_output', {
+          status: 'blocked',
+          reason: routePayload.error || error.message,
+          route: routePayload.route,
+        });
+        addTraceStep(trace, 'engine_result', {
+          route: 'world-scaffold',
+          status: 'blocked',
+          reason: routePayload.error || error.message,
+        });
+        setExecutiveResult(routePayload);
+        updateCanvasIntentRun(trace.trace_id, {
+          phase: 'complete',
+          route: 'world-scaffold',
+          forceIntentScan: false,
+        });
+        setScene(SCENES.CANVAS);
+        setStatus(routePayload.error || error.message);
+        return;
+      }
+      if (routePayload?.route === 'world-edit') {
+        if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
+        addTraceStep(trace, 'intent_object', routePayload.intent || null);
+        addTraceStep(trace, 'planner_output', {
+          route: routePayload.route,
+          summary: routePayload.intent?.summary || 'Existing-world tile edit request',
+          validation: routePayload.validation || routePayload.intent?.validation || null,
+          mutation_generation: routePayload.mutationGeneration || null,
+          mutation_count: routePayload.mutations?.length || 0,
+          supported: routePayload.supported !== false,
+        });
+        addTraceStep(trace, 'executor_output', {
+          status: 'unsupported',
+          reason: routePayload.error || routePayload.validation?.reason || error.message,
+          route: routePayload.route,
+        });
+        addTraceStep(trace, 'engine_result', {
+          route: 'world-edit',
+          status: 'unsupported',
+          reason: routePayload.error || routePayload.validation?.reason || error.message,
+        });
+        setExecutiveResult(routePayload);
+        updateCanvasIntentRun(trace.trace_id, {
+          phase: 'complete',
+          route: 'world-edit',
+          forceIntentScan: false,
+        });
+        setScene(SCENES.CANVAS);
+        setStatus(`world edit unsupported | ${routePayload.error || routePayload.validation?.reason || error.message}`);
+        return;
+      }
+      if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
       addTraceStep(trace, 'ERROR', { stage: 'intent_parse', reason: error.message });
+      updateCanvasIntentRun(trace.trace_id, {
+        phase: 'error',
+        route: forceIntentScan ? 'debug-intent-scan' : null,
+        forceIntentScan,
+      });
       setStatus(`scan failed: ${error.message}`);
     } finally {
-      setScannerBusy(false);
+      if (isActiveCanvasIntentTrace(trace.trace_id)) {
+        setScannerBusy(false);
+      }
     }
   };
 
@@ -2679,19 +4253,34 @@ function SpatialNotebook() {
     const current = graphEngine.getState().nodes.find((node) => node.id === nodeId);
     if (!current) return;
     const content = (rawContent || '').trim();
+    const primaryIntentNode = isPrimaryIntentNode(current);
     graphEngine.updateNode(nodeId, {
       content,
-      metadata: {
-        ...(current.metadata || {}),
-        origin: 'user_input',
-        intentStatus: content ? 'processing' : 'idle',
-        lastCommittedContent: content,
-      },
+      type: primaryIntentNode ? 'text' : current.type,
+      metadata: primaryIntentNode
+        ? buildPrimaryIntentNodeMetadata(current.metadata, {
+            lastCommittedContent: content,
+          })
+        : {
+            ...(current.metadata || {}),
+            origin: 'user_input',
+            intentStatus: content ? 'processing' : 'idle',
+            lastCommittedContent: content,
+          },
     });
     let nextNode = graphEngine.getState().nodes.find((node) => node.id === nodeId);
-    const patch = classifyNode(nextNode, graphEngine.getState(), activeGraphLayer);
-    graphEngine.updateNode(nodeId, patch);
+    let patch = null;
+    if (!primaryIntentNode) {
+      patch = classifyNode(nextNode, graphEngine.getState(), activeGraphLayer);
+      graphEngine.updateNode(nodeId, patch);
+    }
     syncGraphState();
+    if (primaryIntentNode) {
+      setContextDraft(content);
+      setScanPreview(null);
+      setStatus(content ? PRIMARY_INTENT_REDIRECT_HINT : 'Primary canvas note cleared.');
+      return null;
+    }
     if (!content) {
       if (!isLinkedDraftNode(current)) {
         const removedDraftIds = mutationEngine.removeLinkedDraftsForSource(nodeId);
@@ -2775,7 +4364,7 @@ function SpatialNotebook() {
         reason: rsgResult?.reason || null,
       });
       setSelectedAgentId('context-manager');
-      setStatus(`intent manager confidence ${Math.round((report.confidence || 0) * 100)}% | ${(report.tasks || []).length} tasks for ${resolvedRole}${rsgResult?.entry ? ` | ${formatRsgActivity(rsgResult.entry)}` : ''}`);
+      setStatus(`secondary draft scan | ${Math.round((report.confidence || 0) * 100)}% confidence | ${(report.tasks || []).length} tasks for ${resolvedRole}${rsgResult?.entry ? ` | ${formatRsgActivity(rsgResult.entry)}` : ''}`);
       return report;
     } catch (error) {
       addTraceStep(trace, 'ERROR', { stage: 'intent_parse', reason: error.message });
@@ -2866,8 +4455,10 @@ function SpatialNotebook() {
     setExpandedGeneratedNodeIds({});
     setCanvasViewport(createDefaultCanvasViewport());
     setScene(SCENES.CANVAS);
+    setWorldViewMode(DEFAULT_WORLD_VIEW_MODE);
     setContextDraft('');
     setScanPreview(null);
+    setPreview(null);
     setIntentState({
       latest: null,
       contextReport: null,
@@ -2875,19 +4466,22 @@ function SpatialNotebook() {
       reports: [],
     });
     setRsgMeta(createDefaultRsgState());
+    setMutationGate(EMPTY_MUTATION_GATE);
+    setRecentWorldChange(null);
+    setShowRecentWorldChanges(true);
     setHandoffs(EMPTY_HANDOFFS);
     setTeamBoard(EMPTY_TEAM_BOARD);
     const newPage = createDefaultPage();
     setPages([newPage]);
     setActivePageId(newPage.id);
     setOrchestratorState(EMPTY_ORCHESTRATOR_STATE);
+    setExecutiveResult(null);
+    activeCanvasIntentTraceId.current = null;
+    setCanvasIntentRunState(EMPTY_CANVAS_INTENT_RUN_STATE);
+    setTraceLog([]);
+    setOpenTraceId(null);
+    setExpandedTraceIds({});
     setStatus('new blank canvas ready');
-  };
-
-  const startSidebarResize = (event) => {
-    if (sidebarCollapsed) return;
-    event.preventDefault();
-    sidebarResize.current = { startX: event.clientX, startWidth: sidebarWidth };
   };
 
   const focusStudioAgent = (agentId) => {
@@ -2895,6 +4489,7 @@ function SpatialNotebook() {
     centerStudioOnDesk(agentId);
     setReviewPanelOpen(false);
     setScene(SCENES.STUDIO);
+    openDeskPropertiesPanel(agentId, 'properties');
   };
 
   const resetStudioView = () => {
@@ -2927,7 +4522,7 @@ function SpatialNotebook() {
   };
 
   const reviewSelectedAgent = () => {
-    if (selectedAgentId === 'context-manager' && selectedAgent?.deskSnapshot?.handoff) {
+    if (selectedAgentId === 'memory-archivist' && selectedAgent?.deskSnapshot?.handoff) {
       setReviewPanelOpen((value) => !value);
       setStatus('reviewing planner handoff report in studio');
       return;
@@ -2941,6 +4536,7 @@ function SpatialNotebook() {
     if (sketchMode || scene !== SCENES.CANVAS) return;
     event.stopPropagation();
     setSelectedId(node.id);
+    setSelectedRelationship(null);
     if (event.shiftKey) {
       connectState.current = { source: node.id };
       return;
@@ -3021,6 +4617,7 @@ function SpatialNotebook() {
       const strokeId = annotationId ? null : hitTestStroke(world);
       setSelectedAnnotationId(annotationId);
       setSelectedSketchId(strokeId);
+      setSelectedRelationship(null);
       if (annotationId || strokeId) return;
       const stroke = {
         id: `sketch_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -3032,6 +4629,14 @@ function SpatialNotebook() {
       setSelectedAnnotationId(null);
       setSketches((previous) => [...previous, stroke]);
       return;
+    }
+    if (event.button === 0 && !event.shiftKey) {
+      const relationshipEdge = hitTestRelationshipEdgeAtPoint(graph, world, canvasViewport);
+      if (relationshipEdge) {
+        event.preventDefault();
+        focusRelationshipEdge(relationshipEdge, 'graph');
+        return;
+      }
     }
     if (event.button === 1 || event.button === 2 || event.shiftKey) {
       event.preventDefault();
@@ -3076,6 +4681,10 @@ function SpatialNotebook() {
   };
 
   const startStudioElementDrag = (event, descriptor) => {
+    if (event.button !== 0) return;
+    if (descriptor.type === 'desk' && descriptor.id === CONTROL_CENTRE_DESK_ID) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     studioElementDrag.current = {
@@ -3083,10 +4692,56 @@ function SpatialNotebook() {
       startX: event.clientX,
       startY: event.clientY,
       initial: descriptor.type === 'desk'
-        ? { ...(studioLayout.desks?.[descriptor.id] || deskStagePoint(descriptor.id, studioLayout)) }
+        ? { ...((studioLayout.desks?.[descriptor.id]?.position || studioLayout.desks?.[descriptor.id]) || deskStagePoint(descriptor.id, studioLayout)) }
         : { ...(studioLayout.whiteboards?.[descriptor.id] || DEFAULT_STUDIO_WHITEBOARDS.teamBoard) },
     };
   };
+
+  const startUtilityWindowDrag = useCallback((event, windowId) => {
+    if (event.button !== 0) return;
+    if (event.target.closest('button')) return;
+    const config = utilityWindows[windowId];
+    if (!config || config.docked) return;
+    event.preventDefault();
+    event.stopPropagation();
+    utilityWindowDrag.current = {
+      windowId,
+      startX: event.clientX,
+      startY: event.clientY,
+      initial: config.position || getDefaultUtilityWindowPosition(windowId),
+    };
+  }, [utilityWindows]);
+
+  useEffect(() => {
+    const onMouseMove = (event) => {
+      if (!utilityWindowDrag.current) return;
+      const drag = utilityWindowDrag.current;
+      const deltaX = event.clientX - drag.startX;
+      const deltaY = event.clientY - drag.startY;
+      setUtilityWindows((current) => {
+        const existing = current[drag.windowId] || createDefaultUtilityWindowState(drag.windowId);
+        return {
+          ...current,
+          [drag.windowId]: {
+            ...existing,
+            position: clampUtilityWindowPosition({
+              left: drag.initial.left + deltaX,
+              top: drag.initial.top + deltaY,
+            }),
+          },
+        };
+      });
+    };
+    const onMouseUp = () => {
+      utilityWindowDrag.current = null;
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
 
   const onStudioMouseDown = (event) => {
     if (event.target.closest('.agent-station') || event.target.closest('.studio-team-board')) return;
@@ -3109,15 +4764,18 @@ function SpatialNotebook() {
           },
         };
         if (drag.type === 'desk') {
-          nextLayout.desks[drag.id] = clampDeskPosition({
-            x: drag.initial.x + deltaX,
-            y: drag.initial.y + deltaY,
-          }, current.room || STUDIO_ROOM);
+          nextLayout.desks[drag.id] = {
+            ...(current.desks?.[drag.id] || {}),
+            position: snapDeskPositionToDepartment({
+              x: drag.initial.x + deltaX,
+              y: drag.initial.y + deltaY,
+            }, drag.id, current),
+          };
         } else if (drag.type === 'whiteboard') {
           nextLayout.whiteboards[drag.id] = clampWhiteboardPosition({
             x: drag.initial.x + deltaX,
             y: drag.initial.y + deltaY,
-          }, current.room || STUDIO_ROOM);
+          }, current.bounds || current.room || STUDIO_ROOM);
         }
         return nextLayout;
       });
@@ -3162,7 +4820,7 @@ function SpatialNotebook() {
       saveWorkspace(lightweightWorkspacePayload),
       savePages({ pages, activePageId }),
       saveIntentState({ intentState: slimIntentStatePayload }),
-      saveStudioState({ handoffs, teamBoard }),
+      saveStudioState(slimStudioStatePayload),
       saveArchitectureMemory({ architectureMemory: memory.model }),
     ]);
     setStatus('workspace saved');
@@ -3188,7 +4846,13 @@ function SpatialNotebook() {
 
   const runAiProcess = async (node) => {
     if (activeGraphLayer !== 'system') {
-      setStatus('RSG v1 only drafts linked notes from the system graph');
+      setStatus('Secondary drafting only runs on the system graph.');
+      return;
+    }
+    if (isPrimaryIntentNode(node)) {
+      setContextDraft(String(node.content || ''));
+      setScanPreview(null);
+      setStatus(PRIMARY_INTENT_REDIRECT_HINT);
       return;
     }
     if (node.metadata?.intentAnalysis && normalizedNodeContent(node.metadata?.lastCommittedContent) === normalizedNodeContent(node.content)) {
@@ -3214,6 +4878,7 @@ function SpatialNotebook() {
     try {
       const response = await ace.applyMutation(preview.mutations);
       addTraceStep(trace, 'executor_output', response.mutationResult || response);
+      syncRecentWorldChange(response.recentWorldChange || null);
       if (response.runtime) {
         applyRuntimePayload(response.runtime);
       }
@@ -3224,14 +4889,14 @@ function SpatialNotebook() {
         status: response.status || response.mutationResult?.status || 'unknown',
       });
       setPreview(null);
-      if (response.confirmed) {
-        setStatus(`ACE suggestions applied | ${response.mutationResult?.applied || 0} canonical changes confirmed`);
-        return;
-      }
-      setStatus(response.mutationResult?.reason || 'ACE suggestions were not applied to canonical state');
+      setStatus(buildMutationApplyStatus(response.mutationResult || response));
     } catch (error) {
+      syncRecentWorldChange(error?.payload?.recentWorldChange || null);
+      if (error?.payload?.runtime) {
+        applyRuntimePayload(error.payload.runtime);
+      }
       addTraceStep(trace, 'executor_output', error?.payload?.mutationResult || { ok: false, error: error.message });
-      setStatus(error?.payload?.mutationResult?.reason || error.message || 'Mutation apply failed');
+      setStatus(buildMutationApplyStatus(error?.payload?.mutationResult || { status: 'blocked', reason: error.message || 'Mutation apply failed' }));
     }
   };
 
@@ -3252,8 +4917,8 @@ function SpatialNotebook() {
 
   const sceneLabel = scene === SCENES.CANVAS ? 'Canvas' : 'ACE Studio';
   const activeGraphLabel = GRAPH_LAYER_TITLES[activeGraphLayer] || activeGraphLayer;
-  const canReviewIntent = selectedAgentId === 'context-manager' && !!selectedAgent?.deskSnapshot?.handoff;
-  const contextDeskSnapshot = selectedAgent?.deskSnapshot || null;
+  const canReviewIntent = selectedAgentId === 'memory-archivist' && !!selectedAgent?.deskSnapshot?.handoff;
+  const contextDeskSnapshot = selectedAgent?.agentContext || selectedAgent?.deskSnapshot || null;
   const studioLinks = buildStudioLinks(orchestratorState, handoffs);
   const laneState = buildLaneState(orchestratorState, studioLinks, selfUpgrade);
   const teamBoardColumns = useMemo(() => ({
@@ -3291,22 +4956,49 @@ function SpatialNotebook() {
 
   useEffect(() => {
     if (!deskPanelState.open || !deskPanelState.deskId) return;
-    const sourceDeskId = deskPanelState.mode === 'edit' && deskPanelState.deskId === 'cto-architect'
-      ? ctoEditTargetDeskId
-      : deskPanelState.deskId;
+    const sourceDeskId = deskPanelState.deskId;
+    setSelectedAgentId(sourceDeskId);
     loadDeskPanel(sourceDeskId);
-  }, [deskPanelState.open, deskPanelState.deskId, deskPanelState.mode, ctoEditTargetDeskId]);
+  }, [deskPanelState.open, deskPanelState.deskId]);
 
   useEffect(() => {
     if (!deskPanelState.open || !deskPanelState.deskId) return;
-    const sourceDeskId = deskPanelState.mode === 'edit' && deskPanelState.deskId === 'cto-architect'
-      ? ctoEditTargetDeskId
-      : deskPanelState.deskId;
+    const sourceDeskId = deskPanelState.deskId;
     const availableTabs = getDeskPropertyTabs(sourceDeskId);
     if (!availableTabs.some((tab) => tab.id === deskPanelTab)) {
-      setDeskPanelTab(availableTabs[0]?.id || 'agents');
+      setDeskPanelTab(availableTabs[0]?.id || 'hierarchy');
     }
-  }, [deskPanelState.open, deskPanelState.deskId, deskPanelState.mode, ctoEditTargetDeskId, deskPanelTab]);
+  }, [deskPanelState.open, deskPanelState.deskId, deskPanelTab]);
+
+  useEffect(() => {
+    if (scene === SCENES.STUDIO) return;
+    if (deskPanelState.open) {
+      closeDeskInspector();
+    }
+  }, [scene, deskPanelState.open, closeDeskInspector]);
+
+  useEffect(() => {
+    if (utilityWindows.environment.open) {
+      loadDeskPanel(ctoEditTargetDeskId, { silent: true });
+    }
+    if (utilityWindows.qa.open || utilityWindows.scorecards.open) {
+      loadDeskPanel('qa-lead', { silent: true });
+    }
+    if (utilityWindows.context.open) {
+      loadDeskPanel('memory-archivist', { silent: true });
+    }
+    if (utilityWindows.reports.open && utilityWindows.reports.targetDeskId) {
+      loadDeskPanel(utilityWindows.reports.targetDeskId, { silent: true });
+    }
+  }, [
+    utilityWindows.environment.open,
+    utilityWindows.qa.open,
+    utilityWindows.scorecards.open,
+    utilityWindows.context.open,
+    utilityWindows.reports.open,
+    utilityWindows.reports.targetDeskId,
+    ctoEditTargetDeskId,
+  ]);
 
   const resolvePageTitle = (pageId) => {
     if (!pageId) return 'Unknown page';
@@ -3338,7 +5030,7 @@ function SpatialNotebook() {
               className: `team-board-card ${selectedExecutionCard?.id === card.id ? 'selected' : ''} ${isExpandedReview ? 'expanded' : ''}`,
               onClick: columnId === 'review' ? () => setExpandedReviewCardId((value) => value === card.id ? null : card.id) : undefined,
             },
-              h('div', { className: 'team-board-card-id muted' }, `#${card.id} • ${card.desk || 'Desk'}`),
+              h('div', { className: 'team-board-card-id muted' }, `#${card.id} â€¢ ${card.desk || 'Desk'}`),
               h('div', { className: 'team-board-card-title' }, card.title),
               h('div', { className: 'team-board-card-meta muted' }, card.state || 'Ready'),
               h('div', { className: 'team-board-card-meta muted' }, resolvePageTitle(card.pageId)),
@@ -3396,7 +5088,7 @@ function SpatialNotebook() {
                         event.stopPropagation();
                         openTaskFolder(taskId);
                       },
-                    }, 'Open task')
+                    }, 'Legacy task folder')
                   : null,
               ),
             );
@@ -3405,56 +5097,112 @@ function SpatialNotebook() {
     );
   };
 
-  const renderStudioTeamBoard = () => h('section', {
-    className: 'studio-team-board',
-    'data-qa': 'whiteboard-teamBoard',
-    'data-whiteboard-id': 'teamBoard',
-    'data-whiteboard-label': 'Team Board',
-    'data-stage-x': teamBoardFrame.x,
-    'data-stage-y': teamBoardFrame.y,
-    'data-stage-width': STUDIO_TEAM_BOARD_SIZE.width,
-    'data-stage-height': STUDIO_TEAM_BOARD_SIZE.height,
-    style: {
-      left: `${teamBoardFrame.x}px`,
-      top: `${teamBoardFrame.y}px`,
-      width: `${STUDIO_TEAM_BOARD_SIZE.width}px`,
-      minHeight: `${STUDIO_TEAM_BOARD_SIZE.height}px`,
+  const renderStudioTeamBoard = () => {
+    const compact = !teamBoardWallBoardExpanded;
+    const summaryPills = [
+      { label: 'Plan', value: teamBoard.summary?.plan || 0 },
+      { label: 'Active', value: teamBoard.summary?.active || 0 },
+      { label: 'Complete', value: teamBoard.summary?.complete || 0 },
+      { label: 'Review', value: teamBoard.summary?.review || 0 },
+    ];
+    return h('section', {
+      className: `studio-team-board ${compact ? 'compact' : 'expanded'}`,
+      'data-qa': 'whiteboard-teamBoard',
+      'data-whiteboard-id': 'teamBoard',
+      'data-whiteboard-label': 'Team Board',
+      'data-stage-x': teamBoardFrame.x,
+      'data-stage-y': teamBoardFrame.y,
+      'data-stage-width': STUDIO_TEAM_BOARD_SIZE.width,
+      'data-stage-height': STUDIO_TEAM_BOARD_SIZE.height,
+      style: {
+        left: `${teamBoardFrame.x}px`,
+        top: `${teamBoardFrame.y}px`,
+        width: compact ? '360px' : `${STUDIO_TEAM_BOARD_SIZE.width}px`,
+        minHeight: compact ? '132px' : `${STUDIO_TEAM_BOARD_SIZE.height}px`,
+      },
+      onMouseDown: stopStudioInteraction,
+      onMouseMove: stopStudioInteraction,
+      onMouseUp: stopStudioInteraction,
+      onWheel: stopStudioInteraction,
     },
-    onMouseDown: stopStudioInteraction,
-    onMouseMove: stopStudioInteraction,
-    onMouseUp: stopStudioInteraction,
-    onWheel: stopStudioInteraction,
-  },
-    h('div', { className: 'studio-team-board-hangers', 'aria-hidden': true },
-      h('span', null),
-      h('span', null),
-    ),
-    h('div', { className: 'studio-team-board-header' },
-      h('div', null,
-        h('div', { className: 'studio-team-board-title' }, 'Team Board'),
-        h('div', { className: 'studio-team-board-subtitle muted' }, 'Global workflow truth for planner output, builder packages, executor apply/deploy, and risk-gated approvals.'),
+      h('div', { className: 'studio-team-board-hangers', 'aria-hidden': true },
+        h('span', null),
+        h('span', null),
       ),
-      h('div', { className: 'studio-team-board-meta' },
-        h('span', null, `Page ${activePage?.title || 'Current Page'}`),
-        h('span', null, `Plan ${teamBoard.summary?.plan || 0}`),
-        h('span', null, `Active ${teamBoard.summary?.active || 0}`),
-        h('span', null, `Idle workers ${teamBoard.summary?.idleWorkers || 0}`),
-        h('span', { className: selectedExecutionCard ? 'selected' : '' }, selectedExecutionCard ? `Executor ${selectedExecutionCard.state}: ${selectedExecutionCard.title}` : `Ready to Apply ${teamBoard.summary?.review || 0}`),
-        h('button', {
-          className: 'mini studio-edit-handle whiteboard-edit-handle',
-          type: 'button',
-          onMouseDown: (event) => startStudioElementDrag(event, { type: 'whiteboard', id: 'teamBoard' }),
-          onClick: (event) => {
-            event.preventDefault();
-            event.stopPropagation();
+      h('div', { className: 'studio-team-board-header' },
+        h('div', null,
+          h('div', { className: 'studio-team-board-title' }, compact ? 'Team Board Preview' : 'Team Board'),
+          h('div', { className: 'studio-team-board-subtitle muted' }, compact
+            ? 'Compact wall-board preview. Click to expand the full kanban and pipeline board.'
+            : 'Secondary execution whiteboard only. Canvas Intent owns scaffold/world routing; this board reflects downstream packages and approvals.'),
+        ),
+        h('div', { className: 'studio-team-board-meta' },
+          h('span', null, `Page ${activePage?.title || 'Current Page'}`),
+          h('span', null, `Plan ${teamBoard.summary?.plan || 0}`),
+          h('span', null, `Active ${teamBoard.summary?.active || 0}`),
+          h('span', null, `Idle ${teamBoard.summary?.idleWorkers || 0}`),
+          h('span', { className: selectedExecutionCard ? 'selected' : '' }, selectedExecutionCard ? `Executor ${selectedExecutionCard.state}: ${selectedExecutionCard.title}` : `Ready to Apply ${teamBoard.summary?.review || 0}`),
+          compact
+            ? h('button', {
+                className: 'mini studio-edit-handle whiteboard-edit-handle',
+                type: 'button',
+                onClick: (event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setTeamBoardWallBoardExpanded(true);
+                },
+              }, 'Open')
+            : h('div', { className: 'button-row' },
+                h('button', {
+                  className: 'mini studio-edit-handle whiteboard-edit-handle',
+                  type: 'button',
+                  onMouseDown: (event) => startStudioElementDrag(event, { type: 'whiteboard', id: 'teamBoard' }),
+                  onClick: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  },
+                }, 'Move'),
+                h('button', {
+                  className: 'mini',
+                  type: 'button',
+                  onClick: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setTeamBoardWallBoardExpanded(false);
+                  },
+                }, 'Compact'),
+              ),
+        ),
+      ),
+      compact
+        ? h('div', {
+            className: 'team-board-preview',
+            role: 'button',
+            tabIndex: 0,
+            onClick: () => setTeamBoardWallBoardExpanded(true),
+            onKeyDown: (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setTeamBoardWallBoardExpanded(true);
+              }
+            },
           },
-        }, 'Move'),
-      ),
-    ),
-        h('div', { className: 'team-board-columns' },
-      ['plan', 'active', 'complete', 'review'].map(renderTeamBoardColumn),
-    ),
-  );
+            h('div', { className: 'team-board-preview-pills' },
+              summaryPills.map((pill) => h('div', { key: pill.label, className: 'team-board-preview-pill' },
+                h('div', { className: 'team-board-preview-pill-label' }, pill.label),
+                h('div', { className: 'team-board-preview-pill-value' }, String(pill.value)),
+              )),
+            ),
+            h('div', { className: 'team-board-preview-line' }, selectedExecutionCard
+              ? `Executor ${selectedExecutionCard.state}: ${selectedExecutionCard.title}`
+              : `Ready to Apply ${teamBoard.summary?.review || 0}`),
+            h('div', { className: 'team-board-preview-line muted' }, 'Click to expand the full whiteboard.'),
+          )
+        : h('div', { className: 'team-board-columns' },
+            ['plan', 'active', 'complete', 'review'].map(renderTeamBoardColumn),
+          ),
+    );
+  };
 
   const renderQAWorkbenchPanel = () => h('div', { className: 'inspector-block panel-card review-panel browser-pass-panel', 'data-qa': 'qa-desk-summary' },
     h('div', { className: 'inspector-label' }, 'QA Workbench'),
@@ -3505,8 +5253,11 @@ function SpatialNotebook() {
               className: `qa-finding severity-${finding.severity || 'info'}`,
               type: 'button',
               onClick: () => {
-                if (finding.relatedDeskIds?.[0]) setSelectedAgentId(finding.relatedDeskIds[0]);
-                setScene(SCENES.STUDIO);
+                if (finding.relatedDeskIds?.[0]) {
+                  focusStudioAgent(finding.relatedDeskIds[0]);
+                } else {
+                  setScene(SCENES.STUDIO);
+                }
               },
               title: finding.details || finding.summary,
             }, `${finding.summary}`)))
@@ -3533,7 +5284,7 @@ function SpatialNotebook() {
     h('div', { className: 'button-row' },
       h('button', { className: 'mini', type: 'button', disabled: throughputBusy, onClick: () => runThroughputDebug('fixture') }, throughputBusy ? 'Running...' : 'Run fixture'),
       h('button', { className: 'mini', type: 'button', disabled: throughputBusy, onClick: () => runThroughputDebug('live') }, throughputBusy ? 'Running...' : 'Run live ACE pass'),
-      latestThroughputSession?.runnerTaskId ? h('button', { className: 'mini', type: 'button', onClick: () => openTaskFolder(latestThroughputSession.runnerTaskId) }, 'Open runner task') : null,
+      latestThroughputSession?.runnerTaskId ? h('button', { className: 'mini', type: 'button', onClick: () => openTaskFolder(latestThroughputSession.runnerTaskId) }, 'Open legacy runner task') : null,
     ),
     latestThroughputSession
       ? h(React.Fragment, null,
@@ -3557,25 +5308,728 @@ function SpatialNotebook() {
       : h('div', { className: 'signal-empty muted' }, 'No throughput session recorded yet. Run a fixture pass or a live ACE pass to inspect the full pipeline.'),
   );
 
+  const renderTruthMetricRows = (truth = {}, focusSummary = null) => {
+    const workload = truth?.workload && typeof truth.workload === 'object' ? truth.workload : {};
+    const reports = normalizeDeskEntries(truth?.reports);
+    const scorecards = normalizeDeskEntries(truth?.scorecards);
+    const assessments = normalizeDeskEntries(truth?.assessments);
+    const guardrails = normalizeDeskEntries(truth?.guardrails);
+    const linkedWindows = normalizeDeskEntries(focusSummary?.linkedWindows);
+    const blockers = normalizeDeskEntries(focusSummary?.blockers);
+    return h('div', { className: 'criteria-list desk-metric-list' },
+      h('div', { className: 'criteria-row' }, h('span', null, 'Live / assigned agents'), h('span', { className: 'muted' }, `${focusSummary?.liveAgents ?? 0} / ${focusSummary?.assignedAgents ?? 0}`)),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Active work'), h('span', { className: 'muted' }, String(focusSummary?.activeWork ?? 0))),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Queue'), h('span', { className: 'muted' }, String(focusSummary?.queueCount ?? workload.queueSize ?? 0))),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Blockers'), h('span', { className: 'muted' }, blockers.length ? blockers.slice(0, 3).join(' | ') : 'none')),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Linked reports'), h('span', { className: 'muted' }, String(focusSummary?.linkedReports ?? reports.length))),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Windows available'), h('span', { className: 'muted' }, linkedWindows.length ? linkedWindows.map((window) => window.label).join(' / ') : 'none')),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Workload'), h('span', { className: 'muted' }, `${workload.assignedTasks ?? 0} / ${workload.queueSize ?? 0} / ${workload.outputs ?? 0}`)),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Throughput'), h('span', { className: 'muted' }, truth?.throughput || 'n/a')),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Reports'), h('span', { className: 'muted' }, String(reports.length))),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Scorecards'), h('span', { className: 'muted' }, String(scorecards.length))),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Assessments'), h('span', { className: 'muted' }, String(assessments.length))),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Context'), h('span', { className: 'muted' }, describeDeskValue(truth?.context) || 'n/a')),
+      h('div', { className: 'criteria-row' }, h('span', null, 'Guardrails'), h('span', { className: 'muted' }, String(guardrails.length))),
+    );
+  };
+
+  const renderDeskUtilityActions = (deskId, options = {}) => {
+    if (!deskId) return null;
+    const ctoActive = selectedAgentId === 'cto-architect' || deskPanelState.deskId === 'cto-architect';
+    const actions = [];
+    if (deskId === 'cto-architect') {
+      actions.push({ id: 'environment', label: 'Environment', onClick: () => openUtilityWindow('environment') });
+    }
+    if (deskId === 'qa-lead') {
+      actions.push({ id: 'qa', label: 'QA Workbench', onClick: () => openUtilityWindow('qa') });
+      actions.push({ id: 'scorecards', label: 'Scorecards', onClick: () => openUtilityWindow('scorecards', { targetDeskId: 'qa-lead' }) });
+    }
+    if (deskId === 'memory-archivist' || deskId === 'context-manager') {
+      actions.push({ id: 'context', label: 'Context Archive', onClick: () => openUtilityWindow('context') });
+    }
+    actions.push({ id: 'reports', label: 'Reports', onClick: () => openUtilityWindow('reports', { targetDeskId: deskId }) });
+    return h('div', { className: `button-row desk-utility-actions ${options.compact ? 'compact' : ''}` },
+      actions.map((action) => h('button', {
+        key: `${deskId}-${action.id}`,
+        className: 'mini',
+        type: 'button',
+        disabled: action.id === 'environment' && !ctoActive,
+        onClick: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          action.onClick();
+        },
+      }, action.label)),
+    );
+  };
+
+  const renderReportsList = (reports = [], emptyState = 'No desk reports are cached yet.') => (
+    reports.length
+      ? h('div', { className: 'desk-panel-list utility-list' }, reports.map((report) => h('div', { key: report.id || `${report.name}-${report.source}`, className: 'desk-panel-item utility-card' },
+          h('div', { className: 'signal-summary' }, `${report.name || report.id || 'Report'}${report.verdict ? ` (${report.verdict})` : ''}`),
+          h('div', { className: 'signal-meta muted' }, `${report.type || 'report'} | ${report.source || 'unknown source'}${report.detail ? ` | ${report.detail}` : ''}`),
+        )))
+      : h('div', { className: 'signal-empty muted' }, emptyState)
+  );
+
+  const renderScorecardsList = (scorecards = [], emptyState = 'No scorecards are available yet.') => (
+    scorecards.length
+      ? h('div', { className: 'desk-panel-list utility-list' }, scorecards.map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item utility-card' },
+          h('div', { className: 'signal-summary' }, `${card.desk || 'Desk'} | ${card.testName || card.testId || 'Scorecard'}`),
+          h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+          card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
+        )))
+      : h('div', { className: 'signal-empty muted' }, emptyState)
+  );
+
+  const renderStudioMapUtility = () => {
+    const desks = studioDeskEntries || [];
+    const activeDesk = selectedAgentId ? studioDeskEntries.find((desk) => desk.id === selectedAgentId) || null : null;
+    return h('div', { className: 'utility-window-stack', 'data-qa': 'studio-map-window' },
+      h('div', { className: 'utility-window-section utility-window-hero' },
+        h('div', { className: 'inspector-label' }, 'Studio Map'),
+        h('div', { className: 'signal-summary' }, activeDesk ? activeDesk.name : 'Studio overview'),
+        h('div', { className: 'signal-meta muted' }, 'The map stays in Utilities when you want it and gets out of the way when you do not.'),
+      ),
+      h('div', { className: 'utility-window-section' },
+        h('div', { className: 'studio-map-toolbar' },
+          h('button', {
+            className: 'mini',
+            type: 'button',
+            onClick: () => centerStudioOnRoom('Studio view centered on the full room.'),
+          }, 'Center room'),
+          activeDesk ? h('button', {
+            className: 'mini',
+            type: 'button',
+            onClick: () => focusStudioAgent(activeDesk.id),
+          }, `Focus ${activeDesk.id}`) : null,
+        ),
+        h('div', { className: 'minimap-dots minimap-dots-panel' },
+          desks.map((desk) => h('button', {
+            key: `${desk.id}-dot`,
+            type: 'button',
+            className: `minimap-dot ${selectedAgentId === desk.id ? 'selected' : ''}`,
+            style: {
+              left: `${((desk.position?.x || deskStagePoint(desk.id, studioLayout).x) / STUDIO_SIZE.width) * 100}%`,
+              top: `${((desk.position?.y || deskStagePoint(desk.id, studioLayout).y) / STUDIO_SIZE.height) * 100}%`,
+              background: desk.theme.accent,
+            },
+            onClick: () => focusStudioAgent(desk.id),
+            title: desk.name,
+          })),
+        ),
+        h('div', { className: 'signal-meta muted' }, `Active layer: ${activeGraphLabel}. Click a station to inspect scope.`),
+      ),
+    );
+  };
+
+  const renderRosterUtility = () => {
+    const department = rosterSurfaceModel.department || {};
+    const summary = rosterSurfaceModel.summary || {};
+    const departments = rosterSurfaceModel.departments || [];
+    const desks = rosterSurfaceModel.desks || [];
+    const roster = rosterSurfaceModel.roster || [];
+    const openRoles = rosterSurfaceModel.openRoles || [];
+    const blockers = rosterSurfaceModel.blockers || [];
+    const hiringSignals = rosterSurfaceModel.hiringSignals || [];
+    const resourceSignals = listDepartmentsByPriority(resourceSignalModel);
+    const activeDepartmentCards = departments.length ? departments : desks;
+    return h('div', { className: 'utility-window-stack', 'data-qa': 'people-plan-window' },
+      h('div', { className: 'utility-window-section utility-window-hero' },
+        h('div', { className: 'inspector-label' }, department.name || 'People Plan'),
+        h('div', { className: 'signal-summary' }, department.summary || 'Who we have and who we still need'),
+        h('div', { className: 'signal-meta muted' }, `Updated ${department.updatedAt || 'just now'} | Urgency ${String(summary.urgency || 'low').toUpperCase()}`),
+        h('div', { className: 'signal-meta muted' }, taDepartmentError ? `Load error: ${taDepartmentError}` : 'Canonical staffing truth is sourced from the TA department payload.'),
+      ),
+      h('div', { className: 'utility-window-section' },
+        taDepartmentBusy
+          ? h('div', { className: 'signal-empty muted' }, 'Loading department staffing coverage...')
+          : h('div', { className: 'criteria-list' },
+              h('div', { className: 'criteria-row' }, h('span', null, 'Departments'), h('span', { className: 'muted' }, String(summary.totalCoverage || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Healthy / open'), h('span', { className: 'muted' }, `${summary.healthyCount || 0} / ${summary.openEntityCount || 0}`)),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Open roles'), h('span', { className: 'muted' }, String(summary.openRoleCount || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Missing leads'), h('span', { className: 'muted' }, String(summary.missingLeadCount || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Open seats'), h('span', { className: 'muted' }, String(summary.blockerCount || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Rostered hires'), h('span', { className: 'muted' }, String(summary.rosterCount || roster.length || 0))),
+            ),
+      ),
+      hiringSignals.length
+        ? h('div', { className: 'utility-window-section' },
+            h('div', { className: 'signal-summary' }, 'Hiring signals'),
+            h('div', { className: 'signal-meta muted' }, 'Read-only suggestions derived from staffing pressure and module ownership.'),
+            h('div', { className: 'desk-panel-list utility-list' }, hiringSignals.map((signal) => h('div', {
+              key: signal.id,
+              className: 'desk-panel-item utility-card',
+            },
+              h('div', { className: 'signal-summary' }, signal.label),
+              h('div', { className: 'signal-meta muted' }, `${signal.kind} | ${signal.scope} | strandCount ${signal.strandCount}`),
+              h('div', { className: 'signal-meta muted' }, `Reasons: ${Array.isArray(signal.reasons) && signal.reasons.length ? signal.reasons.join(', ') : 'n/a'}`),
+              h('div', { className: 'signal-meta muted' }, signal.suggestedHire || 'Suggested hire unavailable.'),
+            ))),
+          )
+        : null,
+      resourceSignals.length
+        ? h('div', { className: 'utility-window-section' },
+            h('div', { className: 'signal-summary' }, 'Resource signals'),
+            h('div', { className: 'signal-meta muted' }, 'Read-only support pressure derived from org health, staffing gaps, and weak relationships.'),
+            h('div', { className: 'desk-panel-list utility-list' }, resourceSignals.slice(0, 3).map((signal) => h('div', {
+              key: signal.departmentId,
+              className: 'desk-panel-item utility-card',
+            },
+              h('div', { className: 'signal-summary' }, `${signal.departmentLabel} | ${signal.resourcePressure}`),
+              h('div', { className: 'signal-meta muted' }, `Priority ${signal.priorityScore} | blockers ${signal.blockerCount} | staffing gaps ${signal.staffingGapCount}`),
+              h('div', { className: 'signal-meta muted' }, `Weak relationships ${signal.weakRelationshipCount} | ${signal.reasonSummary.length ? signal.reasonSummary.join(', ') : 'No additional reasons.'}`),
+            ))),
+          )
+        : null,
+      activeDepartmentCards.length
+        ? h('div', { className: 'utility-window-section' },
+            h('div', { className: 'signal-summary' }, departments.length ? 'Department coverage' : 'Desk coverage'),
+            h('div', { className: 'desk-panel-list utility-list' }, activeDepartmentCards.map((entity) => h('div', {
+                key: entity.entityId,
+                className: 'desk-panel-item utility-card',
+              },
+                h('div', { className: 'signal-summary' }, `${entity.label} | ${entity.health || 'unknown'}`),
+                h('div', { className: 'signal-meta muted' }, `${entity.entityType === 'department' ? 'Department' : 'Desk'} | ${entity.statusLabel || 'covered'}`),
+                h('div', { className: 'signal-meta muted' }, `Lead ${entity.leadLabel || 'n/a'} | Open seats ${entity.openSeatCount || 0}`),
+                h('div', { className: 'signal-meta muted' }, `Rostered ${entity.assignedRoster.length} | Roles ${entity.assignedRoles?.length || 0}`),
+                entity.roleCoverage.length
+                  ? h('div', { className: 'desk-hierarchy-leaf-list' }, entity.roleCoverage.map((role) => h('div', {
+                      key: `${entity.entityId}-${role.roleId}`,
+                      className: `desk-hierarchy-leaf ${role.covered ? '' : 'draft'}`,
+                    }, `${role.roleLabel}${role.isLeadRole ? ' (Lead)' : ''} | ${role.covered ? `x${role.count}` : 'open'}`)))
+                  : null,
+                entity.roster.length
+                  ? h('div', { className: 'desk-hierarchy-leaf-list' }, entity.roster.map((candidate) => h('div', {
+                      key: candidate.id,
+                      className: 'desk-hierarchy-leaf',
+                    }, `${candidate.name} | ${candidate.role}${candidate.deskId ? ` | ${candidate.deskId}` : ''}`)))
+                  : h('div', { className: 'signal-empty muted' }, 'No hires are assigned here yet.'),
+              ))),
+          )
+        : h('div', { className: 'utility-window-section' },
+            h('div', { className: 'signal-empty muted' }, 'No department coverage is available yet.'),
+          ),
+      h('div', { className: 'utility-window-section' },
+        h('div', { className: 'signal-summary' }, 'Open seats'),
+        blockers.length
+          ? h('div', { className: 'desk-panel-list utility-list' }, openRoles.filter((entry) => entry.blocker).map((entry) => h('div', {
+              key: `${entry.entityType}-${entry.entityId}-${entry.roleId || entry.kind}`,
+              className: 'desk-panel-item utility-card',
+            },
+              h('div', { className: 'signal-summary' }, `${entry.entityLabel || entry.entityId} | ${entry.roleLabel || entry.roleId || entry.kind}`),
+              h('div', { className: 'signal-meta muted' }, `${entry.kind} | shortfall ${entry.shortfall || 0} | urgency ${entry.urgency || 'low'}`),
+            )))
+          : h('div', { className: 'signal-empty muted' }, 'No required seats are open right now.'),
+      ),
+      h('div', { className: 'utility-window-section' },
+        h('div', { className: 'signal-summary' }, 'Roster'),
+        roster.length
+          ? h('div', { className: 'desk-panel-list utility-list' }, roster.map((candidate) => h('div', {
+              key: candidate.id,
+              className: 'desk-panel-item utility-card',
+            },
+              h('div', { className: 'signal-summary' }, `${candidate.name} | ${candidate.role}`),
+              h('div', { className: 'signal-meta muted' }, `${candidate.deskId || 'unassigned desk'}${candidate.assignedModel ? ` | ${candidate.assignedModel}` : ''}`),
+              h('div', { className: 'signal-meta muted' }, candidate.summary || 'No hire summary available.'),
+            )))
+          : h('div', { className: 'signal-empty muted' }, 'No hires have been assigned yet.'),
+      ),
+    );
+  };
+
+  const renderEnvironmentUtility = () => {
+    const targetDeskId = ctoEditTargetDeskId;
+    const targetDeskLabel = getStudioDeskLabel(targetDeskId);
+    const panelData = getDeskPayload(targetDeskId);
+    const managementDraft = normalizeDeskManagementDraft(deskManagementDrafts[targetDeskId] || {});
+    const selectedDeskDepartment = studioRenderModel.departments.find((department) => department.id === layoutMutationDraft.deskDepartmentId) || null;
+    const allowedDeskTemplates = (layoutCatalog.deskTemplates || []).filter((entry) => {
+      if (!Array.isArray(entry.allowedDepartmentKinds) || !entry.allowedDepartmentKinds.length) return true;
+      return selectedDeskDepartment ? entry.allowedDepartmentKinds.includes(selectedDeskDepartment.kind) : true;
+    });
+    const recruitAgent = async () => {
+      const agentId = String(managementDraft.recruit.agentId || '').trim();
+      const traits = String(managementDraft.recruit.traits || '').trim();
+      const role = String(managementDraft.recruit.role || '').trim();
+      if (!agentId) {
+        setStatus(`Enter an agent id before recruiting for ${targetDeskLabel}.`);
+        return;
+      }
+      await runDeskPanelAction('add_agent', { agentId, traits, role }, targetDeskId);
+      clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'recruit');
+      await loadDeskPanel(targetDeskId, { silent: true });
+      setStatus(`Recruit agent submitted for ${targetDeskLabel}.`);
+    };
+    const addAssessment = async () => {
+      const testId = String(managementDraft.assessment.testId || '').trim();
+      const notes = String(managementDraft.assessment.notes || '').trim();
+      if (!testId) {
+        setStatus(`Enter an assessment id before adding one for ${targetDeskLabel}.`);
+        return;
+      }
+      await runDeskPanelAction('add_test', { testId, verdict: 'pending', notes }, targetDeskId);
+      clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'assessment');
+      await loadDeskPanel(targetDeskId, { silent: true });
+      setStatus(`Assessment submitted for ${targetDeskLabel}.`);
+    };
+    return h('div', { className: 'utility-window-stack', 'data-qa': 'utility-environment-window' },
+      h('div', { className: 'utility-window-section utility-window-hero' },
+        h('div', { className: 'inspector-label' }, 'CTO Control Tower'),
+        h('div', { className: 'signal-summary' }, `Managing ${targetDeskLabel}`),
+        h('div', { className: 'signal-meta muted' }, 'Department contexts, hiring pressure, and guardrails are scoped here instead of living on every desk.'),
+      ),
+      h('div', { className: 'utility-window-section' },
+        h('label', { className: 'desk-management-field' },
+          h('span', { className: 'muted' }, 'Managed desk'),
+          h('select', {
+            className: 'mini recent-select',
+            value: ctoEditTargetDeskId,
+            onChange: async (event) => {
+              setCtoEditTargetDeskId(event.target.value);
+              await loadDeskPanel(event.target.value, { silent: true });
+            },
+          }, managedDeskOptions.map((entry) => h('option', { key: entry.id, value: entry.id }, `${entry.label} | ${entry.departmentLabel}`))),
+        ),
+        panelData?.truth ? renderTruthMetricRows(panelData.truth) : h('div', { className: 'signal-empty muted' }, 'Desk truth is loading for the managed department.'),
+      ),
+      h('div', { className: 'desk-management-grid utility-window-grid' },
+        h('section', { className: 'desk-management-section', 'data-qa': 'layout-controls-panel' },
+          h('div', { className: 'desk-management-section-header' },
+            h('div', { className: 'signal-summary' }, 'Studio Layout'),
+            h('div', { className: 'signal-meta muted' }, 'Approved templates only'),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Department template'),
+            h('select', {
+              className: 'mini recent-select',
+              value: layoutMutationDraft.departmentTemplateId,
+              onChange: (event) => setLayoutMutationDraft((current) => ({ ...current, departmentTemplateId: event.target.value })),
+            }, (layoutCatalog.departmentTemplates || []).map((entry) => h('option', { key: entry.id, value: entry.id }, entry.label))),
+          ),
+          h('div', { className: 'signal-meta muted' }, (layoutCatalog.departmentTemplates || []).find((entry) => entry.id === layoutMutationDraft.departmentTemplateId)?.summary || 'Add a bounded room from the approved catalog.'),
+          h('div', { className: 'button-row desk-management-actions' },
+            h(ActionButton, {
+              actionId: 'add_department',
+              context: { layoutMutationDraft },
+              actionStatus: uiActionStatus,
+              onAction: runStudioUiAction,
+              className: 'mini',
+              type: 'button',
+              disabled: layoutMutationBusy,
+              dataQa: 'add-department-button',
+            }, '+ Add Department'),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Desk department'),
+            h('select', {
+              className: 'mini recent-select',
+              value: layoutMutationDraft.deskDepartmentId,
+              onChange: (event) => setLayoutMutationDraft((current) => ({ ...current, deskDepartmentId: event.target.value })),
+            }, studioRenderModel.departments.filter((department) => department.id !== 'dept-control').map((department) => h('option', { key: department.id, value: department.id }, department.label))),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Desk template'),
+            h('select', {
+              className: 'mini recent-select',
+              value: layoutMutationDraft.deskTemplateId,
+              onChange: (event) => setLayoutMutationDraft((current) => ({ ...current, deskTemplateId: event.target.value })),
+            }, allowedDeskTemplates.map((entry) => h('option', { key: entry.id, value: entry.id }, entry.label))),
+          ),
+          h('div', { className: 'signal-meta muted' }, allowedDeskTemplates.find((entry) => entry.id === layoutMutationDraft.deskTemplateId)?.summary || 'Add a desk using an approved template and slot.'),
+          h('div', { className: 'button-row desk-management-actions' },
+            h(ActionButton, {
+              actionId: 'add_desk',
+              context: { layoutMutationDraft },
+              actionStatus: uiActionStatus,
+              onAction: runStudioUiAction,
+              className: 'mini',
+              type: 'button',
+              disabled: layoutMutationBusy,
+              dataQa: 'add-desk-button',
+            }, '+ Add Desk'),
+          ),
+          layoutMutationFeedback && ['add_department', 'add_desk'].includes(layoutMutationFeedback.actionId)
+            ? h('div', {
+                className: `utility-inline-status studio-mutation-feedback ${layoutMutationFeedback.phase}`,
+                'data-qa': 'layout-mutation-feedback',
+              },
+                h('div', { className: 'signal-summary' }, layoutMutationFeedback.title),
+                h('div', { className: 'signal-meta muted' }, layoutMutationFeedback.message),
+                Array.isArray(layoutMutationFeedback.reasons) && layoutMutationFeedback.reasons.length
+                  ? h('ul', { className: 'signal-meta muted' },
+                      layoutMutationFeedback.reasons.map((reason, index) => h('li', { key: `${layoutMutationFeedback.actionId}-${index}` }, reason)),
+                    )
+                  : null,
+              )
+            : null,
+        ),
+        h('section', { className: 'desk-management-section' },
+          h('div', { className: 'desk-management-section-header' },
+            h('div', { className: 'signal-summary' }, 'Hire Agent'),
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              onClick: () => clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'recruit'),
+            }, 'Reset'),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Agent id'),
+            h('input', {
+              type: 'text',
+              value: managementDraft.recruit.agentId,
+              placeholder: 'planner-agent',
+              onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                ...draft,
+                recruit: { ...draft.recruit, agentId: event.target.value },
+              })),
+            }),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Traits'),
+            h('textarea', {
+              rows: 3,
+              value: managementDraft.recruit.traits,
+              placeholder: 'calm, systems-minded, desk-aware',
+              onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                ...draft,
+                recruit: { ...draft.recruit, traits: event.target.value },
+              })),
+            }),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Character card'),
+            h('textarea', {
+              rows: 3,
+              value: managementDraft.recruit.role,
+              placeholder: 'role, strengths, recruitment notes',
+              onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                ...draft,
+                recruit: { ...draft.recruit, role: event.target.value },
+              })),
+            }),
+          ),
+          h('div', { className: 'button-row desk-management-actions' },
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              disabled: deskPanelActionBusy,
+              onClick: recruitAgent,
+            }, deskPanelActionBusy ? 'Submitting...' : 'Recruit Agent'),
+          ),
+        ),
+        h('section', { className: 'desk-management-section' },
+          h('div', { className: 'desk-management-section-header' },
+            h('div', { className: 'signal-summary' }, 'Department Context'),
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              onClick: () => clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'context'),
+            }, 'Reset'),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Summary'),
+            h('input', {
+              type: 'text',
+              value: managementDraft.context.summary,
+              placeholder: 'Department context summary',
+              onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                ...draft,
+                context: { ...draft.context, summary: event.target.value },
+              })),
+            }),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Detail'),
+            h('textarea', {
+              rows: 3,
+              value: managementDraft.context.detail,
+              placeholder: 'Context ownership, routing, and source of truth notes',
+              onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                ...draft,
+                context: { ...draft.context, detail: event.target.value },
+              })),
+            }),
+          ),
+          h('div', { className: 'signal-meta muted' }, 'Drafts stay local to the CTO utility window in this slice.'),
+        ),
+        h('section', { className: 'desk-management-section' },
+          h('div', { className: 'desk-management-section-header' },
+            h('div', { className: 'signal-summary' }, 'Guardrails'),
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              onClick: () => clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'guardrails'),
+            }, 'Reset'),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Summary'),
+            h('input', {
+              type: 'text',
+              value: managementDraft.guardrails.summary,
+              placeholder: 'Guardrail summary',
+              onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                ...draft,
+                guardrails: { ...draft.guardrails, summary: event.target.value },
+              })),
+            }),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Detail'),
+            h('textarea', {
+              rows: 3,
+              value: managementDraft.guardrails.detail,
+              placeholder: 'Approval gates, ownership rules, and safety constraints',
+              onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                ...draft,
+                guardrails: { ...draft.guardrails, detail: event.target.value },
+              })),
+            }),
+          ),
+          h('div', { className: 'signal-meta muted' }, 'Guardrail notes are staged here before we wire persistence.'),
+        ),
+        h('section', { className: 'desk-management-section' },
+          h('div', { className: 'desk-management-section-header' },
+            h('div', { className: 'signal-summary' }, 'Assessments'),
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              onClick: () => clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'assessment'),
+            }, 'Reset'),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Assessment id'),
+            h('input', {
+              type: 'text',
+              value: managementDraft.assessment.testId,
+              placeholder: 'qa-assessment-1',
+              onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                ...draft,
+                assessment: { ...draft.assessment, testId: event.target.value },
+              })),
+            }),
+          ),
+          h('label', { className: 'desk-management-field' },
+            h('span', { className: 'muted' }, 'Notes'),
+            h('textarea', {
+              rows: 3,
+              value: managementDraft.assessment.notes,
+              placeholder: 'Coverage gaps or readiness notes',
+              onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                ...draft,
+                assessment: { ...draft.assessment, notes: event.target.value },
+              })),
+            }),
+          ),
+          h('div', { className: 'button-row desk-management-actions' },
+            h('button', {
+              className: 'mini',
+              type: 'button',
+              disabled: deskPanelActionBusy,
+              onClick: addAssessment,
+            }, deskPanelActionBusy ? 'Submitting...' : 'Add Assessment'),
+          ),
+        ),
+      ),
+    );
+  };
+
+  const renderUtilityWindows = () => {
+    const windows = UTILITY_WINDOW_ORDER.filter((id) => utilityWindows[id]?.open);
+    if (!windows.length) return null;
+    return h('div', { className: 'utility-window-layer', 'data-qa': 'utility-window-layer' },
+      windows.map((windowId) => {
+        const config = utilityWindows[windowId];
+        const targetDeskId = config.targetDeskId || UTILITY_WINDOW_META[windowId]?.deskId || deskPanelState.deskId || null;
+        const panelData = getDeskPayload(targetDeskId);
+        const title = targetDeskId && !UTILITY_WINDOW_META[windowId]?.deskId
+          ? `${UTILITY_WINDOW_META[windowId].title} | ${getStudioDeskLabel(targetDeskId)}`
+          : UTILITY_WINDOW_META[windowId].title;
+        let content = h('div', { className: 'signal-empty muted' }, 'No utility content is available yet.');
+        if (windowId === 'environment') {
+          content = renderEnvironmentUtility();
+        } else if (windowId === 'qa') {
+          content = renderQAWorkbenchPanel();
+        } else if (windowId === 'context') {
+          content = h('div', { className: 'utility-window-stack' },
+            h('div', { className: 'utility-window-section utility-window-hero' },
+              h('div', { className: 'inspector-label' }, 'Archivist Context'),
+              h('div', { className: 'signal-summary' }, describeDeskValue(panelData?.truth?.context) || 'Context archive loading'),
+              h('div', { className: 'signal-meta muted' }, 'Memory Archivist is the canonical holder of department context with CTO oversight.'),
+            ),
+            panelData?.truth ? renderTruthMetricRows(panelData.truth) : h('div', { className: 'signal-empty muted' }, 'No archivist truth is cached yet.'),
+            renderReportsList(panelData?.reports || [], 'No archivist reports are recorded yet.'),
+          );
+        } else if (windowId === 'reports') {
+          content = h('div', { className: 'utility-window-stack' },
+            h('div', { className: 'utility-window-section utility-window-hero' },
+              h('div', { className: 'inspector-label' }, 'Desk Reports'),
+              h('div', { className: 'signal-summary' }, targetDeskId ? getStudioDeskLabel(targetDeskId) : 'No desk selected'),
+              h('div', { className: 'signal-meta muted' }, 'Relevant tests, QA evidence, and surfaced downstream reports for the current desk.'),
+            ),
+            panelData?.truth ? renderTruthMetricRows(panelData.truth) : null,
+            renderReportsList(panelData?.reports || []),
+          );
+        } else if (windowId === 'relationship') {
+          content = renderRelationshipInspectorPanel(selectedRelationshipInspector);
+        } else if (windowId === 'roster') {
+          content = renderRosterUtility();
+        } else if (windowId === 'studio-map') {
+          content = renderStudioMapUtility();
+        } else if (windowId === 'scorecards') {
+          content = h('div', { className: 'utility-window-stack' },
+            h('div', { className: 'utility-window-section utility-window-hero' },
+              h('div', { className: 'inspector-label' }, 'Scorecards'),
+              h('div', { className: 'signal-summary' }, targetDeskId ? getStudioDeskLabel(targetDeskId) : 'QA'),
+              h('div', { className: 'signal-meta muted' }, 'Cross-cutting assessments that should stay visible without living on the floor.'),
+            ),
+            renderScorecardsList(panelData?.qa?.scorecards || panelData?.truth?.scorecards || []),
+          );
+        }
+        return h('section', {
+          key: windowId,
+          className: `utility-window ${config.docked ? 'docked' : 'floating'} ${config.minimized ? 'minimized' : ''}`,
+          style: config.docked ? null : (() => {
+            const position = config.position || getDefaultUtilityWindowPosition(windowId);
+            return { top: `${position.top}px`, left: `${position.left}px` };
+          })(),
+          'data-qa': `utility-window-${windowId}`,
+        },
+          h('div', {
+            className: 'utility-window-header',
+            onMouseDown: (event) => startUtilityWindowDrag(event, windowId),
+          },
+            h('div', null,
+              h('div', { className: 'inspector-label' }, 'Utility Window'),
+              h('div', { className: 'signal-summary' }, title),
+            ),
+            h('div', { className: 'button-row utility-window-controls' },
+              h('button', {
+                className: 'mini',
+                type: 'button',
+                onClick: () => toggleUtilityWindowDocked(windowId),
+              }, config.docked ? 'Float' : 'Dock'),
+              h('button', {
+                className: 'mini',
+                type: 'button',
+                onClick: () => toggleUtilityWindowMinimized(windowId),
+              }, config.minimized ? 'Restore' : 'Minimize'),
+              h('button', {
+                className: 'mini',
+                type: 'button',
+                onClick: () => closeUtilityWindow(windowId),
+              }, 'Close'),
+            ),
+          ),
+          !config.minimized ? h('div', { className: 'utility-window-body' }, content) : null,
+        );
+      }),
+    );
+  };
+
+  const renderUtilityDock = () => {
+    const ctoActive = selectedAgentId === 'cto-architect' || deskPanelState.deskId === 'cto-architect';
+    if (scene !== SCENES.STUDIO) return null;
+    return h('div', { className: 'utility-dock' },
+      h('button', {
+        className: `mini utility-dock-toggle ${utilityDockOpen ? 'active' : ''}`,
+        type: 'button',
+        'data-qa': 'utility-dock-toggle',
+        onClick: () => setUtilityDockOpen((value) => !value),
+      }, utilityDockOpen ? 'Hide Utilities' : 'Utilities'),
+      utilityDockOpen ? h('div', { className: 'utility-dock-panel', 'data-qa': 'utility-dock-panel' },
+        UTILITY_WINDOW_ORDER.map((windowId) => h('button', {
+          key: windowId,
+          className: `mini utility-dock-button ${utilityWindows[windowId]?.open ? 'active' : ''}`,
+          type: 'button',
+          disabled: windowId === 'environment' && !ctoActive,
+          onClick: () => openUtilityWindow(windowId, {
+            targetDeskId: windowId === 'reports'
+              ? (deskPanelState.deskId || selectedAgentId || null)
+              : utilityWindows[windowId]?.targetDeskId,
+          }),
+        }, UTILITY_WINDOW_META[windowId].title)),
+      ) : null,
+    );
+  };
+
   const renderDeskPropertiesPanel = () => {
     if (!deskPanelState.open || !deskPanelState.deskId) return null;
     const deskId = deskPanelState.deskId;
-    const deskLabel = getStudioAgents().find((entry) => entry.id === deskId)?.name || deskId;
+    const deskLabel = getStudioDeskLabel(deskId);
     const isCtoEdit = deskPanelState.mode === 'edit' && deskId === 'cto-architect';
     const targetDeskId = isCtoEdit ? ctoEditTargetDeskId : deskId;
-    const targetDeskLabel = getStudioAgents().find((entry) => entry.id === targetDeskId)?.name || targetDeskId;
-    const panelData = deskPanelData && deskPanelData.deskId === targetDeskId ? deskPanelData : null;
+    const targetDeskLabel = getStudioDeskLabel(targetDeskId);
+    const panelData = getDeskPayload(targetDeskId);
     const availableTabs = getDeskPropertyTabs(targetDeskId);
     const isQADesk = targetDeskId === 'qa-lead';
-    return h('div', { className: 'desk-properties-modal', 'data-qa': isQADesk ? 'qa-properties-modal' : 'desk-properties-modal', 'data-desk-id': targetDeskId },
-      h('div', { className: 'desk-properties-card panel-card' },
+    const managementDraft = normalizeDeskManagementDraft(deskManagementDrafts[targetDeskId] || {});
+    const hierarchyModel = buildDeskHierarchyModel({
+      deskId,
+      deskLabel,
+      targetDeskId,
+      targetDeskLabel,
+      panelData,
+      isCtoEdit,
+    });
+    const recruitAgent = async () => {
+      const agentId = String(managementDraft.recruit.agentId || '').trim();
+      const traits = String(managementDraft.recruit.traits || '').trim();
+      const role = String(managementDraft.recruit.role || '').trim();
+      if (!agentId) {
+        setStatus(`Enter an agent id before recruiting for ${targetDeskLabel}.`);
+        return;
+      }
+      await runDeskPanelAction('add_agent', { agentId, traits, role }, targetDeskId);
+      clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'recruit');
+      setStatus(`Recruit agent submitted for ${targetDeskLabel}.`);
+    };
+    const addAssessment = async () => {
+      const testId = String(managementDraft.assessment.testId || '').trim();
+      const notes = String(managementDraft.assessment.notes || '').trim();
+      if (!testId) {
+        setStatus(`Enter an assessment id before adding one for ${targetDeskLabel}.`);
+        return;
+      }
+      await runDeskPanelAction('add_test', { testId, verdict: 'pending', notes }, targetDeskId);
+      clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'assessment');
+      setStatus(`Assessment submitted for ${targetDeskLabel}.`);
+    };
+    const resetDeskDrafts = () => {
+      clearDeskManagementDraft(setDeskManagementDrafts, targetDeskId);
+      setStatus(`Drafts reset for ${targetDeskLabel}.`);
+    };
+    const cancelDeskDrafts = () => {
+      clearDeskManagementDraft(setDeskManagementDrafts, targetDeskId);
+      closeDeskInspector();
+    };
+    return h('div', {
+      className: 'desk-properties-modal',
+      'data-qa': isQADesk ? 'qa-properties-modal' : 'desk-properties-modal',
+      'data-desk-id': targetDeskId,
+      onClick: () => closeDeskInspector(),
+    },
+      h('div', {
+        className: 'desk-properties-card panel-card',
+        onClick: (event) => event.stopPropagation(),
+      },
         h('div', { className: 'inline review-header' },
           h('div', null,
-            h('div', { className: 'inspector-label' }, isCtoEdit ? 'CTO Desk Edit Panel' : 'Desk Properties Panel'),
-            h('div', { className: 'signal-summary' }, isCtoEdit ? `${deskLabel} managing ${targetDeskLabel}` : deskLabel),
+            h('div', { className: 'inspector-label' }, isCtoEdit ? 'CTO Desk Edit Panel' : 'Desk Inspection'),
+            h('div', { className: 'signal-summary', 'data-qa': 'desk-management-target' }, isCtoEdit ? hierarchyModel.managementSummary : `${targetDeskLabel} truth surface`),
+            h('div', { className: 'signal-meta muted', 'data-qa': 'desk-focus-summary' }, hierarchyModel.focusSummary.summary),
+            h('div', { className: 'signal-meta muted' }, hierarchyModel.focusSummary.detail),
+            h('div', { className: 'signal-meta muted' }, hierarchyModel.departmentDetail),
+            h('div', { className: 'signal-meta muted' }, isCtoEdit ? hierarchyModel.managementDetail : 'Inspector stays hidden until a desk is clicked, then closes when you leave the desk view.'),
           ),
-          h('button', { className: 'mini', type: 'button', onClick: () => setDeskPanelState({ open: false, deskId: null, mode: 'properties' }) }, 'Close'),
+          h('button', { className: 'mini', type: 'button', onClick: cancelDeskDrafts }, 'Leave Desk'),
         ),
+        renderDeskUtilityActions(targetDeskId),
+        panelData?.truth ? h('div', { className: 'desk-panel-item desk-truth-summary desk-inspector-truth', 'data-qa': 'desk-truth-summary' },
+          h('div', { className: 'inspector-label' }, 'Desk Truth'),
+          h('div', { className: 'signal-summary' }, `${targetDeskLabel} canonical truth`),
+          renderTruthMetricRows(panelData.truth, hierarchyModel.focusSummary),
+        ) : null,
         isCtoEdit ? h('div', { className: 'desk-cto-controls' },
           h('label', { className: 'muted', htmlFor: 'cto-target-desk' }, 'Managed desk'),
           h('select', {
@@ -3584,40 +6038,30 @@ function SpatialNotebook() {
             value: ctoEditTargetDeskId,
             onChange: async (event) => {
               setCtoEditTargetDeskId(event.target.value);
+              setSelectedAgentId(event.target.value);
               await loadDeskPanel(event.target.value);
+              setDeskPanelTab('hierarchy');
             },
-          }, getStudioAgents().filter((entry) => entry.id !== 'cto-architect').map((entry) => h('option', { key: entry.id, value: entry.id }, entry.name))),
-          h('div', { className: 'button-row' },
+              }, managedDeskOptions.map((entry) => h('option', { key: entry.id, value: entry.id }, `${entry.label} | ${entry.departmentLabel}`))),
+          h('div', { className: 'button-row desk-management-actions' },
             h('button', {
               className: 'mini',
               type: 'button',
               disabled: deskPanelActionBusy,
-              onClick: async () => {
-                const agentId = window.prompt(`Add agent id to ${targetDeskLabel}`);
-                if (!agentId) return;
-                await runDeskPanelAction('add_agent', { agentId }, targetDeskId);
-              },
-            }, deskPanelActionBusy ? 'Saving...' : '+ Add Agent'),
+              onClick: resetDeskDrafts,
+            }, deskPanelActionBusy ? 'Saving...' : 'Reset Drafts'),
             h('button', {
               className: 'mini',
               type: 'button',
               disabled: deskPanelActionBusy,
-              onClick: async () => {
-                const moduleId = window.prompt(`Assign module id to ${targetDeskLabel}`);
-                if (!moduleId) return;
-                await runDeskPanelAction('assign_module', { moduleId }, targetDeskId);
-              },
-            }, deskPanelActionBusy ? 'Saving...' : '+ Assign Module'),
+              onClick: recruitAgent,
+            }, deskPanelActionBusy ? 'Saving...' : 'Recruit Agent'),
             h('button', {
               className: 'mini',
               type: 'button',
               disabled: deskPanelActionBusy,
-              onClick: async () => {
-                const testId = window.prompt(`Add test/report id for ${targetDeskLabel}`);
-                if (!testId) return;
-                await runDeskPanelAction('add_test', { testId, verdict: 'pending' }, targetDeskId);
-              },
-            }, deskPanelActionBusy ? 'Saving...' : '+ Add Test'),
+              onClick: addAssessment,
+            }, deskPanelActionBusy ? 'Saving...' : 'Add Assessment'),
           ),
         ) : null,
         h('div', { className: 'scene-switcher desk-tabs' },
@@ -3632,9 +6076,287 @@ function SpatialNotebook() {
           ? h('div', { className: 'signal-empty muted' }, 'Loading desk properties...')
           : null,
         !deskPanelBusy && !panelData ? h('div', { className: 'signal-empty muted' }, 'No desk properties available.') : null,
+        !deskPanelBusy && panelData && deskPanelTab === 'hierarchy' ? h('div', { className: 'desk-hierarchy', 'data-qa': 'desk-hierarchy-panel' },
+          h('div', { className: 'desk-hierarchy-header' },
+            h('div', { className: 'desk-hierarchy-title-row' },
+              h('div', { className: 'inspector-label' }, hierarchyModel.departmentLabel),
+              h('div', { className: 'signal-summary' }, hierarchyModel.deskLabel),
+            ),
+            h('div', { className: 'signal-meta muted' }, hierarchyModel.focusSummary.summary),
+            h('div', { className: 'signal-meta muted' }, hierarchyModel.focusSummary.detail),
+            h('div', { className: 'signal-meta muted' }, hierarchyModel.departmentDetail),
+            h('div', { className: 'signal-meta muted' }, hierarchyModel.deskDetail),
+            hierarchyModel.deskMission ? h('div', { className: 'signal-meta muted' }, hierarchyModel.deskMission) : null,
+          ),
+          h('div', { className: 'desk-hierarchy-tree' },
+            h('div', { className: 'desk-hierarchy-node department' },
+              h('div', { className: 'desk-hierarchy-node-label' }, hierarchyModel.departmentLabel),
+              h('div', { className: 'signal-meta muted' }, `Departments ${hierarchyModel.counts.departments}`),
+              hierarchyModel.departments.length
+                ? h('div', { className: 'desk-hierarchy-leaf-list' }, hierarchyModel.departments.map((item) => h('div', { key: item.id, className: 'desk-hierarchy-leaf' }, item.label)))
+                : h('div', { className: 'signal-empty muted' }, 'No local departments drafted yet.'),
+            ),
+            h('div', { className: 'desk-hierarchy-node desk' },
+              h('div', { className: 'desk-hierarchy-node-label' }, hierarchyModel.deskLabel),
+              h('div', { className: 'signal-meta muted' }, `Desk ${targetDeskId}`),
+              h('div', { className: 'signal-meta muted' }, `Agents ${hierarchyModel.counts.agents} | Tasks ${hierarchyModel.counts.tasks} | Reports ${hierarchyModel.counts.reports}`),
+              hierarchyModel.desks.length
+                ? h('div', { className: 'desk-hierarchy-leaf-list' }, hierarchyModel.desks.map((item) => h('div', { key: item.id, className: 'desk-hierarchy-leaf' }, item.label)))
+                : null,
+            ),
+            h('div', { className: 'desk-hierarchy-node agents' },
+              h('div', { className: 'desk-hierarchy-node-label' }, 'Agents'),
+              hierarchyModel.agents.length
+                ? h('div', { className: 'desk-hierarchy-agent-grid' }, hierarchyModel.agents.map((agent) => h('button', {
+                    key: agent.id,
+                    className: 'desk-hierarchy-agent-card',
+                    type: 'button',
+                    onClick: () => {
+                      setSelectedAgentId(agent.id);
+                      setDeskPanelTab('agents');
+                    },
+                  },
+                    h('div', { className: 'signal-summary' }, agent.id),
+                    h('div', { className: 'signal-meta muted' }, agent.summary),
+                    h('div', { className: 'signal-meta muted' }, agent.currentTaskSummary),
+                  )))
+                : h('div', { className: 'signal-empty muted' }, 'No agents assigned to this desk yet.'),
+              hierarchyModel.recruits.length
+                ? h('div', { className: 'desk-hierarchy-leaf-list' }, hierarchyModel.recruits.map((item) => h('div', { key: item.id, className: 'desk-hierarchy-leaf draft' }, `${item.agentId}${item.traits ? ` | ${item.traits}` : ''}${item.role ? ` | ${item.role}` : ''}`)))
+                : null,
+            ),
+          ),
+          h('div', { className: 'desk-hierarchy-footer' },
+              hierarchyModel.assessments.length
+                ? h('div', { className: 'desk-hierarchy-leaf-list' }, hierarchyModel.assessments.map((item) => h('div', { key: item.id, className: 'desk-hierarchy-leaf draft' }, `${item.testId}${item.notes ? ` | ${item.notes}` : ''}`)))
+                : h('div', { className: 'signal-empty muted' }, 'No local assessments drafted yet.'),
+          ),
+          isCtoEdit
+            ? h('div', { className: 'desk-management-workflow' },
+                h('div', { className: 'desk-management-panel', 'data-qa': 'desk-management-panel', 'data-managed-desk-id': targetDeskId },
+                  h('div', { className: 'desk-management-header' },
+                    h('div', null,
+                      h('div', { className: 'inspector-label' }, 'CTO Control Tower'),
+                      h('div', { className: 'signal-summary' }, `Managing ${targetDeskLabel}`),
+                      h('div', { className: 'signal-meta muted' }, 'Recruit, context, and guardrail changes stay bound to the selected desk.'),
+                    ),
+                    h('button', {
+                      className: 'mini',
+                      type: 'button',
+                      onClick: resetDeskDrafts,
+                    }, 'Reset Drafts'),
+                  ),
+                  h('div', { className: 'desk-management-grid' },
+                    h('section', { className: 'desk-management-section' },
+                      h('div', { className: 'desk-management-section-header' },
+                        h('div', { className: 'signal-summary' }, 'Recruit Agent'),
+                        h('button', {
+                          className: 'mini',
+                          type: 'button',
+                          onClick: () => clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'recruit'),
+                        }, 'Reset'),
+                      ),
+                      h('label', { className: 'desk-management-field' },
+                        h('span', { className: 'muted' }, 'Agent id'),
+                        h('input', {
+                          type: 'text',
+                          value: managementDraft.recruit.agentId,
+                          placeholder: 'planner-agent',
+                          onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                            ...draft,
+                            recruit: {
+                              ...draft.recruit,
+                              agentId: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                      h('label', { className: 'desk-management-field' },
+                        h('span', { className: 'muted' }, 'Traits'),
+                        h('textarea', {
+                          rows: 3,
+                          value: managementDraft.recruit.traits,
+                          placeholder: 'calm, systems-minded, desk-aware',
+                          onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                            ...draft,
+                            recruit: {
+                              ...draft.recruit,
+                              traits: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                      h('label', { className: 'desk-management-field' },
+                        h('span', { className: 'muted' }, 'Character card'),
+                        h('textarea', {
+                          rows: 3,
+                          value: managementDraft.recruit.role,
+                          placeholder: 'role, strengths, recruitment notes',
+                          onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                            ...draft,
+                            recruit: {
+                              ...draft.recruit,
+                              role: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                      h('div', { className: 'button-row desk-management-actions' },
+                        h('button', {
+                          className: 'mini',
+                          type: 'button',
+                          disabled: deskPanelActionBusy,
+                          onClick: recruitAgent,
+                        }, deskPanelActionBusy ? 'Submitting...' : 'Recruit Agent'),
+                      ),
+                    ),
+                    h('section', { className: 'desk-management-section' },
+                      h('div', { className: 'desk-management-section-header' },
+                        h('div', { className: 'signal-summary' }, 'Department Context'),
+                        h('button', {
+                          className: 'mini',
+                          type: 'button',
+                          onClick: () => clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'context'),
+                        }, 'Reset'),
+                      ),
+                      h('label', { className: 'desk-management-field' },
+                        h('span', { className: 'muted' }, 'Summary'),
+                        h('input', {
+                          type: 'text',
+                          value: managementDraft.context.summary,
+                          placeholder: 'Department context summary',
+                          onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                            ...draft,
+                            context: {
+                              ...draft.context,
+                              summary: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                      h('label', { className: 'desk-management-field' },
+                        h('span', { className: 'muted' }, 'Detail'),
+                        h('textarea', {
+                          rows: 3,
+                          value: managementDraft.context.detail,
+                          placeholder: 'Context ownership, routing, and source of truth notes',
+                          onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                            ...draft,
+                            context: {
+                              ...draft.context,
+                              detail: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                    ),
+                    h('section', { className: 'desk-management-section' },
+                      h('div', { className: 'desk-management-section-header' },
+                        h('div', { className: 'signal-summary' }, 'Guardrails'),
+                        h('button', {
+                          className: 'mini',
+                          type: 'button',
+                          onClick: () => clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'guardrails'),
+                        }, 'Reset'),
+                      ),
+                      h('label', { className: 'desk-management-field' },
+                        h('span', { className: 'muted' }, 'Summary'),
+                        h('input', {
+                          type: 'text',
+                          value: managementDraft.guardrails.summary,
+                          placeholder: 'Guardrail summary',
+                          onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                            ...draft,
+                            guardrails: {
+                              ...draft.guardrails,
+                              summary: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                      h('label', { className: 'desk-management-field' },
+                        h('span', { className: 'muted' }, 'Detail'),
+                        h('textarea', {
+                          rows: 3,
+                          value: managementDraft.guardrails.detail,
+                          placeholder: 'Approval gates, ownership rules, and safety constraints',
+                          onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                            ...draft,
+                            guardrails: {
+                              ...draft.guardrails,
+                              detail: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                    ),
+                    h('section', { className: 'desk-management-section' },
+                      h('div', { className: 'desk-management-section-header' },
+                        h('div', { className: 'signal-summary' }, 'Add Assessment'),
+                        h('button', {
+                          className: 'mini',
+                          type: 'button',
+                          onClick: () => clearDeskManagementDraftSection(setDeskManagementDrafts, targetDeskId, 'assessment'),
+                        }, 'Reset'),
+                      ),
+                      h('label', { className: 'desk-management-field' },
+                        h('span', { className: 'muted' }, 'Assessment id'),
+                        h('input', {
+                          type: 'text',
+                          value: managementDraft.assessment.testId,
+                          placeholder: 'qa-assessment-1',
+                          onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                            ...draft,
+                            assessment: {
+                              ...draft.assessment,
+                              testId: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                      h('label', { className: 'desk-management-field' },
+                        h('span', { className: 'muted' }, 'Notes'),
+                        h('textarea', {
+                          rows: 3,
+                          value: managementDraft.assessment.notes,
+                          placeholder: 'pass criteria, caveats, follow-up notes',
+                          onChange: (event) => updateDeskManagementDraft(setDeskManagementDrafts, targetDeskId, (draft) => ({
+                            ...draft,
+                            assessment: {
+                              ...draft.assessment,
+                              notes: event.target.value,
+                            },
+                          })),
+                        }),
+                      ),
+                      h('div', { className: 'button-row desk-management-actions' },
+                        h('button', {
+                          className: 'mini',
+                          type: 'button',
+                          disabled: deskPanelActionBusy,
+                          onClick: addAssessment,
+                        }, deskPanelActionBusy ? 'Submitting...' : 'Add Assessment'),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : h('div', { className: 'desk-truth-summary panel-card', 'data-qa': 'desk-truth-summary' },
+                h('div', { className: 'inspector-label' }, 'Desk Truth'),
+                h('div', { className: 'signal-summary' }, `${targetDeskLabel} is read-only`),
+                panelData?.truth
+                  ? renderTruthMetricRows(panelData.truth)
+                  : h('div', { className: 'signal-empty muted' }, 'No desk truth payload available.'),
+              ),
+        ) : null,
         !deskPanelBusy && panelData && deskPanelTab === 'qa' ? h('div', { className: 'desk-panel-list', 'data-qa': 'qa-properties-panel' },
           panelData.qa
             ? h(React.Fragment, null,
+                h('div', { className: 'desk-panel-item desk-truth-summary', 'data-qa': 'desk-truth-summary' },
+                  h('div', { className: 'inspector-label' }, 'Desk Truth'),
+                  h('div', { className: 'signal-summary' }, `${targetDeskLabel} truth bundle`),
+                  renderTruthMetricRows(panelData.truth || {}, hierarchyModel.focusSummary),
+                ),
                 h('div', { className: 'desk-panel-item' },
                   h('div', { className: 'signal-summary' }, panelData.qa.structuredSummary?.summary || 'Structured QA'),
                   h('div', { className: 'signal-meta muted' }, `Status: ${panelData.qa.structuredSummary?.status || 'idle'} | Desks ${panelData.qa.structuredSummary?.deskCount || 0} | Tests ${panelData.qa.structuredSummary?.testCount || 0}`),
@@ -3642,10 +6364,8 @@ function SpatialNotebook() {
                     ? h('ul', { className: 'signal-list compact' }, panelData.qa.structuredReport.failures.slice(0, 4).map((failure, index) => h('li', { key: `qa-structured-failure-${index}` }, `${failure.desk || 'desk'}: ${failure.test || failure.id || 'test'} | ${failure.reason || 'Needs review'}`)))
                     : h('div', { className: 'signal-meta muted' }, 'No structured QA failures are recorded in the latest suite.'),
                 ),
-                h('div', { className: 'button-row' },
-                  h('button', { className: 'mini', type: 'button', disabled: qaState.structuredBusy, onClick: runStructuredQA }, qaState.structuredBusy ? 'Running...' : 'Run Structured QA'),
-                  h('button', { className: 'mini', type: 'button', disabled: qaState.browserBusy, onClick: runBrowserPass }, qaState.browserBusy ? 'Running...' : 'Run Browser Pass'),
-                ),
+                h('div', { className: 'signal-meta muted' }, 'Execution controls live in the QA utility window so desk inspection stays read-only.'),
+                renderDeskUtilityActions('qa-lead', { compact: true }),
                 (panelData.qa.scorecards || []).length
                   ? h('div', { className: 'desk-panel-item' },
                       h('div', { className: 'signal-summary' }, `Scorecards (${panelData.qa.scorecards.length})`),
@@ -3812,18 +6532,93 @@ function SpatialNotebook() {
     );
   };
 
-  return h('section', { className: 'spatial-main ace-shell', 'data-qa': 'spatial-root', style: { gridTemplateColumns: `minmax(0, 1fr) ${sidebarColumnWidth}px` } },
+  return h('section', { className: 'spatial-main ace-shell', 'data-qa': 'spatial-root', style: { gridTemplateColumns: 'minmax(0, 1fr)' } },
     h('div', { className: 'canvas-column scene-column' },
       h('div', { className: 'canvas-toolbar ace-toolbar' },
-        h('div', { className: 'toolbar-primary' },
-          h('div', { className: 'workspace-title' }, 'ACE Overlay Workspace'),
-          h('div', { className: 'toolbar-caption muted' }, `Page: ${activePage?.title || 'Current Page'} | Orchestrator: ${orchestratorState.status || 'idle'} | Active desks: ${(orchestratorState.activeDeskIds || []).length}`),
-        ),
-        h('div', { className: 'toolbar-secondary' },
-          h('div', { className: 'toolbar-meta toolbar-meta-top' },
+        h('div', { className: 'toolbar-summary-row' },
+          h('div', { className: 'toolbar-summary-primary' },
+            h('input', {
+              className: 'mini toolbar-title-input',
+              type: 'text',
+              value: workspaceBannerTitle,
+              onChange: (event) => setWorkspaceBannerTitle(event.target.value),
+              'data-qa': 'toolbar-title-input',
+              'aria-label': 'Workspace banner title',
+            }),
+            h('div', { className: 'toolbar-caption muted' }, `Page: ${activePage?.title || 'Current Page'} | Orchestrator: ${orchestratorState.status || 'idle'} | Active desks: ${(orchestratorState.activeDeskIds || []).length}`),
+          ),
+          h('div', { className: 'toolbar-summary-actions' },
             h('div', { className: 'scene-switcher' },
               h('button', { className: `mini ${scene === SCENES.CANVAS ? 'active' : ''}`, 'data-qa': 'scene-canvas-button', onClick: () => setScene(SCENES.CANVAS), type: 'button' }, 'Canvas'),
               h('button', { className: `mini ${scene === SCENES.STUDIO ? 'active' : ''}`, 'data-qa': 'scene-studio-button', onClick: () => setScene(SCENES.STUDIO), type: 'button' }, 'ACE Studio'),
+            ),
+            h('span', { className: 'toolbar-status' }, `${sceneLabel} | ${activeGraphLabel}${activeGraphLayer === 'world' ? ` | View ${worldViewMode}` : ''} | Page ${activePage?.title || 'Current Page'} | Canvas ${Math.round(canvasViewport.zoom * 100)}% | Studio ${Math.round(studioViewport.zoom * 100)}% | ${status}`),
+          ),
+        ),
+        h('div', { className: 'toolbar-toggle-row' },
+          h('button', {
+            className: `mini toolbar-section-toggle ${toolbarSectionsOpen.view ? 'active' : ''}`,
+            type: 'button',
+            onClick: () => toggleToolbarSection('view'),
+            'data-qa': 'toolbar-view-toggle',
+          }, toolbarSectionsOpen.view ? 'Hide View' : 'View Controls'),
+          h('button', {
+            className: `mini toolbar-section-toggle ${toolbarSectionsOpen.launch ? 'active' : ''}`,
+            type: 'button',
+            onClick: () => toggleToolbarSection('launch'),
+            'data-qa': 'toolbar-launch-toggle',
+          }, toolbarSectionsOpen.launch ? 'Hide Sim Launch' : 'Sim Launch'),
+          scene === SCENES.STUDIO ? h(ActionButton, {
+            actionId: 'toggle_utility_dock',
+            context: { utilityDockOpen },
+            actionStatus: uiActionStatus,
+            onAction: runStudioUiAction,
+            className: `mini ${utilityDockOpen ? 'active' : ''}`,
+            type: 'button',
+            dataQa: 'toolbar-utilities-button',
+          }) : null,
+          scene === SCENES.STUDIO ? h('button', { className: 'mini', 'data-qa': 'reset-view-button', type: 'button', onClick: () => resetStudioView() }, 'Reset View') : null,
+        ),
+        scene === SCENES.STUDIO ? h('div', { className: 'toolbar-quick-access', 'data-qa': 'studio-default-controls' },
+          h('div', { className: 'toolbar-caption muted' }, 'Quick access'),
+          h('div', { className: 'toolbar-quick-access-row' },
+            studioQuickAccessStrip.map((control) => h('button', {
+              key: control.id,
+              className: `mini quick-access-pill ${control.tone || ''} ${control.active ? 'active' : ''}`,
+              type: 'button',
+              'data-qa': `studio-quick-access-${control.id}`,
+              onClick: () => {
+                if (control.id === 'department' || control.id === 'desk') {
+                  focusStudioAgent(control.targetDeskId);
+                  return;
+                }
+                if (control.id === 'people-plan') {
+                  setScene(SCENES.STUDIO);
+                  openUtilityWindow(control.windowId || 'roster');
+                  return;
+                }
+                if (control.id === 'whiteboard') {
+                  setScene(SCENES.STUDIO);
+                  setTeamBoardWallBoardExpanded(true);
+                  centerStudioOnRoom('whiteboard opened');
+                  return;
+                }
+                if (control.id === 'utilities') {
+                  runStudioUiAction('toggle_utility_dock');
+                }
+              },
+            }, control.label)),
+          ),
+        ) : null,
+        toolbarSectionsOpen.view ? h('div', { className: 'toolbar-panel' },
+          h('div', { className: 'toolbar-panel-header' },
+            h('div', { className: 'workspace-title' }, 'View Controls'),
+            h('div', { className: 'toolbar-caption muted' }, 'Scene, graph, pages, and viewport settings.'),
+          ),
+          h('div', { className: 'toolbar-meta toolbar-meta-top' },
+            h('div', { className: 'scene-switcher' },
+              h('button', { className: `mini ${scene === SCENES.CANVAS ? 'active' : ''}`, 'data-qa': 'scene-canvas-button-panel', onClick: () => setScene(SCENES.CANVAS), type: 'button' }, 'Canvas'),
+              h('button', { className: `mini ${scene === SCENES.STUDIO ? 'active' : ''}`, 'data-qa': 'scene-studio-button-panel', onClick: () => setScene(SCENES.STUDIO), type: 'button' }, 'ACE Studio'),
             ),
             h('div', { className: 'scene-switcher graph-layer-switcher' },
               GRAPH_LAYERS.map((layer) => h('button', {
@@ -3834,6 +6629,26 @@ function SpatialNotebook() {
                 type: 'button',
               }, GRAPH_LAYER_TITLES[layer] || layer)),
             ),
+            activeGraphLayer === 'world' ? h('div', { className: 'scene-switcher graph-layer-switcher' },
+              WORLD_VIEW_MODES.map((mode) => h('button', {
+                key: mode,
+                className: `mini graph-layer-pill ${worldViewMode === mode ? 'active' : ''}`,
+                type: 'button',
+                disabled: mode === '3d',
+                title: mode === '3d' ? '3D is a placeholder in this slice.' : `Switch world view to ${mode}`,
+                onClick: mode === '3d' ? undefined : () => setWorldViewMode(mode),
+              }, mode.toUpperCase())),
+            ) : null,
+            activeGraphLayer === 'world' ? h('button', {
+              className: `mini ${showRecentWorldChanges ? 'active' : ''}`,
+              type: 'button',
+              disabled: !recentWorldChange,
+              title: recentWorldChange
+                ? 'Toggle the recent world change overlay.'
+                : 'No recent world change has been derived in this session yet.',
+              'data-qa': 'recent-world-changes-toggle',
+              onClick: () => setShowRecentWorldChanges((value) => !value),
+            }, showRecentWorldChanges ? 'Hide Recent' : 'Show Recent') : null,
             h('select', {
               className: 'mini origin-filter-select',
               value: originFilter,
@@ -3861,8 +6676,12 @@ function SpatialNotebook() {
               h('option', { value: '' }, 'Recent Saves'),
               recentHistory.map((entry) => h('option', { key: entry.at, value: entry.at }, `${new Date(entry.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${entry.summary?.nodes || 0} nodes`)),
             ),
-            scene === SCENES.STUDIO ? h('button', { className: 'mini', 'data-qa': 'reset-view-button', type: 'button', onClick: () => resetStudioView() }, 'Reset View') : null,
-            h('span', { className: 'toolbar-status' }, `${sceneLabel} | ${activeGraphLabel} | Page ${activePage?.title || 'Current Page'} | Canvas ${Math.round(canvasViewport.zoom * 100)}% | Studio ${Math.round(studioViewport.zoom * 100)}% | ${status}`),
+          ),
+        ) : null,
+        toolbarSectionsOpen.launch ? h('div', { className: 'toolbar-panel' },
+          h('div', { className: 'toolbar-panel-header' },
+            h('div', { className: 'workspace-title' }, 'Sim Launch'),
+            h('div', { className: 'toolbar-caption muted' }, 'Launch from a dedicated utility panel instead of the default banner.'),
           ),
           renderSimLaunchOverlay({
             project: simLauncher.project,
@@ -3873,21 +6692,21 @@ function SpatialNotebook() {
             error: simLauncher.error,
             onLaunch: runSimLaunch,
           }),
-          h('div', { className: 'canvas-control-dock toolbar-meta toolbar-meta-bottom' },
-            h('div', { className: 'button-row' },
-              h('button', { className: 'mini', onClick: newCanvas, type: 'button' }, 'New Canvas'),
-              h('button', { className: `mini ${sketchMode ? 'active' : ''}`, onClick: () => setSketchMode((value) => !value), type: 'button', disabled: scene !== SCENES.CANVAS }, sketchMode ? 'Sketch On' : 'Sketch'),
-              h('button', { className: 'mini', onClick: clearSketchLayer, type: 'button', disabled: scene !== SCENES.CANVAS }, 'Clear Marks'),
-              h('button', { className: 'mini', onClick: () => setSimulating((value) => !value), type: 'button' }, simulating ? 'Stop Sim' : 'Simulate'),
-              selected && h('button', {
-                className: 'mini',
-                onClick: () => runAiProcess(selected).catch((error) => setStatus(error.message)),
-                type: 'button',
-                disabled: activeGraphLayer !== 'system',
-                title: activeGraphLayer === 'system' ? 'Ask ACE' : 'RSG v1 only mutates the system graph.',
-              }, 'Ask ACE'),
-            ),
+        ) : null,
+        h('div', { className: 'canvas-control-dock toolbar-meta toolbar-meta-bottom' },
+          h('div', { className: 'button-row' },
+            h('button', { className: 'mini', onClick: newCanvas, type: 'button' }, 'New Canvas'),
+            h('button', { className: `mini ${sketchMode ? 'active' : ''}`, onClick: () => setSketchMode((value) => !value), type: 'button', disabled: scene !== SCENES.CANVAS }, sketchMode ? 'Sketch On' : 'Sketch'),
+            h('button', { className: 'mini', onClick: clearSketchLayer, type: 'button', disabled: scene !== SCENES.CANVAS }, 'Clear Marks'),
+            h('button', { className: 'mini', onClick: () => setSimulating((value) => !value), type: 'button' }, simulating ? 'Stop Sim' : 'Simulate'),
+            selectedSupportsSecondaryDrafting && h('button', {
+              className: 'mini',
+              onClick: () => runAiProcess(selected).catch((error) => setStatus(error.message)),
+              type: 'button',
+              title: 'Secondary drafting only. This does not route live world scaffolds.',
+            }, 'Draft Notes'),
           ),
+          selected && isPrimaryIntentNode(selected) ? h('div', { className: 'toolbar-caption' }, 'Primary context node mirrors Canvas Intent only. Route live intent from the Canvas Intent panel.') : null,
         ),
       ),
       h('div', { className: 'scene-shell' },
@@ -3960,17 +6779,23 @@ function SpatialNotebook() {
               const rsgConfidenceLabel = Number.isFinite(Number(rsg?.confidence)) ? `${Math.round(Number(rsg.confidence) * 100)}% confidence` : null;
               const rsgFallbackLabel = rsg?.usedFallback ? 'fallback' : null;
               const rsgGenerationLabel = rsg?.state === 'linked-draft' ? 'Generated' : 'Adopted';
+              const primaryIntentNode = isPrimaryIntentNode(node);
+              const recentNodeChange = activeGraphLayer === 'world' && showRecentWorldChanges
+                ? resolveRecentWorldNodeChange(recentWorldChange, node.id)
+                : null;
               const rsgAttribution = rsg
                 ? [rsgGenerationLabel, `from ${rsgSourceLabel}`, rsgConfidenceLabel, rsgFallbackLabel].filter(Boolean).join(' | ')
                 : null;
-              const intentFooterText = node.metadata?.intentAnalysis
-                ? summarizeIntentReport(node.metadata.intentAnalysis)
-                : (rsg
-                    ? (rsgNodeState === 'linked-draft' ? 'Linked draft ready for edit' : 'Adopted draft stays in place on rerun')
-                    : 'press Enter to classify');
+              const intentFooterText = primaryIntentNode
+                ? PRIMARY_INTENT_REDIRECT_HINT
+                : node.metadata?.intentAnalysis
+                  ? summarizeIntentReport(node.metadata.intentAnalysis)
+                  : (rsg
+                      ? (rsgNodeState === 'linked-draft' ? 'Linked draft ready for edit' : 'Adopted draft stays in place on rerun')
+                      : SECONDARY_DRAFT_HINT);
               return h('div', {
                 key: node.id,
-                className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} origin-${nodeOrigin} ${selectedId === node.id ? 'selected' : ''} ${isLinkedDraftNode(node) ? 'rsg-linked-draft' : ''} ${isAdoptedDraftNode(node) ? 'rsg-adopted' : ''} ${lowConfidenceDraft ? 'rsg-low-confidence' : ''} ${expandedGenerated ? 'expanded' : ''}`,
+                className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} origin-${nodeOrigin} ${selectedId === node.id ? 'selected' : ''} ${isLinkedDraftNode(node) ? 'rsg-linked-draft' : ''} ${isAdoptedDraftNode(node) ? 'rsg-adopted' : ''} ${lowConfidenceDraft ? 'rsg-low-confidence' : ''} ${expandedGenerated ? 'expanded' : ''} ${recentNodeChange ? `recent-world-change recent-world-${recentNodeChange.changeType}` : ''}`,
                 style: {
                   left: `${x}px`,
                   top: `${y}px`,
@@ -4005,6 +6830,8 @@ function SpatialNotebook() {
                   h('div', { className: 'node-header' }, `${activeGraphLayer.toUpperCase()} | ${classified.metadata.proposalTarget || classified.metadata.role}`),
                   h('div', { className: 'node-header-tags' },
                     h('div', { className: `node-origin-badge origin-${nodeOrigin}` }, originLabel),
+                    primaryIntentNode ? h('div', { className: 'node-rsg-chip primary-intent' }, 'Primary mirror') : null,
+                    recentNodeChange ? h('div', { className: `node-rsg-chip recent-world-chip ${recentNodeChange.changeType}` }, recentNodeChange.changeType === 'added' ? 'Recent +' : 'Recent ~') : null,
                     rsgNodeState ? h('div', { className: `node-rsg-chip ${rsgNodeState}` }, rsgNodeState === 'linked-draft' ? 'RSG draft' : 'Adopted') : null,
                     generatedInspection?.basis ? h('div', { className: `node-rsg-chip basis-${generatedInspection.basis}` }, generatedInspection.basis) : null,
                     lowConfidenceDraft ? h('div', { className: 'node-rsg-chip low-confidence' }, 'Low confidence') : null,
@@ -4013,6 +6840,7 @@ function SpatialNotebook() {
                 h('textarea', {
                   className: 'node-editor',
                   value: node.content,
+                  title: primaryIntentNode ? 'Primary canvas mirror only. Route live world changes from Canvas Intent.' : 'Secondary drafting note. Enter refreshes note analysis only.',
                   onChange: (event) => handleNodeContentChange(node, event.target.value),
                   onFocus: () => keys.current.clear(),
                   onKeyDown: (event) => {
@@ -4027,7 +6855,7 @@ function SpatialNotebook() {
                   onMouseDown: (event) => event.stopPropagation(),
                 }),
                 h('div', { className: 'node-footer' },
-                  h('div', { className: 'node-labels' }, labels.length ? labels.join(' - ') : 'press Enter to classify'),
+                  h('div', { className: 'node-labels' }, labels.length ? labels.join(' - ') : (primaryIntentNode ? 'primary canvas mirror' : 'secondary draft note')),
                   h('div', { className: 'node-intent-summary muted' }, `${node.id.slice(-4)} | ${classified.metadata.role}`),
                   rsgAttribution ? h('div', { className: 'node-intent-summary muted' }, rsgAttribution) : null,
                   rsgSummary ? h('div', { className: 'node-intent-summary muted' }, rsgSummary) : null,
@@ -4111,6 +6939,79 @@ function SpatialNotebook() {
             },
           },
               h('div', { className: 'studio-floor' }),
+              h('svg', {
+                className: 'studio-boundary-layer',
+                'data-qa': 'studio-boundary-layer',
+                viewBox: `0 0 ${STUDIO_SIZE.width} ${STUDIO_SIZE.height}`,
+                'aria-hidden': true,
+              },
+                studioRenderModel.departments.map((room) => h('g', {
+                  key: room.id,
+                  className: `studio-boundary room-${room.tone || room.id}`,
+                },
+                  h('rect', {
+                    x: room.bounds.x,
+                    y: room.bounds.y,
+                    width: room.bounds.width,
+                    height: room.bounds.height,
+                    rx: 18,
+                    ry: 18,
+                    className: 'studio-boundary-rect',
+                    'data-room-id': room.id,
+                    'data-room-label': room.label,
+                    'data-room-status': room.statusLabel || room.status || 'ready',
+                  }),
+                  h('text', {
+                    x: room.bounds.x + 14,
+                    y: room.bounds.y + 21,
+                    className: 'studio-boundary-label',
+                  }, room.label),
+                  h('g', { className: `studio-boundary-status ${getOrgStatusMeta(room.statusLabel || room.status).tone}` },
+                    h('rect', {
+                      x: room.bounds.x + room.bounds.width - 116,
+                      y: room.bounds.y + 10,
+                      width: 102,
+                      height: 18,
+                      rx: 9,
+                      className: 'studio-boundary-status-pill',
+                    }),
+                    h('text', {
+                      x: room.bounds.x + room.bounds.width - 65,
+                      y: room.bounds.y + 22,
+                      className: 'studio-boundary-status-text',
+                      textAnchor: 'middle',
+                    }, getOrgStatusMeta(room.statusLabel || room.status).badge),
+                  ),
+                  room.dependencyWarningSummary ? h('text', {
+                    x: room.bounds.x + 14,
+                    y: room.bounds.y + room.bounds.height - 14,
+                    className: 'studio-boundary-warning',
+                  }, room.dependencyWarningSummary) : null,
+                )),
+                studioRenderModel.roomConnections.map((link) => h('g', {
+                  key: link.id,
+                  className: `studio-boundary-anchor ${link.tone}`,
+                },
+                  h('path', {
+                    d: `M ${link.from.x} ${link.from.y} L ${link.to.x} ${link.to.y}`,
+                    className: 'studio-boundary-anchor-line',
+                    'data-link-id': link.id,
+                    'data-link-label': link.label,
+                  }),
+                  h('circle', {
+                    cx: link.from.x,
+                    cy: link.from.y,
+                    r: 4,
+                    className: 'studio-boundary-anchor-node control',
+                  }),
+                  h('circle', {
+                    cx: link.to.x,
+                    cy: link.to.y,
+                    r: 3.5,
+                    className: 'studio-boundary-anchor-node',
+                  }),
+                )),
+              ),
               h('div', {
                 className: 'studio-room',
                 'data-qa': 'studio-room',
@@ -4124,7 +7025,9 @@ function SpatialNotebook() {
                   width: `${studioRoom.width}px`,
                   height: `${studioRoom.height}px`,
                 },
-              }),
+              },
+                h('div', { className: 'studio-room-label' }, 'Studio Floor'),
+              ),
               h('div', { className: `studio-lane lane-top ${laneState.top.active ? `active ${laneState.top.tone} level-${laneState.top.strength}` : ''}` }),
               h('div', { className: `studio-lane lane-mid ${laneState.mid.active ? `active ${laneState.mid.tone} level-${laneState.mid.strength}` : ''}` }),
               h('div', { className: `studio-lane lane-side ${laneState.side.active ? `active ${laneState.side.tone} level-${laneState.side.strength}` : ''}` }),
@@ -4145,94 +7048,93 @@ function SpatialNotebook() {
                     || selectedAgentId === link.from
                     || selectedAgentId === link.to
                     || (link.kind === 'conflict' && selectedAgentId === 'cto-architect');
-                  return h('g', { key: link.id, className: `studio-link ${link.kind}` },
+                  const isSelectedRelationship = selectedRelationshipId === link.id;
+                  return h('g', { key: link.id, className: `studio-link ${link.kind} relationship-${link.visualForm} ${isSelectedRelationship ? 'selected' : ''}` },
                     h('path', {
                       d: `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`,
-                      className: 'studio-link-path',
+                      className: `studio-link-path relationship-${link.visualForm} ${isSelectedRelationship ? 'selected' : ''}`,
                       'data-qa': 'studio-link-path',
                       'data-link-id': link.id,
                       'data-link-label': link.label,
                       'data-link-kind': link.kind,
                       'data-from-desk': link.from,
                       'data-to-desk': link.to,
+                      'data-relationship-type': link.relationshipType,
+                      'data-relationship-strength': link.strength,
+                      'data-relationship-strands': link.strandCount,
+                      'data-relationship-health': link.health,
+                      'data-relationship-form': link.visualForm,
                       'data-start-x': from.x,
                       'data-start-y': from.y,
                       'data-end-x': to.x,
                       'data-end-y': to.y,
+                      strokeDasharray: link.dashArray && link.dashArray.length ? link.dashArray.join(' ') : undefined,
+                      onMouseDown: (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        focusRelationshipEdge(link, 'studio');
+                      },
+                      style: {
+                        strokeWidth: link.strokeWidth,
+                        opacity: link.opacity,
+                        cursor: 'pointer',
+                      },
                     }),
                     showLabel ? h('text', { x: midX, y: midY, className: 'studio-link-label' }, link.label) : null,
                   );
                 }),
               ),
-              agentSnapshots.map((agent) => {
-                const deskPosition = studioLayout.desks?.[agent.id] || deskStagePoint(agent.id, studioLayout);
-                const meta = STATUS_META[agent.status] || STATUS_META.idle;
-                const thoughtBubble = orchestratorState.desks?.[agent.id]?.thoughtBubble || null;
-                const pageBadge = orchestratorState.activeDeskIds?.includes(agent.id)
-                  ? buildDeskBadge(agent.id, orchestratorState, activePage)
+              studioDeskEntries.map((desk) => {
+                const deskPosition = desk.position || deskStagePoint(desk.id, studioLayout);
+                const meta = STATUS_META[desk.status] || STATUS_META.idle;
+                const thoughtBubble = orchestratorState.desks?.[desk.id]?.thoughtBubble || desk.thoughtBubble || null;
+                const pageBadge = orchestratorState.activeDeskIds?.includes(desk.id)
+                  ? buildDeskBadge(desk.id, orchestratorState, activePage)
                   : null;
                 return h('div', {
-                  key: agent.id,
-                  className: `agent-station ${selectedAgentId === agent.id ? 'selected' : ''} ${agent.isOversight ? 'oversight' : ''}`,
-                  'data-qa': `desk-${agent.id}`,
-                  'data-desk-id': agent.id,
-                  'data-desk-label': agent.name,
+                  key: desk.id,
+                  className: `agent-station ${selectedAgentId === desk.id ? 'selected' : ''} ${desk.isOversight ? 'oversight' : ''} ${getOrgStatusClass(desk.statusLabel || desk.orgStatus || 'ready')}`,
+                  'data-qa': `desk-${desk.id}`,
+                  'data-desk-id': desk.id,
+                  'data-desk-label': desk.name,
+                  'data-desk-status': desk.statusLabel || desk.orgStatus || 'ready',
                   'data-stage-x': deskPosition.x,
                   'data-stage-y': deskPosition.y,
                   style: {
                     left: `${deskPosition.x}px`,
                     top: `${deskPosition.y}px`,
-                    '--agent-accent': agent.theme.accent,
-                    '--agent-shadow': agent.theme.shadow,
+                    '--agent-accent': desk.theme.accent,
+                    '--agent-shadow': desk.theme.shadow,
                   },
                   role: 'button',
                   tabIndex: 0,
-                  onClick: () => focusStudioAgent(agent.id),
+                  onMouseDown: (event) => startStudioElementDrag(event, { type: 'desk', id: desk.id }),
+                  onClick: () => focusStudioAgent(desk.id),
                   onKeyDown: (event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
-                      focusStudioAgent(agent.id);
+                      focusStudioAgent(desk.id);
                     }
                   },
-                  title: `${agent.name} | ${orchestratorState.desks?.[agent.id]?.currentGoal || agent.role}`,
+                  title: `${desk.name} | ${orchestratorState.desks?.[desk.id]?.currentGoal || desk.role}`,
                 },
                   h(DeskThoughtBubble, { text: thoughtBubble, tone: meta.tone }),
-                  h('span', {
-                    className: 'studio-edit-handle station-edit-handle',
-                    onMouseDown: (event) => startStudioElementDrag(event, { type: 'desk', id: agent.id }),
-                    onClick: (event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                    },
-                  }, 'Move'),
-                  h('button', {
-                    className: 'mini desk-properties-trigger',
-                    'data-qa': `desk-props-${agent.id}`,
-                    type: 'button',
-                    onClick: (event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      openDeskPropertiesPanel(agent.id, 'properties');
-                    },
-                  }, 'Props'),
-                  agent.id === 'cto-architect' ? h('button', {
-                    className: 'mini desk-properties-trigger cto-edit-trigger',
-                    type: 'button',
-                    onClick: (event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      openDeskPropertiesPanel(agent.id, 'edit');
-                    },
-                  }, 'Edit desks') : null,
+                  h('div', { className: 'desk-card-truth' },
+                    h('div', { className: 'desk-card-truth-line' }, desk.focusSummary || desk.role),
+                    h('div', { className: 'desk-card-truth-line muted' }, desk.throughputLabel),
+                    desk.latestSignal ? h('div', { className: 'desk-card-truth-line muted' }, desk.latestSignal) : null,
+                    desk.dependencyWarningSummary ? h('div', { className: 'desk-card-truth-line warning' }, desk.dependencyWarningSummary) : null,
+                  ),
                   pageBadge ? h('div', { className: 'desk-page-badge' }, pageBadge) : null,
                   h('div', { className: 'station-desk' },
-                    h('div', { className: `desk-light ${agent.activityPulse ? 'pulse' : ''} ${agent.unresolved ? 'warning' : ''}` }),
+                    h('div', { className: `desk-light ${desk.activityPulse ? 'pulse' : ''} ${desk.unresolved ? 'warning' : ''}` }),
                     h('div', { className: 'station-prop' }),
                     h('div', { className: 'station-screen' }),
                   ),
-                  h(PixelAvatar, { accent: agent.theme.accent, status: agent.status }),
+                  h(PixelAvatar, { accent: desk.theme.accent, status: desk.status }),
                   h('div', { className: `status-chip ${meta.tone}` }, meta.badge),
-                  h('div', { className: 'agent-label' }, agent.shortLabel),
+                  h('div', { className: `org-status-chip ${getOrgStatusMeta(desk.statusLabel || desk.orgStatus).tone}` }, getOrgStatusMeta(desk.statusLabel || desk.orgStatus).badge),
+                  h('div', { className: 'agent-label' }, desk.shortLabel),
                 );
               }),
               h('div', { className: 'studio-plaque' },
@@ -4241,583 +7143,25 @@ function SpatialNotebook() {
               ),
             ),
             h('div', { className: 'scene-indicator studio-indicator' },
-              h('div', { className: 'indicator-title' }, 'Studio Map'),
-              h('div', { className: 'minimap-dots' },
-                agentSnapshots.map((agent) => h('button', {
-                  key: `${agent.id}-dot`,
+              h('div', { className: 'indicator-title-row' },
+                h('div', { className: 'indicator-title' }, 'Studio Map'),
+                h('button', {
+                  className: `mini studio-map-toggle ${studioMapUtilityOpen ? 'active' : ''}`,
                   type: 'button',
-                  className: `minimap-dot ${selectedAgentId === agent.id ? 'selected' : ''}`,
-                  style: {
-                    left: `${((studioLayout.desks?.[agent.id]?.x || deskStagePoint(agent.id, studioLayout).x) / STUDIO_SIZE.width) * 100}%`,
-                    top: `${((studioLayout.desks?.[agent.id]?.y || deskStagePoint(agent.id, studioLayout).y) / STUDIO_SIZE.height) * 100}%`,
-                    background: agent.theme.accent,
-                  },
-                  onClick: () => focusStudioAgent(agent.id),
-                  title: agent.name,
-                })),
+                  onClick: () => openUtilityWindow('studio-map'),
+                  title: studioMapUtilityOpen ? 'Restore studio map from Utilities' : 'Open studio map in Utilities',
+                  'aria-label': 'Open studio map',
+                }, 'Map'),
               ),
-              h('div', { className: 'muted' }, `Click a station to inspect scope. Active layer: ${activeGraphLabel}. World domain: ${rsgState.worldDomain}.`),
+              h('div', { className: 'muted' }, `Map stays tucked into Utilities. Active layer: ${activeGraphLabel}. World domain: ${rsgState.worldDomain}.`),
             ),
           ),
         ),
       ),
     ),
-    h('aside', { className: `spatial-sidebar ace-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`, style: sidebarCollapsed ? undefined : { width: `${sidebarWidth}px` } },
-      h('button', { className: 'sidebar-resize-handle', type: 'button', tabIndex: -1, 'aria-hidden': true, onMouseDown: startSidebarResize }),
-      h('div', { className: 'sidebar-header' },
-        h('div', { className: 'inspector-label' }, scene === SCENES.CANVAS ? 'Canvas Inspector' : 'Studio Inspector'),
-        h('button', { className: 'mini', type: 'button', onClick: () => setSidebarCollapsed((value) => !value) }, sidebarCollapsed ? 'Open' : 'Collapse'),
-      ),
-      !sidebarCollapsed && h('div', { className: 'sidebar-scroll' },
-      h('div', { className: 'inspector-block panel-card graph-inspector-panel' },
-        h('div', { className: 'inspector-label' }, 'Graph Inspector v0'),
-        h('div', { className: 'signal-meta muted' }, 'Read-only bundle health for the normalized graph state.'),
-        h('div', { className: 'criteria-list desk-metric-list' },
-          h('div', { className: 'criteria-row' },
-            h('span', null, 'Normalized bundle'),
-            h('span', { className: 'muted' }, normalizedGraphBundlePresent === null ? 'loading' : (normalizedGraphBundlePresent ? 'present' : 'missing')),
-          ),
-          h('div', { className: 'criteria-row' },
-            h('span', null, 'Available layers'),
-            h('span', { className: 'muted' }, GRAPH_LAYERS.join(' / ')),
-          ),
-          graphInspectorLayerRows.map((row) => h('div', { key: row.layer, className: 'criteria-row' },
-            h('span', null, `${row.layer} layer`),
-            h('span', { className: 'muted' }, `${row.nodes} nodes / ${row.edges} edges`),
-          )),
-          h('div', { className: 'criteria-row' },
-            h('span', null, 'Context-manager node'),
-            h('span', { className: 'muted' }, graphInspectorContextNodeFound ? 'found' : 'missing'),
-          ),
-          h('div', { className: 'criteria-row' },
-            h('span', null, 'Mutation preview'),
-            h('span', { className: 'muted' }, graphInspectorPreviewCount === null ? 'not present' : `${graphInspectorPreviewCount} mutations`),
-          ),
-        ),
-      ),
-      scene === SCENES.CANVAS
-        ? h(React.Fragment, null,
-          h('div', { className: 'inspector-block' },
-            h('div', { className: 'inspector-label' }, 'Notebook Inspector'),
-            selected
-              ? h('div', { className: 'muted' }, `Selected note: ${selected.id}`)
-              : h('div', { className: 'muted' }, 'Select a node to inspect. Right-click a node to override type or labels.'),
-          ),
-          h('div', { className: 'inspector-block panel-card context-intake' },
-            h('div', { className: 'inspector-label' }, 'Context Intake'),
-            h('div', { className: 'muted' }, activeGraphLayer === 'system'
-              ? 'This is the direct input surface for the context agent and intent scanner.'
-              : 'Context intake currently writes to the system graph. Switch layers to scan or publish context.'),
-            h('textarea', {
-              value: contextDraft,
-              placeholder: 'Describe the project intent, architecture concerns, and what ACE should understand next.',
-              onChange: (event) => setContextDraft(event.target.value),
-              onFocus: () => keys.current.clear(),
-              disabled: activeGraphLayer !== 'system',
-            }),
-            h('div', { className: 'button-row' },
-              h('button', { className: 'mini', type: 'button', onClick: captureContextInput, disabled: activeGraphLayer !== 'system' }, 'Save to Context'),
-              h('button', { className: 'mini', type: 'button', onClick: () => scanContextIntent().catch((error) => setStatus(error.message)), disabled: scannerBusy || activeGraphLayer !== 'system' }, scannerBusy ? 'Routing...' : 'Run Executive Route'),
-              h('button', { className: 'mini', type: 'button', onClick: () => scanContextIntent({ forceIntentScan: true }).catch((error) => setStatus(error.message)), disabled: scannerBusy || activeGraphLayer !== 'system' }, 'Scan for intent'),
-              scanPreview ? h('button', { className: 'mini', type: 'button', onClick: () => { setSelectedAgentId('context-manager'); setScene(SCENES.STUDIO); setReviewPanelOpen(true); } }, 'Open problem report') : null,
-            ),
-            scanPreview
-              ? h(React.Fragment, null,
-                h('div', { className: 'intent-summary-card' },
-                  h('div', { className: 'confidence-pill' }, `${Math.round((scanPreview.confidence || 0) * 100)}% confidence`),
-                  h('div', null, scanPreview.summary || 'Intent captured.'),
-                ),
-                h('div', { className: 'muted' }, 'Planner handoff updates automatically from this report.'),
-                scanPreview.tasks?.length ? h('ul', { className: 'signal-list' }, scanPreview.tasks.map((task, index) => h('li', { key: `scan-${index}` }, task))) : h('div', { className: 'signal-empty muted' }, 'No extracted tasks yet.'),
-                h('div', { className: 'criteria-list' }, (scanPreview.criteria || []).map((criterion) => h('div', { key: criterion.id || criterion.label, className: 'criteria-row' },
-                  h('span', null, `${criterion.label}: ${Math.round((criterion.score || 0) * 100)}%`),
-                  h('span', { className: 'muted' }, criterion.reason || ''),
-                ))),
-              )
-              : h('div', { className: 'signal-empty muted' }, 'Run the scanner to preview extracted intent items.'),
-            executiveResult?.route === 'module' && executiveResult.preview
-              ? h(React.Fragment, null,
-                h('div', { className: 'intent-summary-card' },
-                  h('div', { className: 'confidence-pill' }, `${Math.round((executiveResult.preview.confidence || 0) * 100)}% confidence`),
-                  h('div', null, `Artifact: ${executiveResult.preview.artifact_type || 'unknown'}`),
-                ),
-                h('div', { className: 'muted' }, `Validation ${executiveResult.preview.validation_status} | Human review ${executiveResult.preview.requires_human_review ? 'required' : 'not required'}`),
-                (executiveResult.preview.output_paths || []).length
-                  ? h('ul', { className: 'signal-list' }, executiveResult.preview.output_paths.map((item) => h('li', { key: item }, item)))
-                  : h('div', { className: 'signal-empty muted' }, 'No output paths reported.'),
-                h('div', { className: 'button-row' },
-                  h('button', { className: 'mini', type: 'button', onClick: () => exportExecutiveManifest().catch((error) => setStatus(error.message)) }, 'Export Manifest'),
-                  h('button', { className: 'mini', type: 'button', onClick: () => copyExecutiveMetadata().catch((error) => setStatus(error.message)) }, 'Copy Metadata'),
-                  h('button', { className: 'mini', type: 'button', onClick: revealExecutiveOutputPaths }, 'Reveal Paths'),
-                ),
-              )
-              : null,
-          ),
-          h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'Backend Signal Check'),
-            h('div', { className: 'muted' }, `Current focus: ${dashboardState.current_focus || 'none reported'}`),
-            h('div', { className: 'muted' }, `Latest run: ${latestRun ? `${latestRun.action} (${latestRun.status})` : 'no run history yet'}`),
-            (dashboardState.next_actions || []).length
-              ? h('ul', { className: 'signal-list' }, dashboardState.next_actions.slice(0, 4).map((item, index) => h('li', { key: `next-${index}` }, item)))
-              : h('div', { className: 'signal-empty muted' }, 'No next actions exposed by the current dashboard state.'),
-            (dashboardState.blockers || []).length
-              ? h('ul', { className: 'signal-list' }, dashboardState.blockers.slice(0, 3).map((item, index) => h('li', { key: `blocker-${index}` }, item)))
-              : null,
-          ),
-          h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'Latest Intent Capture'),
-            selectedIntent || intentState.latest
-              ? h(React.Fragment, null,
-                h('div', { className: 'intent-summary-card' },
-                  h('div', { className: 'confidence-pill' }, `${Math.round((((selectedIntent || intentState.latest).confidence) || 0) * 100)}% confidence`),
-                  h('div', null, (selectedIntent || intentState.latest).summary || 'Intent captured'),
-                ),
-                h('div', { className: 'muted' }, `Agent: ${(selectedIntent || intentState.latest).agent?.name || 'Context Manager'}`),
-                h('div', { className: 'criteria-list' }, ((selectedIntent || intentState.latest).criteria || []).map((criterion) => h('div', { key: criterion.id || criterion.label, className: 'criteria-row' },
-                  h('span', null, `${criterion.label}: ${Math.round((criterion.score || 0) * 100)}%`),
-                  h('span', { className: 'muted' }, criterion.reason || ''),
-                ))),
-              )
-              : h('div', { className: 'signal-empty muted' }, 'Press Enter in a node or run Context Intake to inspect how ACE is judging intent.'),
-          ),
-          h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'Canvas Controls'),
-            h('div', { className: 'muted' }, 'Double-click to add nodes. Drag from node handles to create arrows. Press Enter in a system node, or pause for 1.2s while editing, to classify intent and let RSG draft up to three linked notes. Edit generated text to adopt it. Use Delete or Backspace to remove selections. Use K for sketch mode.'),
-          ),
-          h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'RSG Architecture'),
-            h('div', { className: 'signal-summary' }, `${rsgState.mode} | ${activeGraphLabel}`),
-            h('div', { className: 'signal-meta muted' }, `World domain: ${rsgState.worldDomain}`),
-            h('div', { className: 'criteria-list desk-metric-list' },
-              h('div', { className: 'criteria-row' }, h('span', null, 'System structure'), h('span', { className: 'muted' }, String(rsgState.summary?.systemStructure || 0))),
-              h('div', { className: 'criteria-row' }, h('span', null, 'World structure'), h('span', { className: 'muted' }, String(rsgState.summary?.worldStructure || 0))),
-              h('div', { className: 'criteria-row' }, h('span', null, 'Adapters'), h('span', { className: 'muted' }, String(rsgState.summary?.adapterTranslation || 0))),
-              h('div', { className: 'criteria-row' }, h('span', null, 'Runtime mutations'), h('span', { className: 'muted' }, String(rsgState.summary?.codeRuntimeMutation || 0))),
-            ),
-            h('div', { className: 'signal-meta muted' }, `Policy: system/world/adapter proposals auto-record, code/runtime changes stay risk-gated.`),
-          ),
-          h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'RSG Activity'),
-            latestRsgActivity
-              ? h(React.Fragment, null,
-                h('div', { className: 'signal-summary' }, formatRsgActivity(latestRsgActivity)),
-                h('div', { className: 'signal-meta muted' }, `Source: ${latestRsgActivity.sourceNodeLabel || latestRsgActivity.sourceNodeId || 'unknown node'}`),
-                latestRsgActivity.summary ? h('div', { className: 'signal-meta muted' }, latestRsgActivity.summary) : null,
-                h('div', { className: 'criteria-list desk-metric-list' },
-                  h('div', { className: 'criteria-row' }, h('span', null, 'Status'), h('span', { className: 'muted' }, latestRsgActivity.type || 'rsg-skip')),
-                  h('div', { className: 'criteria-row' }, h('span', null, 'Trigger'), h('span', { className: 'muted' }, latestRsgActivity.trigger || 'manual')),
-                  h('div', { className: 'criteria-row' }, h('span', null, 'Generated'), h('span', { className: 'muted' }, String(latestRsgActivity.generatedCount || 0))),
-                  h('div', { className: 'criteria-row' }, h('span', null, 'Replaced'), h('span', { className: 'muted' }, String(latestRsgActivity.replacedCount || 0))),
-                  h('div', { className: 'criteria-row' }, h('span', null, 'Confidence'), h('span', { className: 'muted' }, Number.isFinite(Number(latestRsgActivity.confidence)) ? `${Math.round(Number(latestRsgActivity.confidence) * 100)}%` : 'n/a')),
-                ),
-                latestRsgActivity.usedFallback || latestRsgActivity.reason
-                  ? h('div', { className: 'signal-meta muted' }, `${latestRsgActivity.usedFallback ? 'Fallback used' : 'Reason'}${latestRsgActivity.reason ? ` | ${latestRsgActivity.reason}` : ''}`)
-                  : null,
-              )
-              : h('div', { className: 'signal-empty muted' }, 'RSG runs appear here after Enter or idle-triggered intent capture on the system canvas.'),
-          ),
-          h('div', { className: 'inspector-block' },
-            h('div', { className: 'inspector-label' }, 'Architecture Memory'),
-            h('pre', { className: 'doc' }, JSON.stringify(architectureMemory, null, 2)),
-          ),
-          h('div', { className: 'inspector-block' },
-            h('div', { className: 'inspector-label' }, `${activeGraphLabel} Node Types`),
-            h('div', { className: 'button-row' }, activeLayerNodeTypes.map((type) => h('button', {
-              key: type,
-              className: 'mini',
-              type: 'button',
-              onClick: () => addNodeAt({ x: 180, y: 180 }, type, `${type} note`),
-            }, type))),
-          ),
-        )
-        : selectedAgent && h(React.Fragment, null,
-          h('div', { className: 'inspector-block' },
-            h('div', { className: 'inspector-label' }, 'Agent Scope'),
-            h('div', { className: 'agent-panel-title' }, selectedAgent.name),
-            h('div', { className: `agent-panel-status ${STATUS_META[selectedAgent.status]?.tone || 'idle'}` }, selectedAgent.status),
-            h('p', { className: 'muted' }, selectedAgent.role),
-          ),
-          h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'Agent Signal'),
-            h('div', { className: 'signal-summary' }, selectedAgent.latestSignal || selectedAgent.statusDetail),
-            h('div', { className: 'signal-meta muted' }, `Run state: ${selectedAgent.latestRunStatus || 'idle'}`),
-            h('div', { className: 'signal-meta muted' }, selectedAgent.latestRunSummary || 'No recent run logs surfaced for this station yet.'),
-          ),
-          selectedAgent.id === 'dave' ? h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'Dave Learning Profile'),
-            h('div', { className: 'criteria-list desk-metric-list' },
-              ['Tokens', 'Duration', 'Status', 'Last run'].map((label) => {
-                let value = '—';
-                const worker = selectedAgent.workerState || {};
-                if (label === 'Tokens') value = worker.tokensUsed ?? 0;
-                if (label === 'Duration') value = worker.durationMs ? `${worker.durationMs} ms` : '—';
-                if (label === 'Status') value = worker.responseStatus || 'idle';
-                if (label === 'Last run') value = worker.lastRunId || 'none';
-                return h('div', { key: label, className: 'criteria-row' },
-                  h('span', null, label),
-                  h('span', { className: 'muted' }, value),
-                );
-              }),
-            ),
-            h('div', { className: 'inspector-label' }, 'Context Alignment (heuristic)'),
-            h('div', { className: 'signal-summary' }, `${Math.round((daveContextAlignment.score || 0) * 100)}%`),
-            h('div', { className: 'signal-meta muted' }, daveContextAlignment.reason),
-            h('div', { className: 'inspector-label' }, 'Editable Properties'),
-            h('div', { className: 'form-grid' },
-              h('label', { className: 'muted' }, 'Name'),
-              h('input', {
-                className: 'comment-box',
-                value: davePropertiesForm.name,
-                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, name: event.target.value })),
-              }),
-              h('label', { className: 'muted' }, 'Role'),
-              h('input', {
-                className: 'comment-box',
-                value: davePropertiesForm.role,
-                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, role: event.target.value })),
-              }),
-              h('label', { className: 'muted' }, 'Model'),
-              h('select', {
-                className: 'comment-box',
-                value: davePropertiesForm.model,
-                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, model: event.target.value })),
-              },
-                (daveModelOptions.length ? daveModelOptions : [DAVE_DEFAULT_MODEL]).map((option) => h('option', { key: option, value: option }, option)),
-              ),
-              h('label', { className: 'muted' }, 'Status'),
-              h('select', {
-                className: 'comment-box',
-                value: davePropertiesForm.status,
-                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, status: event.target.value })),
-              }, DAVE_STATUS_OPTIONS.map((option) => h('option', { key: option, value: option }, option))),
-              h('label', { className: 'muted' }, 'Response State'),
-              h('select', {
-                className: 'comment-box',
-                value: davePropertiesForm.responseStatus,
-                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, responseStatus: event.target.value })),
-              }, DAVE_RESPONSE_STATUSES.map((option) => h('option', { key: option, value: option }, option))),
-              h('label', { className: 'muted' }, 'Backend'),
-              h('input', {
-                className: 'comment-box',
-                value: davePropertiesForm.backend,
-                onChange: (event) => setDavePropertiesForm((current) => ({ ...current, backend: event.target.value })),
-              }),
-            ),
-            h('div', { className: 'button-row' },
-              h('button', { className: 'mini', type: 'button', onClick: saveDaveProperties }, 'Save'),
-            ),
-            h('div', { className: 'inspector-label' }, 'Learning Ledger'),
-            h('div', { className: 'criteria-list desk-metric-list' },
-              Object.entries({
-                Attempts: daveLedger.stats.attemptCount || 0,
-                Failed: daveLedger.stats.failedCount || 0,
-                Approvals: daveLedger.stats.approvedFixCount || 0,
-                'Dataset ready': daveLedger.stats.datasetReadyCount || 0,
-              }).map(([label, value]) => h('div', { key: label, className: 'criteria-row' },
-                h('span', null, label),
-                h('span', { className: 'muted' }, value),
-              )),
-            ),
-            h('textarea', {
-              className: 'comment-box',
-              placeholder: 'Describe the prompt, context, and generated output for this attempt.',
-              value: daveLedgerDraft.taskPrompt,
-              onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, taskPrompt: event.target.value })),
-            }),
-            h('textarea', {
-              className: 'comment-box',
-              placeholder: 'Paste the generated output to capture what ran.',
-              value: daveLedgerDraft.generatedOutput,
-              onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, generatedOutput: event.target.value })),
-            }),
-            h('div', { className: 'button-row' },
-              h('button', { className: 'mini', type: 'button', onClick: submitDaveLedgerEntry, disabled: daveLedgerLoading }, daveLedgerLoading ? 'Saving...' : 'Record attempt'),
-              h('label', { className: 'muted inline' },
-                h('input', {
-                  type: 'checkbox',
-                  checked: Boolean(daveLedgerDraft.datasetReady),
-                  onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, datasetReady: event.target.checked })),
-                }),
-                'Mark dataset ready',
-              ),
-              h('select', {
-                className: 'comment-box',
-                value: daveLedgerDraft.responseStatus,
-                onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, responseStatus: event.target.value })),
-              }, DAVE_RESPONSE_STATUSES.map((option) => h('option', { key: option, value: option }, option))),
-              h('select', {
-                className: 'comment-box',
-                value: daveLedgerDraft.qaOutcome,
-                onChange: (event) => setDaveLedgerDraft((current) => ({ ...current, qaOutcome: event.target.value })),
-              }, ['unknown', 'passed', 'failed'].map((option) => h('option', { key: option, value: option }, option))),
-            ),
-            (daveLedgerError || (daveLedger.entries || []).length === 0)
-              ? h('div', { className: 'signal-empty muted' }, daveLedgerError || 'No ledger entries yet.')
-              : h('div', { className: 'ledger-list' },
-                  (daveLedger.entries || []).slice(0, 5).map((entry) => {
-                    const draft = daveFixDrafts[entry.entryId] || {};
-                    return h('div', { key: entry.entryId, className: 'ledger-entry' },
-                      h('div', { className: 'signal-summary' }, entry.taskPrompt || 'Untitled attempt'),
-                      h('div', { className: 'signal-meta muted' }, `${formatTimestamp(entry.timestamp)} | ${entry.responseStatus}`),
-                      h('div', { className: 'muted' }, entry.qaReason || 'No QA reason provided.'),
-                      h('div', { className: 'button-row' },
-                        h('textarea', {
-                          className: 'comment-box',
-                          placeholder: 'Approved fix or note',
-                          value: draft.text || entry.approvedFix || '',
-                          onChange: (event) => setDaveFixDrafts((current) => ({
-                            ...current,
-                            [entry.entryId]: {
-                              ...current[entry.entryId],
-                              text: event.target.value,
-                            },
-                          })),
-                        }),
-                      ),
-                      h('div', { className: 'button-row' },
-                        h('label', { className: 'muted inline' },
-                          h('input', {
-                            type: 'checkbox',
-                            checked: Boolean(draft.datasetReady ?? entry.datasetReady),
-                            onChange: (event) => setDaveFixDrafts((current) => ({
-                              ...current,
-                              [entry.entryId]: {
-                                ...current[entry.entryId],
-                                datasetReady: event.target.checked,
-                              },
-                            })),
-                          }),
-                          'Dataset ready',
-                        ),
-                        h('button', {
-                          className: 'mini',
-                          type: 'button',
-                          onClick: () => saveDaveLedgerFix(entry.entryId),
-                          disabled: daveLedgerLoading,
-                        }, 'Attach fix'),
-                      ),
-                      entry.approvedFix ? h('div', { className: 'signal-meta muted' }, `Approved fix: ${entry.approvedFix}`) : null,
-                    );
-                  }),
-                ),
-          ) : null,
-          selectedAgent.id === 'cto-architect' && orchestratorState.desks?.['cto-architect']?.thoughtBubble ? h('div', { className: 'inspector-block panel-card review-panel' },
-            h('div', { className: 'inspector-label' }, 'Orchestrator Thought Bubble'),
-            h('div', { className: 'signal-summary' }, orchestratorState.desks['cto-architect'].thoughtBubble),
-            h('div', { className: 'signal-meta muted' }, `Last heartbeat: ${formatTimestamp(orchestratorState.lastTickAt)}`),
-          ) : null,
-          selectedAgent.id === 'cto-architect' ? h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'Architecture Layers'),
-            h('div', { className: 'signal-summary' }, `${rsgState.mode} | ${rsgState.worldDomain}`),
-            h('div', { className: 'criteria-list desk-metric-list' },
-              h('div', { className: 'criteria-row' }, h('span', null, 'System proposals'), h('span', { className: 'muted' }, String(rsgState.summary?.systemStructure || 0))),
-              h('div', { className: 'criteria-row' }, h('span', null, 'World proposals'), h('span', { className: 'muted' }, String(rsgState.summary?.worldStructure || 0))),
-              h('div', { className: 'criteria-row' }, h('span', null, 'Adapter links'), h('span', { className: 'muted' }, String(rsgState.summary?.adapterTranslation || 0))),
-              h('div', { className: 'criteria-row' }, h('span', null, 'Mutation packages'), h('span', { className: 'muted' }, String(rsgState.summary?.codeRuntimeMutation || 0))),
-            ),
-            (rsgState.proposals || []).length
-              ? h('ul', { className: 'signal-list' }, rsgState.proposals.slice(0, 6).map((proposal) => h('li', { key: proposal.id },
-                  h('div', null, proposal.title),
-                  h('div', { className: 'muted' }, `${proposal.target} | ${proposal.approval}`),
-                )))
-              : h('div', { className: 'signal-empty muted' }, 'No explicit RSG proposals recorded yet.'),
-          ) : null,
-          selectedAgent.id === 'cto-architect' ? h('div', { className: 'inspector-block panel-card review-panel' },
-            h('div', { className: 'inspector-label' }, 'ACE Self Upgrade'),
-            h('div', { className: 'signal-summary' }, `Status: ${selfUpgrade.status || 'idle'}`),
-            h('div', { className: 'signal-meta muted' }, `Target: ${selfUpgrade.targetProjectKey || 'ace-self'} | Permission: ${selfUpgrade.requiresPermission || 'none'}`),
-            h('div', { className: 'signal-meta muted' }, `Server health: ${serverHealth.selfUpgrade?.deploy?.health?.status || serverHealth.selfUpgrade?.deploy?.status || 'unknown'} | PID: ${serverHealth.pid || 'n/a'}`),
-            h('div', { className: 'self-upgrade-grid' },
-              h('label', { className: 'muted', htmlFor: 'self-upgrade-task-id' }, 'Task ID'),
-              h('input', {
-                id: 'self-upgrade-task-id',
-                className: 'comment-box self-upgrade-input',
-                type: 'text',
-                value: selfUpgradeTaskId,
-                placeholder: '0001',
-                onChange: (event) => setSelfUpgradeTaskId(event.target.value),
-              }),
-            ),
-            selfUpgrade.patchReview?.changedFiles?.length
-              ? h('div', { className: 'signal-meta muted' }, `Patch scope: ${selfUpgrade.patchReview.changedFiles.join(', ')}`)
-              : h('div', { className: 'signal-empty muted' }, 'No self-patch review has been recorded yet.'),
-            (selfUpgrade.preflight?.checks || []).length
-              ? h('ul', { className: 'signal-list' }, selfUpgrade.preflight.checks.map((check) => h('li', { key: check.id },
-                  h('div', null, `${check.ok ? 'PASS' : 'FAIL'} ${check.label}`),
-                  h('div', { className: 'muted' }, check.output || check.command),
-                )))
-              : h('div', { className: 'signal-empty muted' }, 'Run preflight to verify ACE can safely apply this self patch.'),
-            selfUpgrade.patchReview?.refusalReasons?.length
-              ? h('ul', { className: 'signal-list' }, selfUpgrade.patchReview.refusalReasons.map((reason, index) => h('li', { key: `self-refusal-${index}` }, reason)))
-              : null,
-            h('div', { className: 'button-row' },
-              h('button', { className: 'mini', type: 'button', disabled: selfUpgradeBusy, onClick: runSelfUpgradePreflight }, selfUpgradeBusy ? 'Running...' : 'Run preflight'),
-              h('button', { className: 'mini', type: 'button', disabled: selfUpgradeBusy || !selfUpgrade.apply?.ok, onClick: deploySelfUpgrade }, selfUpgrade.deploy?.status === 'restarting' ? 'Restarting...' : 'Deploy & restart'),
-            ),
-          selfUpgrade.apply?.ok ? h('div', { className: 'signal-meta muted' }, `Applied commit ${selfUpgrade.apply.commit || 'pending'} on ${selfUpgrade.apply.branch || 'apply branch'}`) : null,
-        ) : null,
-        selectedAgent.id === 'cto-architect' ? renderThroughputDebugPanel() : null,
-        selectedAgent.id === 'qa-lead' ? renderQAWorkbenchPanel() : null,
-        selectedAgent.id === 'context-manager'
-            ? h(React.Fragment, null,
-                reviewPanelOpen && contextDeskSnapshot?.handoff ? h('div', { className: 'inspector-block panel-card review-panel' },
-                  h('div', { className: 'inline review-header' },
-                    h('div', null,
-                      h('div', { className: 'inspector-label' }, 'Problem Report'),
-                      h('div', { className: 'signal-summary' }, contextDeskSnapshot.handoff.summary || 'Planner brief ready'),
-                    ),
-                    h('button', { className: 'mini', type: 'button', onClick: () => setReviewPanelOpen(false) }, 'Close')
-                  ),
-                  h('pre', { className: 'doc desk-problem-report' }, contextDeskSnapshot.handoff.problemStatement || 'No problem report generated yet.'),
-                  contextDeskSnapshot.handoff.truth?.plannerBrief
-                    ? h('div', { className: 'truth-inline' }, contextDeskSnapshot.handoff.truth.plannerBrief)
-                    : null,
-                  h('div', { className: 'button-row' },
-                    contextDeskSnapshot.handoff.sourceNodeId ? h('button', { className: 'mini', type: 'button', onClick: () => focusCanvasNode(contextDeskSnapshot.handoff.sourceNodeId) }, 'Open source node') : null,
-                  ),
-                ) : null,
-                renderDeskSection(contextDeskSnapshot?.sections?.find((section) => section.id === 'core-truth')),
-                h('div', { className: 'inspector-block panel-card review-panel' },
-                  h('div', { className: 'inspector-label' }, 'Problem To Solve'),
-                  contextDeskSnapshot?.handoff
-                    ? h(React.Fragment, null,
-                        h('div', { className: 'signal-summary' }, contextDeskSnapshot.handoff.summary || 'Planner brief ready.'),
-                        h('div', { className: 'signal-meta muted' }, `Sent to Planner: ${formatTimestamp(contextDeskSnapshot.handoff.createdAt)}`),
-                        h('div', { className: 'signal-meta muted' }, `Status: ${contextDeskSnapshot.handoff.status}`),
-                        contextDeskSnapshot.handoff.truth?.plannerBrief ? h('div', { className: 'truth-inline muted' }, contextDeskSnapshot.handoff.truth.plannerBrief) : null,
-                        contextDeskSnapshot.handoff.tasks?.length
-                          ? h('ul', { className: 'signal-list' }, contextDeskSnapshot.handoff.tasks.map((task, index) => h('li', { key: `handoff-task-${index}` }, task)))
-                          : h('div', { className: 'signal-empty muted' }, 'No extracted tasks yet.'),
-                        h('div', { className: 'button-row' },
-                          h('button', { className: 'mini', type: 'button', onClick: reviewSelectedAgent }, reviewPanelOpen ? 'Hide report' : 'Open problem report'),
-                          contextDeskSnapshot.handoff.sourceNodeId ? h('button', { className: 'mini', type: 'button', onClick: () => focusCanvasNode(contextDeskSnapshot.handoff.sourceNodeId) }, 'Open source node') : null,
-                        ),
-                      )
-                    : h('div', { className: 'signal-empty muted' }, 'Planner handoff will appear after the next context scan.'),
-                ),
-                h('div', { className: 'inspector-block panel-card' },
-                  h('div', { className: 'inspector-label' }, 'Workstation'),
-                  h('div', { className: 'muted' }, selectedAgent.responsibility),
-                  h('div', { className: 'agent-focus muted' }, contextDeskSnapshot?.focus?.summary || selectedAgent.focusSummary),
-                  contextDeskSnapshot?.focus?.detail ? h('div', { className: 'signal-meta muted' }, contextDeskSnapshot.focus.detail) : null,
-                ),
-                h('div', { className: 'inspector-block panel-card' },
-                  h('div', { className: 'inspector-label' }, 'Throughput'),
-                  h(ThroughputBar, { label: 'Assigned', value: selectedAgent.workload.assignedTasks, max: 6 }),
-                  h(ThroughputBar, { label: 'Queue', value: selectedAgent.workload.queueSize, max: 5 }),
-                  h(ThroughputBar, { label: 'Outputs', value: selectedAgent.workload.outputs, max: 4 }),
-                ),
-                h('div', { className: 'inspector-block panel-card' },
-                  h('div', { className: 'inspector-label' }, 'Intent Extraction'),
-                  contextDeskSnapshot?.sections?.find((section) => section.id === 'intent-pipeline')?.value
-                    ? h(React.Fragment, null,
-                        h('div', { className: 'confidence-pill' }, `${Math.round((contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.confidence || 0) * 100)}% confidence`),
-                        h('div', { className: 'signal-summary' }, contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.summary || 'Intent captured.'),
-                        h('div', { className: 'signal-meta muted' }, `Source: ${contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.nodeId || 'context input'} | Classified as ${contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.classification?.role || 'context'}`),
-                        contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.truth?.plannerBrief
-                          ? h('div', { className: 'truth-inline muted' }, contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.truth.plannerBrief)
-                          : null,
-                        h('div', { className: 'criteria-list' }, (contextDeskSnapshot.sections.find((section) => section.id === 'intent-pipeline').value.criteria || []).map((criterion) => h('div', { key: criterion.id || criterion.label, className: 'criteria-row' },
-                          h('span', null, `${criterion.label}: ${Math.round((criterion.score || 0) * 100)}%`),
-                          h('span', { className: 'muted' }, criterion.reason || ''),
-                        ))),
-                      )
-                    : h('div', { className: 'signal-empty muted' }, 'Run context intake to generate an intent report.'),
-                ),
-                h('div', { className: 'inspector-block panel-card' },
-                  h('div', { className: 'inspector-label' }, 'Recent History'),
-                  (contextDeskSnapshot?.history || []).length
-                    ? h('ul', { className: 'signal-list' }, contextDeskSnapshot.history.map((entry, index) => h('li', { key: entry.id || `history-${index}` },
-                        h('div', null, summarizeHistoryEntry(entry)),
-                        entry.at ? h('div', { className: 'muted' }, formatTimestamp(entry.at)) : null,
-                      )))
-                    : h('div', { className: 'signal-empty muted' }, 'No recent context history yet.'),
-                ),
-                h('div', { className: 'inspector-block panel-card' },
-                  h('div', { className: 'inspector-label' }, 'Waiting On You'),
-                  (contextDeskSnapshot?.userActions || []).length
-                    ? h('ul', { className: 'signal-list' }, contextDeskSnapshot.userActions.map((entry, index) => h('li', { key: `action-${index}` }, entry)))
-                    : h('div', { className: 'signal-empty muted' }, 'No manual clarification needed right now.'),
-                ),
-              )
-            : h(React.Fragment, null,
-                (selectedAgent.deskSnapshot?.sections || []).map((section) => renderDeskSection(section, {
-                  openQARun: loadQARunDetails,
-                  runStructuredQA: selectedAgent.id === 'qa-lead' ? runStructuredQA : null,
-                  runBrowserPass: selectedAgent.id === 'qa-lead' ? runBrowserPass : null,
-                })),
-                selectedAgent.id === 'executor' ? h('div', { className: 'inspector-block panel-card' },
-                  h('div', { className: 'inspector-label' }, 'Worker Controls'),
-                  selectedExecutionCard
-                    ? h(React.Fragment, null,
-                        h('div', { className: 'signal-summary' }, selectedExecutionCard.title || 'Selected mutation package'),
-                        h('div', { className: 'signal-meta muted' }, `Task ${selectedExecutionCard.runnerTaskId || selectedExecutionCard.builderTaskId || selectedExecutionCard.executionPackage?.taskId || 'unbound'} | Verify ${selectedExecutionCard.verifyStatus || 'idle'} | Apply ${selectedExecutionCard.applyStatus || 'idle'} | Deploy ${selectedExecutionCard.deployStatus || 'idle'}`),
-                        h('div', { className: 'signal-meta muted' }, `Action: ${selectedExecutionCard.executionPackage?.expectedAction || 'apply'} | Risk: ${selectedExecutionCard.riskLevel || 'unknown'}`),
-                        selectedExecutionCard.executorBlocker?.message ? h('div', { className: 'signal-meta muted' }, `Blocker: ${selectedExecutionCard.executorBlocker.message}`) : null,
-                      )
-                    : h('div', { className: 'signal-empty muted' }, 'No execution card is selected or queued for executor review.'),
-                  h('div', { className: 'button-row' },
-                    h('button', {
-                      className: 'mini',
-                      type: 'button',
-                      'data-qa': 'executor-run-button',
-                      disabled: agentWorkerBusyId === 'executor' || !selectedExecutionCard,
-                      onClick: () => runExecutorWorkerAssessment().catch((error) => setStatus(error.message)),
-                    }, agentWorkerBusyId === 'executor' ? 'Running...' : 'Run executor check'),
-                  ),
-                ) : null,
-                h('div', { className: 'inspector-block panel-card' },
-                  h('div', { className: 'inspector-label' }, 'Throughput'),
-                  h(ThroughputBar, { label: 'Assigned', value: selectedAgent.workload.assignedTasks, max: 6 }),
-                  h(ThroughputBar, { label: 'Queue', value: selectedAgent.workload.queueSize, max: 5 }),
-                  h(ThroughputBar, { label: 'Outputs', value: selectedAgent.workload.outputs, max: 4 }),
-                ),
-              ),
-          h('div', { className: 'inspector-block panel-card' },
-            h('div', { className: 'inspector-label' }, 'Feedback Thread'),
-            h('div', { className: 'comment-thread' },
-              (selectedAgent.comments || []).length
-                ? selectedAgent.comments.map((entry) => h('div', { key: entry.id, className: 'comment-entry' },
-                    h('div', { className: 'comment-meta muted' }, new Date(entry.createdAt).toLocaleString()),
-                    h('div', null, entry.text),
-                  ))
-                : h('div', { className: 'muted' }, 'No comments yet for this agent.'),
-            ),
-            h('textarea', {
-              className: 'comment-box',
-              placeholder: `Leave feedback for ${selectedAgent.name}`,
-              value: commentDraft,
-              onChange: (event) => setCommentDraft(event.target.value),
-              onFocus: () => keys.current.clear(),
-            }),
-            h('div', { className: 'button-row' },
-              h('button', { className: 'mini', type: 'button', onClick: addComment }, 'Add comment'),
-              h('button', { className: 'mini', type: 'button', onClick: () => focusStudioAgent(selectedAgent.id) }, 'Refocus station'),
-              canReviewIntent ? h('button', { className: 'mini', type: 'button', onClick: reviewSelectedAgent }, reviewPanelOpen ? 'Report open' : 'Open problem report') : null,
-            ),
-          ),
-          h('div', { className: 'inspector-block panel-card trace-panel' },
-            h('div', { className: 'inspector-label' }, 'Trace Debug (last 5)'),
-            traceLog.length
-              ? traceLog.map((trace) => {
-                  const latestStage = trace.steps?.[trace.steps.length - 1]?.stage || 'pending';
-                  const expanded = Boolean(expandedTraceIds[trace.trace_id]);
-                  return h('div', { key: trace.trace_id, className: 'trace-entry' },
-                    h('button', {
-                      className: 'mini',
-                      type: 'button',
-                      onClick: () => setExpandedTraceIds((current) => ({ ...current, [trace.trace_id]: !expanded })),
-                    }, `${expanded ? 'Hide' : 'Show'} ${trace.trace_id}`),
-                    h('div', { className: 'muted' }, `${trace.steps.length} steps | latest: ${latestStage}`),
-                    expanded ? h('pre', { className: 'doc trace-json' }, JSON.stringify(trace, null, 2)) : null,
-                  );
-                })
-              : h('div', { className: 'signal-empty muted' }, 'No traces yet. Run context intake or executor actions.'),
-          ),
-          ),
-      ),
-    ),
+    renderUtilityDock(),
     renderDeskPropertiesPanel(),
+    renderUtilityWindows(),
     preview && h('div', { className: 'modal' },
       h('div', { className: 'modal-content card' },
         h('div', { className: 'card-title' }, 'ACE Suggestion Preview'),
@@ -4843,7 +7187,59 @@ function drawArrowHead(ctx, fromX, fromY, toX, toY, color) {
   ctx.fill();
 }
 
-function drawCanvasScene(canvas, graph, viewport, connecting, pointerWorld, simIndex, sketches, annotations, selectedSketchId, selectedAnnotationId) {
+function drawRelationshipStrand(ctx, source, target, viewport, visual, color, offset = 0, dashArray = []) {
+  const angle = Math.atan2(target.y - source.y, target.x - source.x);
+  const normalX = -Math.sin(angle);
+  const normalY = Math.cos(angle);
+  const offsetX = normalX * offset * viewport.zoom;
+  const offsetY = normalY * offset * viewport.zoom;
+  const x1 = source.x * viewport.zoom + viewport.x + offsetX;
+  const y1 = source.y * viewport.zoom + viewport.y + offsetY;
+  const x2 = target.x * viewport.zoom + viewport.x + offsetX;
+  const y2 = target.y * viewport.zoom + viewport.y + offsetY;
+  const bend = 90 * viewport.zoom;
+  const horizontal = Math.abs(target.x - source.x) >= Math.abs(target.y - source.y);
+  const cp1x = horizontal ? x1 + (target.x >= source.x ? bend : -bend) : x1;
+  const cp1y = horizontal ? y1 : y1 + (target.y >= source.y ? bend : -bend);
+  const cp2x = horizontal ? x2 - (target.x >= source.x ? bend : -bend) : x2;
+  const cp2y = horizontal ? y2 : y2 - (target.y >= source.y ? bend : -bend);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = visual.opacity;
+  ctx.lineWidth = Math.max(1.4, visual.strokeWidth - Math.abs(offset) * 0.18);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  if (dashArray.length) ctx.setLineDash(dashArray);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+  ctx.stroke();
+  ctx.restore();
+  return { x1, y1, x2, y2 };
+}
+
+function drawRelationshipEdge(ctx, source, target, viewport, visual, color, dashArray = []) {
+  const strandOffsets = visual.visualForm === 'woven-rope'
+    ? [-4, 0, 4]
+    : (visual.visualForm === 'bundle' ? [-2.5, 2.5] : [0]);
+  let center = null;
+  strandOffsets.forEach((offset, index) => {
+    const strandColor = index === 0 || visual.visualForm === 'string'
+      ? color
+      : 'rgba(255,255,255,0.18)';
+    const strand = drawRelationshipStrand(ctx, source, target, viewport, visual, strandColor, offset, dashArray);
+    if (offset === 0) center = strand;
+  });
+  const finalCenter = center || drawRelationshipStrand(ctx, source, target, viewport, visual, color, 0, []) || {
+    x1: source.x * viewport.zoom + viewport.x,
+    y1: source.y * viewport.zoom + viewport.y,
+    x2: target.x * viewport.zoom + viewport.x,
+    y2: target.y * viewport.zoom + viewport.y,
+  };
+  drawArrowHead(ctx, finalCenter.x1, finalCenter.y1, finalCenter.x2, finalCenter.y2, color);
+}
+
+function drawCanvasScene(canvas, graph, viewport, activeGraphLayer, worldViewMode, recentWorldChange, showRecentWorldChanges, connecting, pointerWorld, simIndex, sketches, annotations, selectedSketchId, selectedAnnotationId, selectedRelationshipId, selectedDeskId = '', selectedDeskLabel = '') {
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
@@ -4860,6 +7256,16 @@ function drawCanvasScene(canvas, graph, viewport, connecting, pointerWorld, simI
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = '#08111d';
   ctx.fillRect(0, 0, width, height);
+
+  if (activeGraphLayer === 'world') {
+    drawWorldScaffolds(ctx, graph, viewport, {
+      viewMode: worldViewMode,
+      recentChange: recentWorldChange,
+      showRecentChanges: showRecentWorldChanges,
+      selectedDeskId,
+      selectedDeskLabel,
+    });
+  }
 
   ctx.strokeStyle = 'rgba(173, 204, 235, 0.08)';
   for (let x = viewport.x % 48; x < width; x += 48) {
@@ -4907,18 +7313,29 @@ function drawCanvasScene(canvas, graph, viewport, connecting, pointerWorld, simI
     const source = graph.nodes.find((node) => node.id === edge.source);
     const target = graph.nodes.find((node) => node.id === edge.target);
     if (!source || !target) return;
-    const x1 = source.position.x * viewport.zoom + viewport.x + NODE_LAYOUT.outputAnchorX * viewport.zoom;
-    const y1 = source.position.y * viewport.zoom + viewport.y + NODE_LAYOUT.anchorY * viewport.zoom;
-    const x2 = target.position.x * viewport.zoom + viewport.x + NODE_LAYOUT.inputAnchorX * viewport.zoom;
-    const y2 = target.position.y * viewport.zoom + viewport.y + NODE_LAYOUT.anchorY * viewport.zoom;
-    const color = simIndex === index ? '#5ce29f' : 'rgba(143, 167, 255, 0.9)';
-    ctx.strokeStyle = color;
-    ctx.lineWidth = simIndex === index ? 3 : 2;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.bezierCurveTo(x1 + 90, y1, x2 - 90, y2, x2, y2);
-    ctx.stroke();
-    drawArrowHead(ctx, x1, y1, x2, y2, color);
+    const visual = deriveRelationshipVisual(edge);
+    const recentEdgeChange = activeGraphLayer === 'world' && showRecentWorldChanges
+      ? resolveRecentWorldEdgeChange(recentWorldChange, edge)
+      : null;
+    const color = simIndex === index
+      ? '#5ce29f'
+      : (recentEdgeChange
+          ? (recentEdgeChange.changeType === 'added' ? 'rgba(155, 247, 199, 0.96)' : 'rgba(255, 224, 156, 0.96)')
+          : 'rgba(143, 167, 255, 0.9)');
+    const sourcePoint = {
+      x: source.position.x + NODE_LAYOUT.outputAnchorX,
+      y: source.position.y + NODE_LAYOUT.anchorY,
+    };
+    const targetPoint = {
+      x: target.position.x + NODE_LAYOUT.inputAnchorX,
+      y: target.position.y + NODE_LAYOUT.anchorY,
+    };
+    const dashArray = recentEdgeChange ? [10, 6] : visual.dashArray;
+    const isSelectedRelationship = edge.id === selectedRelationshipId;
+    const relationshipVisual = isSelectedRelationship
+      ? { ...visual, strokeWidth: visual.strokeWidth + 1.4, opacity: 1 }
+      : visual;
+    drawRelationshipEdge(ctx, sourcePoint, targetPoint, viewport, relationshipVisual, isSelectedRelationship ? '#ffd36e' : color, dashArray);
   });
 
   if (connecting?.source && pointerWorld) {
@@ -4939,6 +7356,7 @@ function drawCanvasScene(canvas, graph, viewport, connecting, pointerWorld, simI
 }
 
 ReactDOM.createRoot(document.getElementById('spatial-root')).render(h(SpatialNotebook));
+
 
 
 

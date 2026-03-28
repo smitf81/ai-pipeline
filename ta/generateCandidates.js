@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 
 const NAME_BANK = [
@@ -11,149 +12,45 @@ const NAME_BANK = [
   'Alex Sloane',
 ];
 
-const ARCHETYPES = {
-  integration_auditor: {
-    role: 'Integration Auditor',
-    department: 'Talent Acquisition',
-    summary: 'Maps claimed system behavior against actual execution paths and integration seams.',
-    strengths: [
-      'Traces UI intent through backend execution paths',
-      'Identifies broken handoffs between surfaces and services',
-      'Produces concrete mismatch reports instead of vague observations',
-    ],
-    weaknesses: [
-      'Less suited to greenfield product ideation',
-      'Can over-index on audit depth when rapid shipping is the priority',
-    ],
-    recommended_tools: ['network inspector', 'request logs', 'route map', 'contract checklist'],
-    recommended_skills: ['integration analysis', 'API tracing', 'systems debugging', 'evidence synthesis'],
-    model_policy: {
-      preferred: 'hybrid',
-      reason: 'Combines deterministic checks with higher-level reasoning across cross-system behavior.',
-    },
-    risk_notes: ['Needs current endpoint and workflow visibility to avoid stale conclusions.'],
-    confidence: 0.82,
-  },
-  contract_steward: {
-    role: 'Contract Steward',
-    department: 'Talent Acquisition',
-    summary: 'Owns interface contracts so data shapes and handoffs remain consistent across layers.',
-    strengths: [
-      'Clarifies payload expectations between services and UI surfaces',
-      'Reduces drift by turning assumptions into explicit contracts',
-      'Improves schema discipline for fast-moving teams',
-    ],
-    weaknesses: [
-      'Less effective when the main gap is operational rather than interface-driven',
-      'Can surface many schema fixes without prioritizing rollout order',
-    ],
-    recommended_tools: ['JSON schema validator', 'contract diff', 'fixture library', 'API examples'],
-    recommended_skills: ['schema design', 'contract testing', 'payload review', 'backward compatibility analysis'],
-    model_policy: {
-      preferred: 'local',
-      reason: 'Contract validation is strongest when grounded in deterministic schemas and repeatable checks.',
-    },
-    risk_notes: ['May not resolve runtime behavior gaps without complementary execution tracing.'],
-    confidence: 0.79,
-  },
-  delivery_analyst: {
-    role: 'Delivery Analyst',
-    department: 'Talent Acquisition',
-    summary: 'Connects system gaps to delivery impact, rollout friction, and execution bottlenecks.',
-    strengths: [
-      'Translates technical drift into delivery risk',
-      'Highlights missing ownership across workflows',
-      'Prioritizes the smallest intervention that restores flow',
-    ],
-    weaknesses: [
-      'Not ideal for deep code-level root-cause work',
-      'Can depend on team process signals that are incomplete',
-    ],
-    recommended_tools: ['run history', 'incident timeline', 'handoff board', 'dependency map'],
-    recommended_skills: ['delivery diagnostics', 'workflow analysis', 'risk triage', 'operational reporting'],
-    model_policy: {
-      preferred: 'codex',
-      reason: 'Cross-cutting workflow interpretation benefits from richer reasoning over multiple signals.',
-    },
-    risk_notes: ['Recommendations can stay high-level unless paired with implementation owners.'],
-    confidence: 0.74,
-  },
-  pipeline_observer: {
-    role: 'Pipeline Observer',
-    department: 'Talent Acquisition',
-    summary: 'Monitors task and execution pipelines for dropped signals, stalled transitions, and missing feedback.',
-    strengths: [
-      'Finds silent failures in asynchronous flows',
-      'Surfaces queue, event, and state transition blind spots',
-      'Improves observability around execution progress',
-    ],
-    weaknesses: [
-      'May be too infrastructure-focused for purely UX gaps',
-      'Requires instrumentation to reach full value quickly',
-    ],
-    recommended_tools: ['event log', 'queue inspector', 'metrics dashboard', 'pipeline replay'],
-    recommended_skills: ['pipeline debugging', 'observability design', 'event modeling', 'state transition analysis'],
-    model_policy: {
-      preferred: 'hybrid',
-      reason: 'Needs deterministic event inspection plus reasoning about systemic failure patterns.',
-    },
-    risk_notes: ['Limited when the system lacks reliable telemetry or state history.'],
-    confidence: 0.77,
-  },
-  runtime_cartographer: {
-    role: 'Runtime Cartographer',
-    department: 'Talent Acquisition',
-    summary: 'Builds a concrete map of runtime components, ownership boundaries, and execution dependencies.',
-    strengths: [
-      'Clarifies affected components and hidden dependencies',
-      'Reduces ambiguity in complex multi-surface systems',
-      'Improves scoping for subsequent specialist roles',
-    ],
-    weaknesses: [
-      'Often frames the space without fully solving the defect',
-      'Can feel indirect if the gap is already well localized',
-    ],
-    recommended_tools: ['component inventory', 'runtime diagram', 'dependency crawler', 'ownership matrix'],
-    recommended_skills: ['system mapping', 'runtime analysis', 'dependency tracing', 'architecture review'],
-    model_policy: {
-      preferred: 'codex',
-      reason: 'Complex system-context synthesis benefits from broader architectural reasoning.',
-    },
-    risk_notes: ['Best used early; value drops if architecture is already well documented.'],
-    confidence: 0.72,
-  },
-  feedback_liaison: {
-    role: 'Feedback Liaison',
-    department: 'Talent Acquisition',
-    summary: 'Turns ambiguous user-visible failures into actionable technical signals and acceptance checks.',
-    strengths: [
-      'Bridges user-facing symptoms to engineering diagnostics',
-      'Creates acceptance criteria around visible behavior',
-      'Keeps remediation tied to observed outcomes',
-    ],
-    weaknesses: [
-      'Not optimized for low-level platform diagnostics',
-      'Needs access to clear user reports or reproduction steps',
-    ],
-    recommended_tools: ['repro checklist', 'behavior log', 'acceptance matrix', 'issue clustering'],
-    recommended_skills: ['symptom triage', 'acceptance design', 'cross-functional communication', 'behavior analysis'],
-    model_policy: {
-      preferred: 'hybrid',
-      reason: 'Works best when structured evidence is combined with interpretation of ambiguous symptoms.',
-    },
-    risk_notes: ['Can mis-prioritize if user-facing evidence is anecdotal or incomplete.'],
-    confidence: 0.7,
-  },
-};
+const ASSIGNED_MODEL = 'mistral:latest';
+const ROLE_TAXONOMY_PATH = path.join(__dirname, '..', 'ui', 'public', 'spatial', 'roleTaxonomy.mjs');
+let cachedRoleTaxonomy = null;
 
-const KEYWORD_SIGNALS = [
-  { key: 'integration_auditor', words: ['frontend', 'backend', 'ui', 'api', 'server', 'disconnect', 'drift', 'execution'] },
-  { key: 'contract_steward', words: ['schema', 'contract', 'payload', 'interface', 'field', 'response'] },
-  { key: 'delivery_analyst', words: ['delivery', 'handoff', 'workflow', 'ownership', 'rollout', 'coordination'] },
-  { key: 'pipeline_observer', words: ['pipeline', 'queue', 'event', 'worker', 'async', 'job', 'run'] },
-  { key: 'runtime_cartographer', words: ['system', 'runtime', 'component', 'architecture', 'context', 'dependency'] },
-  { key: 'feedback_liaison', words: ['user', 'action', 'behavior', 'feedback', 'visible', 'experience'] },
-];
+function loadRoleTaxonomy() {
+  if (cachedRoleTaxonomy) return cachedRoleTaxonomy;
+  const source = fs.readFileSync(ROLE_TAXONOMY_PATH, 'utf8');
+  const match = source.match(/export const ROLE_TAXONOMY_JSON = String\.raw`([\s\S]*?)`;/);
+  if (!match) {
+    throw new Error('roleTaxonomy.mjs is missing the ROLE_TAXONOMY_JSON export.');
+  }
+  cachedRoleTaxonomy = JSON.parse(match[1]);
+  return cachedRoleTaxonomy;
+}
+
+const ROLE_TAXONOMY = loadRoleTaxonomy();
+const ARCHETYPES = Object.fromEntries(
+  ROLE_TAXONOMY.roles
+    .filter((role) => role.kind === 'talent')
+    .map((role) => [role.id, {
+      id: role.id,
+      role: role.label,
+      department: role.starterTemplate?.department || 'Talent Acquisition',
+      desk_targets: Array.isArray(role.allowedDeskIds) ? [...role.allowedDeskIds] : [],
+      summary: role.summary,
+      strengths: Array.isArray(role.strengths) ? [...role.strengths] : [],
+      weaknesses: Array.isArray(role.weaknesses) ? [...role.weaknesses] : [],
+      recommended_tools: Array.isArray(role.recommendedTools) ? [...role.recommendedTools] : [],
+      recommended_skills: Array.isArray(role.recommendedSkills) ? [...role.recommendedSkills] : [],
+      model_policy: role.modelPolicy ? { ...role.modelPolicy } : null,
+      risk_notes: Array.isArray(role.riskNotes) ? [...role.riskNotes] : [],
+      confidence: Number(role.confidence || 0),
+      gapSignals: Array.isArray(role.gapSignals) ? [...role.gapSignals] : [],
+      capabilities: Array.isArray(role.capabilities) ? [...role.capabilities] : [],
+      allowed_department_ids: Array.isArray(role.allowedDepartmentIds) ? [...role.allowedDepartmentIds] : [],
+      lead_role_ids: Array.isArray(role.leadOfDepartmentIds) ? [...role.leadOfDepartmentIds] : [],
+    }]),
+);
+const TALENT_ROLE_ORDER = ROLE_TAXONOMY.roles.filter((role) => role.kind === 'talent').map((role) => role.id);
 
 function slugify(value) {
   return String(value || '')
@@ -180,21 +77,15 @@ function tokenizeGap(gap = {}) {
 }
 
 function chooseArchetypes(parsedGap) {
-  const scores = KEYWORD_SIGNALS.map((signal) => {
-    const score = signal.words.reduce((total, word) => total + (parsedGap.corpus.includes(word) ? 1 : 0), 0);
-    return { key: signal.key, score };
+  const scores = TALENT_ROLE_ORDER.map((key) => {
+    const archetype = ARCHETYPES[key];
+    const score = archetype.gapSignals.reduce((total, word) => total + (parsedGap.corpus.includes(word) ? 1 : 0), 0);
+    return { key, score };
   }).sort((left, right) => right.score - left.score);
 
   const chosen = scores.filter((entry) => entry.score > 0).map((entry) => entry.key);
   const preferredCount = Math.min(5, Math.max(3, 3 + Math.min(parsedGap.components.length, 2)));
-  const fallbackOrder = [
-    'integration_auditor',
-    'contract_steward',
-    'pipeline_observer',
-    'delivery_analyst',
-    'runtime_cartographer',
-    'feedback_liaison',
-  ];
+  const fallbackOrder = [...TALENT_ROLE_ORDER];
 
   for (const key of fallbackOrder) {
     if (!chosen.includes(key)) chosen.push(key);
@@ -236,12 +127,59 @@ function createCandidateProfile(archetypeKey, parsedGap, index) {
   const focusLine = buildFocusLine(archetypeKey, parsedGap);
   const nameIndex = (parsedGap.tokens.length + index * 2) % NAME_BANK.length;
   const gapSeed = slugify(parsedGap.description || parsedGap.systemContext || `gap-${index + 1}`);
+  const assignedModel = ASSIGNED_MODEL;
+  const deskTargets = Array.isArray(archetype.desk_targets) && archetype.desk_targets.length
+    ? archetype.desk_targets
+    : ['planner'];
+  const primaryDeskTarget = deskTargets[0];
+  const cvCard = {
+    title: `${NAME_BANK[nameIndex]} :: ${archetype.role}`,
+    headline: `${archetype.role} for ${primaryDeskTarget}`,
+    summary: `${archetype.summary} ${focusLine}`,
+    evidence: [
+      `Gap signal: ${parsedGap.description || parsedGap.systemContext || 'unspecified'}`,
+      `Assigned model: ${assignedModel}`,
+      `Desk targets: ${deskTargets.join(', ')}`,
+    ],
+    controls: [
+      'Model is locked after hiring.',
+      'No fallback model path is allowed.',
+      'Role and desk targets are fixed on the card.',
+    ],
+    contract: {
+      input: [
+        'A concrete desk gap or workflow issue.',
+        'A target desk or department needing coverage.',
+        'Evidence that the candidate improves the line of work.',
+      ],
+      output: [
+        'A hire-ready CV card.',
+        'An immutable model binding.',
+        'A desk-ready contract for the roster.',
+      ],
+    },
+  };
 
   return {
     id: `${gapSeed}-${slugify(archetype.role)}`,
     name: NAME_BANK[nameIndex],
+    role_id: archetype.id,
+    roleId: archetype.id,
     role: archetype.role,
     department: archetype.department,
+    department_id: 'talent-acquisition',
+    departmentId: 'talent-acquisition',
+    allowed_department_ids: archetype.allowed_department_ids,
+    allowedDepartmentIds: archetype.allowed_department_ids,
+    allowed_desk_ids: deskTargets,
+    allowedDeskIds: deskTargets,
+    lead_role_ids: archetype.lead_role_ids,
+    leadRoleIds: archetype.lead_role_ids,
+    capabilities: archetype.capabilities,
+    desk_targets: deskTargets,
+    primary_desk_target: primaryDeskTarget,
+    assigned_model: assignedModel,
+    model_locked: true,
     summary: `${archetype.summary} ${focusLine}`,
     strengths: archetype.strengths,
     weaknesses: archetype.weaknesses,
@@ -251,6 +189,8 @@ function createCandidateProfile(archetypeKey, parsedGap, index) {
     why_this_role: buildWhyThisRole(archetype, parsedGap),
     risk_notes: archetype.risk_notes,
     confidence: archetype.confidence,
+    cv_card: cvCard,
+    contract: cvCard.contract,
   };
 }
 

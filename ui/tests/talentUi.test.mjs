@@ -13,11 +13,21 @@ export default async function runTalentUiTests() {
   assert.match(indexHtml, /id="talentGapInput"/);
   assert.match(indexHtml, /id="generateCandidatesBtn"/);
   assert.match(indexHtml, /id="taCandidateResults"/);
+  assert.match(indexHtml, /id="taDepartmentStatus"/);
+  assert.match(indexHtml, /id="taDepartmentCoverage"/);
+  assert.match(indexHtml, /id="taDepartmentRoster"/);
 
   assert.match(appJs, /\/api\/ta\/candidates/);
   assert.match(appJs, /renderTalentCandidates/);
+  assert.match(appJs, /hireTalentCandidate/);
+  assert.match(appJs, /loadTalentDepartment/);
   assert.match(appJs, /window\.__ACE_APP_TEST__/);
 
   assert.match(styleCss, /\.ta-candidate-grid/);
   assert.match(styleCss, /\.ta-candidate-card/);
+  assert.match(styleCss, /\.ta-cv-card/);
+  assert.match(styleCss, /\.ta-gap-summary/);
+  assert.match(styleCss, /\.ta-gap-chip/);
+  assert.match(styleCss, /\.ta-coverage-grid/);
+  assert.match(styleCss, /\.ta-roster-grid/);
 }

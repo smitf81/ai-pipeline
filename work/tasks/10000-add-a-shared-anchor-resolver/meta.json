@@ -1,0 +1,17 @@
+{
+  "id": "10000",
+  "title": "Add a shared anchor resolver",
+  "created_utc": "2026-03-27T12:39:28.118Z",
+  "source": "studio-team-board",
+  "sessionId": null,
+  "handoffId": "handoff_1774615166822_7w2p",
+  "anchorRefs": [
+    "brain/emergence/project_brain.md",
+    "brain/emergence/roadmap.md",
+    "brain/emergence/decisions.md",
+    "brain/emergence/changelog.md",
+    "brain/emergence/slices.md",
+    "brain/emergence/plan.md",
+    "brain/emergence/tasks.md"
+  ]
+}

@@ -6,16 +6,19 @@ const net = require('net');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
+const { pathToFileURL } = require('url');
 const {
   advanceOrchestratorWorkspace,
   buildRuntimePayload,
   createTeamBoardCard,
   createDefaultTeamBoard,
+  createDefaultMutationGateState,
   normalizeGraphBundle,
   createDefaultRsgState,
   buildRsgState,
   getSelectedExecutionCard,
   normalizeNotebookState,
+  normalizeMutationGateState,
   normalizeTeamBoardState,
 } = require('./orchestratorState');
 const {
@@ -51,6 +54,32 @@ const {
   summarizeQARun,
   writeStructuredQAReport,
 } = require('./qaRunner');
+const {
+  CORE_DESK_AGENT_DEFAULTS,
+  createDefaultStudioLayoutSchema,
+  normalizeStudioLayoutSchema,
+  listStudioDeskIds,
+  hasStudioDesk,
+  addDepartmentToLayout,
+  addDeskToLayout,
+  buildStudioLayoutCatalog,
+} = require('./studioLayoutSchema');
+const {
+  WORLD_SCAFFOLD_KIND,
+  WORLD_SCAFFOLD_METADATA_KEYS,
+  buildWorldScaffoldMutationPlan,
+  buildWorldScaffoldMutations,
+  detectPotentialWorldScaffoldPrompt,
+  evaluateWorldScaffoldCandidate,
+  findWorldScaffoldNode,
+  isWorldScaffold,
+  normalizeWorldScaffoldCandidate,
+  parseWorldScaffoldIntent,
+  shouldAttemptModelScaffoldInterpretation,
+} = require('./worldScaffold');
+const {
+  deriveRecentWorldChange,
+} = require('./worldDiff');
 const {
   createDefaultAgentWorkersState,
   evaluatePlannerEligibility,
@@ -112,7 +141,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+app.use(express.json({ limit: '512kb' }));
 
 app.get(['/qa', '/qa/'], (req, res) => {
   res.redirect(302, '/?mode=qa');
@@ -129,6 +158,7 @@ const SPATIAL_PAGES_FILE = path.join(ROOT, 'data', 'spatial', 'pages.json');
 const SPATIAL_INTENT_STATE_FILE = path.join(ROOT, 'data', 'spatial', 'intent-state.json');
 const SPATIAL_STUDIO_STATE_FILE = path.join(ROOT, 'data', 'spatial', 'studio-state.json');
 const SPATIAL_ARCHITECTURE_MEMORY_FILE = path.join(ROOT, 'data', 'spatial', 'architecture-memory.json');
+const TA_DEPARTMENT_FILE = path.join(ROOT, 'data', 'spatial', 'ta-department.json');
 const SERVER_STARTED_AT = nowIso();
 const DOMAIN_KEY = DEFAULT_DOMAIN_KEY;
 const dashboardFiles = listCanonicalAnchorPaths(DOMAIN_KEY);
@@ -146,12 +176,8 @@ const STATIC_WEB_BOOT_ENTRY_PATHS = ['/src/main.js', '/src/editor/ui.js'];
 const PROJECT_RUN_START_TIMEOUT_MS = 4000;
 const TASK_ARTIFACT_NAMES = ['context.md', 'plan.md', 'patch.diff'];
 const DESK_AGENT_DEFAULTS = {
-  'context-manager': ['context-manager'],
-  planner: ['planner'],
-  executor: ['executor'],
-  'memory-archivist': ['memory-archivist', 'dave'],
-  'cto-architect': ['cto-architect'],
-  [QA_LEAD_DESK_ID]: [QA_LEAD_DESK_ID],
+  ...CORE_DESK_AGENT_DEFAULTS,
+  [QA_LEAD_DESK_ID]: CORE_DESK_AGENT_DEFAULTS[QA_LEAD_DESK_ID] || [QA_LEAD_DESK_ID],
 };
 const TEAM_BOARD_DESK_TO_STUDIO_DESK = {
   Planner: 'planner',
@@ -164,6 +190,35 @@ const LEARNING_LEDGER_ROOT = path.join(ROOT, 'data', 'spatial', 'learning-ledger
 const AGENTS_DIR = path.join(ROOT, AGENTS_ROOT);
 const DEFAULT_CONTEXT_MANAGER_MODEL = 'mistral:latest';
 const DEFAULT_CONTEXT_MANAGER_BACKEND = 'ollama';
+const DEFAULT_SCAFFOLD_INTERPRETER_MODEL = DEFAULT_CONTEXT_MANAGER_MODEL;
+const DEFAULT_SCAFFOLD_INTERPRETER_BACKEND = DEFAULT_CONTEXT_MANAGER_BACKEND;
+const DEFAULT_SCAFFOLD_INTERPRETER_TIMEOUT_MS = 12000;
+const WORLD_SCAFFOLD_MODEL_CONTRACT = 'world_scaffold_candidate.v0';
+const WORLD_EDIT_ACTION_PATTERN = /\b(add|paint|replace|set|turn|update)\b/i;
+const WORLD_EDIT_TARGET_PATTERN = /\b(grid|scaffold)\b/i;
+const WORLD_EDIT_TILE_NOUN_PATTERN = /\b(tile|tiles|cell|cells)\b/i;
+const WORLD_EDIT_MATERIAL_PATTERN = /\b(water|grass|stone|dirt)\b/i;
+const SPATIAL_MUTATION_ALLOWED_TYPES = new Set(['create_node', 'modify_node', 'create_edge']);
+const SPATIAL_MUTATION_SAFE_MODIFY_KEYS = new Set(['content', 'position', 'metadata']);
+const SPATIAL_MUTATION_ACTIVITY_LIMIT = 32;
+const SPATIAL_MUTATION_APPROVAL_LIMIT = 16;
+const TA_COVERAGE_REQUIREMENTS = [
+  { deskId: 'context-manager', label: 'Context Manager', minimum: 1, role: 'Feedback Liaison' },
+  { deskId: 'planner', label: 'Planner', minimum: 1, role: 'Delivery Analyst' },
+  { deskId: 'executor', label: 'Executor', minimum: 1, role: 'Integration Auditor' },
+  { deskId: 'memory-archivist', label: 'Memory Archivist', minimum: 1, role: 'Contract Steward' },
+  { deskId: 'cto-architect', label: 'CTO Architect', minimum: 1, role: 'Runtime Cartographer' },
+];
+
+let staffingRulesModulePromise = null;
+
+function loadStaffingRulesModule() {
+  if (!staffingRulesModulePromise) {
+    const staffingRulesPath = path.join(ROOT, 'ui', 'public', 'spatial', 'staffingRules.js');
+    staffingRulesModulePromise = import(pathToFileURL(staffingRulesPath).href);
+  }
+  return staffingRulesModulePromise;
+}
 
 
 function ensureSpatialStorage() {
@@ -175,8 +230,14 @@ function ensureSpatialStorage() {
   }
   if (!fs.existsSync(SPATIAL_PAGES_FILE)) writeJson(SPATIAL_PAGES_FILE, { pages: [], activePageId: null });
   if (!fs.existsSync(SPATIAL_INTENT_STATE_FILE)) writeJson(SPATIAL_INTENT_STATE_FILE, { intentState: { currentIntentId: null, summary: '', status: 'idle' } });
-  if (!fs.existsSync(SPATIAL_STUDIO_STATE_FILE)) writeJson(SPATIAL_STUDIO_STATE_FILE, { handoffs: {}, teamBoard: createDefaultTeamBoard() });
+  if (!fs.existsSync(SPATIAL_STUDIO_STATE_FILE)) {
+    writeJson(SPATIAL_STUDIO_STATE_FILE, normalizeStoredStudioState({
+      handoffs: { contextToPlanner: null, history: [] },
+      teamBoard: { selectedCardId: null },
+    }));
+  }
   if (!fs.existsSync(SPATIAL_ARCHITECTURE_MEMORY_FILE)) writeJson(SPATIAL_ARCHITECTURE_MEMORY_FILE, { architectureMemory: {} });
+  if (!fs.existsSync(TA_DEPARTMENT_FILE)) writeJson(TA_DEPARTMENT_FILE, { hiredCandidates: [], updatedAt: null, lastGeneratedGap: null });
   if (!fs.existsSync(SPATIAL_HISTORY_FILE)) fs.writeFileSync(SPATIAL_HISTORY_FILE, '[]\n');
   const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
   const sliceSnapshot = readSliceStore(ROOT, DOMAIN_KEY);
@@ -206,10 +267,125 @@ function cloneJsonValue(value, fallback) {
   }
 }
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+const STRONG_RELATIONSHIP_TYPES = new Set([
+  'dependency',
+  'handoff',
+  'ownership',
+  'pipeline',
+  'data_flow',
+  'reporting',
+  'workflow',
+  'support',
+  'validated',
+]);
+
+function normalizeRelationshipType(value = 'relates_to') {
+  return String(value || 'relates_to').trim().toLowerCase().replace(/\s+/g, '_') || 'relates_to';
+}
+
+function normalizeRelationshipList(value = []) {
+  const source = Array.isArray(value) ? value : (value == null ? [] : [value]);
+  return [...new Set(source.map((entry) => String(entry || '').trim()).filter(Boolean))];
+}
+
+function clampRelationshipStrength(value = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 1;
+  return Math.max(1, Math.min(4, Math.round(numeric)));
+}
+
+function inferRelationshipStrength(edge = {}, supports = [], validatedBy = []) {
+  const explicit = Number(edge?.strength);
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return clampRelationshipStrength(explicit);
+  }
+  let score = 1;
+  if (STRONG_RELATIONSHIP_TYPES.has(normalizeRelationshipType(edge?.relationshipType || edge?.relationship_type || edge?.type))) score += 1;
+  score += Math.min(2, supports.length);
+  if (validatedBy.length) score += 1;
+  if (edge?.lastActive) score += 1;
+  return clampRelationshipStrength(score);
+}
+
+function inferRelationshipStrandCount(edge = {}, supports = [], validatedBy = []) {
+  const explicit = Number(edge?.strandCount);
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return Math.max(1, Math.round(explicit));
+  }
+  return Math.max(1, supports.length, validatedBy.length);
+}
+
+function inferRelationshipHealth(edge = {}, strength = 1, strandCount = 1) {
+  const risk = String(edge?.risk || '').trim().toLowerCase();
+  if (risk === 'high' || risk === 'blocked') return 'blocked';
+  if (strength >= 3 && strandCount >= 2) return 'healthy';
+  if (strength >= 2) return 'degraded';
+  return 'fragile';
+}
+
+function inferRelationshipVisualForm(strength = 1, strandCount = 1) {
+  if (strandCount >= 3 || strength >= 4) return 'woven-rope';
+  if (strandCount === 2 || strength >= 2) return 'bundle';
+  return 'string';
+}
+
+function normalizeRelationshipEdge(edge = {}, { fallbackRelationshipType = 'relates_to' } = {}) {
+  if (!edge || typeof edge !== 'object') return null;
+  const source = String(edge.source || '').trim();
+  const target = String(edge.target || '').trim();
+  if (!source || !target) return null;
+  const relationshipType = normalizeRelationshipType(edge.relationshipType || edge.relationship_type || edge.type || fallbackRelationshipType);
+  const supports = normalizeRelationshipList(edge.supports);
+  const validatedBy = normalizeRelationshipList(edge.validatedBy);
+  const strength = inferRelationshipStrength({ ...edge, relationshipType }, supports, validatedBy);
+  const strandCount = inferRelationshipStrandCount(edge, supports, validatedBy);
+  const health = inferRelationshipHealth(edge, strength, strandCount);
+  const visualForm = inferRelationshipVisualForm(strength, strandCount);
+  return {
+    ...edge,
+    id: String(edge.id || '').trim() || `${source}__${target}__${relationshipType}`,
+    source,
+    target,
+    relationshipType,
+    relationship_type: relationshipType,
+    label: String(edge.label || '').trim() || relationshipType.replace(/_/g, ' '),
+    supports,
+    validatedBy,
+    strength,
+    strandCount,
+    health,
+    visualForm,
+    lastActive: edge.lastActive || null,
+    risk: edge.risk || null,
+  };
+}
+
+function mergeRelationshipEdge(existing = {}, incoming = {}) {
+  const supports = normalizeRelationshipList([...(existing.supports || []), ...(incoming.supports || [])]);
+  const validatedBy = normalizeRelationshipList([...(existing.validatedBy || []), ...(incoming.validatedBy || [])]);
+  const relationshipType = existing.relationshipType && existing.relationshipType !== 'relates_to'
+    ? existing.relationshipType
+    : (incoming.relationshipType || incoming.relationship_type || 'relates_to');
+  return normalizeRelationshipEdge({
+    ...existing,
+    ...incoming,
+    relationshipType,
+    relationship_type: relationshipType,
+    supports,
+    validatedBy,
+    lastActive: incoming.lastActive || existing.lastActive || null,
+    risk: incoming.risk || existing.risk || null,
+  });
+}
+
 function cloneSpatialGraph(graph = {}) {
   return {
     nodes: cloneJsonValue(graph.nodes, []),
-    edges: cloneJsonValue(graph.edges, []),
+    edges: (Array.isArray(graph.edges) ? graph.edges : []).map((edge) => normalizeRelationshipEdge(edge)).filter(Boolean),
   };
 }
 
@@ -229,6 +405,264 @@ function resolveSpatialMutationLayer(graphs = {}, mutation = {}) {
     return findSpatialNodeLayer(graphs, mutation?.edge?.source) || findSpatialNodeLayer(graphs, mutation?.edge?.target) || 'system';
   }
   return 'system';
+}
+
+function findSpatialNodeRecord(graphs = {}, nodeId = '') {
+  const layer = findSpatialNodeLayer(graphs, nodeId);
+  if (!layer) return null;
+  const node = (graphs?.[layer]?.nodes || []).find((entry) => entry?.id === nodeId) || null;
+  return node ? { layer, node } : null;
+}
+
+function normalizeSpatialNodePayload(node = {}, layer = 'system') {
+  const metadata = isPlainObject(node?.metadata) ? cloneJsonValue(node.metadata, {}) : {};
+  return {
+    ...cloneJsonValue(node, {}),
+    metadata: {
+      ...metadata,
+      graphLayer: layer,
+    },
+  };
+}
+
+function isProtectedSpatialNode(node = {}) {
+  const metadata = isPlainObject(node?.metadata) ? node.metadata : {};
+  return Boolean(
+    String(metadata.agentId || '').trim()
+    || metadata.protected
+    || metadata.canonical
+    || metadata.managerTruth
+  );
+}
+
+function describeSpatialMutation(mutation = {}) {
+  const type = String(mutation?.type || '').trim().toLowerCase();
+  if (type === 'create_node') {
+    const node = mutation?.node || {};
+    return `Create ${(node.type || 'node')} ${String(node.id || node.content || 'pending').trim() || 'pending'}`;
+  }
+  if (type === 'modify_node') {
+    return `Modify node ${String(mutation?.id || 'unknown').trim() || 'unknown'}`;
+  }
+  if (type === 'create_edge') {
+    const edge = mutation?.edge || {};
+    return `Create edge ${String(edge.source || '?').trim() || '?'} -> ${String(edge.target || '?').trim() || '?'}`;
+  }
+  return `Mutation ${type || 'unknown'}`;
+}
+
+function buildSpatialMutationDecision({
+  classification = 'blocked',
+  mutation = null,
+  reason = '',
+  code = '',
+  riskLevel = 'low',
+  layer = null,
+} = {}) {
+  return {
+    classification,
+    mutation: cloneJsonValue(mutation, null),
+    reason: String(reason || '').trim(),
+    code: String(code || '').trim() || null,
+    riskLevel,
+    layer,
+    summary: describeSpatialMutation(mutation || {}),
+  };
+}
+
+function buildMutationGateEntry(decision = {}, status = 'blocked') {
+  return {
+    id: `mutation_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    at: nowIso(),
+    classification: decision.classification || 'blocked',
+    status,
+    riskLevel: decision.riskLevel || 'medium',
+    summary: decision.summary || describeSpatialMutation(decision.mutation || {}),
+    reason: decision.reason || '',
+    layer: decision.layer || null,
+    mutationType: decision.mutation?.type || null,
+    mutation: cloneJsonValue(decision.mutation, null),
+  };
+}
+
+function isSafeWorldScaffoldMetadataPatch(targetNode = {}, metadataPatch = {}) {
+  if (!isPlainObject(metadataPatch)) {
+    return { ok: false, reason: 'modify_node metadata patch must be an object.', code: 'invalid-metadata' };
+  }
+  if (!isWorldScaffold(targetNode?.metadata?.scaffold) && !isWorldScaffold(metadataPatch?.scaffold)) {
+    return { ok: false, reason: 'Modify patch touches non-local fields and requires approval.', code: 'broad-modify' };
+  }
+  if (Object.keys(metadataPatch).some((key) => !WORLD_SCAFFOLD_METADATA_KEYS.has(key))) {
+    return { ok: false, reason: 'World scaffold metadata patch contains unsupported keys.', code: 'invalid-scaffold-metadata' };
+  }
+  if (metadataPatch.graphLayer !== undefined && String(metadataPatch.graphLayer || '').trim() !== 'world') {
+    return { ok: false, reason: 'World scaffold metadata must stay on the world graph.', code: 'invalid-scaffold-layer' };
+  }
+  if (metadataPatch.scaffold !== undefined && !isWorldScaffold(metadataPatch.scaffold)) {
+    return { ok: false, reason: 'World scaffold metadata patch is malformed.', code: 'invalid-scaffold' };
+  }
+  const mergedMetadata = {
+    ...(isPlainObject(targetNode?.metadata) ? targetNode.metadata : {}),
+    ...metadataPatch,
+  };
+  if (mergedMetadata.agentId || mergedMetadata.protected || mergedMetadata.canonical || mergedMetadata.managerTruth) {
+    return { ok: false, reason: 'World scaffold metadata cannot declare protected system markers.', code: 'protected-scaffold' };
+  }
+  return { ok: true };
+}
+
+function classifySpatialMutation(graphs = {}, mutation = {}) {
+  const type = String(mutation?.type || '').trim().toLowerCase();
+  const block = (reason, code, nextMutation = mutation, layer = null) => buildSpatialMutationDecision({
+    classification: 'blocked',
+    mutation: nextMutation,
+    reason,
+    code,
+    riskLevel: 'high',
+    layer,
+  });
+  const review = (reason, code, nextMutation = mutation, layer = null, riskLevel = 'medium') => buildSpatialMutationDecision({
+    classification: 'needs_approval',
+    mutation: nextMutation,
+    reason,
+    code,
+    riskLevel,
+    layer,
+  });
+  const safe = (nextMutation = mutation, layer = null) => buildSpatialMutationDecision({
+    classification: 'safe',
+    mutation: nextMutation,
+    riskLevel: 'low',
+    layer,
+  });
+
+  if (!type) {
+    return block('Mutation type is required.', 'missing-type');
+  }
+  if (!SPATIAL_MUTATION_ALLOWED_TYPES.has(type)) {
+    return block(`Mutation type "${type}" is not supported in Auto Mutation Gate v1.`, 'unsupported-type');
+  }
+
+  if (type === 'create_node') {
+    const layer = resolveSpatialMutationLayer(graphs, mutation);
+    const rawNode = cloneJsonValue(mutation?.node, null);
+    if (!isPlainObject(rawNode)) {
+      return block('create_node requires a node payload.', 'missing-node', mutation, layer);
+    }
+    const nodeId = String(rawNode.id || '').trim();
+    if (!nodeId) {
+      return block('create_node requires node.id.', 'missing-node-id', mutation, layer);
+    }
+    const normalizedMutation = {
+      ...cloneJsonValue(mutation, {}),
+      type: 'create_node',
+      node: normalizeSpatialNodePayload(rawNode, layer),
+      layer,
+    };
+    const existingRecord = findSpatialNodeRecord(graphs, nodeId);
+    if (existingRecord) {
+      if (JSON.stringify(existingRecord.node) === JSON.stringify(normalizedMutation.node)) {
+        return safe(normalizedMutation, existingRecord.layer);
+      }
+      return block(`Cannot create node "${nodeId}" because it already exists with different content.`, 'node-conflict', normalizedMutation, existingRecord.layer);
+    }
+    if (isProtectedSpatialNode(normalizedMutation.node)) {
+      return review('New node declares protected or canonical metadata and requires approval.', 'protected-create', normalizedMutation, layer, 'high');
+    }
+    return safe(normalizedMutation, layer);
+  }
+
+  if (type === 'modify_node') {
+    const nodeId = String(mutation?.id || '').trim();
+    if (!nodeId) {
+      return block('modify_node requires id.', 'missing-node-id');
+    }
+    const targetRecord = findSpatialNodeRecord(graphs, nodeId);
+    if (!targetRecord) {
+      return block(`Cannot modify missing node "${nodeId}".`, 'node-not-found');
+    }
+    const patch = cloneJsonValue(mutation?.patch, null);
+    if (!isPlainObject(patch) || !Object.keys(patch).length) {
+      return block('modify_node requires a non-empty patch.', 'missing-patch', mutation, targetRecord.layer);
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, 'id') || Object.prototype.hasOwnProperty.call(patch, 'connections')) {
+      return block('modify_node cannot change node identity or connections in Auto Mutation Gate v1.', 'unsafe-modify', mutation, targetRecord.layer);
+    }
+    if (patch.content !== undefined && typeof patch.content !== 'string') {
+      return block('modify_node content patch must be a string.', 'invalid-content', mutation, targetRecord.layer);
+    }
+    if (patch.position !== undefined) {
+      if (!isPlainObject(patch.position)) {
+        return block('modify_node position patch must be an object.', 'invalid-position', mutation, targetRecord.layer);
+      }
+      if (!Number.isFinite(Number(patch.position.x)) || !Number.isFinite(Number(patch.position.y))) {
+        return block('modify_node position patch must include numeric x and y values.', 'invalid-position', mutation, targetRecord.layer);
+      }
+    }
+    if (patch.metadata !== undefined) {
+      const scaffoldMetadataCheck = isSafeWorldScaffoldMetadataPatch(targetRecord.node, patch.metadata);
+      if (!scaffoldMetadataCheck.ok) {
+        const usesScaffoldMetadata = Boolean(isWorldScaffold(targetRecord.node?.metadata?.scaffold) || isWorldScaffold(patch.metadata?.scaffold));
+        if (usesScaffoldMetadata && scaffoldMetadataCheck.code !== 'broad-modify') {
+          return block(scaffoldMetadataCheck.reason, scaffoldMetadataCheck.code, mutation, targetRecord.layer);
+        }
+        return review(scaffoldMetadataCheck.reason, scaffoldMetadataCheck.code, mutation, targetRecord.layer, 'high');
+      }
+    }
+    const normalizedMutation = {
+      ...cloneJsonValue(mutation, {}),
+      type: 'modify_node',
+      id: nodeId,
+      patch,
+      layer: targetRecord.layer,
+    };
+    if (isProtectedSpatialNode(targetRecord.node)) {
+      return review('Target node is protected and requires approval before modification.', 'protected-modify', normalizedMutation, targetRecord.layer, 'high');
+    }
+    if (Object.keys(patch).some((key) => !SPATIAL_MUTATION_SAFE_MODIFY_KEYS.has(key))) {
+      return review('Modify patch touches non-local fields and requires approval.', 'broad-modify', normalizedMutation, targetRecord.layer, 'high');
+    }
+    return safe(normalizedMutation, targetRecord.layer);
+  }
+
+  if (type === 'create_edge') {
+    const rawEdge = cloneJsonValue(mutation?.edge, null);
+    if (!isPlainObject(rawEdge)) {
+      return block('create_edge requires an edge payload.', 'missing-edge');
+    }
+    const source = String(rawEdge.source || '').trim();
+    const target = String(rawEdge.target || '').trim();
+    if (!source || !target) {
+      return block('create_edge requires source and target.', 'missing-edge-endpoints');
+    }
+    if (source === target) {
+      return block('Self-referential edges are blocked by mutation invariants.', 'self-edge');
+    }
+    const sourceRecord = findSpatialNodeRecord(graphs, source);
+    const targetRecord = findSpatialNodeRecord(graphs, target);
+    if (!sourceRecord || !targetRecord) {
+      return block(`Cannot create edge "${source}" -> "${target}" without both endpoint nodes.`, 'edge-node-missing');
+    }
+    if (sourceRecord.layer !== targetRecord.layer) {
+      return block('Cross-layer edges are blocked by mutation invariants in Auto Mutation Gate v1.', 'cross-layer-edge', mutation, sourceRecord.layer);
+    }
+    const normalizedMutation = {
+      ...cloneJsonValue(mutation, {}),
+      type: 'create_edge',
+      edge: {
+        ...rawEdge,
+        source,
+        target,
+      },
+      layer: sourceRecord.layer,
+    };
+    if (isProtectedSpatialNode(sourceRecord.node) || isProtectedSpatialNode(targetRecord.node)) {
+      return review('Edge touches a protected node and requires approval.', 'protected-edge', normalizedMutation, sourceRecord.layer, 'high');
+    }
+    return safe(normalizedMutation, sourceRecord.layer);
+  }
+
+  return block(`Mutation type "${type}" is not supported in Auto Mutation Gate v1.`, 'unsupported-type');
 }
 
 function applySingleSpatialMutation(graph = {}, mutation = {}) {
@@ -279,8 +713,17 @@ function applySingleSpatialMutation(graph = {}, mutation = {}) {
       throw error;
     }
     const patch = cloneJsonValue(mutation.patch, {});
+    const normalizedPatch = isPlainObject(patch?.metadata)
+      ? {
+          ...patch,
+          metadata: {
+            ...(isPlainObject(node.metadata) ? node.metadata : {}),
+            ...patch.metadata,
+          },
+        }
+      : patch;
     const before = JSON.stringify(node);
-    Object.assign(node, patch);
+    Object.assign(node, normalizedPatch);
     return {
       changed: JSON.stringify(node) !== before,
       appliedCount: JSON.stringify(node) !== before ? 1 : 0,
@@ -310,10 +753,16 @@ function applySingleSpatialMutation(graph = {}, mutation = {}) {
     if (source === target) {
       return { changed: false, appliedCount: 0, reason: 'self-edge-skipped' };
     }
-    if (graph.edges.some((entry) => entry?.source === source && entry?.target === target)) {
-      return { changed: false, appliedCount: 0, reason: 'edge-already-exists' };
+    const normalizedEdge = normalizeRelationshipEdge(edge, { fallbackRelationshipType: edge.relationshipType || edge.relationship_type || 'relates_to' });
+    const existingIndex = graph.edges.findIndex((entry) => entry?.source === source && entry?.target === target);
+    if (existingIndex >= 0) {
+      const mergedEdge = mergeRelationshipEdge(graph.edges[existingIndex], normalizedEdge);
+      const before = JSON.stringify(graph.edges[existingIndex]);
+      graph.edges[existingIndex] = mergedEdge;
+      const changed = JSON.stringify(mergedEdge) !== before;
+      return { changed, appliedCount: changed ? 1 : 0, reason: changed ? '' : 'edge-unchanged' };
     }
-    graph.edges.push(edge);
+    graph.edges.push(normalizedEdge);
     return { changed: true, appliedCount: 1, reason: '' };
   }
 
@@ -337,42 +786,125 @@ function applySpatialMutationsToWorkspace(workspace = {}, mutations = []) {
       ok: true,
       status: 'no-op',
       confirmed: false,
+      persisted: false,
       requested: 0,
       applied: 0,
+      queued: 0,
+      blocked: 0,
       changedLayers: [],
       reason: 'No mutations requested.',
+      results: [],
+      recentWorldChange: null,
+      activity: normalizedWorkspace.mutationGate.activity,
+      approvalQueue: normalizedWorkspace.mutationGate.approvalQueue,
       workspace: normalizedWorkspace,
     };
   }
 
+  const mutationGate = normalizeMutationGateState(normalizedWorkspace.mutationGate);
+  const nextActivity = [...(mutationGate.activity || [])];
+  const nextApprovalQueue = [...(mutationGate.approvalQueue || [])];
   const changedLayers = new Set();
   let applied = 0;
-  const opReasons = [];
+  let queued = 0;
+  let blocked = 0;
+  const results = [];
 
   requestedMutations.forEach((mutation) => {
-    const layer = resolveSpatialMutationLayer(nextGraphs, mutation);
-    const targetGraph = nextGraphs[layer] || nextGraphs.system;
-    const result = applySingleSpatialMutation(targetGraph, mutation);
-    if (result.changed) changedLayers.add(layer);
-    applied += Number(result.appliedCount || 0);
-    if (result.reason) opReasons.push(result.reason);
+    const decision = classifySpatialMutation(nextGraphs, mutation);
+    if (decision.classification === 'safe') {
+      const layer = decision.layer || resolveSpatialMutationLayer(nextGraphs, decision.mutation || mutation);
+      const targetGraph = nextGraphs[layer] || nextGraphs.system;
+      const result = applySingleSpatialMutation(targetGraph, decision.mutation || mutation);
+      if (result.changed) changedLayers.add(layer);
+      applied += Number(result.appliedCount || 0);
+      const status = result.changed ? 'auto-applied' : 'no-op';
+      nextActivity.unshift(buildMutationGateEntry({
+        ...decision,
+        reason: result.reason || decision.reason,
+      }, status));
+      results.push({
+        ...decision,
+        status,
+        reason: result.reason || decision.reason || '',
+      });
+      return;
+    }
+
+    if (decision.classification === 'needs_approval') {
+      queued += 1;
+      const queueEntry = buildMutationGateEntry(decision, 'pending-approval');
+      nextApprovalQueue.unshift(queueEntry);
+      nextActivity.unshift(buildMutationGateEntry(decision, 'queued'));
+      results.push({
+        ...decision,
+        status: 'queued',
+      });
+      return;
+    }
+
+    blocked += 1;
+    nextActivity.unshift(buildMutationGateEntry(decision, 'blocked'));
+    results.push({
+      ...decision,
+      status: 'blocked',
+    });
   });
 
   const nextWorkspace = normalizeSpatialWorkspaceShape({
     ...normalizedWorkspace,
     graphs: nextGraphs,
     graph: nextGraphs.system,
+    mutationGate: {
+      ...mutationGate,
+      activity: nextActivity.slice(0, SPATIAL_MUTATION_ACTIVITY_LIMIT),
+      approvalQueue: nextApprovalQueue.slice(0, SPATIAL_MUTATION_APPROVAL_LIMIT),
+    },
   });
-  const status = changedLayers.size ? 'applied' : 'no-op';
+  const changed = changedLayers.size > 0;
+  const status = (() => {
+    if (blocked && !applied && !queued) return 'blocked';
+    if (applied && !queued && !blocked) return changed ? 'applied' : 'no-op';
+    if (queued && !applied && !blocked) return 'queued';
+    if (applied || queued || blocked) return 'mixed';
+    return 'no-op';
+  })();
+  const reason = (() => {
+    if (status === 'blocked') {
+      return results.find((entry) => entry.status === 'blocked')?.reason || 'All mutations were blocked.';
+    }
+    if (status === 'queued') {
+      return results.find((entry) => entry.status === 'queued')?.reason || 'All mutations require approval.';
+    }
+    if (status === 'no-op') {
+      return results.find((entry) => entry.status === 'no-op')?.reason || 'No canonical graph change detected.';
+    }
+    return '';
+  })();
+  const persisted = changed || queued > 0 || blocked > 0 || results.length > 0;
+  const recentWorldChange = deriveRecentWorldChange({
+    previousGraphs: graphs,
+    nextGraphs,
+    results,
+    status,
+    changedLayers: Array.from(changedLayers),
+  });
 
   return {
-    ok: true,
+    ok: status !== 'blocked',
     status,
-    confirmed: changedLayers.size > 0,
+    confirmed: changed,
+    persisted,
     requested,
     applied,
+    queued,
+    blocked,
     changedLayers: Array.from(changedLayers),
-    reason: changedLayers.size ? '' : (opReasons[0] || 'No canonical graph change detected.'),
+    reason,
+    results,
+    recentWorldChange,
+    activity: nextWorkspace.mutationGate.activity,
+    approvalQueue: nextWorkspace.mutationGate.approvalQueue,
     workspace: nextWorkspace,
   };
 }
@@ -484,6 +1016,10 @@ function detectMaterialGenerationIntent(text) {
   return mentionsMaterial && generationVerb;
 }
 
+function detectWorldScaffoldIntent(text) {
+  return detectPotentialWorldScaffoldPrompt(text);
+}
+
 function inferMaterialSurface(text) {
   const value = String(text || '').trim();
   const quoted = value.match(/"([^"]{2,80})"/);
@@ -554,6 +1090,393 @@ function classifyLlmFailureStatus(reason = '', usedFallback = false) {
   return usedFallback ? 'degraded_fallback' : 'model_error';
 }
 
+function buildWorldScaffoldInterpretationLabel({
+  source = 'none',
+  attempted = false,
+  accepted = false,
+  fallbackUsed = false,
+} = {}) {
+  if (accepted && fallbackUsed) return 'model unavailable -> deterministic fallback';
+  if (accepted && source === 'deterministic') return 'deterministic';
+  if (accepted && source === 'model-assisted') return 'model-assisted';
+  if (attempted && source === 'model-assisted') return 'model-assisted rejected';
+  return 'no accepted interpretation';
+}
+
+function buildWorldScaffoldInterpretation({
+  source = 'none',
+  attempted = false,
+  accepted = false,
+  fallbackUsed = false,
+  status = 'not_attempted',
+  reason = '',
+  backend = null,
+  model = null,
+  candidate = null,
+  rawCandidate = null,
+  rawText = '',
+} = {}) {
+  return {
+    source,
+    label: buildWorldScaffoldInterpretationLabel({ source, attempted, accepted, fallbackUsed }),
+    attempted: Boolean(attempted),
+    accepted: Boolean(accepted),
+    fallbackUsed: Boolean(fallbackUsed),
+    status: String(status || 'not_attempted').trim() || 'not_attempted',
+    reason: String(reason || '').trim() || '',
+    backend: backend || null,
+    model: model || null,
+    contract: WORLD_SCAFFOLD_MODEL_CONTRACT,
+    candidate: candidate || null,
+    rawCandidate: rawCandidate ?? null,
+    rawText: String(rawText || '').trim() || '',
+  };
+}
+
+function buildScaffoldInterpretationPrompt(text = '') {
+  return [
+    'You are the ACE scaffold interpreter.',
+    '',
+    'Return JSON only. No markdown fences. No prose outside JSON.',
+    'Interpret only bounded world scaffold requests.',
+    'If the request is not asking for a starter ground/platform/grid scaffold, return {"candidate": null, "notes": "not a scaffold request"}.',
+    'Use only this contract:',
+    '{',
+    '  "candidate": {',
+    '    "type": "world_scaffold",',
+    '    "shape": "grid",',
+    '    "width": 12,',
+    '    "height": 12,',
+    '    "material": "grass",',
+    '    "position": { "x": 0, "y": 0, "z": 0 }',
+    '  },',
+    '  "notes": "optional short note"',
+    '}',
+    'Rules:',
+    '- Only shape "grid" is allowed.',
+    '- Only materials "grass", "stone", or "dirt" are allowed.',
+    '- Width and height must be integers between 1 and 100.',
+    '- Default position to {0,0,0} when not specified.',
+    '- Prefer small starter scaffolds for vague requests.',
+    '',
+    `Request: ${String(text || '').trim()}`,
+  ].join('\n');
+}
+
+async function interpretScaffoldIntentWithModel(text, options = {}) {
+  const requestedModel = String(options.model || DEFAULT_SCAFFOLD_INTERPRETER_MODEL).trim() || DEFAULT_SCAFFOLD_INTERPRETER_MODEL;
+  const requestedBackend = String(options.backend || DEFAULT_SCAFFOLD_INTERPRETER_BACKEND).trim() || DEFAULT_SCAFFOLD_INTERPRETER_BACKEND;
+  const requestedTimeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : DEFAULT_SCAFFOLD_INTERPRETER_TIMEOUT_MS;
+  const callModel = typeof options.callModel === 'function' ? options.callModel : callOllamaGenerate;
+  try {
+    const result = await callModel({
+      prompt: buildScaffoldInterpretationPrompt(text),
+      model: requestedModel,
+      host: String(options.host || '').trim() || undefined,
+      timeoutMs: requestedTimeoutMs,
+      expectJson: true,
+      fetchImpl: options.fetchImpl,
+    });
+    const rawJson = result?.json;
+    const rawCandidate = rawJson && typeof rawJson === 'object' && !Array.isArray(rawJson) && Object.prototype.hasOwnProperty.call(rawJson, 'candidate')
+      ? rawJson.candidate
+      : rawJson;
+    const candidate = normalizeWorldScaffoldCandidate(rawCandidate, {
+      requestText: text,
+      source: 'model-assisted',
+    });
+    if (!candidate.validation?.ok) {
+      return buildWorldScaffoldInterpretation({
+        source: 'model-assisted',
+        attempted: true,
+        accepted: false,
+        status: candidate.validation?.code === 'malformed_candidate' ? 'rejected_malformed_output' : 'rejected_candidate',
+        reason: candidate.validation?.reason || 'Model scaffold candidate was rejected.',
+        backend: requestedBackend,
+        model: requestedModel,
+        candidate,
+        rawCandidate,
+        rawText: result?.text || '',
+      });
+    }
+    return buildWorldScaffoldInterpretation({
+      source: 'model-assisted',
+      attempted: true,
+      accepted: true,
+      status: 'accepted',
+      backend: requestedBackend,
+      model: requestedModel,
+      candidate,
+      rawCandidate,
+      rawText: result?.text || '',
+    });
+  } catch (error) {
+    const reason = String(error?.message || error).trim();
+    const message = reason.toLowerCase();
+    const status = message.includes('not valid json') || message.includes('empty response')
+      ? 'rejected_malformed_output'
+      : classifyLlmFailureStatus(reason, false);
+    return buildWorldScaffoldInterpretation({
+      source: 'model-assisted',
+      attempted: true,
+      accepted: false,
+      status,
+      reason,
+      backend: requestedBackend,
+      model: requestedModel,
+    });
+  }
+}
+
+function buildWorldScaffoldRoutePayload({
+  envelope,
+  graphs,
+  intent = null,
+  interpretation = null,
+  evaluation = null,
+  ok = false,
+  error = '',
+} = {}) {
+  const resolvedIntent = evaluation?.finalCandidate || intent || null;
+  const mutationGeneration = buildWorldScaffoldMutationPlan(graphs, resolvedIntent || {});
+  const existingNodeId = mutationGeneration.targetNodeId || findWorldScaffoldNode(graphs)?.node?.id || null;
+  return {
+    ok: Boolean(ok),
+    route: 'world-scaffold',
+    envelope,
+    intent: resolvedIntent,
+    validation: resolvedIntent?.validation || null,
+    evaluation,
+    mutationGeneration,
+    mutations: ok ? mutationGeneration.mutations : [],
+    existingNodeId,
+    interpretation,
+    ...(ok ? {} : {
+      error: String(error || interpretation?.reason || mutationGeneration.reason || 'No accepted scaffold interpretation.').trim() || 'No accepted scaffold interpretation.',
+    }),
+  };
+}
+
+function detectPotentialWorldEditPrompt(text = '') {
+  const normalizedText = String(text || '').trim().toLowerCase();
+  if (!normalizedText) return false;
+  return Boolean(
+    WORLD_EDIT_ACTION_PATTERN.test(normalizedText)
+    && WORLD_EDIT_TARGET_PATTERN.test(normalizedText)
+    && (WORLD_EDIT_TILE_NOUN_PATTERN.test(normalizedText) || /\bto the\b/i.test(normalizedText))
+    && WORLD_EDIT_MATERIAL_PATTERN.test(normalizedText)
+  );
+}
+
+function parseWorldEditIntent(text = '', graphs = {}) {
+  const normalizedText = String(text || '').trim();
+  if (!detectPotentialWorldEditPrompt(normalizedText)) {
+    return null;
+  }
+  const existing = findWorldScaffoldNode(graphs);
+  const requestedMaterial = normalizedText.toLowerCase().match(WORLD_EDIT_MATERIAL_PATTERN)?.[1] || null;
+  const targetSummary = existing?.node?.metadata?.scaffold?.summary || null;
+  const missingScaffold = !existing?.node;
+  const reason = missingScaffold
+    ? 'Create a scaffold first. Existing-world tile edits are not implemented yet.'
+    : 'Existing-world tile edits are not implemented yet. Supported today: scaffold creation only.';
+  return {
+    type: 'world_edit',
+    action: 'paint_tiles',
+    target: 'world_scaffold',
+    requestText: normalizedText,
+    summary: requestedMaterial
+      ? `Request ${requestedMaterial} tile edits on the current scaffold`
+      : 'Existing-world tile edit request',
+    requestedMaterial,
+    targetNodeId: existing?.node?.id || null,
+    targetSummary,
+    supported: false,
+    parameters: {
+      requestedMaterial,
+      targetNodeId: existing?.node?.id || null,
+      targetSummary,
+    },
+    validation: {
+      ok: false,
+      code: missingScaffold ? 'missing_scaffold' : 'world_edit_not_implemented',
+      reason,
+    },
+  };
+}
+
+function buildWorldEditRoutePayload({
+  envelope,
+  graphs,
+  intent = null,
+} = {}) {
+  const targetNodeId = intent?.targetNodeId || findWorldScaffoldNode(graphs)?.node?.id || null;
+  const reason = String(intent?.validation?.reason || 'Existing-world tile edits are not implemented yet.').trim()
+    || 'Existing-world tile edits are not implemented yet.';
+  return {
+    ok: false,
+    route: 'world-edit',
+    envelope,
+    intent,
+    validation: intent?.validation || null,
+    mutationGeneration: {
+      ok: false,
+      deterministic: true,
+      mutationCount: 0,
+      reason,
+      mutations: [],
+      mode: 'unsupported',
+      targetNodeId,
+    },
+    mutations: [],
+    existingNodeId: targetNodeId,
+    supported: false,
+    error: reason,
+  };
+}
+
+function resolveWorldEditExecutiveRoute({
+  promptText = '',
+  envelope = null,
+  graphs = {},
+} = {}) {
+  const intent = parseWorldEditIntent(promptText, graphs);
+  if (!intent) {
+    return null;
+  }
+  return {
+    matched: true,
+    statusCode: 422,
+    body: buildWorldEditRoutePayload({
+      envelope,
+      graphs,
+      intent,
+    }),
+  };
+}
+
+async function resolveWorldScaffoldExecutiveRoute({
+  promptText = '',
+  envelope = null,
+  graphs = {},
+  modelInterpreter = interpretScaffoldIntentWithModel,
+  modelOptions = {},
+} = {}) {
+  const text = String(promptText || '').trim();
+  if (!detectPotentialWorldScaffoldPrompt(text)) {
+    return null;
+  }
+
+  function finalizeWorldScaffoldRoute({
+    candidate = null,
+    interpretation = null,
+    intendedOk = false,
+    failureStatusCode = 422,
+    error = '',
+  } = {}) {
+    const evaluation = evaluateWorldScaffoldCandidate(candidate, {
+      requestText: text,
+      interpretationSource: interpretation?.source || candidate?.source || 'unknown',
+    });
+    const accepted = Boolean(intendedOk && evaluation.accepted);
+    const reason = String(
+      error
+      || evaluation.reason
+      || interpretation?.reason
+      || evaluation?.finalCandidate?.validation?.reason
+      || candidate?.validation?.reason
+      || 'No accepted scaffold interpretation.'
+    ).trim() || 'No accepted scaffold interpretation.';
+    return {
+      matched: true,
+      statusCode: accepted ? 200 : failureStatusCode,
+      body: buildWorldScaffoldRoutePayload({
+        envelope,
+        graphs,
+        intent: evaluation.finalCandidate || candidate || null,
+        interpretation,
+        evaluation,
+        ok: accepted,
+        error: reason,
+      }),
+    };
+  }
+
+  const deterministicIntent = parseWorldScaffoldIntent(text);
+  if (deterministicIntent?.validation?.ok) {
+    const interpretation = buildWorldScaffoldInterpretation({
+      source: 'deterministic',
+      attempted: false,
+      accepted: true,
+      status: 'accepted',
+      candidate: deterministicIntent,
+    });
+    return finalizeWorldScaffoldRoute({
+      candidate: deterministicIntent,
+      interpretation,
+      intendedOk: true,
+    });
+  }
+
+  if (shouldAttemptModelScaffoldInterpretation(text, deterministicIntent)) {
+    let interpretation = null;
+    try {
+      interpretation = await modelInterpreter(text, modelOptions);
+    } catch (error) {
+      const reason = String(error?.message || error).trim();
+      interpretation = buildWorldScaffoldInterpretation({
+        source: 'model-assisted',
+        attempted: true,
+        accepted: false,
+        status: classifyLlmFailureStatus(reason, false),
+        reason,
+        backend: String(modelOptions.backend || DEFAULT_SCAFFOLD_INTERPRETER_BACKEND).trim() || DEFAULT_SCAFFOLD_INTERPRETER_BACKEND,
+        model: String(modelOptions.model || DEFAULT_SCAFFOLD_INTERPRETER_MODEL).trim() || DEFAULT_SCAFFOLD_INTERPRETER_MODEL,
+      });
+    }
+    return finalizeWorldScaffoldRoute({
+      candidate: interpretation?.candidate || null,
+      interpretation,
+      intendedOk: Boolean(interpretation?.accepted),
+      failureStatusCode: interpretation?.status === 'model_unavailable' ? 503 : 422,
+      error: interpretation?.reason || interpretation?.candidate?.validation?.reason || 'No accepted scaffold interpretation.',
+    });
+  }
+
+  if (deterministicIntent) {
+    const interpretation = buildWorldScaffoldInterpretation({
+      source: 'deterministic',
+      attempted: false,
+      accepted: false,
+      status: 'rejected_validation',
+      reason: deterministicIntent.validation?.reason || 'No accepted scaffold interpretation.',
+      candidate: deterministicIntent,
+    });
+    return finalizeWorldScaffoldRoute({
+      candidate: deterministicIntent,
+      interpretation,
+      intendedOk: false,
+      failureStatusCode: 422,
+      error: deterministicIntent.validation?.reason || 'No accepted scaffold interpretation.',
+    });
+  }
+
+  const interpretation = buildWorldScaffoldInterpretation({
+    source: 'none',
+    attempted: false,
+    accepted: false,
+    status: 'no_candidate',
+    reason: 'No accepted scaffold interpretation.',
+  });
+  return finalizeWorldScaffoldRoute({
+    candidate: null,
+    interpretation,
+    intendedOk: false,
+    failureStatusCode: 422,
+    error: 'No accepted scaffold interpretation.',
+  });
+}
+
 function buildAgentFailurePayload(result, extras = {}) {
   const run = extras.run || result?.run || result?.worker || null;
   const reason = String(result?.reason || run?.reason || extras.error || 'Agent model call failed.').trim();
@@ -613,6 +1536,36 @@ function normalizeStoredIntentState(rawIntentState = {}) {
   };
 }
 
+function normalizeStoredStudioHandoffs(rawHandoffs = null) {
+  if (!rawHandoffs || typeof rawHandoffs !== 'object') return null;
+  const next = {};
+  if (Object.prototype.hasOwnProperty.call(rawHandoffs, 'contextToPlanner')) {
+    next.contextToPlanner = rawHandoffs.contextToPlanner || null;
+  }
+  if (Object.prototype.hasOwnProperty.call(rawHandoffs, 'history')) {
+    next.history = Array.isArray(rawHandoffs.history) ? rawHandoffs.history.filter(Boolean).slice(0, 12) : [];
+  }
+  return Object.keys(next).length ? next : null;
+}
+
+function normalizeStoredStudioTeamBoard(rawTeamBoard = null) {
+  if (!rawTeamBoard || typeof rawTeamBoard !== 'object') return null;
+  if (!Object.prototype.hasOwnProperty.call(rawTeamBoard, 'selectedCardId')) return null;
+  return {
+    selectedCardId: rawTeamBoard.selectedCardId || null,
+  };
+}
+
+function normalizeStoredStudioState(rawStudioState = {}) {
+  const studioState = rawStudioState && typeof rawStudioState === 'object' ? rawStudioState : {};
+  const next = {};
+  const handoffs = normalizeStoredStudioHandoffs(studioState.handoffs);
+  const teamBoard = normalizeStoredStudioTeamBoard(studioState.teamBoard);
+  if (handoffs) next.handoffs = handoffs;
+  if (teamBoard) next.teamBoard = teamBoard;
+  return next;
+}
+
 function mergeWorkspacePatch(workspace, patch = {}) {
   const nextStudio = {
     ...(workspace?.studio || {}),
@@ -636,6 +1589,8 @@ function mergeWorkspacePatch(workspace, patch = {}) {
       zoom: patch.zoom,
     };
   }
+  if (patch.activeGraphLayer !== undefined) nextStudio.activeGraphLayer = patch.activeGraphLayer;
+  if (patch.worldViewMode !== undefined) nextStudio.worldViewMode = patch.worldViewMode;
   if (patch.handoffs) {
     nextStudio.handoffs = {
       ...(workspace?.studio?.handoffs || {}),
@@ -649,6 +1604,8 @@ function mergeWorkspacePatch(workspace, patch = {}) {
     };
   }
   if (patch.studio && typeof patch.studio === 'object') {
+    nextStudio.activeGraphLayer = patch.studio.activeGraphLayer !== undefined ? patch.studio.activeGraphLayer : nextStudio.activeGraphLayer;
+    nextStudio.worldViewMode = patch.studio.worldViewMode !== undefined ? patch.studio.worldViewMode : nextStudio.worldViewMode;
     nextStudio.layout = patch.studio.layout !== undefined ? patch.studio.layout : nextStudio.layout;
     nextStudio.sidebar = patch.studio.sidebar !== undefined ? patch.studio.sidebar : nextStudio.sidebar;
     nextStudio.orchestrator = patch.studio.orchestrator !== undefined ? patch.studio.orchestrator : nextStudio.orchestrator;
@@ -690,8 +1647,9 @@ function mergeWorkspacePatch(workspace, patch = {}) {
 
 function normalizeDeskPropertiesState(workspace = {}) {
   const current = workspace?.studio?.deskProperties || {};
+  const layoutDeskIds = listStudioDeskIds(workspace?.studio?.layout || {});
   return Object.fromEntries(
-    Object.keys(DESK_AGENT_DEFAULTS).map((deskId) => {
+    layoutDeskIds.map((deskId) => {
       const deskState = current?.[deskId] || {};
       return [deskId, {
         managedAgents: Array.isArray(deskState.managedAgents) ? [...new Set(deskState.managedAgents.filter(Boolean))] : [],
@@ -704,9 +1662,216 @@ function normalizeDeskPropertiesState(workspace = {}) {
               notes: entry.notes || '',
             }))
           : [],
+        departmentContext: String(deskState.departmentContext || '').trim(),
+        guardrails: Array.isArray(deskState.guardrails)
+          ? [...new Set(deskState.guardrails.map((entry) => String(entry || '').trim()).filter(Boolean))]
+          : [],
+        contextSlices: Array.isArray(deskState.contextSlices)
+          ? deskState.contextSlices.filter((entry) => entry && String(entry.summary || entry.title || entry.label || '').trim()).map((entry, index) => ({
+              id: String(entry.id || `${deskId}-context-${index}`),
+              summary: String(entry.summary || entry.title || entry.label || '').trim(),
+              detail: String(entry.detail || entry.notes || '').trim(),
+            }))
+          : [],
       }];
     }),
   );
+}
+
+function normalizeTaCandidateCard(candidate = {}) {
+  const source = candidate && typeof candidate === 'object' ? candidate : {};
+  const deskTargets = Array.isArray(source.desk_targets)
+    ? source.desk_targets.map((value) => String(value || '').trim()).filter(Boolean)
+    : Array.isArray(source.deskTargets)
+      ? source.deskTargets.map((value) => String(value || '').trim()).filter(Boolean)
+    : [];
+  const primaryDeskTarget = String(source.primary_desk_target || source.primaryDeskTarget || deskTargets[0] || '').trim();
+  const assignedModel = String(source.assigned_model || source.assignedModel || '').trim();
+  const cvCard = source.cv_card && typeof source.cv_card === 'object'
+    ? source.cv_card
+    : (source.cvCard && typeof source.cvCard === 'object' ? source.cvCard : null);
+  const contract = source.contract && typeof source.contract === 'object' ? source.contract : null;
+  if (!String(source.id || '').trim()) throw new Error('candidate.id is required.');
+  if (!String(source.name || '').trim()) throw new Error('candidate.name is required.');
+  if (!String(source.role || '').trim()) throw new Error('candidate.role is required.');
+  if (!String(source.department || '').trim()) throw new Error('candidate.department is required.');
+  if (!deskTargets.length) throw new Error('candidate.desk_targets is required.');
+  if (!primaryDeskTarget) throw new Error('candidate.primary_desk_target is required.');
+  if (!assignedModel) throw new Error('candidate.assigned_model is required.');
+  if (source.model_locked !== true && source.modelLocked !== true) throw new Error('candidate.model_locked must be true.');
+  if (!cvCard || !String(cvCard.title || '').trim() || !String(cvCard.summary || '').trim()) {
+    throw new Error('candidate.cv_card must include title and summary.');
+  }
+  if (!contract || !Array.isArray(contract.input) || !Array.isArray(contract.output)) {
+    throw new Error('candidate.contract must include input and output arrays.');
+  }
+  const availableModels = listAgentModelOptions();
+  if (!availableModels.includes(assignedModel)) {
+    throw new Error(`candidate.assigned_model must be one of the available models: ${availableModels.join(', ')}.`);
+  }
+  return {
+    id: String(source.id).trim(),
+    name: String(source.name).trim(),
+    roleId: String(source.role_id || source.roleId || '').trim() || null,
+    role: String(source.role).trim(),
+    department: String(source.department).trim(),
+    departmentId: String(source.department_id || source.departmentId || '').trim() || null,
+    deskTargets,
+    primaryDeskTarget,
+    assignedModel,
+    modelLocked: true,
+    model_locked: true,
+    summary: String(source.summary || '').trim(),
+    strengths: Array.isArray(source.strengths) ? source.strengths.filter(Boolean).map((entry) => String(entry)) : [],
+    weaknesses: Array.isArray(source.weaknesses) ? source.weaknesses.filter(Boolean).map((entry) => String(entry)) : [],
+    recommendedTools: Array.isArray(source.recommended_tools) ? source.recommended_tools.filter(Boolean).map((entry) => String(entry)) : [],
+    recommendedSkills: Array.isArray(source.recommended_skills) ? source.recommended_skills.filter(Boolean).map((entry) => String(entry)) : [],
+    modelPolicy: source.model_policy && typeof source.model_policy === 'object'
+      ? {
+          preferred: String(source.model_policy.preferred || '').trim(),
+          reason: String(source.model_policy.reason || '').trim(),
+        }
+      : null,
+    whyThisRole: String(source.why_this_role || '').trim(),
+    riskNotes: Array.isArray(source.risk_notes) ? source.risk_notes.filter(Boolean).map((entry) => String(entry)) : [],
+    confidence: Number(source.confidence || 0),
+    allowedDepartmentIds: Array.isArray(source.allowed_department_ids)
+      ? source.allowed_department_ids.filter(Boolean).map((entry) => String(entry))
+      : Array.isArray(source.allowedDepartmentIds)
+        ? source.allowedDepartmentIds.filter(Boolean).map((entry) => String(entry))
+        : [],
+    allowedDeskIds: Array.isArray(source.allowed_desk_ids)
+      ? source.allowed_desk_ids.filter(Boolean).map((entry) => String(entry))
+      : Array.isArray(source.allowedDeskIds)
+        ? source.allowedDeskIds.filter(Boolean).map((entry) => String(entry))
+        : [],
+    leadRoleIds: Array.isArray(source.lead_role_ids)
+      ? source.lead_role_ids.filter(Boolean).map((entry) => String(entry))
+      : Array.isArray(source.leadRoleIds)
+        ? source.leadRoleIds.filter(Boolean).map((entry) => String(entry))
+        : [],
+    capabilities: Array.isArray(source.capabilities) ? source.capabilities.filter(Boolean).map((entry) => String(entry)) : [],
+    cvCard: {
+      title: String(cvCard.title || '').trim(),
+      headline: String(cvCard.headline || '').trim(),
+      summary: String(cvCard.summary || '').trim(),
+      evidence: Array.isArray(cvCard.evidence) ? cvCard.evidence.filter(Boolean).map((entry) => String(entry)) : [],
+      controls: Array.isArray(cvCard.controls) ? cvCard.controls.filter(Boolean).map((entry) => String(entry)) : [],
+      contract: {
+        input: Array.isArray(cvCard.contract?.input) ? cvCard.contract.input.filter(Boolean).map((entry) => String(entry)) : [],
+        output: Array.isArray(cvCard.contract?.output) ? cvCard.contract.output.filter(Boolean).map((entry) => String(entry)) : [],
+      },
+    },
+    contract: {
+      input: Array.isArray(contract.input) ? contract.input.filter(Boolean).map((entry) => String(entry)) : [],
+      output: Array.isArray(contract.output) ? contract.output.filter(Boolean).map((entry) => String(entry)) : [],
+    },
+    hiredAt: source.hiredAt || null,
+    hiredDeskId: source.hiredDeskId || null,
+    contractLocked: source.contractLocked === true,
+  };
+}
+
+function createDefaultTaDepartmentState() {
+  return {
+    hiredCandidates: [],
+    updatedAt: null,
+    lastGeneratedGap: null,
+  };
+}
+
+function normalizeTaDepartmentState(state = {}) {
+  const source = state && typeof state === 'object' ? state : {};
+  return {
+    hiredCandidates: Array.isArray(source.hiredCandidates)
+      ? source.hiredCandidates.filter(Boolean).map((candidate) => normalizeTaCandidateCard(candidate))
+      : [],
+    updatedAt: source.updatedAt || null,
+    lastGeneratedGap: source.lastGeneratedGap || null,
+  };
+}
+
+function computeTaCoverage(hiredCandidates = []) {
+  return TA_COVERAGE_REQUIREMENTS.map((requirement) => {
+    const matches = hiredCandidates.filter((candidate) => candidate.hiredDeskId === requirement.deskId
+      || candidate.deskTargets.includes(requirement.deskId));
+    const hiredCount = matches.length;
+    const covered = hiredCount >= requirement.minimum;
+    return {
+      ...requirement,
+      hiredCount,
+      covered,
+      status: covered ? 'covered' : 'open',
+      remaining: Math.max(0, requirement.minimum - hiredCount),
+      roledIn: matches.map((candidate) => candidate.name),
+    };
+  });
+}
+
+async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()) {
+  const normalizedState = normalizeTaDepartmentState(state);
+  const staffingRules = await loadStaffingRulesModule();
+  const gapModel = staffingRules.computeTaGapModel(staffingRules.STAFFING_RULES, normalizedState.hiredCandidates);
+  const coverage = gapModel.coverage || [];
+  const healthyCount = coverage.filter((entry) => entry.health === 'healthy').length;
+  const openEntityCount = coverage.length - healthyCount;
+  const summary = gapModel.summary || {
+    openRoleCount: 0,
+    blockerCount: 0,
+    missingLeadCount: 0,
+    understaffedCount: 0,
+    optionalHireCount: 0,
+    urgency: 'low',
+  };
+  const urgencyText = summary.urgency === 'critical'
+    ? 'Critical'
+    : summary.urgency === 'high'
+      ? 'High'
+      : summary.urgency === 'medium'
+        ? 'Medium'
+        : 'Low';
+  return {
+    department: {
+      name: 'Talent Acquisition',
+      summary: summary.openRoleCount
+        ? `${summary.openRoleCount} open role${summary.openRoleCount === 1 ? '' : 's'} across ${coverage.length} staffing rules. ${summary.blockerCount} blocker${summary.blockerCount === 1 ? '' : 's'}; urgency ${urgencyText.toLowerCase()}.`
+        : `All ${coverage.length} staffing rules are covered.`,
+      urgency: summary.urgency,
+      controls: [
+        'Model binding is immutable after hire.',
+        'No fallback model path is permitted.',
+        'Each hire must include a CV card and contract.',
+      ],
+      updatedAt: normalizedState.updatedAt,
+      lastGeneratedGap: normalizedState.lastGeneratedGap,
+    },
+    coverage,
+    gapModel,
+    hiredCandidates: normalizedState.hiredCandidates,
+    roster: normalizedState.hiredCandidates.map((candidate) => ({
+      id: candidate.id,
+      name: candidate.name,
+      role: candidate.role,
+      roleId: candidate.roleId || null,
+      department: candidate.department,
+      departmentId: candidate.departmentId || null,
+      deskId: candidate.hiredDeskId || candidate.primaryDeskTarget,
+      assignedModel: candidate.assignedModel,
+      hiredAt: candidate.hiredAt,
+      summary: candidate.cvCard?.summary || candidate.summary,
+    })),
+    coverageSummary: {
+      healthyCount,
+      openEntityCount,
+      total: coverage.length,
+      openRoleCount: summary.openRoleCount,
+      blockerCount: summary.blockerCount,
+      missingLeadCount: summary.missingLeadCount,
+      understaffedCount: summary.understaffedCount,
+      optionalHireCount: summary.optionalHireCount,
+      urgency: summary.urgency,
+    },
+  };
 }
 
 function listModuleManifests() {
@@ -951,14 +2116,27 @@ function buildQAStatePayload(rootPath = ROOT) {
 }
 
 function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
+  const layout = normalizeStudioLayoutSchema(workspace?.studio?.layout || {});
+  const deskLayout = layout.desks?.[deskId] || null;
+  if (!deskLayout) {
+    throw new Error(`Unknown desk id: ${deskId}`);
+  }
+  const departmentLayout = layout.departments.find((entry) => entry.id === deskLayout.departmentId) || null;
   const desk = workspace?.studio?.orchestrator?.desks?.[deskId] || {};
-  const deskProperties = normalizeDeskPropertiesState(workspace)?.[deskId] || { managedAgents: [], moduleIds: [], manualTests: [] };
+  const deskProperties = normalizeDeskPropertiesState(workspace)?.[deskId] || {
+    managedAgents: [],
+    moduleIds: [],
+    manualTests: [],
+    departmentContext: '',
+    guardrails: [],
+    contextSlices: [],
+  };
   const modules = listModuleManifests();
   const tasks = collectDeskTasks(workspace, deskId);
   const resolvedQAState = deskId === QA_LEAD_DESK_ID ? (qaState || buildQAStatePayload()) : null;
   const structuredReport = resolvedQAState?.structuredReport || null;
   const qaScorecards = collectStructuredQAScorecards(structuredReport);
-  const primaryAgentIds = DESK_AGENT_DEFAULTS[deskId] || [];
+  const primaryAgentIds = mergeUnique([...(deskLayout.assignedAgentIds || []), ...(DESK_AGENT_DEFAULTS[deskId] || [])]);
   const agents = [...new Set([...primaryAgentIds, ...deskProperties.managedAgents])]
     .map((agentId) => {
       const worker = workspace?.studio?.agentWorkers?.[agentId] || null;
@@ -976,13 +2154,52 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
         } : null,
       };
     });
+  const truth = {
+    department: {
+      id: departmentLayout?.id || deskLayout.departmentId,
+      label: departmentLayout?.label || deskLayout.departmentId,
+      owner: departmentLayout?.controlCentreDeskId || layout.controlCentreDeskId,
+      context: deskProperties.departmentContext || desk.currentGoal || desk.mission || departmentLayout?.summary || null,
+      kind: departmentLayout?.kind || null,
+    },
+    workload: {
+      assignedTasks: tasks.length,
+      queueSize: tasks.filter((task) => task.lifecycle !== 'complete').length,
+      outputs: collectDeskReports(workspace, deskId).length,
+    },
+    throughput: deskId === 'cto-architect'
+      ? `${qaScorecards.length} scorecards / ${deskProperties.guardrails.length} guardrails`
+      : (deskId === 'memory-archivist'
+        ? `${deskProperties.contextSlices.length} context slices / ${collectDeskReports(workspace, deskId).length} reports`
+        : `${tasks.filter((task) => task.lifecycle === 'complete').length} complete / ${tasks.filter((task) => task.lifecycle === 'in_progress').length} in progress`),
+    reports: collectDeskReports(workspace, deskId).slice(0, 6),
+    scorecards: deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect' ? qaScorecards : [],
+    assessments: deskProperties.manualTests,
+    context: {
+      summary: deskProperties.departmentContext || desk.currentGoal || desk.mission || null,
+      slices: deskProperties.contextSlices,
+    },
+    guardrails: deskProperties.guardrails,
+  };
   return {
     deskId,
     desk: {
+      label: deskLayout.label,
+      type: deskLayout.type,
       mission: desk.mission || null,
       currentGoal: desk.currentGoal || null,
       localState: desk.localState || null,
+      capabilities: [...(deskLayout.capabilities || [])],
+      editable: Boolean(deskLayout.editable),
+      assignedAgentIds: [...(deskLayout.assignedAgentIds || [])],
+      departmentId: deskLayout.departmentId,
     },
+    layout: {
+      controlCentreDeskId: layout.controlCentreDeskId,
+      department: departmentLayout,
+      desk: deskLayout,
+    },
+    truth,
     agents,
     tasks,
     modules: modules.map((module) => ({
@@ -1519,9 +2736,11 @@ function defaultSpatialWorkspace() {
     pages: [],
     activePageId: null,
     rsg: createDefaultRsgState(),
+    mutationGate: createDefaultMutationGateState(),
     studio: {
       handoffs: {},
       agentWorkers: createDefaultAgentWorkersState(),
+      layout: createDefaultStudioLayoutSchema(),
       deskProperties: normalizeDeskPropertiesState({}),
       selfUpgrade: createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }),
     },
@@ -1549,6 +2768,7 @@ function normalizeSpatialWorkspaceShape(workspace = {}) {
       ...(baseWorkspace.studio || {}),
       handoffs: { ...((baseWorkspace.studio || {}).handoffs || {}) },
       agentWorkers: normalizeAgentWorkersState(baseWorkspace?.studio?.agentWorkers),
+      layout: normalizeStudioLayoutSchema(baseWorkspace?.studio?.layout || {}),
       deskProperties: normalizeDeskPropertiesState(baseWorkspace),
       selfUpgrade: getSelfUpgradeState(baseWorkspace),
     },
@@ -1556,6 +2776,7 @@ function normalizeSpatialWorkspaceShape(workspace = {}) {
   return {
     ...normalizedWorkspace,
     rsg: buildRsgState(normalizedWorkspace),
+    mutationGate: normalizeMutationGateState(normalizedWorkspace.mutationGate),
   };
 }
 
@@ -1892,7 +3113,7 @@ function readSpatialWorkspace() {
   const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
   const pagesState = readJsonSafe(SPATIAL_PAGES_FILE, null);
   const intentState = readJsonSafe(SPATIAL_INTENT_STATE_FILE, null);
-  const studioState = readJsonSafe(SPATIAL_STUDIO_STATE_FILE, null);
+  const studioState = normalizeStoredStudioState(readJsonSafe(SPATIAL_STUDIO_STATE_FILE, null));
   const architectureState = readJsonSafe(SPATIAL_ARCHITECTURE_MEMORY_FILE, null);
   return normalizeSpatialWorkspaceShape(projectCanonicalSlicesIntoWorkspace({
     ...workspace,
@@ -1904,8 +3125,8 @@ function readSpatialWorkspace() {
     architectureMemory: architectureState?.architectureMemory || architectureState || workspace.architectureMemory,
     studio: {
       ...(workspace.studio || {}),
-      ...(studioState?.handoffs ? { handoffs: { ...(workspace.studio?.handoffs || {}), ...studioState.handoffs } } : {}),
-      ...(studioState?.teamBoard ? { teamBoard: { ...(workspace.studio?.teamBoard || {}), ...studioState.teamBoard } } : {}),
+      ...(studioState.handoffs ? { handoffs: { ...(workspace.studio?.handoffs || {}), ...studioState.handoffs } } : {}),
+      ...(studioState.teamBoard ? { teamBoard: { ...(workspace.studio?.teamBoard || {}), ...studioState.teamBoard } } : {}),
     },
   }));
 }
@@ -4360,6 +5581,51 @@ app.post('/api/ta/candidates', (req, res) => {
   });
 });
 
+app.get('/api/ta/department', async (req, res) => {
+  try {
+    const state = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+    res.json(await buildTaDepartmentPayload(state));
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.post('/api/ta/hire', async (req, res) => {
+  const body = req.body || {};
+  try {
+    const candidate = normalizeTaCandidateCard(body.candidate || body.profile || body);
+    const deskId = String(body.deskId || candidate.hiredDeskId || candidate.primaryDeskTarget || '').trim();
+    if (!deskId) throw new Error('deskId is required.');
+    if (!candidate.deskTargets.includes(deskId)) {
+      throw new Error(`deskId "${deskId}" is not one of the candidate desk targets.`);
+    }
+    const currentState = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+    if (currentState.hiredCandidates.some((entry) => entry.id === candidate.id)) {
+      throw new Error(`Candidate "${candidate.id}" is already hired.`);
+    }
+    const hiredCandidate = {
+      ...candidate,
+      hiredAt: nowIso(),
+      hiredDeskId: deskId,
+      contractLocked: true,
+    };
+    const nextState = {
+      ...currentState,
+      hiredCandidates: [...currentState.hiredCandidates, hiredCandidate],
+      updatedAt: nowIso(),
+      lastGeneratedGap: body.gapDescription || currentState.lastGeneratedGap || null,
+    };
+    writeJson(TA_DEPARTMENT_FILE, nextState);
+    res.status(201).json({
+      ok: true,
+      hiredCandidate,
+      department: await buildTaDepartmentPayload(nextState),
+    });
+  } catch (error) {
+    res.status(400).json({ error: String(error.message || error) });
+  }
+});
+
 app.get('/api/spatial/workspace', async (req, res) => {
   const workspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
     workspace: await pumpAutomatedTeamBoardAsync(),
@@ -4375,15 +5641,80 @@ app.get('/api/spatial/workspace', async (req, res) => {
   res.json(workspace);
 });
 
-app.get('/api/spatial/desks/:deskId/properties', async (req, res) => {
-  const deskId = String(req.params.deskId || '').trim();
-  if (!DESK_AGENT_DEFAULTS[deskId]) {
-    res.status(404).json({ error: 'Unknown desk id' });
+app.get('/api/spatial/layout/catalog', (req, res) => {
+  res.json(buildStudioLayoutCatalog());
+});
+
+app.post('/api/spatial/layout/actions', (req, res) => {
+  const action = String(req.body?.action || '').trim();
+  if (!action) {
+    res.status(400).json({ error: 'action is required' });
     return;
   }
+  try {
+    const currentWorkspace = readSpatialWorkspace();
+    const currentLayout = normalizeStudioLayoutSchema(currentWorkspace?.studio?.layout || {});
+    let mutationResult = null;
+    const updatedWorkspace = updateSpatialWorkspace((workspace) => {
+      const workspaceLayout = normalizeStudioLayoutSchema(workspace?.studio?.layout || {});
+      if (action === 'add_department') {
+        mutationResult = addDepartmentToLayout(workspaceLayout, {
+          templateId: req.body?.templateId,
+          returnResult: true,
+        });
+      } else if (action === 'add_desk') {
+        mutationResult = addDeskToLayout(workspaceLayout, {
+          departmentId: req.body?.departmentId,
+          templateId: req.body?.templateId,
+          returnResult: true,
+        });
+      } else {
+        throw new Error(`Unsupported layout action: ${action}`);
+      }
+      if (mutationResult?.ok === false && mutationResult?.validation?.status === 'block') {
+        return workspace;
+      }
+      return {
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          layout: mutationResult?.layout || workspaceLayout,
+        },
+      };
+    });
+    const nextLayout = updatedWorkspace?.studio?.layout || currentLayout || createDefaultStudioLayoutSchema();
+    const validation = mutationResult?.validation || null;
+    const createdDepartmentId = action === 'add_department' && mutationResult?.ok
+      ? nextLayout.departments.find((entry) => !currentLayout.departments.some((previous) => previous.id === entry.id))?.id || null
+      : null;
+    const createdDeskId = action === 'add_desk' && mutationResult?.ok
+      ? listStudioDeskIds(nextLayout).find((deskId) => !listStudioDeskIds(currentLayout).includes(deskId)) || null
+      : null;
+    res.json({
+      ok: mutationResult?.ok !== false,
+      action,
+      layout: nextLayout,
+      createdDepartmentId,
+      createdDeskId,
+      focusDeskId: createdDeskId,
+      validation,
+      reason: mutationResult?.ok === false ? mutationResult?.validation?.blockers?.[0]?.reason || mutationResult?.validation?.issues?.[0]?.reason || 'Dependency validation blocked.' : null,
+      catalog: buildStudioLayoutCatalog(),
+    });
+  } catch (error) {
+    res.status(400).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/spatial/desks/:deskId/properties', async (req, res) => {
+  const deskId = String(req.params.deskId || '').trim();
   const workspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
     workspace: await pumpAutomatedTeamBoardAsync(),
   }));
+  if (!hasStudioDesk(workspace?.studio?.layout || {}, deskId)) {
+    res.status(404).json({ error: 'Unknown desk id' });
+    return;
+  }
   const payload = buildDeskPropertiesPayload(workspace, deskId);
   console.debug(`[desk-properties] loaded desk=${deskId} tasks=${payload.tasks.length} modules=${payload.modules.length} reports=${payload.reports.length}`);
   res.json(payload);
@@ -4391,7 +5722,8 @@ app.get('/api/spatial/desks/:deskId/properties', async (req, res) => {
 
 app.post('/api/spatial/desks/:deskId/actions', (req, res) => {
   const deskId = String(req.params.deskId || '').trim();
-  if (!DESK_AGENT_DEFAULTS[deskId]) {
+  const currentWorkspace = readSpatialWorkspace();
+  if (!hasStudioDesk(currentWorkspace?.studio?.layout || {}, deskId)) {
     res.status(404).json({ error: 'Unknown desk id' });
     return;
   }
@@ -4402,6 +5734,16 @@ app.post('/api/spatial/desks/:deskId/actions', (req, res) => {
   const action = String(req.body?.action || '').trim();
   if (!action) {
     res.status(400).json({ error: 'action is required' });
+    return;
+  }
+  const isCtoDesk = deskId === 'cto-architect';
+  const isArchivistDesk = deskId === 'memory-archivist';
+  const allowedActions = new Set([
+    ...(isCtoDesk ? ['add_agent', 'assign_module', 'add_test', 'set_context', 'set_guardrails'] : []),
+    ...(isArchivistDesk ? ['archive-summary', 'snapshot-history'] : []),
+  ]);
+  if (!allowedActions.has(action)) {
+    res.status(403).json({ error: 'This desk is read-only for that action.' });
     return;
   }
   if (deskId === 'memory-archivist' && (action === 'archive-summary' || action === 'snapshot-history')) {
@@ -4421,7 +5763,7 @@ app.post('/api/spatial/desks/:deskId/actions', (req, res) => {
   try {
     const updatedWorkspace = updateSpatialWorkspace((workspace) => {
       const current = normalizeDeskPropertiesState(workspace);
-      const nextDesk = { ...(current[deskId] || { managedAgents: [], moduleIds: [], manualTests: [] }) };
+      const nextDesk = { ...(current[deskId] || { managedAgents: [], moduleIds: [], manualTests: [], departmentContext: '', guardrails: [], contextSlices: [] }) };
       if (action === 'add_agent') {
         const agentId = String(req.body?.agentId || '').trim();
         if (!agentId) throw new Error('agentId is required');
@@ -4444,6 +5786,19 @@ app.post('/api/spatial/desks/:deskId/actions', (req, res) => {
             createdAt: nowIso(),
           },
         ];
+      } else if (action === 'set_context') {
+        nextDesk.departmentContext = String(req.body?.context || req.body?.summary || '').trim();
+        const slices = Array.isArray(req.body?.slices) ? req.body.slices : [];
+        nextDesk.contextSlices = slices
+          .filter((entry) => entry && String(entry.summary || entry.title || entry.label || '').trim())
+          .map((entry, index) => ({
+            id: String(entry.id || `${deskId}-context-${index}`),
+            summary: String(entry.summary || entry.title || entry.label || '').trim(),
+            detail: String(entry.detail || entry.notes || '').trim(),
+          }));
+      } else if (action === 'set_guardrails') {
+        const guardrails = Array.isArray(req.body?.guardrails) ? req.body.guardrails : String(req.body?.guardrails || '').split('\n');
+        nextDesk.guardrails = guardrails.map((entry) => String(entry || '').trim()).filter(Boolean);
       } else {
         throw new Error(`Unsupported action: ${action}`);
       }
@@ -4880,18 +6235,19 @@ app.put('/api/spatial/intent-state', (req, res) => {
 
 app.put('/api/spatial/studio-state', (req, res) => {
   const body = req.body || {};
+  const nextStudioState = normalizeStoredStudioState(body);
   (async () => {
     await fs.promises.mkdir(path.dirname(SPATIAL_STUDIO_STATE_FILE), { recursive: true });
-    await fs.promises.writeFile(SPATIAL_STUDIO_STATE_FILE, JSON.stringify(body, null, 2));
+    await fs.promises.writeFile(SPATIAL_STUDIO_STATE_FILE, JSON.stringify(nextStudioState, null, 2));
     persistWorkspacePatch((workspace) => ({
       ...workspace,
       studio: {
         ...(workspace.studio || {}),
-        handoffs: body.handoffs ? { ...(workspace.studio?.handoffs || {}), ...body.handoffs } : workspace.studio?.handoffs,
-        teamBoard: body.teamBoard ? { ...(workspace.studio?.teamBoard || {}), ...body.teamBoard } : workspace.studio?.teamBoard,
+        handoffs: nextStudioState.handoffs ? { ...(workspace.studio?.handoffs || {}), ...nextStudioState.handoffs } : workspace.studio?.handoffs,
+        teamBoard: nextStudioState.teamBoard ? { ...(workspace.studio?.teamBoard || {}), ...nextStudioState.teamBoard } : workspace.studio?.teamBoard,
       },
     }));
-    res.json({ ok: true });
+    res.json({ ok: true, studioState: nextStudioState });
   })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
 });
 
@@ -5260,6 +6616,26 @@ app.post('/api/spatial/executive/route', async (req, res) => {
   }
 
   const forceIntentScan = Boolean(body.override?.force_intent_scan);
+  if (!forceIntentScan) {
+    const workspace = readSpatialWorkspace();
+    const graphs = normalizeGraphBundle(workspace);
+    const scaffoldRoute = await resolveWorldScaffoldExecutiveRoute({
+      promptText,
+      envelope,
+      graphs,
+    });
+    if (scaffoldRoute?.matched) {
+      return res.status(scaffoldRoute.statusCode).json(scaffoldRoute.body);
+    }
+    const worldEditRoute = resolveWorldEditExecutiveRoute({
+      promptText,
+      envelope,
+      graphs,
+    });
+    if (worldEditRoute?.matched) {
+      return res.status(worldEditRoute.statusCode).json(worldEditRoute.body);
+    }
+  }
   const looksLikeMaterial = detectMaterialGenerationIntent(promptText)
     || String(envelope.nodes.target.data.module_id || '').trim() === 'material_gen';
 
@@ -5518,22 +6894,34 @@ app.post('/api/spatial/mutations/apply', (req, res) => {
       confirmed: result.confirmed,
       requested: result.requested,
       applied: result.applied,
+      queued: result.queued,
+      blocked: result.blocked,
       changedLayers: result.changedLayers,
       reason: result.reason || '',
+      results: result.results,
+      approvalQueueSize: result.approvalQueue.length,
     };
-    const nextWorkspace = result.confirmed ? persistSpatialWorkspace(result.workspace) : previousWorkspace;
+    const nextWorkspace = result.persisted ? persistSpatialWorkspace(result.workspace) : previousWorkspace;
     appendArchitectureHistory({
       at: nowIso(),
       type: 'mutation-apply',
       summary: mutationSummary,
     });
-    res.json({
-      ok: true,
+    const payload = {
+      ok: result.ok,
       status: result.status,
       confirmed: result.confirmed,
       mutationResult: mutationSummary,
+      recentWorldChange: result.recentWorldChange || null,
       runtime: buildSpatialRuntimePayload(nextWorkspace),
-    });
+    };
+    if (!result.ok) {
+      return res.status(422).json({
+        ...payload,
+        error: mutationSummary.reason,
+      });
+    }
+    res.json(payload);
   } catch (error) {
     const requested = Array.isArray(mutations) ? mutations.length : 0;
     const mutationSummary = {
@@ -5541,6 +6929,8 @@ app.post('/api/spatial/mutations/apply', (req, res) => {
       confirmed: false,
       requested,
       applied: 0,
+      queued: 0,
+      blocked: requested,
       changedLayers: [],
       reason: String(error.message || error),
     };
@@ -5555,6 +6945,7 @@ app.post('/api/spatial/mutations/apply', (req, res) => {
       confirmed: false,
       error: mutationSummary.reason,
       mutationResult: mutationSummary,
+      recentWorldChange: null,
     });
   }
 });
@@ -5614,7 +7005,20 @@ module.exports = {
   listProjectsForUi,
   smokeCheckStaticWebBoot,
   detectMaterialGenerationIntent,
+  detectWorldScaffoldIntent,
+  detectPotentialWorldEditPrompt,
+  deriveRecentWorldChange,
   buildMaterialIntentModuleEnvelope,
+  interpretScaffoldIntentWithModel,
+  parseWorldEditIntent,
+  parseWorldScaffoldIntent,
+  resolveWorldEditExecutiveRoute,
+  resolveWorldScaffoldExecutiveRoute,
+  buildWorldScaffoldMutationPlan,
+  buildWorldScaffoldMutations,
+  normalizeStoredStudioState,
+  normalizeStoredStudioTeamBoard,
+  normalizeStoredStudioHandoffs,
   normalizeExecutiveEnvelope,
   mapEnvelopeToMaterialModule,
   buildModulePreview,
@@ -5624,4 +7028,10 @@ module.exports = {
   stopProjectRun,
   runArchivistWriteback,
   summarizeExecutionProvenance,
+  createDefaultStudioLayoutSchema,
+  normalizeStudioLayoutSchema,
+  addDepartmentToLayout,
+  addDeskToLayout,
+  buildStudioLayoutCatalog,
+  listStudioDeskIds,
 };

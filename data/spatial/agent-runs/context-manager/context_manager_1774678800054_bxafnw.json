@@ -1,0 +1,960 @@
+{
+  "id": "context_manager_1774678800054_bxafnw",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-28T06:20:00.090Z",
+  "startedAt": "2026-03-28T06:20:00.090Z",
+  "completedAt": "2026-03-28T06:20:16.023Z",
+  "durationMs": 15933,
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Migrate water tiles into the grass grid within the current ACE domain",
+  "reason": null,
+  "sourceNodeId": "node_1774678781107_pc7zc",
+  "sourceText": "can we add water tiles yet to our grass grid?",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Migrate water tiles into the grass grid within the current ACE domain",
+    "statement": "Update or add water tiles to our existing grass grid as part of the ongoing ACE domain evolution. The focus is on using a canonical anchor system for manager and context behavior.",
+    "goal": "Update or add water tiles to our existing grass grid as part of the ongoing ACE domain evolution. The focus is on using a canonical anchor system for manager and context behavior.",
+    "requestedOutcomes": [
+      "Add water tiles to the grass grid"
+    ],
+    "tasks": [
+      "Add water tiles to the grass grid"
+    ],
+    "targets": [],
+    "constraints": [
+      "Use the canonical `brain/emergence/` bundle for manager and context behavior"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "signals": {},
+    "clarifications": [
+      "Confirm if there are any specific requirements or considerations for adding water tiles within the grass grid"
+    ],
+    "focusTerms": [
+      "water tiles",
+      "grass grid"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/project_brain.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1774678800054_bxafnw",
+    "sourceNodeId": "node_1774678781107_pc7zc",
+    "sourceText": "can we add water tiles yet to our grass grid?",
+    "summary": "Migrate water tiles into the grass grid within the current ACE domain",
+    "explicitClaims": [
+      "Migrate water tiles into the grass grid"
+    ],
+    "inferredClaims": [
+      "The focus is on using a canonical anchor system for manager and context behavior in the migration of water tiles"
+    ],
+    "candidateNodes": [
+      {
+        "id": "grass_grid",
+        "label": "Grass Grid",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Existing grass grid is the target for adding water tiles.",
+        "confidence": 0.95
+      },
+      {
+        "id": "water_tiles",
+        "label": "Water Tiles",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Entities being added to the grass grid.",
+        "confidence": 0.95
+      },
+      {
+        "id": "ace_system",
+        "label": "ACE System",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Current ACE domain where the migration is happening.",
+        "confidence": 0.95
+      }
+    ],
+    "candidateEdges": [
+      {
+        "sourceCandidateId": "water_tiles",
+        "targetCandidateId": "grass_grid",
+        "kind": "uses",
+        "basis": "explicit",
+        "rationale": "Water tiles are being added to the grass grid."
+      },
+      {
+        "sourceCandidateId": "ace_system",
+        "targetCandidateId": "grass_grid",
+        "kind": "resides_in",
+        "basis": "explicit",
+        "rationale": "The grass grid is within the current ACE domain."
+      }
+    ],
+    "gaps": [
+      "Confirm if there are any specific requirements or considerations for adding water tiles within the grass grid in the context of the canonical anchor system."
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774678800054_bxafnw",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.73,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 1,
+          "reason": "Matched project terms: ace, canonical, anchor, system, context"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 1,
+          "reason": "Detected 6 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.6666666666666666,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context",
+          "ux",
+          "governance"
+        ]
+      },
+      "matchedTerms": [
+        "ace",
+        "canonical",
+        "anchor",
+        "system",
+        "context",
+        "brain",
+        "emergence"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Migrate water tiles into the grass grid within the current ACE domain",
+    "confidence": 0.73,
+    "legacyConfidence": 0.77,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: ace, canonical, anchor, system, context"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 6 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.6666666666666666,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: ace, canonical, anchor, system, context"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 2 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.8571428571428571,
+        "reason": "References ACE system structure, agents, or implementation surfaces."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.73,
+      "executionReadiness": 0.75,
+      "plannerUsefulness": 0.92,
+      "deployReadiness": 0.22
+    },
+    "truth": {
+      "rawSource": "can we add water tiles yet to our grass grid?",
+      "rawInput": "can we add water tiles yet to our grass grid?",
+      "statement": "Migrate water tiles into the grass grid within the current ACE domain",
+      "goal": "Migrate water tiles into the grass grid within the current ACE domain",
+      "intentType": "Constraint / guardrail request",
+      "requestType": "constraint_request",
+      "requestedOutcomes": [
+        "Add water tiles to the grass grid"
+      ],
+      "tasks": [
+        "Add water tiles to the grass grid"
+      ],
+      "targets": [
+        "ace",
+        "canonical",
+        "anchor",
+        "system",
+        "context",
+        "brain",
+        "emergence",
+        "and"
+      ],
+      "constraints": [
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "urgency": "normal",
+      "signals": {
+        "actionSignals": 1,
+        "constraintSignals": 0,
+        "architectureSignals": 0,
+        "executionSignals": 0,
+        "featureSignals": 0,
+        "matchedProjectTerms": 7,
+        "anchorRefs": 7,
+        "lowConfidenceCriteria": 1,
+        "plannerUsefulness": 0.92,
+        "executionReadiness": 0.75,
+        "deployReadiness": 0.22,
+        "labels": [
+          "context",
+          "ux",
+          "governance"
+        ],
+        "role": "constraint",
+        "requestedOutcomeCount": 1
+      },
+      "unresolved": [
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Project alignment: Matched project terms: ace, canonical, anchor, system, context",
+        "Actionability: Detected 6 implementation/planning verb signals.",
+        "Clarity: Input includes enough detail to classify intent reliably."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/slices.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Add water tiles to the grass grid",
+      "readiness": {
+        "intentConfidence": 0.73,
+        "plannerUsefulness": 0.92,
+        "executionReadiness": 0.75,
+        "deployReadiness": 0.22
+      }
+    },
+    "goal": "Update or add water tiles to our existing grass grid as part of the ongoing ACE domain evolution. The focus is on using a canonical anchor system for manager and context behavior.",
+    "targets": [
+      "ace",
+      "canonical",
+      "anchor",
+      "system",
+      "context",
+      "brain",
+      "emergence",
+      "brain/emergence/project_brain.md"
+    ],
+    "constraints": [
+      "Use the canonical `brain/emergence/` bundle for manager and context behavior"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "requestedOutcomes": [
+      "Add water tiles to the grass grid"
+    ],
+    "tasks": [
+      "Add water tiles to the grass grid"
+    ],
+    "signals": {},
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/slices.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "ace",
+            "brain",
+            "emergence",
+            "canonical",
+            "context",
+            "current",
+            "manager",
+            "system"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/slices.md",
+          "sourceRef": "brain/emergence/slices.md",
+          "source": "canonical",
+          "weight": 6,
+          "intentWeight": 5,
+          "matchedTerms": [
+            "brain",
+            "emergence",
+            "update",
+            "anchor",
+            "canonical"
+          ],
+          "score": 26
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "emergence",
+            "anchor",
+            "add",
+            "domain",
+            "ace"
+          ],
+          "score": 21
+        },
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "ace",
+            "brain",
+            "emergence",
+            "canonical",
+            "system"
+          ],
+          "score": 16
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "anchor",
+            "brain",
+            "canonical"
+          ],
+          "score": 10
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 1,
+          "intentWeight": 1,
+          "matchedTerms": [
+            "anchor",
+            "brain",
+            "canonical",
+            "emergence",
+            "manager",
+            "context"
+          ],
+          "score": 7
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 1,
+          "intentWeight": 1,
+          "matchedTerms": [
+            "brain",
+            "emergence",
+            "use"
+          ],
+          "score": 4
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make repo anchors canonical for manager, context, and intent flow.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: active",
+          "State: Building package",
+          "Phase: active"
+        ],
+        "next_actions": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: active",
+          "State: Building package",
+          "Phase: active",
+          "Owner: planner",
+          "Assignee: executor",
+          "Anchor refs: brain/emergence/decisions.md, brain/emergence/project_brain.md, brain/emergence/roadmap.md, brain/emergence/slices.md, brain/emergence/changelog.md, brain/emergence/plan.md, brain/emergence/tasks.md"
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "ux",
+        "governance"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 51,
+      "sentenceCount": 15,
+      "matchedProjectTerms": [
+        "ace",
+        "canonical",
+        "anchor",
+        "system",
+        "context",
+        "brain",
+        "emergence"
+      ],
+      "actionSignals": 6,
+      "featureRequestSignals": 0,
+      "architectureSignals": 3,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make repo anchors canonical for manager, context, and intent flow.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "ace",
+        "canonical",
+        "anchor",
+        "system",
+        "context",
+        "brain",
+        "emergence"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "for",
+        "the",
+        "emergence",
+        "brain",
+        "active",
+        "anchor"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/slices.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/slices.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "slices",
+          "relativePath": "brain/emergence/slices.md",
+          "sourceRelativePath": "brain/emergence/slices.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/slices.md",
+          "legacyRelativePaths": [
+            "projects/emergence/slices.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": false,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make repo anchors canonical for manager, context, and intent flow.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: active",
+          "State: Building package",
+          "Phase: active"
+        ],
+        "next_actions": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: active",
+          "State: Building package",
+          "Phase: active",
+          "Owner: planner",
+          "Assignee: executor",
+          "Anchor refs: brain/emergence/decisions.md, brain/emergence/project_brain.md, brain/emergence/roadmap.md, brain/emergence/slices.md, brain/emergence/changelog.md, brain/emergence/plan.md, brain/emergence/tasks.md"
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-28T06:20:04.938Z",
+    "nodeId": "node_1774678781107_pc7zc",
+    "source": "node-idle",
+    "createdAt": "2026-03-28T06:20:16.023Z",
+    "contextPacket": {
+      "summary": "Migrate water tiles into the grass grid within the current ACE domain",
+      "statement": "Update or add water tiles to our existing grass grid as part of the ongoing ACE domain evolution. The focus is on using a canonical anchor system for manager and context behavior.",
+      "goal": "Update or add water tiles to our existing grass grid as part of the ongoing ACE domain evolution. The focus is on using a canonical anchor system for manager and context behavior.",
+      "requestedOutcomes": [
+        "Add water tiles to the grass grid"
+      ],
+      "tasks": [
+        "Add water tiles to the grass grid"
+      ],
+      "targets": [],
+      "constraints": [
+        "Use the canonical `brain/emergence/` bundle for manager and context behavior"
+      ],
+      "urgency": "normal",
+      "requestType": "context_request",
+      "signals": {},
+      "clarifications": [
+        "Confirm if there are any specific requirements or considerations for adding water tiles within the grass grid"
+      ],
+      "focusTerms": [
+        "water tiles",
+        "grass grid"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/project_brain.md"
+      ],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1774678800054_bxafnw",
+      "sourceNodeId": "node_1774678781107_pc7zc",
+      "sourceText": "can we add water tiles yet to our grass grid?",
+      "summary": "Migrate water tiles into the grass grid within the current ACE domain",
+      "explicitClaims": [
+        "Migrate water tiles into the grass grid"
+      ],
+      "inferredClaims": [
+        "The focus is on using a canonical anchor system for manager and context behavior in the migration of water tiles"
+      ],
+      "candidateNodes": [
+        {
+          "id": "grass_grid",
+          "label": "Grass Grid",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Existing grass grid is the target for adding water tiles.",
+          "confidence": 0.95
+        },
+        {
+          "id": "water_tiles",
+          "label": "Water Tiles",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Entities being added to the grass grid.",
+          "confidence": 0.95
+        },
+        {
+          "id": "ace_system",
+          "label": "ACE System",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Current ACE domain where the migration is happening.",
+          "confidence": 0.95
+        }
+      ],
+      "candidateEdges": [
+        {
+          "sourceCandidateId": "water_tiles",
+          "targetCandidateId": "grass_grid",
+          "kind": "uses",
+          "basis": "explicit",
+          "rationale": "Water tiles are being added to the grass grid."
+        },
+        {
+          "sourceCandidateId": "ace_system",
+          "targetCandidateId": "grass_grid",
+          "kind": "resides_in",
+          "basis": "explicit",
+          "rationale": "The grass grid is within the current ACE domain."
+        }
+      ],
+      "gaps": [
+        "Confirm if there are any specific requirements or considerations for adding water tiles within the grass grid in the context of the canonical anchor system."
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1774678800054_bxafnw",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.73,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: ace, canonical, anchor, system, context"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 1,
+            "reason": "Detected 6 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.6666666666666666,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "ux",
+            "governance"
+          ]
+        },
+        "matchedTerms": [
+          "ace",
+          "canonical",
+          "anchor",
+          "system",
+          "context",
+          "brain",
+          "emergence"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774678800054_bxafnw",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1774678816023_y8s49c",
+  "handoff": {
+    "id": "handoff_1774678816023_y8s49c",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-28T06:20:16.023Z",
+    "sourceNodeId": "node_1774678781107_pc7zc",
+    "summary": "Migrate water tiles into the grass grid within the current ACE domain",
+    "goal": "Update or add water tiles to our existing grass grid as part of the ongoing ACE domain evolution. The focus is on using a canonical anchor system for manager and context behavior.",
+    "problemStatement": "Goal: Migrate water tiles into the grass grid within the current ACE domain\nRequested outcomes: Add water tiles to the grass grid.\nWhy ACE believes this: Project alignment 100%, Actionability 100%, Architecture fit 67%.\nConstraints and review signals: Use the canonical `brain/emergence/` bundle for manager and context behavior | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Confirm if there are any specific requirements or considerations for adding water tiles within the grass grid",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/slices.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md"
+    ],
+    "requestedOutcomes": [
+      "Add water tiles to the grass grid"
+    ],
+    "tasks": [
+      "Add water tiles to the grass grid"
+    ],
+    "constraints": [
+      "Use the canonical `brain/emergence/` bundle for manager and context behavior",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.73,
+    "legacyConfidence": 0.77,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: ace, canonical, anchor, system, context"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 6 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.6666666666666666,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.73,
+      "executionReadiness": 0.75,
+      "plannerUsefulness": 0.92,
+      "deployReadiness": 0.22
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "ux",
+        "governance"
+      ]
+    },
+    "requestType": "context_request",
+    "urgency": "normal",
+    "targets": [
+      "ace",
+      "canonical",
+      "anchor",
+      "system",
+      "context",
+      "brain",
+      "emergence",
+      "brain/emergence/project_brain.md"
+    ],
+    "signals": {},
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "llmStatus": "live",
+  "rawResponse": "{\n  \"summary\": \"Migrate water tiles into the grass grid within the current ACE domain\",\n  \"statement\": \"Update or add water tiles to our existing grass grid as part of the ongoing ACE domain evolution. The focus is on using a canonical anchor system for manager and context behavior.\",\n  \"tasks\": [\"Add water tiles to the grass grid\"],\n  \"constraints\": [\"Use the canonical `brain/emergence/` bundle for manager and context behavior\"],\n  \"clarifications\": [\"Confirm if there are any specific requirements or considerations for adding water tiles within the grass grid\"],\n  \"focusTerms\": [\"water tiles\", \"grass grid\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/project_brain.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1774678800054_bxafnw",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-28T06:20:00.090Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-28T06:20:04.936Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Migrate water tiles into the grass grid within the current ACE domain\",\n  \"statement\": \"Update or add water tiles to our existing grass grid as part of the ongoing ACE domain evolution. The focus is on using a canonical anchor system for manager and context behavior.\",\n  \"tasks\": [\"A"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-28T06:20:04.938Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-28T06:20:16.022Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Migrate water tiles into the grass grid within the current ACE domain\",\n  \"explicitClaims\": [\"Migrate water tiles into the grass grid\"],\n  \"inferredClaims\": [\"The focus is on using a canonical anchor system for manager and context behavior in the migration of water tiles\"],\n  \"candid"
+      }
+    ]
+  }
+}

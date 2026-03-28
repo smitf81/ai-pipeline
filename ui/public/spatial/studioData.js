@@ -1,75 +1,31 @@
+import { getOperationalRoles } from './roleTaxonomy.mjs';
+import {
+  getStudioDepartmentForDesk,
+  getStudioDeskRecord,
+} from './studioLayoutModel.js';
+
 const STATIONS = [
-  {
-    id: 'context-manager',
-    name: 'Context Manager',
-    shortLabel: 'Context',
-    role: 'Curates project context, live constraints, and working memory for the rest of ACE.',
-    responsibility: 'books / archive / memory terminal',
-    scope: ['context', 'constraint', 'memory', 'intent', 'brief'],
-    theme: { accent: '#66c7ff', shadow: 'rgba(64, 133, 184, 0.38)' },
-    position: { x: 16, y: 18 },
-  },
-  {
-    id: 'planner',
-    name: 'Planner',
-    shortLabel: 'Planner',
-    role: 'Breaks intent into sequences, milestones, and queued execution steps.',
-    responsibility: 'whiteboard / sticky notes / task desk',
-    scope: ['task', 'plan', 'todo', 'roadmap', 'flow'],
-    theme: { accent: '#ffd36e', shadow: 'rgba(180, 132, 54, 0.38)' },
-    position: { x: 54, y: 18 },
-  },
-  {
-    id: 'executor',
-    name: 'Executor',
-    shortLabel: 'Exec',
-    role: 'Owns build-facing delivery, implementation throughput, and task completion.',
-    responsibility: 'terminal / build station',
-    scope: ['build', 'implement', 'file', 'module', 'code', 'service'],
-    theme: { accent: '#5ce29f', shadow: 'rgba(49, 132, 94, 0.38)' },
-    position: { x: 16, y: 56 },
-  },
-  {
-    id: 'memory-archivist',
-    name: 'Memory Archivist',
-    shortLabel: 'Archivist',
-    role: 'Tracks saved notes, sketches, architecture snapshots, and historical decisions.',
-    responsibility: 'filing system / repository shelves',
-    scope: ['annotation', 'history', 'decision', 'archive', 'snapshot'],
-    theme: { accent: '#d2a3ff', shadow: 'rgba(126, 87, 160, 0.38)' },
-    position: { x: 54, y: 56 },
-  },
-  {
-    id: 'qa-lead',
-    name: 'QA / Test Lead',
-    shortLabel: 'QA',
-    role: 'Runs suites, surfaces evidence, and rates test quality across desks.',
-    responsibility: 'report wall / evidence bench',
-    scope: ['qa', 'test', 'scorecard', 'browser', 'evidence'],
-    theme: { accent: '#7dd6c8', shadow: 'rgba(78, 157, 145, 0.38)' },
-    position: { x: 50, y: 35 },
-  },
-  {
-    id: 'cto-architect',
-    name: 'CTO / Architect',
-    shortLabel: 'CTO',
-    role: 'Supervises ACE self-updates, guardrails, architecture boundaries, and review gates.',
-    responsibility: 'control desk / oversight station',
-    scope: ['architecture', 'rule', 'governance', 'review', 'ace'],
-    theme: { accent: '#ff8f7a', shadow: 'rgba(166, 86, 72, 0.42)' },
-    position: { x: 74, y: 35 },
-    isOversight: true,
-  },
+  ...getOperationalRoles().map((role) => ({
+    id: role.id,
+    name: role.label,
+    shortLabel: role.station.shortLabel,
+    role: role.station.role,
+    responsibility: role.station.responsibility,
+    scope: [...role.station.scope],
+    theme: { ...role.station.theme },
+    position: { ...role.station.position },
+    departmentId: role.departmentIds[0] || null,
+    allowedDepartmentIds: [...role.allowedDepartmentIds],
+    allowedDeskIds: [...role.allowedDeskIds],
+    leadOfDepartmentIds: [...role.leadOfDepartmentIds],
+    capabilities: [...role.capabilities],
+    starterTemplate: { ...role.starterTemplate },
+    mission: role.station.mission,
+    isOversight: Boolean(role.station.isOversight),
+  })),
 ];
 
-const DESK_MISSIONS = {
-  'context-manager': 'Maintain active page focus, context confidence, and desk-specific context slices.',
-  planner: 'Translate active context into concrete plans, work items, and dependency-aware handoffs.',
-  executor: 'Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.',
-  'memory-archivist': 'Persist useful summaries, artifact references, and history for active work.',
-  'qa-lead': 'Run QA suites, expose evidence, and score test quality for current ACE surfaces.',
-  'cto-architect': 'Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.',
-};
+const DESK_MISSIONS = Object.fromEntries(STATIONS.map((station) => [station.id, station.mission]));
 
 function uniqueStrings(values = []) {
   return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
@@ -546,20 +502,145 @@ export function normalizeTeamBoardState(workspace = {}) {
     return normalizedCard;
   }) : [];
   const selectedCard = cards.find((card) => card.id === board.selectedCardId) || null;
+  const economy = deriveTaskEconomy({ cards, selectedCardId: selectedCard?.id || null });
   return {
     cards,
     selectedCardId: selectedCard?.id || null,
     updatedAt: new Date().toISOString(),
     summary: {
-      plan: cards.filter((card) => card.status === 'plan').length,
-      active: cards.filter((card) => card.status === 'active').length,
-      complete: cards.filter((card) => card.status === 'complete').length,
-      review: cards.filter((card) => card.status === 'review').length,
+      plan: economy.intakeCount,
+      active: economy.wipCount,
+      complete: economy.completionCount,
+      review: economy.bottleneckCount,
       assigned: cards.filter((card) => card.taskFlow?.assignmentState === 'assigned').length,
       handedOff: cards.filter((card) => card.taskFlow?.phase === 'handed_off').length,
-      binned: cards.filter((card) => card.status === 'binned').length,
+      binned: economy.shelvedCount,
       idleWorkers: Number(board.summary?.idleWorkers || 0),
+      backlogPressure: economy.backlogPressure,
+      momentum: economy.momentum,
+      rewardYield: economy.rewardYield,
+      upgradeReadiness: economy.upgradeReadiness,
     },
+  };
+}
+
+function clamp01(value = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(1, numeric));
+}
+
+export function deriveTaskEconomy(board = {}) {
+  const cards = Array.isArray(board.cards) ? board.cards.filter(Boolean) : [];
+  const selectedCard = cards.find((card) => card.id === board.selectedCardId) || null;
+  const intakeCards = cards.filter((card) => normalizeBoardStatus(card.status) === 'plan');
+  const wipCards = cards.filter((card) => normalizeBoardStatus(card.status) === 'active');
+  const completionCards = cards.filter((card) => normalizeBoardStatus(card.status) === 'complete');
+  const rewardCards = cards.filter((card) => normalizeBoardStatus(card.status) === 'complete' && (
+    card.approvalState === 'approved'
+    || card.applyStatus === 'applied'
+    || card.deployStatus === 'deployed'
+  ));
+  const bottleneckCards = cards.filter((card) => normalizeBoardStatus(card.status) === 'review'
+    || card.approvalState === 'rejected'
+    || ['flagged', 'failed'].includes(card.applyStatus)
+    || ['flagged', 'failed'].includes(card.deployStatus));
+  const shelvedCards = cards.filter((card) => normalizeBoardStatus(card.status) === 'binned');
+  const total = Math.max(1, cards.length);
+  const intakeCount = intakeCards.length;
+  const wipCount = wipCards.length;
+  const completionCount = completionCards.length;
+  const rewardCount = rewardCards.length || completionCount;
+  const bottleneckCount = bottleneckCards.length;
+  const shelvedCount = shelvedCards.length;
+  const readyLaneCount = intakeCount + wipCount + completionCount;
+  const backlogPressure = Math.round(clamp01((intakeCount * 0.22) + (wipCount * 0.34) + (bottleneckCount * 0.44)) * 100);
+  const momentum = Math.round(clamp01(((completionCount * 0.45) + (rewardCount * 0.35) + (wipCount * 0.2)) / total) * 100);
+  const rewardYield = (rewardCount * 5) + (completionCount * 2) + (bottleneckCount ? 0 : 3);
+  const upgradeReadiness = Math.round(clamp01(((rewardCount + completionCount + wipCount) / total) * 0.55 + (momentum / 100) * 0.3 - (backlogPressure / 100) * 0.2) * 100);
+  const pressureTone = bottleneckCount > 0
+    ? 'bad'
+    : (backlogPressure >= 60 ? 'warn' : 'good');
+  const rewardState = rewardCount > 0
+    ? (bottleneckCount > 0 ? 'reward held at review' : 'reward unlocked')
+    : 'reward locked';
+  const backlogState = bottleneckCount > 0
+    ? `${bottleneckCount} bottleneck${bottleneckCount === 1 ? '' : 's'} in review`
+    : (wipCount > 0
+      ? `${wipCount} work-in-progress card${wipCount === 1 ? '' : 's'} in flight`
+      : `${intakeCount} intake card${intakeCount === 1 ? '' : 's'} waiting to move`);
+  const lanes = [
+    {
+      id: 'intake',
+      label: 'Intake',
+      value: intakeCount,
+      detail: intakeCount
+        ? 'Queued for planning and scope shaping.'
+        : 'No intake cards are waiting in the queue.',
+    },
+    {
+      id: 'wip',
+      label: 'Work-in-Progress',
+      value: wipCount,
+      detail: wipCount
+        ? 'Active production lane with tasks in motion.'
+        : 'No active tasks are burning cycles.',
+    },
+    {
+      id: 'completion',
+      label: 'Completion',
+      value: completionCount,
+      detail: completionCount
+        ? 'Finished cards are waiting for reward conversion.'
+        : 'No cards have reached completion yet.',
+    },
+    {
+      id: 'reward',
+      label: 'Reward',
+      value: rewardCount,
+      detail: rewardCount
+        ? 'Validated work has unlocked visible payoff.'
+        : 'No reward has been banked yet.',
+    },
+    {
+      id: 'bottleneck',
+      label: 'Bottleneck',
+      value: bottleneckCount,
+      detail: bottleneckCount
+        ? 'Review or approval pressure is slowing the line.'
+        : 'No bottlenecks are currently slowing throughput.',
+    },
+  ];
+
+  return {
+    cards,
+    selectedCard,
+    total,
+    intakeCount,
+    wipCount,
+    completionCount,
+    rewardCount,
+    bottleneckCount,
+    shelvedCount,
+    readyLaneCount,
+    backlogPressure,
+    momentum,
+    rewardYield,
+    upgradeReadiness,
+    pressureTone,
+    rewardState,
+    backlogState,
+    lanes,
+    headline: `${intakeCount} intake | ${wipCount} WIP | ${completionCount} completion | ${rewardCount} reward | ${bottleneckCount} bottleneck`,
+    detail: `${backlogState}. Momentum ${momentum}% | pressure ${backlogPressure}% | upgrade readiness ${upgradeReadiness}%`,
+    selectedLane: selectedCard
+      ? {
+          id: 'selected',
+          label: 'Selected Card',
+          value: selectedCard.title || selectedCard.id,
+          detail: `${taskPhaseLabel(selectedCard.taskFlow?.phase || normalizeBoardStatus(selectedCard.status))} | ${taskAssignmentLabel(selectedCard.taskFlow?.assignmentState || 'unassigned')} | ${deriveCardState(selectedCard)}`,
+        }
+      : null,
   };
 }
 
@@ -702,7 +783,7 @@ function deriveDeskLocalState(workItems = [], blockedReason = null) {
   return 'waiting';
 }
 
-function buildDeskStatusLabel({ deskId, localState, handoff, plannerToContext = null, contextWorker = {}, plannerWorker = {}, workItems = [] }) {
+function buildDeskStatusLabel({ deskId, localState, handoff, plannerToContext = null, contextWorker = {}, plannerWorker = {}, workItems = [], taskEconomy = null }) {
   const plannerFeedbackActive = isPlannerFeedbackActive(plannerToContext, handoff);
   if (deskId === 'context-manager') {
     if (contextWorker.status === 'running') return 'Refreshing context';
@@ -712,6 +793,10 @@ function buildDeskStatusLabel({ deskId, localState, handoff, plannerToContext = 
     return 'Idle';
   }
   if (deskId === 'planner') {
+    if (taskEconomy?.bottleneckCount) return 'Task bottleneck';
+    if (taskEconomy?.intakeCount) return 'Intake flowing';
+    if (taskEconomy?.wipCount) return 'Production line';
+    if (taskEconomy?.rewardCount) return 'Reward ready';
     if (plannerWorker.status === 'running') return 'Planning';
     if (plannerFeedbackActive) return plannerToContext?.action === 'bin-candidate' ? 'Bin candidate' : 'Needs context retry';
     if (handoff?.status === 'needs-clarification') return 'Needs clarification';
@@ -720,6 +805,10 @@ function buildDeskStatusLabel({ deskId, localState, handoff, plannerToContext = 
     return localState === 'ready' ? 'Queued' : 'Idle';
   }
   if (deskId === 'executor') {
+    if (taskEconomy?.bottleneckCount) return 'Production blocked';
+    if (taskEconomy?.wipCount) return 'Production running';
+    if (taskEconomy?.rewardCount) return 'Reward pending';
+    if (taskEconomy?.intakeCount) return 'Queue building';
     if (localState === 'blocked') return 'Execution gated';
     if (localState === 'running') return 'Executing';
     if (localState === 'ready') return 'Ready to execute';
@@ -737,7 +826,7 @@ function buildDeskStatusLabel({ deskId, localState, handoff, plannerToContext = 
   return localState === 'running' ? 'Processing' : (localState === 'ready' ? 'Queued' : 'Idle');
 }
 
-function buildDeskStatusDetail({ deskId, localState, handoff, plannerToContext = null, contextWorker = {}, plannerWorker = {}, workItems = [] }) {
+function buildDeskStatusDetail({ deskId, localState, handoff, plannerToContext = null, contextWorker = {}, plannerWorker = {}, workItems = [], taskEconomy = null }) {
   const plannerFeedbackActive = isPlannerFeedbackActive(plannerToContext, handoff);
   if (deskId === 'context-manager') {
     if (contextWorker.status === 'running') return contextWorker.statusReason || 'Drafting a planner-facing context packet.';
@@ -747,6 +836,10 @@ function buildDeskStatusDetail({ deskId, localState, handoff, plannerToContext =
     return 'Waiting for the next source context input.';
   }
   if (deskId === 'planner') {
+    if (taskEconomy?.bottleneckCount) return `${taskEconomy.bottleneckCount} review bottleneck${taskEconomy.bottleneckCount === 1 ? '' : 's'} are slowing the planning lane.`;
+    if (taskEconomy?.rewardCount) return `${taskEconomy.rewardCount} reward-ready card${taskEconomy.rewardCount === 1 ? '' : 's'} are ready to convert into visible payoff.`;
+    if (taskEconomy?.wipCount) return `${taskEconomy.wipCount} work-in-progress card${taskEconomy.wipCount === 1 ? '' : 's'} are moving through planning.`;
+    if (taskEconomy?.intakeCount) return `${taskEconomy.intakeCount} intake card${taskEconomy.intakeCount === 1 ? '' : 's'} are waiting to be shaped into work.`;
     if (plannerWorker.status === 'running') return plannerWorker.statusReason || 'Sequencing anchored plan cards from the current handoff.';
     if (plannerFeedbackActive) return plannerToContext?.detail || 'Planner is blocked on context follow-up.';
     if (handoff?.status === 'needs-clarification') return 'Planner cannot decompose work until the current handoff is clarified.';
@@ -758,6 +851,10 @@ function buildDeskStatusDetail({ deskId, localState, handoff, plannerToContext =
     return 'Planner is waiting for the next context handoff.';
   }
   if (deskId === 'executor') {
+    if (taskEconomy?.bottleneckCount) return `${taskEconomy.bottleneckCount} production bottleneck${taskEconomy.bottleneckCount === 1 ? '' : 's'} need review before the line can move again.`;
+    if (taskEconomy?.rewardCount) return `${taskEconomy.rewardCount} reward-ready card${taskEconomy.rewardCount === 1 ? '' : 's'} are waiting for executor validation.`;
+    if (taskEconomy?.wipCount) return `${taskEconomy.wipCount} work-in-progress card${taskEconomy.wipCount === 1 ? '' : 's'} are actively being processed.`;
+    if (taskEconomy?.intakeCount) return `${taskEconomy.intakeCount} intake card${taskEconomy.intakeCount === 1 ? '' : 's'} are waiting to enter production.`;
     return localState === 'blocked'
       ? 'Execution cannot advance until review gates or context blockers clear.'
       : (localState === 'ready' ? 'A reviewed package is waiting for executor work.' : 'Executor is idle.');
@@ -874,18 +971,24 @@ function advanceTeamBoardState({ workspace, handoff, board, deskStates = {}, con
         updatedAt: now,
       };
     });
+  const taskEconomy = deriveTaskEconomy({ cards, selectedCardId: board.selectedCardId });
   return {
     ...board,
     cards,
     updatedAt: now,
     summary: {
-      plan: cards.filter((card) => card.status === 'plan').length,
-      active: cards.filter((card) => card.status === 'active').length,
-      complete: cards.filter((card) => card.status === 'complete').length,
-      review: cards.filter((card) => card.status === 'review').length,
+      plan: taskEconomy.intakeCount,
+      active: taskEconomy.wipCount,
+      complete: taskEconomy.completionCount,
+      review: taskEconomy.bottleneckCount,
       assigned: cards.filter((card) => card.taskFlow?.assignmentState === 'assigned').length,
       handedOff: cards.filter((card) => card.taskFlow?.phase === 'handed_off').length,
+      binned: taskEconomy.shelvedCount,
       idleWorkers: countIdleWorkers(deskStates),
+      backlogPressure: taskEconomy.backlogPressure,
+      momentum: taskEconomy.momentum,
+      rewardYield: taskEconomy.rewardYield,
+      upgradeReadiness: taskEconomy.upgradeReadiness,
     },
   };
 }
@@ -1201,6 +1304,7 @@ export function advanceOrchestratorState({ workspace, dashboardState = {}, runs 
   const plannerWorker = workers.planner;
   const plannerToContext = workspace.studio?.handoffs?.plannerToContext || null;
   const baseBoard = normalizeTeamBoardState(workspace);
+  const baseTaskEconomy = deriveTaskEconomy(baseBoard);
   const seededBoard = !baseBoard.cards.length && handoff
     ? {
         ...baseBoard,
@@ -1245,6 +1349,7 @@ export function advanceOrchestratorState({ workspace, dashboardState = {}, runs 
       contextWorker,
       plannerWorker,
       workItems,
+      taskEconomy: baseTaskEconomy,
     });
     const statusDetail = buildDeskStatusDetail({
       deskId: agent.id,
@@ -1254,12 +1359,14 @@ export function advanceOrchestratorState({ workspace, dashboardState = {}, runs 
       contextWorker,
       plannerWorker,
       workItems,
+      taskEconomy: baseTaskEconomy,
     });
     return [agent.id, {
       mission: DESK_MISSIONS[agent.id],
       localState: localStatus,
       statusLabel,
       statusDetail,
+      taskEconomy: baseTaskEconomy,
       currentGoal: workItems[0]?.title || agent.role,
       allowedActions: DESK_ALLOWED_ACTIONS[agent.id] || [],
       workItems,
@@ -1332,6 +1439,7 @@ export function advanceOrchestratorState({ workspace, dashboardState = {}, runs 
       localState: localStatus,
       statusLabel,
       statusDetail,
+      taskEconomy: baseTaskEconomy,
       currentGoal: workItems[0]?.title || agent.role,
       allowedActions: DESK_ALLOWED_ACTIONS[agent.id] || [],
       workItems,
@@ -1451,6 +1559,7 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
   const plannerToContext = workspace.studio?.handoffs?.plannerToContext || null;
   const notebook = normalizeNotebookState(workspace);
   const board = normalizeTeamBoardState(workspace);
+  const taskEconomy = deriveTaskEconomy(board);
   const governedDesk = workspace.studio?.orchestrator?.desks?.[agent.id] || null;
   const contextWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers)['context-manager'];
   const actionSignals = Number(report?.metrics?.actionSignals || 0);
@@ -1480,6 +1589,17 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
   if (contextWorker?.lastBlockedReason) {
     userActions.push(contextWorker.lastBlockedReason);
   }
+  const workload = agent.id === 'qa-lead'
+    ? {
+          assignedTasks: Number(qaState?.structuredReport?.tests?.length || qaState?.structuredReport?.scorecards?.length || 0),
+          queueSize: Number((qaState?.browserRuns?.length || qaState?.structuredBusy) ? 1 : 0),
+          outputs: Number((qaState?.structuredReport ? 1 : 0) + (qaState?.browserRuns?.length || 0) + (qaState?.localGate ? 1 : 0)),
+      }
+    : {
+        assignedTasks: metrics.count,
+        queueSize: metrics.queue,
+        outputs: Math.max(history.length, runSignal ? 1 : 0),
+      };
 
   return {
     identity: {
@@ -1488,6 +1608,12 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
       role: agent.role,
     },
     status,
+    department: {
+      id: agent.id,
+      label: agent.name,
+      owner: 'memory-archivist',
+      summary: report?.projectContext?.currentFocus || governedDesk?.mission || 'Context intake lane',
+    },
     focus: {
       summary: report?.summary || 'Watching current context intake and workspace signals.',
       detail: report?.projectContext?.currentFocus || 'No active project focus reported.',
@@ -1500,10 +1626,68 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
       constraintSignals,
       usedFallback: Boolean(contextWorker?.lastUsedFallback),
     },
+    reports: [
+      report?.summary || null,
+      handoff?.summary || null,
+      plannerToContext?.detail || null,
+      ...history.slice(0, 2).map((entry) => entry.summary || entry.detail || null),
+    ].filter(Boolean),
+    scorecards: [],
+    assessments: [
+      {
+        id: 'context-confidence',
+        summary: `Confidence ${Math.round((report?.confidence || 0) * 100)}%`,
+        verdict: Number(report?.confidence || 0) < 0.55 ? 'review' : 'pass',
+      },
+      ...(contextWorker?.lastUsedFallback ? [{
+        id: 'context-fallback',
+        summary: 'Context worker used deterministic fallback',
+        verdict: 'review',
+      }] : []),
+    ],
+    context: {
+      summary: report?.summary || 'Watching current context intake and workspace signals.',
+      detail: report?.truth?.plannerBrief || report?.projectContext?.currentFocus || 'No active project focus reported.',
+      slices: taskCards.slice(0, 3).map((record) => ({
+        id: record.id,
+        summary: record.title,
+        detail: taskTrailSummary(record.taskFlow),
+      })),
+    },
+    guardrails: [
+      ...(dashboardState?.blockers || []).slice(0, 2),
+      ...(contextWorker?.lastBlockedReason ? [contextWorker.lastBlockedReason] : []),
+    ],
     history,
     userActions,
     handoff,
+    taskEconomy,
     sections: [
+      {
+        id: 'desk-truth',
+        label: 'Desk Truth',
+        kind: 'desk-truth',
+        truth: {
+          department: 'Context Intake',
+          workload,
+          throughput: taskEconomy.throughputLabel || `${taskEconomy.intakeCount} intake / ${taskEconomy.wipCount} WIP`,
+          reports: [
+            report?.summary || null,
+            handoff?.summary || null,
+            plannerToContext?.detail || null,
+          ].filter(Boolean),
+          scorecards: [],
+          assessments: [
+            `Confidence ${Math.round((report?.confidence || 0) * 100)}%`,
+            ...(contextWorker?.lastUsedFallback ? ['Context worker used deterministic fallback'] : []),
+          ],
+          context: report?.truth?.plannerBrief || report?.projectContext?.currentFocus || 'No active project focus reported.',
+          guardrails: [
+            ...(dashboardState?.blockers || []).slice(0, 2),
+            ...(contextWorker?.lastBlockedReason ? [contextWorker.lastBlockedReason] : []),
+          ],
+        },
+      },
       {
         id: 'current-job',
         label: 'Current Job',
@@ -1600,6 +1784,8 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
   const executorWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).executor;
   const plannerWorker = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).planner;
   const board = normalizeTeamBoardState(workspace);
+  const taskEconomy = deriveTaskEconomy(board);
+  const dashboardState = workspace.dashboardState || workspace.studio?.dashboardState || {};
   const plannerProducedCards = board.cards.filter((card) => (plannerWorker.lastProducedCardIds || []).includes(card.id));
   const selectedExecutionCard = getSelectedExecutionCard(workspace);
   const history = recentRunSummary(runs).map((entry, index) => ({ id: `${agent.id}-history-${index}`, summary: entry }));
@@ -1617,6 +1803,12 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
         : (plannerWorker.lastRunId
           ? `Last run ${plannerWorker.lastRunId} | outcome ${plannerWorker.lastOutcome || 'unknown'}${plannerWorker.statusReason ? ` | ${plannerWorker.statusReason}` : ''}`
           : 'No planner run has completed yet.'),
+    },
+    {
+      id: 'planner-task-economy',
+      label: 'Task Economy',
+      kind: 'task-economy',
+      economy: taskEconomy,
     },
     {
       id: 'planner-handoff',
@@ -1682,6 +1874,12 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
           ? `Last run ${executorWorker.lastRunId} | outcome ${executorWorker.lastOutcome || 'unknown'}${executorWorker.lastDecision ? ` | decision ${executorWorker.lastDecision}` : ''}${executorWorker.lastBlockedReason ? ` | blocker ${executorWorker.lastBlockedReason}` : ''}${executorWorker.statusReason ? ` | ${executorWorker.statusReason}` : ''}`
           : 'No executor run metadata has been recorded yet.'),
     },
+    {
+      id: 'executor-task-economy',
+      label: 'Task Economy',
+      kind: 'task-economy',
+      economy: taskEconomy,
+    },
   ] : [];
   const selfUpgradeSections = agent.id === 'cto-architect' ? [
     {
@@ -1732,9 +1930,100 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
         : 'Focus QA desk to run structured QA or browser evidence passes.',
     },
   ] : [];
+  const intent = workspace.intentState?.contextReport || null;
+  const archivedContext = workspace.architectureMemory?.latestContext || intent || null;
+  const guardrailSummary = [
+    governedDesk?.blockedReason,
+    selfUpgrade?.requiresPermission ? `Permission: ${selfUpgrade.requiresPermission}` : null,
+    hasLocalGateIssue(normalizedQA.localGate) ? summarizeLocalGate(normalizedQA.localGate) : null,
+  ].filter(Boolean);
+  const workload = agent.id === 'qa-lead'
+    ? {
+        assignedTasks: Number(qaState?.structuredReport?.tests?.length || qaState?.structuredReport?.scorecards?.length || 0),
+        queueSize: Number((qaState?.browserRuns?.length || qaState?.structuredBusy) ? 1 : 0),
+        outputs: Number((qaState?.structuredReport ? 1 : 0) + (qaState?.browserRuns?.length || 0) + (qaState?.localGate ? 1 : 0)),
+      }
+    : {
+        assignedTasks: metrics.count,
+        queueSize: metrics.queue,
+        outputs: Math.max(history.length, runSignal ? 1 : 0),
+      };
+  const deskTruth = {
+    department: agent.id === 'memory-archivist'
+      ? 'Memory Archive'
+      : (agent.id === 'cto-architect'
+        ? 'CTO Control Tower'
+        : `${agent.name} Desk`),
+    workload,
+    throughput: agent.id === 'memory-archivist'
+      ? `${(workspace.annotations || []).length} annotations / ${(workspace.sketches || []).length} sketches`
+      : (agent.id === 'cto-architect'
+        ? `${guardrailSummary.length} guardrails / ${qaScorecards.cards.length} scorecards`
+        : taskEconomy.throughputLabel),
+    reports: agent.id === 'memory-archivist'
+      ? [
+          archivedContext?.summary || null,
+          ...(workspace.architectureMemory?.versions || []).slice(0, 2).map((entry) => entry.summary || entry.title || entry.label || null),
+        ].filter(Boolean)
+      : (agent.id === 'cto-architect'
+        ? [
+            qaScorecards.summary || null,
+            latestQARun?.summary || null,
+            ...(history.slice(0, 2).map((entry) => entry.summary)),
+          ].filter(Boolean)
+        : [
+            governedDesk?.lastOutput || null,
+            runSignal?.summary || null,
+            ...(history.slice(0, 2).map((entry) => entry.summary)),
+          ].filter(Boolean)),
+    scorecards: agent.id === 'qa-lead' || agent.id === 'cto-architect' ? qaScorecards.cards : [],
+    assessments: agent.id === 'qa-lead'
+      ? mergeBrowserRuns(latestBrowserRun, normalizedQA.browserRuns).slice(0, 3).map((run) => ({
+          id: run.id,
+          summary: summarizeQABrowserRun(run),
+          verdict: latestQAVerdict(run),
+        }))
+      : (agent.id === 'cto-architect'
+        ? [
+            {
+              id: 'guardrails',
+              summary: guardrailSummary[0] || 'CTO guardrails are active.',
+              verdict: guardrailSummary.length ? 'review' : 'pass',
+            },
+            {
+              id: 'self-upgrade',
+              summary: selfUpgrade?.status ? `Self upgrade ${selfUpgrade.status}` : 'No self upgrade in motion.',
+              verdict: selfUpgrade?.status === 'blocked' ? 'review' : 'pass',
+            },
+          ]
+        : (governedDesk?.blockedReason ? [{
+            id: `${agent.id}-blocker`,
+            summary: governedDesk.blockedReason,
+            verdict: 'blocked',
+          }] : [])),
+    context: agent.id === 'memory-archivist'
+      ? (archivedContext?.truth?.plannerBrief || archivedContext?.summary || 'Memory Archivist owns canonical context slices.')
+      : (agent.id === 'cto-architect'
+        ? (workspace.studio?.selfUpgrade?.patchReview?.summary || workspace.studio?.selfUpgrade?.status || 'Managing department guardrails and desk ownership.')
+        : (governedDesk?.mission || `${metrics.count} related items in workspace`)),
+    guardrails: agent.id === 'cto-architect'
+      ? guardrailSummary
+      : (agent.id === 'memory-archivist'
+        ? [
+            'Archivist owns canonical context and archival history.',
+            'CTO oversight controls desk ownership and guardrails.',
+          ]
+        : (dashboardState?.blockers || []).slice(0, 2)),
+  };
   return {
     identity: { id: agent.id, name: agent.name, role: agent.role },
     status,
+    department: {
+      id: agent.id,
+      label: agent.name,
+      owner: agent.id === 'memory-archivist' ? 'memory-archivist' : (agent.id === 'cto-architect' ? 'cto-architect' : 'studio'),
+      summary: deskTruth.context,
+    },
     focus: {
       summary: governedDesk?.currentGoal || `${metrics.count} related items in workspace`,
       detail: governedDesk?.mission || statusDetail(status),
@@ -1746,6 +2035,14 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
         ? Math.max(plannerProducedCards.length, (plannerWorker.proposalArtifactRefs || []).length, history.length, runSignal ? 1 : 0)
         : Math.max(history.length, runSignal ? 1 : 0),
     },
+    workload,
+    throughput: deskTruth.throughput,
+    reports: deskTruth.reports,
+    scorecards: deskTruth.scorecards,
+    assessments: deskTruth.assessments,
+    context: deskTruth.context,
+    guardrails: deskTruth.guardrails,
+    truth: deskTruth,
     history,
     userActions: [
       ...(governedDesk?.blockedReason ? [governedDesk.blockedReason] : []),
@@ -1753,6 +2050,12 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
     ],
     handoff: agent.id === 'planner' ? handoff : null,
     sections: [
+      {
+        id: 'desk-truth',
+        label: 'Desk Truth',
+        kind: 'desk-truth',
+        truth: deskTruth,
+      },
       {
         id: 'mission',
         label: 'Mission',
@@ -1801,6 +2104,7 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
       ...qaSummarySections,
       ...selfUpgradeSections,
     ],
+    taskEconomy,
   };
 }
 
@@ -2098,6 +2402,32 @@ function buildQADeskSnapshot({ agent, workspace, status, qaState = null }) {
   if (localGate?.studioBoot && ['weak', 'fail', 'failed', 'error'].includes(localGateVerdict(localGate.studioBoot))) {
     waitingOnYou.push(`Review the latest Studio boot guardrail run (${localGate.studioBoot.verdict || localGate.studioBoot.status || 'pending'}).`);
   }
+  const deskTruth = {
+    department: 'QA Operations',
+    workload: {
+      assignedTasks: scorecards.cards.length,
+      queueSize: latestBrowserRun && latestQAVerdict(latestBrowserRun) !== 'pass' ? browserFindingCount(latestBrowserRun) : 0,
+      outputs: (normalizedQA.structuredReport ? 1 : 0) + browserRuns.length + localGateOutputCount(localGate),
+    },
+    throughput: normalizedQA.structuredBusy
+      ? 'Structured QA running'
+      : normalizedQA.browserBusy
+        ? 'Browser QA running'
+        : `${scorecards.cards.length} scorecards / ${browserRuns.length} browser runs / ${localGateOutputCount(localGate)} local gates`,
+    reports: [
+      scorecards.summary || null,
+      latestBrowserRun?.summary || null,
+      localGateSummary || null,
+    ].filter(Boolean),
+    scorecards: scorecards.cards || [],
+    assessments: browserRuns.slice(0, 3).map((run) => ({
+      id: run.id || `qa-run-${run.scenario || 'latest'}`,
+      summary: summarizeQABrowserRun(run),
+      verdict: latestQAVerdict(run),
+    })),
+    context: currentGoal,
+    guardrails: waitingOnYou.slice(0, 2),
+  };
   return {
     identity: { id: agent.id, name: agent.name, role: agent.role },
     status,
@@ -2110,6 +2440,14 @@ function buildQADeskSnapshot({ agent, workspace, status, qaState = null }) {
       queueSize: latestBrowserRun && latestQAVerdict(latestBrowserRun) !== 'pass' ? browserFindingCount(latestBrowserRun) : 0,
       outputs: (normalizedQA.structuredReport ? 1 : 0) + browserRuns.length + localGateOutputCount(localGate),
     },
+    workload: deskTruth.workload,
+    throughput: deskTruth.throughput,
+    reports: deskTruth.reports,
+    scorecards: deskTruth.scorecards,
+    assessments: deskTruth.assessments,
+    context: deskTruth.context,
+    guardrails: deskTruth.guardrails,
+    truth: deskTruth,
     history: browserRuns.map((run) => ({
       id: run.id || `qa-run-${run.scenario || 'latest'}`,
       summary: summarizeQABrowserRun(run),
@@ -2119,6 +2457,12 @@ function buildQADeskSnapshot({ agent, workspace, status, qaState = null }) {
     userActions: waitingOnYou,
     handoff: null,
     sections: [
+      {
+        id: 'desk-truth',
+        label: 'Desk Truth',
+        kind: 'desk-truth',
+        truth: deskTruth,
+      },
       {
         id: 'mission',
         label: 'Mission',
@@ -2204,8 +2548,161 @@ export function createInitialComments() {
   return Object.fromEntries(STATIONS.map((agent) => [agent.id, []]));
 }
 
+export {
+  STUDIO_LAYOUT_SCHEMA,
+  STUDIO_ROOM,
+  STUDIO_DESK_SIZE,
+  STUDIO_TEAM_BOARD_SIZE,
+  STUDIO_ROOM_FIT_PADDING,
+  DEFAULT_STUDIO_DESK_LAYOUT,
+  DEFAULT_STUDIO_WHITEBOARDS,
+  clampDeskPosition,
+  clampWhiteboardPosition,
+  createDefaultStudioLayout,
+  resolveStudioRoomZoom,
+  normalizeStudioLayout,
+  getStudioDepartmentForDesk,
+  getStudioDeskRecord,
+} from './studioLayoutModel.js';
+
 export function getStudioAgents() {
   return STATIONS.map((agent) => ({ ...agent }));
+}
+
+function resolveWorkspaceRuntime(runtimeState = {}) {
+  if (runtimeState && typeof runtimeState.workspace === 'object') return runtimeState.workspace;
+  return runtimeState && typeof runtimeState === 'object' ? runtimeState : {};
+}
+
+function summarizeAgentContextHistory(entries = []) {
+  const filtered = Array.isArray(entries) ? entries.filter(Boolean).map((entry) => String(entry.summary || entry.detail || entry.label || '').trim()).filter(Boolean) : [];
+  if (!filtered.length) return 'No recent context history surfaced.';
+  if (filtered.length === 1) return filtered[0];
+  return `${filtered[0]} +${filtered.length - 1} more`;
+}
+
+export function buildAgentContext(agentSnapshot = {}, runtimeState = {}, options = {}) {
+  const workspace = resolveWorkspaceRuntime(runtimeState);
+  const layout = options.layout || workspace?.studio?.layout || null;
+  const agentId = String(agentSnapshot?.id || options.agentId || '').trim();
+  const desk = agentId ? getStudioDeskRecord(agentId, layout) : null;
+  const department = agentId ? getStudioDepartmentForDesk(agentId, layout) : null;
+  const workers = normalizeAgentWorkersState(workspace?.studio?.agentWorkers);
+  const workerState = workers[agentId] || agentSnapshot?.workerState || {};
+  const intent = latestIntentReport(workspace);
+  const board = normalizeTeamBoardState(workspace);
+  const taskEconomy = deriveTaskEconomy(board);
+  const orchestrator = workspace?.studio?.orchestrator || {};
+  const deskState = orchestrator.desks?.[agentId] || null;
+  const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
+  const plannerToContext = workspace?.studio?.handoffs?.plannerToContext || null;
+  const recentHistory = Array.isArray(options.recentHistory)
+    ? options.recentHistory.filter(Boolean).slice(0, 3)
+    : [];
+  const recentActions = Array.isArray(agentSnapshot?.recentActions)
+    ? agentSnapshot.recentActions.filter(Boolean).slice(0, 3)
+    : [];
+  const commentCount = Array.isArray(agentSnapshot?.comments) ? agentSnapshot.comments.filter(Boolean).length : 0;
+  const activePageId = workspace.activePageId || null;
+  const activePageTitle = Array.isArray(workspace.pages)
+    ? (workspace.pages.find((page) => page.id === activePageId)?.title || null)
+    : null;
+  const visibleDeskCount = Object.values(workspace?.studio?.layout?.desks || {})
+    .filter((deskEntry) => deskEntry?.visible !== false && !deskEntry?.hidden).length;
+  const activeDeskCount = Array.isArray(orchestrator.activeDeskIds) ? orchestrator.activeDeskIds.length : 0;
+  const contextSummary = intent?.summary || agentSnapshot?.focusSummary || deskState?.currentGoal || 'No active context summary.';
+  const contextDetail = intent?.projectContext?.currentFocus || handoff?.summary || plannerToContext?.detail || deskState?.currentGoal || 'No active context detail surfaced.';
+  const currentGoal = deskState?.currentGoal || agentSnapshot?.latestRunSummary || agentSnapshot?.focusSummary || null;
+  const workload = agentSnapshot?.workload || {};
+  const status = agentSnapshot?.status || workerState.status || 'idle';
+
+  return {
+    id: agentId || null,
+    name: agentSnapshot?.name || agentId || 'Agent',
+    status,
+    summary: `${agentSnapshot?.name || agentId || 'Agent'} | ${contextSummary}`,
+    global: {
+      activePageId,
+      activePageTitle,
+      scene: workspace?.studio?.scene || null,
+      activeGraphLayer: workspace?.studio?.activeGraphLayer || null,
+      worldViewMode: workspace?.studio?.worldViewMode || null,
+      orchestratorStatus: orchestrator.status || 'idle',
+      activeDeskCount,
+      visibleDeskCount,
+      contextSummary,
+    },
+    desk: {
+      id: desk?.id || agentId || null,
+      label: desk?.label || agentSnapshot?.name || agentId || 'Desk',
+      departmentId: desk?.departmentId || null,
+      departmentLabel: department?.label || null,
+      visible: desk ? desk.visible !== false && !desk.hidden : null,
+      hidden: Boolean(desk?.hidden),
+      aliasOf: desk?.aliasOf || null,
+      capabilities: Array.isArray(desk?.capabilities) ? [...desk.capabilities] : [],
+      reportsToDeskId: desk?.reportsToDeskId || null,
+    },
+    department: department ? {
+      id: department.id,
+      label: department.label,
+      kind: department.kind,
+      status: department.status || null,
+      statusLabel: department.statusLabel || null,
+      dependencyWarnings: Array.isArray(department.dependencyWarnings) ? [...department.dependencyWarnings] : [],
+      dependencyWarningSummary: department.dependencyWarningSummary || null,
+    } : null,
+    role: {
+      id: agentSnapshot?.role || workerState.role || null,
+      label: agentSnapshot?.role || workerState.role || agentSnapshot?.name || agentId || 'Agent',
+      capabilities: Array.isArray(desk?.capabilities) ? [...desk.capabilities] : [],
+      mission: agentSnapshot?.mission || deskState?.mission || null,
+      oversight: Boolean(agentSnapshot?.isOversight || deskState?.allowedActions?.includes('approve-apply')),
+    },
+    task: {
+      currentGoal,
+      status: deskState?.localState || status,
+      assignedTasks: Number.isFinite(Number(workload.assignedTasks)) ? Number(workload.assignedTasks) : 0,
+      queueSize: Number.isFinite(Number(workload.queueSize)) ? Number(workload.queueSize) : 0,
+      outputs: Number.isFinite(Number(workload.outputs)) ? Number(workload.outputs) : 0,
+      throughputLabel: agentSnapshot?.throughputLabel || null,
+      latestSignal: agentSnapshot?.latestSignal || null,
+      latestRunSummary: agentSnapshot?.latestRunSummary || null,
+    },
+    context: {
+      summary: contextSummary,
+      detail: contextDetail,
+      handoffSummary: handoff?.summary || null,
+      plannerFeedback: plannerToContext?.detail || null,
+    },
+    history: {
+      recentActions,
+      recentHistory,
+      comments: Array.isArray(agentSnapshot?.comments) ? agentSnapshot.comments.slice(0, 3) : [],
+      summary: summarizeAgentContextHistory([
+        { summary: agentSnapshot?.latestRunSummary || null },
+        ...recentActions.map((entry) => ({ summary: entry })),
+        ...recentHistory,
+      ]),
+    },
+    signals: {
+      latestSignal: agentSnapshot?.latestSignal || null,
+      recentCommentCount: commentCount,
+      hasContextHandoff: Boolean(handoff?.id),
+      hasPlannerFeedback: Boolean(plannerToContext?.detail),
+    },
+  };
+}
+
+export function getAgentContext(agentId, options = {}) {
+  const agentSnapshots = Array.isArray(options.agentSnapshots) ? options.agentSnapshots : [];
+  const snapshot = typeof agentId === 'string'
+    ? agentSnapshots.find((entry) => entry?.id === agentId) || null
+    : (agentId && typeof agentId === 'object' ? agentId : null);
+  if (!snapshot) {
+    return buildAgentContext({ id: typeof agentId === 'string' ? agentId : null }, options.workspace || options.runtimeState || {}, options);
+  }
+  return buildAgentContext(snapshot, options.workspace || options.runtimeState || {}, options);
 }
 
 export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComments, recentHistory = [], qaState = null }) {
@@ -2222,6 +2719,12 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
   const normalizedQA = normalizeQAState(qaState);
   const qaScorecards = collectQAScorecards(normalizedQA.structuredReport);
   const latestBrowserRun = normalizedQA.latestBrowserRun || normalizedQA.browserRuns[0] || null;
+  const taskEconomy = deriveTaskEconomy(runtimeBoard);
+  const guardrailSummary = [
+    workspace.studio?.selfUpgrade?.status ? `Self upgrade ${workspace.studio.selfUpgrade.status}` : null,
+    normalizedQA.localGate ? summarizeLocalGate(normalizedQA.localGate) : null,
+    dashboardState?.blockers?.[0] || null,
+  ].filter(Boolean);
   return STATIONS.map((agent) => {
     const workerState = workers[agent.id] || {};
     const metrics = collectNodeMetrics(agent, systemGraph, workspace);
@@ -2267,11 +2770,14 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
       status,
       statusDetail: statusDetail(status),
       workload,
+      taskEconomy,
       recentActions,
       comments,
       focusSummary: agent.id === 'context-manager' && intent
         ? `${intent.summary || 'Intent captured'} (${Math.round((intent.confidence || 0) * 100)}%)`
-        : agent.id === 'qa-lead'
+        : agent.id === 'memory-archivist'
+          ? (workspace.architectureMemory?.latestContext?.summary || workspace.intentState?.contextReport?.summary || 'Canonical context archive ready')
+          : agent.id === 'qa-lead'
           ? (normalizedQA.structuredBusy
             ? 'Structured QA is running'
             : normalizedQA.browserBusy
@@ -2280,11 +2786,17 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
         : `${metrics.count} related items in workspace`,
       throughputLabel: agent.id === 'context-manager' && intent
         ? `${(intent.tasks || []).length} intent tasks / ${Math.round((intent.confidence || 0) * 100)}% confidence`
-        : agent.id === 'qa-lead'
+        : agent.id === 'memory-archivist'
+          ? `${(workspace.architectureMemory?.versions || []).length} archive versions / ${(workspace.annotations || []).length} annotations`
+          : agent.id === 'qa-lead'
           ? `${qaScorecards.cards.length} scorecards / ${mergeBrowserRuns(latestBrowserRun, normalizedQA.browserRuns).length} browser runs / ${localGateOutputCount(normalizedQA.localGate)} local gates`
-        : agent.id === 'executor'
-          ? `${runtimeBoard.summary.review} ready to apply / ${runtimeBoard.summary.active} active`
-          : `${metrics.count} tracked / ${metrics.queue} queued`,
+        : agent.id === 'cto-architect'
+          ? `${qaScorecards.cards.length} scorecards / ${guardrailSummary.length} guardrails`
+          : agent.id === 'executor'
+          ? `${taskEconomy.completionCount} completion / ${taskEconomy.bottleneckCount} bottleneck / ${taskEconomy.upgradeReadiness}% ready`
+          : agent.id === 'planner'
+            ? `${taskEconomy.intakeCount} intake / ${taskEconomy.wipCount} WIP / ${taskEconomy.rewardCount} reward`
+            : `${metrics.count} tracked / ${metrics.queue} queued`,
       activityPulse: Boolean(runSignal?.status === 'running' || status === 'processing' || status === 'queued'),
       unresolved: Boolean(runSignal?.status === 'error' || status === 'blocked' || status === 'degraded' || status === 'review'),
       latestSignal: runSignal?.summary || governedDesk?.lastOutput || governedDesk?.currentGoal || reviewReport?.summary || null,
@@ -2302,6 +2814,24 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
             metrics,
           })
         : buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal, status, qaState: normalizedQA }),
+      agentContext: buildAgentContext({
+        ...agent,
+        workerState,
+        status,
+        workload,
+        recentActions,
+        latestSignal: runSignal?.summary || governedDesk?.lastOutput || governedDesk?.currentGoal || reviewReport?.summary || null,
+        latestRunStatus: runSignal?.status || governedDesk?.localState || null,
+        latestRunSummary: runSignal?.summary || governedDesk?.blockedReason || governedDesk?.currentGoal || null,
+      }, {
+        workspace,
+        dashboardState,
+        runs,
+        recentHistory,
+        qaState: normalizedQA,
+      }, {
+        layout: workspace?.studio?.layout || null,
+      }),
     };
   });
 }

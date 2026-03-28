@@ -1,0 +1,710 @@
+{
+  "id": "qa_1774641885489_yg78nh",
+  "scenario": "studio-smoke",
+  "mode": "interactive",
+  "trigger": "guardrail",
+  "prompt": "Local Studio boot guardrail",
+  "baseUrl": "http://127.0.0.1:3107",
+  "status": "completed",
+  "verdict": "failed",
+  "createdAt": "2026-03-27T20:04:45.489Z",
+  "finishedAt": "2026-03-27T20:04:54.962Z",
+  "linked": {},
+  "browser": {
+    "executablePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "engine": "chromium"
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-27T20:04:45.491Z",
+      "finishedAt": "2026-03-27T20:04:45.506Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-27T20:04:45.507Z",
+      "finishedAt": "2026-03-27T20:04:46.859Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-27T20:04:46.861Z",
+      "finishedAt": "2026-03-27T20:04:50.131Z",
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-27T20:04:50.133Z",
+      "finishedAt": "2026-03-27T20:04:50.662Z",
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-27T20:04:50.663Z",
+      "finishedAt": "2026-03-27T20:04:54.406Z",
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-03-27T20:04:54.407Z",
+      "finishedAt": "2026-03-27T20:04:54.939Z",
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "weak",
+      "startedAt": "2026-03-27T20:04:54.941Z",
+      "finishedAt": "2026-03-27T20:04:54.962Z",
+      "error": null
+    }
+  ],
+  "findings": [
+    {
+      "id": "camera-off-center",
+      "severity": "warning",
+      "kind": "camera",
+      "summary": "Studio camera is not centered on the room.",
+      "details": "Room center drift is 227px horizontally and 321px vertically."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (72, 86) to (1128, 728)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (72, 86) to (1128, 728)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (72, 86) to (1128, 728)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (72, 86) to (1128, 728)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (72, 86) to (1128, 728)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (72, 86) to (1128, 728)."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    }
+  ],
+  "artifacts": {
+    "screenshots": [
+      {
+        "name": "01-initial.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774641885489_yg78nh\\01-initial.png",
+        "url": "/api/spatial/qa/runs/qa_1774641885489_yg78nh/artifacts/01-initial.png",
+        "label": "Initial ACE render"
+      },
+      {
+        "name": "02-studio-smoke.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774641885489_yg78nh\\02-studio-smoke.png",
+        "url": "/api/spatial/qa/runs/qa_1774641885489_yg78nh/artifacts/02-studio-smoke.png",
+        "label": "Scenario studio-smoke"
+      }
+    ],
+    "domSnapshot": {
+      "name": "dom.html",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774641885489_yg78nh\\dom.html",
+      "url": "/api/spatial/qa/runs/qa_1774641885489_yg78nh/artifacts/dom.html"
+    },
+    "consoleLog": {
+      "name": "console.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774641885489_yg78nh\\console.json",
+      "url": "/api/spatial/qa/runs/qa_1774641885489_yg78nh/artifacts/console.json"
+    },
+    "networkSummary": {
+      "name": "network.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774641885489_yg78nh\\network.json",
+      "url": "/api/spatial/qa/runs/qa_1774641885489_yg78nh/artifacts/network.json"
+    },
+    "runtimeSnapshot": {
+      "name": "runtime.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774641885489_yg78nh\\runtime.json",
+      "url": "/api/spatial/qa/runs/qa_1774641885489_yg78nh/artifacts/runtime.json"
+    },
+    "layoutFindings": {
+      "name": "layout-findings.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1774641885489_yg78nh\\layout-findings.json",
+      "url": "/api/spatial/qa/runs/qa_1774641885489_yg78nh/artifacts/layout-findings.json"
+    }
+  },
+  "console": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:3107/favicon.ico",
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace payload bytes: 303",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 9,
+        "columnNumber": 12
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"activePageId\": 25 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"selectedDeskId\": 9 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"selectedTab\": 4 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"scene\": 8 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"activeGraphLayer\": 8 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"worldViewMode\": 4 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"camera\": 44 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"zoom\": 3 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"openTraceId\": 28 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"openReportId\": 4 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"openTaskId\": 7 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "intent-state payload bytes: 125",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 9,
+        "columnNumber": 12
+      }
+    },
+    {
+      "type": "log",
+      "text": "intent-state key \"intentState\": 109 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "studio-state payload bytes: 174560",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 9,
+        "columnNumber": 12
+      }
+    },
+    {
+      "type": "log",
+      "text": "studio-state key \"handoffs\": 8616 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "studio-state key \"teamBoard\": 165918 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "pages payload bytes: 4671",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 9,
+        "columnNumber": 12
+      }
+    },
+    {
+      "type": "log",
+      "text": "pages key \"pages\": 4620 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "pages key \"activePageId\": 25 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "architecture-memory payload bytes: 449",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 9,
+        "columnNumber": 12
+      }
+    },
+    {
+      "type": "log",
+      "text": "architecture-memory key \"architectureMemory\": 426 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace payload bytes: 305",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 9,
+        "columnNumber": 12
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"activePageId\": 25 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"selectedDeskId\": 9 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"selectedTab\": 4 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"scene\": 8 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"activeGraphLayer\": 8 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"worldViewMode\": 4 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"camera\": 46 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"zoom\": 3 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"openTraceId\": 28 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"openReportId\": 4 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "log",
+      "text": "workspace key \"openTaskId\": 7 bytes",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/persistence.js",
+        "lineNumber": 16,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "debug",
+      "text": "[desk-properties-panel] sources {tasks: Array(2), modules: Array(1), reports: Array(3), agents: Array(2), qa: Array(4)}",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/spatialApp.js",
+        "lineNumber": 1632,
+        "columnNumber": 14
+      }
+    },
+    {
+      "type": "debug",
+      "text": "[desk-properties-panel] sources {tasks: Array(2), modules: Array(1), reports: Array(3), agents: Array(2), qa: Array(4)}",
+      "location": {
+        "url": "http://127.0.0.1:3107/spatial/spatialApp.js",
+        "lineNumber": 1632,
+        "columnNumber": 14
+      }
+    }
+  ],
+  "network": [],
+  "error": null
+}

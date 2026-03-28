@@ -2,16 +2,179 @@
   "pages": [
     {
       "outputs": [],
-      "handoffs": [],
+      "handoffs": [
+        {
+          "id": "handoff_1774615405452_2yc7",
+          "sourceAgentId": "context-manager",
+          "targetAgentId": "planner",
+          "createdAt": "2026-03-27T12:39:27.479Z",
+          "sourceNodeId": "node_1774615116734_91jfx",
+          "summary": "Migrate to canonical anchor-based ACE system",
+          "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
+          "anchorRefs": [
+            "brain/emergence/decisions.md",
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/slices.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md"
+          ],
+          "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
+          "requestedOutcomes": [
+            "Update or check the status of RGS nodes"
+          ],
+          "tasks": [
+            "Update or check the status of RGS nodes"
+          ],
+          "constraints": [
+            "Ensure compatibility during migration",
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "confidence": 0.69,
+          "criteria": [
+            {
+              "id": "project-alignment",
+              "label": "Project alignment",
+              "score": 1,
+              "reason": "Matched project terms: canonical, ace, system, context, compatibility"
+            },
+            {
+              "id": "actionability",
+              "label": "Actionability",
+              "score": 0.875,
+              "reason": "Detected 4 implementation/planning verb signals."
+            },
+            {
+              "id": "architecture-fit",
+              "label": "Architecture fit",
+              "score": 0.5555555555555556,
+              "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+            },
+            {
+              "id": "constraint-coverage",
+              "label": "Constraint coverage",
+              "score": 0,
+              "reason": "No clear constraints or review gates were stated."
+            },
+            {
+              "id": "clarity",
+              "label": "Clarity",
+              "score": 1,
+              "reason": "Input includes enough detail to classify intent reliably."
+            }
+          ],
+          "truth": {
+            "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+            "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+            "statement": "Migrate to canonical anchor-based ACE system",
+            "goal": "Migrate to canonical anchor-based ACE system",
+            "intentType": "Constraint / guardrail request",
+            "requestType": "constraint_request",
+            "requestedOutcomes": [
+              "Update or check the status of RGS nodes"
+            ],
+            "tasks": [
+              "Update or check the status of RGS nodes"
+            ],
+            "targets": [
+              "canonical",
+              "ace",
+              "system",
+              "context",
+              "compatibility",
+              "runtime",
+              "anchor",
+              "and"
+            ],
+            "constraints": [
+              "Constraint coverage: No clear constraints or review gates were stated."
+            ],
+            "urgency": "normal",
+            "signals": {
+              "actionSignals": 1,
+              "constraintSignals": 0,
+              "architectureSignals": 0,
+              "executionSignals": 0,
+              "featureSignals": 0,
+              "matchedProjectTerms": 7,
+              "anchorRefs": 7,
+              "lowConfidenceCriteria": 1,
+              "plannerUsefulness": 0.89,
+              "executionReadiness": 0.72,
+              "deployReadiness": 0.19,
+              "labels": [
+                "context",
+                "ux",
+                "governance"
+              ],
+              "role": "constraint",
+              "requestedOutcomeCount": 1
+            },
+            "unresolved": [
+              "Constraint coverage: No clear constraints or review gates were stated."
+            ],
+            "evidence": [
+              "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
+              "Clarity: Input includes enough detail to classify intent reliably.",
+              "Actionability: Detected 4 implementation/planning verb signals."
+            ],
+            "anchorRefs": [
+              "brain/emergence/decisions.md",
+              "brain/emergence/project_brain.md",
+              "brain/emergence/roadmap.md",
+              "brain/emergence/slices.md",
+              "brain/emergence/changelog.md",
+              "brain/emergence/plan.md",
+              "brain/emergence/tasks.md"
+            ],
+            "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
+            "readiness": {
+              "intentConfidence": 0.69,
+              "plannerUsefulness": 0.89,
+              "executionReadiness": 0.72,
+              "deployReadiness": 0.19
+            }
+          },
+          "scores": {
+            "intentConfidence": 0.69,
+            "executionReadiness": 0.72,
+            "plannerUsefulness": 0.89,
+            "deployReadiness": 0.19
+          },
+          "classification": {
+            "role": "constraint",
+            "labels": [
+              "context",
+              "ux",
+              "governance"
+            ]
+          },
+          "requestType": "context_request",
+          "urgency": "normal",
+          "targets": [
+            "canonical",
+            "ace",
+            "system",
+            "context",
+            "compatibility",
+            "runtime",
+            "anchor",
+            "brain/emergence/project_brain.md"
+          ],
+          "signals": {},
+          "status": "needs-clarification"
+        }
+      ],
       "artifactRefs": [],
-      "id": "page_1774440616080_m3p3",
-      "title": "Current Page",
+      "id": "page_1774615405445_ect6",
+      "title": "Migrate to canonical anchor-based ACE system",
       "status": "active",
-      "sourceNodeId": "node_1774259559573_gj2ai",
-      "summary": "Notebook page for current studio work.",
-      "createdAt": "2026-03-25T12:10:16.080Z",
-      "updatedAt": "2026-03-27T10:47:49.666Z"
+      "sourceNodeId": "node_1774615116734_91jfx",
+      "summary": "Migrate to canonical anchor-based ACE system",
+      "createdAt": "2026-03-27T12:43:25.445Z",
+      "updatedAt": "2026-03-28T14:03:54.976Z"
     }
   ],
-  "activePageId": "page_1774440616080_m3p3"
+  "activePageId": "page_1774615405445_ect6"
 }

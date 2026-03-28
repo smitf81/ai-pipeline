@@ -1,0 +1,78 @@
+{
+  "snapshot": {
+    "viewport": {
+      "width": 1600,
+      "height": 1100
+    },
+    "room": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0
+    },
+    "roomRect": null,
+    "shellRect": null,
+    "desks": [],
+    "whiteboards": [],
+    "links": [],
+    "controls": [
+      {
+        "id": "scene-canvas-button",
+        "label": "Canvas button",
+        "visible": false
+      },
+      {
+        "id": "scene-studio-button",
+        "label": "ACE Studio button",
+        "visible": false
+      },
+      {
+        "id": "recent-saves-select",
+        "label": "Recent Saves",
+        "visible": false
+      },
+      {
+        "id": "reset-view-button",
+        "label": "Reset View",
+        "visible": false
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "control-hidden-scene-canvas-button",
+      "severity": "warning",
+      "kind": "visibility",
+      "summary": "Canvas button is clipped or hidden.",
+      "details": "Required control scene-canvas-button was not fully visible in the current browser pass."
+    },
+    {
+      "id": "control-hidden-scene-studio-button",
+      "severity": "warning",
+      "kind": "visibility",
+      "summary": "ACE Studio button is clipped or hidden.",
+      "details": "Required control scene-studio-button was not fully visible in the current browser pass."
+    },
+    {
+      "id": "control-hidden-recent-saves-select",
+      "severity": "warning",
+      "kind": "visibility",
+      "summary": "Recent Saves is clipped or hidden.",
+      "details": "Required control recent-saves-select was not fully visible in the current browser pass."
+    },
+    {
+      "id": "control-hidden-reset-view-button",
+      "severity": "warning",
+      "kind": "visibility",
+      "summary": "Reset View is clipped or hidden.",
+      "details": "Required control reset-view-button was not fully visible in the current browser pass."
+    },
+    {
+      "id": "console-7",
+      "severity": "error",
+      "kind": "console",
+      "summary": "Console errors were captured during the browser pass.",
+      "details": "Uncaught Error: Objects are not valid as a React child (found: object with keys {summary, slices}). If you meant to render a collection of children, use an array instead.\n    at throwOnInvalidObjectType (https://unpkg.com/react-dom@18/umd/react-dom.development.js:13132:10)\n    at reconcileChildFibers (https://unpkg.com/react-dom@18/umd/react-dom.development.js:14073:8)\n    at reconcileChildren (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19195:29)\n    at updateHostComponent (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19962:4)\n    at beginWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:21666:15)\n    at callCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4150:15)\n    at invokeGuardedCallbackDev (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4199:17)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4263:32)\n    at beginWork$1 (https://unpkg.com/react-dom@18/umd/react-dom.development.js:27499:8)\n    at performUnitOfWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26608:13)\n    at workLoopSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26514:6)\n    at renderRootSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26482:8)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25786:75)\n    at workLoop (https://unpkg.com/react@18/umd/react.development.js:2652:35)\n    at flushWork (https://unpkg.com/react@18/umd/react.development.js:2625:15)\n    at performWorkUntilDeadline (https://unpkg.com/react@18/umd/react.development.js:2919:22) | Uncaught Error: Objects are not valid as a React child (found: object with keys {summary, slices}). If you meant to render a collection of children, use an array instead.\n    at throwOnInvalidObjectType (https://unpkg.com/react-dom@18/umd/react-dom.development.js:13132:10)\n    at reconcileChildFibers (https://unpkg.com/react-dom@18/umd/react-dom.development.js:14073:8)\n    at reconcileChildren (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19195:29)\n    at updateHostComponent (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19962:4)\n    at beginWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:21666:15)\n    at callCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4150:15)\n    at invokeGuardedCallbackDev (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4199:17)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4263:32)\n    at beginWork$1 (https://unpkg.com/react-dom@18/umd/react-dom.development.js:27499:8)\n    at performUnitOfWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26608:13)\n    at workLoopSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26514:6)\n    at renderRootSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26482:8)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25786:75)\n    at workLoop (https://unpkg.com/react@18/umd/react.development.js:2652:35)\n    at flushWork (https://unpkg.com/react@18/umd/react.development.js:2625:15)\n    at performWorkUntilDeadline (https://unpkg.com/react@18/umd/react.development.js:2919:22) | Uncaught Error: Objects are not valid as a React child (found: object with keys {summary, slices}). If you meant to render a collection of children, use an array instead.\n    at throwOnInvalidObjectType (https://unpkg.com/react-dom@18/umd/react-dom.development.js:13132:10)\n    at reconcileChildFibers (https://unpkg.com/react-dom@18/umd/react-dom.development.js:14073:8)\n    at reconcileChildren (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19195:29)\n    at updateHostComponent (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19962:4)\n    at beginWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:21666:15)\n    at callCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4150:15)\n    at invokeGuardedCallbackDev (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4199:17)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4263:32)\n    at beginWork$1 (https://unpkg.com/react-dom@18/umd/react-dom.development.js:27499:8)\n    at performUnitOfWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26608:13)\n    at workLoopSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26514:6)\n    at renderRootSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26482:8)\n    at recoverFromConcurrentError (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25898:21)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25798:23)\n    at workLoop (https://unpkg.com/react@18/umd/react.development.js:2652:35)\n    at flushWork (https://unpkg.com/react@18/umd/react.development.js:2625:15)\n    at performWorkUntilDeadline (https://unpkg.com/react@18/umd/react.development.js:2919:22) | Uncaught Error: Objects are not valid as a React child (found: object with keys {summary, slices}). If you meant to render a collection of children, use an array instead.\n    at throwOnInvalidObjectType (https://unpkg.com/react-dom@18/umd/react-dom.development.js:13132:10)\n    at reconcileChildFibers (https://unpkg.com/react-dom@18/umd/react-dom.development.js:14073:8)\n    at reconcileChildren (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19195:29)\n    at updateHostComponent (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19962:4)\n    at beginWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:21666:15)\n    at callCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4150:15)\n    at invokeGuardedCallbackDev (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4199:17)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4263:32)\n    at beginWork$1 (https://unpkg.com/react-dom@18/umd/react-dom.development.js:27499:8)\n    at performUnitOfWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26608:13)\n    at workLoopSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26514:6)\n    at renderRootSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26482:8)\n    at recoverFromConcurrentError (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25898:21)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25798:23)\n    at workLoop (https://unpkg.com/react@18/umd/react.development.js:2652:35)\n    at flushWork (https://unpkg.com/react@18/umd/react.development.js:2625:15)\n    at performWorkUntilDeadline (https://unpkg.com/react@18/umd/react.development.js:2919:22) | The above error occurred in the <span> component:\n\n    at span\n    at div\n    at div\n    at div\n    at div\n    at div\n    at section\n    at SpatialNotebook (http://127.0.0.1:3107/spatial/spatialApp.js:1736:25)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries. | The above error occurred in the <span> component:\n\n    at span\n    at div\n    at div\n    at div\n    at div\n    at div\n    at div\n    at section\n    at SpatialNotebook (http://127.0.0.1:3107/spatial/spatialApp.js:1736:25)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries."
+    }
+  ]
+}

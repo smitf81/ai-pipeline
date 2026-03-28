@@ -25,14 +25,7 @@
       "constraints": []
     },
     "adapters": [],
-    "proposals": [
-      "system-structure: QA desk in studio",
-      "system-structure: QA lead agent",
-      "system-structure: tools they can use",
-      "system-structure: new note",
-      "system-structure: skill idea (of sorts)\n- humility\n- self doubt\n-being able to say \"i don't know\"\n- \"but try asking someone at the(X) desk they might have a better understanding",
-      "system-structure: in business alot of good management is knowing who to ask "
-    ],
+    "proposals": [],
     "rules": [
       "modular architecture",
       "no circular dependencies",

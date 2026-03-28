@@ -1,0 +1,961 @@
+{
+  "id": "context_manager_1774696527193_onge2a",
+  "workerId": "context-manager",
+  "createdAt": "2026-03-28T11:15:27.206Z",
+  "startedAt": "2026-03-28T11:15:27.206Z",
+  "completedAt": "2026-03-28T11:15:48.412Z",
+  "durationMs": 21206,
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Migrate ground tiles project to canonical anchor system",
+  "reason": null,
+  "sourceNodeId": "node_1774696520290_gzsp8",
+  "sourceText": "lets make some ground tiles",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Migrate ground tiles project to canonical anchor system",
+    "statement": "Update the current ground tiles project to use the new anchor-based ACE system, ensuring compatibility with existing RGS nodes.",
+    "goal": "Update the current ground tiles project to use the new anchor-based ACE system, ensuring compatibility with existing RGS nodes.",
+    "requestedOutcomes": [
+      "Update ground tiles project configuration",
+      "Check the status of RGS nodes"
+    ],
+    "tasks": [
+      "Update ground tiles project configuration",
+      "Check the status of RGS nodes"
+    ],
+    "targets": [],
+    "constraints": [
+      "Maintain compatibility with existing RGS nodes"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "signals": {},
+    "clarifications": [
+      "What is the current state of the ground tiles project? Are there any specific dependencies or requirements that need to be considered during migration?"
+    ],
+    "focusTerms": [
+      "ground tiles",
+      "RGS nodes"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/project_brain.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1774696527193_onge2a",
+    "sourceNodeId": "node_1774696520290_gzsp8",
+    "sourceText": "lets make some ground tiles",
+    "summary": "Migrate ground tiles project to the canonical anchor-based ACE system",
+    "explicitClaims": [
+      "Update the current ground tiles project configuration"
+    ],
+    "inferredClaims": [
+      "Check the status of RGS nodes"
+    ],
+    "candidateNodes": [
+      {
+        "id": "ground_tiles_project",
+        "label": "Ground Tiles Project",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Current focus of the request",
+        "confidence": 1
+      },
+      {
+        "id": "ace_system",
+        "label": "Anchor-based ACE System",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "Target system for the migration",
+        "confidence": 1
+      },
+      {
+        "id": "rgs_nodes",
+        "label": "RGS Nodes",
+        "kind": "module",
+        "basis": "inferred",
+        "rationale": "Mentioned in the request as a compatibility concern",
+        "confidence": 0.75
+      }
+    ],
+    "candidateEdges": [
+      {
+        "sourceCandidateId": "ground_tiles_project",
+        "targetCandidateId": "ace_system",
+        "kind": "depends_on",
+        "basis": "explicit",
+        "rationale": "The request is about updating the ground tiles project to use the anchor-based ACE system"
+      },
+      {
+        "sourceCandidateId": "ground_tiles_project",
+        "targetCandidateId": "rgs_nodes",
+        "kind": "relates_to",
+        "basis": "inferred",
+        "rationale": "The request mentions maintaining compatibility with RGS nodes"
+      }
+    ],
+    "gaps": [
+      "Detailed information about the current state of the ground tiles project and any specific dependencies or requirements"
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774696527193_onge2a",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.59,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 0.8571428571428571,
+          "reason": "Matched project terms: canonical, anchor, system, ace, compatibility"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.75,
+          "reason": "Detected 3 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.3333333333333333,
+          "reason": "Little direct architecture language found."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context",
+          "ux",
+          "governance"
+        ]
+      },
+      "matchedTerms": [
+        "canonical",
+        "anchor",
+        "system",
+        "ace",
+        "compatibility",
+        "check"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Migrate ground tiles project to canonical anchor system",
+    "confidence": 0.59,
+    "legacyConfidence": 0.69,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.8571428571428571,
+        "reason": "Matched project terms: canonical, anchor, system, ace, compatibility"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.75,
+        "reason": "Detected 3 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.3333333333333333,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: canonical, anchor, system, ace, compatibility"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 1,
+        "reason": "Detected 3 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.42857142857142855,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.59,
+      "executionReadiness": 0.69,
+      "plannerUsefulness": 0.8,
+      "deployReadiness": 0.17
+    },
+    "truth": {
+      "rawSource": "lets make some ground tiles",
+      "rawInput": "lets make some ground tiles",
+      "statement": "Migrate ground tiles project to canonical anchor system",
+      "goal": "Migrate ground tiles project to canonical anchor system",
+      "intentType": "Constraint / guardrail request",
+      "requestType": "constraint_request",
+      "requestedOutcomes": [
+        "Update ground tiles project configuration",
+        "Check the status of RGS nodes"
+      ],
+      "tasks": [
+        "Update ground tiles project configuration",
+        "Check the status of RGS nodes"
+      ],
+      "targets": [
+        "canonical",
+        "anchor",
+        "system",
+        "ace",
+        "compatibility",
+        "check",
+        "and",
+        "for"
+      ],
+      "constraints": [
+        "Architecture fit: Little direct architecture language found.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "urgency": "normal",
+      "signals": {
+        "actionSignals": 0,
+        "constraintSignals": 0,
+        "architectureSignals": 0,
+        "executionSignals": 0,
+        "featureSignals": 0,
+        "matchedProjectTerms": 6,
+        "anchorRefs": 7,
+        "lowConfidenceCriteria": 2,
+        "plannerUsefulness": 0.8,
+        "executionReadiness": 0.69,
+        "deployReadiness": 0.17,
+        "labels": [
+          "context",
+          "ux",
+          "governance"
+        ],
+        "role": "constraint",
+        "requestedOutcomeCount": 2
+      },
+      "unresolved": [
+        "Architecture fit: Little direct architecture language found.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Project alignment: Matched project terms: canonical, anchor, system, ace, compatibility",
+        "Actionability: Detected 3 implementation/planning verb signals."
+      ],
+      "anchorRefs": [
+        "brain/emergence/slices.md",
+        "brain/emergence/project_brain.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Update ground tiles project configuration; Check the status of RGS nodes",
+      "readiness": {
+        "intentConfidence": 0.59,
+        "plannerUsefulness": 0.8,
+        "executionReadiness": 0.69,
+        "deployReadiness": 0.17
+      }
+    },
+    "goal": "Update the current ground tiles project to use the new anchor-based ACE system, ensuring compatibility with existing RGS nodes.",
+    "targets": [
+      "canonical",
+      "anchor",
+      "system",
+      "ace",
+      "compatibility",
+      "check",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "constraints": [
+      "Maintain compatibility with existing RGS nodes"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "requestedOutcomes": [
+      "Update ground tiles project configuration",
+      "Check the status of RGS nodes"
+    ],
+    "tasks": [
+      "Update ground tiles project configuration",
+      "Check the status of RGS nodes"
+    ],
+    "signals": {},
+    "anchorRefs": [
+      "brain/emergence/slices.md",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/slices.md",
+          "sourceRef": "brain/emergence/slices.md",
+          "source": "canonical",
+          "weight": 6,
+          "intentWeight": 5,
+          "matchedTerms": [
+            "status",
+            "check",
+            "nodes",
+            "rgs",
+            "update",
+            "anchor",
+            "canonical"
+          ],
+          "score": 36
+        },
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "ace",
+            "state",
+            "canonical",
+            "current",
+            "system"
+          ],
+          "score": 21
+        },
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "ace",
+            "canonical",
+            "compatibility",
+            "migration",
+            "system"
+          ],
+          "score": 16
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "anchor",
+            "compatibility",
+            "ace"
+          ],
+          "score": 13
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "anchor",
+            "canonical"
+          ],
+          "score": 7
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 1,
+          "intentWeight": 1,
+          "matchedTerms": [
+            "anchor",
+            "canonical",
+            "compatibility"
+          ],
+          "score": 4
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 1,
+          "intentWeight": 1,
+          "matchedTerms": [
+            "compatibility",
+            "use"
+          ],
+          "score": 3
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make repo anchors canonical for manager, context, and intent flow.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: active",
+          "State: Building package",
+          "Phase: active"
+        ],
+        "next_actions": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: active",
+          "State: Building package",
+          "Phase: active",
+          "Owner: planner",
+          "Assignee: executor",
+          "Anchor refs: brain/emergence/decisions.md, brain/emergence/project_brain.md, brain/emergence/roadmap.md, brain/emergence/slices.md, brain/emergence/changelog.md, brain/emergence/plan.md, brain/emergence/tasks.md"
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "ux",
+        "governance"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 47,
+      "sentenceCount": 15,
+      "matchedProjectTerms": [
+        "canonical",
+        "anchor",
+        "system",
+        "ace",
+        "compatibility",
+        "check"
+      ],
+      "actionSignals": 3,
+      "featureRequestSignals": 0,
+      "architectureSignals": 0,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make repo anchors canonical for manager, context, and intent flow.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "canonical",
+        "anchor",
+        "system",
+        "ace",
+        "compatibility",
+        "check"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "for",
+        "the",
+        "emergence",
+        "brain",
+        "active",
+        "anchor"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/slices.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/slices.md",
+        "brain/emergence/project_brain.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md"
+      ],
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "slices",
+          "relativePath": "brain/emergence/slices.md",
+          "sourceRelativePath": "brain/emergence/slices.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/slices.md",
+          "legacyRelativePaths": [
+            "projects/emergence/slices.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": false,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make repo anchors canonical for manager, context, and intent flow.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: active",
+          "State: Building package",
+          "Phase: active"
+        ],
+        "next_actions": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: active",
+          "State: Building package",
+          "Phase: active",
+          "Owner: planner",
+          "Assignee: executor",
+          "Anchor refs: brain/emergence/decisions.md, brain/emergence/project_brain.md, brain/emergence/roadmap.md, brain/emergence/slices.md, brain/emergence/changelog.md, brain/emergence/plan.md, brain/emergence/tasks.md"
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-28T11:15:37.831Z",
+    "nodeId": "node_1774696520290_gzsp8",
+    "source": "node-enter",
+    "createdAt": "2026-03-28T11:15:48.412Z",
+    "contextPacket": {
+      "summary": "Migrate ground tiles project to canonical anchor system",
+      "statement": "Update the current ground tiles project to use the new anchor-based ACE system, ensuring compatibility with existing RGS nodes.",
+      "goal": "Update the current ground tiles project to use the new anchor-based ACE system, ensuring compatibility with existing RGS nodes.",
+      "requestedOutcomes": [
+        "Update ground tiles project configuration",
+        "Check the status of RGS nodes"
+      ],
+      "tasks": [
+        "Update ground tiles project configuration",
+        "Check the status of RGS nodes"
+      ],
+      "targets": [],
+      "constraints": [
+        "Maintain compatibility with existing RGS nodes"
+      ],
+      "urgency": "normal",
+      "requestType": "context_request",
+      "signals": {},
+      "clarifications": [
+        "What is the current state of the ground tiles project? Are there any specific dependencies or requirements that need to be considered during migration?"
+      ],
+      "focusTerms": [
+        "ground tiles",
+        "RGS nodes"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/project_brain.md"
+      ],
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1774696527193_onge2a",
+      "sourceNodeId": "node_1774696520290_gzsp8",
+      "sourceText": "lets make some ground tiles",
+      "summary": "Migrate ground tiles project to the canonical anchor-based ACE system",
+      "explicitClaims": [
+        "Update the current ground tiles project configuration"
+      ],
+      "inferredClaims": [
+        "Check the status of RGS nodes"
+      ],
+      "candidateNodes": [
+        {
+          "id": "ground_tiles_project",
+          "label": "Ground Tiles Project",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Current focus of the request",
+          "confidence": 1
+        },
+        {
+          "id": "ace_system",
+          "label": "Anchor-based ACE System",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "Target system for the migration",
+          "confidence": 1
+        },
+        {
+          "id": "rgs_nodes",
+          "label": "RGS Nodes",
+          "kind": "module",
+          "basis": "inferred",
+          "rationale": "Mentioned in the request as a compatibility concern",
+          "confidence": 0.75
+        }
+      ],
+      "candidateEdges": [
+        {
+          "sourceCandidateId": "ground_tiles_project",
+          "targetCandidateId": "ace_system",
+          "kind": "depends_on",
+          "basis": "explicit",
+          "rationale": "The request is about updating the ground tiles project to use the anchor-based ACE system"
+        },
+        {
+          "sourceCandidateId": "ground_tiles_project",
+          "targetCandidateId": "rgs_nodes",
+          "kind": "relates_to",
+          "basis": "inferred",
+          "rationale": "The request mentions maintaining compatibility with RGS nodes"
+        }
+      ],
+      "gaps": [
+        "Detailed information about the current state of the ground tiles project and any specific dependencies or requirements"
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1774696527193_onge2a",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.59,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 0.8571428571428571,
+            "reason": "Matched project terms: canonical, anchor, system, ace, compatibility"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.75,
+            "reason": "Detected 3 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.3333333333333333,
+            "reason": "Little direct architecture language found."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "ux",
+            "governance"
+          ]
+        },
+        "matchedTerms": [
+          "canonical",
+          "anchor",
+          "system",
+          "ace",
+          "compatibility",
+          "check"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774696527193_onge2a",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1774696548412_dbuit0",
+  "handoff": {
+    "id": "handoff_1774696548412_dbuit0",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-28T11:15:48.412Z",
+    "sourceNodeId": "node_1774696520290_gzsp8",
+    "summary": "Migrate ground tiles project to canonical anchor system",
+    "goal": "Update the current ground tiles project to use the new anchor-based ACE system, ensuring compatibility with existing RGS nodes.",
+    "problemStatement": "Goal: Migrate ground tiles project to canonical anchor system\nRequested outcomes: Update ground tiles project configuration; Check the status of RGS nodes.\nWhy ACE believes this: Project alignment 86%, Actionability 75%, Architecture fit 33%.\nConstraints and review signals: Maintain compatibility with existing RGS nodes | Architecture fit: Little direct architecture language found. | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: What is the current state of the ground tiles project? Are there any specific dependencies or requirements that need to be considered during migration?",
+    "anchorRefs": [
+      "brain/emergence/slices.md",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md"
+    ],
+    "requestedOutcomes": [
+      "Update ground tiles project configuration",
+      "Check the status of RGS nodes"
+    ],
+    "tasks": [
+      "Update ground tiles project configuration",
+      "Check the status of RGS nodes"
+    ],
+    "constraints": [
+      "Maintain compatibility with existing RGS nodes",
+      "Architecture fit: Little direct architecture language found.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.59,
+    "legacyConfidence": 0.69,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 0.8571428571428571,
+        "reason": "Matched project terms: canonical, anchor, system, ace, compatibility"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.75,
+        "reason": "Detected 3 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.3333333333333333,
+        "reason": "Little direct architecture language found."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.59,
+      "executionReadiness": 0.69,
+      "plannerUsefulness": 0.8,
+      "deployReadiness": 0.17
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "ux",
+        "governance"
+      ]
+    },
+    "requestType": "context_request",
+    "urgency": "normal",
+    "targets": [
+      "canonical",
+      "anchor",
+      "system",
+      "ace",
+      "compatibility",
+      "check",
+      "brain/emergence/project_brain.md",
+      "brain/emergence/roadmap.md"
+    ],
+    "signals": {},
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "llmStatus": "live",
+  "rawResponse": "{\n  \"summary\": \"Migrate ground tiles project to canonical anchor system\",\n  \"statement\": \"Update the current ground tiles project to use the new anchor-based ACE system, ensuring compatibility with existing RGS nodes.\",\n  \"tasks\": [\"Update ground tiles project configuration\", \"Check the status of RGS nodes\"],\n  \"constraints\": [\"Maintain compatibility with existing RGS nodes\"],\n  \"clarifications\": [\"What is the current state of the ground tiles project? Are there any specific dependencies or requirements that need to be considered during migration?\"],\n  \"focusTerms\": [\"ground tiles\", \"RGS nodes\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/project_brain.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1774696527193_onge2a",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-28T11:15:27.206Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-28T11:15:37.827Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Migrate ground tiles project to canonical anchor system\",\n  \"statement\": \"Update the current ground tiles project to use the new anchor-based ACE system, ensuring compatibility with existing RGS nodes.\",\n  \"tasks\": [\"Update ground tiles project configuration\", \"Check the status of RG"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-28T11:15:37.832Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-28T11:15:48.411Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Migrate ground tiles project to the canonical anchor-based ACE system\",\n  \"explicitClaims\": [\"Update the current ground tiles project configuration\"],\n  \"inferredClaims\": [\"Check the status of RGS nodes\"],\n  \"candidateNodes\": [\n    {\n      \"id\": \"ground_tiles_project\",\n      \"label\":"
+      }
+    ]
+  }
+}

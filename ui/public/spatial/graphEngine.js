@@ -3,7 +3,139 @@ export const PROPOSAL_TARGETS = ['system-structure', 'world-structure', 'adapter
 export const SYSTEM_NODE_TYPES = ['text', 'task', 'module', 'file', 'constraint', 'adapter'];
 export const WORLD_NODE_TYPES = ['gameplay-system', 'mechanic', 'quest', 'item', 'world-constraint', 'adapter'];
 export const NODE_TYPES = [...new Set([...SYSTEM_NODE_TYPES, ...WORLD_NODE_TYPES])];
+const STRONG_RELATIONSHIP_TYPES = new Set([
+  'dependency',
+  'handoff',
+  'ownership',
+  'pipeline',
+  'data_flow',
+  'reporting',
+  'workflow',
+  'support',
+  'validated',
+]);
+const RELATIONSHIP_VISUAL_FORMS = ['string', 'bundle', 'woven-rope'];
 const RSG_ACTIVITY_LIMIT = 24;
+
+function clampRelationshipStrength(value = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 1;
+  return Math.max(1, Math.min(4, Math.round(numeric)));
+}
+
+function normalizeRelationshipType(value = 'relates_to') {
+  return String(value || 'relates_to').trim().toLowerCase().replace(/\s+/g, '_') || 'relates_to';
+}
+
+function normalizeRelationshipList(value = []) {
+  const source = Array.isArray(value) ? value : (value == null ? [] : [value]);
+  return [...new Set(source.map((entry) => String(entry || '').trim()).filter(Boolean))];
+}
+
+function inferRelationshipStrength(edge = {}, supports = [], validatedBy = []) {
+  const explicit = Number(edge?.strength);
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return clampRelationshipStrength(explicit);
+  }
+  const relationshipType = normalizeRelationshipType(edge?.relationshipType || edge?.relationship_type || edge?.type);
+  let score = 1;
+  if (STRONG_RELATIONSHIP_TYPES.has(relationshipType)) score += 1;
+  score += Math.min(2, supports.length);
+  if (validatedBy.length) score += 1;
+  if (edge?.lastActive) score += 1;
+  return clampRelationshipStrength(score);
+}
+
+function inferRelationshipStrandCount(edge = {}, supports = [], validatedBy = []) {
+  const explicit = Number(edge?.strandCount);
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return Math.max(1, Math.round(explicit));
+  }
+  return Math.max(1, supports.length, validatedBy.length);
+}
+
+function inferRelationshipHealth(edge = {}, strength = 1, strandCount = 1) {
+  const risk = String(edge?.risk || '').trim().toLowerCase();
+  if (risk === 'high' || risk === 'blocked') return 'blocked';
+  if (strength >= 3 && strandCount >= 2) return 'healthy';
+  if (strength >= 2) return 'degraded';
+  return 'fragile';
+}
+
+function inferRelationshipVisualForm(strength = 1, strandCount = 1) {
+  if (strandCount >= 3 || strength >= 4) return 'woven-rope';
+  if (strandCount === 2 || strength >= 2) return 'bundle';
+  return 'string';
+}
+
+export function deriveRelationshipVisual(edge = {}) {
+  const relationshipType = normalizeRelationshipType(edge?.relationshipType || edge?.relationship_type || edge?.type);
+  const supports = normalizeRelationshipList(edge?.supports);
+  const validatedBy = normalizeRelationshipList(edge?.validatedBy);
+  const strandCount = inferRelationshipStrandCount(edge, supports, validatedBy);
+  const strength = inferRelationshipStrength({ ...edge, relationshipType }, supports, validatedBy);
+  const health = inferRelationshipHealth(edge, strength, strandCount);
+  const visualForm = inferRelationshipVisualForm(strength, strandCount);
+  const strokeWidth = strength === 1 ? 1.8 : strength === 2 ? 2.8 : strength === 3 ? 3.8 : 4.8;
+  const dashArray = visualForm === 'string'
+    ? [8, 7]
+    : (visualForm === 'bundle' ? [12, 6, 4, 6] : []);
+  const opacity = health === 'blocked' ? 0.72 : (health === 'healthy' ? 0.96 : 0.88);
+  return {
+    relationshipType,
+    supports,
+    validatedBy,
+    strandCount,
+    strength,
+    health,
+    visualForm,
+    strokeWidth,
+    dashArray,
+    opacity,
+  };
+}
+
+export function normalizeRelationshipEdge(edge = {}, { fallbackRelationshipType = 'relates_to' } = {}) {
+  if (!edge || typeof edge !== 'object') return null;
+  const source = String(edge.source || '').trim();
+  const target = String(edge.target || '').trim();
+  if (!source || !target) return null;
+  const relationshipType = normalizeRelationshipType(edge.relationshipType || edge.relationship_type || edge.type || fallbackRelationshipType);
+  const supports = normalizeRelationshipList(edge.supports);
+  const validatedBy = normalizeRelationshipList(edge.validatedBy);
+  const visual = deriveRelationshipVisual({
+    ...edge,
+    source,
+    target,
+    relationshipType,
+    supports,
+    validatedBy,
+  });
+  const id = String(edge.id || '').trim() || `${source}__${target}__${relationshipType}`;
+  return {
+    ...edge,
+    id,
+    source,
+    target,
+    relationshipType,
+    relationship_type: relationshipType,
+    label: String(edge.label || '').trim() || relationshipType.replace(/_/g, ' '),
+    supports: visual.supports,
+    validatedBy: visual.validatedBy,
+    strandCount: visual.strandCount,
+    strength: visual.strength,
+    health: visual.health,
+    visualForm: visual.visualForm,
+    lastActive: edge.lastActive || null,
+    risk: edge.risk || null,
+  };
+}
+
+function normalizeGraphEdges(edges = []) {
+  return (Array.isArray(edges) ? edges : [])
+    .map((edge) => normalizeRelationshipEdge(edge))
+    .filter(Boolean);
+}
 
 export function buildStarterGraph() {
   return { nodes: [], edges: [] };
@@ -13,11 +145,11 @@ export function buildGraphBundle(initial = {}) {
   return {
     system: {
       nodes: initial.system?.nodes || [],
-      edges: initial.system?.edges || [],
+      edges: normalizeGraphEdges(initial.system?.edges || []),
     },
     world: {
       nodes: initial.world?.nodes || [],
-      edges: initial.world?.edges || [],
+      edges: normalizeGraphEdges(initial.world?.edges || []),
     },
   };
 }
@@ -161,15 +293,61 @@ export function createNode({ type = 'text', content = '', position = { x: 0, y: 
   };
 }
 
-export function createEdge({ source, target, relationship_type = 'relates_to' }) {
-  return { source, target, relationship_type };
+export function createEdge({
+  source,
+  target,
+  relationship_type = 'relates_to',
+  relationshipType = relationship_type,
+  label = '',
+  supports = [],
+  validatedBy = [],
+  strandCount = null,
+  strength = null,
+  health = null,
+  risk = null,
+  lastActive = null,
+} = {}) {
+  return normalizeRelationshipEdge({
+    id: `edge_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    source,
+    target,
+    relationshipType,
+    relationship_type,
+    label,
+    supports,
+    validatedBy,
+    strandCount,
+    strength,
+    health,
+    risk,
+    lastActive,
+  });
+}
+
+function mergeRelationshipEdge(existing = {}, incoming = {}) {
+  const supports = normalizeRelationshipList([...(existing.supports || []), ...(incoming.supports || [])]);
+  const validatedBy = normalizeRelationshipList([...(existing.validatedBy || []), ...(incoming.validatedBy || [])]);
+  const relationshipType = existing.relationshipType && existing.relationshipType !== 'relates_to'
+    ? existing.relationshipType
+    : (incoming.relationshipType || incoming.relationship_type || 'relates_to');
+  const merged = normalizeRelationshipEdge({
+    ...existing,
+    ...incoming,
+    relationshipType,
+    relationship_type: relationshipType,
+    supports,
+    validatedBy,
+    lastActive: incoming.lastActive || existing.lastActive || null,
+    risk: incoming.risk || existing.risk || null,
+  });
+  return merged || existing;
 }
 
 export class GraphEngine {
   constructor(initial = buildStarterGraph()) {
     this.graph = {
       nodes: initial.nodes || [],
-      edges: initial.edges || [],
+      edges: normalizeGraphEdges(initial.edges || []),
     };
   }
 
@@ -180,7 +358,7 @@ export class GraphEngine {
   setState(next) {
     this.graph = {
       nodes: next.nodes || [],
-      edges: next.edges || [],
+      edges: normalizeGraphEdges(next.edges || []),
     };
   }
 
@@ -206,10 +384,15 @@ export class GraphEngine {
   }
 
   addEdge(edge) {
-    if (edge.source === edge.target) return edge;
-    if (this.graph.edges.some((e) => e.source === edge.source && e.target === edge.target)) return edge;
-    this.graph.edges.push(edge);
-    return edge;
+    const normalized = normalizeRelationshipEdge(edge);
+    if (!normalized || normalized.source === normalized.target) return normalized;
+    const existingIndex = this.graph.edges.findIndex((e) => e.source === normalized.source && e.target === normalized.target);
+    if (existingIndex >= 0) {
+      this.graph.edges[existingIndex] = mergeRelationshipEdge(this.graph.edges[existingIndex], normalized);
+      return this.graph.edges[existingIndex];
+    }
+    this.graph.edges.push(normalized);
+    return normalized;
   }
 
   removeEdge(source, target) {

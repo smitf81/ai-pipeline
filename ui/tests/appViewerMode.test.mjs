@@ -170,32 +170,6 @@ export default async function runAppViewerModeTest() {
     '/api/tasks': {
       tasks: ['task-1'],
     },
-    '/api/task-artifacts?taskId=task-1': {
-      ok: true,
-      taskId: 'task-1',
-      folder: 'task-0001-legacy',
-      taskDir: 'tasks/task-0001-legacy',
-      presentCount: 2,
-      totalCount: 3,
-      artifacts: [
-        { name: 'context.md', exists: true, path: 'tasks/task-0001-legacy/context.md' },
-        { name: 'plan.md', exists: false, path: 'tasks/task-0001-legacy/plan.md' },
-        { name: 'patch.diff', exists: true, path: 'tasks/task-0001-legacy/patch.diff' },
-      ],
-    },
-    '/api/task-artifacts?taskId=task-2': {
-      ok: true,
-      taskId: 'task-2',
-      folder: null,
-      taskDir: null,
-      presentCount: 0,
-      totalCount: 3,
-      artifacts: [
-        { name: 'context.md', exists: false, path: null },
-        { name: 'plan.md', exists: false, path: null },
-        { name: 'patch.diff', exists: false, path: null },
-      ],
-    },
   };
 
   const qaSandbox = await loadApp('http://localhost/?mode=qa', fetchMap);
@@ -234,28 +208,30 @@ export default async function runAppViewerModeTest() {
   const operatorSandbox = await loadApp('http://localhost/', fetchMap);
   assert.equal(operatorSandbox.window.__ACE_APP_TEST__.detectQaMode(), false);
   assert.equal(operatorSandbox.document.body.classList.contains('qa-mode'), false);
-  assert.equal(operatorSandbox.document.getElementById('mode_badge').textContent, 'OPERATOR');
+  assert.equal(operatorSandbox.document.getElementById('mode_badge').textContent, 'STUDIO PRIMARY');
   assert.equal(operatorSandbox.document.getElementById('readonly_badge').textContent, 'READ WRITE');
+  assert.equal(operatorSandbox.document.getElementById('uiModeLabel').textContent, 'legacy shell');
   assert.equal(operatorSandbox.document.getElementById('runProjectBtn').disabled, true);
   assert.match(operatorSandbox.document.getElementById('projectRunStatus').textContent, /topdown-slice static web prototype only/i);
-  assert.equal(operatorSandbox.document.getElementById('artifactTaskLabel').textContent, 'Selected task: task-1');
-  assert.equal(operatorSandbox.document.getElementById('artifactTaskFolder').textContent, 'Task folder: task-0001-legacy');
-  assert.equal(operatorSandbox.document.getElementById('artifactStatusMeta').textContent, '2/3 artifacts present');
-  assert.equal(operatorSandbox.document.getElementById('artifact_context_status').textContent, 'present');
-  assert.equal(operatorSandbox.document.getElementById('artifact_plan_status').textContent, 'missing');
-  assert.equal(operatorSandbox.document.getElementById('artifact_patch_status').textContent, 'present');
-  assert.equal(operatorSandbox.document.getElementById('artifact_context_status').classList.contains('present'), true);
-  assert.equal(operatorSandbox.document.getElementById('artifact_plan_status').classList.contains('missing'), true);
-  assert.equal(operatorSandbox.document.getElementById('artifact_patch_status').classList.contains('present'), true);
+  assert.equal(operatorSandbox.document.getElementById('artifactTaskLabel').textContent, 'Selected legacy task: task-1');
+  assert.match(operatorSandbox.document.getElementById('artifactTaskFolder').textContent, /Legacy task folders are debug-only/i);
+  assert.match(operatorSandbox.document.getElementById('artifactStatusMeta').textContent, /legacy compatibility only/i);
+  assert.equal(operatorSandbox.document.getElementById('artifact_context_status').textContent, 'legacy-only');
+  assert.equal(operatorSandbox.document.getElementById('artifact_plan_status').textContent, 'world-first');
+  assert.equal(operatorSandbox.document.getElementById('artifact_patch_status').textContent, 'use-studio');
+  assert.equal(operatorSandbox.document.getElementById('artifact_context_status').classList.contains('unknown'), true);
+  assert.equal(operatorSandbox.document.getElementById('artifact_plan_status').classList.contains('unknown'), true);
+  assert.equal(operatorSandbox.document.getElementById('artifact_patch_status').classList.contains('unknown'), true);
+  assert.equal(operatorSandbox.requests.some((request) => String(request.url).includes('/api/task-artifacts')), false);
 
   operatorSandbox.document.getElementById('taskSelect').onchange({ target: { value: 'task-2' } });
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.equal(operatorSandbox.document.getElementById('artifactTaskLabel').textContent, 'Selected task: task-2');
-  assert.equal(operatorSandbox.document.getElementById('artifactTaskFolder').textContent, 'Task folder: not found');
-  assert.equal(operatorSandbox.document.getElementById('artifactStatusMeta').textContent, '0/3 artifacts present');
-  assert.equal(operatorSandbox.document.getElementById('artifact_context_status').textContent, 'missing');
-  assert.equal(operatorSandbox.document.getElementById('artifact_plan_status').textContent, 'missing');
-  assert.equal(operatorSandbox.document.getElementById('artifact_patch_status').textContent, 'missing');
+  assert.equal(operatorSandbox.document.getElementById('artifactTaskLabel').textContent, 'Selected legacy task: task-2');
+  assert.match(operatorSandbox.document.getElementById('artifactTaskFolder').textContent, /Legacy task folders are debug-only/i);
+  assert.match(operatorSandbox.document.getElementById('artifactStatusMeta').textContent, /legacy compatibility only/i);
+  assert.equal(operatorSandbox.document.getElementById('artifact_context_status').textContent, 'legacy-only');
+  assert.equal(operatorSandbox.document.getElementById('artifact_plan_status').textContent, 'world-first');
+  assert.equal(operatorSandbox.document.getElementById('artifact_patch_status').textContent, 'use-studio');
 
   const launchSandbox = await loadApp('http://localhost/', {
     ...fetchMap,

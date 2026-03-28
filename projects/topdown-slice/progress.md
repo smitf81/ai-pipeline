@@ -77,6 +77,13 @@ Add agent energy visibility and simple feedback.
 - Resetting the scenario clears the prompt and translated-intent preview state so debug-only intent injection does not persist across scenario resets.
 - Validation: syntax checks passed for `intentTranslator.js`, `agentStub.js`, `ui.js`, and `main.js`. Inline module assertions confirmed `make this east opening more open` -> `{ type: flow, position: { x: 18, y: 8 }, radius: 3, weight: 1.2, id: nl-flow-east-opening }`, `make the ridge area more defensible` -> `{ type: defensibility, position: { x: 17, y: 8 }, radius: 4, weight: 1.0, id: nl-defensibility-east-ridge }`, and `make it better somehow` -> explicit translation failure.
 
+2026-03-28
+- Reopened desk mobility as a constrained tactical edit: desks now drag from the station cards, but the move helper snaps them back into their owning department's valid slots and keeps the control-centre desk anchored.
+- Movement stays canonical: the department assignment never changes during drag, positions are clamped to the department bounds first, then snapped to the nearest valid slot while avoiding occupied slots when possible.
+- Added a drag affordance on the visible studio desks so the move behavior is discoverable without broadening the layout or adding new panels.
+- Validation: `node --experimental-default-type=module --test ui/tests/studioLayoutModel.test.mjs ui/tests/spatialApp.smoke.test.mjs` passed, and the broader TA/UI regression set still passed afterwards.
+- TODO: if a later slice needs reordering between desks inside the same department, keep that inside the same snap-grid helper rather than introducing free-form placement.
+
 2026-03-26
 - Added `relay` as an explicit support structure building type, wired through the existing building/task path rather than a parallel support system. Relays can be authored, placed through the current building flow, and are visible like other buildings.
 - Added deterministic relay recharge with no passive background regen. Workers only recover energy when they are on/adjacent to a complete relay and either idle with no queued work or blocked on energy in a clear `recharging` state.

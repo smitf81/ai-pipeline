@@ -9,6 +9,10 @@
     "name",
     "role",
     "department",
+    "desk_targets",
+    "primary_desk_target",
+    "assigned_model",
+    "model_locked",
     "summary",
     "strengths",
     "weaknesses",
@@ -17,7 +21,9 @@
     "model_policy",
     "why_this_role",
     "risk_notes",
-    "confidence"
+    "confidence",
+    "cv_card",
+    "contract"
   ],
   "properties": {
     "id": {
@@ -35,6 +41,25 @@
     "department": {
       "type": "string",
       "minLength": 1
+    },
+    "desk_targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "primary_desk_target": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assigned_model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_locked": {
+      "type": "boolean"
     },
     "summary": {
       "type": "string",
@@ -100,6 +125,88 @@
       "type": "number",
       "minimum": 0,
       "maximum": 1
+    },
+    "cv_card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "headline",
+        "summary",
+        "evidence",
+        "controls",
+        "contract"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "headline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "input",
+            "output"
+          ],
+          "properties": {
+            "input": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "output": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input",
+        "output"
+      ],
+      "properties": {
+        "input": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "output": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }

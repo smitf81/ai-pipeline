@@ -6,16 +6,21 @@ import { loadModuleCopy } from './helpers/browser-module-loader.mjs';
 
 const require = createRequire(import.meta.url);
 const studioDataPath = path.resolve(process.cwd(), 'public', 'spatial', 'studioData.js');
+const studioLayoutModelPath = path.resolve(process.cwd(), 'public', 'spatial', 'studioLayoutModel.js');
 
 export default async function runStudioDataTests() {
   const {
     advanceOrchestratorState,
     buildAgentSnapshots,
+    buildAgentContext,
     createDefaultTeamBoard,
     createPlannerHandoff,
+    deriveTaskEconomy,
+    getStudioAgents,
     normalizeNotebookState,
     normalizeTeamBoardState,
   } = await loadModuleCopy(studioDataPath, { label: 'studioData' });
+  const layoutModel = await loadModuleCopy(studioLayoutModelPath, { label: 'studioLayoutModel' });
   const {
     buildPlannerContractCheckQualityCard,
     buildRunnerContractCheckQualityCard,
@@ -71,6 +76,64 @@ export default async function runStudioDataTests() {
     'Studio output is hard to audit',
     'Actionability: Input reads like a note.',
   ]);
+
+  assert.equal(layoutModel.STUDIO_LAYOUT_SCHEMA.version, 'studio-layout.v1');
+  assert.deepEqual(layoutModel.STUDIO_LAYOUT_SCHEMA.room, {
+    x: 56,
+    y: 72,
+    width: 1088,
+    height: 664,
+  });
+  assert.deepEqual(
+    layoutModel.STUDIO_LAYOUT_SCHEMA.departments.map((department) => ({
+      id: department.id,
+      label: department.label,
+      kind: department.kind,
+    })),
+    [
+      { id: 'dept-intake', label: 'Intake', kind: 'intake' },
+      { id: 'dept-delivery', label: 'Delivery', kind: 'delivery' },
+      { id: 'dept-quality', label: 'Quality', kind: 'quality' },
+      { id: 'dept-archive', label: 'Archive', kind: 'archive' },
+      { id: 'dept-control', label: 'Control Centre', kind: 'control' },
+      { id: 'dept-talent-acquisition', label: 'Talent Acquisition', kind: 'talent' },
+    ],
+  );
+  assert.deepEqual(
+    layoutModel.STUDIO_LAYOUT_SCHEMA.departments.map((department) => department.deskIds),
+    [
+      ['context-manager'],
+      ['planner', 'executor'],
+      ['qa-lead'],
+      ['memory-archivist'],
+      ['cto-architect'],
+      ['integration_auditor'],
+    ],
+  );
+  assert.equal(layoutModel.getStudioDeskRecord('planner').departmentId, 'dept-delivery');
+  assert.equal(layoutModel.getStudioDepartmentForDesk('cto-architect').label, 'Control Centre');
+  const defaultLayout = layoutModel.createDefaultStudioLayout();
+  assert.deepEqual(defaultLayout.room, {
+    x: 56,
+    y: 72,
+    width: 1088,
+    height: 664,
+  });
+  assert.equal(defaultLayout.departments.length, 6);
+  assert.equal(defaultLayout.controlCentreDeskId, 'cto-architect');
+  assert.deepEqual(defaultLayout.desks['context-manager'].position, { x: 182, y: 252 });
+  assert.deepEqual(defaultLayout.desks.planner.position, { x: 536, y: 252 });
+  assert.deepEqual(defaultLayout.desks.executor.position, { x: 682, y: 252 });
+  assert.deepEqual(defaultLayout.desks['memory-archivist'].position, { x: 620, y: 640 });
+  assert.deepEqual(defaultLayout.desks['cto-architect'].position, { x: 990, y: 422 });
+  assert.deepEqual(defaultLayout.whiteboards.teamBoard, { x: 284, y: 88, width: 584, height: 208 });
+  const renderModel = layoutModel.buildStudioRenderModel(defaultLayout, []);
+  assert.equal(renderModel.departments.length, 6);
+  assert.equal(renderModel.roomConnections.length, 5);
+  assert.equal(renderModel.deskMap['qa-lead'].department.label, 'Quality');
+  assert.equal(renderModel.desks.some((desk) => desk.id === 'context-manager'), false);
+  assert.equal(getStudioAgents().find((agent) => agent.id === 'planner').departmentId, 'delivery');
+  assert.ok(getStudioAgents().find((agent) => agent.id === 'planner').capabilities.includes('break intent into steps'));
 
   const workspace = {
     graphs: {
@@ -317,6 +380,35 @@ export default async function runStudioDataTests() {
   assert.equal(seededBoard.cards[0].taskFlow.assignmentState, 'unassigned');
   assert.equal(seededBoard.cards[0].id, '0001');
 
+  const economyBoard = normalizeTeamBoardState({
+    ...workspace,
+    pages: notebook.pages,
+    activePageId: notebook.activePageId,
+    studio: {
+      ...workspace.studio,
+      teamBoard: {
+        ...createDefaultTeamBoard(),
+        cards: [
+          { id: 'task-plan', title: 'Plan task', status: 'plan', desk: 'Planner', state: 'Ready' },
+          { id: 'task-active', title: 'Active task', status: 'active', desk: 'Executor', state: 'Running' },
+          { id: 'task-complete', title: 'Complete task', status: 'complete', approvalState: 'approved', desk: 'Executor', state: 'Done' },
+          { id: 'task-review', title: 'Review task', status: 'review', desk: 'CTO', state: 'Queued' },
+          { id: 'task-binned', title: 'Binned task', status: 'binned', desk: 'Planner', state: 'Parked' },
+        ],
+      },
+    },
+  });
+  const taskEconomy = deriveTaskEconomy(economyBoard);
+  assert.equal(taskEconomy.intakeCount, 1);
+  assert.equal(taskEconomy.wipCount, 1);
+  assert.equal(taskEconomy.completionCount, 1);
+  assert.equal(taskEconomy.rewardCount, 1);
+  assert.equal(taskEconomy.bottleneckCount, 1);
+  assert.equal(taskEconomy.shelvedCount, 1);
+  assert.equal(taskEconomy.total, 5);
+  assert.ok(taskEconomy.headline.includes('1 intake'));
+  assert.ok(taskEconomy.detail.includes('Momentum'));
+
   const orchestrator = advanceOrchestratorState({
     workspace: {
       ...workspace,
@@ -324,6 +416,7 @@ export default async function runStudioDataTests() {
       activePageId: notebook.activePageId,
       studio: {
         ...workspace.studio,
+        layout: defaultLayout,
         teamBoard: {
           ...seededBoard,
           selectedCardId: seededBoard.cards[0].id,
@@ -351,6 +444,7 @@ export default async function runStudioDataTests() {
       activePageId: notebook.activePageId,
       studio: {
         ...workspace.studio,
+        layout: defaultLayout,
         teamBoard: orchestrator.teamBoard,
         orchestrator,
       },
@@ -452,7 +546,28 @@ export default async function runStudioDataTests() {
     },
   });
 
+  const plannerAgentContext = buildAgentContext(snapshots.find((agent) => agent.id === 'planner'), {
+    workspace: {
+      ...workspace,
+      pages: notebook.pages,
+      activePageId: notebook.activePageId,
+      studio: {
+        ...workspace.studio,
+        layout: defaultLayout,
+        teamBoard: orchestrator.teamBoard,
+        orchestrator,
+      },
+    },
+  }, { layout: defaultLayout });
+  assert.equal(plannerAgentContext.id, 'planner');
+  assert.equal(plannerAgentContext.desk.label, 'Planner');
+  assert.equal(plannerAgentContext.department.label, 'Delivery');
+  assert.equal(typeof plannerAgentContext.global.orchestratorStatus, 'string');
+  assert.ok(plannerAgentContext.task.currentGoal);
+  assert.match(plannerAgentContext.summary, /Planner/);
+
   const contextSnapshot = snapshots.find((agent) => agent.id === 'context-manager');
+  const archivistSnapshot = snapshots.find((agent) => agent.id === 'memory-archivist');
   const plannerSnapshot = snapshots.find((agent) => agent.id === 'planner');
   const executorSnapshot = snapshots.find((agent) => agent.id === 'executor');
   const qaLeadSnapshot = snapshots.find((agent) => agent.id === 'qa-lead');
@@ -460,30 +575,41 @@ export default async function runStudioDataTests() {
 
   assert.equal(snapshots.length, 6);
   assert.ok(contextSnapshot);
+  assert.ok(archivistSnapshot);
   assert.ok(plannerSnapshot);
   assert.ok(executorSnapshot);
   assert.ok(qaLeadSnapshot);
   assert.ok(ctoSnapshot);
+  assert.ok(plannerSnapshot.agentContext);
+  assert.equal(plannerSnapshot.agentContext.desk.label, 'Planner');
   assert.equal(contextSnapshot.deskSnapshot.handoff.summary, 'Planner brief ready.');
   assert.deepEqual(
     contextSnapshot.deskSnapshot.sections.map((section) => section.label),
-    ['Current Job', 'Context Worker', 'Core Truth', 'Problem To Solve', 'Task Creation', 'Intent Extraction', 'KPIs', 'Recent History', 'Waiting On You'],
+    ['Desk Truth', 'Current Job', 'Context Worker', 'Core Truth', 'Problem To Solve', 'Task Creation', 'Intent Extraction', 'KPIs', 'Recent History', 'Waiting On You'],
   );
   assert.equal(contextSnapshot.deskSnapshot.sections.find((section) => section.label === 'Context Worker').value, 'Status: running | backend ollama | model mistral:latest');
   assert.equal(contextSnapshot.deskSnapshot.sections.find((section) => section.label === 'Task Creation').items.length, 2);
+  assert.equal(archivistSnapshot.deskSnapshot.sections[0].label, 'Desk Truth');
+  assert.match(archivistSnapshot.deskSnapshot.sections[0].truth.department, /Memory Archive/i);
+  assert.ok(Array.isArray(archivistSnapshot.deskSnapshot.truth.guardrails));
   assert.equal(plannerSnapshot.deskSnapshot.handoff.id, 'handoff_1');
-  assert.equal(plannerSnapshot.deskSnapshot.sections[0].label, 'Mission');
+  assert.equal(plannerSnapshot.deskSnapshot.sections[0].label, 'Desk Truth');
+  assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Task Economy'));
   assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Task Movement'));
   assert.ok(plannerSnapshot.deskSnapshot.sections.find((section) => section.label === 'Task Movement').items.length >= 1);
   assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Planner Worker'));
   assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Planner Handoff'));
   assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Produced Cards'));
   assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Proposal Artifacts'));
+  assert.ok(plannerSnapshot.deskSnapshot.taskEconomy.backlogPressure >= 0);
+  assert.equal(executorSnapshot.deskSnapshot.sections[0].label, 'Desk Truth');
   assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'execution-selection').label, 'Mutation Queue');
   assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'executor-worker').value, 'Status: idle | backend ollama | model mistral:latest');
+  assert.ok(executorSnapshot.deskSnapshot.sections.some((section) => section.label === 'Task Economy'));
+  assert.equal(executorSnapshot.deskSnapshot.taskEconomy.rewardState, plannerSnapshot.deskSnapshot.taskEconomy.rewardState);
   assert.deepEqual(
     qaLeadSnapshot.deskSnapshot.sections.map((section) => section.label),
-    ['Mission', 'Current Goal', 'Structured QA', 'Structured QA Scorecards', 'Browser Pass', 'Local UI Gate', 'Recent QA Runs', 'Waiting On You'],
+    ['Desk Truth', 'Mission', 'Current Goal', 'Structured QA', 'Structured QA Scorecards', 'Browser Pass', 'Local UI Gate', 'Recent QA Runs', 'Waiting On You'],
   );
   const qaScorecardSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-scorecards');
   assert.ok(qaScorecardSection);
@@ -516,6 +642,7 @@ export default async function runStudioDataTests() {
   assert.match(qaLocalGateSection.summary, /unit gate pass/i);
   assert.equal(qaLocalGateSection.gate.unit.totalChecks, 22);
   assert.equal(qaLeadSnapshot.workload.outputs, 4);
+  assert.equal(ctoSnapshot.deskSnapshot.sections[0].label, 'Desk Truth');
   const qaSummarySection = ctoSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-summary');
   assert.ok(qaSummarySection);
   assert.equal(qaSummarySection.kind, 'qa-summary');

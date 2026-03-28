@@ -1,0 +1,17 @@
+{
+  "id": "10000",
+  "title": "Update or check the status of RGS nodes",
+  "created_utc": "2026-03-28T14:07:31.144Z",
+  "source": "studio-team-board",
+  "sessionId": null,
+  "handoffId": "handoff_1774615405452_2yc7",
+  "anchorRefs": [
+    "brain/emergence/decisions.md",
+    "brain/emergence/project_brain.md",
+    "brain/emergence/roadmap.md",
+    "brain/emergence/slices.md",
+    "brain/emergence/changelog.md",
+    "brain/emergence/plan.md",
+    "brain/emergence/tasks.md"
+  ]
+}

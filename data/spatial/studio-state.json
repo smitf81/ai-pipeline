@@ -1,596 +1,333 @@
 {
   "handoffs": {
-    "contextToPlanner": null,
-    "history": []
-  },
-  "teamBoard": {
-    "cards": [
-      {
-        "pageId": "page_1774440616080_m3p3",
-        "id": "0001",
-        "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-        "summary": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-        "status": "active",
-        "sourceKey": "page_1774440616080_m3p3:add-ace-orchestration-persistent-graph-l",
-        "sourceNodeId": "node_1774607282790_il706",
-        "sourceIntentId": "node_1774607282790_il706",
-        "sourceHandoffId": "handoff_1774607307184_6p4nbb",
-        "sourceAnchorRefs": [
+    "contextToPlanner": {
+      "id": "handoff_1774615405452_2yc7",
+      "sourceAgentId": "context-manager",
+      "targetAgentId": "planner",
+      "createdAt": "2026-03-27T12:39:27.479Z",
+      "sourceNodeId": "node_1774615116734_91jfx",
+      "summary": "Migrate to canonical anchor-based ACE system",
+      "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
+      "anchorRefs": [
+        "brain/emergence/decisions.md",
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/slices.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md"
+      ],
+      "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
+      "requestedOutcomes": [
+        "Update or check the status of RGS nodes"
+      ],
+      "tasks": [
+        "Update or check the status of RGS nodes"
+      ],
+      "constraints": [
+        "Ensure compatibility during migration",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "confidence": 0.69,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 1,
+          "reason": "Matched project terms: canonical, ace, system, context, compatibility"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.875,
+          "reason": "Detected 4 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.5555555555555556,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "truth": {
+        "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+        "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+        "statement": "Migrate to canonical anchor-based ACE system",
+        "goal": "Migrate to canonical anchor-based ACE system",
+        "intentType": "Constraint / guardrail request",
+        "requestType": "constraint_request",
+        "requestedOutcomes": [
+          "Update or check the status of RGS nodes"
+        ],
+        "tasks": [
+          "Update or check the status of RGS nodes"
+        ],
+        "targets": [
+          "canonical",
+          "ace",
+          "system",
+          "context",
+          "compatibility",
+          "runtime",
+          "anchor",
+          "and"
+        ],
+        "constraints": [
+          "Constraint coverage: No clear constraints or review gates were stated."
+        ],
+        "urgency": "normal",
+        "signals": {
+          "actionSignals": 1,
+          "constraintSignals": 0,
+          "architectureSignals": 0,
+          "executionSignals": 0,
+          "featureSignals": 0,
+          "matchedProjectTerms": 7,
+          "anchorRefs": 7,
+          "lowConfidenceCriteria": 1,
+          "plannerUsefulness": 0.89,
+          "executionReadiness": 0.72,
+          "deployReadiness": 0.19,
+          "labels": [
+            "context",
+            "ux",
+            "governance"
+          ],
+          "role": "constraint",
+          "requestedOutcomeCount": 1
+        },
+        "unresolved": [
+          "Constraint coverage: No clear constraints or review gates were stated."
+        ],
+        "evidence": [
+          "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
+          "Clarity: Input includes enough detail to classify intent reliably.",
+          "Actionability: Detected 4 implementation/planning verb signals."
+        ],
+        "anchorRefs": [
+          "brain/emergence/decisions.md",
           "brain/emergence/project_brain.md",
           "brain/emergence/roadmap.md",
-          "brain/emergence/decisions.md",
-          "brain/emergence/changelog.md"
+          "brain/emergence/slices.md",
+          "brain/emergence/changelog.md",
+          "brain/emergence/plan.md",
+          "brain/emergence/tasks.md"
         ],
-        "taskFlow": {
-          "phase": "active",
-          "assignmentState": "assigned",
-          "ownerDeskId": "planner",
-          "assigneeDeskId": "executor",
-          "sourceIntentId": "node_1774607282790_il706",
-          "sourceHandoffId": "handoff_1774607307184_6p4nbb",
-          "lastTransitionAt": "2026-03-27T10:47:49.589Z",
-          "lastTransitionLabel": "Active on planner slab",
-          "history": [
-            {
-              "phase": "active",
-              "assignmentState": "assigned",
-              "ownerDeskId": "planner",
-              "assigneeDeskId": "executor",
-              "label": "Active on planner slab",
-              "note": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-              "at": "2026-03-27T10:47:49.389Z"
-            },
-            {
-              "phase": "handed_off",
-              "assignmentState": "claimed",
-              "ownerDeskId": "executor",
-              "assigneeDeskId": "executor",
-              "label": "Executor claimed task",
-              "note": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-              "at": "2026-03-27T10:47:49.379Z"
-            },
-            {
-              "phase": "active",
-              "assignmentState": "assigned",
-              "ownerDeskId": "planner",
-              "assigneeDeskId": "executor",
-              "label": "Active on planner slab",
-              "note": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-              "at": "2026-03-27T10:47:48.839Z"
-            },
-            {
-              "phase": "handed_off",
-              "assignmentState": "claimed",
-              "ownerDeskId": "executor",
-              "assigneeDeskId": "executor",
-              "label": "Executor claimed task",
-              "note": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-              "at": "2026-03-27T10:47:48.828Z"
-            },
-            {
-              "phase": "active",
-              "assignmentState": "assigned",
-              "ownerDeskId": "planner",
-              "assigneeDeskId": "executor",
-              "label": "Active on planner slab",
-              "note": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-              "at": "2026-03-27T10:47:44.828Z"
-            },
-            {
-              "phase": "handed_off",
-              "assignmentState": "claimed",
-              "ownerDeskId": "executor",
-              "assigneeDeskId": "executor",
-              "label": "Executor claimed task",
-              "note": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-              "at": "2026-03-27T10:47:44.818Z"
-            },
-            {
-              "phase": "active",
-              "assignmentState": "assigned",
-              "ownerDeskId": "planner",
-              "assigneeDeskId": "executor",
-              "label": "Active on planner slab",
-              "note": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-              "at": "2026-03-27T10:47:40.821Z"
-            },
-            {
-              "phase": "handed_off",
-              "assignmentState": "claimed",
-              "ownerDeskId": "executor",
-              "assigneeDeskId": "executor",
-              "label": "Executor claimed task",
-              "note": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack",
-              "at": "2026-03-27T10:47:40.810Z"
-            }
+        "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
+        "readiness": {
+          "intentConfidence": 0.69,
+          "plannerUsefulness": 0.89,
+          "executionReadiness": 0.72,
+          "deployReadiness": 0.19
+        }
+      },
+      "scores": {
+        "intentConfidence": 0.69,
+        "executionReadiness": 0.72,
+        "plannerUsefulness": 0.89,
+        "deployReadiness": 0.19
+      },
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context",
+          "ux",
+          "governance"
+        ]
+      },
+      "requestType": "context_request",
+      "urgency": "normal",
+      "targets": [
+        "canonical",
+        "ace",
+        "system",
+        "context",
+        "compatibility",
+        "runtime",
+        "anchor",
+        "brain/emergence/project_brain.md"
+      ],
+      "signals": {},
+      "status": "needs-clarification"
+    },
+    "history": [
+      {
+        "id": "handoff_1774615405452_2yc7",
+        "sourceAgentId": "context-manager",
+        "targetAgentId": "planner",
+        "createdAt": "2026-03-27T12:39:27.479Z",
+        "sourceNodeId": "node_1774615116734_91jfx",
+        "summary": "Migrate to canonical anchor-based ACE system",
+        "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
+        "anchorRefs": [
+          "brain/emergence/decisions.md",
+          "brain/emergence/project_brain.md",
+          "brain/emergence/roadmap.md",
+          "brain/emergence/slices.md",
+          "brain/emergence/changelog.md",
+          "brain/emergence/plan.md",
+          "brain/emergence/tasks.md"
+        ],
+        "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
+        "requestedOutcomes": [
+          "Update or check the status of RGS nodes"
+        ],
+        "tasks": [
+          "Update or check the status of RGS nodes"
+        ],
+        "constraints": [
+          "Ensure compatibility during migration",
+          "Constraint coverage: No clear constraints or review gates were stated."
+        ],
+        "confidence": 0.69,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: canonical, ace, system, context, compatibility"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.875,
+            "reason": "Detected 4 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.5555555555555556,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "truth": {
+          "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+          "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+          "statement": "Migrate to canonical anchor-based ACE system",
+          "goal": "Migrate to canonical anchor-based ACE system",
+          "intentType": "Constraint / guardrail request",
+          "requestType": "constraint_request",
+          "requestedOutcomes": [
+            "Update or check the status of RGS nodes"
+          ],
+          "tasks": [
+            "Update or check the status of RGS nodes"
+          ],
+          "targets": [
+            "canonical",
+            "ace",
+            "system",
+            "context",
+            "compatibility",
+            "runtime",
+            "anchor",
+            "and"
+          ],
+          "constraints": [
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "urgency": "normal",
+          "signals": {
+            "actionSignals": 1,
+            "constraintSignals": 0,
+            "architectureSignals": 0,
+            "executionSignals": 0,
+            "featureSignals": 0,
+            "matchedProjectTerms": 7,
+            "anchorRefs": 7,
+            "lowConfidenceCriteria": 1,
+            "plannerUsefulness": 0.89,
+            "executionReadiness": 0.72,
+            "deployReadiness": 0.19,
+            "labels": [
+              "context",
+              "ux",
+              "governance"
+            ],
+            "role": "constraint",
+            "requestedOutcomeCount": 1
+          },
+          "unresolved": [
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "evidence": [
+            "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Actionability: Detected 4 implementation/planning verb signals."
+          ],
+          "anchorRefs": [
+            "brain/emergence/decisions.md",
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/slices.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md"
+          ],
+          "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
+          "readiness": {
+            "intentConfidence": 0.69,
+            "plannerUsefulness": 0.89,
+            "executionReadiness": 0.72,
+            "deployReadiness": 0.19
+          }
+        },
+        "scores": {
+          "intentConfidence": 0.69,
+          "executionReadiness": 0.72,
+          "plannerUsefulness": 0.89,
+          "deployReadiness": 0.19
+        },
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "ux",
+            "governance"
           ]
         },
-        "phaseTicks": 0,
-        "targetProjectKey": "ace-self",
-        "builderTaskId": "10000",
-        "runnerTaskId": "10000",
-        "runIds": [
-          "1774607308105-7hubp1",
-          "1774607309848-hxhjrq",
-          "1774607310162-9xdc81",
-          "1774607313843-sfyje9",
-          "1774607317868-4xqp38",
-          "1774607318843-eomy6o",
-          "1774607321924-pd0jwj",
-          "1774607325645-fkzwp2",
-          "1774607325889-jo228d",
-          "1774607329930-tpymhf",
-          "1774607332923-3iobf3",
-          "1774607333925-pns8oa",
-          "1774607337942-eydixt",
-          "1774607341783-6kpviu",
-          "1774607342012-1nzxzj",
-          "1774607346033-jfntx6",
-          "1774607350043-2w5nhg",
-          "1774607350320-773fxu",
-          "1774607354056-o4bc5e",
-          "1774607354354-ymfhc9",
-          "1774607358042-7wz418",
-          "1774607358270-aioc57",
-          "1774607362318-vw91jp",
-          "1774607366116-5ul5zn",
-          "1774607366373-pgtood",
-          "1774607368292-iamlxa",
-          "1774607370413-hgedl8",
-          "1774607370871-5r4y2r",
-          "1774607374428-9h8jih",
-          "1774607378406-dmjj87",
-          "1774607382403-w1cf63",
-          "1774607386416-6arrgg",
-          "1774607390424-ct4oih",
-          "1774607394441-05uclb",
-          "1774607398439-aeodc4",
-          "1774607401887-hoyw1y",
-          "1774607406443-lq6ar9",
-          "1774607410463-1zuxfw",
-          "1774607414465-1f1621",
-          "1774607417319-sbmork",
-          "1774607422476-r3ck7m",
-          "1774607426481-43njzy",
-          "1774607430495-sswq7c",
-          "1774607432650-002zu0",
-          "1774607434486-cn6hd9",
-          "1774607438516-2jnq4l",
-          "1774607442525-601ptv",
-          "1774607446529-7z9pu2",
-          "1774607448011-0eljor",
-          "1774607450540-9mrxmk",
-          "1774607454540-92cfh3",
-          "1774607458543-5up39j",
-          "1774607462565-3fu799",
-          "1774607463380-zojwej",
-          "1774607466556-i3xjaz",
-          "1774607470576-pd4cpi",
-          "1774607474574-zh8eid",
-          "1774607478585-rq130i",
-          "1774607478885-s8jum4",
-          "1774607482590-n990rv",
-          "1774607486602-ehuzsx",
-          "1774607490614-qausxs",
-          "1774607494286-p3zalc",
-          "1774607498623-uvqbbt",
-          "1774607502630-8ph86w",
-          "1774607506631-heylas",
-          "1774607509678-47r93v",
-          "1774607514638-rx476p",
-          "1774607518648-u05fds",
-          "1774607522662-qs89o1",
-          "1774607525041-dlvwtu",
-          "1774607530689-5sa6ba",
-          "1774607534685-ovo21a",
-          "1774607538689-c194r0",
-          "1774607540403-x12cm9",
-          "1774607542705-txl0ht",
-          "1774607546712-mk8w9a",
-          "1774607550711-pm6pme",
-          "1774607554725-hyopls",
-          "1774607555763-8tdl9q",
-          "1774607558740-422nrt",
-          "1774607562746-vtnx2y",
-          "1774607566741-r16h35",
-          "1774607570761-pqxr1f",
-          "1774607571141-sxhp52",
-          "1774607574789-4rop6i",
-          "1774607578773-xyoqnu",
-          "1774607582779-753img",
-          "1774607586487-c1h59l",
-          "1774607590797-pf3mln",
-          "1774607594793-2mvlij",
-          "1774607598796-2dxybm",
-          "1774607602101-pj2olb",
-          "1774607606818-kf12yr",
-          "1774607610835-z8b5ud",
-          "1774607614846-rggkmc",
-          "1774607617432-yd0sn5",
-          "1774607622857-g5tmu0",
-          "1774607626874-8pqsa3",
-          "1774607630870-yayb6r",
-          "1774607632821-6he8oj",
-          "1774607634893-i35niy",
-          "1774607638913-gm662e",
-          "1774607642895-41s1tz",
-          "1774607646900-gwryw2",
-          "1774607648218-n1fq9a",
-          "1774607650914-dikx6b",
-          "1774607654919-byy9o4",
-          "1774607658925-4uzng4",
-          "1774607662936-rvo3yh",
-          "1774607663605-3vwcm2",
-          "1774607666931-3sc8dm",
-          "1774607670944-u3duhl",
-          "1774607674936-kd9fuj",
-          "1774607678945-bialof",
-          "1774607679225-v89xk5",
-          "1774607682944-ngqanz",
-          "1774607686955-j1ooyg",
-          "1774607690957-5yjpww",
-          "1774607694602-nosc5o",
-          "1774607698984-l34f39",
-          "1774607702978-q7a6we",
-          "1774607706998-uyq49i",
-          "1774607709967-1oevs1",
-          "1774607715015-3gmxnx",
-          "1774607719028-8yg6jd",
-          "1774607723028-u1s226",
-          "1774607725393-nc5hpg",
-          "1774607731057-a26s9p",
-          "1774607735062-uk12kk",
-          "1774607739046-0fxlfr",
-          "1774607740799-qzlo02",
-          "1774607743063-4z9l3u",
-          "1774607747072-e1iuqe",
-          "1774607751068-4n5myp",
-          "1774607755099-efmq1b",
-          "1774607756204-rfl1rp",
-          "1774607759104-dau4nh",
-          "1774607763113-slqaed",
-          "1774607767108-f2cunn",
-          "1774607771112-sjr8q5",
-          "1774607771573-48h1um",
-          "1774607775123-7co9qd",
-          "1774607779141-0j4wlb",
-          "1774607783151-cbka0n",
-          "1774607786963-hrmrei",
-          "1774607791276-217p77",
-          "1774607795265-sy789q",
-          "1774607799269-0gvmyc",
-          "1774607802628-8oe90t",
-          "1774607807296-ljo3y0",
-          "1774607811311-ba6ivf",
-          "1774607815312-lxmhrb",
-          "1774607818009-cgv52k",
-          "1774607823346-ei2zn3",
-          "1774607827342-k3f2x7",
-          "1774607831355-dxgves",
-          "1774607833388-gdcc3p",
-          "1774607835350-5wdqce",
-          "1774607839372-3agfrd",
-          "1774607843370-cgfz3w",
-          "1774607847381-g1cn5e",
-          "1774607848780-aewp4p",
-          "1774607851396-f2gtni",
-          "1774607855406-phugbg",
-          "1774607859409-3egsq4",
-          "1774607863414-bokdrp",
-          "1774607864173-fh61sv",
-          "1774607867438-0me3sn",
-          "1774607871441-0t1bdn",
-          "1774607875442-f3izah",
-          "1774607879455-qfw78k",
-          "1774607879741-hbozro",
-          "1774607883443-mr86ls",
-          "1774607887475-rktrf8",
-          "1774607891470-njahd0",
-          "1774607895134-t4n0hh",
-          "1774607899473-g176d3",
-          "1774607903503-qpis1b",
-          "1774607907522-7atfra",
-          "1774607910492-x4sfr6",
-          "1774607915534-2slk53",
-          "1774607919533-ofisi0",
-          "1774607923551-brkygn",
-          "1774607925880-zmmzgk",
-          "1774607931549-o97gnj",
-          "1774607935557-7lxukq",
-          "1774607939571-9jfnfx",
-          "1774607941258-evubvn",
-          "1774607943570-bp28ny",
-          "1774607947587-nojahm",
-          "1774607951595-ty4emz",
-          "1774607955611-ydff1p",
-          "1774607956686-xqp46m",
-          "1774607959617-w9ipay",
-          "1774607963615-ex9a0e",
-          "1774607967624-byachp",
-          "1774607971655-yasg8z",
-          "1774607972116-drr3yv",
-          "1774607975644-5dfc57",
-          "1774607979662-lssz0r",
-          "1774607983660-op9k9i",
-          "1774607987523-m8jmro",
-          "1774607991826-0747rm",
-          "1774607995832-fxpgpv",
-          "1774607999863-muctzg",
-          "1774608002911-br6uay",
-          "1774608007863-gbxr1h",
-          "1774608011870-gg9mhc",
-          "1774608015878-xcu31q",
-          "1774608018301-ndm63d",
-          "1774608023918-ez9bna",
-          "1774608027887-z76vul",
-          "1774608031896-zy5uc9",
-          "1774608033643-do2pt9",
-          "1774608035920-rjf1e1",
-          "1774608039921-1a0jat",
-          "1774608043933-7pruuv",
-          "1774608047944-n78x3o",
-          "1774608049009-u3p8kj",
-          "1774608051951-b83z7z",
-          "1774608055980-oab99s",
-          "1774608059964-iuohn1",
-          "1774608063975-gu0jga",
-          "1774608067994-ywrlzy",
-          "1774608072034-u4dk4y",
-          "1774608075326-et2n21",
-          "1774608080035-p7s85y",
-          "1774608084027-f98obc",
-          "1774608088043-i68o59",
-          "1774608090684-jma2ot",
-          "1774608096073-9vj15q",
-          "1774608100058-te9xr3",
-          "1774608104074-hg7bf9",
-          "1774608106069-mvg2zg",
-          "1774608108064-h4tvbe",
-          "1774608112080-hfca86",
-          "1774608116090-1rqa0x",
-          "1774608120107-76ybgi",
-          "1774608121508-45twck",
-          "1774608124103-uqwgu7",
-          "1774608128121-1atby9",
-          "1774608132118-eeem22",
-          "1774608136123-wbcfzo",
-          "1774608136902-oh7thb",
-          "1774608140128-62kq7t",
-          "1774608144161-gn08qc",
-          "1774608148143-7c08c5",
-          "1774608152144-0svfis",
-          "1774608152510-czltnu",
-          "1774608156154-tl0srh",
-          "1774608160173-fcda2i",
-          "1774608164183-43ydpi",
-          "1774608167883-ymih8o",
-          "1774608172228-bnrs95",
-          "1774608176239-gt9td8",
-          "1774608180223-8oqua7",
-          "1774608183536-x9t6w7",
-          "1774608188241-mwfugp",
-          "1774608192249-w8sgyb",
-          "1774608196340-msyz3a",
-          "1774608198923-r3jfbl",
-          "1774608204280-zrf9lj",
-          "1774608208284-sj43b3",
-          "1774608212295-qxce87",
-          "1774608214343-0w9jhl",
-          "1774608216297-uw3bnr",
-          "1774608220348-v00a5m",
-          "1774608224332-pl8lez",
-          "1774608228338-pk4951",
-          "1774608229747-2s1jb8",
-          "1774608232351-xy6xxx",
-          "1774608236360-gw3k62",
-          "1774608240370-ysd6z0",
-          "1774608244387-jafaju",
-          "1774608245115-vsls38",
-          "1774608248390-m2zzwr",
-          "1774608252415-4q4xm5",
-          "1774608256422-i68uiy",
-          "1774608260418-nnnge1",
-          "1774608260701-xq6t6i",
-          "1774608264434-0kfiwf",
-          "1774608268434-hr9tw2",
-          "1774608272445-zchash",
-          "1774608276055-krmraz",
-          "1774608280464-7i8kbp",
-          "1774608284477-54x1yl",
-          "1774608288486-quy6yu",
-          "1774608291453-6rlr0l",
-          "1774608296509-18322x",
-          "1774608300519-zx3cdh",
-          "1774608304524-nh30jr",
-          "1774608306836-ydjjv1",
-          "1774608312546-te1e4c",
-          "1774608316542-kdme3r",
-          "1774608320548-935f7f",
-          "1774608322192-g6t6zm",
-          "1774608324552-8aysfp",
-          "1774608328562-lc0f9k",
-          "1774608332561-fjlukg",
-          "1774608336576-gnyxgg",
-          "1774608337559-6fsw8d",
-          "1774608340587-g4o4r1",
-          "1774608344570-ciwa0f",
-          "1774608348589-gmawga",
-          "1774608352609-orr284",
-          "1774608352921-lpp826",
-          "1774608356622-tvvi4w",
-          "1774608360625-e0tr88",
-          "1774608364636-b53us9",
-          "1774608368287-f58que",
-          "1774608372654-lko9zy",
-          "1774608376680-hhdyhc",
-          "1774608380680-79o128",
-          "1774608383649-mqdz4y",
-          "1774608388689-497fja",
-          "1774608392695-wztz5u",
-          "1774608396710-4eo66g",
-          "1774608399036-p1pr3n",
-          "1774608404738-l448di",
-          "1774608408734-ey7984",
-          "1774608412752-4r5ehe",
-          "1774608414411-4toqbg",
-          "1774608416758-qc0dgd",
-          "1774608420760-0cjlcn",
-          "1774608424760-22lav3",
-          "1774608432781-qsnzx7",
-          "1774608436793-qbyqi3",
-          "1774608438601-mdnhhs",
-          "1774608440791-cp2zhl",
-          "1774608444805-15q136",
-          "1774608448807-u5n5oy",
-          "1774608452812-jtpm57",
-          "1774608453999-s010nm",
-          "1774608456841-aryd0h",
-          "1774608460833-nq5mqj",
-          "1774608464841-i6razn",
-          "1774608468851-7car96",
-          "1774608469402-ty9rig"
+        "requestType": "context_request",
+        "urgency": "normal",
+        "targets": [
+          "canonical",
+          "ace",
+          "system",
+          "context",
+          "compatibility",
+          "runtime",
+          "anchor",
+          "brain/emergence/project_brain.md"
         ],
-        "artifactRefs": [
-          "work/tasks/10000-add-ace-orchestration-persistent-graph-l/context.md",
-          "work/tasks/10000-add-ace-orchestration-persistent-graph-l/idea.txt",
-          "work/tasks/10000-add-ace-orchestration-persistent-graph-l/meta.json",
-          "work/tasks/10000-add-ace-orchestration-persistent-graph-l/patch.diff",
-          "work/tasks/10000-add-ace-orchestration-persistent-graph-l/plan.md"
-        ],
-        "executionPackage": {
-          "status": "failed",
-          "taskId": "10000",
-          "taskDir": "work/tasks/10000-add-ace-orchestration-persistent-graph-l",
-          "patchPath": "work/tasks/10000-add-ace-orchestration-persistent-graph-l/patch.diff",
-          "changedFiles": [],
-          "targetProjectKey": "ace-self",
-          "expectedAction": "apply",
-          "summary": "Traceback (most recent call last):\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\runner\\ai.py\", line 969, in <module>\nraise SystemExit(main())\n~~~~^^\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\runner\\ai.py\", line 965, in main\nreturn args.func(args)\n~~~~~~~~~^^^^^^\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipe...",
-          "verificationPlan": {
-            "required": false,
-            "commands": [],
-            "qaScenarios": [],
-            "signature": null,
-            "summary": "No verification required.",
-            "generatedAt": null
-          },
-          "provenance": {
-            "classification": "mixed",
-            "orchestration": "studio",
-            "execution": "hybrid",
-            "engine": "ace-studio-builder-pipeline",
-            "stageIds": [
-              "builder",
-              "scan",
-              "manage",
-              "build"
-            ],
-            "legacyActions": [
-              "scan",
-              "manage",
-              "build"
-            ],
-            "nativeActions": [
-              "studio-orchestration"
-            ],
-            "evidence": [
-              "route:studio",
-              "route:legacy-fallback",
-              "source:team-board-builder"
-            ],
-            "notes": []
-          },
-          "provenanceSummary": "mixed | Studio orchestrates, legacy runs scan, manage, build"
-        },
-        "executorBlocker": {
-          "code": "builder-failed",
-          "message": "Traceback (most recent call last):\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\runner\\ai.py\", line 969, in <module>\nraise SystemExit(main())\n~~~~^^\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\runner\\ai.py\", line 965, in main\nreturn args.func(args)\n~~~~~~~~~^^^^^^\nFile \"C:\\Users\\felix\\Desktop\\Automated_AI_Pipe...",
-          "updatedAt": "2026-03-27T10:47:49.574Z"
-        },
-        "verifyRequired": false,
-        "verifyStatus": "idle",
-        "verifyRunIds": [],
-        "verifyArtifacts": [],
-        "lastVerificationSummary": "",
-        "verifiedSignature": null,
-        "riskLevel": "unknown",
-        "riskReasons": [],
-        "approvalState": "none",
-        "applyStatus": "idle",
-        "deployStatus": "idle",
-        "branch": null,
-        "commit": null,
-        "auditSessionId": null,
-        "provenance": {
-          "classification": "mixed",
-          "orchestration": "studio",
-          "execution": "hybrid",
-          "engine": "ace-studio-builder-pipeline",
-          "stageIds": [
-            "builder",
-            "scan",
-            "manage",
-            "build"
-          ],
-          "legacyActions": [
-            "scan",
-            "manage",
-            "build"
-          ],
-          "nativeActions": [
-            "studio-orchestration"
-          ],
-          "evidence": [
-            "route:studio",
-            "route:legacy-fallback",
-            "source:team-board-builder"
-          ],
-          "notes": []
-        },
-        "createdAt": "2026-03-27T10:28:27.183Z",
-        "updatedAt": "2026-03-27T10:47:49.589Z",
-        "desk": "Builder",
-        "state": "Builder failed",
-        "lastHealth": null,
-        "executionProvenance": {
-          "classification": "mixed",
-          "orchestration": "studio",
-          "execution": "hybrid",
-          "engine": "ace-studio-builder-pipeline",
-          "stageIds": [
-            "builder",
-            "scan",
-            "manage",
-            "build"
-          ],
-          "legacyActions": [
-            "scan",
-            "manage",
-            "build"
-          ],
-          "nativeActions": [
-            "studio-orchestration"
-          ],
-          "evidence": [
-            "route:studio",
-            "route:legacy-fallback",
-            "source:team-board-builder"
-          ],
-          "notes": []
-        }
+        "signals": {},
+        "status": "needs-clarification"
       }
-    ],
-    "selectedCardId": "0001",
-    "updatedAt": "2026-03-27T10:47:49.658Z",
-    "summary": {
-      "plan": 0,
-      "active": 1,
-      "complete": 0,
-      "review": 0,
-      "assigned": 1,
-      "handedOff": 0,
-      "binned": 0,
-      "idleWorkers": 1
-    }
+    ]
+  },
+  "teamBoard": {
+    "selectedCardId": "0001"
   }
 }

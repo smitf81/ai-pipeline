@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-import { smokeLoadSpatialApp } from './helpers/browser-module-loader.mjs';
+import { loadModuleCopy, smokeLoadSpatialApp } from './helpers/browser-module-loader.mjs';
 
 export default async function runSpatialAppSmokeTest() {
   const spatialAppPath = path.resolve(process.cwd(), 'public', 'spatial', 'spatialApp.js');
@@ -14,6 +14,156 @@ export default async function runSpatialAppSmokeTest() {
   assert.equal(typeof spatialApp.resolveGeneratedNodeInspection, 'function');
   assert.equal(typeof spatialApp.renderDeskSection, 'function');
   assert.equal(typeof spatialApp.renderSimLaunchOverlay, 'function');
+  assert.equal(typeof spatialApp.buildDeskHierarchyModel, 'function');
+  assert.equal(typeof spatialApp.normalizeDeskManagementDraft, 'function');
+  assert.equal(typeof spatialApp.updateDeskManagementDraft, 'function');
+  assert.equal(typeof spatialApp.clearDeskManagementDraft, 'function');
+  assert.equal(typeof spatialApp.clearDeskManagementDraftSection, 'function');
+  assert.equal(typeof spatialApp.normalizeRecentWorldChange, 'function');
+  assert.equal(typeof spatialApp.formatRecentWorldChangeItem, 'function');
+  assert.equal(typeof spatialApp.formatScaffoldInterpretationLabel, 'function');
+  assert.equal(typeof spatialApp.formatWorldScaffoldEvaluationSummary, 'function');
+  assert.equal(typeof spatialApp.buildStudioLinks, 'function');
+  assert.equal(typeof spatialApp.buildRelationshipInspectorPayload, 'function');
+  assert.equal(typeof spatialApp.resolveSelectedRelationshipInspector, 'function');
+  assert.equal(typeof spatialApp.hitTestRelationshipEdgeAtPoint, 'function');
+  assert.equal(typeof spatialApp.renderRelationshipInspectorPanel, 'function');
+
+  const layoutModelPath = path.resolve(process.cwd(), 'public', 'spatial', 'studioLayoutModel.js');
+  const layoutModel = await loadModuleCopy(layoutModelPath, { label: 'studioLayoutModel-smoke' });
+  const defaultLayout = layoutModel.createDefaultStudioLayout();
+  assert.equal(defaultLayout.controlCentreDeskId, 'cto-architect');
+  assert.equal(defaultLayout.departments.length, 6);
+  assert.equal(defaultLayout.departments.some((department) => department.id === 'dept-talent-acquisition'), true);
+  assert.ok(defaultLayout.desks['integration_auditor']);
+  assert.ok(defaultLayout.desks['qa-lead']);
+  const layoutRenderModel = layoutModel.buildStudioRenderModel(defaultLayout, []);
+  assert.equal(layoutRenderModel.roomConnections.length, 5);
+  assert.ok(layoutRenderModel.deskMap['planner']);
+  assert.equal(layoutRenderModel.departments.some((department) => department.id === 'dept-talent-acquisition'), true);
+  assert.equal(layoutRenderModel.deskMap['integration_auditor'].visible, true);
+  assert.equal(layoutRenderModel.departments.find((department) => department.id === 'dept-talent-acquisition').statusLabel, 'blocked');
+  assert.equal(layoutRenderModel.deskMap['integration_auditor'].orgStatus, 'missing lead');
+  assert.equal(layoutRenderModel.deskMap['integration_auditor'].statusLabel, 'blocked');
+  assert.ok(layoutRenderModel.deskMap['integration_auditor'].dependencyWarnings.length >= 1);
+  assert.equal(layoutRenderModel.deskMap['integration_auditor'].throughputLabel, '1 assigned agent');
+
+  const recentWorldChange = spatialApp.normalizeRecentWorldChange({
+    items: [{
+      kind: 'scaffold',
+      nodeId: 'world_scaffold_ground_grid',
+      changeType: 'added',
+      label: 'World scaffold created',
+      detail: '20x20 grass/ground grid | 400 cells added',
+      counts: { addedCells: 400, modifiedCells: 0 },
+      addedCells: [{ x: 0, y: 0, z: 0 }],
+      modifiedCells: [],
+    }],
+  });
+  assert.equal(recentWorldChange.items[0].kind, 'scaffold');
+  assert.equal(recentWorldChange.counts.addedCells, 400);
+  assert.match(spatialApp.formatRecentWorldChangeItem(recentWorldChange.items[0]), /World scaffold created/);
+  assert.equal(spatialApp.formatScaffoldInterpretationLabel({
+    source: 'model-assisted',
+    label: 'model-assisted rejected',
+    attempted: true,
+    accepted: false,
+  }), 'model-assisted rejected');
+  assert.equal(spatialApp.formatWorldScaffoldEvaluationSummary({
+    scorecard: {
+      suitability: 'warn',
+      correctionApplied: true,
+      acceptedForMutationGeneration: true,
+    },
+  }), 'warn | corrected | accepted');
+
+  const studioLinks = spatialApp.buildStudioLinks({
+    desks: {
+      planner: { workItems: [{ id: 'plan_1', title: 'Bridge intent' }] },
+      executor: { workItems: [{ id: 'task_1', title: 'Apply change' }] },
+    },
+    conflicts: [{
+      kind: 'low-confidence-context',
+      desks: ['context-manager'],
+      updatedAt: '2026-03-16T10:00:00.000Z',
+    }],
+  }, {
+    contextToPlanner: {
+      id: 'handoff_1',
+      anchorRefs: ['brain/emergence/plan.md'],
+      requestedOutcomes: ['Bridge intent'],
+      status: 'needs-clarification',
+      updatedAt: '2026-03-16T10:05:00.000Z',
+    },
+  });
+  assert.equal(studioLinks.length, 4);
+  assert.equal(studioLinks[0].relationshipType, 'handoff');
+  assert.equal(studioLinks[0].visualForm, 'woven-rope');
+  assert.ok(studioLinks[0].strandCount >= 2);
+  assert.equal(studioLinks[1].relationshipType, 'workflow');
+  assert.equal(studioLinks[1].visualForm, 'bundle');
+  assert.equal(studioLinks[2].relationshipType, 'memory');
+  assert.equal(studioLinks[2].visualForm, 'bundle');
+  assert.equal(studioLinks[3].risk, 'high');
+
+  const selectedRelationshipGraph = {
+    nodes: [
+      { id: 'source_a', position: { x: 100, y: 120 } },
+      { id: 'target_b', position: { x: 320, y: 120 } },
+    ],
+    edges: [{
+      id: 'source_a__target_b__dependency',
+      source: 'source_a',
+      target: 'target_b',
+      relationshipType: 'dependency',
+      strength: 3,
+      strandCount: 2,
+      supports: ['shared module ownership', 'direct dependency'],
+      validatedBy: ['qa-lead'],
+      health: 'healthy',
+      visualForm: 'bundle',
+      lastActive: '2026-03-20T12:15:00.000Z',
+    }],
+  };
+  const relationshipInspector = spatialApp.resolveSelectedRelationshipInspector(selectedRelationshipGraph, 'source_a__target_b__dependency');
+  assert.deepEqual(relationshipInspector, {
+    id: 'source_a__target_b__dependency',
+    source: 'source_a',
+    target: 'target_b',
+    label: 'dependency',
+    relationshipType: 'dependency',
+    strength: 3,
+    strandCount: 2,
+    visualForm: 'bundle',
+    supports: ['shared module ownership', 'direct dependency'],
+    supportsCount: 2,
+    validatedBy: ['qa-lead'],
+    validatedByCount: 1,
+    health: 'healthy',
+    lastActive: '2026-03-20T12:15:00.000Z',
+  });
+  assert.deepEqual(spatialApp.buildRelationshipInspectorPayload({
+    source: 'source_a',
+    target: 'target_b',
+  }), {
+    id: null,
+    source: 'source_a',
+    target: 'target_b',
+    label: 'relates to',
+    relationshipType: 'relates_to',
+    strength: null,
+    strandCount: null,
+    visualForm: null,
+    supports: [],
+    supportsCount: 0,
+    validatedBy: [],
+    validatedByCount: 0,
+    health: null,
+    lastActive: null,
+  });
+  assert.equal(spatialApp.hitTestRelationshipEdgeAtPoint(selectedRelationshipGraph, { x: 324, y: 194 }, { zoom: 1 })?.id, 'source_a__target_b__dependency');
+  assert.ok(spatialApp.renderRelationshipInspectorPanel(relationshipInspector));
+  assert.ok(spatialApp.renderRelationshipInspectorPanel({ source: 'source_a', target: 'target_b' }));
 
   const helpers = {
     runStructuredQA: () => undefined,
@@ -109,6 +259,47 @@ export default async function runSpatialAppSmokeTest() {
       runId: 'qa_run_1',
     }],
   }, helpers));
+  assert.ok(spatialApp.renderDeskSection({
+    id: 'task-economy',
+    label: 'Task Economy',
+    kind: 'task-economy',
+    economy: {
+      headline: '1 intake | 1 WIP | 1 completion | 1 reward | 1 bottleneck',
+      detail: 'Balanced throughput with visible pressure.',
+      pressureTone: 'warn',
+      backlogPressure: 42,
+      momentum: 68,
+      upgradeReadiness: 54,
+      rewardYield: 33,
+      lanes: [
+        { id: 'intake', label: 'Intake', value: 1, detail: 'One task entering the line.' },
+        { id: 'wip', label: 'WIP', value: 1, detail: 'One task in flight.' },
+        { id: 'completion', label: 'Completion', value: 1, detail: 'One task finished.' },
+        { id: 'reward', label: 'Reward', value: 1, detail: 'One task banked payoff.' },
+        { id: 'bottleneck', label: 'Bottleneck', value: 1, detail: 'One task waiting on review.' },
+      ],
+      selectedLane: {
+        label: 'Selected Card',
+        value: 'Render executor queue',
+        detail: 'planned | unassigned | ready',
+      },
+    },
+  }, helpers));
+  assert.ok(spatialApp.renderDeskSection({
+    id: 'desk-truth',
+    label: 'Desk Truth',
+    kind: 'desk-truth',
+    truth: {
+      department: 'Memory Archivist',
+      workload: { assignedTasks: 2, queueSize: 1, outputs: 3 },
+      throughput: '3 archive versions / 2 annotations',
+      reports: ['Archived context slice', 'QA report surfaced'],
+      scorecards: [{ id: 'qa-1', status: 'pass' }],
+      assessments: ['Context preserved'],
+      context: { summary: 'Canonical context archive', slices: [{ id: 'slice-1', summary: 'Planner brief' }] },
+      guardrails: ['CTO approval required'],
+    },
+  }, helpers));
 
   assert.ok(spatialApp.renderSimLaunchOverlay({
     project: {
@@ -124,4 +315,98 @@ export default async function runSpatialAppSmokeTest() {
     error: '',
     onLaunch: () => undefined,
   }));
+
+  const hierarchyModel = spatialApp.buildDeskHierarchyModel({
+    deskId: 'cto-architect',
+    deskLabel: 'CTO / Architect',
+    targetDeskId: 'planner',
+    targetDeskLabel: 'Planner',
+    isCtoEdit: true,
+    panelData: {
+      desk: {
+        localState: 'ready',
+        currentGoal: 'Refine desk scope',
+        mission: 'Monitor guardrails across the desk network.',
+      },
+      agents: [{ id: 'planner-agent', status: 'idle', backend: 'ollama', model: 'mistral:latest' }],
+      tasks: [{ id: 'task-1', lifecycle: 'planned', progress: { label: 'queued' }, source: 'studio' }],
+      modules: [{ id: 'module-1', assigned: true }],
+      reports: [{ id: 'report-1', type: 'assessment', source: 'qa', detail: 'desk scope' }],
+    },
+    draft: {
+      departments: [{ id: 'department-1', label: 'Research' }],
+      desks: [{ id: 'desk-1', label: 'Desk A' }],
+      recruits: [{ id: 'recruit-1', agentId: 'agent-1', traits: 'calm' }],
+      assessments: [{ id: 'assessment-1', testId: 'qa-1' }],
+    },
+  });
+  assert.equal(hierarchyModel.departmentLabel, 'CTO Desk');
+  assert.equal(hierarchyModel.deskLabel, 'Planner');
+  assert.equal(hierarchyModel.managedDeskLabel, 'Planner');
+  assert.match(hierarchyModel.managementSummary, /Planner/);
+  assert.match(hierarchyModel.focusSummary.summary, /Agents 0\/1/);
+  assert.match(hierarchyModel.focusSummary.summary, /Queue 1/);
+  assert.match(hierarchyModel.focusSummary.summary, /Reports 1/);
+  assert.match(hierarchyModel.focusSummary.summary, /Windows Desk Reports/);
+  assert.equal(hierarchyModel.focusSummary.blockerCount, 0);
+  assert.equal(hierarchyModel.counts.departments, 1);
+  assert.equal(hierarchyModel.counts.recruits, 1);
+  assert.equal(hierarchyModel.agents[0].summary.includes('planner-agent'), true);
+
+  const sparseHierarchyModel = spatialApp.buildDeskHierarchyModel({
+    targetDeskId: 'qa-lead',
+    targetDeskLabel: 'QA / Test Lead',
+    panelData: {
+      desk: null,
+      agents: null,
+      tasks: null,
+      modules: null,
+      reports: null,
+      truth: {
+        blockers: ['Waiting on test gate'],
+      },
+    },
+  });
+  assert.equal(sparseHierarchyModel.focusSummary.liveAgents, 0);
+  assert.equal(sparseHierarchyModel.focusSummary.assignedAgents, 0);
+  assert.equal(sparseHierarchyModel.focusSummary.queueCount, 0);
+  assert.equal(sparseHierarchyModel.focusSummary.blockerCount, 1);
+  assert.match(sparseHierarchyModel.focusSummary.summary, /Blockers Waiting on test gate/);
+  assert.match(sparseHierarchyModel.focusSummary.summary, /Windows QA Workbench \/ Scorecards \/ Desk Reports/);
+  assert.match(sparseHierarchyModel.focusSummary.detail, /QA \/ Test Lead focus/);
+
+  const normalizedDraft = spatialApp.normalizeDeskManagementDraft({
+    recruit: { agentId: 'planner-agent', traits: 'calm' },
+    assessment: { testId: 'planner-audit', notes: 'desk-only' },
+  });
+  assert.equal(normalizedDraft.recruit.agentId, 'planner-agent');
+  assert.equal(normalizedDraft.assessment.notes, 'desk-only');
+
+  let draftState = {
+    planner: normalizedDraft,
+    qaLead: spatialApp.normalizeDeskManagementDraft({
+      recruit: { agentId: 'qa-agent', traits: 'critical' },
+      assessment: { testId: 'qa-audit', notes: 'guardrails' },
+    }),
+  };
+  const setDraftState = (updater) => {
+    draftState = typeof updater === 'function' ? updater(draftState) : updater;
+  };
+
+  spatialApp.updateDeskManagementDraft(setDraftState, 'planner', (draft) => ({
+    ...draft,
+    recruit: {
+      ...draft.recruit,
+      traits: 'steady',
+    },
+  }));
+  assert.equal(draftState.planner.recruit.traits, 'steady');
+  assert.equal(draftState.qaLead.recruit.traits, 'critical');
+
+  spatialApp.clearDeskManagementDraftSection(setDraftState, 'planner', 'recruit');
+  assert.equal(draftState.planner.recruit.agentId, '');
+  assert.equal(draftState.planner.assessment.testId, 'planner-audit');
+
+  spatialApp.clearDeskManagementDraft(setDraftState, 'qaLead');
+  assert.equal(draftState.qaLead, undefined);
 }

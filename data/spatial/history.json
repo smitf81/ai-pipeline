@@ -1,775 +1,773 @@
 [
   {
-    "at": "2026-03-27T10:46:24.878Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "runIds": [
-        "1774608384686-bgzw99"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-27T10:46:28.665Z",
+    "at": "2026-03-28T14:06:57.721Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:28.687Z",
+    "at": "2026-03-28T14:06:57.741Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:28.890Z",
+    "at": "2026-03-28T14:06:57.847Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608388689-497fja"
+        "1774706817742-qtg72l"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:46:32.674Z",
+    "at": "2026-03-28T14:06:58.921Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:32.694Z",
+    "at": "2026-03-28T14:06:58.941Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:32.886Z",
+    "at": "2026-03-28T14:06:59.050Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608392695-wztz5u"
+        "1774706818942-9muimw"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:46:36.688Z",
+    "at": "2026-03-28T14:06:59.104Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:36.708Z",
+    "at": "2026-03-28T14:06:59.129Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:36.895Z",
+    "at": "2026-03-28T14:06:59.239Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608396710-4eo66g"
+        "1774706819131-2zy3m7"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:46:39.012Z",
+    "at": "2026-03-28T14:07:01.726Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:39.033Z",
+    "at": "2026-03-28T14:07:01.747Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:39.228Z",
+    "at": "2026-03-28T14:07:01.861Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608399036-p1pr3n"
+        "1774706821748-sk0nus"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:46:40.695Z",
+    "at": "2026-03-28T14:07:02.931Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:40.717Z",
+    "at": "2026-03-28T14:07:02.951Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:40.909Z",
+    "at": "2026-03-28T14:07:03.066Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608400719-28abso"
+        "1774706822952-f6liwl"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:46:44.712Z",
+    "at": "2026-03-28T14:07:03.106Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:44.737Z",
+    "at": "2026-03-28T14:07:03.130Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:44.937Z",
+    "at": "2026-03-28T14:07:03.246Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608404738-l448di"
+        "1774706823131-vvhy76"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:46:48.709Z",
+    "at": "2026-03-28T14:07:05.735Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:48.732Z",
+    "at": "2026-03-28T14:07:05.753Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:48.933Z",
+    "at": "2026-03-28T14:07:05.866Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608408734-ey7984"
+        "1774706825755-z72x6j"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:46:52.724Z",
+    "at": "2026-03-28T14:07:06.925Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:52.749Z",
+    "at": "2026-03-28T14:07:06.945Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:52.951Z",
+    "at": "2026-03-28T14:07:07.054Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608412752-4r5ehe"
+        "1774706826946-ca32gi"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:46:54.391Z",
+    "at": "2026-03-28T14:07:07.122Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:54.409Z",
+    "at": "2026-03-28T14:07:07.147Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:54.607Z",
+    "at": "2026-03-28T14:07:07.269Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608414411-4toqbg"
+        "1774706827148-hm89d7"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:46:56.734Z",
+    "at": "2026-03-28T14:07:09.746Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:56.757Z",
+    "at": "2026-03-28T14:07:09.775Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:46:56.960Z",
+    "at": "2026-03-28T14:07:09.882Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608416758-qc0dgd"
+        "1774706829776-peuqxn"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:00.738Z",
+    "at": "2026-03-28T14:07:10.948Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:00.758Z",
+    "at": "2026-03-28T14:07:10.974Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:00.975Z",
+    "at": "2026-03-28T14:07:11.081Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608420760-0cjlcn"
+        "1774706830975-ywj5vd"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:04.739Z",
+    "at": "2026-03-28T14:07:11.126Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:04.758Z",
+    "at": "2026-03-28T14:07:11.145Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:04.978Z",
+    "at": "2026-03-28T14:07:11.251Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608424760-22lav3"
+        "1774706831146-8obxoi"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:08.747Z",
+    "at": "2026-03-28T14:07:13.761Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:12.754Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
-    }
-  },
-  {
-    "at": "2026-03-27T10:47:12.779Z",
+    "at": "2026-03-28T14:07:13.779Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:12.991Z",
+    "at": "2026-03-28T14:07:13.890Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608432781-qsnzx7"
+        "1774706833780-31kuyu"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:16.770Z",
+    "at": "2026-03-28T14:07:14.964Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:16.791Z",
+    "at": "2026-03-28T14:07:14.992Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:16.995Z",
+    "at": "2026-03-28T14:07:15.146Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-28T14:07:15.175Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-28T14:07:15.298Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608436793-qbyqi3"
+        "1774706835177-t7doz5"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:18.578Z",
+    "at": "2026-03-28T14:07:17.756Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:18.599Z",
+    "at": "2026-03-28T14:07:17.777Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:18.777Z",
+    "at": "2026-03-28T14:07:17.885Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608438601-mdnhhs"
+        "1774706837778-wuaxfk"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:20.765Z",
+    "at": "2026-03-28T14:07:18.948Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:20.789Z",
+    "at": "2026-03-28T14:07:18.968Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:20.988Z",
+    "at": "2026-03-28T14:07:19.077Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608440791-cp2zhl"
+        "1774706838969-dt9daq"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:24.784Z",
+    "at": "2026-03-28T14:07:19.125Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:24.804Z",
+    "at": "2026-03-28T14:07:19.150Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:25.006Z",
+    "at": "2026-03-28T14:07:19.266Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608444805-15q136"
+        "1774706839152-el700c"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:28.786Z",
+    "at": "2026-03-28T14:07:21.769Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:28.805Z",
+    "at": "2026-03-28T14:07:21.788Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:29.005Z",
+    "at": "2026-03-28T14:07:21.895Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608448807-u5n5oy"
+        "1774706841789-veni08"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:32.787Z",
+    "at": "2026-03-28T14:07:22.956Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:32.809Z",
+    "at": "2026-03-28T14:07:22.974Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:33.023Z",
+    "at": "2026-03-28T14:07:23.081Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608452812-jtpm57"
+        "1774706842975-kif56t"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:33.957Z",
+    "at": "2026-03-28T14:07:23.151Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:33.996Z",
+    "at": "2026-03-28T14:07:23.170Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:34.181Z",
+    "at": "2026-03-28T14:07:23.278Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608453999-s010nm"
+        "1774706843170-kk40hb"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:36.811Z",
+    "at": "2026-03-28T14:07:25.763Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:36.839Z",
+    "at": "2026-03-28T14:07:25.780Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:37.034Z",
+    "at": "2026-03-28T14:07:25.884Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608456841-aryd0h"
+        "1774706845781-gip7vi"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:40.808Z",
+    "at": "2026-03-28T14:07:26.976Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:40.829Z",
+    "at": "2026-03-28T14:07:26.994Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:41.028Z",
+    "at": "2026-03-28T14:07:27.097Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608460833-nq5mqj"
+        "1774706846995-onyzcp"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:44.816Z",
+    "at": "2026-03-28T14:07:27.163Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:44.840Z",
+    "at": "2026-03-28T14:07:27.189Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:45.050Z",
+    "at": "2026-03-28T14:07:27.293Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608464841-i6razn"
+        "1774706847190-xh6gaj"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:48.826Z",
+    "at": "2026-03-28T14:07:29.794Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:48.849Z",
+    "at": "2026-03-28T14:07:29.815Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:49.039Z",
+    "at": "2026-03-28T14:07:29.919Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608468851-7car96"
+        "1774706849816-w796iw"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:49.377Z",
+    "at": "2026-03-28T14:07:30.978Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:49.399Z",
+    "at": "2026-03-28T14:07:31.002Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:49.583Z",
+    "at": "2026-03-28T14:07:31.107Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608469402-ty9rig"
+        "1774706851003-dmseuo"
       ]
     }
   },
   {
-    "at": "2026-03-27T10:47:52.831Z",
+    "at": "2026-03-28T14:07:31.167Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:52.853Z",
+    "at": "2026-03-28T14:07:31.199Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "title": "Add ACE orchestration, persistent graph layer, and spatial fields as the new stack"
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-27T10:47:53.030Z",
+    "at": "2026-03-28T14:07:31.314Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774608472855-pjrh9u"
+        "1774706851200-h07txx"
       ]
     }
   }

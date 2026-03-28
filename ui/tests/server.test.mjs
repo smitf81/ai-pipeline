@@ -52,10 +52,30 @@ export default async function runServerTests() {
     stopProjectRun,
     summarizeExecutionProvenance,
     executeModuleAction,
+    detectWorldScaffoldIntent,
+    detectPotentialWorldEditPrompt,
+    interpretScaffoldIntentWithModel,
+    parseWorldEditIntent,
+    parseWorldScaffoldIntent,
+    resolveWorldEditExecutiveRoute,
+    resolveWorldScaffoldExecutiveRoute,
+    buildWorldScaffoldMutationPlan,
+    buildWorldScaffoldMutations,
+    normalizeStoredStudioState,
+    normalizeStoredStudioTeamBoard,
+    createDefaultStudioLayoutSchema,
+    normalizeStudioLayoutSchema,
+    addDepartmentToLayout,
+    addDeskToLayout,
+    buildStudioLayoutCatalog,
+    listStudioDeskIds,
   } = require(serverPath);
   const {
     createPlannerHandoff,
   } = require(throughputDebugPath);
+  const {
+    createWorldScaffold,
+  } = require(path.resolve(process.cwd(), 'worldScaffold.js'));
   const {
     ensureQAStorage,
     writeLocalGateReport,
@@ -64,9 +84,594 @@ export default async function runServerTests() {
 
   assert.equal(detectMaterialGenerationIntent('Generate a material for wet stone'), true);
   assert.equal(detectMaterialGenerationIntent('Need planning updates for team board'), false);
+  const oversizedStudioState = {
+    handoffs: {
+      contextToPlanner: { id: 'handoff_1', title: 'Planner brief' },
+      history: [{ id: 'handoff_1' }, null, { id: 'handoff_0' }],
+    },
+    teamBoard: {
+      selectedCardId: 'card_2',
+      cards: Array.from({ length: 20 }, (_, index) => ({
+        id: `card_${index}`,
+        title: `Task ${index}`,
+        executionPackage: {
+          changedFiles: Array.from({ length: 10 }, (__, fileIndex) => `src/file_${index}_${fileIndex}.js`),
+        },
+      })),
+      summary: { review: 20 },
+    },
+  };
+  const compactStudioState = normalizeStoredStudioState(oversizedStudioState);
+  assert.deepEqual(compactStudioState, {
+    handoffs: {
+      contextToPlanner: { id: 'handoff_1', title: 'Planner brief' },
+      history: [{ id: 'handoff_1' }, { id: 'handoff_0' }],
+    },
+    teamBoard: { selectedCardId: 'card_2' },
+  });
+  assert.deepEqual(normalizeStoredStudioTeamBoard({
+    selectedCardId: null,
+    cards: [{ id: 'card_1', title: 'Should be stripped' }],
+  }), { selectedCardId: null });
+  assert.ok(JSON.stringify(compactStudioState).length < JSON.stringify(oversizedStudioState).length / 4);
+
+  const defaultLayout = createDefaultStudioLayoutSchema();
+  assert.equal(defaultLayout.controlCentreDeskId, 'cto-architect');
+  assert.equal(defaultLayout.departments.find((entry) => entry.id === 'dept-control').label, 'Control Centre');
+  assert.equal(defaultLayout.departments.some((entry) => entry.id === 'dept-talent-acquisition'), true);
+  assert.ok(defaultLayout.desks['qa-lead']);
+  assert.deepEqual(listStudioDeskIds(defaultLayout).sort(), [
+    'context-manager',
+    'cto-architect',
+    'executor',
+    'integration_auditor',
+    'memory-archivist',
+    'planner',
+    'qa-lead',
+  ]);
+  assert.equal(defaultLayout.desks['context-manager'].staffing.seatKind, 'lead');
+  assert.equal(defaultLayout.desks['integration_auditor'].departmentId, 'dept-talent-acquisition');
+  assert.equal(defaultLayout.desks['integration_auditor'].staffing.placeholder, true);
+  assert.equal(defaultLayout.desks['integration_auditor'].staffing.seatKind, 'lead');
+  const layoutCatalog = buildStudioLayoutCatalog();
+  assert.ok(layoutCatalog.departmentTemplates.some((entry) => entry.id === 'research'));
+  assert.ok(layoutCatalog.deskTemplates.some((entry) => entry.id === 'report-node'));
+  const departmentExpandedLayout = addDepartmentToLayout(defaultLayout, { templateId: 'research' });
+  const addedDepartment = departmentExpandedLayout.departments.find((entry) => entry.id.startsWith('dept-research-'));
+  assert.ok(addedDepartment);
+  assert.equal(addedDepartment.visible, true);
+  assert.equal(new Set(departmentExpandedLayout.departments.map((entry) => entry.id)).size, departmentExpandedLayout.departments.length);
+  const deskExpandedLayout = addDeskToLayout(departmentExpandedLayout, {
+    departmentId: addedDepartment.id,
+    templateId: 'analysis-node',
+  });
+  const addedDeskId = Object.keys(deskExpandedLayout.desks).find((deskId) => deskId.startsWith('analysis-'));
+  assert.ok(addedDeskId);
+  assert.equal(deskExpandedLayout.desks[addedDeskId].departmentId, addedDepartment.id);
+  assert.equal(normalizeStudioLayoutSchema(deskExpandedLayout).departments.some((entry) => entry.id === addedDepartment.id), true);
+  assert.equal(new Set(listStudioDeskIds(deskExpandedLayout)).size, listStudioDeskIds(deskExpandedLayout).length);
+  const dynamicDeskPayload = buildDeskPropertiesPayload({
+    graph: { nodes: [], edges: [] },
+    graphs: {
+      system: { nodes: [], edges: [] },
+      world: { nodes: [], edges: [] },
+    },
+    studio: {
+      layout: deskExpandedLayout,
+      orchestrator: { desks: {}, activeDeskIds: [], conflicts: [] },
+      deskProperties: {},
+      agentWorkers: {},
+      teamBoard: { cards: [], selectedCardId: null, summary: {} },
+      handoffs: {},
+    },
+  }, addedDeskId);
+  assert.equal(dynamicDeskPayload.layout.desk.id, addedDeskId);
+  assert.equal(dynamicDeskPayload.truth.department.label, addedDepartment.label);
+  assert.equal(dynamicDeskPayload.truth.workload.assignedTasks, 0);
+
+  assert.equal(detectWorldScaffoldIntent("let's start with a 20x20 grass/ground grid"), true);
+  assert.equal(detectWorldScaffoldIntent('make a grass grid'), true);
+  assert.equal(detectWorldScaffoldIntent('make a small stone platform to build on'), true);
+  assert.equal(detectWorldScaffoldIntent('something to build on'), true);
+  assert.equal(detectWorldScaffoldIntent('a small grid'), true);
+  assert.equal(detectWorldScaffoldIntent('make it kinda big'), false);
+  assert.equal(detectWorldScaffoldIntent('a huge space idk'), false);
+  assert.equal(detectWorldScaffoldIntent('infinite grass world'), false);
+  assert.equal(detectPotentialWorldEditPrompt('add water tiles to the grass grid'), true);
+  assert.equal(detectPotentialWorldEditPrompt('20x20 grass grid'), false);
+  const scaffoldIntent = parseWorldScaffoldIntent("let's start with a 20x20 grass/ground grid");
+  const stoneScaffoldIntent = parseWorldScaffoldIntent('create a 10x30 stone ground grid');
+  const dirtScaffoldIntent = parseWorldScaffoldIntent('make a 15 by 15 dirt grid');
+  const oneByOneScaffoldIntent = parseWorldScaffoldIntent('1x1 grass grid');
+  const oversizedScaffoldIntent = parseWorldScaffoldIntent("let's start with a 200x200 grass grid");
+  const zeroWidthIntent = parseWorldScaffoldIntent('0x10 grid');
+  const negativeHeightIntent = parseWorldScaffoldIntent('10x-5 grid');
+  const unsupportedMaterialIntent = parseWorldScaffoldIntent('create a 20x20 lava grid');
+  const missingDimensionsIntent = parseWorldScaffoldIntent('make a grass grid');
+  const missingMaterialIntent = parseWorldScaffoldIntent('make a 20x20 grid');
+  const smallGridIntent = parseWorldScaffoldIntent('a small grid');
+  assert.equal(scaffoldIntent.type, 'world_scaffold');
+  assert.equal(scaffoldIntent.shape, 'grid');
+  assert.equal(scaffoldIntent.kind, 'rect-ground-grid');
+  assert.equal(scaffoldIntent.width, 20);
+  assert.equal(scaffoldIntent.height, 20);
+  assert.equal(scaffoldIntent.material, 'grass');
+  assert.deepEqual(scaffoldIntent.position, { x: 0, y: 0, z: 0 });
+  assert.equal(scaffoldIntent.validation.ok, true);
+  assert.equal(scaffoldIntent.confidence.label, 'medium');
+  assert.equal(stoneScaffoldIntent.validation.ok, true);
+  assert.equal(stoneScaffoldIntent.material, 'stone');
+  assert.equal(stoneScaffoldIntent.width, 10);
+  assert.equal(stoneScaffoldIntent.height, 30);
+  assert.equal(dirtScaffoldIntent.validation.ok, true);
+  assert.equal(dirtScaffoldIntent.material, 'dirt');
+  assert.equal(dirtScaffoldIntent.parse.dimensionSyntax, 'by');
+  assert.equal(dirtScaffoldIntent.confidence.label, 'medium');
+  assert.equal(oneByOneScaffoldIntent.validation.ok, true);
+  assert.equal(oneByOneScaffoldIntent.width, 1);
+  assert.equal(oneByOneScaffoldIntent.height, 1);
+  assert.equal(oversizedScaffoldIntent.validation.ok, false);
+  assert.match(oversizedScaffoldIntent.validation.reason, /100x100 or smaller/i);
+  assert.equal(zeroWidthIntent.validation.ok, false);
+  assert.equal(zeroWidthIntent.validation.code, 'non_positive_dimensions');
+  assert.equal(negativeHeightIntent.validation.ok, false);
+  assert.equal(negativeHeightIntent.validation.code, 'non_positive_dimensions');
+  assert.equal(unsupportedMaterialIntent.validation.ok, false);
+  assert.match(unsupportedMaterialIntent.validation.reason, /Unsupported scaffold material "lava"/);
+  assert.equal(missingDimensionsIntent.validation.ok, false);
+  assert.equal(missingDimensionsIntent.validation.reason, 'Could not parse grid dimensions.');
+  assert.equal(missingMaterialIntent.validation.ok, false);
+  assert.equal(missingMaterialIntent.validation.reason, 'Could not parse scaffold material.');
+  assert.equal(smallGridIntent, null);
+
+  const acceptedModelInterpretation = await interpretScaffoldIntentWithModel('make a small stone platform to build on', {
+    backend: 'ollama-fixture',
+    model: 'scaffold-fixture',
+    callModel: async () => ({
+      text: JSON.stringify({
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 12,
+          height: 8,
+          material: 'stone',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      }),
+      json: {
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 12,
+          height: 8,
+          material: 'stone',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      },
+    }),
+  });
+  assert.equal(acceptedModelInterpretation.source, 'model-assisted');
+  assert.equal(acceptedModelInterpretation.attempted, true);
+  assert.equal(acceptedModelInterpretation.accepted, true);
+  assert.equal(acceptedModelInterpretation.status, 'accepted');
+  assert.equal(acceptedModelInterpretation.candidate.material, 'stone');
+
+  const grassyAreaInterpretation = await interpretScaffoldIntentWithModel('make a grassy area', {
+    backend: 'ollama-fixture',
+    model: 'scaffold-fixture',
+    callModel: async () => ({
+      text: JSON.stringify({
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 6,
+          height: 6,
+          material: 'grass',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      }),
+      json: {
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 6,
+          height: 6,
+          material: 'grass',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      },
+    }),
+  });
+  assert.equal(grassyAreaInterpretation.accepted, true);
+  assert.equal(grassyAreaInterpretation.candidate.width, 6);
+  assert.equal(grassyAreaInterpretation.candidate.height, 6);
+
+  const undersizedStarterInterpretation = await interpretScaffoldIntentWithModel('give me a decent grassy starter area', {
+    backend: 'ollama-fixture',
+    model: 'scaffold-fixture',
+    callModel: async () => ({
+      text: JSON.stringify({
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 5,
+          height: 5,
+          material: 'grass',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      }),
+      json: {
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 5,
+          height: 5,
+          material: 'grass',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      },
+    }),
+  });
+  assert.equal(undersizedStarterInterpretation.accepted, true);
+  assert.equal(undersizedStarterInterpretation.status, 'accepted');
+  assert.equal(undersizedStarterInterpretation.candidate.width, 5);
+  assert.equal(undersizedStarterInterpretation.candidate.height, 5);
+
+  const buildOnInterpretation = await interpretScaffoldIntentWithModel('something to build on', {
+    backend: 'ollama-fixture',
+    model: 'scaffold-fixture',
+    callModel: async () => ({
+      text: JSON.stringify({
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 6,
+          height: 6,
+          material: 'stone',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      }),
+      json: {
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 6,
+          height: 6,
+          material: 'stone',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      },
+    }),
+  });
+  assert.equal(buildOnInterpretation.accepted, true);
+  assert.equal(buildOnInterpretation.candidate.material, 'stone');
+
+  const starterVillageInterpretation = await interpretScaffoldIntentWithModel('set up a basic ground grid for a first village', {
+    backend: 'ollama-fixture',
+    model: 'scaffold-fixture',
+    callModel: async () => ({
+      text: JSON.stringify({
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 5,
+          height: 5,
+          material: 'grass',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      }),
+      json: {
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 5,
+          height: 5,
+          material: 'grass',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      },
+    }),
+  });
+  assert.equal(starterVillageInterpretation.accepted, true);
+  assert.equal(starterVillageInterpretation.candidate.width, 5);
+  assert.equal(starterVillageInterpretation.candidate.height, 5);
+
+  const smallGridInterpretation = await interpretScaffoldIntentWithModel('a small grid', {
+    backend: 'ollama-fixture',
+    model: 'scaffold-fixture',
+    callModel: async () => ({
+      text: JSON.stringify({
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 4,
+          height: 4,
+          material: 'grass',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      }),
+      json: {
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'grid',
+          width: 4,
+          height: 4,
+          material: 'grass',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      },
+    }),
+  });
+  assert.equal(smallGridInterpretation.accepted, true);
+  assert.equal(smallGridInterpretation.candidate.width, 4);
+  assert.equal(smallGridInterpretation.candidate.height, 4);
+
+  const malformedModelInterpretation = await interpretScaffoldIntentWithModel('give me a decent grassy starter area', {
+    callModel: async () => {
+      throw new Error('Local model response was not valid JSON: Unexpected token } in JSON at position 12');
+    },
+  });
+  assert.equal(malformedModelInterpretation.accepted, false);
+  assert.equal(malformedModelInterpretation.status, 'rejected_malformed_output');
+
+  const unsupportedModelInterpretation = await interpretScaffoldIntentWithModel('set up a basic ground grid for a first village', {
+    callModel: async () => ({
+      text: JSON.stringify({
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'circle',
+          width: 16,
+          height: 16,
+          material: 'lava',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      }),
+      json: {
+        candidate: {
+          type: 'world_scaffold',
+          shape: 'circle',
+          width: 16,
+          height: 16,
+          material: 'lava',
+          position: { x: 0, y: 0, z: 0 },
+        },
+      },
+    }),
+  });
+  assert.equal(unsupportedModelInterpretation.accepted, false);
+  assert.equal(unsupportedModelInterpretation.status, 'rejected_candidate');
+  assert.match(unsupportedModelInterpretation.reason, /Unsupported scaffold shape "circle"/);
+
+  const unavailableModelInterpretation = await interpretScaffoldIntentWithModel('give me a decent grassy starter area', {
+    callModel: async () => {
+      throw new Error('No fetch implementation is available for callOllamaGenerate.');
+    },
+  });
+  assert.equal(unavailableModelInterpretation.accepted, false);
+  assert.equal(unavailableModelInterpretation.status, 'model_unavailable');
+
+  const resolveScaffoldRoute = (promptText, modelInterpreter) => resolveWorldScaffoldExecutiveRoute({
+    promptText,
+    envelope: normalizeExecutiveEnvelope({
+      entries: [{ type: 'prompt', content: promptText }],
+    }),
+    graphs: {
+      system: { nodes: [], edges: [] },
+      world: { nodes: [], edges: [] },
+    },
+    modelInterpreter,
+  });
+
+  const createEmptySpatialWorkspace = () => ({
+    graph: { nodes: [], edges: [] },
+    graphs: {
+      system: { nodes: [], edges: [] },
+      world: { nodes: [], edges: [] },
+    },
+    studio: {},
+  });
+
+  const deterministicScaffoldRoute = await resolveScaffoldRoute("let's start with a 20x20 grass grid", async () => {
+    throw new Error('deterministic scaffold route should not call model interpreter');
+  });
+  assert.equal(deterministicScaffoldRoute.statusCode, 200);
+  assert.equal(deterministicScaffoldRoute.body.interpretation.source, 'deterministic');
+  assert.equal(deterministicScaffoldRoute.body.interpretation.attempted, false);
+  assert.equal(deterministicScaffoldRoute.body.evaluation.scorecard.validity, 'pass');
+  assert.equal(deterministicScaffoldRoute.body.evaluation.scorecard.suitability, 'pass');
+  assert.equal(deterministicScaffoldRoute.body.evaluation.scorecard.correctionApplied, false);
+  assert.equal(deterministicScaffoldRoute.body.evaluation.scorecard.acceptedForMutationGeneration, true);
+  const scaffoldWorkspace = applySpatialMutationsToWorkspace(createEmptySpatialWorkspace(), deterministicScaffoldRoute.body.mutations).workspace;
+  const parsedWorldEditIntent = parseWorldEditIntent('add water tiles to the grass grid', scaffoldWorkspace.graphs);
+  assert.equal(parsedWorldEditIntent.action, 'paint_tiles');
+  assert.equal(parsedWorldEditIntent.requestedMaterial, 'water');
+  assert.equal(parsedWorldEditIntent.supported, false);
+  assert.equal(parsedWorldEditIntent.targetNodeId, scaffoldWorkspace.graphs.world.nodes[0].id);
+  assert.match(parsedWorldEditIntent.validation.reason, /not implemented yet/i);
+  const unsupportedWorldEditRoute = resolveWorldEditExecutiveRoute({
+    promptText: 'add water tiles to the grass grid',
+    envelope: normalizeExecutiveEnvelope({
+      entries: [{ type: 'prompt', content: 'add water tiles to the grass grid' }],
+    }),
+    graphs: scaffoldWorkspace.graphs,
+  });
+  assert.equal(unsupportedWorldEditRoute.matched, true);
+  assert.equal(unsupportedWorldEditRoute.statusCode, 422);
+  assert.equal(unsupportedWorldEditRoute.body.route, 'world-edit');
+  assert.equal(unsupportedWorldEditRoute.body.supported, false);
+  assert.equal(unsupportedWorldEditRoute.body.mutationGeneration.mutationCount, 0);
+  assert.match(unsupportedWorldEditRoute.body.error, /Supported today: scaffold creation only/i);
+  const missingScaffoldEditIntent = parseWorldEditIntent('add water tiles to the grass grid', createEmptySpatialWorkspace().graphs);
+  assert.equal(missingScaffoldEditIntent.validation.code, 'missing_scaffold');
+  assert.match(missingScaffoldEditIntent.validation.reason, /Create a scaffold first/i);
+  const missingScaffoldEditRoute = resolveWorldEditExecutiveRoute({
+    promptText: 'add water tiles to the grass grid',
+    envelope: normalizeExecutiveEnvelope({
+      entries: [{ type: 'prompt', content: 'add water tiles to the grass grid' }],
+    }),
+    graphs: createEmptySpatialWorkspace().graphs,
+  });
+  assert.equal(missingScaffoldEditRoute.statusCode, 422);
+  assert.match(missingScaffoldEditRoute.body.error, /Create a scaffold first/i);
+
+  for (const [promptText, width, height, material] of [
+    ['20x20 grass grid', 20, 20, 'grass'],
+    ['10x30 stone ground grid', 10, 30, 'stone'],
+    ['15 by 15 dirt grid', 15, 15, 'dirt'],
+  ]) {
+    const exactRoute = await resolveScaffoldRoute(promptText, async () => {
+      throw new Error('exact deterministic scaffold route should not call model interpreter');
+    });
+    assert.equal(exactRoute.statusCode, 200, promptText);
+    assert.equal(exactRoute.body.interpretation.source, 'deterministic', promptText);
+    assert.equal(exactRoute.body.interpretation.attempted, false, promptText);
+    assert.equal(exactRoute.body.evaluation.scorecard.correctionApplied, false, promptText);
+    assert.equal(exactRoute.body.intent.width, width, promptText);
+    assert.equal(exactRoute.body.intent.height, height, promptText);
+    assert.equal(exactRoute.body.intent.material, material, promptText);
+    const exactApplyResult = applySpatialMutationsToWorkspace(createEmptySpatialWorkspace(), exactRoute.body.mutations);
+    assert.equal(exactApplyResult.status, 'applied', promptText);
+    assert.equal(exactApplyResult.workspace.graphs.world.nodes[0].metadata.scaffold.dimensions.width, width, promptText);
+    assert.equal(exactApplyResult.workspace.graphs.world.nodes[0].metadata.scaffold.dimensions.height, height, promptText);
+    assert.equal(exactApplyResult.workspace.graphs.world.nodes[0].metadata.scaffold.material, material, promptText);
+    assert.equal(exactApplyResult.workspace.mutationGate.activity[0].classification, 'safe', promptText);
+  }
+
+  let fuzzyRouteModelCalls = 0;
+  const fuzzyScaffoldRoute = await resolveScaffoldRoute('make a small stone platform to build on', async () => {
+    fuzzyRouteModelCalls += 1;
+    return acceptedModelInterpretation;
+  });
+  assert.equal(fuzzyRouteModelCalls, 1);
+  assert.equal(fuzzyScaffoldRoute.statusCode, 200);
+  assert.equal(fuzzyScaffoldRoute.body.interpretation.source, 'model-assisted');
+  assert.equal(fuzzyScaffoldRoute.body.intent.material, 'stone');
+  assert.equal(fuzzyScaffoldRoute.body.mutationGeneration.ok, true);
+  assert.equal(fuzzyScaffoldRoute.body.evaluation.scorecard.correctionApplied, false);
+  assert.equal(fuzzyScaffoldRoute.body.evaluation.finalCandidate.width, 12);
+  assert.equal(fuzzyScaffoldRoute.body.evaluation.finalCandidate.height, 8);
+
+  const correctedStarterScaffoldRoute = await resolveScaffoldRoute('give me a decent grassy starter area', async () => undersizedStarterInterpretation);
+  assert.equal(correctedStarterScaffoldRoute.statusCode, 200);
+  assert.equal(correctedStarterScaffoldRoute.body.interpretation.source, 'model-assisted');
+  assert.equal(correctedStarterScaffoldRoute.body.evaluation.scorecard.sizeAdequacy, 'warn');
+  assert.equal(correctedStarterScaffoldRoute.body.evaluation.scorecard.suitability, 'warn');
+  assert.equal(correctedStarterScaffoldRoute.body.evaluation.scorecard.correctionApplied, true);
+  assert.match(correctedStarterScaffoldRoute.body.evaluation.scorecard.correctionReason, /minimum starter grid size of 8x8/i);
+  assert.equal(correctedStarterScaffoldRoute.body.evaluation.originalCandidate.width, 5);
+  assert.equal(correctedStarterScaffoldRoute.body.evaluation.correctedCandidate.width, 8);
+  assert.equal(correctedStarterScaffoldRoute.body.evaluation.correctedCandidate.height, 8);
+  assert.equal(correctedStarterScaffoldRoute.body.evaluation.finalCandidate.width, 8);
+  assert.equal(correctedStarterScaffoldRoute.body.evaluation.finalCandidate.height, 8);
+  assert.equal(correctedStarterScaffoldRoute.body.intent.width, 8);
+  assert.equal(correctedStarterScaffoldRoute.body.intent.height, 8);
+  assert.equal(correctedStarterScaffoldRoute.body.mutationGeneration.ok, true);
+
+  const starterVillageScaffoldRoute = await resolveScaffoldRoute('set up a basic ground grid for a first village', async () => starterVillageInterpretation);
+  assert.equal(starterVillageScaffoldRoute.statusCode, 200);
+  assert.equal(starterVillageScaffoldRoute.body.interpretation.source, 'model-assisted');
+  assert.equal(starterVillageScaffoldRoute.body.evaluation.scorecard.correctionApplied, true);
+  assert.equal(starterVillageScaffoldRoute.body.evaluation.finalCandidate.width, 8);
+  assert.equal(starterVillageScaffoldRoute.body.evaluation.finalCandidate.height, 8);
+
+  const grassyAreaScaffoldRoute = await resolveScaffoldRoute('make a grassy area', async () => grassyAreaInterpretation);
+  assert.equal(grassyAreaScaffoldRoute.statusCode, 200);
+  assert.equal(grassyAreaScaffoldRoute.body.interpretation.source, 'model-assisted');
+  assert.equal(grassyAreaScaffoldRoute.body.evaluation.scorecard.correctionApplied, false);
+  assert.equal(grassyAreaScaffoldRoute.body.evaluation.finalCandidate.width, 6);
+  assert.equal(grassyAreaScaffoldRoute.body.evaluation.finalCandidate.height, 6);
+
+  const buildOnScaffoldRoute = await resolveScaffoldRoute('something to build on', async () => buildOnInterpretation);
+  assert.equal(buildOnScaffoldRoute.statusCode, 200);
+  assert.equal(buildOnScaffoldRoute.body.interpretation.source, 'model-assisted');
+  assert.equal(buildOnScaffoldRoute.body.evaluation.scorecard.correctionApplied, true);
+  assert.equal(buildOnScaffoldRoute.body.evaluation.finalCandidate.width, 8);
+  assert.equal(buildOnScaffoldRoute.body.evaluation.finalCandidate.height, 8);
+  assert.equal(buildOnScaffoldRoute.body.evaluation.finalCandidate.material, 'stone');
+
+  const smallGridScaffoldRoute = await resolveScaffoldRoute('a small grid', async () => smallGridInterpretation);
+  assert.equal(smallGridScaffoldRoute.statusCode, 200);
+  assert.equal(smallGridScaffoldRoute.body.interpretation.source, 'model-assisted');
+  assert.equal(smallGridScaffoldRoute.body.evaluation.scorecard.correctionApplied, false);
+  assert.equal(smallGridScaffoldRoute.body.evaluation.finalCandidate.width, 4);
+  assert.equal(smallGridScaffoldRoute.body.evaluation.finalCandidate.height, 4);
+
+  for (const [promptText, routeResult, width, height, material] of [
+    ['give me a decent grassy starter area', correctedStarterScaffoldRoute, 8, 8, 'grass'],
+    ['make a small stone platform to build on', fuzzyScaffoldRoute, 12, 8, 'stone'],
+    ['set up a basic ground grid for a first village', starterVillageScaffoldRoute, 8, 8, 'grass'],
+    ['make a grassy area', grassyAreaScaffoldRoute, 6, 6, 'grass'],
+    ['something to build on', buildOnScaffoldRoute, 8, 8, 'stone'],
+    ['a small grid', smallGridScaffoldRoute, 4, 4, 'grass'],
+  ]) {
+    const applyResultForPrompt = applySpatialMutationsToWorkspace(createEmptySpatialWorkspace(), routeResult.body.mutations);
+    assert.equal(applyResultForPrompt.status, 'applied', promptText);
+    assert.equal(applyResultForPrompt.workspace.graphs.world.nodes[0].metadata.scaffold.dimensions.width, width, promptText);
+    assert.equal(applyResultForPrompt.workspace.graphs.world.nodes[0].metadata.scaffold.dimensions.height, height, promptText);
+    assert.equal(applyResultForPrompt.workspace.graphs.world.nodes[0].metadata.scaffold.material, material, promptText);
+    assert.equal(applyResultForPrompt.workspace.mutationGate.activity[0].classification, 'safe', promptText);
+    assert.match(applyResultForPrompt.recentWorldChange.summary, new RegExp(`${width}x${height} ${material}`, 'i'), promptText);
+  }
+
+  const malformedScaffoldRoute = await resolveScaffoldRoute('give me a decent grassy starter area', async () => malformedModelInterpretation);
+  assert.equal(malformedScaffoldRoute.statusCode, 422);
+  assert.equal(malformedScaffoldRoute.body.interpretation.status, 'rejected_malformed_output');
+  assert.equal(malformedScaffoldRoute.body.evaluation.scorecard.acceptedForMutationGeneration, false);
+  assert.equal(malformedScaffoldRoute.body.mutations.length, 0);
+
+  const unavailableScaffoldRoute = await resolveScaffoldRoute('give me a decent grassy starter area', async () => unavailableModelInterpretation);
+  assert.equal(unavailableScaffoldRoute.statusCode, 503);
+  assert.equal(unavailableScaffoldRoute.body.interpretation.attempted, true);
+  assert.equal(unavailableScaffoldRoute.body.interpretation.fallbackUsed, false);
+  assert.equal(unavailableScaffoldRoute.body.evaluation.scorecard.acceptedForMutationGeneration, false);
+  assert.equal(unavailableScaffoldRoute.body.evaluation.reason, 'No scaffold candidate to evaluate.');
+
+  let oversizedModelCalls = 0;
+  const oversizedScaffoldRoute = await resolveScaffoldRoute("let's start with a 200x200 grass grid", async () => {
+      oversizedModelCalls += 1;
+      return acceptedModelInterpretation;
+  });
+  assert.equal(oversizedModelCalls, 0);
+  assert.equal(oversizedScaffoldRoute.statusCode, 422);
+  assert.equal(oversizedScaffoldRoute.body.interpretation.source, 'deterministic');
+  assert.equal(oversizedScaffoldRoute.body.interpretation.attempted, false);
+  assert.equal(oversizedScaffoldRoute.body.evaluation.scorecard.validity, 'fail');
+  assert.equal(oversizedScaffoldRoute.body.evaluation.scorecard.acceptedForMutationGeneration, false);
+
+  let invalidDimensionModelCalls = 0;
+  const zeroWidthScaffoldRoute = await resolveScaffoldRoute('0x10 grid', async () => {
+    invalidDimensionModelCalls += 1;
+    return acceptedModelInterpretation;
+  });
+  assert.equal(zeroWidthScaffoldRoute.statusCode, 422);
+  assert.equal(zeroWidthScaffoldRoute.body.error, 'Grid dimensions must be positive integers.');
+  assert.equal(zeroWidthScaffoldRoute.body.evaluation.scorecard.sizeAdequacy, 'fail');
+  assert.equal(invalidDimensionModelCalls, 0);
+
+  const negativeHeightScaffoldRoute = await resolveScaffoldRoute('10x-5 grid', async () => {
+    invalidDimensionModelCalls += 1;
+    return acceptedModelInterpretation;
+  });
+  assert.equal(negativeHeightScaffoldRoute.statusCode, 422);
+  assert.equal(negativeHeightScaffoldRoute.body.error, 'Grid dimensions must be positive integers.');
+  assert.equal(negativeHeightScaffoldRoute.body.evaluation.scorecard.sizeAdequacy, 'fail');
+  assert.equal(invalidDimensionModelCalls, 0);
+
+  const unsupportedMaterialScaffoldRoute = await resolveScaffoldRoute('10x10 lava grid', async () => acceptedModelInterpretation);
+  assert.equal(unsupportedMaterialScaffoldRoute.statusCode, 422);
+  assert.match(unsupportedMaterialScaffoldRoute.body.error, /Unsupported scaffold material "lava"/);
+  assert.equal(unsupportedMaterialScaffoldRoute.body.evaluation.scorecard.materialSupport, 'fail');
+  assert.equal(unsupportedMaterialScaffoldRoute.body.mutations.length, 0);
+
+  for (const promptText of ['make it kinda big', 'a huge space idk', 'infinite grass world']) {
+    const nonScaffoldRoute = await resolveScaffoldRoute(promptText, async () => acceptedModelInterpretation);
+    assert.equal(nonScaffoldRoute, null, promptText);
+  }
   assert.ok(app.router.stack.some((layer) => Array.isArray(layer.route?.path) && layer.route.path.includes('/qa')));
   assert.ok(app.router.stack.some((layer) => layer.route?.path === '/api/projects/run'));
   assert.ok(app.router.stack.some((layer) => layer.route?.path === '/api/spatial/archive/writeback'));
+  assert.ok(app.router.stack.some((layer) => layer.route?.path === '/api/spatial/layout/catalog'));
+  assert.ok(app.router.stack.some((layer) => layer.route?.path === '/api/spatial/layout/actions'));
   assert.ok(dashboardFiles.includes('brain/emergence/state.json'));
   assert.ok(dashboardFiles.includes('brain/emergence/tasks.md'));
   assert.ok(dashboardFiles.includes('brain/emergence/decisions.md'));
@@ -615,6 +1220,43 @@ export default async function runServerTests() {
   assert.equal(qaDeskPayload.qa.localGate.studioBoot.id, 'qa_guardrail_1');
   assert.ok(Array.isArray(qaDeskPayload.qa.availableTests));
 
+  const ctoWorkspace = {
+    ...qaWorkspace,
+    studio: {
+      ...qaWorkspace.studio,
+      orchestrator: {
+        ...qaWorkspace.studio.orchestrator,
+        desks: {
+          ...(qaWorkspace.studio.orchestrator.desks || {}),
+          'cto-architect': {
+            mission: 'Manage department context and guardrails',
+            currentGoal: 'Keep desk ownership aligned',
+            localState: 'ready',
+            workItems: [],
+          },
+        },
+      },
+      deskProperties: {
+        ...(qaWorkspace.studio.deskProperties || {}),
+        'cto-architect': {
+          managedAgents: ['planner'],
+          moduleIds: [],
+          manualTests: [{ id: 'cto-review', verdict: 'pass', notes: 'Check guardrails', createdAt: '2026-03-25T10:00:00.000Z' }],
+          departmentContext: 'CTO manages context and ownership',
+          guardrails: ['No unreviewed ownership changes'],
+          contextSlices: [{ id: 'slice-1', summary: 'Planner brief', detail: 'Preserved for CTO review' }],
+        },
+      },
+    },
+  };
+  const ctoDeskPayload = buildDeskPropertiesPayload(ctoWorkspace, 'cto-architect', qaState);
+  assert.equal(ctoDeskPayload.truth.department.label, 'Control Centre');
+  assert.equal(ctoDeskPayload.truth.department.context, 'CTO manages context and ownership');
+  assert.equal(ctoDeskPayload.truth.guardrails.length, 1);
+  assert.equal(ctoDeskPayload.truth.context.slices.length, 1);
+  assert.equal(ctoDeskPayload.truth.scorecards.length, qaDeskPayload.qa.scorecards.length);
+  assert.ok(Array.isArray(ctoDeskPayload.agents));
+
   const runtimePayload = buildSpatialRuntimePayload(qaWorkspace, {
     qaState,
     anchorBundle: {
@@ -656,28 +1298,139 @@ export default async function runServerTests() {
   assert.equal(applyResult.status, 'applied');
   assert.equal(applyResult.confirmed, true);
   assert.equal(applyResult.applied, 2);
+  assert.equal(applyResult.queued, 0);
+  assert.equal(applyResult.blocked, 0);
   assert.equal(applyResult.workspace.graphs.system.nodes.length, 2);
   assert.equal(applyResult.workspace.graphs.system.edges.length, 1);
+  assert.equal(applyResult.workspace.graphs.system.edges[0].relationshipType, 'relates_to');
+  assert.equal(applyResult.workspace.graphs.system.edges[0].visualForm, 'string');
+  assert.equal(applyResult.workspace.graphs.system.edges[0].strength >= 1, true);
+  assert.equal(applyResult.workspace.mutationGate.approvalQueue.length, 0);
+  assert.equal(applyResult.workspace.mutationGate.activity.length, 2);
+  assert.equal(applyResult.workspace.mutationGate.activity[0].classification, 'safe');
+  assert.equal(applyResult.recentWorldChange, null);
 
   const noOpResult = applySpatialMutationsToWorkspace(applyResult.workspace, [
     {
       type: 'create_edge',
-      edge: { source: 'node_1', target: 'node_2', relationship_type: 'relates_to' },
+      edge: { source: 'node_1', target: 'node_2', relationship_type: 'relates_to', supports: ['qa-approval'], validatedBy: ['planner'] },
     },
   ]);
   assert.equal(noOpResult.ok, true);
-  assert.equal(noOpResult.status, 'no-op');
-  assert.equal(noOpResult.confirmed, false);
-  assert.equal(noOpResult.applied, 0);
+  assert.equal(noOpResult.status, 'applied');
+  assert.equal(noOpResult.confirmed, true);
+  assert.equal(noOpResult.applied, 1);
+  assert.equal(noOpResult.workspace.graphs.system.edges[0].strandCount >= 1, true);
+  assert.equal(noOpResult.workspace.graphs.system.edges[0].supports.includes('qa-approval'), true);
 
-  assert.throws(
-    () => applySpatialMutationsToWorkspace(mutationWorkspace, [
-      {
-        type: 'modify_node',
-        id: 'missing-node',
-        patch: { content: 'Broken' },
+  const scaffoldMutationPlan = buildWorldScaffoldMutationPlan(mutationWorkspace.graphs, scaffoldIntent);
+  const invalidScaffoldMutationPlan = buildWorldScaffoldMutationPlan(mutationWorkspace.graphs, missingDimensionsIntent);
+  assert.equal(scaffoldMutationPlan.ok, true);
+  assert.equal(scaffoldMutationPlan.deterministic, true);
+  assert.equal(scaffoldMutationPlan.mutationCount, 1);
+  assert.equal(scaffoldMutationPlan.mode, 'create_node');
+  assert.equal(invalidScaffoldMutationPlan.ok, false);
+  assert.equal(invalidScaffoldMutationPlan.mutationCount, 0);
+  assert.equal(buildWorldScaffoldMutations(mutationWorkspace.graphs, missingDimensionsIntent).length, 0);
+  const scaffoldMutations = buildWorldScaffoldMutations(mutationWorkspace.graphs, scaffoldIntent);
+  assert.deepEqual(scaffoldMutationPlan.mutations, scaffoldMutations);
+  assert.equal(scaffoldMutations.length, 1);
+  assert.equal(scaffoldMutations[0].type, 'create_node');
+  assert.equal(scaffoldMutations[0].layer, 'world');
+  const scaffoldApplyResult = applySpatialMutationsToWorkspace(mutationWorkspace, scaffoldMutations);
+  assert.equal(scaffoldApplyResult.ok, true);
+  assert.equal(scaffoldApplyResult.status, 'applied');
+  assert.equal(scaffoldApplyResult.confirmed, true);
+  assert.equal(scaffoldApplyResult.workspace.graphs.world.nodes.length, 1);
+  assert.equal(scaffoldApplyResult.workspace.graphs.world.nodes[0].metadata.scaffold.dimensions.width, 20);
+  assert.equal(scaffoldApplyResult.workspace.graphs.world.nodes[0].metadata.scaffold.field.layers['0'].values[0][0], 'grass');
+  assert.equal(scaffoldApplyResult.workspace.graphs.world.nodes[0].metadata.scaffold.field.layers['1'].width, 10);
+  assert.equal(scaffoldApplyResult.workspace.graphs.world.nodes[0].metadata.scaffold.field.layers['1'].height, 10);
+  assert.equal(scaffoldApplyResult.workspace.mutationGate.activity[0].classification, 'safe');
+  assert.equal(buildSpatialRuntimePayload(scaffoldApplyResult.workspace).graphs.world.nodes.length, 1);
+  assert.ok(scaffoldApplyResult.recentWorldChange);
+  assert.equal(scaffoldApplyResult.recentWorldChange.items[0].kind, 'scaffold');
+  assert.equal(scaffoldApplyResult.recentWorldChange.items[0].changeType, 'added');
+  assert.equal(scaffoldApplyResult.recentWorldChange.counts.addedCells, 400);
+  assert.match(scaffoldApplyResult.recentWorldChange.summary, /World scaffold created/i);
+
+  const directScaffold = createWorldScaffold(scaffoldIntent);
+  assert.equal(directScaffold.field.kind, 'spatial-field-bundle');
+  assert.equal(directScaffold.field.baseLayer.width, 20);
+  assert.equal(directScaffold.field.coarseLayer.width, 10);
+  assert.equal(directScaffold.field.summary, 'Field base 20x20 @1x | coarse 10x10 @2x');
+
+  const scaffoldResizeIntent = {
+    ...scaffoldIntent,
+    width: 24,
+    totalCells: 480,
+    summary: '24x20 grass grid',
+  };
+  const scaffoldResizeMutations = buildWorldScaffoldMutations(scaffoldApplyResult.workspace.graphs, scaffoldResizeIntent);
+  assert.equal(scaffoldResizeMutations[0].type, 'modify_node');
+  const scaffoldResizeResult = applySpatialMutationsToWorkspace(scaffoldApplyResult.workspace, scaffoldResizeMutations);
+  assert.equal(scaffoldResizeResult.ok, true);
+  assert.equal(scaffoldResizeResult.status, 'applied');
+  assert.equal(scaffoldResizeResult.recentWorldChange.items[0].changeType, 'modified');
+  assert.equal(scaffoldResizeResult.recentWorldChange.counts.addedCells, 80);
+  assert.equal(scaffoldResizeResult.recentWorldChange.counts.modifiedCells, 0);
+
+  const scaffoldUpdateMutations = buildWorldScaffoldMutations(scaffoldApplyResult.workspace.graphs, scaffoldIntent);
+  assert.equal(scaffoldUpdateMutations[0].type, 'modify_node');
+  const scaffoldUpdateResult = applySpatialMutationsToWorkspace(scaffoldApplyResult.workspace, scaffoldUpdateMutations);
+  assert.equal(scaffoldUpdateResult.ok, true);
+  assert.equal(scaffoldUpdateResult.status, 'no-op');
+  assert.equal(scaffoldUpdateResult.blocked, 0);
+  assert.equal(scaffoldUpdateResult.queued, 0);
+  assert.equal(scaffoldUpdateResult.workspace.graphs.world.nodes.length, 1);
+  assert.equal(scaffoldUpdateResult.recentWorldChange, null);
+
+  const queuedResult = applySpatialMutationsToWorkspace({
+    graph: {
+      nodes: [{ id: 'node_ctx', type: 'text', content: 'Protected', position: { x: 0, y: 0 }, metadata: { graphLayer: 'system', agentId: 'context-manager' } }],
+      edges: [],
+    },
+    graphs: {
+      system: {
+        nodes: [{ id: 'node_ctx', type: 'text', content: 'Protected', position: { x: 0, y: 0 }, metadata: { graphLayer: 'system', agentId: 'context-manager' } }],
+        edges: [],
       },
-    ]),
-    /Cannot modify missing node "missing-node"\./,
-  );
+      world: { nodes: [], edges: [] },
+    },
+    studio: {},
+  }, [
+    {
+      type: 'modify_node',
+      id: 'node_ctx',
+      patch: { content: 'Review me first' },
+    },
+  ]);
+  assert.equal(queuedResult.ok, true);
+  assert.equal(queuedResult.status, 'queued');
+  assert.equal(queuedResult.confirmed, false);
+  assert.equal(queuedResult.applied, 0);
+  assert.equal(queuedResult.queued, 1);
+  assert.equal(queuedResult.blocked, 0);
+  assert.equal(queuedResult.workspace.graphs.system.nodes[0].content, 'Protected');
+  assert.equal(queuedResult.workspace.mutationGate.approvalQueue.length, 1);
+  assert.equal(queuedResult.workspace.mutationGate.approvalQueue[0].classification, 'needs_approval');
+  assert.equal(buildSpatialRuntimePayload(queuedResult.workspace).mutationGate.approvalQueue.length, 1);
+
+  const blockedResult = applySpatialMutationsToWorkspace(mutationWorkspace, [
+    {
+      type: 'modify_node',
+      id: 'missing-node',
+      patch: { content: 'Broken' },
+    },
+  ]);
+  assert.equal(blockedResult.ok, false);
+  assert.equal(blockedResult.status, 'blocked');
+  assert.equal(blockedResult.confirmed, false);
+  assert.equal(blockedResult.applied, 0);
+  assert.equal(blockedResult.queued, 0);
+  assert.equal(blockedResult.blocked, 1);
+  assert.match(blockedResult.reason, /missing node/i);
+  assert.equal(blockedResult.workspace.graphs.system.nodes.length, 1);
+  assert.equal(blockedResult.workspace.mutationGate.approvalQueue.length, 0);
+  assert.equal(blockedResult.workspace.mutationGate.activity[0].status, 'blocked');
 }

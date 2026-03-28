@@ -12,6 +12,8 @@ export default async function runGraphEngineTests() {
     normalizeGraphBundle,
     buildRsgState,
     proposalRequiresApproval,
+    createEdge,
+    deriveRelationshipVisual,
   } = await loadModuleCopy(graphEnginePath, { label: 'graphEngine' });
 
   assert.deepEqual(GRAPH_LAYERS, ['system', 'world']);
@@ -86,4 +88,30 @@ export default async function runGraphEngineTests() {
   assert.equal(rsg.lastStatus, 'rsg-generate');
   assert.equal(proposalRequiresApproval('code-runtime-mutation'), true);
   assert.equal(proposalRequiresApproval('world-structure'), false);
+
+  const ropeEdge = createEdge({
+    source: 'node_adapter',
+    target: 'node_world',
+    relationshipType: 'workflow',
+    supports: ['direct-dependency', 'qa-validation'],
+    validatedBy: ['planner'],
+  });
+  assert.equal(ropeEdge.source, 'node_adapter');
+  assert.equal(ropeEdge.target, 'node_world');
+  assert.equal(ropeEdge.relationshipType, 'workflow');
+  assert.equal(ropeEdge.relationship_type, 'workflow');
+  assert.equal(ropeEdge.strength >= 3, true);
+  assert.equal(ropeEdge.strandCount >= 2, true);
+  assert.equal(ropeEdge.visualForm, 'woven-rope');
+  assert.equal(ropeEdge.health, 'healthy');
+
+  const bundleVisual = deriveRelationshipVisual({
+    relationshipType: 'handoff',
+    supports: ['anchor-ref'],
+    validatedBy: ['context-manager', 'planner'],
+    lastActive: '2026-03-16T09:00:00.000Z',
+  });
+  assert.equal(bundleVisual.strength >= 3, true);
+  assert.equal(bundleVisual.strandCount >= 2, true);
+  assert.equal(bundleVisual.visualForm, 'woven-rope');
 }

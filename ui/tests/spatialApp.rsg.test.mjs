@@ -10,10 +10,12 @@ export default async function runSpatialAppRsgTests() {
   const {
     RSG_IDLE_DELAY_MS,
     buildRsgActivityEntry,
+    buildMutationTraceEmptyReason,
     getExtractedIntent,
     isAdoptedDraftNode,
     isLinkedDraftNode,
     pushRsgActivityEntry,
+    resolveIntentTraceReport,
     resolveGeneratedNodeInspection,
     shouldRunFocusedRsgLoop,
   } = spatialApp;
@@ -49,6 +51,20 @@ export default async function runSpatialAppRsgTests() {
     { ok: false, reason: 'linked-draft' },
   );
   assert.deepEqual(
+    shouldRunFocusedRsgLoop({
+      node: {
+        ...normalNode,
+        metadata: {
+          ...normalNode.metadata,
+          agentId: 'context-manager',
+          labels: ['primary-input'],
+        },
+      },
+      trigger: 'enter',
+    }),
+    { ok: false, reason: 'primary-intent-node' },
+  );
+  assert.deepEqual(
     shouldRunFocusedRsgLoop({ node: normalNode, activeGraphLayer: 'world' }),
     { ok: false, reason: 'not-system-layer' },
   );
@@ -56,6 +72,61 @@ export default async function runSpatialAppRsgTests() {
   assert.equal(isAdoptedDraftNode({ metadata: { rsg: { state: 'adopted' } } }), true);
   assert.equal(getExtractedIntent({ extractedIntent: { id: 'intent_1' } }).id, 'intent_1');
   assert.equal(getExtractedIntent(null), null);
+  assert.equal(
+    resolveIntentTraceReport({
+      scanPreview: { trace_id: 'trace_old', summary: 'stale route summary' },
+      latestIntentReport: { summary: 'persisted summary' },
+      canvasIntentRunState: { traceId: 'trace_new', phase: 'routing' },
+    }),
+    null,
+  );
+  assert.equal(
+    resolveIntentTraceReport({
+      scanPreview: { trace_id: 'trace_new', summary: 'fresh route summary' },
+      latestIntentReport: { summary: 'persisted summary' },
+      canvasIntentRunState: { traceId: 'trace_new', phase: 'complete' },
+    }).summary,
+    'fresh route summary',
+  );
+  assert.equal(
+    resolveIntentTraceReport({
+      scanPreview: null,
+      latestIntentReport: { summary: 'persisted summary' },
+      canvasIntentRunState: { traceId: null, phase: 'idle' },
+    }).summary,
+    'persisted summary',
+  );
+  assert.equal(
+    buildMutationTraceEmptyReason({
+      canvasIntentRunState: { traceId: 'trace_1', phase: 'routing' },
+    }),
+    'Waiting for the current route to produce a mutation package.',
+  );
+  assert.equal(
+    buildMutationTraceEmptyReason({
+      canvasIntentRunState: { traceId: 'trace_2', phase: 'complete', route: 'debug-intent-scan', forceIntentScan: true },
+    }),
+    'Debug scan only. The current run did not request world mutations.',
+  );
+  assert.equal(
+    buildMutationTraceEmptyReason({
+      canvasIntentRunState: { traceId: 'trace_3', phase: 'complete', route: 'world-edit' },
+      executiveResult: {
+        route: 'world-edit',
+        mutationGeneration: {
+          reason: 'Existing-world tile edits are not implemented yet. Supported today: scaffold creation only.',
+        },
+      },
+    }),
+    'Existing-world tile edits are not implemented yet. Supported today: scaffold creation only.',
+  );
+  assert.equal(
+    buildMutationTraceEmptyReason({
+      canvasIntentRunState: { traceId: 'trace_4', phase: 'complete', route: 'module' },
+      executiveResult: { route: 'module' },
+    }),
+    'Module routes do not generate world mutations.',
+  );
 
   const activityEntry = buildRsgActivityEntry({
     type: 'rsg-generate',

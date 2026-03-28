@@ -1,0 +1,256 @@
+[
+  {
+    "type": "info",
+    "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+    "location": {
+      "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+      "lineNumber": 29904,
+      "columnNumber": 18
+    }
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:3107/favicon.ico",
+      "lineNumber": 0,
+      "columnNumber": 0
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace payload bytes: 316",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 38,
+      "columnNumber": 12
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"activePageId\": 25 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"selectedDeskId\": 9 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"selectedTab\": 4 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"scene\": 8 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"activeGraphLayer\": 8 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"worldViewMode\": 4 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"camera\": 44 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"zoom\": 4 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"openTraceId\": 28 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"openReportId\": 16 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "workspace key \"openTaskId\": 7 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "intent-state payload bytes: 125",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 38,
+      "columnNumber": 12
+    }
+  },
+  {
+    "type": "log",
+    "text": "intent-state key \"intentState\": 109 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "studio-state payload bytes: 8667",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 38,
+      "columnNumber": 12
+    }
+  },
+  {
+    "type": "log",
+    "text": "studio-state key \"handoffs\": 8616 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "studio-state key \"teamBoard\": 25 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "pages payload bytes: 4671",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 38,
+      "columnNumber": 12
+    }
+  },
+  {
+    "type": "log",
+    "text": "pages key \"pages\": 4620 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "log",
+    "text": "pages key \"activePageId\": 25 bytes",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/persistence.js",
+      "lineNumber": 45,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "debug",
+    "text": "[desk-properties-panel] sources {tasks: Array(2), modules: Array(1), reports: Array(3), agents: Array(2), qa: Array(4)}",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/spatialApp.js",
+      "lineNumber": 2067,
+      "columnNumber": 14
+    }
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught Error: Objects are not valid as a React child (found: object with keys {summary, slices}). If you meant to render a collection of children, use an array instead.\n    at throwOnInvalidObjectType (https://unpkg.com/react-dom@18/umd/react-dom.development.js:13132:10)\n    at reconcileChildFibers (https://unpkg.com/react-dom@18/umd/react-dom.development.js:14073:8)\n    at reconcileChildren (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19195:29)\n    at updateHostComponent (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19962:4)\n    at beginWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:21666:15)\n    at callCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4150:15)\n    at invokeGuardedCallbackDev (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4199:17)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4263:32)\n    at beginWork$1 (https://unpkg.com/react-dom@18/umd/react-dom.development.js:27499:8)\n    at performUnitOfWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26608:13)\n    at workLoopSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26514:6)\n    at renderRootSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26482:8)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25786:75)\n    at workLoop (https://unpkg.com/react@18/umd/react.development.js:2652:35)\n    at flushWork (https://unpkg.com/react@18/umd/react.development.js:2625:15)\n    at performWorkUntilDeadline (https://unpkg.com/react@18/umd/react.development.js:2919:22)"
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught Error: Objects are not valid as a React child (found: object with keys {summary, slices}). If you meant to render a collection of children, use an array instead.\n    at throwOnInvalidObjectType (https://unpkg.com/react-dom@18/umd/react-dom.development.js:13132:10)\n    at reconcileChildFibers (https://unpkg.com/react-dom@18/umd/react-dom.development.js:14073:8)\n    at reconcileChildren (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19195:29)\n    at updateHostComponent (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19962:4)\n    at beginWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:21666:15)\n    at callCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4150:15)\n    at invokeGuardedCallbackDev (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4199:17)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4263:32)\n    at beginWork$1 (https://unpkg.com/react-dom@18/umd/react-dom.development.js:27499:8)\n    at performUnitOfWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26608:13)\n    at workLoopSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26514:6)\n    at renderRootSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26482:8)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25786:75)\n    at workLoop (https://unpkg.com/react@18/umd/react.development.js:2652:35)\n    at flushWork (https://unpkg.com/react@18/umd/react.development.js:2625:15)\n    at performWorkUntilDeadline (https://unpkg.com/react@18/umd/react.development.js:2919:22)"
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught Error: Objects are not valid as a React child (found: object with keys {summary, slices}). If you meant to render a collection of children, use an array instead.\n    at throwOnInvalidObjectType (https://unpkg.com/react-dom@18/umd/react-dom.development.js:13132:10)\n    at reconcileChildFibers (https://unpkg.com/react-dom@18/umd/react-dom.development.js:14073:8)\n    at reconcileChildren (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19195:29)\n    at updateHostComponent (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19962:4)\n    at beginWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:21666:15)\n    at callCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4150:15)\n    at invokeGuardedCallbackDev (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4199:17)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4263:32)\n    at beginWork$1 (https://unpkg.com/react-dom@18/umd/react-dom.development.js:27499:8)\n    at performUnitOfWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26608:13)\n    at workLoopSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26514:6)\n    at renderRootSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26482:8)\n    at recoverFromConcurrentError (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25898:21)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25798:23)\n    at workLoop (https://unpkg.com/react@18/umd/react.development.js:2652:35)\n    at flushWork (https://unpkg.com/react@18/umd/react.development.js:2625:15)\n    at performWorkUntilDeadline (https://unpkg.com/react@18/umd/react.development.js:2919:22)"
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught Error: Objects are not valid as a React child (found: object with keys {summary, slices}). If you meant to render a collection of children, use an array instead.\n    at throwOnInvalidObjectType (https://unpkg.com/react-dom@18/umd/react-dom.development.js:13132:10)\n    at reconcileChildFibers (https://unpkg.com/react-dom@18/umd/react-dom.development.js:14073:8)\n    at reconcileChildren (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19195:29)\n    at updateHostComponent (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19962:4)\n    at beginWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:21666:15)\n    at callCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4150:15)\n    at invokeGuardedCallbackDev (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4199:17)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18/umd/react-dom.development.js:4263:32)\n    at beginWork$1 (https://unpkg.com/react-dom@18/umd/react-dom.development.js:27499:8)\n    at performUnitOfWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26608:13)\n    at workLoopSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26514:6)\n    at renderRootSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26482:8)\n    at recoverFromConcurrentError (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25898:21)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25798:23)\n    at workLoop (https://unpkg.com/react@18/umd/react.development.js:2652:35)\n    at flushWork (https://unpkg.com/react@18/umd/react.development.js:2625:15)\n    at performWorkUntilDeadline (https://unpkg.com/react@18/umd/react.development.js:2919:22)"
+  },
+  {
+    "type": "error",
+    "text": "The above error occurred in the <span> component:\n\n    at span\n    at div\n    at div\n    at div\n    at div\n    at div\n    at section\n    at SpatialNotebook (http://127.0.0.1:3107/spatial/spatialApp.js:1736:25)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries.",
+    "location": {
+      "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+      "lineNumber": 18713,
+      "columnNumber": 24
+    }
+  },
+  {
+    "type": "error",
+    "text": "The above error occurred in the <span> component:\n\n    at span\n    at div\n    at div\n    at div\n    at div\n    at div\n    at div\n    at section\n    at SpatialNotebook (http://127.0.0.1:3107/spatial/spatialApp.js:1736:25)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries.",
+    "location": {
+      "url": "https://unpkg.com/react-dom@18/umd/react-dom.development.js",
+      "lineNumber": 18713,
+      "columnNumber": 24
+    }
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught Error: Objects are not valid as a React child (found: object with keys {summary, slices}). If you meant to render a collection of children, use an array instead.\n    at throwOnInvalidObjectType (https://unpkg.com/react-dom@18/umd/react-dom.development.js:13132:10)\n    at reconcileChildFibers (https://unpkg.com/react-dom@18/umd/react-dom.development.js:14073:8)\n    at reconcileChildren (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19195:29)\n    at updateHostComponent (https://unpkg.com/react-dom@18/umd/react-dom.development.js:19962:4)\n    at beginWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:21666:15)\n    at beginWork$1 (https://unpkg.com/react-dom@18/umd/react-dom.development.js:27474:15)\n    at performUnitOfWork (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26608:13)\n    at workLoopSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26514:6)\n    at renderRootSync (https://unpkg.com/react-dom@18/umd/react-dom.development.js:26482:8)\n    at recoverFromConcurrentError (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25898:21)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18/umd/react-dom.development.js:25798:23)\n    at workLoop (https://unpkg.com/react@18/umd/react.development.js:2652:35)\n    at flushWork (https://unpkg.com/react@18/umd/react.development.js:2625:15)\n    at performWorkUntilDeadline (https://unpkg.com/react@18/umd/react.development.js:2919:22)"
+  },
+  {
+    "type": "debug",
+    "text": "[desk-properties-panel] sources {tasks: Array(2), modules: Array(1), reports: Array(3), agents: Array(2), qa: Array(4)}",
+    "location": {
+      "url": "http://127.0.0.1:3107/spatial/spatialApp.js",
+      "lineNumber": 2067,
+      "columnNumber": 14
+    }
+  }
+]

@@ -58,18 +58,21 @@ async function main() {
   const server = startServer();
   try {
     await waitForHealth(`${baseUrl}/api/health`);
+    const workspaceResponse = await fetch(`${baseUrl}/api/spatial/workspace`);
+    if (!workspaceResponse.ok) {
+      throw new Error(`Failed to load workspace bootstrap payload: ${workspaceResponse.status}`);
+    }
+    const workspace = await workspaceResponse.json();
     const run = await runQARun({
       rootPath: repoRoot,
       baseUrl,
       scenario: 'studio-smoke',
       mode: 'interactive',
       trigger: 'guardrail',
-      prompt: 'Local Studio boot guardrail',
+      prompt: 'Local Studio boot guardrail for desk truth surfaces and QA properties',
       actions: [
+        { type: 'click', selector: '[data-qa="scene-studio-button"]', label: 'Return to ACE Studio' },
         { type: 'select-desk', deskId: 'qa-lead', label: 'Focus QA desk' },
-        { type: 'wait-visible', selector: '[data-qa="qa-desk-summary"]', label: 'Wait for QA desk summary' },
-        { type: 'click', selector: '[data-qa="desk-props-qa-lead"]', label: 'Open QA desk properties' },
-        { type: 'wait-visible', selector: '[data-qa="qa-properties-panel"]', label: 'Wait for QA properties panel' },
       ],
     });
 
@@ -97,11 +100,26 @@ async function main() {
     if ((run.network || []).length) {
       failures.push(`Network failures were captured: ${run.network.map((entry) => entry.url).slice(0, 3).join(' | ')}`);
     }
-    if (!domSnapshot.includes('data-qa="qa-desk-summary"')) {
-      failures.push('QA desk summary was not present in the Studio boot DOM snapshot.');
+    if (!workspace?.studio?.layout?.departments?.some((department) => department.id === 'dept-talent-acquisition')) {
+      failures.push('Talent Acquisition department was not present in the default workspace bootstrap payload.');
     }
-    if (!domSnapshot.includes('data-qa="qa-properties-panel"')) {
-      failures.push('QA properties panel was not present in the Studio boot DOM snapshot.');
+    if (!workspace?.studio?.layout?.desks?.integration_auditor) {
+      failures.push('Talent Acquisition desk was not present in the default workspace bootstrap payload.');
+    }
+    if (!domSnapshot.includes('Talent Acquisition') && !domSnapshot.includes('Integration Auditor')) {
+      failures.push('Talent Acquisition was not visibly rendered in the Studio boot DOM snapshot.');
+    }
+    if (!domSnapshot.includes('data-qa="desk-truth-summary"')) {
+      failures.push('Desk truth summary was not present in the Studio boot DOM snapshot.');
+    }
+    if (!domSnapshot.includes('Workload') || !domSnapshot.includes('Throughput') || !domSnapshot.includes('Reports')) {
+      failures.push('Desk truth summary did not surface workload, throughput, and reports.');
+    }
+    if (!domSnapshot.includes('data-qa="utility-dock-toggle"')) {
+      failures.push('Utility dock toggle was not present in the Studio boot DOM snapshot.');
+    }
+    if (domSnapshot.includes('data-qa="desk-props-qa-lead"')) {
+      failures.push('Legacy always-on QA desk control is still rendered in the Studio boot DOM snapshot.');
     }
 
     if (failures.length) {

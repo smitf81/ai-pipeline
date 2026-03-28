@@ -2,137 +2,136 @@
 
 Last updated: 2026-03-27
 
-This file is an operational context artefact for the ACE planner.
-Use it as drift-audit input, not as canonical truth.
+This file is an operational drift note for ACE work.
+Treat it as audit context, not canonical truth.
 
-## 1. Confirmed wired relationships
+## 1. Canonical Studio flow now grounded in live state
 
-### Desk properties are end-to-end wired
+### Intent trace is now read from Studio runtime, not inferred from legacy artifacts
 - Why it was flagged:
-  The spatial UI exposes desk property editing and persists it through a real backend route.
+  Studio needed to make the world-first flow legible from the real current data path.
 - Exact files involved:
   `ui/public/spatial/spatialApp.js`
   `ui/public/spatial/aceConnector.js`
   `ui/server.js`
 - Evidence:
-  `ui/public/spatial/spatialApp.js` loads desk properties, renders the desk-properties panel, and exposes desk property actions from desk cards.
-  `ui/public/spatial/aceConnector.js` calls `/api/spatial/agents/:id/properties` and `/api/spatial/desks/:id/actions`.
-  `ui/server.js` persists Dave desk properties back into workspace state.
+  `ui/public/spatial/spatialApp.js` now reads raw intent from the canvas/context node plus `traceLog`, interpreted intent from `executiveResult`, `scanPreview`, and `intentState`, and shows scaffold-route failures without collapsing them into plain text errors.
+  `ui/public/spatial/aceConnector.js` now preserves structured `/api/spatial/executive/route` error payloads on rejection.
+  `ui/server.js` already returns structured `world-scaffold`, `module`, and `intent-scan` route payloads.
 - Confidence:
   high
 - Recommended next validation step:
-  Change one desk property in the modal, reload, and confirm it rehydrates from persisted state.
+  Enter `let's start with a 20x20 grass/ground grid`, then confirm Studio shows raw intent, route, and interpreted scaffold summary before looking at the world result.
 
-### Split spatial persistence is wired through the UI and server helpers
+### Mutation trace is grounded in the mutation gate contract
 - Why it was flagged:
-  The save flow uses separate state slices instead of a single opaque blob, so the UI and server need to stay aligned.
+  Studio should explain proposed mutations, gate decisions, and live outcomes from the real apply route.
 - Exact files involved:
   `ui/public/spatial/spatialApp.js`
-  `ui/public/spatial/persistence.js`
   `ui/server.js`
 - Evidence:
-  `ui/public/spatial/spatialApp.js` autosaves workspace state and persists architecture memory.
-  `ui/public/spatial/persistence.js` provides matching `saveWorkspace`, `savePages`, `saveIntentState`, `saveStudioState`, and `saveArchitectureMemory` helpers.
-  `ui/server.js` exposes the corresponding persistence hooks for the workspace state.
+  `ui/public/spatial/spatialApp.js` now surfaces the latest mutation package from `executiveResult.mutations` or the latest traced executor input, gate results from `mutationResult/results`, and persisted history from `mutationGate.activity` and `mutationGate.approvalQueue`.
+  `ui/server.js` remains the single source of truth for mutation classification, apply, queue, block, and runtime refresh through `/api/spatial/mutations/apply`.
 - Confidence:
   high
 - Recommended next validation step:
-  Change one field in each slice, save, and verify the corresponding JSON files update independently.
+  Trigger one safe scaffold materialisation and one blocked mutation, then verify the proposed package, gate result, approval queue, and activity history all align.
 
-### Dave learning ledger is operationally wired end-to-end
+### World trace is grounded in canonical world state
 - Why it was flagged:
-  The UI now exposes Dave-specific profile and ledger controls, and the backend persists both the ledger and the editable worker profile.
+  Studio must show what exists in the canonical world layer after gate application, not just intent-side previews.
 - Exact files involved:
   `ui/public/spatial/spatialApp.js`
-  `ui/public/spatial/aceConnector.js`
+  `ui/public/spatial/worldScaffoldView.js`
   `ui/server.js`
 - Evidence:
-  `ui/public/spatial/spatialApp.js` loads Dave ledger data, creates entries, updates ledger fixes, and renders the Dave learning profile surface.
-  `ui/public/spatial/aceConnector.js` implements the Dave ledger and property calls.
-  `ui/server.js` stores ledger entries under `data/spatial/learning-ledger` and persists Dave worker properties into the workspace snapshot.
+  `ui/public/spatial/spatialApp.js` now reads the world trace from `graphBundle.world`, persisted `activeGraphLayer`, persisted `worldViewMode`, and the canonical world scaffold node metadata.
+  `ui/server.js` persists scaffold mutations and returns runtime with layer and view state.
+  `ui/public/spatial/worldScaffoldView.js` continues to render the persisted scaffold in 2D and 2.5D.
 - Confidence:
   high
 - Recommended next validation step:
-  Create a ledger entry, edit it, reload Studio, and confirm both the entry and Dave profile state rehydrate.
+  Reload after a scaffold apply and confirm the world trace panel still matches the rendered grid.
 
-### Executor manual run is exposed in the browser and hits the real worker endpoint
+### Agent attempts are surfaced only from existing worker state
 - Why it was flagged:
-  The executor desk is not decorative; it can trigger the actual worker route from Studio.
+  The user wanted attempt visibility, but this pass should not invent a new telemetry subsystem.
 - Exact files involved:
   `ui/public/spatial/spatialApp.js`
-  `ui/public/spatial/aceConnector.js`
-  `ui/server.js`
+  `ui/public/spatial/studioData.js`
 - Evidence:
-  `ui/public/spatial/spatialApp.js:2459` calls `ace.runAgentWorker('executor', ...)`.
-  `ui/public/spatial/aceConnector.js:129` supports agent worker POSTs.
-  `ui/server.js:4571-4619` and `ui/server.js:4619-4654` expose the worker run routes, including executor support.
+  `ui/public/spatial/spatialApp.js` now shows a minimal Agent Attempts panel based on `agentSnapshots`.
+  `ui/public/spatial/studioData.js` already exposes `workerState`, `latestRunStatus`, and `latestRunSummary` for context-manager, planner, and executor workers.
 - Confidence:
   high
 - Recommended next validation step:
-  Run a safe executor check and compare the returned runtime payload with the next persisted workspace snapshot.
+  Run planner, context-manager, and executor actions and confirm the panel reflects outcomes or blocked reasons without implying more telemetry than exists.
 
-### Mutation apply now persists through the backend workspace write path
+## 2. Drift removed or demoted
+
+### Legacy viewer no longer depends on `/api/task-artifacts`
 - Why it was flagged:
-  An earlier planner artefact warned that mutation apply only logged history, but the live route now persists confirmed mutations before returning runtime state.
+  The old drawer still fetched task artifacts even though that path is no longer canonical for the world-first Studio flow.
 - Exact files involved:
-  `ui/public/spatial/spatialApp.js`
-  `ui/public/spatial/aceConnector.js`
-  `ui/server.js`
+  `ui/public/app.js`
+  `ui/public/index.html`
+  `ui/tests/appViewerMode.test.mjs`
 - Evidence:
-  `ui/public/spatial/spatialApp.js:3202` calls `ace.applyMutation(preview.mutations)`.
-  `ui/public/spatial/aceConnector.js:103-113` posts the mutation list to `/api/spatial/mutations/apply`.
-  `ui/server.js:5476-5498` applies mutations and calls `persistSpatialWorkspace(result.workspace)` when the mutation is confirmed.
+  `ui/public/app.js` no longer calls `/api/task-artifacts`; it now labels that card as legacy-only and directs users back to Spatial Studio for canonical flow inspection.
+  `ui/public/index.html` now labels the card as legacy observability rather than live truth.
+  `ui/tests/appViewerMode.test.mjs` now asserts that no `/api/task-artifacts` request is issued.
 - Confidence:
   high
 - Recommended next validation step:
-  Apply a preview mutation, reload Studio, and verify the graph changes survive a fresh workspace read.
+  Open the legacy drawer in the browser and confirm the card explicitly states that canonical flow lives in Spatial Studio.
 
-## 2. Backend with no clear frontend surface
-
-### Planner and Context Manager manual-run endpoints exist, but Studio only exposes executor run control
+### Dashboard and RSG surfaces are now labeled as secondary context
 - Why it was flagged:
-  The server has direct manual-run routes for planner and context-manager, but the browser surface only shows an executor run button and indirect context-intake actions.
+  Those panels are still useful, but they should not read like the main source of truth for world scaffold materialisation.
 - Exact files involved:
-  `ui/server.js`
   `ui/public/spatial/spatialApp.js`
-  `ui/public/spatial/aceConnector.js`
 - Evidence:
-  `ui/server.js:4571-4619` implements `/api/spatial/agents/context-manager/run`.
-  `ui/server.js:4619-4654` implements `/api/spatial/agents/planner/run`.
-  `ui/public/spatial/spatialApp.js` exposes context-intake actions and an explicit executor run button, but no matching direct planner or context-manager run controls were found.
-  `ui/public/spatial/aceConnector.js:129` supports arbitrary agent IDs, so the missing surface appears to be product choice or UI drift rather than connector limitation.
+  Studio now labels dashboard state as `Legacy Dashboard Signals` and reframes RSG panels as `System Graph Drafting`, making their role secondary to the mutation gate and world state.
 - Confidence:
   medium
 - Recommended next validation step:
-  Confirm whether planner/context-manager runs are intentionally automation-only or whether Studio should expose direct controls.
+  Review the sidebar copy in both canvas and studio scenes and confirm the canonical flow reads clearly without removing still-useful secondary signals.
 
-## 3. Likely placeholders or heuristic bridges
+## 3. Remaining known drift
 
-### Code and test generation helpers are still local template stubs
-- Why it was flagged:
-  The public connector defines code/test generation methods, but they never call the backend and instead return synthetic strings inline.
+### `/api/task-artifacts` still exists on the server as legacy compatibility
+- Why it still matters:
+  The client dependency was removed, but the server route still exists and could be mistaken for a canonical surface later.
 - Exact files involved:
-  `ui/public/spatial/aceConnector.js`
+  `ui/server.js`
 - Evidence:
-  `ui/public/spatial/aceConnector.js:81-89` implements `regenerateCode()` and `generateTests()` with inline template strings.
-  The same file routes other capabilities through fetch calls, but these two methods do not touch any `/api/spatial/...` endpoint.
-  A search of the spatial UI subtree found no call sites for either method.
+  The server still exports task-artifact helpers and the route remains present.
 - Confidence:
   high
 - Recommended next validation step:
-  Decide whether these helpers should be removed, renamed as placeholders, or backed by real backend routes before they are surfaced in the UI.
+  Decide in a later pass whether to keep the route as explicit legacy compatibility or retire it fully once no consumers remain.
 
-## 4. Uncertain findings needing manual validation
-
-### Planner/context-manager access may be intentionally automation-only
-- Why it was flagged:
-  The backend supports manual runs, but the UI currently steers users toward context intake and executor review instead of direct planner/context-manager controls.
+### Trace log and executive result are still session-local
+- Why it still matters:
+  Persistent truth now survives through context state, mutation history, approval queue, and world state, but the richest per-run trace is still in-memory only.
 - Exact files involved:
-  `ui/server.js`
   `ui/public/spatial/spatialApp.js`
 - Evidence:
-  Manual-run routes exist on the server, but the visible Studio control surface does not show a matching direct button for them.
+  `traceLog` and `executiveResult` are React state, not persisted workspace slices.
 - Confidence:
-  medium
+  high
 - Recommended next validation step:
-  Confirm the intended product contract before adding more UI or removing the routes.
+  If historical replay becomes important, add a tiny persisted execution-trace summary instead of persisting full debug traces.
+
+### Agent attempt visibility remains partial by design
+- Why it still matters:
+  The new panel is honest, but it only knows what worker state already exposes.
+- Exact files involved:
+  `ui/public/spatial/studioData.js`
+  `ui/public/spatial/spatialApp.js`
+- Evidence:
+  Attempt summaries come from `workerState`, `latestRunStatus`, and `latestRunSummary`; they do not include a full ordered run ledger for every agent action.
+- Confidence:
+  high
+- Recommended next validation step:
+  Only add more agent attempt detail if the backend already has a natural persisted source for it.

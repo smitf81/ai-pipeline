@@ -13,6 +13,9 @@ const state = {
   lastCommandSummary: null,
   lastSuccessfulRefreshAt: null,
   taLoading: false,
+  taCandidates: [],
+  taDepartment: null,
+  taGapDescription: '',
   projects: [],
   projectLaunching: false,
   projectLaunch: null,
@@ -75,14 +78,14 @@ function dashboardText(files, rel) {
 }
 
 function setModeUi() {
-  const modeLabel = state.qaMode ? 'QA VIEWER' : 'OPERATOR';
+  const modeLabel = state.qaMode ? 'QA VIEWER' : 'STUDIO PRIMARY';
   const readonlyLabel = state.qaMode ? 'READ ONLY' : 'READ WRITE';
   document.body.classList.toggle('qa-mode', state.qaMode);
   document.documentElement.dataset.uiMode = state.qaMode ? 'qa' : 'operator';
   document.body.dataset.uiMode = state.qaMode ? 'qa' : 'operator';
   setText('mode_badge', modeLabel);
   setText('readonly_badge', readonlyLabel);
-  setText('uiModeLabel', state.qaMode ? 'qa viewer' : 'operator');
+  setText('uiModeLabel', state.qaMode ? 'qa viewer' : 'legacy shell');
 }
 
 function buildCommandSummary(run = null) {
@@ -192,7 +195,7 @@ async function refreshDashboard() {
       refreshedAt: data.refreshedAt,
       runs: runs?.runs || [],
     });
-    await refreshTaskArtifacts();
+    renderLegacyTaskStatus();
     document.getElementById('error_wrap').style.display = 'none';
     setText('error_box', '');
 
@@ -259,7 +262,7 @@ async function loadTasks() {
     select.appendChild(opt);
   });
   if (data.tasks[0]) document.getElementById('taskIdInput').value = data.tasks[0];
-  await refreshTaskArtifacts();
+  renderLegacyTaskStatus();
 }
 
 function selectedTaskId() {
@@ -281,14 +284,9 @@ function setRunHeader({ status = 'idle', exit = '—', duration = '—', artifac
   });
 }
 
-const TASK_ARTIFACT_NAMES = [
-  { name: 'context.md', id: 'artifact_context_status' },
-  { name: 'plan.md', id: 'artifact_plan_status' },
-  { name: 'patch.diff', id: 'artifact_patch_status' },
-];
-
 function artifactStatusText(entry = null) {
   if (!entry) return 'unknown';
+  if (entry.statusText) return String(entry.statusText);
   if (entry.exists === true) return 'present';
   if (entry.exists === false) return 'missing';
   return 'unknown';
@@ -300,56 +298,21 @@ function setArtifactBadge(id, value, count = null) {
   const text = artifactStatusText(value);
   el.textContent = count === null ? text : `${text}${count ? ` (${count})` : ''}`;
   el.classList.remove('present', 'missing', 'unknown');
-  el.classList.add(text);
+  el.classList.add(['present', 'missing', 'unknown'].includes(text) ? text : 'unknown');
 }
 
-function renderTaskArtifactStatus(payload = null) {
-  const taskId = String(payload?.taskId || selectedTaskId() || '').trim();
-  const folder = String(payload?.folder || '').trim();
-  const artifacts = Array.isArray(payload?.artifacts) ? payload.artifacts : [];
-  const signature = JSON.stringify({ taskId, folder, artifacts });
+function renderLegacyTaskStatus(taskId = selectedTaskId()) {
+  const resolvedTaskId = String(taskId || '').trim();
+  const signature = JSON.stringify({ taskId: resolvedTaskId });
   if (signature === state.artifactStatusSignature) return;
   state.artifactStatusSignature = signature;
 
-  setText('artifactTaskLabel', taskId ? `Selected task: ${taskId}` : 'Selected task: none');
-  setText('artifactTaskFolder', folder ? `Task folder: ${folder}` : 'Task folder: not found');
-  setText('artifactStatusMeta', payload?.presentCount != null && payload?.totalCount != null
-    ? `${payload.presentCount}/${payload.totalCount} artifacts present`
-    : 'Artifact status unavailable');
-
-  const byName = new Map(artifacts.map((artifact) => [artifact.name, artifact]));
-  TASK_ARTIFACT_NAMES.forEach(({ name, id }) => {
-    setArtifactBadge(id, byName.get(name));
-  });
-}
-
-async function refreshTaskArtifacts() {
-  const taskId = selectedTaskId();
-  if (!taskId) {
-    renderTaskArtifactStatus({
-      taskId: null,
-      folder: null,
-      artifacts: TASK_ARTIFACT_NAMES.map(({ name }) => ({ name, exists: false, path: null })),
-      presentCount: 0,
-      totalCount: TASK_ARTIFACT_NAMES.length,
-    });
-    return null;
-  }
-  try {
-    const data = await api(`/api/task-artifacts?taskId=${encodeURIComponent(taskId)}`);
-    renderTaskArtifactStatus(data);
-    return data;
-  } catch (error) {
-    renderTaskArtifactStatus({
-      taskId,
-      folder: null,
-      artifacts: TASK_ARTIFACT_NAMES.map(({ name }) => ({ name, exists: false, path: null })),
-      presentCount: 0,
-      totalCount: TASK_ARTIFACT_NAMES.length,
-    });
-    setText('artifactStatusMeta', `Artifact status error: ${shortText(error.message || error, 120)}`);
-    return null;
-  }
+  setText('artifactTaskLabel', resolvedTaskId ? `Selected legacy task: ${resolvedTaskId}` : 'Selected legacy task: none');
+  setText('artifactTaskFolder', 'Legacy task folders are debug-only. Canonical world routing lives in Canvas Intent and Spatial Studio.');
+  setText('artifactStatusMeta', 'Artifact lookup disabled. /api/task-artifacts is legacy compatibility only and no longer drives Studio truth.');
+  setArtifactBadge('artifact_context_status', { statusText: 'legacy-only' });
+  setArtifactBadge('artifact_plan_status', { statusText: 'world-first' });
+  setArtifactBadge('artifact_patch_status', { statusText: 'use-studio' });
 }
 
 function appendOutput(text) {
@@ -452,7 +415,7 @@ function syncProjectRunnerUi() {
 function syncActionUi() {
   const mode = actionMode();
   const executeButton = document.getElementById('executeBtn');
-  if (executeButton) executeButton.textContent = `Execute ${mode}`;
+  if (executeButton) executeButton.textContent = `Run Legacy ${mode}`;
 }
 
 async function runLegacyCommandStep({
@@ -508,7 +471,7 @@ async function runLegacyCommandStep({
           };
           renderCommandSummary(state.lastCommandSummary);
         }
-        refreshTaskArtifacts().catch(() => {});
+        renderLegacyTaskStatus();
         es.close();
         resolve({
           status: event.status,
@@ -544,6 +507,166 @@ function setTalentUiState({ status = '', error = '', loading = false } = {}) {
   }
 }
 
+function renderTalentGapItems(items = [], emptyLabel = 'None') {
+  const list = document.createElement('div');
+  list.className = 'ta-gap-role-list';
+  const entries = items.length ? items : [{ empty: true, label: emptyLabel }];
+  entries.forEach((item) => {
+    const pill = document.createElement('span');
+    pill.className = `ta-gap-chip${item.empty ? ' is-empty' : ''}`;
+    const itemLabel = item.kind === 'understaffed' && !item.roleLabel && !item.roleId
+      ? 'staffing floor'
+      : (item.roleLabel || item.roleId || item.label || 'n/a');
+    pill.textContent = item.empty ? emptyLabel : `${item.kind || 'gap'}: ${itemLabel}`;
+    list.appendChild(pill);
+  });
+  return list;
+}
+
+function renderTalentGapSummary(gapModel = null) {
+  const summary = gapModel?.summary || {};
+  const card = document.createElement('article');
+  card.className = 'ta-gap-summary';
+
+  const header = document.createElement('div');
+  header.className = 'ta-gap-summary-header';
+
+  const title = document.createElement('div');
+  title.className = 'signal-summary';
+  title.textContent = 'Hiring demand';
+
+  const urgency = document.createElement('div');
+  urgency.className = `ta-gap-urgency urgency-${summary.urgency || 'low'}`;
+  urgency.textContent = `Urgency: ${String(summary.urgency || 'low').toUpperCase()}`;
+
+  header.append(title, urgency);
+  card.appendChild(header);
+
+  const stats = document.createElement('div');
+  stats.className = 'ta-gap-stats';
+  [
+    `Open roles: ${summary.openRoleCount || 0}`,
+    `Blockers: ${summary.blockerCount || 0}`,
+    `Missing leads: ${summary.missingLeadCount || 0}`,
+    `Understaffed: ${summary.understaffedCount || 0}`,
+    `Optional hires: ${summary.optionalHireCount || 0}`,
+  ].forEach((label) => {
+    const chip = document.createElement('span');
+    chip.className = 'ta-gap-chip';
+    chip.textContent = label;
+    stats.appendChild(chip);
+  });
+  card.appendChild(stats);
+
+  const openRoles = Array.isArray(gapModel?.openRoles) ? gapModel.openRoles : [];
+  const blockers = Array.isArray(gapModel?.blockers) ? gapModel.blockers : [];
+
+  if (blockers.length) {
+    const blockerLabel = document.createElement('div');
+    blockerLabel.className = 'ta-gap-blocker-label muted';
+    blockerLabel.textContent = 'Blocking gaps';
+    card.appendChild(blockerLabel);
+    card.appendChild(renderTalentGapItems(blockers, 'No blockers'));
+  }
+
+  if (openRoles.length) {
+    const roleLabel = document.createElement('div');
+    roleLabel.className = 'ta-gap-blocker-label muted';
+    roleLabel.textContent = 'Open roles';
+    card.appendChild(roleLabel);
+    card.appendChild(renderTalentGapItems(openRoles, 'No open roles'));
+  } else if (!blockers.length) {
+    const none = document.createElement('div');
+    none.className = 'muted';
+    none.textContent = 'No hiring gaps remain.';
+    card.appendChild(none);
+  }
+
+  return card;
+}
+
+function setTalentDepartmentUi(department = null) {
+  const summaryEl = document.getElementById('taDepartmentStatus');
+  const coverageEl = document.getElementById('taDepartmentCoverage');
+  const rosterEl = document.getElementById('taDepartmentRoster');
+  const activeDepartment = department && typeof department === 'object' ? department : null;
+  if (summaryEl) {
+    summaryEl.textContent = activeDepartment?.department?.summary || 'No hires recorded yet.';
+  }
+  if (coverageEl) {
+    coverageEl.innerHTML = '';
+    const gapModel = activeDepartment?.gapModel || null;
+    if (gapModel) {
+      coverageEl.appendChild(renderTalentGapSummary(gapModel));
+    }
+    const coverage = Array.isArray(activeDepartment?.coverage) ? activeDepartment.coverage : [];
+    if (!coverage.length) {
+      const empty = document.createElement('div');
+      empty.className = 'ta-coverage-empty muted';
+      empty.textContent = 'Bare minimum coverage is not tracked yet.';
+      coverageEl.appendChild(empty);
+    } else {
+      coverage.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = `ta-coverage-card ${item.covered ? 'covered' : 'open'}`;
+
+        const title = document.createElement('div');
+        title.className = 'signal-summary';
+        title.textContent = item.label || item.deskId || 'Desk';
+        card.appendChild(title);
+
+        const status = document.createElement('div');
+        status.className = 'ta-coverage-status';
+        status.textContent = item.statusLabel || (item.covered ? 'Covered' : 'Needs hire');
+        card.appendChild(status);
+
+        const detail = document.createElement('div');
+        detail.className = 'ta-coverage-detail muted';
+        const openRoleCount = Array.isArray(item.openRoles) ? item.openRoles.length : 0;
+        const blockerText = Array.isArray(item.blockers) && item.blockers.length
+          ? item.blockers.map((entry) => `${entry.kind}: ${entry.roleLabel || entry.roleId || 'n/a'}`).join(' | ')
+          : 'no blockers';
+        detail.textContent = `${item.assignedStaffCount || 0}/${item.minimumStaffing || 1} assigned | ${openRoleCount ? `${openRoleCount} open role${openRoleCount === 1 ? '' : 's'}` : 'fully staffed'} | ${blockerText}`;
+        card.appendChild(detail);
+
+        const roleList = renderTalentGapItems(item.openRoles || [], 'No open roles');
+        card.appendChild(roleList);
+
+        coverageEl.appendChild(card);
+      });
+    }
+  }
+  if (rosterEl) {
+    rosterEl.innerHTML = '';
+    const roster = Array.isArray(activeDepartment?.roster) ? activeDepartment.roster : [];
+    if (!roster.length) {
+      const empty = document.createElement('div');
+      empty.className = 'ta-roster-empty muted';
+      empty.textContent = 'No agents have been hired into this department yet.';
+      rosterEl.appendChild(empty);
+    } else {
+      roster.forEach((entry) => {
+        const card = document.createElement('article');
+        card.className = 'ta-roster-card';
+        const name = document.createElement('div');
+        name.className = 'signal-summary';
+        name.textContent = entry.name || entry.id;
+        const role = document.createElement('div');
+        role.className = 'muted';
+        role.textContent = `${entry.role || 'Role n/a'} | Desk ${entry.deskId || 'n/a'}`;
+        const model = document.createElement('div');
+        model.className = 'ta-roster-model';
+        model.textContent = `Model locked: ${entry.assignedModel || 'n/a'}`;
+        const summary = document.createElement('div');
+        summary.className = 'signal-meta muted';
+        summary.textContent = entry.summary || 'No summary available.';
+        card.append(name, role, model, summary);
+        rosterEl.appendChild(card);
+      });
+    }
+  }
+}
+
 function createSectionList(title, items = [], emptyLabel = 'None') {
   const wrapper = document.createElement('div');
   wrapper.className = 'ta-candidate-section';
@@ -565,11 +688,73 @@ function createSectionList(title, items = [], emptyLabel = 'None') {
   return wrapper;
 }
 
-function renderTalentCandidates(candidates = []) {
+function renderCandidateCvCard(candidate) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ta-candidate-section-grid';
+  wrapper.appendChild(createSectionList('Evidence', candidate.cv_card?.evidence || []));
+  wrapper.appendChild(createSectionList('Strengths', candidate.strengths || []));
+  wrapper.appendChild(createSectionList('Weaknesses', candidate.weaknesses || []));
+  wrapper.appendChild(createSectionList('Recommended Tools', candidate.recommended_tools || []));
+  wrapper.appendChild(createSectionList('Recommended Skills', candidate.recommended_skills || []));
+  wrapper.appendChild(createSectionList('Controls', candidate.cv_card?.controls || []));
+  wrapper.appendChild(createSectionList('Contract Input', candidate.cv_card?.contract?.input || []));
+  wrapper.appendChild(createSectionList('Contract Output', candidate.cv_card?.contract?.output || []));
+  return wrapper;
+}
+
+async function loadTalentDepartment() {
+  try {
+    const department = await api('/api/ta/department');
+    state.taDepartment = department;
+    setTalentDepartmentUi(department);
+  } catch (error) {
+    state.taDepartment = null;
+    setTalentDepartmentUi(null);
+  }
+}
+
+async function hireTalentCandidate(candidateId) {
+  const candidate = state.taCandidates.find((entry) => entry.id === candidateId);
+  if (!candidate) return;
+  const deskId = candidate.primary_desk_target || candidate.primaryDeskTarget || candidate.desk_targets?.[0];
+  setTalentUiState({
+    status: `Hiring ${candidate.name} into ${deskId || 'selected desk'}...`,
+    error: '',
+    loading: true,
+  });
+  try {
+    const response = await api('/api/ta/hire', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        candidate,
+        deskId,
+        gapDescription: state.taGapDescription,
+      }),
+    });
+    state.taDepartment = response.department;
+    await loadTalentDepartment();
+    renderTalentCandidates(state.taCandidates, state.taDepartment);
+    setTalentUiState({
+      status: `${candidate.name} is now hired and model locked.`,
+      error: '',
+      loading: false,
+    });
+  } catch (error) {
+    setTalentUiState({
+      status: 'Hire request failed.',
+      error: String(error.message || error),
+      loading: false,
+    });
+  }
+}
+
+function renderTalentCandidates(candidates = [], department = null) {
   const root = document.getElementById('taCandidateResults');
   if (!root) return;
 
   root.innerHTML = '';
+  const hiredIds = new Set((department?.hiredCandidates || []).map((entry) => entry.id));
 
   candidates.forEach((candidate) => {
     const card = document.createElement('article');
@@ -585,12 +770,12 @@ function renderTalentCandidates(candidates = []) {
     const role = document.createElement('div');
     role.className = 'ta-candidate-role';
     role.textContent = candidate.role || 'Unknown Role';
-    const department = document.createElement('div');
-    department.className = 'ta-candidate-role';
-    department.textContent = `Department: ${candidate.department || 'Unknown Department'}`;
+    const departmentLabel = document.createElement('div');
+    departmentLabel.className = 'ta-candidate-role';
+    departmentLabel.textContent = `Department: ${candidate.department || 'Unknown Department'}`;
     identity.appendChild(name);
     identity.appendChild(role);
-    identity.appendChild(department);
+    identity.appendChild(departmentLabel);
 
     const confidence = document.createElement('div');
     confidence.className = 'ta-candidate-confidence';
@@ -606,6 +791,31 @@ function renderTalentCandidates(candidates = []) {
     summary.textContent = candidate.summary || 'No summary provided.';
     card.appendChild(summary);
 
+    const cvCard = document.createElement('div');
+    cvCard.className = 'ta-cv-card';
+    const cvTitle = document.createElement('div');
+    cvTitle.className = 'ta-cv-title';
+    cvTitle.textContent = candidate.cv_card?.title || `${candidate.name || 'Candidate'} CV`;
+    const cvHeadline = document.createElement('div');
+    cvHeadline.className = 'ta-cv-headline muted';
+    cvHeadline.textContent = candidate.cv_card?.headline || candidate.why_this_role || 'No CV headline provided.';
+    const cvSummary = document.createElement('div');
+    cvSummary.className = 'ta-cv-summary';
+    cvSummary.textContent = candidate.cv_card?.summary || candidate.summary || 'No CV summary provided.';
+    cvCard.append(cvTitle, cvHeadline, cvSummary);
+    card.appendChild(cvCard);
+
+    const assignmentRow = document.createElement('div');
+    assignmentRow.className = 'ta-candidate-assignment';
+    const model = document.createElement('div');
+    model.className = 'ta-candidate-model';
+    model.textContent = `Assigned model: ${candidate.assigned_model || 'locked model missing'}`;
+    const desk = document.createElement('div');
+    desk.className = 'ta-candidate-desk muted';
+    desk.textContent = `Desk target: ${(candidate.desk_targets || []).join(' | ') || 'n/a'}`;
+    assignmentRow.append(model, desk);
+    card.appendChild(assignmentRow);
+
     const modelPolicy = document.createElement('div');
     modelPolicy.className = 'ta-candidate-policy';
     modelPolicy.textContent = `Model policy: ${candidate.model_policy?.preferred || 'n/a'} - ${candidate.model_policy?.reason || 'No reason provided.'}`;
@@ -616,14 +826,20 @@ function renderTalentCandidates(candidates = []) {
     why.textContent = candidate.why_this_role || 'No fit rationale provided.';
     card.appendChild(why);
 
-    const sectionGrid = document.createElement('div');
-    sectionGrid.className = 'ta-candidate-section-grid';
-    sectionGrid.appendChild(createSectionList('Strengths', candidate.strengths || []));
-    sectionGrid.appendChild(createSectionList('Weaknesses', candidate.weaknesses || []));
-    sectionGrid.appendChild(createSectionList('Recommended Tools', candidate.recommended_tools || []));
-    sectionGrid.appendChild(createSectionList('Recommended Skills', candidate.recommended_skills || []));
+    const sectionGrid = renderCandidateCvCard(candidate);
     sectionGrid.appendChild(createSectionList('Risk Notes', candidate.risk_notes || []));
     card.appendChild(sectionGrid);
+
+    const actions = document.createElement('div');
+    actions.className = 'button-row';
+    const hireButton = document.createElement('button');
+    hireButton.type = 'button';
+    hireButton.className = 'mini';
+    hireButton.textContent = hiredIds.has(candidate.id) ? 'Hired' : `Hire for ${candidate.primary_desk_target || candidate.desk_targets?.[0] || 'desk'}`;
+    hireButton.disabled = hiredIds.has(candidate.id);
+    hireButton.onclick = () => hireTalentCandidate(candidate.id);
+    actions.appendChild(hireButton);
+    card.appendChild(actions);
 
     root.appendChild(card);
   });
@@ -633,6 +849,7 @@ async function generateTalentCandidates() {
   const gapInput = document.getElementById('talentGapInput');
   const description = String(gapInput?.value || '').trim();
   if (!description) {
+    state.taCandidates = [];
     setTalentUiState({
       status: 'Enter a gap description to generate candidate profiles.',
       error: 'Gap description is required.',
@@ -642,6 +859,7 @@ async function generateTalentCandidates() {
     return;
   }
 
+  state.taGapDescription = description;
   state.taLoading = true;
   setTalentUiState({
     status: 'Generating candidate profiles...',
@@ -661,7 +879,8 @@ async function generateTalentCandidates() {
     });
 
     const candidates = Array.isArray(response.candidates) ? response.candidates : [];
-    renderTalentCandidates(candidates);
+    state.taCandidates = candidates;
+    renderTalentCandidates(candidates, state.taDepartment);
     setTalentUiState({
       status: candidates.length
         ? `Generated ${candidates.length} candidate profile${candidates.length === 1 ? '' : 's'}.`
@@ -670,7 +889,8 @@ async function generateTalentCandidates() {
       loading: false,
     });
   } catch (error) {
-    renderTalentCandidates([]);
+    state.taCandidates = [];
+    renderTalentCandidates([], state.taDepartment);
     setTalentUiState({
       status: 'Candidate generation failed.',
       error: String(error.message || error),
@@ -801,7 +1021,7 @@ function streamRun(runId) {
     if (event.type === 'done') {
       const duration = event.durationMs ? `${(event.durationMs / 1000).toFixed(2)}s` : '—';
       setRunHeader({ status: event.status, exit: event.exitCode, duration, artifacts: event.artifacts || [] });
-      refreshTaskArtifacts().catch(() => {});
+      renderLegacyTaskStatus();
       state.lastCommandSummary = {
         ...(state.lastCommandSummary || {}),
         state: event.status,
@@ -898,9 +1118,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const legacyBtn = document.getElementById('toggleLegacyBtn');
   const legacyUi = document.getElementById('legacy-ui');
   if (legacyBtn && legacyUi) {
+    const syncLegacyToggleLabel = () => {
+      legacyBtn.textContent = legacyUi.classList.contains('legacy-hidden') ? 'Open Legacy Shell' : 'Hide Legacy Shell';
+    };
+    syncLegacyToggleLabel();
     legacyBtn.onclick = () => {
       legacyUi.classList.toggle('legacy-hidden');
-      legacyBtn.textContent = legacyUi.classList.contains('legacy-hidden') ? 'Show Legacy Controls' : 'Hide Legacy Controls';
+      syncLegacyToggleLabel();
     };
   }
 
@@ -908,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('projectSelect').onchange = syncProjectRunnerUi;
   document.getElementById('taskSelect').onchange = (e) => {
     document.getElementById('taskIdInput').value = e.target.value;
-    refreshTaskArtifacts().catch(() => {});
+    renderLegacyTaskStatus();
   };
   document.getElementById('runAllBtn').onclick = () => runAllActions().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
   document.getElementById('executeBtn').onclick = () => executeAction().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
@@ -940,13 +1164,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setText('uiLastRefreshError', 'none');
   setText('uiConnectionState', 'connecting');
-  await Promise.all([refreshDashboard(), loadProjects(), loadTasks(), hydrateRunHistory()]);
+  await Promise.all([refreshDashboard(), loadProjects(), loadTasks(), hydrateRunHistory(), loadTalentDepartment()]);
   syncActionUi();
   startAutoRefresh();
 });
 
 window.__ACE_APP_TEST__ = {
   renderTalentCandidates,
+  setTalentDepartmentUi,
+  loadTalentDepartment,
+  hireTalentCandidate,
   generateTalentCandidates,
   detectQaMode,
   buildCommandSummary,

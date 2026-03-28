@@ -1,0 +1,571 @@
+{
+  "snapshot": {
+    "viewport": {
+      "width": 1600,
+      "height": 1100
+    },
+    "room": {
+      "x": 56,
+      "y": 72,
+      "width": 1088,
+      "height": 664
+    },
+    "roomRect": {
+      "left": 448.7200012207031,
+      "top": 469.1312561035156,
+      "width": 1392.6400146484375,
+      "height": 849.9200439453125
+    },
+    "shellRect": {
+      "left": 0,
+      "top": 359.03125,
+      "width": 1220,
+      "height": 680.96875
+    },
+    "desks": [
+      {
+        "id": "context-manager",
+        "label": "Context Manager",
+        "x": 182,
+        "y": 252,
+        "rect": {
+          "left": 499.9200134277344,
+          "top": 609.9312744140625,
+          "width": 220.15994262695312,
+          "height": 179.199951171875
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "",
+        "label": "",
+        "x": 0,
+        "y": 0,
+        "rect": {
+          "left": 494.79998779296875,
+          "top": 586.8912353515625,
+          "width": 65,
+          "height": 38.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "planner",
+        "label": "Planner",
+        "x": 970,
+        "y": 252,
+        "rect": {
+          "left": 1508.56005859375,
+          "top": 609.9312744140625,
+          "width": 220.159912109375,
+          "height": 179.199951171875
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "",
+        "label": "",
+        "x": 0,
+        "y": 0,
+        "rect": {
+          "left": 1503.4400634765625,
+          "top": 586.8912353515625,
+          "width": 65,
+          "height": 38.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "executor",
+        "label": "Executor",
+        "x": 182,
+        "y": 585,
+        "rect": {
+          "left": 499.9200134277344,
+          "top": 1036.1712646484375,
+          "width": 220.15994262695312,
+          "height": 179.199951171875
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "",
+        "label": "",
+        "x": 0,
+        "y": 0,
+        "rect": {
+          "left": 494.79998779296875,
+          "top": 1013.1312255859375,
+          "width": 65,
+          "height": 38.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "memory-archivist",
+        "label": "Memory Archivist",
+        "x": 620,
+        "y": 595,
+        "rect": {
+          "left": 1060.5599365234375,
+          "top": 1048.97119140625,
+          "width": 220.1600341796875,
+          "height": 179.199951171875
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "",
+        "label": "",
+        "x": 0,
+        "y": 0,
+        "rect": {
+          "left": 1055.43994140625,
+          "top": 1025.93115234375,
+          "width": 65,
+          "height": 38.400146484375
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "qa-lead",
+        "label": "QA / Test Lead",
+        "x": 182,
+        "y": 252,
+        "rect": {
+          "left": 499.9200134277344,
+          "top": 609.9312744140625,
+          "width": 220.15994262695312,
+          "height": 179.199951171875
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "",
+        "label": "",
+        "x": 0,
+        "y": 0,
+        "rect": {
+          "left": 494.79998779296875,
+          "top": 586.8912353515625,
+          "width": 65,
+          "height": 38.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "cto-architect",
+        "label": "CTO / Architect",
+        "x": 930,
+        "y": 422,
+        "rect": {
+          "left": 1457.3599853515625,
+          "top": 827.53125,
+          "width": 220.1600341796875,
+          "height": 179.20001220703125
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "",
+        "label": "",
+        "x": 0,
+        "y": 0,
+        "rect": {
+          "left": 1452.239990234375,
+          "top": 804.4912109375,
+          "width": 65,
+          "height": 38.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      }
+    ],
+    "whiteboards": [
+      {
+        "id": "teamBoard",
+        "label": "Team Board",
+        "x": 284,
+        "y": 88,
+        "width": 584,
+        "height": 208,
+        "rect": {
+          "left": 740.5599975585938,
+          "top": 489.61126708984375,
+          "width": 747.5199584960938,
+          "height": 592.2999877929688
+        }
+      }
+    ],
+    "links": [
+      {
+        "id": "handoff-handoff_1774615405452_2yc7",
+        "label": "Problem brief",
+        "kind": "handoff",
+        "fromDeskId": "context-manager",
+        "toDeskId": "planner",
+        "startX": 256,
+        "startY": 248,
+        "endX": 898,
+        "endY": 248
+      },
+      {
+        "id": "planner-executor",
+        "label": "1 plan item",
+        "kind": "workflow",
+        "fromDeskId": "planner",
+        "toDeskId": "executor",
+        "startX": 896,
+        "startY": 248,
+        "endX": 254,
+        "endY": 581
+      },
+      {
+        "id": "work-to-memory",
+        "label": "Artifacts",
+        "kind": "memory",
+        "fromDeskId": "executor",
+        "toDeskId": "memory-archivist",
+        "startX": 256,
+        "startY": 581,
+        "endX": 548,
+        "endY": 591
+      },
+      {
+        "id": "conflict-0-context-manager",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "context-manager",
+        "startX": 862,
+        "startY": 418,
+        "endX": 248,
+        "endY": 248
+      },
+      {
+        "id": "conflict-0-planner",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "planner",
+        "startX": 930,
+        "startY": 370,
+        "endX": 970,
+        "endY": 302
+      },
+      {
+        "id": "conflict-0-executor",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "executor",
+        "startX": 862,
+        "startY": 418,
+        "endX": 248,
+        "endY": 581
+      }
+    ],
+    "controls": [
+      {
+        "id": "scene-canvas-button",
+        "label": "Canvas button",
+        "visible": true,
+        "rect": {
+          "left": 477.984375,
+          "top": 25,
+          "width": 59.078125,
+          "height": 30
+        }
+      },
+      {
+        "id": "scene-studio-button",
+        "label": "ACE Studio button",
+        "visible": true,
+        "rect": {
+          "left": 547.0625,
+          "top": 25,
+          "width": 79.9375,
+          "height": 30
+        }
+      },
+      {
+        "id": "recent-saves-select",
+        "label": "Recent Saves",
+        "visible": true,
+        "rect": {
+          "left": 1041,
+          "top": 63,
+          "width": 152,
+          "height": 32
+        }
+      },
+      {
+        "id": "reset-view-button",
+        "label": "Reset View",
+        "visible": true,
+        "rect": {
+          "left": 720.453125,
+          "top": 103,
+          "width": 80.546875,
+          "height": 30
+        }
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "camera-off-center",
+      "severity": "warning",
+      "kind": "camera",
+      "summary": "Studio camera is not centered on the room.",
+      "details": "Room center drift is 535px horizontally and 195px vertically."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (56, 72) to (1144, 736)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (56, 72) to (1144, 736)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (56, 72) to (1144, 736)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (56, 72) to (1144, 736)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (56, 72) to (1144, 736)."
+    },
+    {
+      "id": "desk-outside-",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        ""
+      ],
+      "summary": " sits outside the Studio room bounds.",
+      "details": "Desk center is at (0, 0) while the room spans (56, 72) to (1144, 736)."
+    },
+    {
+      "id": "desk-overlap-context-manager-qa-lead",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "context-manager",
+        "qa-lead"
+      ],
+      "summary": "Context Manager overlaps QA / Test Lead.",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "desk-overlap--",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "",
+        ""
+      ],
+      "summary": " overlaps .",
+      "details": "Overlap area is 24080px."
+    }
+  ]
+}

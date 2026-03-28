@@ -1,0 +1,333 @@
+{
+  "snapshot": {
+    "viewport": {
+      "width": 1600,
+      "height": 1100
+    },
+    "room": {
+      "x": 56,
+      "y": 72,
+      "width": 1088,
+      "height": 664
+    },
+    "roomRect": {
+      "left": 277.760009765625,
+      "top": 405.2799987792969,
+      "width": 1044.47998046875,
+      "height": 637.43994140625
+    },
+    "shellRect": {
+      "left": 0,
+      "top": 348,
+      "width": 1600,
+      "height": 752
+    },
+    "desks": [
+      {
+        "id": "planner",
+        "label": "Planner",
+        "x": 536,
+        "y": 252,
+        "rect": {
+          "left": 656,
+          "top": 510.8800048828125,
+          "width": 165.1199951171875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "executor",
+        "label": "Executor",
+        "x": 682,
+        "y": 252,
+        "rect": {
+          "left": 796.1599731445312,
+          "top": 510.8800048828125,
+          "width": 165.1199951171875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "qa-lead",
+        "label": "QA / Test Lead",
+        "x": 182,
+        "y": 510,
+        "rect": {
+          "left": 316.1600036621094,
+          "top": 758.5599975585938,
+          "width": 165.1199951171875,
+          "height": 134.39996337890625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "memory-archivist",
+        "label": "Memory Archivist",
+        "x": 620,
+        "y": 642,
+        "rect": {
+          "left": 736.6400146484375,
+          "top": 885.2799682617188,
+          "width": 165.1199951171875,
+          "height": 134.39996337890625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "cto-architect",
+        "label": "CTO / Architect",
+        "x": 990,
+        "y": 422,
+        "rect": {
+          "left": 1091.8399658203125,
+          "top": 674.0799560546875,
+          "width": 165.1199951171875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "integration_auditor",
+        "label": "Integration Auditor",
+        "x": 986,
+        "y": 174,
+        "rect": {
+          "left": 1088,
+          "top": 436,
+          "width": 165.1199951171875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      }
+    ],
+    "whiteboards": [
+      {
+        "id": "teamBoard",
+        "label": "Team Board",
+        "x": 284,
+        "y": 88,
+        "width": 584,
+        "height": 208,
+        "rect": {
+          "left": 496.6399841308594,
+          "top": 420.6400146484375,
+          "width": 345.6000061035156,
+          "height": 449.39996337890625
+        }
+      }
+    ],
+    "links": [
+      {
+        "id": "handoff-handoff_1774615405452_2yc7",
+        "label": "Problem brief",
+        "kind": "handoff",
+        "fromDeskId": "context-manager",
+        "toDeskId": "planner",
+        "startX": 268,
+        "startY": 252,
+        "endX": 450,
+        "endY": 252
+      },
+      {
+        "id": "planner-executor",
+        "label": "1 plan item",
+        "kind": "workflow",
+        "fromDeskId": "planner",
+        "toDeskId": "executor",
+        "startX": 622,
+        "startY": 252,
+        "endX": 596,
+        "endY": 252
+      },
+      {
+        "id": "work-to-memory",
+        "label": "Artifacts",
+        "kind": "memory",
+        "fromDeskId": "executor",
+        "toDeskId": "memory-archivist",
+        "startX": 682,
+        "startY": 322,
+        "endX": 620,
+        "endY": 572
+      },
+      {
+        "id": "conflict-0-context-manager",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "context-manager",
+        "startX": 904,
+        "startY": 422,
+        "endX": 268,
+        "endY": 252
+      },
+      {
+        "id": "conflict-0-planner",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "planner",
+        "startX": 904,
+        "startY": 422,
+        "endX": 622,
+        "endY": 252
+      },
+      {
+        "id": "conflict-0-executor",
+        "label": "Low confidence",
+        "kind": "conflict",
+        "fromDeskId": "cto-architect",
+        "toDeskId": "executor",
+        "startX": 904,
+        "startY": 422,
+        "endX": 768,
+        "endY": 252
+      }
+    ],
+    "controls": [
+      {
+        "id": "scene-canvas-button",
+        "label": "Canvas button",
+        "visible": true,
+        "rect": {
+          "left": 1031.984375,
+          "top": 97.5,
+          "width": 59.078125,
+          "height": 30
+        }
+      },
+      {
+        "id": "scene-studio-button",
+        "label": "ACE Studio button",
+        "visible": true,
+        "rect": {
+          "left": 1101.0625,
+          "top": 97.5,
+          "width": 79.9375,
+          "height": 30
+        }
+      },
+      {
+        "id": "recent-saves-select",
+        "label": "Recent Saves",
+        "visible": false
+      },
+      {
+        "id": "reset-view-button",
+        "label": "Reset View",
+        "visible": true,
+        "rect": {
+          "left": 298.0625,
+          "top": 152,
+          "width": 80.546875,
+          "height": 30
+        }
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "desk-overlap-planner-executor",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "planner",
+        "executor"
+      ],
+      "summary": "Planner overlaps Executor.",
+      "details": "Overlap area is 3640px."
+    },
+    {
+      "id": "whiteboard-overlap-teamBoard-planner",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "planner"
+      ],
+      "relatedWhiteboardIds": [
+        "teamBoard"
+      ],
+      "summary": "Team Board overlaps Planner.",
+      "details": "Overlap area is 19608px."
+    },
+    {
+      "id": "whiteboard-overlap-teamBoard-executor",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "executor"
+      ],
+      "relatedWhiteboardIds": [
+        "teamBoard"
+      ],
+      "summary": "Team Board overlaps Executor.",
+      "details": "Overlap area is 19608px."
+    },
+    {
+      "id": "control-hidden-recent-saves-select",
+      "severity": "warning",
+      "kind": "visibility",
+      "summary": "Recent Saves is clipped or hidden.",
+      "details": "Required control recent-saves-select was not fully visible in the current browser pass."
+    },
+    {
+      "id": "stale-anchor-planner-executor",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "planner",
+        "executor"
+      ],
+      "summary": "1 plan item is not anchored to the current desk positions.",
+      "details": "Connector drift is 14px from the expected anchor geometry."
+    },
+    {
+      "id": "stale-anchor-work-to-memory",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "executor",
+        "memory-archivist"
+      ],
+      "summary": "Artifacts is not anchored to the current desk positions.",
+      "details": "Connector drift is 14px from the expected anchor geometry."
+    },
+    {
+      "id": "stale-anchor-conflict-0-planner",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "cto-architect",
+        "planner"
+      ],
+      "summary": "Low confidence is not anchored to the current desk positions.",
+      "details": "Connector drift is 20px from the expected anchor geometry."
+    },
+    {
+      "id": "stale-anchor-conflict-0-executor",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "cto-architect",
+        "executor"
+      ],
+      "summary": "Low confidence is not anchored to the current desk positions.",
+      "details": "Connector drift is 20px from the expected anchor geometry."
+    },
+    {
+      "id": "console-2",
+      "severity": "error",
+      "kind": "console",
+      "summary": "Console errors were captured during the browser pass.",
+      "details": "Failed to load resource: the server responded with a status of 404 (Not Found) | Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ]
+}

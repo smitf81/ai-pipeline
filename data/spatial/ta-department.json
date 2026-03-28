@@ -1,0 +1,111 @@
+{
+  "hiredCandidates": [
+    {
+      "id": "ui-actions-appear-disconnected-from-backend-exec-integration-auditor",
+      "name": "Taylor Pike",
+      "roleId": "integration_auditor",
+      "role": "Integration Auditor",
+      "department": "Talent Acquisition",
+      "departmentId": "talent-acquisition",
+      "deskTargets": [
+        "executor",
+        "qa-lead"
+      ],
+      "primaryDeskTarget": "executor",
+      "assignedModel": "mistral:latest",
+      "modelLocked": true,
+      "model_locked": true,
+      "summary": "Maps claimed system behavior against actual execution paths and integration seams. Focuses on execution mismatches across ui, server, task pipeline.",
+      "strengths": [
+        "Traces UI intent through backend execution paths",
+        "Identifies broken handoffs between surfaces and services",
+        "Produces concrete mismatch reports instead of vague observations"
+      ],
+      "weaknesses": [
+        "Less suited to greenfield product ideation",
+        "Can over-index on audit depth when rapid shipping is the priority"
+      ],
+      "recommendedTools": [
+        "network inspector",
+        "request logs",
+        "route map",
+        "contract checklist"
+      ],
+      "recommendedSkills": [
+        "integration analysis",
+        "API tracing",
+        "systems debugging",
+        "evidence synthesis"
+      ],
+      "modelPolicy": {
+        "preferred": "hybrid",
+        "reason": "Combines deterministic checks with higher-level reasoning across cross-system behavior."
+      },
+      "whyThisRole": "Integration Auditor is a fit because \"ui actions appear disconnected from backend execution\" suggests a need to maps claimed system behavior against actual execution paths and integration seams. within ace studio runtime.",
+      "riskNotes": [
+        "Needs current endpoint and workflow visibility to avoid stale conclusions."
+      ],
+      "confidence": 0.82,
+      "allowedDepartmentIds": [
+        "delivery",
+        "quality"
+      ],
+      "allowedDeskIds": [
+        "executor",
+        "qa-lead"
+      ],
+      "leadRoleIds": [
+        "talent-acquisition"
+      ],
+      "capabilities": [
+        "trace execution mismatches",
+        "audit integration seams",
+        "report concrete drift"
+      ],
+      "cvCard": {
+        "title": "Taylor Pike :: Integration Auditor",
+        "headline": "Integration Auditor for executor",
+        "summary": "Maps claimed system behavior against actual execution paths and integration seams. Focuses on execution mismatches across ui, server, task pipeline.",
+        "evidence": [
+          "Gap signal: ui actions appear disconnected from backend execution",
+          "Assigned model: mistral:latest",
+          "Desk targets: executor, qa-lead"
+        ],
+        "controls": [
+          "Model is locked after hiring.",
+          "No fallback model path is allowed.",
+          "Role and desk targets are fixed on the card."
+        ],
+        "contract": {
+          "input": [
+            "A concrete desk gap or workflow issue.",
+            "A target desk or department needing coverage.",
+            "Evidence that the candidate improves the line of work."
+          ],
+          "output": [
+            "A hire-ready CV card.",
+            "An immutable model binding.",
+            "A desk-ready contract for the roster."
+          ]
+        }
+      },
+      "contract": {
+        "input": [
+          "A concrete desk gap or workflow issue.",
+          "A target desk or department needing coverage.",
+          "Evidence that the candidate improves the line of work."
+        ],
+        "output": [
+          "A hire-ready CV card.",
+          "An immutable model binding.",
+          "A desk-ready contract for the roster."
+        ]
+      },
+      "hiredAt": "2026-03-28T13:42:07.440Z",
+      "hiredDeskId": "executor",
+      "contractLocked": true
+    }
+  ],
+  "updatedAt": "2026-03-28T13:42:07.440Z",
+  "lastGeneratedGap": "UI actions appear disconnected from backend execution"
+}

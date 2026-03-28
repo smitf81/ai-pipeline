@@ -1,5 +1,7 @@
 const { normalizeAgentWorkersState } = require('./agentWorkers');
 const RSG_ACTIVITY_LIMIT = 24;
+const MUTATION_ACTIVITY_LIMIT = 32;
+const MUTATION_APPROVAL_LIMIT = 16;
 
 function makeId(prefix) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -13,17 +15,109 @@ function buildEmptyGraph() {
   return { nodes: [], edges: [] };
 }
 
+const STRONG_RELATIONSHIP_TYPES = new Set([
+  'dependency',
+  'handoff',
+  'ownership',
+  'pipeline',
+  'data_flow',
+  'reporting',
+  'workflow',
+  'support',
+  'validated',
+]);
+
+function normalizeRelationshipType(value = 'relates_to') {
+  return String(value || 'relates_to').trim().toLowerCase().replace(/\s+/g, '_') || 'relates_to';
+}
+
+function normalizeRelationshipList(value = []) {
+  const source = Array.isArray(value) ? value : (value == null ? [] : [value]);
+  return [...new Set(source.map((entry) => String(entry || '').trim()).filter(Boolean))];
+}
+
+function clampRelationshipStrength(value = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 1;
+  return Math.max(1, Math.min(4, Math.round(numeric)));
+}
+
+function inferRelationshipStrength(edge = {}, supports = [], validatedBy = []) {
+  const explicit = Number(edge?.strength);
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return clampRelationshipStrength(explicit);
+  }
+  let score = 1;
+  if (STRONG_RELATIONSHIP_TYPES.has(normalizeRelationshipType(edge?.relationshipType || edge?.relationship_type || edge?.type))) score += 1;
+  score += Math.min(2, supports.length);
+  if (validatedBy.length) score += 1;
+  if (edge?.lastActive) score += 1;
+  return clampRelationshipStrength(score);
+}
+
+function inferRelationshipStrandCount(edge = {}, supports = [], validatedBy = []) {
+  const explicit = Number(edge?.strandCount);
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return Math.max(1, Math.round(explicit));
+  }
+  return Math.max(1, supports.length, validatedBy.length);
+}
+
+function inferRelationshipHealth(edge = {}, strength = 1, strandCount = 1) {
+  const risk = String(edge?.risk || '').trim().toLowerCase();
+  if (risk === 'high' || risk === 'blocked') return 'blocked';
+  if (strength >= 3 && strandCount >= 2) return 'healthy';
+  if (strength >= 2) return 'degraded';
+  return 'fragile';
+}
+
+function inferRelationshipVisualForm(strength = 1, strandCount = 1) {
+  if (strandCount >= 3 || strength >= 4) return 'woven-rope';
+  if (strandCount === 2 || strength >= 2) return 'bundle';
+  return 'string';
+}
+
+function normalizeRelationshipEdge(edge = {}, { fallbackRelationshipType = 'relates_to' } = {}) {
+  if (!edge || typeof edge !== 'object') return null;
+  const source = String(edge.source || '').trim();
+  const target = String(edge.target || '').trim();
+  if (!source || !target) return null;
+  const relationshipType = normalizeRelationshipType(edge.relationshipType || edge.relationship_type || edge.type || fallbackRelationshipType);
+  const supports = normalizeRelationshipList(edge.supports);
+  const validatedBy = normalizeRelationshipList(edge.validatedBy);
+  const strength = inferRelationshipStrength({ ...edge, relationshipType }, supports, validatedBy);
+  const strandCount = inferRelationshipStrandCount(edge, supports, validatedBy);
+  const health = inferRelationshipHealth(edge, strength, strandCount);
+  return {
+    ...edge,
+    id: String(edge.id || '').trim() || `${source}__${target}__${relationshipType}`,
+    source,
+    target,
+    relationshipType,
+    relationship_type: relationshipType,
+    label: String(edge.label || '').trim() || relationshipType.replace(/_/g, ' '),
+    supports,
+    validatedBy,
+    strength,
+    strandCount,
+    health,
+    visualForm: inferRelationshipVisualForm(strength, strandCount),
+    lastActive: edge.lastActive || null,
+    risk: edge.risk || null,
+  };
+}
+
 function normalizeGraphBundle(workspace = {}) {
   const graphs = workspace?.graphs || {};
   const legacyGraph = workspace?.graph || buildEmptyGraph();
   return {
     system: {
       nodes: graphs.system?.nodes || legacyGraph.nodes || [],
-      edges: graphs.system?.edges || legacyGraph.edges || [],
+      edges: (graphs.system?.edges || legacyGraph.edges || []).map((edge) => normalizeRelationshipEdge(edge)).filter(Boolean),
     },
     world: {
       nodes: graphs.world?.nodes || [],
-      edges: graphs.world?.edges || [],
+      edges: (graphs.world?.edges || []).map((edge) => normalizeRelationshipEdge(edge)).filter(Boolean),
     },
   };
 }
@@ -50,6 +144,42 @@ function createDefaultRsgState() {
     lastGenerationAt: null,
     lastStatus: 'idle',
     lastEvaluatedAt: null,
+  };
+}
+
+function createDefaultMutationGateState() {
+  return {
+    activity: [],
+    approvalQueue: [],
+  };
+}
+
+function normalizeMutationGateEntries(entries = [], limit = MUTATION_ACTIVITY_LIMIT) {
+  return (Array.isArray(entries) ? entries : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      id: entry.id || null,
+      at: entry.at || null,
+      classification: entry.classification || 'blocked',
+      status: entry.status || 'blocked',
+      riskLevel: entry.riskLevel || 'medium',
+      summary: entry.summary || '',
+      reason: entry.reason || '',
+      layer: entry.layer || null,
+      mutationType: entry.mutationType || entry.type || null,
+      mutation: entry.mutation || null,
+    }))
+    .filter((entry) => entry.id && entry.summary)
+    .slice(0, limit);
+}
+
+function normalizeMutationGateState(state = {}) {
+  const base = createDefaultMutationGateState();
+  return {
+    ...base,
+    ...(state || {}),
+    activity: normalizeMutationGateEntries((state || {}).activity, MUTATION_ACTIVITY_LIMIT),
+    approvalQueue: normalizeMutationGateEntries((state || {}).approvalQueue, MUTATION_APPROVAL_LIMIT),
   };
 }
 
@@ -1419,6 +1549,7 @@ function buildRuntimePayload(workspace = {}) {
     agentWorkers: normalizeAgentWorkersState(normalizedWorkspace?.studio?.agentWorkers),
     selfUpgrade: normalizedWorkspace?.studio?.selfUpgrade || null,
     teamBoard: normalizeTeamBoardState(normalizedWorkspace),
+    mutationGate: normalizeMutationGateState(normalizedWorkspace?.mutationGate),
     orchestrator: normalizedWorkspace?.studio?.orchestrator || {
       status: 'idle',
       lastTickAt: null,
@@ -1439,7 +1570,9 @@ module.exports = {
   createDefaultTeamBoard,
   normalizeGraphBundle,
   createDefaultRsgState,
+  createDefaultMutationGateState,
   buildRsgState,
+  normalizeMutationGateState,
   getSelectedExecutionCard,
   normalizeNotebookState,
   normalizeTeamBoardState,

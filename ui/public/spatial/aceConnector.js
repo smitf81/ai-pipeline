@@ -1,3 +1,5 @@
+import { parseActionRequest } from './actionRequestParser.js';
+
 export class AceConnector {
   async getProjects() {
     const res = await fetch('/api/projects');
@@ -26,7 +28,11 @@ export class AceConnector {
       body: JSON.stringify(payload || {}),
     });
     const response = await res.json();
-    if (!res.ok) throw new Error(response.error || 'Executive route failed');
+    if (!res.ok) {
+      const error = new Error(response.error || 'Executive route failed');
+      error.payload = response;
+      throw error;
+    }
     return response;
   }
 
@@ -59,6 +65,10 @@ export class AceConnector {
     return response;
   }
 
+  async parseActionRequest(input, options = {}) {
+    return parseActionRequest(input, options);
+  }
+
   async askCtoDesk(payload = {}) {
     const res = await fetch('/api/spatial/cto/chat', {
       method: 'POST',
@@ -72,6 +82,13 @@ export class AceConnector {
       throw error;
     }
     return response;
+  }
+
+  async getTaDepartment() {
+    const res = await fetch('/api/ta/department');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load TA department');
+    return payload;
   }
 
   async decomposeTask(node) {
@@ -107,12 +124,15 @@ export class AceConnector {
       body: JSON.stringify({ mutations }),
     });
     const payload = await res.json();
-    if (!res.ok) {
+    if (!res.ok || payload?.ok === false) {
       const error = new Error(payload.error || payload.mutationResult?.reason || 'Mutation apply failed');
       error.payload = payload;
       throw error;
     }
-    return payload;
+    return {
+      ...payload,
+      mutationResult: payload.mutationResult || null,
+    };
   }
 
   async teamBoardAction(action, cardId) {
@@ -250,5 +270,33 @@ export class AceConnector {
     const response = await res.json();
     if (!res.ok) throw new Error(response.error || 'Unable to update desk properties');
     return response;
+  }
+
+  async getStudioLayoutCatalog() {
+    const res = await fetch('/api/spatial/layout/catalog');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load studio layout catalog');
+    return payload;
+  }
+
+  async mutateStudioLayout(action, payload = {}) {
+    const name = String(action || '').trim();
+    if (!name) throw new Error('Layout action is required');
+    const res = await fetch('/api/spatial/layout/actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: name, ...(payload || {}) }),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.error || 'Unable to update studio layout');
+    return response;
+  }
+
+  async addDepartment(payload = {}) {
+    return this.mutateStudioLayout('add_department', payload);
+  }
+
+  async addDesk(payload = {}) {
+    return this.mutateStudioLayout('add_desk', payload);
   }
 }
