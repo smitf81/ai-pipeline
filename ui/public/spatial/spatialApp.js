@@ -5366,8 +5366,8 @@ function syncRecentWorldChange(change = null) {
   };
 
   const renderReportsList = (reports = [], emptyState = 'No desk reports are cached yet.') => (
-    reports.length
-      ? h('div', { className: 'desk-panel-list utility-list' }, reports.map((report) => h('div', { key: report.id || `${report.name}-${report.source}`, className: 'desk-panel-item utility-card' },
+    (Array.isArray(reports) ? reports : []).length
+      ? h('div', { className: 'desk-panel-list utility-list' }, (Array.isArray(reports) ? reports : []).map((report) => h('div', { key: report.id || `${report.name}-${report.source}`, className: 'desk-panel-item utility-card' },
           h('div', { className: 'signal-summary' }, `${report.name || report.id || 'Report'}${report.verdict ? ` (${report.verdict})` : ''}`),
           h('div', { className: 'signal-meta muted' }, `${report.type || 'report'} | ${report.source || 'unknown source'}${report.detail ? ` | ${report.detail}` : ''}`),
         )))
@@ -5375,8 +5375,8 @@ function syncRecentWorldChange(change = null) {
   );
 
   const renderScorecardsList = (scorecards = [], emptyState = 'No scorecards are available yet.') => (
-    scorecards.length
-      ? h('div', { className: 'desk-panel-list utility-list' }, scorecards.map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item utility-card' },
+    (Array.isArray(scorecards) ? scorecards : []).length
+      ? h('div', { className: 'desk-panel-list utility-list' }, (Array.isArray(scorecards) ? scorecards : []).map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item utility-card' },
           h('div', { className: 'signal-summary' }, `${card.desk || 'Desk'} | ${card.testName || card.testId || 'Scorecard'}`),
           h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
           card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
@@ -5426,15 +5426,16 @@ function syncRecentWorldChange(change = null) {
   };
 
   const renderRosterUtility = () => {
-    const department = rosterSurfaceModel.department || {};
-    const summary = rosterSurfaceModel.summary || {};
-    const departments = rosterSurfaceModel.departments || [];
-    const desks = rosterSurfaceModel.desks || [];
-    const roster = rosterSurfaceModel.roster || [];
-    const openRoles = rosterSurfaceModel.openRoles || [];
-    const blockers = rosterSurfaceModel.blockers || [];
-    const hiringSignals = rosterSurfaceModel.hiringSignals || [];
-    const resourceSignals = listDepartmentsByPriority(resourceSignalModel);
+    const department = rosterSurfaceModel.department && typeof rosterSurfaceModel.department === 'object' ? rosterSurfaceModel.department : {};
+    const summary = rosterSurfaceModel.summary && typeof rosterSurfaceModel.summary === 'object' ? rosterSurfaceModel.summary : {};
+    const departments = Array.isArray(rosterSurfaceModel.departments) ? rosterSurfaceModel.departments : [];
+    const desks = Array.isArray(rosterSurfaceModel.desks) ? rosterSurfaceModel.desks : [];
+    const roster = Array.isArray(rosterSurfaceModel.roster) ? rosterSurfaceModel.roster : [];
+    const openRoles = Array.isArray(rosterSurfaceModel.openRoles) ? rosterSurfaceModel.openRoles : [];
+    const blockers = Array.isArray(rosterSurfaceModel.blockers) ? rosterSurfaceModel.blockers : [];
+    const hiringSignals = Array.isArray(rosterSurfaceModel.hiringSignals) ? rosterSurfaceModel.hiringSignals : [];
+    const prioritizedResourceSignals = listDepartmentsByPriority(resourceSignalModel);
+    const resourceSignals = Array.isArray(prioritizedResourceSignals) ? prioritizedResourceSignals : [];
     const activeDepartmentCards = departments.length ? departments : desks;
     return h('div', { className: 'utility-window-stack', 'data-qa': 'people-plan-window' },
       h('div', { className: 'utility-window-section utility-window-hero' },
@@ -5480,7 +5481,7 @@ function syncRecentWorldChange(change = null) {
             },
               h('div', { className: 'signal-summary' }, `${signal.departmentLabel} | ${signal.resourcePressure}`),
               h('div', { className: 'signal-meta muted' }, `Priority ${signal.priorityScore} | blockers ${signal.blockerCount} | staffing gaps ${signal.staffingGapCount}`),
-              h('div', { className: 'signal-meta muted' }, `Weak relationships ${signal.weakRelationshipCount} | ${signal.reasonSummary.length ? signal.reasonSummary.join(', ') : 'No additional reasons.'}`),
+              h('div', { className: 'signal-meta muted' }, `Weak relationships ${signal.weakRelationshipCount} | ${(Array.isArray(signal.reasonSummary) && signal.reasonSummary.length) ? signal.reasonSummary.join(', ') : 'No additional reasons.'}`),
             ))),
           )
         : null,
@@ -5494,14 +5495,14 @@ function syncRecentWorldChange(change = null) {
                 h('div', { className: 'signal-summary' }, `${entity.label} | ${entity.health || 'unknown'}`),
                 h('div', { className: 'signal-meta muted' }, `${entity.entityType === 'department' ? 'Department' : 'Desk'} | ${entity.statusLabel || 'covered'}`),
                 h('div', { className: 'signal-meta muted' }, `Lead ${entity.leadLabel || 'n/a'} | Open seats ${entity.openSeatCount || 0}`),
-                h('div', { className: 'signal-meta muted' }, `Rostered ${entity.assignedRoster.length} | Roles ${entity.assignedRoles?.length || 0}`),
-                entity.roleCoverage.length
+                h('div', { className: 'signal-meta muted' }, `Rostered ${Array.isArray(entity.assignedRoster) ? entity.assignedRoster.length : 0} | Roles ${Array.isArray(entity.assignedRoles) ? entity.assignedRoles.length : 0}`),
+                Array.isArray(entity.roleCoverage) && entity.roleCoverage.length
                   ? h('div', { className: 'desk-hierarchy-leaf-list' }, entity.roleCoverage.map((role) => h('div', {
                       key: `${entity.entityId}-${role.roleId}`,
                       className: `desk-hierarchy-leaf ${role.covered ? '' : 'draft'}`,
                     }, `${role.roleLabel}${role.isLeadRole ? ' (Lead)' : ''} | ${role.covered ? `x${role.count}` : 'open'}`)))
                   : null,
-                entity.roster.length
+                Array.isArray(entity.roster) && entity.roster.length
                   ? h('div', { className: 'desk-hierarchy-leaf-list' }, entity.roster.map((candidate) => h('div', {
                       key: candidate.id,
                       className: 'desk-hierarchy-leaf',
@@ -7175,7 +7176,7 @@ function syncRecentWorldChange(change = null) {
     preview && h('div', { className: 'modal' },
       h('div', { className: 'modal-content card' },
         h('div', { className: 'card-title' }, 'ACE Suggestion Preview'),
-        h('pre', { className: 'doc' }, preview.summary.join('\n')),
+        h('pre', { className: 'doc' }, Array.isArray(preview.summary) ? preview.summary.join('\n') : String(preview.summary || '')),
         h('div', { className: 'button-row' },
           h('button', { type: 'button', onClick: approvePreview }, 'Accept Preview'),
           h('button', { type: 'button', onClick: () => setPreview(null) }, 'Dismiss'),

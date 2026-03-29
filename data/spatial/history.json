@@ -1,81 +1,5 @@
 [
   {
-    "at": "2026-03-29T00:23:30.816Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-29T00:23:30.878Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-29T00:23:30.922Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-29T00:23:30.945Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-29T00:23:30.978Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-29T00:23:31.075Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-29T00:23:31.285Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "runIds": [
-        "1774743810925-t6if5d"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-29T00:23:31.340Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "runIds": [
-        "1774743810981-h89cso"
-      ]
-    }
-  },
-  {
     "at": "2026-03-29T00:23:31.463Z",
     "type": "team-board-builder-failed",
     "summary": {
@@ -773,6 +697,94 @@
   },
   {
     "at": "2026-03-29T11:05:56.436Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T11:52:21.923Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T11:52:32.872Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T11:52:35.620Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T11:52:36.560Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T11:52:40.637Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T11:52:43.984Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T12:00:36.524Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T12:00:39.103Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,

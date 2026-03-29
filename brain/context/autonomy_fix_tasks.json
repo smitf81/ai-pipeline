@@ -1,6 +1,6 @@
 {
   "version": "ace/autonomy-policy.v0",
-  "updatedAt": "2026-03-29T11:05:49.374Z",
+  "updatedAt": "2026-03-29T12:00:37.596Z",
   "entries": [
     {
       "version": "ace/autonomy-policy.v0",
@@ -13,7 +13,7 @@
       "decision": "blocked",
       "status": "blocked",
       "reasons": [
-        "M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/architecture-memory.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/studio-state.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md"
+        "M brain/context/agent_audits/builder/builder_0001.json\n M brain/context/agent_audits/builder/builder_0001.md\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/public/spatial/spatialApp.js\n M ui/tests/spatialApp.smoke.test.mjs"
       ],
       "policy_rule_hits": [
         "project_resolved",
@@ -55,10 +55,10 @@
       "consumedAt": null,
       "resolvedAt": null,
       "reEscalatedAt": null,
-      "blockedAt": "2026-03-29T11:05:49.373Z",
-      "updatedAt": "2026-03-29T11:05:49.374Z",
+      "blockedAt": "2026-03-29T12:00:37.595Z",
+      "updatedAt": "2026-03-29T12:00:37.596Z",
       "queuedAt": "2026-03-29T10:12:42.205Z",
-      "createdAt": "2026-03-29T11:05:49.374Z"
+      "createdAt": "2026-03-29T12:00:37.596Z"
     },
     {
       "version": "ace/autonomy-policy.v0",
@@ -129,7 +129,7 @@
       "decision": "blocked",
       "status": "blocked",
       "reasons": [
-        "M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/architecture-memory.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md"
+        "M brain/context/agent_audits/builder/builder_0001.json\n M brain/context/agent_audits/builder/builder_0001.md\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/public/spatial/spatialApp.js\n M ui/tests/spatialApp.smoke.test.mjs"
       ],
       "policy_rule_hits": [
         "project_resolved",
@@ -171,10 +171,10 @@
       "consumedAt": null,
       "resolvedAt": null,
       "reEscalatedAt": null,
-      "blockedAt": "2026-03-29T11:05:46.508Z",
-      "updatedAt": "2026-03-29T11:05:46.509Z",
+      "blockedAt": "2026-03-29T12:00:36.515Z",
+      "updatedAt": "2026-03-29T12:00:36.516Z",
       "queuedAt": "2026-03-29T08:30:24.022Z",
-      "createdAt": "2026-03-29T11:05:46.509Z"
+      "createdAt": "2026-03-29T12:00:36.516Z"
     }
   ]
 }

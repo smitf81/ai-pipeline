@@ -227,6 +227,23 @@ export default async function runSpatialAppSmokeTest() {
     },
   }, helpers));
   assert.ok(spatialApp.renderDeskSection({
+    id: 'truth-partial',
+    label: 'Partial Truth',
+    kind: 'truth',
+    value: {
+      statement: 'Partial payload should not crash the render path.',
+      intentType: 'context',
+    },
+  }, helpers));
+  assert.ok(spatialApp.renderDeskSection({
+    id: 'qa-summary-partial',
+    label: 'Partial QA Summary',
+    kind: 'qa-summary',
+    structuredStatus: 'idle',
+    latestBrowserRun: {},
+    localGate: {},
+  }, helpers));
+  assert.ok(spatialApp.renderDeskSection({
     id: 'local-gates',
     label: 'Local UI Gate',
     kind: 'qa-local-gates',
