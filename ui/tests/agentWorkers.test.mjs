@@ -128,10 +128,14 @@ export default async function runAgentWorkersTests() {
   const {
     evaluatePlannerEligibility,
     getAgentWorkerConfig,
+    buildPlannerPrompt,
     runContextManagerWorker,
     runExecutorWorker,
     runPlannerWorker,
   } = require(agentWorkersPath);
+  const {
+    buildFixTaskPlannerHandoff,
+  } = require(path.resolve(process.cwd(), 'fixTasks.js'));
   const { buildAnchorBundle } = require(anchorResolverPath);
   const { analyzeSpatialIntent, buildIntentProjectContext } = require(intentAnalysisPath);
 
@@ -165,6 +169,36 @@ export default async function runAgentWorkersTests() {
     mode: 'auto',
     runs: [],
   }).eligible, false);
+
+  const fixTaskHandoff = buildFixTaskPlannerHandoff(rootPath, {
+    taskId: '0009',
+    parentTaskId: '0007',
+    status: 'consumed',
+    location: 'task',
+    stage: 'planner',
+    action: 'fix-task-intake',
+    summary: 'Retry the bounded fix task.',
+    problemStatement: 'Retry the bounded fix task.',
+    reasons: ['Patch is empty or invalid.'],
+    retry_count: 1,
+    retry_limit: 2,
+    projectKey: 'ace-self',
+    changedFiles: ['brain/emergence/plan.md'],
+    jsonPath: 'work/tasks/0009-fix-task/fix_task.json',
+    markdownPath: 'work/tasks/0009-fix-task/fix_task.md',
+    anchorRefs: ['work/tasks/0009-fix-task/fix_task.md'],
+  });
+  const plannerPrompt = buildPlannerPrompt({
+    promptTemplate: 'planner-template',
+    handoff: fixTaskHandoff,
+    anchorBundle: { anchors: {} },
+    board: { selectedCardId: null, cards: [] },
+    rootPath,
+    taskCache: null,
+  });
+  assert.match(plannerPrompt, /## Fix Task Intake/);
+  assert.match(plannerPrompt, /Parent task: 0007/);
+  assert.match(plannerPrompt, /Retry count: 1/);
 
   const successResult = await runPlannerWorker({
     rootPath,

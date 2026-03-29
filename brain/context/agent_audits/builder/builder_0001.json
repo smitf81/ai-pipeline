@@ -1,0 +1,25 @@
+{
+  "version": "ace/agent-audit.v0",
+  "audit_id": "builder_0001",
+  "created_at": "2026-03-29T11:05:37.361Z",
+  "updated_at": "2026-03-29T11:05:37.361Z",
+  "agent_id": "executor",
+  "agent_version": "ace/agent-attribution.v0",
+  "task_id": "0001",
+  "stage": "builder",
+  "artifact_refs": [
+    "../../../../../../AppData/Local/Temp/ace-task-cache-wLWRhD/work/tasks/0001-cache-apply-result/agent_attribution.json",
+    "../../../../../../AppData/Local/Temp/ace-task-cache-wLWRhD/work/tasks/0001-cache-apply-result/apply_result.json",
+    "../../../../../../AppData/Local/Temp/ace-task-cache-wLWRhD/work/tasks/0001-cache-apply-result/meta.json",
+    "../../../../../../AppData/Local/Temp/ace-task-cache-wLWRhD/work/tasks/0001-cache-apply-result/patch.diff"
+  ],
+  "outcome": "failed",
+  "pass_fail": "fail",
+  "scope_discipline_score": 60,
+  "architecture_respect_score": 54,
+  "output_clarity_score": 88,
+  "recovery_burden_score": 48,
+  "validation_rigour_score": 54,
+  "review_summary": "Review needed for builder: fix task pressure, known failure: git_apply_check_failed, failed output.",
+  "recommended_followup": "Address the known avoidable failure (git_apply_check_failed) before retrying this path."
+}

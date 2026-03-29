@@ -45,6 +45,12 @@ const {
   reconcilePendingThroughputSessions,
 } = require('./throughputDebug');
 const {
+  evaluatePreLlmGuards,
+} = require('./preflightGuards');
+const {
+  recordFailureOccurrence,
+} = require('./failureMemory');
+const {
   ensureQAStorage,
   listQARuns,
   readLocalGateReport,
@@ -97,6 +103,21 @@ const {
   summarizePlannerRun,
 } = require('./agentWorkers');
 const {
+  buildTaskArtifactAttributionMap,
+  resolveArtifactAgentIdentity,
+  resolveStageAgentIdentity,
+  renderAgentAttributionBlock,
+} = require('./agentAttribution');
+const {
+  buildAgentAuditRecord,
+  writeAgentAuditArtifacts,
+} = require('./agentAudit');
+const {
+  buildAgentCapabilityProfile,
+  readAgentCapabilityProfile,
+  rebuildAgentCapabilityLedger,
+} = require('./agentCapabilities');
+const {
   CANONICAL_TARGETS_FILE,
   DEFAULT_DOMAIN_KEY,
   buildAnchorBundle,
@@ -113,6 +134,21 @@ const {
 const {
   applyArchivistWriteback,
 } = require('./archivistWriteback');
+const {
+  TASK_CACHE_SOURCE,
+  readTaskCache,
+  summarizeTaskCache,
+} = require('./taskCache');
+const {
+  createBoundedFixTaskArtifact,
+  evaluateAutonomyPolicy,
+  summarizeAutonomyPolicyDecision,
+} = require('./autonomyPolicy');
+const {
+  buildFixTaskPromptSection,
+  consumePendingFixTask,
+  finalizeFixTask,
+} = require('./fixTasks');
 const {
   generateCandidates,
   validateGap,
@@ -174,7 +210,7 @@ const STATIC_WEB_SUPPORTED_ORIGIN = `http://${STATIC_WEB_HOST}:${STATIC_WEB_DEFA
 const STATIC_WEB_SHELL_MARKER = 'Top-Down Thin Slice';
 const STATIC_WEB_BOOT_ENTRY_PATHS = ['/src/main.js', '/src/editor/ui.js'];
 const PROJECT_RUN_START_TIMEOUT_MS = 4000;
-const TASK_ARTIFACT_NAMES = ['context.md', 'plan.md', 'patch.diff'];
+const TASK_ARTIFACT_NAMES = ['idea.txt', 'context.md', 'plan.md', 'patch.diff', 'apply_result.json', 'agent_attribution.json'];
 const DESK_AGENT_DEFAULTS = {
   ...CORE_DESK_AGENT_DEFAULTS,
   [QA_LEAD_DESK_ID]: CORE_DESK_AGENT_DEFAULTS[QA_LEAD_DESK_ID] || [QA_LEAD_DESK_ID],
@@ -1480,6 +1516,20 @@ async function resolveWorldScaffoldExecutiveRoute({
 function buildAgentFailurePayload(result, extras = {}) {
   const run = extras.run || result?.run || result?.worker || null;
   const reason = String(result?.reason || run?.reason || extras.error || 'Agent model call failed.').trim();
+  try {
+    recordFailureOccurrence(ROOT, {
+      message: reason,
+      related_tool: extras.tool || run?.backend || run?.model || null,
+      related_stage: extras.stage || run?.stage || run?.outcome || null,
+      stage: extras.stage || run?.stage || run?.outcome || null,
+      agent_id: extras.agentId || run?.agent_id || run?.workerId || null,
+      agent_version: extras.agentVersion || run?.agent_version || null,
+      related_run: extras.runId || run?.id || run?.runId || null,
+      related_project: extras.projectKey || extras.project || null,
+    });
+  } catch (error) {
+    console.warn('[WARN] failure history update failed:', error?.message || error);
+  }
   return {
     ok: false,
     status: classifyLlmFailureStatus(reason, Boolean(result?.usedFallback || run?.usedFallback)),
@@ -2815,17 +2865,24 @@ function persistSpatialWorkspace(nextWorkspace) {
   return advancedWorkspace;
 }
 
-function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = null, anchorRefs = [] }) {
-  fs.mkdirSync(TASKS_DIR, { recursive: true });
+function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = null, anchorRefs = [], tasksDir = TASKS_DIR, rootPath = ROOT }) {
+  fs.mkdirSync(tasksDir, { recursive: true });
   const safeTitle = slugify(title || prompt);
-  const lastId = getTaskFolders().reduce((highest, folder) => {
+  const lastId = (tasksDir === TASKS_DIR ? getTaskFolders() : getTaskFoldersFromRoot(tasksDir)).reduce((highest, folder) => {
     const value = Number.parseInt(String(folder || '').slice(0, 4), 10);
     return Number.isFinite(value) ? Math.max(highest, value) : highest;
   }, 0);
   const taskId = String(lastId + 1).padStart(4, '0');
   const folderName = `${taskId}-${safeTitle}`;
-  const taskDir = path.join(TASKS_DIR, folderName);
+  const taskDir = path.join(tasksDir, folderName);
   const createdAt = nowIso();
+  const artifactAttribution = buildTaskArtifactAttributionMap({
+    taskId,
+    taskDir: relativeToRoot(rootPath, taskDir),
+    createdAt,
+    updatedAt: createdAt,
+    artifactNames: TASK_ARTIFACT_NAMES,
+  });
   fs.mkdirSync(taskDir, { recursive: true });
   fs.writeFileSync(path.join(taskDir, 'idea.txt'), `${prompt.trim()}\n`, 'utf8');
   fs.writeFileSync(path.join(taskDir, 'context.md'), [
@@ -2842,6 +2899,8 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
     `# Task ${taskId}: ${title || prompt.slice(0, 60)}`,
     '',
     `Created: ${createdAt}`,
+    '',
+    renderAgentAttributionBlock(resolveArtifactAgentIdentity('plan.md'), { title: 'Plan Attribution' }),
     '',
     '## Goal',
     handoff?.summary ? `- ${handoff.summary}` : '-',
@@ -2860,6 +2919,35 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
     '',
   ].join('\n'), 'utf8');
   fs.writeFileSync(path.join(taskDir, 'patch.diff'), '', 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'agent_attribution.json'), `${JSON.stringify(artifactAttribution, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'apply_result.json'), `${JSON.stringify({
+    taskId,
+    stage: 'apply',
+    status: 'pending',
+    ok: false,
+    created_utc: createdAt,
+    updated_utc: createdAt,
+    taskDir: relativeToRoot(rootPath, taskDir),
+    patchPath: relativeToRoot(rootPath, path.join(taskDir, 'patch.diff')),
+    reuseHint: 'Keep idea.txt, context.md, plan.md, and patch.diff stable; only rerun the smallest broken stage.',
+    inputs: {
+      idea: 'idea.txt',
+      context: 'context.md',
+      plan: 'plan.md',
+      patch: 'patch.diff',
+    },
+    outputs: {
+      result: 'apply_result.json',
+    },
+    result: null,
+    error: null,
+    branch: null,
+    commit: null,
+    agent_id: resolveStageAgentIdentity('apply').agent_id,
+    agent_version: resolveStageAgentIdentity('apply').agent_version,
+    attribution: resolveStageAgentIdentity('apply'),
+    artifactAttributionPath: relativeToRoot(rootPath, path.join(taskDir, 'agent_attribution.json')),
+  }, null, 2)}\n`, 'utf8');
   fs.writeFileSync(path.join(taskDir, 'meta.json'), `${JSON.stringify({
     id: taskId,
     title: title || prompt.slice(0, 60),
@@ -2867,6 +2955,14 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
     source: sessionId ? 'throughput-debug' : 'studio-team-board',
     sessionId,
     handoffId: handoff?.id || null,
+    parentTaskId: handoff?.sourceFixTaskParentTaskId || handoff?.sourceFixTaskId || null,
+    sourceFixTaskId: handoff?.sourceFixTaskId || null,
+    sourceFixTaskParentTaskId: handoff?.sourceFixTaskParentTaskId || null,
+    sourceFixTaskQueueKey: handoff?.sourceFixTaskQueueKey || null,
+    sourceFixTaskLocation: handoff?.sourceFixTaskLocation || null,
+    sourceFixTaskStatus: handoff?.sourceFixTaskStatus || null,
+    artifactAttributionPath: relativeToRoot(rootPath, path.join(taskDir, 'agent_attribution.json')),
+    artifactAttribution,
     anchorRefs: Array.isArray(anchorRefs) ? anchorRefs.filter(Boolean) : [],
   }, null, 2)}\n`, 'utf8');
   return {
@@ -2874,6 +2970,131 @@ function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = nul
     folderName,
     taskDir,
   };
+}
+
+function buildTaskApplyResultRecord({
+  taskId,
+  taskDir,
+  projectKey = null,
+  patchPath,
+  ok,
+  status,
+  result = null,
+  error = null,
+  branch = null,
+  commit = null,
+  stage = 'apply',
+  policy = null,
+  fixTask = null,
+  sourceFixTask = null,
+  rootPath = ROOT,
+}) {
+  const updatedUtc = nowIso();
+  const attribution = resolveStageAgentIdentity(stage || 'apply');
+  return {
+    taskId: String(taskId || '').trim() || null,
+    projectKey: String(projectKey || '').trim() || null,
+    stage,
+    status: status || (ok ? 'passed' : 'failed'),
+    ok: Boolean(ok),
+    created_utc: null,
+    updated_utc: updatedUtc,
+    agent_id: attribution.agent_id,
+    agent_version: attribution.agent_version,
+    attribution,
+    taskDir: taskDir ? relativeToRoot(rootPath, taskDir) : null,
+    patchPath: patchPath ? relativeToRoot(rootPath, patchPath) : null,
+    reuseHint: ok
+      ? 'Cache hit available. Reuse the existing plan and patch before rerunning apply.'
+      : 'Cache preserved. Rerun only the smallest broken stage and keep previous plan/context intact.',
+    inputs: {
+      idea: 'idea.txt',
+      context: 'context.md',
+      plan: 'plan.md',
+      patch: 'patch.diff',
+    },
+    outputs: {
+      result: 'apply_result.json',
+    },
+    result,
+    error: error ? String(error) : null,
+    branch: branch || null,
+    commit: commit || null,
+    policy: policy ? {
+      decision: policy.decision || null,
+      reasons: policy.reasons || [],
+      policy_rule_hits: policy.policy_rule_hits || [],
+      retry_count: policy.retry_count ?? null,
+      cache_status: policy.cache_status || null,
+      fix_task_created: Boolean(policy.fix_task_created),
+      fix_task_path: policy.fix_task_path || null,
+    } : null,
+    fixTask: fixTask ? {
+      location: fixTask.location || null,
+      jsonPath: relativeToRoot(rootPath, fixTask.jsonPath),
+      markdownPath: relativeToRoot(rootPath, fixTask.markdownPath),
+    } : null,
+    sourceFixTask: sourceFixTask ? {
+      taskId: sourceFixTask.taskId || null,
+      parentTaskId: sourceFixTask.parentTaskId || null,
+      location: sourceFixTask.location || null,
+      status: sourceFixTask.status || null,
+      retry_count: Number(sourceFixTask.retry_count || 0) || 0,
+      retry_limit: Number(sourceFixTask.retry_limit || 0) || 0,
+      queueKey: sourceFixTask.queueKey || null,
+      jsonPath: sourceFixTask.jsonPath || null,
+      markdownPath: sourceFixTask.markdownPath || null,
+    } : null,
+    artifactAttributionPath: taskDir ? relativeToRoot(rootPath, path.join(taskDir, 'agent_attribution.json')) : null,
+  };
+}
+
+function writeTaskApplyResult(taskDir, payload, { recordFailure = true } = {}) {
+  if (!taskDir) return null;
+  const filePath = path.join(taskDir, 'apply_result.json');
+  const existing = fs.existsSync(filePath) ? readJsonSafe(filePath, {}) || {} : {};
+  const nextPayload = {
+    ...existing,
+    ...payload,
+    created_utc: payload?.created_utc ?? existing.created_utc ?? nowIso(),
+    updated_utc: nowIso(),
+  };
+  fs.writeFileSync(filePath, `${JSON.stringify(nextPayload, null, 2)}\n`, 'utf8');
+  try {
+    writeAgentAuditArtifacts(ROOT, buildAgentAuditRecord({
+      rootPath: ROOT,
+      stage: 'builder',
+      taskId: nextPayload.taskId || existing.taskId || null,
+      taskDir,
+      sourceRecord: nextPayload,
+      outcome: nextPayload.status || (nextPayload.ok ? 'passed' : 'failed'),
+      pass_fail: nextPayload.ok === false || String(nextPayload.status || '').toLowerCase() === 'blocked' ? 'fail' : 'pass',
+      artifactRefs: [
+        path.relative(ROOT, filePath).replace(/\\/g, '/'),
+        path.relative(ROOT, path.join(taskDir, 'patch.diff')).replace(/\\/g, '/'),
+        path.relative(ROOT, path.join(taskDir, 'agent_attribution.json')).replace(/\\/g, '/'),
+      ],
+    }));
+  } catch (error) {
+    console.warn('[WARN] builder audit write failed:', error?.message || error);
+  }
+  if (recordFailure && (String(nextPayload.status || '').toLowerCase() === 'failed' || nextPayload.ok === false)) {
+    try {
+      recordFailureOccurrence(ROOT, {
+        message: nextPayload.error || nextPayload.summary || 'Apply failed.',
+        related_tool: 'git',
+        related_stage: 'apply',
+        stage: 'apply',
+        agent_id: nextPayload.agent_id || 'executor',
+        agent_version: nextPayload.agent_version || null,
+        related_project: nextPayload.projectKey || payload?.projectKey || null,
+        related_run: nextPayload.runId || nextPayload.taskId || null,
+      });
+    } catch (error) {
+      console.warn('[WARN] failure history update failed:', error?.message || error);
+    }
+  }
+  return nextPayload;
 }
 
 async function analyzeIntentWithContextWorker(text, workspace, options = {}) {
@@ -3103,6 +3324,14 @@ function getTaskFolders() {
     .sort();
 }
 
+function getTaskFoldersFromRoot(tasksDir) {
+  if (!tasksDir || !fs.existsSync(tasksDir)) return [];
+  return fs.readdirSync(tasksDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && /^\d{4}-.+/.test(d.name))
+    .map((d) => d.name)
+    .sort();
+}
+
 let teamBoardAutomationRunning = false;
 let contextManagerWorkerAutomationRunning = false;
 let plannerWorkerAutomationRunning = false;
@@ -3131,9 +3360,11 @@ function readSpatialWorkspace() {
   }));
 }
 
-function relativeToRoot(targetPath) {
-  if (!targetPath) return null;
-  return path.relative(ROOT, targetPath).replace(/\\/g, '/');
+function relativeToRoot(rootPathOrTargetPath, maybeTargetPath = null) {
+  const rootPath = maybeTargetPath ? rootPathOrTargetPath : ROOT;
+  const targetPath = maybeTargetPath || rootPathOrTargetPath;
+  if (!rootPath || !targetPath) return null;
+  return path.relative(rootPath, targetPath).replace(/\\/g, '/');
 }
 
 function plannerCardSourceKey(pageId, title) {
@@ -3271,6 +3502,8 @@ function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
   const board = normalizeTeamBoardState(workspace);
   const cards = [...board.cards];
   const producedCardIds = [];
+  const sourceFixTask = handoff?.sourceFixTask || null;
+  const sourceFixTaskTaskId = sourceFixTask?.taskDirPath ? sourceFixTask.taskId || null : null;
   for (const plannerCard of plannerCards) {
     const sourceKey = plannerCardSourceKey(notebook.activePageId, plannerCard.title);
     const existingIndex = cards.findIndex((card) => card.sourceKey === sourceKey && card.sourceHandoffId === handoff?.id);
@@ -3281,6 +3514,16 @@ function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
         summary: plannerCard.summary || existingCard.summary || '',
         targetProjectKey: plannerCard.targetProjectKey || existingCard.targetProjectKey || SELF_TARGET_KEY,
         sourceAnchorRefs: mergeUnique([...(existingCard.sourceAnchorRefs || []), ...(plannerCard.anchorRefs || [])]),
+        sourceFixTaskId: existingCard.sourceFixTaskId || handoff?.sourceFixTaskId || null,
+        sourceFixTaskParentTaskId: existingCard.sourceFixTaskParentTaskId || handoff?.sourceFixTaskParentTaskId || null,
+        sourceFixTaskQueueKey: existingCard.sourceFixTaskQueueKey || handoff?.sourceFixTaskQueueKey || null,
+        sourceFixTaskLocation: existingCard.sourceFixTaskLocation || handoff?.sourceFixTaskLocation || null,
+        sourceFixTaskStatus: existingCard.sourceFixTaskStatus || handoff?.sourceFixTaskStatus || null,
+        sourceFixTaskRetryCount: Number(existingCard.sourceFixTaskRetryCount || handoff?.sourceFixTaskRetryCount || 0) || 0,
+        sourceFixTaskRetryLimit: Number(existingCard.sourceFixTaskRetryLimit || handoff?.sourceFixTaskRetryLimit || 0) || 0,
+        sourceFixTask: existingCard.sourceFixTask || handoff?.sourceFixTask || null,
+        builderTaskId: existingCard.builderTaskId || sourceFixTaskTaskId || null,
+        runnerTaskId: existingCard.runnerTaskId || sourceFixTaskTaskId || null,
         taskFlow: existingCard.taskFlow || {
           phase: 'planned',
           assignmentState: 'unassigned',
@@ -3309,6 +3552,16 @@ function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
       }),
       summary: plannerCard.summary || '',
       targetProjectKey: plannerCard.targetProjectKey || SELF_TARGET_KEY,
+      sourceFixTaskId: handoff?.sourceFixTaskId || null,
+      sourceFixTaskParentTaskId: handoff?.sourceFixTaskParentTaskId || null,
+      sourceFixTaskQueueKey: handoff?.sourceFixTaskQueueKey || null,
+      sourceFixTaskLocation: handoff?.sourceFixTaskLocation || null,
+      sourceFixTaskStatus: handoff?.sourceFixTaskStatus || null,
+      sourceFixTaskRetryCount: Number(handoff?.sourceFixTaskRetryCount || 0) || 0,
+      sourceFixTaskRetryLimit: Number(handoff?.sourceFixTaskRetryLimit || 0) || 0,
+      sourceFixTask: handoff?.sourceFixTask || null,
+      builderTaskId: sourceFixTaskTaskId || null,
+      runnerTaskId: sourceFixTaskTaskId || null,
     };
     cards.push(nextCard);
     producedCardIds.push(nextCard.id);
@@ -3355,6 +3608,16 @@ function applyPlannerRunResult(workspace, handoff, result, { runId, mode }) {
 
   if (result.ok) {
     const plannerCards = applyPlannerCardsToWorkspace(baseWorkspace, handoff, result.cards || []);
+    if (handoff?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, handoff.sourceFixTask, {
+        status: 'consumed',
+        reason: plannerCards.producedCardIds.length
+          ? 'Planner produced bounded follow-up cards.'
+          : 'Planner completed the intake.',
+        followupTaskId: plannerCards.producedCardIds[0] || null,
+        followupTaskDir: null,
+      });
+    }
     return applyPlannerRuntimeState(plannerCards.workspace, {
       worker: {
         status: 'idle',
@@ -3387,6 +3650,12 @@ function applyPlannerRunResult(workspace, handoff, result, { runId, mode }) {
     });
   }
 
+  if (handoff?.sourceFixTaskId) {
+    finalizeFixTask(ROOT, handoff.sourceFixTask, {
+      status: result.outcome === 'degraded' ? 're_escalated' : 'blocked',
+      reason: result.reason || runRecord.reason || 'Planner is blocked on the current handoff.',
+    });
+  }
   return applyPlannerRuntimeState(baseWorkspace, {
     worker: {
       status: result.outcome === 'degraded' ? 'degraded' : 'blocked',
@@ -3582,10 +3851,65 @@ function applyExecutorRunResult(workspace, card, result, { mode }) {
 
 async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffId = null } = {}) {
   const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
-  const handoff = getPlannerHandoff(currentWorkspace, handoffId);
+  const preflight = buildPreLlmGuardInput({
+     requiredFiles: [
+       'brain/emergence/project_brain.md',
+       'brain/emergence/roadmap.md',
+       'brain/emergence/plan.md',
+      'brain/emergence/tasks.md',
+    ],
+    validationCommand: {
+       command: 'node',
+       args: ['--version'],
+    },
+  });
+  let intakeWorkspace = currentWorkspace;
+  let intakeResult = null;
+  const currentPlannerHandoff = currentWorkspace?.studio?.handoffs?.contextToPlanner || null;
+  if (mode === 'auto' && !handoffId && currentPlannerHandoff?.status !== 'ready') {
+    intakeResult = consumePendingFixTask(ROOT, {
+      preflight,
+      previousHandoff: currentPlannerHandoff || null,
+    });
+    if (intakeResult?.accepted && intakeResult.handoff) {
+      intakeWorkspace = persistSpatialWorkspace(applyPlannerRuntimeState(currentWorkspace, {
+        handoff: intakeResult.handoff,
+      }));
+    } else if (intakeResult?.fixTask) {
+      return createPreLlmBlockedResult(intakeResult.reason || 'Fix task intake is blocked.', currentWorkspace, {
+        cards: [],
+        proposalArtifactRefs: [],
+        plannerToContext: null,
+        guardChecks: preflight.checks,
+        guardBlockers: preflight.blockers,
+        preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
+        failureObservation: {
+          related_stage: 'planner',
+          related_tool: 'autonomy-policy',
+        },
+        policy: intakeResult.policy || null,
+        fixTask: intakeResult.fixTask || null,
+      });
+    }
+  }
+  const handoff = getPlannerHandoff(intakeWorkspace, handoffId);
+  if (!preflight.ok) {
+    return createPreLlmBlockedResult(preflight.blockers[0], currentWorkspace, {
+      cards: [],
+      proposalArtifactRefs: [],
+      plannerToContext: null,
+      guardChecks: preflight.checks,
+      guardBlockers: preflight.blockers,
+      preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
+      failureObservation: {
+        related_stage: 'planner',
+        related_tool: 'node',
+      },
+    });
+  }
   const runs = listPlannerRuns(ROOT);
   const eligibility = evaluatePlannerEligibility({
-    workspace: currentWorkspace,
+    workspace: intakeWorkspace,
     handoff,
     mode,
     runs,
@@ -3595,7 +3919,8 @@ async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffI
       ok: false,
       skipped: true,
       reason: eligibility.reason,
-      workspace: currentWorkspace,
+      workspace: intakeWorkspace,
+      preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
       result: {
         ok: false,
         skipped: true,
@@ -3614,6 +3939,7 @@ async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffI
       skipped: true,
       reason: 'Planner worker is already processing another handoff.',
       workspace: readSpatialWorkspace(),
+      preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
       result: {
         ok: false,
         skipped: true,
@@ -3630,7 +3956,7 @@ async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffI
   plannerWorkerAutomationRunning = true;
   const runId = makePlannerRunId();
   try {
-    let runningWorkspace = markPlannerRunStarted(currentWorkspace, handoff, runId, mode);
+    let runningWorkspace = markPlannerRunStarted(intakeWorkspace, handoff, runId, mode);
     runningWorkspace = persistSpatialWorkspace(runningWorkspace);
     appendArchitectureHistory({
       at: nowIso(),
@@ -3658,7 +3984,14 @@ async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffI
         proposalArtifactRefs: nextWorkspace?.studio?.agentWorkers?.planner?.proposalArtifactRefs || [],
       },
     });
-    return { ok: result.ok, skipped: false, reason: result.reason || '', workspace: nextWorkspace, result };
+    return {
+      ok: result.ok,
+      skipped: false,
+      reason: result.reason || '',
+      workspace: nextWorkspace,
+      preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
+      result,
+    };
   } finally {
     plannerWorkerAutomationRunning = false;
   }
@@ -3694,12 +4027,38 @@ async function maybeRunContextManagerWorker(workspace = null, {
       },
     };
   }
+  const preflight = buildPreLlmGuardInput({
+    requiredFiles: [
+      'brain/emergence/project_brain.md',
+      'brain/emergence/plan.md',
+      'brain/emergence/tasks.md',
+      'brain/context/known_fixes.md',
+    ],
+    validationCommand: {
+      command: 'node',
+      args: ['--version'],
+    },
+  });
+  if (!preflight.ok) {
+    return createPreLlmBlockedResult(preflight.blockers[0], currentWorkspace, {
+      report: null,
+      handoff: null,
+      guardChecks: preflight.checks,
+      guardBlockers: preflight.blockers,
+      preflight: buildGuardSurfacePayload({ stage: 'context-manager', preflight }),
+      failureObservation: {
+        related_stage: 'context-manager',
+        related_tool: 'node',
+      },
+    });
+  }
   if (contextManagerWorkerAutomationRunning) {
     return {
       ok: false,
       skipped: true,
       reason: 'Context Manager is already processing another intake.',
       workspace: readSpatialWorkspace(),
+      preflight: buildGuardSurfacePayload({ stage: 'context-manager', preflight }),
       result: {
         ok: false,
         skipped: true,
@@ -3758,7 +4117,14 @@ async function maybeRunContextManagerWorker(workspace = null, {
         usedFallback: Boolean(result.usedFallback),
       },
     });
-    return { ok: result.ok, skipped: false, reason: result.reason || '', workspace: nextWorkspace, result };
+    return {
+      ok: result.ok,
+      skipped: false,
+      reason: result.reason || '',
+      workspace: nextWorkspace,
+      preflight: buildGuardSurfacePayload({ stage: 'context-manager', preflight }),
+      result,
+    };
   } finally {
     contextManagerWorkerAutomationRunning = false;
   }
@@ -3785,12 +4151,40 @@ async function maybeRunExecutorWorker(workspace = null, { mode = 'manual', cardI
       },
     };
   }
+  const targetProject = resolveProjectTarget(card.targetProjectKey || SELF_TARGET_KEY);
+  const preflight = buildPreLlmGuardInput({
+    requiredFiles: [
+      'brain/emergence/project_brain.md',
+      'brain/emergence/plan.md',
+      'brain/emergence/tasks.md',
+    ],
+    projectKey: targetProject.projectKey,
+    projectPath: targetProject.projectPath,
+    validationCommand: {
+      command: 'git',
+      args: ['--version'],
+    },
+  });
+  if (!preflight.ok) {
+    return createPreLlmBlockedResult(preflight.blockers[0], currentWorkspace, {
+      report: null,
+      guardChecks: preflight.checks,
+      guardBlockers: preflight.blockers,
+      preflight: buildGuardSurfacePayload({ stage: 'executor', preflight }),
+      failureObservation: {
+        related_stage: 'executor',
+        related_tool: 'git',
+        related_project: targetProject.projectKey,
+      },
+    });
+  }
   if (executorWorkerAutomationRunning) {
     return {
       ok: false,
       skipped: true,
       reason: 'Executor worker is already processing another card.',
       workspace: readSpatialWorkspace(),
+      preflight: buildGuardSurfacePayload({ stage: 'executor', preflight }),
       result: {
         ok: false,
         skipped: true,
@@ -3833,7 +4227,14 @@ async function maybeRunExecutorWorker(workspace = null, { mode = 'manual', cardI
         usedFallback: Boolean(result.usedFallback),
       },
     });
-    return { ok: result.ok, skipped: false, reason: result.reason || '', workspace: nextWorkspace, result };
+    return {
+      ok: result.ok,
+      skipped: false,
+      reason: result.reason || '',
+      workspace: nextWorkspace,
+      preflight: buildGuardSurfacePayload({ stage: 'executor', preflight }),
+      result,
+    };
   } finally {
     executorWorkerAutomationRunning = false;
   }
@@ -3862,6 +4263,374 @@ function readTaskArtifactStatus(taskId = '') {
     artifacts,
     presentCount: artifacts.filter((artifact) => artifact.exists).length,
     totalCount: artifacts.length,
+    taskCache: {
+      planner: summarizeTaskCache(readTaskCache(ROOT, { taskId: normalizedTaskId || null, taskDir, stage: 'planner' })),
+      executor: summarizeTaskCache(readTaskCache(ROOT, { taskId: normalizedTaskId || null, taskDir, stage: 'executor' })),
+    },
+  };
+}
+
+function buildPreLlmGuardInput({
+  rootPath = ROOT,
+  requiredFiles = [],
+  projectKey = null,
+  projectPath = null,
+  validationCommand = null,
+  patchPath = null,
+} = {}) {
+  return evaluatePreLlmGuards({
+    rootPath,
+    requiredFiles,
+    projectKey,
+    projectPath,
+    validationCommand,
+    patchPath,
+    commandRunner: spawnSyncSafe,
+  });
+}
+
+function normalizePreflightStage(stage = '') {
+  const normalized = String(stage || '').trim().toLowerCase().replace(/\s+/g, '-');
+  return ['planner', 'context-manager', 'executor', 'rebuild', 'self-upgrade'].includes(normalized)
+    ? normalized
+    : null;
+}
+
+function buildGuardSurfacePayload({
+  stage = null,
+  preflight = null,
+  cacheStatus = null,
+  cacheReason = null,
+  warningReasons = [],
+} = {}) {
+  const normalizedStage = normalizePreflightStage(stage) || String(stage || '').trim() || null;
+  const guardReasons = mergeUnique([
+    ...(Array.isArray(preflight?.blockers) ? preflight.blockers : []),
+    ...(Array.isArray(preflight?.warnings) ? preflight.warnings : []),
+    ...(Array.isArray(warningReasons) ? warningReasons : []),
+    cacheReason,
+  ]);
+  const guardStatus = cacheStatus === 'reused'
+    ? 'cache_reused'
+    : (preflight?.ok ? (guardReasons.length ? 'warning' : 'ready') : 'blocked');
+  const guardReason = cacheStatus === 'reused'
+    ? (cacheReason || guardReasons[0] || String(preflight?.summary || '').trim() || 'Cached task artefact reused.')
+    : (guardReasons[0]
+      || String(preflight?.summary || '').trim()
+      || (guardStatus === 'ready' ? 'Preflight checks passed.' : 'Preflight blocked.'));
+  return {
+    ok: guardStatus !== 'blocked',
+    stage: normalizedStage,
+    guard_status: guardStatus,
+    guard_reason: guardReason,
+    guard_reasons: guardReasons,
+    cache_status: cacheStatus || null,
+    checks: preflight?.checks || null,
+  };
+}
+
+function buildAutonomyPolicyResponse({
+  rootPath = ROOT,
+  taskId = null,
+  taskDir = null,
+  stage = 'executor',
+  action = null,
+  projectKey = null,
+  projectPath = null,
+  preflight = null,
+  taskCache = null,
+  validation = null,
+  changedFiles = [],
+  patchText = '',
+  patchValid = null,
+  patchPath = null,
+  retryCount = null,
+  retryLimit = null,
+  failureKey = null,
+  failureMessage = '',
+  allowlistPaths = null,
+  disallowedPaths = [],
+  requiredFilesMissing = [],
+  repoInvalid = null,
+  validationCommandExists = null,
+  patchEmpty = null,
+  ambiguous = null,
+  cacheStatus = null,
+  failureRisky = false,
+} = {}) {
+  const policy = evaluateAutonomyPolicy({
+    rootPath,
+    stage,
+    action,
+    taskId,
+    projectKey,
+    projectPath,
+    preflight,
+    taskCache,
+    validation,
+    changedFiles,
+    patchText,
+    patchValid,
+    patchPath,
+    retryCount,
+    retryLimit,
+    failureKey,
+    failureMessage,
+    allowlistPaths,
+    disallowedPaths,
+    requiredFilesMissing,
+    repoInvalid,
+    validationCommandExists,
+    patchEmpty,
+    ambiguous,
+    cacheStatus,
+    failureRisky,
+  });
+  let fixTask = null;
+  if (policy.decision !== 'auto_allowed') {
+    fixTask = createBoundedFixTaskArtifact(rootPath, {
+      taskId: taskId || null,
+      taskDir: taskDir || null,
+      stage: policy.stage,
+      action: policy.action,
+      decision: policy.decision,
+      reasons: policy.reasons,
+      policy_rule_hits: policy.policy_rule_hits,
+      retryCount: policy.retry_count,
+      projectKey: policy.projectKey,
+      projectPath: policy.projectPath,
+      cache_status: policy.cache_status,
+      changedFiles: changedFiles || [],
+      failureKey: policy.failureKey || failureKey || null,
+      candidateFix: policy.candidate_fix || null,
+      source: 'autonomy-policy',
+    });
+  }
+  return {
+    policy: {
+      ...policy,
+      fix_task_created: Boolean(fixTask),
+      fix_task_path: fixTask?.jsonPath || null,
+    },
+    fixTask,
+  };
+}
+
+function evaluateStagePreflightSurface({
+  stage,
+  taskId = null,
+  projectKey = null,
+  projectPath = null,
+  rootPath = ROOT,
+} = {}) {
+  const normalizedStage = normalizePreflightStage(stage);
+  if (!normalizedStage) {
+    const preflight = {
+      ok: false,
+      blockers: ['Unsupported preflight stage.'],
+      checks: {},
+      cacheHit: false,
+      summary: 'Unsupported preflight stage.',
+    };
+    return {
+      ...buildGuardSurfacePayload({ stage, preflight }),
+      preflight,
+    };
+  }
+
+  if (normalizedStage === 'planner') {
+    const preflight = buildPreLlmGuardInput({
+      rootPath,
+      requiredFiles: [
+        'brain/emergence/project_brain.md',
+        'brain/emergence/roadmap.md',
+        'brain/emergence/plan.md',
+        'brain/emergence/tasks.md',
+      ],
+      validationCommand: {
+        command: 'node',
+        args: ['--version'],
+      },
+    });
+    const projectTarget = resolveProjectTarget(projectKey || SELF_TARGET_KEY);
+    const policy = buildAutonomyPolicyResponse({
+      rootPath,
+      taskId,
+      stage: normalizedStage,
+      action: 'planner',
+      projectKey: projectTarget.projectKey || SELF_TARGET_KEY,
+      projectPath: projectPath || projectTarget.projectPath || resolveProjectTarget(SELF_TARGET_KEY).projectPath,
+      preflight,
+      validationCommandExists: Boolean(preflight?.checks?.validationCommand?.ok !== false),
+      requiredFilesMissing: preflight?.checks?.requiredFiles?.missing || [],
+      repoInvalid: Boolean(preflight?.checks?.repoClean?.ok === false),
+      cacheStatus: null,
+    }).policy;
+    return {
+      ...buildGuardSurfacePayload({ stage: normalizedStage, preflight }),
+      policy,
+      preflight,
+    };
+  }
+
+  if (normalizedStage === 'context-manager') {
+    const preflight = buildPreLlmGuardInput({
+      rootPath,
+      requiredFiles: [
+        'brain/emergence/project_brain.md',
+        'brain/emergence/plan.md',
+        'brain/emergence/tasks.md',
+        'brain/context/known_fixes.md',
+      ],
+      validationCommand: {
+        command: 'node',
+        args: ['--version'],
+      },
+    });
+    const projectTarget = resolveProjectTarget(projectKey || SELF_TARGET_KEY);
+    const policy = buildAutonomyPolicyResponse({
+      rootPath,
+      taskId,
+      stage: normalizedStage,
+      action: 'context-manager',
+      projectKey: projectTarget.projectKey || SELF_TARGET_KEY,
+      projectPath: projectPath || projectTarget.projectPath || resolveProjectTarget(SELF_TARGET_KEY).projectPath,
+      preflight,
+      validationCommandExists: Boolean(preflight?.checks?.validationCommand?.ok !== false),
+      requiredFilesMissing: preflight?.checks?.requiredFiles?.missing || [],
+      repoInvalid: Boolean(preflight?.checks?.repoClean?.ok === false),
+      cacheStatus: null,
+    }).policy;
+    return {
+      ...buildGuardSurfacePayload({ stage: normalizedStage, preflight }),
+      policy,
+      preflight,
+    };
+  }
+
+  if (normalizedStage === 'executor') {
+    const targetProject = resolveProjectTarget(projectKey || SELF_TARGET_KEY);
+    const preflight = buildPreLlmGuardInput({
+      rootPath,
+      requiredFiles: [
+        'brain/emergence/project_brain.md',
+        'brain/emergence/plan.md',
+        'brain/emergence/tasks.md',
+      ],
+      projectKey: targetProject.projectKey,
+      projectPath: projectPath || targetProject.projectPath,
+      validationCommand: {
+        command: 'git',
+        args: ['--version'],
+      },
+    });
+    const policy = buildAutonomyPolicyResponse({
+      rootPath,
+      taskId,
+      stage: normalizedStage,
+      action: 'executor',
+      projectKey: targetProject.projectKey,
+      projectPath: projectPath || targetProject.projectPath,
+      preflight,
+      validationCommandExists: Boolean(preflight?.checks?.validationCommand?.ok !== false),
+      requiredFilesMissing: preflight?.checks?.requiredFiles?.missing || [],
+      repoInvalid: Boolean(preflight?.checks?.repoClean?.ok === false),
+      cacheStatus: null,
+    }).policy;
+    return {
+      ...buildGuardSurfacePayload({ stage: normalizedStage, preflight }),
+      policy,
+      preflight,
+    };
+  }
+
+  const normalizedTaskId = String(taskId || '').trim();
+  const taskFolder = normalizedTaskId ? findTaskFolderByTaskId(normalizedTaskId) : null;
+  const taskDir = taskFolder ? path.join(TASKS_DIR, taskFolder) : null;
+  const taskCache = readTaskCache(rootPath, {
+    taskId: normalizedTaskId || null,
+    taskDir,
+    stage: 'executor',
+  });
+  const targetProject = resolveProjectTarget(projectKey || SELF_TARGET_KEY);
+  const patchPath = taskCache.taskDirPath
+    ? path.join(taskCache.taskDirPath, 'patch.diff')
+    : (taskDir ? path.join(taskDir, 'patch.diff') : null);
+  const preflight = buildPreLlmGuardInput({
+    rootPath,
+    requiredFiles: [
+      'brain/emergence/project_brain.md',
+      'brain/emergence/plan.md',
+      'brain/emergence/tasks.md',
+    ],
+    projectKey: targetProject.projectKey,
+    projectPath: projectPath || targetProject.projectPath,
+    validationCommand: {
+      command: 'git',
+      args: ['--version'],
+    },
+    patchPath,
+  });
+  const cacheStatus = taskCache.source === TASK_CACHE_SOURCE.HIT ? 'reused' : null;
+  const cacheReason = cacheStatus === 'reused'
+    ? 'Cached patch already exists; rebuild skipped.'
+    : null;
+  const policy = buildAutonomyPolicyResponse({
+    rootPath,
+    taskId: normalizedTaskId || null,
+    stage: normalizedStage,
+    action: 'rebuild',
+    projectKey: targetProject.projectKey,
+    projectPath: projectPath || targetProject.projectPath,
+    preflight,
+    taskCache,
+    validationCommandExists: Boolean(preflight?.checks?.validationCommand?.ok !== false),
+    requiredFilesMissing: preflight?.checks?.requiredFiles?.missing || [],
+    repoInvalid: Boolean(preflight?.checks?.repoClean?.ok === false),
+    cacheStatus,
+  }).policy;
+  return {
+    ...buildGuardSurfacePayload({
+      stage: normalizedStage,
+      preflight,
+      cacheStatus,
+      cacheReason,
+    }),
+    policy,
+    preflight,
+    taskCache: summarizeTaskCache(taskCache),
+  };
+}
+
+function createPreLlmBlockedResult(reason, workspace, resultShape = {}) {
+  const blockedReason = String(reason || 'Pre-LLM guard blocked this generation.').trim();
+  if (resultShape.failureObservation) {
+    try {
+      recordFailureOccurrence(ROOT, {
+        message: blockedReason,
+        stage: resultShape.stage || null,
+        agent_id: resultShape.agentId || null,
+        agent_version: resultShape.agentVersion || null,
+        ...resultShape.failureObservation,
+      });
+    } catch (error) {
+      console.warn('[WARN] failure history update failed:', error?.message || error);
+    }
+  }
+  return {
+    ok: false,
+    skipped: true,
+    reason: blockedReason,
+    workspace,
+    result: {
+      ok: false,
+      skipped: true,
+      outcome: 'blocked',
+      reason: blockedReason,
+      blockers: [blockedReason],
+      run: null,
+      ...resultShape,
+    },
   };
 }
 
@@ -4139,6 +4908,10 @@ function buildExecutionPackage({
   preflight,
   risk,
   provenance = null,
+  taskCache = null,
+  policy = null,
+  fixTask = null,
+  sourceFixTask = null,
 }) {
   const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
   const relativePatchPath = relativeToRoot(patchPath);
@@ -4149,6 +4922,7 @@ function buildExecutionPackage({
     targetProjectKey,
     expectedAction: risk.autoDeploy ? 'apply + deploy' : 'apply',
   });
+  const summarizedTaskCache = taskCache ? summarizeTaskCache(taskCache) : null;
   return {
     status: 'ready',
     taskId,
@@ -4162,6 +4936,34 @@ function buildExecutionPackage({
     verificationPlan,
     provenance: provenance || createExecutionProvenance(),
     provenanceSummary: summarizeExecutionProvenance(provenance),
+    taskCache: summarizedTaskCache,
+    taskCacheSource: summarizedTaskCache?.source || null,
+    policy: policy ? {
+      decision: policy.decision || null,
+      reasons: policy.reasons || [],
+      policy_rule_hits: policy.policy_rule_hits || [],
+      retry_count: policy.retry_count ?? null,
+      cache_status: policy.cache_status || null,
+      fix_task_created: Boolean(policy.fix_task_created),
+      fix_task_path: policy.fix_task_path || null,
+      summary: summarizeAutonomyPolicyDecision(policy),
+    } : null,
+    fixTask: fixTask ? {
+      location: fixTask.location || null,
+      jsonPath: relativeToRoot(fixTask.jsonPath),
+      markdownPath: relativeToRoot(fixTask.markdownPath),
+    } : null,
+    sourceFixTask: sourceFixTask ? {
+      taskId: sourceFixTask.taskId || null,
+      parentTaskId: sourceFixTask.parentTaskId || null,
+      location: sourceFixTask.location || null,
+      status: sourceFixTask.status || null,
+      retry_count: Number(sourceFixTask.retry_count || 0) || 0,
+      retry_limit: Number(sourceFixTask.retry_limit || 0) || 0,
+      queueKey: sourceFixTask.queueKey || null,
+      jsonPath: sourceFixTask.jsonPath || null,
+      markdownPath: sourceFixTask.markdownPath || null,
+    } : null,
     builtAt: nowIso(),
   };
 }
@@ -4273,7 +5075,7 @@ function collectTaskArtifacts(taskDir, existingArtifacts = []) {
   const artifacts = [...existingArtifacts];
   if (!taskDir || !fs.existsSync(taskDir)) return mergeUnique(artifacts);
   for (const name of fs.readdirSync(taskDir)) {
-    if (['idea.txt', 'context.md', 'plan.md', 'patch.diff', 'meta.json'].includes(name) || /^run_.+\.(log|json)$/.test(name)) {
+    if (['idea.txt', 'context.md', 'plan.md', 'patch.diff', 'apply_result.json', 'agent_attribution.json', 'meta.json'].includes(name) || /^run_.+\.(log|json)$/.test(name)) {
       artifacts.push(relativeToRoot(path.join(taskDir, name)));
     }
   }
@@ -4282,9 +5084,11 @@ function collectTaskArtifacts(taskDir, existingArtifacts = []) {
 
 function buildCardPrompt(card, workspace) {
   const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
+  const fixTaskSection = buildFixTaskPromptSection(card?.sourceFixTask || card?.executionPackage?.sourceFixTask || null);
   const promptParts = [
     card.title,
     handoff?.problemStatement || handoff?.summary || '',
+    fixTaskSection,
     (card.sourceAnchorRefs || []).length ? `Anchor refs:\n${card.sourceAnchorRefs.map((anchorRef) => `- ${anchorRef}`).join('\n')}` : '',
   ].filter(Boolean);
   return promptParts.join('\n\n');
@@ -4292,6 +5096,11 @@ function buildCardPrompt(card, workspace) {
 
 function readTaskPatchReview({ taskId, projectKey, projectPath }) {
   const taskFolder = findTaskFolderByTaskId(taskId);
+  const taskCache = readTaskCache(ROOT, {
+    taskId,
+    taskDir: taskFolder ? path.join(TASKS_DIR, taskFolder) : null,
+    stage: 'executor',
+  });
   const validation = taskFolder ? validateApply(projectPath, taskFolder) : {
     ok: false,
     taskDir: null,
@@ -4299,9 +5108,12 @@ function readTaskPatchReview({ taskId, projectKey, projectPath }) {
     changedFiles: [],
     refusalReasons: ['Task folder not found.'],
   };
-  const patchText = validation.patchPath && fs.existsSync(validation.patchPath)
-    ? fs.readFileSync(validation.patchPath, 'utf8')
-    : '';
+  let patchText = '';
+  if (taskCache.source === TASK_CACHE_SOURCE.HIT && taskCache.files?.patch?.valid) {
+    patchText = taskCache.files.patch.content;
+  } else if (validation.patchPath && fs.existsSync(validation.patchPath)) {
+    patchText = fs.readFileSync(validation.patchPath, 'utf8');
+  }
   const patchReview = reviewSelfUpgradePatch({
     patchText,
     taskId,
@@ -4313,6 +5125,8 @@ function readTaskPatchReview({ taskId, projectKey, projectPath }) {
     taskFolder,
     validation,
     patchReview,
+    taskCache,
+    patchText,
   };
 }
 
@@ -4360,6 +5174,85 @@ function runCardBuilderPipeline(cardId) {
 
   const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
   const { projectKey, projectPath } = resolveProjectTarget(targetProjectKey);
+  const existingTaskId = String(card.builderTaskId || card.runnerTaskId || '').trim() || null;
+  const builderPreflight = buildPreLlmGuardInput({
+    requiredFiles: [
+      'brain/emergence/project_brain.md',
+      'brain/emergence/roadmap.md',
+      'brain/emergence/plan.md',
+      'brain/emergence/tasks.md',
+    ],
+    projectKey,
+    projectPath,
+    validationCommand: {
+      command: 'git',
+      args: ['--version'],
+    },
+  });
+  if (!builderPreflight.ok) {
+    try {
+      recordFailureOccurrence(ROOT, {
+        message: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+        related_stage: 'builder-preflight',
+        stage: 'builder-preflight',
+        agent_id: 'builder',
+        related_tool: 'git',
+        related_project: projectKey,
+      });
+    } catch (error) {
+      console.warn('[WARN] failure history update failed:', error?.message || error);
+    }
+    const builderPolicy = buildAutonomyPolicyResponse({
+      rootPath: ROOT,
+      taskId: existingTaskId || cardId,
+      taskDir: null,
+      stage: 'builder',
+      action: 'build',
+      projectKey,
+      projectPath,
+      preflight: builderPreflight,
+      validationCommandExists: Boolean(builderPreflight.checks?.validationCommand?.ok !== false),
+      requiredFilesMissing: builderPreflight.checks?.requiredFiles?.missing || [],
+      repoInvalid: Boolean(builderPreflight.checks?.repoClean?.ok === false),
+      cacheStatus: null,
+      failureMessage: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+    });
+    if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+        taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+        location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+      }, {
+        status: builderPolicy.policy?.decision === 'blocked' ? 'blocked' : 're_escalated',
+        reason: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+        policy: builderPolicy.policy,
+      });
+    }
+    const failedWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      builderTaskId: existingTaskId,
+      runnerTaskId: existingTaskId,
+      status: 'review',
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        status: 'blocked',
+        taskId: existingTaskId,
+        taskDir: null,
+        patchPath: null,
+        targetProjectKey,
+        summary: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+      },
+      executorBlocker: createExecutorBlocker('preflight-blocked', builderPreflight.blockers[0] || 'Builder preflight blocked.'),
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), ...builderPreflight.blockers]),
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+      policy: builderPolicy.policy,
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-builder-preflight-blocked', { cardId, taskId: existingTaskId }),
+    };
+  }
   const builderProvenance = buildMixedStudioProvenance({
     engine: 'ace-studio-builder-pipeline',
     stageIds: ['builder', 'scan', 'manage', 'build'],
@@ -4367,7 +5260,7 @@ function runCardBuilderPipeline(cardId) {
     evidence: ['source:team-board-builder'],
   });
   const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
-  let taskId = String(card.builderTaskId || card.runnerTaskId || '').trim();
+  let taskId = existingTaskId || '';
   let taskDir = null;
 
   if (!taskId || !findTaskFolderByTaskId(taskId)) {
@@ -4414,6 +5307,9 @@ function runCardBuilderPipeline(cardId) {
     taskDir = path.join(TASKS_DIR, findTaskFolderByTaskId(taskId));
   }
 
+  const patchPath = taskDir ? path.join(taskDir, 'patch.diff') : null;
+  const cachedPatchExists = Boolean(patchPath && fs.existsSync(patchPath) && fs.statSync(patchPath).size > 0);
+
   workspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => {
     const currentTaskFlow = currentCard.taskFlow || {
       phase: 'active',
@@ -4456,21 +5352,43 @@ function runCardBuilderPipeline(cardId) {
 
   const results = [];
   let failedResult = null;
-  for (const action of ['scan', 'manage', 'build']) {
-    const result = executeActionSync(action, {
-      taskId,
-      project: targetProjectKey,
+  if (cachedPatchExists) {
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'team-board-builder-cache-hit',
+      summary: {
+        cardId,
+        taskId,
+        patchPath: relativeToRoot(patchPath),
+        projectKey,
+      },
     });
-    results.push(result);
-    if (!result.ok) {
-      failedResult = result;
-      break;
+  } else {
+    for (const action of ['scan', 'manage', 'build']) {
+      const result = executeActionSync(action, {
+        taskId,
+        project: targetProjectKey,
+      });
+      results.push(result);
+      if (!result.ok) {
+        failedResult = result;
+        break;
+      }
     }
   }
   const runIds = mergeUnique(results.map((result) => result.runId));
   const runArtifacts = mergeUnique(results.flatMap((result) => result.artifacts || []));
 
   if (failedResult) {
+    if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+        taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+        location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+      }, {
+        status: 're_escalated',
+        reason: failedResult.error || failedResult.summary || 'Builder pipeline failed.',
+      });
+    }
     const failedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
       ...currentCard,
       builderTaskId: taskId,
@@ -4505,7 +5423,7 @@ function runCardBuilderPipeline(cardId) {
     };
   }
 
-  const { validation, patchReview } = readTaskPatchReview({ taskId, projectKey, projectPath });
+  const { validation, patchReview, taskCache, patchText } = readTaskPatchReview({ taskId, projectKey, projectPath });
   const preflight = isSelfTarget(projectKey, projectPath, ROOT)
     ? runSelfUpgradePreflight({ taskId, projectKey, projectPath, validation, patchReview })
     : { status: 'not-required', ok: true, checks: [], summary: 'Preflight not required for this target.' };
@@ -4523,8 +5441,44 @@ function runCardBuilderPipeline(cardId) {
     ...(!validation.ok ? (validation.refusalReasons || []) : []),
     ...(!patchReview.ok ? (patchReview.refusalReasons || []) : []),
   ]);
-  const requiresReview = Boolean(risk.requiresReview || !validation.ok || !patchReview.ok || !preflight.ok);
+  const autonomyPolicy = buildAutonomyPolicyResponse({
+    rootPath: ROOT,
+    taskId,
+    taskDir: validation.taskDir || taskDir,
+    stage: 'executor',
+    action: 'review',
+    projectKey,
+    projectPath,
+    preflight,
+    taskCache,
+    validation,
+    changedFiles: validation.changedFiles || [],
+    patchText,
+    patchValid: Boolean(validation.ok && patchReview.ok && patchText.trim()),
+    patchPath: validation.patchPath,
+    retryCount: null,
+    failureMessage: !validation.ok
+      ? (validation.refusalReasons[0] || 'Patch validation failed.')
+      : (!patchReview.ok
+        ? (patchReview.refusalReasons[0] || 'Patch review failed.')
+        : ''),
+    cacheStatus: taskCache.source === TASK_CACHE_SOURCE.HIT ? 'reused' : null,
+    failureRisky: Boolean(risk.requiresReview || risk.riskLevel === 'high'),
+  });
+  const requiresReview = Boolean(
+    risk.requiresReview
+    || !validation.ok
+    || !patchReview.ok
+    || !preflight.ok
+    || autonomyPolicy.policy.decision !== 'auto_allowed',
+  );
   const nextRiskLevel = requiresReview && risk.riskLevel === 'low' ? 'high' : risk.riskLevel;
+  const fixTaskArtifact = autonomyPolicy.fixTask;
+  const nextPolicy = {
+    ...autonomyPolicy.policy,
+    fix_task_created: Boolean(fixTaskArtifact),
+    fix_task_path: autonomyPolicy.policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+  };
   const nextExecutionPackage = buildExecutionPackage({
     card,
     taskId,
@@ -4534,6 +5488,10 @@ function runCardBuilderPipeline(cardId) {
     preflight,
     risk,
     provenance: builderProvenance,
+    taskCache,
+    policy: nextPolicy,
+    fixTask: fixTaskArtifact,
+    sourceFixTask: card.sourceFixTask || card.executionPackage?.sourceFixTask || null,
   });
 
   if (isSelfTarget(projectKey, projectPath, ROOT)) {
@@ -4570,10 +5528,13 @@ function runCardBuilderPipeline(cardId) {
     deployStatus: 'idle',
     executorBlocker: requiresReview
       ? createExecutorBlocker(
-          !preflight.ok ? 'preflight-failed' : 'approval-required',
+          !preflight.ok ? 'preflight-failed' : (autonomyPolicy.policy.decision === 'escalate' ? 'policy-escalate' : (autonomyPolicy.policy.decision === 'blocked' ? 'policy-blocked' : 'approval-required')),
           !preflight.ok
             ? (preflight.summary || 'Self-upgrade preflight must pass before apply can run.')
-            : summarizeGateMessage(riskReasons, `Waiting for approval on ${currentCard.title}.`),
+            : summarizeGateMessage([
+                ...riskReasons,
+                ...(autonomyPolicy.policy.reasons || []),
+              ], `Waiting for approval on ${currentCard.title}.`),
         )
       : clearExecutorBlocker(),
     updatedAt: nowIso(),
@@ -4586,6 +5547,7 @@ function runCardBuilderPipeline(cardId) {
       ...risk,
       reasons: riskReasons,
     },
+    policy: nextPolicy,
     workspace: persistBoardWorkspace(completedWorkspace, 'team-board-build-complete', {
       cardId,
       taskId,
@@ -4727,14 +5689,28 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
   const card = findTeamBoardCard(workspace, cardId);
   if (!card) return { ok: false, error: 'Card not found.', workspace };
   const gate = evaluateApplyGate({ card, workspace });
-  if (!gate.ok) {
-    const blockedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => applyExecutorGateBlock(currentCard, gate)), 'team-board-apply-blocked', {
-      cardId,
-      code: gate.code,
-    });
-    return { ok: false, error: gate.message, workspace: blockedWorkspace };
-  }
-  const taskId = gate.taskId;
+  const taskId = gate.taskId || getCardTaskId(card);
+  const taskFolder = taskId ? findTaskFolderByTaskId(taskId) : null;
+  const taskDir = taskFolder ? path.join(TASKS_DIR, taskFolder) : null;
+  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  const { projectKey, projectPath } = resolveProjectTarget(targetProjectKey);
+  const taskReview = taskId ? readTaskPatchReview({ taskId, projectKey, projectPath }) : {
+    taskFolder: null,
+    validation: {
+      ok: false,
+      taskDir: null,
+      patchPath: null,
+      changedFiles: [],
+      refusalReasons: ['Task folder not found.'],
+    },
+    patchReview: {
+      ok: false,
+      refusalReasons: ['Task folder not found.'],
+    },
+    taskCache: readTaskCache(ROOT, { taskId: taskId || null, taskDir: null, stage: 'executor' }),
+    patchText: '',
+  };
+  const { validation, patchReview, taskCache, patchText } = taskReview;
   const applyProvenance = mergeExecutionProvenance(
     card.executionPackage?.provenance || card.executionProvenance || null,
     buildMixedStudioProvenance({
@@ -4744,14 +5720,130 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
       evidence: ['source:team-board-apply'],
     }),
   );
+  const selfUpgrade = getSelfUpgradeState(workspace);
+  const policySurface = buildAutonomyPolicyResponse({
+    rootPath: ROOT,
+    taskId,
+    taskDir,
+    stage: 'apply',
+    action: 'apply',
+    projectKey,
+    projectPath,
+    preflight: isSelfTarget(projectKey, projectPath, ROOT) ? selfUpgrade.preflight : null,
+    taskCache,
+    validation,
+    changedFiles: validation.changedFiles || [],
+    patchText,
+    patchValid: Boolean(validation.ok && patchReview.ok && patchText.trim()),
+    patchPath: validation.patchPath,
+    failureMessage: !validation.ok
+      ? (validation.refusalReasons[0] || 'Patch validation failed.')
+      : (!patchReview.ok
+        ? (patchReview.refusalReasons[0] || 'Patch review failed.')
+        : gate.message || ''),
+    cacheStatus: taskCache.source === TASK_CACHE_SOURCE.HIT ? 'reused' : null,
+    failureRisky: gate.code !== 'approval-required',
+  });
+  const policy = policySurface.policy;
+  const fixTaskArtifact = policySurface.fixTask;
+  const approvalBypassAllowed = policy.decision === 'auto_allowed';
 
-  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  if (!gate.ok && !(gate.code === 'approval-required' && approvalBypassAllowed)) {
+    const blockedReason = policy.decision === 'auto_allowed' ? gate.message : summarizeAutonomyPolicyDecision(policy);
+    const blockerCode = policy.decision === 'auto_allowed'
+      ? gate.code
+      : (policy.decision === 'escalate' ? 'policy-escalate' : 'policy-blocked');
+    if (taskDir) {
+      writeTaskApplyResult(taskDir, buildTaskApplyResultRecord({
+        taskId,
+        taskDir,
+        projectKey: targetProjectKey,
+        patchPath: taskDir ? path.join(taskDir, 'patch.diff') : null,
+        ok: false,
+        status: 'blocked',
+        result: null,
+        error: blockedReason,
+        branch: null,
+        commit: null,
+        policy,
+        fixTask: fixTaskArtifact,
+        sourceFixTask: card.sourceFixTask || card.executionPackage?.sourceFixTask || null,
+      }), { recordFailure: false });
+    }
+    if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+        taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+        location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+      }, {
+        status: policy.decision === 'blocked' ? 'blocked' : 're_escalated',
+        reason: blockedReason,
+        policy,
+      });
+    }
+    const blockedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'review',
+      approvalState: 'pending',
+      applyStatus: 'blocked',
+      executionProvenance: applyProvenance,
+      executionPackage: currentCard.executionPackage
+        ? {
+            ...currentCard.executionPackage,
+            policy: {
+              ...policy,
+              fix_task_created: Boolean(fixTaskArtifact),
+              fix_task_path: policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+            },
+            fixTask: fixTaskArtifact
+              ? {
+                  location: fixTaskArtifact.location || null,
+                  jsonPath: relativeToRoot(fixTaskArtifact.jsonPath),
+                  markdownPath: relativeToRoot(fixTaskArtifact.markdownPath),
+                }
+              : currentCard.executionPackage.fixTask,
+          }
+        : currentCard.executionPackage,
+      executorBlocker: createExecutorBlocker(blockerCode, blockedReason),
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), blockedReason, ...(policy.reasons || [])]),
+      updatedAt: nowIso(),
+    })), 'team-board-apply-blocked', {
+      cardId,
+      code: blockerCode,
+      taskId,
+    });
+    return {
+      ok: false,
+      error: blockedReason,
+      policy,
+      workspace: blockedWorkspace,
+    };
+  }
   const applyingWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
     ...currentCard,
     status: 'complete',
-    approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : currentCard.approvalState),
+    approvalState: currentCard.approvalState === 'approved'
+      ? 'approved'
+      : (approvedByUser || approvalBypassAllowed ? 'auto-approved' : currentCard.approvalState),
     applyStatus: 'applying',
     executorBlocker: clearExecutorBlocker(),
+    executionPackage: currentCard.executionPackage
+      ? {
+          ...currentCard.executionPackage,
+          policy: {
+            ...policy,
+            fix_task_created: Boolean(fixTaskArtifact),
+            fix_task_path: policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+          },
+          fixTask: fixTaskArtifact
+            ? {
+                location: fixTaskArtifact.location || null,
+                jsonPath: relativeToRoot(fixTaskArtifact.jsonPath),
+                markdownPath: relativeToRoot(fixTaskArtifact.markdownPath),
+              }
+            : currentCard.executionPackage.fixTask,
+        }
+      : currentCard.executionPackage,
     updatedAt: nowIso(),
   }));
   persistBoardWorkspace(applyingWorkspace, 'team-board-apply-start', { cardId, taskId });
@@ -4761,10 +5853,39 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
     project: targetProjectKey,
     confirmApply: true,
     confirmOverride: true,
-    autoApproved: !approvedByUser,
+    autoApproved: !approvedByUser || approvalBypassAllowed,
   });
+  writeTaskApplyResult(taskDir, buildTaskApplyResultRecord({
+    taskId,
+    taskDir,
+    projectKey: targetProjectKey,
+    patchPath: taskDir ? path.join(taskDir, 'patch.diff') : null,
+    ok: Boolean(result.ok),
+    status: result.ok ? 'passed' : 'failed',
+    result: result.ok ? {
+      runId: result.runId || null,
+      artifacts: result.artifacts || [],
+      meta: result.meta || null,
+    } : null,
+    error: result.ok ? null : (result.error || 'Apply failed.'),
+    branch: result.meta?.branch || null,
+    commit: result.meta?.commit || null,
+    policy,
+    fixTask: fixTaskArtifact,
+    sourceFixTask: card.sourceFixTask || card.executionPackage?.sourceFixTask || null,
+  }));
 
   if (!result.ok) {
+    if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+        taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+        location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+      }, {
+        status: 're_escalated',
+        reason: result.error || 'Apply failed.',
+        policy,
+      });
+    }
     const failedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
       ...currentCard,
       status: 'review',
@@ -4774,11 +5895,29 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
       executorBlocker: createExecutorBlocker('apply-failed', result.error || 'Apply failed.'),
       riskLevel: 'high',
       riskReasons: mergeUnique([...(currentCard.riskReasons || []), result.error || 'Apply failed.']),
+      executionPackage: currentCard.executionPackage
+        ? {
+            ...currentCard.executionPackage,
+            policy: {
+              ...policy,
+              fix_task_created: Boolean(fixTaskArtifact),
+              fix_task_path: policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+            },
+            fixTask: fixTaskArtifact
+              ? {
+                  location: fixTaskArtifact.location || null,
+                  jsonPath: relativeToRoot(fixTaskArtifact.jsonPath),
+                  markdownPath: relativeToRoot(fixTaskArtifact.markdownPath),
+                }
+              : currentCard.executionPackage.fixTask,
+          }
+        : currentCard.executionPackage,
       updatedAt: nowIso(),
     }));
     return {
       ok: false,
       error: result.error || 'Apply failed.',
+      policy,
       workspace: persistBoardWorkspace(failedWorkspace, 'team-board-apply-failed', { cardId, taskId, runId: result.runId }),
     };
   }
@@ -4799,6 +5938,18 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
           ...currentCard.executionPackage,
           provenance: applyProvenance,
           provenanceSummary: summarizeExecutionProvenance(applyProvenance),
+          policy: {
+            ...policy,
+            fix_task_created: Boolean(fixTaskArtifact),
+            fix_task_path: policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+          },
+          fixTask: fixTaskArtifact
+            ? {
+                location: fixTaskArtifact.location || null,
+                jsonPath: relativeToRoot(fixTaskArtifact.jsonPath),
+                markdownPath: relativeToRoot(fixTaskArtifact.markdownPath),
+              }
+            : currentCard.executionPackage.fixTask,
         }
       : currentCard.executionPackage,
     executorBlocker: clearExecutorBlocker(),
@@ -4808,9 +5959,22 @@ function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
     artifactRefs: mergeUnique([...(currentCard.artifactRefs || []), ...(result.artifacts || [])]),
     updatedAt: nowIso(),
   }));
+  if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+    finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+      taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+      location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+    }, {
+      status: 'resolved',
+      reason: 'Apply completed successfully.',
+      policy,
+      followupTaskId: taskId,
+      followupTaskDir: taskDir,
+    });
+  }
   return {
     ok: true,
     result,
+    policy,
     workspace: persistBoardWorkspace(appliedWorkspace, 'team-board-apply-complete', {
       cardId,
       taskId,
@@ -5375,6 +6539,21 @@ app.post('/api/llm/test', async (req, res) => {
   }
 });
 
+app.post('/api/spatial/preflight', (req, res) => {
+  const body = req.body || {};
+  const stage = String(body.stage || body.action || '').trim() || 'rebuild';
+  const taskId = String(body.taskId || '').trim();
+  const project = String(body.project || '').trim();
+  const projectTarget = project ? resolveProjectTarget(project) : { projectKey: null, projectPath: null };
+  const surface = evaluateStagePreflightSurface({
+    stage,
+    taskId,
+    projectKey: projectTarget.projectKey || null,
+    projectPath: projectTarget.projectPath || null,
+  });
+  res.json(surface);
+});
+
 app.post('/api/spatial/self-upgrade/preflight', (req, res) => {
   const body = req.body || {};
   const taskId = String(body.taskId || '').trim();
@@ -5409,6 +6588,33 @@ app.post('/api/spatial/self-upgrade/preflight', (req, res) => {
     validation,
     patchReview,
   });
+  const policySurface = buildAutonomyPolicyResponse({
+    rootPath: ROOT,
+    taskId,
+    taskDir: validation.taskDir,
+    stage: 'self-upgrade',
+    action: 'apply',
+    projectKey,
+    projectPath,
+    preflight,
+    taskCache: readTaskCache(ROOT, {
+      taskId,
+      taskDir: validation.taskDir,
+      stage: 'executor',
+    }),
+    validation,
+    changedFiles: validation.changedFiles || [],
+    patchText,
+    patchValid: Boolean(validation.ok && patchReview.ok && patchText.trim()),
+    patchPath: validation.patchPath,
+    failureMessage: !validation.ok
+      ? (validation.refusalReasons[0] || 'Self-upgrade validation failed.')
+      : (!patchReview.ok
+        ? (patchReview.refusalReasons[0] || 'Self-upgrade patch review failed.')
+        : preflight.summary || ''),
+    cacheStatus: null,
+    failureRisky: !preflight.ok || !patchReview.ok || !validation.ok,
+  });
   const workspace = updateSelfUpgradeState((state) => ({
     ...state,
     status: preflight.ok ? 'ready-to-apply' : 'blocked',
@@ -5419,8 +6625,16 @@ app.post('/api/spatial/self-upgrade/preflight', (req, res) => {
     deploy: preflight.ok ? state.deploy : createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }).deploy,
     requiresPermission: preflight.ok ? 'user-confirmation' : 'none',
   }));
+  const guard = buildGuardSurfacePayload({ stage: 'self-upgrade', preflight });
   res.json({
     ok: preflight.ok,
+    stage: guard.stage,
+    guard_status: guard.guard_status,
+    guard_reason: guard.guard_reason,
+    guard_reasons: guard.guard_reasons,
+    cache_status: guard.cache_status,
+    checks: guard.checks,
+    policy: policySurface.policy,
     selfUpgrade: getSelfUpgradeState(workspace),
   });
 });
@@ -5836,6 +7050,46 @@ app.post('/api/spatial/archive/writeback', (req, res) => {
   }
 });
 
+app.get('/api/spatial/agents/:agentId/capabilities', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  const snapshot = readAgentCapabilityProfile(ROOT, agentId);
+  if (!snapshot.exists) {
+    res.json({
+      agentId,
+      profile: null,
+      exists: false,
+      jsonPath: snapshot.filePath ? relativeToRoot(snapshot.filePath) : null,
+      markdownPath: snapshot.markdownPath ? relativeToRoot(snapshot.markdownPath) : null,
+    });
+    return;
+  }
+  res.json({
+    agentId,
+    profile: snapshot.profile,
+    exists: true,
+    jsonPath: snapshot.filePath ? relativeToRoot(snapshot.filePath) : null,
+    markdownPath: snapshot.markdownPath ? relativeToRoot(snapshot.markdownPath) : null,
+  });
+});
+
+app.post('/api/spatial/agents/:agentId/capabilities/rebuild', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  try {
+    const rebuilt = rebuildAgentCapabilityLedger(ROOT, { agentId });
+    const snapshot = readAgentCapabilityProfile(ROOT, agentId);
+    res.json({
+      agentId,
+      profile: snapshot.profile,
+      exists: snapshot.exists,
+      rebuilt,
+      jsonPath: snapshot.filePath ? relativeToRoot(snapshot.filePath) : null,
+      markdownPath: snapshot.markdownPath ? relativeToRoot(snapshot.markdownPath) : null,
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
 app.get('/api/spatial/agents/:agentId/ledger', (req, res) => {
   const agentId = normalizeAgentId(req.params.agentId);
   if (agentId !== 'dave') {
@@ -6021,6 +7275,7 @@ app.post('/api/spatial/agents/planner/run', async (req, res) => {
             workspace: cycle.workspace,
           })),
         }),
+        preflight: cycle.preflight || cycle.result?.preflight || null,
       });
     }
     return res.json({
@@ -6030,6 +7285,7 @@ app.post('/api/spatial/agents/planner/run', async (req, res) => {
         persist: true,
         workspace: cycle.workspace,
       })),
+      preflight: cycle.preflight || cycle.result?.preflight || null,
     });
   }
   return res.status(mode === 'manual' ? 400 : 200).json({
@@ -6040,6 +7296,7 @@ app.post('/api/spatial/agents/planner/run', async (req, res) => {
       persist: true,
       workspace: cycle.workspace,
     })),
+    preflight: cycle.preflight || cycle.result?.preflight || null,
   });
 });
 
@@ -6059,6 +7316,7 @@ app.post('/api/spatial/agents/executor/run', async (req, res) => {
             workspace: cycle.workspace,
           })),
         }),
+        preflight: cycle.preflight || cycle.result?.preflight || null,
       });
     }
     return res.json({
@@ -6069,6 +7327,7 @@ app.post('/api/spatial/agents/executor/run', async (req, res) => {
         persist: true,
         workspace: cycle.workspace,
       })),
+      preflight: cycle.preflight || cycle.result?.preflight || null,
     });
   }
   return res.status(mode === 'manual' ? 400 : 200).json({
@@ -6079,6 +7338,7 @@ app.post('/api/spatial/agents/executor/run', async (req, res) => {
       persist: true,
       workspace: cycle.workspace,
     })),
+    preflight: cycle.preflight || cycle.result?.preflight || null,
   });
 });
 
@@ -6997,6 +8257,7 @@ module.exports = {
   buildVerificationPlan,
   buildLegacyFallbackProvenance,
   buildMixedStudioProvenance,
+  buildGuardSurfacePayload,
   applySpatialMutationsToWorkspace,
   createExecutorBlocker,
   generateCandidates,
@@ -7022,12 +8283,21 @@ module.exports = {
   normalizeExecutiveEnvelope,
   mapEnvelopeToMaterialModule,
   buildModulePreview,
+  buildTaskApplyResultRecord,
+  buildAgentCapabilityProfile,
+  evaluateStagePreflightSurface,
+  collectTaskArtifacts,
+  createRunnerTaskFolder,
   readDashboardFileForRoot,
+  readAgentCapabilityProfile,
   readTaskArtifactStatus,
   resolveLegacyFallbackPayload,
   stopProjectRun,
   runArchivistWriteback,
+  rebuildAgentCapabilityLedger,
+  writeTaskApplyResult,
   summarizeExecutionProvenance,
+  normalizePreflightStage,
   createDefaultStudioLayoutSchema,
   normalizeStudioLayoutSchema,
   addDepartmentToLayout,

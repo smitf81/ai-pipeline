@@ -94,6 +94,12 @@ function normalizeGraphMutation(mutation = {}) {
         metadata: isPlainObject(node.metadata) ? cloneJsonValue(node.metadata) : {},
       },
     };
+    if (normalizeText(node.role)) {
+      normalized.node.role = normalizeText(node.role);
+    }
+    if (Array.isArray(node.representations) && node.representations.length) {
+      normalized.node.representations = cloneJsonValue(node.representations);
+    }
     if (origin) normalized.origin = origin;
     if (note) normalized.note = note;
     return normalized;
@@ -251,15 +257,25 @@ function buildNodeFromMutation(mutation = {}) {
   const node = mutation.node || {};
   const nodeId = normalizeText(node.id);
   const label = normalizeText(node.label);
-  return {
+  const metadata = {
+    ...(isPlainObject(node.metadata) ? cloneJsonValue(node.metadata) : {}),
+  };
+  if (node.role && !metadata.role) {
+    metadata.role = normalizeText(node.role);
+  }
+  const built = {
     id: nodeId,
     type: normalizeText(node.kind || 'text') || 'text',
     content: label || nodeId,
     metadata: {
-      ...(isPlainObject(node.metadata) ? cloneJsonValue(node.metadata) : {}),
+      ...metadata,
       graphLayer: normalizeText(node.layer || 'system') || 'system',
     },
   };
+  if (Array.isArray(node.representations) && node.representations.length) {
+    built.representations = cloneJsonValue(node.representations);
+  }
+  return built;
 }
 
 function applyGraphMutation(graphBundle = {}, mutation = {}) {

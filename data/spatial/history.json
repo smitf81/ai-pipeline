@@ -1,6 +1,6 @@
 [
   {
-    "at": "2026-03-28T14:06:57.721Z",
+    "at": "2026-03-29T00:23:30.816Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -9,7 +9,16 @@
     }
   },
   {
-    "at": "2026-03-28T14:06:57.741Z",
+    "at": "2026-03-29T00:23:30.878Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:30.922Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -18,76 +27,67 @@
     }
   },
   {
-    "at": "2026-03-28T14:06:57.847Z",
+    "at": "2026-03-29T00:23:30.945Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:30.978Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:31.075Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:31.285Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706817742-qtg72l"
+        "1774743810925-t6if5d"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:06:58.921Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:06:58.941Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:06:59.050Z",
+    "at": "2026-03-29T00:23:31.340Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706818942-9muimw"
+        "1774743810981-h89cso"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:06:59.104Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:06:59.129Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:06:59.239Z",
+    "at": "2026-03-29T00:23:31.463Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706819131-2zy3m7"
+        "1774743811079-e4k2bw"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:01.726Z",
+    "at": "2026-03-29T00:23:34.707Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -96,7 +96,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:01.747Z",
+    "at": "2026-03-29T00:23:34.771Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -105,76 +105,76 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:01.861Z",
+    "at": "2026-03-29T00:23:34.775Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:34.837Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:34.895Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:34.958Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:34.991Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706821748-sk0nus"
+        "1774743814774-qrxunr"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:02.931Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:02.951Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:03.066Z",
+    "at": "2026-03-29T00:23:35.066Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706822952-f6liwl"
+        "1774743814839-4pm5s1"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:03.106Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:03.130Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:03.246Z",
+    "at": "2026-03-29T00:23:35.220Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706823131-vvhy76"
+        "1774743814960-y30ijb"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:05.735Z",
+    "at": "2026-03-29T00:23:38.718Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -183,7 +183,16 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:05.753Z",
+    "at": "2026-03-29T00:23:38.785Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:38.787Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -192,76 +201,67 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:05.866Z",
+    "at": "2026-03-29T00:23:38.854Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:38.880Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:38.952Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:39.009Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706825755-z72x6j"
+        "1774743818789-noohzb"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:06.925Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:06.945Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:07.054Z",
+    "at": "2026-03-29T00:23:39.066Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706826946-ca32gi"
+        "1774743818856-p30rz6"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:07.122Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:07.147Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:07.269Z",
+    "at": "2026-03-29T00:23:39.146Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706827148-hm89d7"
+        "1774743818955-x4lva0"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:09.746Z",
+    "at": "2026-03-29T00:23:42.739Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -270,7 +270,16 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:09.775Z",
+    "at": "2026-03-29T00:23:42.792Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:42.809Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -279,76 +288,67 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:09.882Z",
+    "at": "2026-03-29T00:23:42.866Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:42.885Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:42.961Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:43.097Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706829776-peuqxn"
+        "1774743822812-woxp7h"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:10.948Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:10.974Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:11.081Z",
+    "at": "2026-03-29T00:23:43.135Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706830975-ywj5vd"
+        "1774743822869-sb0gcv"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:11.126Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:11.145Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:11.251Z",
+    "at": "2026-03-29T00:23:43.262Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706831146-8obxoi"
+        "1774743822965-3qu700"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:13.761Z",
+    "at": "2026-03-29T00:23:46.738Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -357,7 +357,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:13.779Z",
+    "at": "2026-03-29T00:23:46.804Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -366,65 +366,67 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:13.890Z",
+    "at": "2026-03-29T00:23:46.871Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:46.872Z",
+    "type": "team-board-builder-start",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:46.942Z",
+    "type": "team-board-builder-hand-off",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "title": "Update or check the status of RGS nodes"
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:47.001Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706833780-31kuyu"
+        "1774743826807-a7reh8"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:14.964Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:14.992Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:15.146Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:15.175Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:15.298Z",
+    "at": "2026-03-29T00:23:47.059Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706835177-t7doz5"
+        "1774743826872-bqr4a8"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:17.756Z",
+    "at": "2026-03-29T00:23:47.160Z",
+    "type": "team-board-builder-failed",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774743826944-mekfyo"
+      ]
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:50.736Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -433,27 +435,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:17.777Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:17.885Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "runIds": [
-        "1774706837778-wuaxfk"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:18.948Z",
+    "at": "2026-03-29T00:23:50.797Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -462,7 +444,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:18.968Z",
+    "at": "2026-03-29T00:23:50.806Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -471,18 +453,16 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:19.077Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-29T00:23:50.861Z",
+    "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
-      "runIds": [
-        "1774706838969-dt9daq"
-      ]
+      "title": "Update or check the status of RGS nodes"
     }
   },
   {
-    "at": "2026-03-28T14:07:19.125Z",
+    "at": "2026-03-29T00:23:50.887Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -491,7 +471,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:19.150Z",
+    "at": "2026-03-29T00:23:50.955Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -500,18 +480,40 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:19.266Z",
+    "at": "2026-03-29T00:23:51.015Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706839152-el700c"
+        "1774743830808-gp18tr"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:21.769Z",
+    "at": "2026-03-29T00:23:51.070Z",
+    "type": "team-board-builder-failed",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774743830864-mvzrdc"
+      ]
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:51.158Z",
+    "type": "team-board-builder-failed",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774743830958-uvtihl"
+      ]
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:54.722Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -520,7 +522,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:21.788Z",
+    "at": "2026-03-29T00:23:54.790Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -529,18 +531,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:21.895Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "runIds": [
-        "1774706841789-veni08"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:22.956Z",
+    "at": "2026-03-29T00:23:54.793Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -549,7 +540,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:22.974Z",
+    "at": "2026-03-29T00:23:54.851Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -558,18 +549,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:23.081Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "runIds": [
-        "1774706842975-kif56t"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:23.151Z",
+    "at": "2026-03-29T00:23:54.897Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -578,7 +558,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:23.170Z",
+    "at": "2026-03-29T00:23:54.968Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -587,18 +567,40 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:23.278Z",
+    "at": "2026-03-29T00:23:54.996Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706843170-kk40hb"
+        "1774743834792-3byv27"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:25.763Z",
+    "at": "2026-03-29T00:23:55.046Z",
+    "type": "team-board-builder-failed",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774743834854-fldc5y"
+      ]
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:55.161Z",
+    "type": "team-board-builder-failed",
+    "summary": {
+      "cardId": "0001",
+      "taskId": "10000",
+      "runIds": [
+        "1774743834970-7lrlvv"
+      ]
+    }
+  },
+  {
+    "at": "2026-03-29T00:23:58.728Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -607,7 +609,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:25.780Z",
+    "at": "2026-03-29T00:23:58.787Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -616,18 +618,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:25.884Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "runIds": [
-        "1774706845781-gip7vi"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:26.976Z",
+    "at": "2026-03-29T00:23:58.812Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -636,7 +627,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:26.994Z",
+    "at": "2026-03-29T00:23:58.881Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -645,18 +636,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:27.097Z",
-    "type": "team-board-builder-failed",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "runIds": [
-        "1774706846995-onyzcp"
-      ]
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:27.163Z",
+    "at": "2026-03-29T00:23:58.898Z",
     "type": "team-board-builder-start",
     "summary": {
       "cardId": "0001",
@@ -665,7 +645,7 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:27.189Z",
+    "at": "2026-03-29T00:23:58.964Z",
     "type": "team-board-builder-hand-off",
     "summary": {
       "cardId": "0001",
@@ -674,101 +654,132 @@
     }
   },
   {
-    "at": "2026-03-28T14:07:27.293Z",
+    "at": "2026-03-29T00:23:58.993Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706847190-xh6gaj"
+        "1774743838789-pe3jfs"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:29.794Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:29.815Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:29.919Z",
+    "at": "2026-03-29T00:23:59.073Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706849816-w796iw"
+        "1774743838884-dyiu50"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:30.978Z",
-    "type": "team-board-builder-start",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:31.002Z",
-    "type": "team-board-builder-hand-off",
-    "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
-    }
-  },
-  {
-    "at": "2026-03-28T14:07:31.107Z",
+    "at": "2026-03-29T00:23:59.152Z",
     "type": "team-board-builder-failed",
     "summary": {
       "cardId": "0001",
       "taskId": "10000",
       "runIds": [
-        "1774706851003-dmseuo"
+        "1774743838967-qk1ly1"
       ]
     }
   },
   {
-    "at": "2026-03-28T14:07:31.167Z",
-    "type": "team-board-builder-start",
+    "at": "2026-03-29T10:12:36.971Z",
+    "type": "team-board-builder-preflight-blocked",
     "summary": {
       "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
+      "taskId": "10000"
     }
   },
   {
-    "at": "2026-03-28T14:07:31.199Z",
-    "type": "team-board-builder-hand-off",
+    "at": "2026-03-29T10:12:42.754Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "title": "Update or check the status of RGS nodes"
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-03-28T14:07:31.314Z",
-    "type": "team-board-builder-failed",
+    "at": "2026-03-29T10:12:44.639Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0001",
-      "taskId": "10000",
-      "runIds": [
-        "1774706851200-h07txx"
-      ]
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T10:12:47.921Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T10:12:51.316Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T10:20:55.460Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T10:21:04.445Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T11:05:46.531Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-03-29T11:05:56.436Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 1,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   }
 ]

@@ -32,6 +32,130 @@ function normalizeRelationshipList(value = []) {
   return [...new Set(source.map((entry) => String(entry || '').trim()).filter(Boolean))];
 }
 
+function cloneJsonValue(value) {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map((entry) => cloneJsonValue(entry));
+  if (typeof value !== 'object') return value;
+  const clone = {};
+  Object.entries(value).forEach(([key, entry]) => {
+    if (typeof entry !== 'function' && entry !== undefined) {
+      clone[key] = cloneJsonValue(entry);
+    }
+  });
+  return clone;
+}
+
+function normalizeRepresentationKind(value = '') {
+  const kind = String(value || '').trim().toLowerCase();
+  if (kind === 'icon' || kind === 'ghost' || kind === 'mesh_stub') return kind;
+  return 'ghost';
+}
+
+function normalizeViewTags(value = []) {
+  return [...new Set((Array.isArray(value) ? value : (value == null ? [] : [value]))
+    .map((entry) => String(entry || '').trim().toLowerCase())
+    .filter(Boolean))];
+}
+
+function normalizeLodValue(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function cloneRepresentationPayload(payload) {
+  return cloneJsonValue(payload);
+}
+
+export function normalizeNodeRepresentations(representations = [], { nodeId = null } = {}) {
+  return (Array.isArray(representations) ? representations : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry, index) => {
+      const repId = String(entry.rep_id || entry.repId || entry.id || '').trim() || `${String(nodeId || 'node').trim() || 'node'}__rep_${index}`;
+      const viewTags = normalizeViewTags(entry.view_tags || entry.viewTags);
+      const lodMin = normalizeLodValue(entry.lod_min, 0);
+      const lodMax = normalizeLodValue(entry.lod_max, 1);
+      return {
+        rep_id: repId,
+        kind: normalizeRepresentationKind(entry.kind),
+        view_tags: viewTags,
+        lod_min: Math.min(lodMin, lodMax),
+        lod_max: Math.max(lodMin, lodMax),
+        payload: cloneRepresentationPayload(entry.payload),
+        ...(entry.derived_from !== undefined ? { derived_from: entry.derived_from } : {}),
+      };
+    })
+    .filter((entry) => entry.rep_id);
+}
+
+function representationDetailWidth(rep = {}) {
+  const min = Number.isFinite(Number(rep?.lod_min)) ? Number(rep.lod_min) : 0;
+  const max = Number.isFinite(Number(rep?.lod_max)) ? Number(rep.lod_max) : 1;
+  return Math.max(0, max - min);
+}
+
+function representationKindRank(kind = '') {
+  const order = { icon: 0, ghost: 1, mesh_stub: 2 };
+  return Object.prototype.hasOwnProperty.call(order, kind) ? order[kind] : 1;
+}
+
+function compareRepresentations(left = null, right = null) {
+  if (!left && !right) return 0;
+  if (!left) return 1;
+  if (!right) return -1;
+  const leftWidth = representationDetailWidth(left);
+  const rightWidth = representationDetailWidth(right);
+  if (leftWidth !== rightWidth) return leftWidth - rightWidth;
+  const leftMin = Number.isFinite(Number(left.lod_min)) ? Number(left.lod_min) : 0;
+  const rightMin = Number.isFinite(Number(right.lod_min)) ? Number(right.lod_min) : 0;
+  if (leftMin !== rightMin) return rightMin - leftMin;
+  const leftKindRank = representationKindRank(left.kind);
+  const rightKindRank = representationKindRank(right.kind);
+  if (leftKindRank !== rightKindRank) return leftKindRank - rightKindRank;
+  return String(left.rep_id || '').localeCompare(String(right.rep_id || ''));
+}
+
+function representationMatchesZoom(representation = {}, zoomLevel = 0) {
+  const zoom = Number(zoomLevel);
+  if (!Number.isFinite(zoom)) return true;
+  const min = Number.isFinite(Number(representation?.lod_min)) ? Number(representation.lod_min) : 0;
+  const max = Number.isFinite(Number(representation?.lod_max)) ? Number(representation.lod_max) : 1;
+  return zoom >= min && zoom <= max;
+}
+
+export function selectRepresentation(node = null, zoomLevel = 0, activeView = 'sketch') {
+  const representations = normalizeNodeRepresentations(node?.representations, { nodeId: node?.id });
+  if (!representations.length) return null;
+  const view = String(activeView || '').trim().toLowerCase();
+  const byView = view
+    ? representations.filter((representation) => representation.view_tags.includes(view))
+    : representations;
+  if (!byView.length) return null;
+  const exactMatches = byView.filter((representation) => representationMatchesZoom(representation, zoomLevel));
+  if (exactMatches.length) {
+    return [...exactMatches].sort(compareRepresentations)[0];
+  }
+  return [...byView].sort((left, right) => {
+    const leftKindRank = representationKindRank(left.kind);
+    const rightKindRank = representationKindRank(right.kind);
+    if (leftKindRank !== rightKindRank) return leftKindRank - rightKindRank;
+    const leftWidth = representationDetailWidth(left);
+    const rightWidth = representationDetailWidth(right);
+    if (leftWidth !== rightWidth) return leftWidth - rightWidth;
+    const leftMin = Number.isFinite(Number(left.lod_min)) ? Number(left.lod_min) : 0;
+    const rightMin = Number.isFinite(Number(right.lod_min)) ? Number(right.lod_min) : 0;
+    if (leftMin !== rightMin) return leftMin - rightMin;
+    return String(left.rep_id || '').localeCompare(String(right.rep_id || ''));
+  })[0] || null;
+}
+
+export function getSketchRepresentation(node = null, zoomLevel = 0) {
+  return selectRepresentation(node, zoomLevel, 'sketch');
+}
+
+export function getWorldRepresentation(node = null, zoomLevel = 0) {
+  return selectRepresentation(node, zoomLevel, 'world');
+}
+
 function inferRelationshipStrength(edge = {}, supports = [], validatedBy = []) {
   const explicit = Number(edge?.strength);
   if (Number.isFinite(explicit) && explicit > 0) {
@@ -282,14 +406,16 @@ export function buildRsgState(workspace = {}) {
   };
 }
 
-export function createNode({ type = 'text', content = '', position = { x: 0, y: 0 }, metadata = {} } = {}) {
+export function createNode({ type = 'text', content = '', position = { x: 0, y: 0 }, metadata = {}, representations = [] } = {}) {
+  const id = `node_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   return {
-    id: `node_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    id,
     type,
     content,
     position,
     connections: [],
     metadata,
+    representations: normalizeNodeRepresentations(representations, { nodeId: id }),
   };
 }
 

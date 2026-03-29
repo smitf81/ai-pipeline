@@ -178,7 +178,8 @@ Success looks like:
 ## Milestone 2 (UE/Blender Assist Hooks)
 - optional “generate UE snippet” panel
 - store snippets in `work/tasks/` as ready‑to‑paste blocks
-- build a “known fixes” knowledge base inside the repo
+- maintain a trusted known-fixes library in `brain/context/known_fixes.*`
+- append known-fixes patterns into worker prompts before broader context
 
 ---
 

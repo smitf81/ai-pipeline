@@ -2068,6 +2068,24 @@ body.qa-mode .status-row:last-child {
   margin-bottom: 10px;
 }
 
+.preflight-summary {
+  display: grid;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.preflight-summary .status-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.preflight-summary .status-row:last-child {
+  border-bottom: 0;
+}
+
 .artifact-status-grid {
   display: grid;
   gap: 8px;
@@ -2114,6 +2132,48 @@ body.qa-mode .status-row:last-child {
   color: var(--warn);
   border-color: rgba(255, 211, 110, 0.28);
   background: rgba(255, 211, 110, 0.06);
+}
+
+.preflight-pill {
+  min-width: 88px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  text-align: center;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.preflight-pill.ready {
+  color: var(--good);
+  border-color: rgba(92, 226, 159, 0.32);
+  background: rgba(92, 226, 159, 0.08);
+}
+
+.preflight-pill.blocked {
+  color: var(--bad);
+  border-color: rgba(255, 131, 121, 0.28);
+  background: rgba(255, 131, 121, 0.06);
+}
+
+.preflight-pill.warning {
+  color: var(--warn);
+  border-color: rgba(255, 211, 110, 0.28);
+  background: rgba(255, 211, 110, 0.06);
+}
+
+.preflight-pill.cache-reused {
+  color: var(--blue);
+  border-color: rgba(112, 182, 255, 0.32);
+  background: rgba(112, 182, 255, 0.08);
+}
+
+.preflight-pill.unknown,
+.preflight-pill.idle {
+  color: var(--muted);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
 }
 .hidden-row, .hidden { display: none; }
 .modal.hidden { display: none !important; }

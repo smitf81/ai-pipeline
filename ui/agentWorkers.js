@@ -14,10 +14,29 @@ const {
   buildIntentTruth,
 } = require('./intentAnalysis');
 const {
+  buildKnownFixesPromptSection,
+} = require('./knownFixes');
+const {
+  TASK_CACHE_SOURCE,
+  buildTaskCachePromptSection,
+  readTaskCache,
+  summarizeTaskCache,
+} = require('./taskCache');
+const {
+  buildFixTaskPromptSection,
+} = require('./fixTasks');
+const {
   getContextManagerNode,
   normalizeGraphBundle,
 } = require('./graphQueries');
 const { createPlannerHandoff } = require('./throughputDebug');
+const {
+  resolveStageAgentIdentity,
+} = require('./agentAttribution');
+const {
+  buildAgentAuditRecord,
+  writeAgentAuditArtifacts,
+} = require('./agentAudit');
 
 const DEFAULT_PLANNER_BACKEND = 'ollama';
 const DEFAULT_PLANNER_MODEL = 'mistral:latest';
@@ -516,6 +535,8 @@ function summarizePlannerRun(run) {
   if (!run) return null;
   return {
     id: run.id,
+    agent_id: run.agent_id || run.attribution?.agent_id || null,
+    agent_version: run.agent_version || run.attribution?.agent_version || null,
     outcome: run.outcome,
     status: run.status,
     mode: run.mode,
@@ -523,6 +544,8 @@ function summarizePlannerRun(run) {
     summary: run.summary,
     reason: run.reason || null,
     proposalArtifactRefs: Array.isArray(run.proposalArtifactRefs) ? run.proposalArtifactRefs : [],
+    taskCacheSource: run.taskCache?.source || run.taskCacheSource || null,
+    taskCacheStage: run.taskCache?.stage || run.taskCacheStage || null,
     createdAt: run.createdAt,
     completedAt: run.completedAt,
   };
@@ -540,6 +563,8 @@ function summarizeContextManagerRun(run) {
   if (!run) return null;
   return {
     id: run.id,
+    agent_id: run.agent_id || run.attribution?.agent_id || null,
+    agent_version: run.agent_version || run.attribution?.agent_version || null,
     outcome: run.outcome,
     status: run.status,
     mode: run.mode,
@@ -565,6 +590,8 @@ function summarizeExecutorRun(run) {
   if (!run) return null;
   return {
     id: run.id,
+    agent_id: run.agent_id || run.attribution?.agent_id || null,
+    agent_version: run.agent_version || run.attribution?.agent_version || null,
     outcome: run.outcome,
     status: run.status,
     mode: run.mode,
@@ -574,6 +601,8 @@ function summarizeExecutorRun(run) {
     decision: run.report?.decision || null,
     reason: run.reason || null,
     usedFallback: Boolean(run.usedFallback),
+    taskCacheSource: run.taskCache?.source || run.taskCacheSource || null,
+    taskCacheStage: run.taskCache?.stage || run.taskCacheStage || null,
     createdAt: run.createdAt,
     completedAt: run.completedAt,
   };
@@ -740,9 +769,18 @@ function buildExecutorWorkspaceSection(workspace = {}) {
   ].join('\n');
 }
 
-function buildExecutorPrompt({ promptTemplate, card, workspace }) {
+function buildExecutorPrompt({ promptTemplate, card, workspace, rootPath, taskCache = null }) {
+  const resolvedTaskCache = taskCache || readTaskCache(rootPath, {
+    taskId: executorTaskId(card),
+    stage: 'executor',
+  });
+  const fixTaskSection = buildFixTaskPromptSection(card?.sourceFixTask || card?.executionPackage?.sourceFixTask || null);
   return [
     String(promptTemplate || FALLBACK_EXECUTOR_PROMPT).trim(),
+    '',
+    buildKnownFixesPromptSection(rootPath),
+    buildTaskCachePromptSection(resolvedTaskCache, { stage: 'executor' }),
+    fixTaskSection,
     '## Selected Execution Card',
     buildExecutorCardSection(card),
     '',
@@ -754,12 +792,31 @@ function buildExecutorPrompt({ promptTemplate, card, workspace }) {
   ].join('\n').trim();
 }
 
-function buildPlannerPrompt({ promptTemplate, handoff, anchorBundle, board }) {
+function buildPlannerPrompt({ promptTemplate, handoff, anchorBundle, board, rootPath, taskCache = null }) {
   const requestedOutcomes = Array.isArray(handoff?.requestedOutcomes)
     ? handoff.requestedOutcomes
     : (Array.isArray(handoff?.tasks) ? handoff.tasks : []);
+  const selectedCard = Array.isArray(board?.cards)
+    ? board.cards.find((card) => card?.id && card.id === board?.selectedCardId) || null
+    : null;
+  const resolvedTaskCache = taskCache || readTaskCache(rootPath, {
+    taskId: String(
+      handoff?.taskId
+      || handoff?.runnerTaskId
+      || selectedCard?.runnerTaskId
+      || selectedCard?.builderTaskId
+      || selectedCard?.executionPackage?.taskId
+      || '',
+    ).trim() || null,
+    stage: 'planner',
+  });
+  const fixTaskSection = buildFixTaskPromptSection(handoff?.sourceFixTask || null);
   return [
     String(promptTemplate || FALLBACK_PLANNER_PROMPT).trim(),
+    '',
+    buildKnownFixesPromptSection(rootPath),
+    buildTaskCachePromptSection(resolvedTaskCache, { stage: 'planner' }),
+    fixTaskSection,
     '## Structured Intent Packet',
     `ID: ${handoff?.id || 'unknown'}`,
     `Summary: ${handoff?.summary || ''}`,
@@ -888,13 +945,18 @@ function createPlannerRunRecord({
   brainProposals = [],
   proposalArtifactRefs = [],
   plannerToContext = null,
+  taskCache = null,
   rawResponse = '',
   startedAt = nowIso(),
   completedAt = nowIso(),
 }) {
+  const attribution = resolveStageAgentIdentity('planner');
   return {
     id: runId,
     workerId: 'planner',
+    agent_id: attribution.agent_id,
+    agent_version: attribution.agent_version,
+    attribution,
     createdAt: startedAt,
     startedAt,
     completedAt,
@@ -913,6 +975,7 @@ function createPlannerRunRecord({
     brainProposals,
     proposalArtifactRefs,
     plannerToContext,
+    taskCache: taskCache ? summarizeTaskCache(taskCache) : null,
     rawResponse: rawResponse || null,
   };
 }
@@ -920,6 +983,25 @@ function createPlannerRunRecord({
 function persistPlannerRun(rootPath, runRecord) {
   ensurePlannerRunsStorage(rootPath);
   writeJson(plannerRunFilePath(rootPath, runRecord.id), runRecord);
+  try {
+    const taskDir = runRecord?.taskCache?.taskDir ? path.resolve(rootPath, runRecord.taskCache.taskDir) : null;
+    writeAgentAuditArtifacts(rootPath, buildAgentAuditRecord({
+      rootPath,
+      stage: 'planner',
+      taskId: runRecord?.taskCache?.taskId || null,
+      taskDir,
+      taskCache: runRecord?.taskCache || null,
+      sourceRecord: runRecord,
+      outcome: runRecord?.outcome || runRecord?.status || null,
+      pass_fail: runRecord?.outcome === 'completed' ? 'pass' : 'fail',
+      artifactRefs: [
+        path.join('data', 'spatial', 'agent-runs', 'planner', `${runRecord.id}.json`),
+        ...(Array.isArray(runRecord?.proposalArtifactRefs) ? runRecord.proposalArtifactRefs : []),
+      ],
+    }));
+  } catch (error) {
+    console.warn('[WARN] planner audit write failed:', error?.message || error);
+  }
   return runRecord;
 }
 
@@ -973,6 +1055,18 @@ async function runPlannerWorker(options = {}) {
   const resolvedHost = host || config.host || DEFAULT_OLLAMA_HOST;
   const resolvedTimeoutMs = Number(timeoutMs || config.timeoutMs || DEFAULT_PLANNER_TIMEOUT_MS);
   const runs = listPlannerRuns(rootPath);
+  const selectedCard = Array.isArray(workspace?.studio?.teamBoard?.cards)
+    ? workspace.studio.teamBoard.cards.find((card) => card?.id === workspace?.studio?.teamBoard?.selectedCardId) || null
+    : null;
+  const taskId = String(
+    handoff?.taskId
+    || handoff?.runnerTaskId
+    || selectedCard?.runnerTaskId
+    || selectedCard?.builderTaskId
+    || selectedCard?.executionPackage?.taskId
+    || '',
+  ).trim() || null;
+  const taskCache = readTaskCache(rootPath, { taskId, stage: 'planner' });
   const eligibility = evaluatePlannerEligibility({ workspace, handoff, mode, runs });
   if (!eligibility.eligible) {
     return {
@@ -984,6 +1078,7 @@ async function runPlannerWorker(options = {}) {
       proposalArtifactRefs: [],
       cards: [],
       plannerToContext: null,
+      taskCacheSource: taskCache.source,
     };
   }
 
@@ -1013,6 +1108,7 @@ async function runPlannerWorker(options = {}) {
       brainProposals: [],
       proposalArtifactRefs: [],
       plannerToContext,
+      taskCache,
       rawResponse,
       startedAt,
       completedAt,
@@ -1026,6 +1122,7 @@ async function runPlannerWorker(options = {}) {
       proposalArtifactRefs: [],
       cards: [],
       plannerToContext,
+      taskCacheSource: taskCache.source,
     };
   };
 
@@ -1049,6 +1146,8 @@ async function runPlannerWorker(options = {}) {
           host: resolvedHost,
           runId,
           definition,
+          taskId,
+          taskCache,
         })
       : await callOllamaGenerate({
           prompt: buildPlannerPrompt({
@@ -1056,6 +1155,8 @@ async function runPlannerWorker(options = {}) {
             handoff,
             anchorBundle: anchorBundle || {},
             board: workspace?.studio?.teamBoard || { cards: [] },
+            rootPath,
+            taskCache,
           }),
           model: resolvedModel,
           host: resolvedHost,
@@ -1085,6 +1186,7 @@ async function runPlannerWorker(options = {}) {
       brainProposals: payload.brainProposals,
       proposalArtifactRefs,
       plannerToContext: null,
+      taskCache,
       rawResponse,
       startedAt,
       completedAt,
@@ -1140,14 +1242,19 @@ function createExecutorRunRecord({
   summary,
   report,
   usedFallback = false,
+  taskCache = null,
   rawResponse = '',
   reason = null,
   startedAt = nowIso(),
   completedAt = nowIso(),
 }) {
+  const attribution = resolveStageAgentIdentity('executor');
   return {
     id: runId,
     workerId: 'executor',
+    agent_id: attribution.agent_id,
+    agent_version: attribution.agent_version,
+    attribution,
     createdAt: startedAt,
     startedAt,
     completedAt,
@@ -1165,6 +1272,7 @@ function createExecutorRunRecord({
     report,
     usedFallback: Boolean(usedFallback),
     llmStatus: outcome === 'completed' ? 'live' : classifyLlmFailure(reason, usedFallback),
+    taskCache: taskCache ? summarizeTaskCache(taskCache) : null,
     rawResponse: rawResponse || null,
   };
 }
@@ -1172,6 +1280,24 @@ function createExecutorRunRecord({
 function persistExecutorRun(rootPath, runRecord) {
   ensureExecutorRunsStorage(rootPath);
   writeJson(executorRunFilePath(rootPath, runRecord.id), runRecord);
+  try {
+    const taskDir = runRecord?.taskCache?.taskDir ? path.resolve(rootPath, runRecord.taskCache.taskDir) : null;
+    writeAgentAuditArtifacts(rootPath, buildAgentAuditRecord({
+      rootPath,
+      stage: 'executor',
+      taskId: runRecord?.taskId || null,
+      taskDir,
+      taskCache: runRecord?.taskCache || null,
+      sourceRecord: runRecord,
+      outcome: runRecord?.outcome || runRecord?.status || null,
+      pass_fail: runRecord?.outcome === 'completed' ? 'pass' : 'fail',
+      artifactRefs: [
+        path.join('data', 'spatial', 'agent-runs', 'executor', `${runRecord.id}.json`),
+      ],
+    }));
+  } catch (error) {
+    console.warn('[WARN] executor audit write failed:', error?.message || error);
+  }
   return runRecord;
 }
 
@@ -1200,6 +1326,7 @@ async function runExecutorWorker(options = {}) {
       run: null,
       report: null,
       usedFallback: false,
+      taskCacheSource: TASK_CACHE_SOURCE.BYPASS,
     };
   }
 
@@ -1209,6 +1336,10 @@ async function runExecutorWorker(options = {}) {
   const resolvedModel = model || config.model;
   const resolvedHost = host || config.host || DEFAULT_OLLAMA_HOST;
   const resolvedTimeoutMs = Number(timeoutMs || config.timeoutMs || DEFAULT_EXECUTOR_TIMEOUT_MS);
+  const taskCache = readTaskCache(rootPath, {
+    taskId: executorTaskId(card),
+    stage: 'executor',
+  });
   const fallbackReport = deriveExecutorAssessment({ card, workspace });
   const startedAt = nowIso();
 
@@ -1230,12 +1361,15 @@ async function runExecutorWorker(options = {}) {
           runId,
           definition,
           fallbackReport,
+          taskCache,
         })
       : await callOllamaGenerate({
           prompt: buildExecutorPrompt({
             promptTemplate: config.prompt,
             card,
             workspace,
+            rootPath,
+            taskCache,
           }),
           model: resolvedModel,
           host: resolvedHost,
@@ -1264,6 +1398,7 @@ async function runExecutorWorker(options = {}) {
     summary: report.summary,
     report,
     usedFallback,
+    taskCache,
     rawResponse,
     reason,
     startedAt,
@@ -1278,6 +1413,7 @@ async function runExecutorWorker(options = {}) {
     run: runRecord,
     report,
     usedFallback,
+    taskCacheSource: taskCache.source,
   };
 }
 
@@ -1300,9 +1436,12 @@ function buildContextManagerPrompt({
   graphBundle = null,
   plannerFeedback = null,
   previousHandoff = null,
+  rootPath,
 }) {
   return [
     String(promptTemplate || FALLBACK_CONTEXT_MANAGER_PROMPT).trim(),
+    '',
+    buildKnownFixesPromptSection(rootPath),
     '## Raw Context Input',
     String(text || '').trim() || '(empty)',
     '',
@@ -1407,9 +1546,12 @@ function buildExtractedIntentPrompt({
   packet,
   report,
   workspace,
+  rootPath,
 }) {
   return [
     FALLBACK_EXTRACTED_INTENT_PROMPT,
+    '',
+    buildKnownFixesPromptSection(rootPath),
     '## Raw Context Input',
     String(text || '').trim() || '(empty)',
     '',
@@ -1706,9 +1848,13 @@ function createContextManagerRunRecord({
   startedAt = nowIso(),
   completedAt = nowIso(),
 }) {
+  const attribution = resolveStageAgentIdentity('context-manager');
   return {
     id: runId,
     workerId: 'context-manager',
+    agent_id: attribution.agent_id,
+    agent_version: attribution.agent_version,
+    attribution,
     createdAt: startedAt,
     startedAt,
     completedAt,
@@ -1738,6 +1884,21 @@ function createContextManagerRunRecord({
 function persistContextManagerRun(rootPath, runRecord) {
   ensureContextManagerRunsStorage(rootPath);
   writeJson(contextManagerRunFilePath(rootPath, runRecord.id), runRecord);
+  try {
+    writeAgentAuditArtifacts(rootPath, buildAgentAuditRecord({
+      rootPath,
+      stage: 'context-manager',
+      taskId: runRecord?.report?.taskId || runRecord?.handoff?.taskId || null,
+      sourceRecord: runRecord,
+      outcome: runRecord?.outcome || runRecord?.status || null,
+      pass_fail: runRecord?.outcome === 'completed' ? 'pass' : 'fail',
+      artifactRefs: [
+        path.join('data', 'spatial', 'agent-runs', 'context-manager', `${runRecord.id}.json`),
+      ],
+    }));
+  } catch (error) {
+    console.warn('[WARN] context-manager audit write failed:', error?.message || error);
+  }
   return runRecord;
 }
 
@@ -1816,6 +1977,7 @@ async function runContextManagerWorker(options = {}) {
       graphBundle,
       plannerFeedback: activePlannerFeedback,
       previousHandoff,
+      rootPath,
     });
     addTraceStep(llmTrace, 'llm_call_start', {
       model: resolvedModel,
@@ -1919,6 +2081,7 @@ async function runContextManagerWorker(options = {}) {
           packet,
           report: baseReport,
           workspace,
+          rootPath,
         });
         addTraceStep(llmTrace, 'llm_call_start', {
           model: resolvedModel,
@@ -2089,6 +2252,8 @@ module.exports = {
   evaluatePlannerEligibility,
   executorRunFilePath,
   executorRunsDir,
+  buildExecutorPrompt,
+  buildPlannerPrompt,
   getAgentWorkerConfig,
   listContextManagerRuns,
   listExecutorRuns,

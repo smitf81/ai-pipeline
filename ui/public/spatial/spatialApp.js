@@ -7,6 +7,8 @@ import {
   getNodeTypesForLayer,
   createDefaultRsgState,
   deriveRelationshipVisual,
+  getSketchRepresentation,
+  getWorldRepresentation,
   normalizeGraphBundle,
   buildRsgState,
 } from './graphEngine.js';
@@ -6759,6 +6761,9 @@ function syncRecentWorldChange(change = null) {
               if (originFilter !== 'all' && nodeOrigin !== originFilter) return null;
               const x = node.position.x * canvasViewport.zoom + canvasViewport.x;
               const y = node.position.y * canvasViewport.zoom + canvasViewport.y;
+              const nodeRepresentation = activeGraphLayer === 'world'
+                ? getWorldRepresentation(node, canvasViewport.zoom)
+                : getSketchRepresentation(node, canvasViewport.zoom);
               const originLabel = NODE_ORIGIN_LABELS[nodeOrigin] || nodeOrigin;
               const classified = classifyNode(node, graph, activeGraphLayer);
               const labels = classified.metadata.labels || [];
@@ -6796,6 +6801,8 @@ function syncRecentWorldChange(change = null) {
               return h('div', {
                 key: node.id,
                 className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} origin-${nodeOrigin} ${selectedId === node.id ? 'selected' : ''} ${isLinkedDraftNode(node) ? 'rsg-linked-draft' : ''} ${isAdoptedDraftNode(node) ? 'rsg-adopted' : ''} ${lowConfidenceDraft ? 'rsg-low-confidence' : ''} ${expandedGenerated ? 'expanded' : ''} ${recentNodeChange ? `recent-world-change recent-world-${recentNodeChange.changeType}` : ''}`,
+                'data-representation-id': nodeRepresentation?.rep_id || null,
+                'data-representation-kind': nodeRepresentation?.kind || 'legacy',
                 style: {
                   left: `${x}px`,
                   top: `${y}px`,
@@ -6804,6 +6811,9 @@ function syncRecentWorldChange(change = null) {
                   pointerEvents: sketchMode ? 'none' : 'auto',
                   opacity: sketchMode ? 0.82 : 1,
                 },
+                title: nodeRepresentation
+                  ? `${node.content || 'Node'} | ${nodeRepresentation.kind} | ${nodeRepresentation.rep_id}`
+                  : node.content || 'Node',
                 onMouseDown: (event) => onNodeMouseDown(event, node),
                 onContextMenu: (event) => openAdvancedProperties(event, node),
               },

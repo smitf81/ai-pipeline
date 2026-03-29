@@ -20,6 +20,14 @@ const state = {
   projectLaunching: false,
   projectLaunch: null,
   artifactStatusSignature: '',
+  preflightSummarySignature: '',
+  preflightSummary: null,
+};
+
+const ACTION_PREFLIGHT_STAGE = {
+  scan: 'planner',
+  manage: 'context-manager',
+  build: 'rebuild',
 };
 
 function detectQaMode() {
@@ -125,6 +133,107 @@ function renderCommandSummary(summary = null) {
   setText('pipelineCommandTimestamp', resolved.timestamp);
   setText('pipelineCommandError', resolved.error || 'none');
   setText('uiLastCommandSummary', `${resolved.name} | ${resolved.state} | exit ${resolved.exitCode}`);
+}
+
+function selectedPreflightStage() {
+  return ACTION_PREFLIGHT_STAGE[actionMode()] || 'rebuild';
+}
+
+function preflightStatusLabel(status = 'idle') {
+  const normalized = String(status || 'idle').trim().toLowerCase();
+  if (normalized === 'cache_reused') return 'cache reused';
+  if (normalized === 'ready') return 'ready';
+  if (normalized === 'blocked') return 'blocked';
+  if (normalized === 'warning') return 'warning';
+  return normalized || 'idle';
+}
+
+function setPreflightChip(id, status = 'idle') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const normalized = String(status || 'idle').trim().toLowerCase();
+  const className = normalized === 'cache_reused' ? 'cache-reused' : normalized || 'unknown';
+  el.textContent = preflightStatusLabel(normalized);
+  el.classList.remove('ready', 'blocked', 'cache-reused', 'warning', 'idle', 'unknown');
+  el.classList.add(className);
+}
+
+function renderPreflightSummary(summary = null) {
+  const resolved = summary || {
+    stage: 'none',
+    guard_status: 'idle',
+    guard_reason: 'No preflight summary yet.',
+    guard_reasons: [],
+    cache_status: null,
+  };
+  const signature = JSON.stringify({
+    stage: resolved.stage || '',
+    guard_status: resolved.guard_status || '',
+    guard_reason: resolved.guard_reason || '',
+    cache_status: resolved.cache_status || '',
+  });
+  if (signature === state.preflightSummarySignature) return;
+  state.preflightSummarySignature = signature;
+  state.preflightSummary = resolved;
+  setText('preflightStage', String(resolved.stage || 'none'));
+  setPreflightChip('preflightStatus', resolved.guard_status || 'idle');
+  setText('preflightReason', shortText(resolved.guard_reason || resolved.guard_reasons?.[0] || 'none', 180) || 'none');
+  const cacheEl = document.getElementById('preflightCacheStatus');
+  if (cacheEl) {
+    cacheEl.classList.remove('ready', 'blocked', 'cache-reused', 'warning', 'idle', 'unknown');
+    if (resolved.cache_status) {
+      const cacheStatus = String(resolved.cache_status).trim().toLowerCase();
+      cacheEl.textContent = cacheStatus.replace(/_/g, ' ');
+      cacheEl.classList.add(cacheStatus === 'reused' ? 'cache-reused' : cacheStatus);
+    } else {
+      cacheEl.textContent = 'none';
+      cacheEl.classList.add('unknown');
+    }
+  }
+}
+
+async function refreshPreflightSummary({
+  stage = selectedPreflightStage(),
+  taskId = selectedTaskId(),
+  project = document.getElementById('projectSelect')?.value || '',
+} = {}) {
+  const normalizedStage = String(stage || '').trim();
+  const normalizedTaskId = String(taskId || '').trim();
+  const normalizedProject = String(project || '').trim();
+  if (!normalizedStage) {
+    renderPreflightSummary({
+      stage: 'none',
+      guard_status: 'idle',
+      guard_reason: 'Select an action to inspect preflight.',
+      guard_reasons: [],
+      cache_status: null,
+    });
+    return null;
+  }
+  try {
+    const response = await api('/api/spatial/preflight', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        stage: normalizedStage,
+        taskId: normalizedTaskId,
+        project: normalizedProject,
+      }),
+    });
+    const summary = response && typeof response === 'object' ? response : {};
+    renderPreflightSummary(summary);
+    return summary;
+  } catch (error) {
+    const message = String(error.message || error);
+    renderPreflightSummary({
+      stage: normalizedStage,
+      guard_status: 'blocked',
+      guard_reason: message,
+      guard_reasons: [message],
+      cache_status: null,
+    });
+    return null;
+  }
 }
 
 function updateRefreshStatus({ connected, error = '', refreshedAt = null, runs = null } = {}) {
@@ -263,6 +372,7 @@ async function loadTasks() {
   });
   if (data.tasks[0]) document.getElementById('taskIdInput').value = data.tasks[0];
   renderLegacyTaskStatus();
+  await refreshPreflightSummary().catch(() => {});
 }
 
 function selectedTaskId() {
@@ -351,7 +461,7 @@ function runHeaderSummary(name, stateLabel, exitCode, error, timestamp = Date.no
 }
 
 function actionMode() {
-  return document.getElementById('actionSelect').value;
+  return String(document.getElementById('actionSelect')?.value || 'scan').trim() || 'scan';
 }
 
 function selectedProjectRecord() {
@@ -384,6 +494,7 @@ function syncProjectRunnerUi() {
   const project = selectedProjectRecord();
   if (!project) {
     setProjectRunUi({ status: 'No project selected.', url: '', supportedOrigin: '', loading: false });
+    void refreshPreflightSummary().catch(() => {});
     return;
   }
   if (state.projectLaunch?.project === project.key && state.projectLaunch?.url) {
@@ -393,6 +504,7 @@ function syncProjectRunnerUi() {
       supportedOrigin: project.supportedOrigin || '',
       loading: false,
     });
+    void refreshPreflightSummary().catch(() => {});
     return;
   }
   if (!project.launchable) {
@@ -402,6 +514,7 @@ function syncProjectRunnerUi() {
       supportedOrigin: '',
       loading: false,
     });
+    void refreshPreflightSummary().catch(() => {});
     return;
   }
   setProjectRunUi({
@@ -410,12 +523,14 @@ function syncProjectRunnerUi() {
     supportedOrigin: project.supportedOrigin || '',
     loading: false,
   });
+  void refreshPreflightSummary().catch(() => {});
 }
 
 function syncActionUi() {
   const mode = actionMode();
   const executeButton = document.getElementById('executeBtn');
   if (executeButton) executeButton.textContent = `Run Legacy ${mode}`;
+  void refreshPreflightSummary().catch(() => {});
 }
 
 async function runLegacyCommandStep({
@@ -999,6 +1114,7 @@ async function executeAction() {
     error: 'none',
   };
   renderCommandSummary(state.lastCommandSummary);
+  await refreshPreflightSummary().catch(() => {});
 
   const response = await api('/api/execute', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -1050,6 +1166,7 @@ async function runAllActions() {
   resetOutput('Starting Run All v0...\n');
   runHeaderSummary('Run All', 'running', '—', 'none', startedAt);
   setRunHeader({ status: 'running' });
+  await refreshPreflightSummary().catch(() => {});
 
   for (let index = 0; index < steps.length; index += 1) {
     const action = steps[index];
@@ -1133,6 +1250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('taskSelect').onchange = (e) => {
     document.getElementById('taskIdInput').value = e.target.value;
     renderLegacyTaskStatus();
+    refreshPreflightSummary().catch(() => {});
   };
   document.getElementById('runAllBtn').onclick = () => runAllActions().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
   document.getElementById('executeBtn').onclick = () => executeAction().catch((e) => appendOutput(`\nERROR: ${e.message}\n`));
@@ -1177,6 +1295,9 @@ window.__ACE_APP_TEST__ = {
   generateTalentCandidates,
   detectQaMode,
   buildCommandSummary,
+  refreshPreflightSummary,
+  renderPreflightSummary,
+  selectedPreflightStage,
   loadProjects,
   renderCommandSummary,
   runAllActions,

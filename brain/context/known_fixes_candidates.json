@@ -1,0 +1,44 @@
+{
+  "version": "ace/known-fix-candidates.v1",
+  "updatedAt": "2026-03-29T11:06:01.827Z",
+  "entries": [
+    {
+      "id": "candidate-git_apply_check_failed",
+      "title": "Rebuild or rebase a patch that no longer applies cleanly",
+      "pattern": "Git apply check failed",
+      "when": [
+        "A patch no longer matches the current tree.",
+        "git apply reports check failure or rejected hunks."
+      ],
+      "do": [
+        "Recompute the diff against the current tree.",
+        "Confirm the task folder still matches the target branch.",
+        "Apply only after the patch has been regenerated or refreshed."
+      ],
+      "avoid": [
+        "Retrying the same stale patch without refreshing it."
+      ],
+      "tags": [
+        "git",
+        "patch",
+        "apply"
+      ],
+      "source": "failure-history",
+      "updatedAt": "2026-03-29T11:06:01.827Z",
+      "status": "candidate",
+      "failureKey": "git_apply_check_failed",
+      "count": 15,
+      "firstSeen": "2026-03-29T07:59:09.707Z",
+      "lastSeen": "2026-03-29T11:05:37.364Z",
+      "exampleMessages": [
+        "Apply failed after patch drift."
+      ],
+      "relatedTools": [
+        "git"
+      ],
+      "relatedStages": [
+        "apply"
+      ]
+    }
+  ]
+}

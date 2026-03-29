@@ -1,0 +1,116 @@
+{
+  "version": "ace/known-fixes.v1",
+  "updatedAt": "2026-03-29T00:00:00.000Z",
+  "entries": [
+    {
+      "id": "path-quoting-windows",
+      "title": "Quote Windows paths at the shell boundary",
+      "pattern": "Path quoting",
+      "when": [
+        "PowerShell parses paths with spaces or brackets",
+        "A command uses literal filesystem paths",
+        "A helper is feeding file paths into subprocess arguments"
+      ],
+      "do": [
+        "Pass command arguments as arrays where possible.",
+        "Use `-LiteralPath` for PowerShell file operations.",
+        "Normalize repo-relative paths with forward slashes before prompt serialization."
+      ],
+      "avoid": [
+        "Building shell commands by string concatenation.",
+        "Letting unquoted paths cross a shell boundary."
+      ],
+      "tags": ["windows", "powershell", "paths"],
+      "source": "slice-2-known-fixes",
+      "updatedAt": "2026-03-29T00:00:00.000Z"
+    },
+    {
+      "id": "branch-creation-safe-path",
+      "title": "Create branches from a clean tracked worktree",
+      "pattern": "Branch creation",
+      "when": [
+        "ACE needs a disposable branch for apply or review",
+        "The repo already has tracked edits",
+        "Branch name collisions are possible"
+      ],
+      "do": [
+        "Verify tracked worktree cleanliness before branch creation.",
+        "Prefer a `codex/` prefix or the repo's existing branch prefix rule.",
+        "Derive a unique branch name before checkout."
+      ],
+      "avoid": [
+        "Creating branches on top of unreviewed tracked edits.",
+        "Reusing branch names that may already exist remotely or locally."
+      ],
+      "tags": ["git", "branch", "safety"],
+      "source": "slice-2-known-fixes",
+      "updatedAt": "2026-03-29T00:00:00.000Z"
+    },
+    {
+      "id": "patch-apply-failure-rollback",
+      "title": "Treat patch apply failures as rollback events",
+      "pattern": "Patch apply failure",
+      "when": [
+        "A generated diff touches disallowed paths",
+        "Git apply fails after branch creation",
+        "The patch may have drifted from the current tree"
+      ],
+      "do": [
+        "Validate patch paths before applying.",
+        "Apply with `git apply --index` on a clean branch.",
+        "Rollback branch state immediately if apply fails."
+      ],
+      "avoid": [
+        "Retrying the same broken patch without a rollback.",
+        "Applying to a dirty tracked worktree."
+      ],
+      "tags": ["git", "patch", "rollback"],
+      "source": "slice-2-known-fixes",
+      "updatedAt": "2026-03-29T00:00:00.000Z"
+    },
+    {
+      "id": "test-command-resolution-explicit-cwd",
+      "title": "Resolve test commands from explicit repo-local context",
+      "pattern": "Test command resolution",
+      "when": [
+        "npm scripts differ by workspace",
+        "A command must be executed from a known project root",
+        "The test harness should avoid guessing the current folder"
+      ],
+      "do": [
+        "Resolve the intended cwd explicitly before running a command.",
+        "Prefer repo-local scripts over ambient global tools.",
+        "Capture stdout and stderr together for diagnostics."
+      ],
+      "avoid": [
+        "Assuming the current shell directory is already the project root.",
+        "Hiding command selection inside a string-built shell pipeline."
+      ],
+      "tags": ["tests", "cwd", "scripts"],
+      "source": "slice-2-known-fixes",
+      "updatedAt": "2026-03-29T00:00:00.000Z"
+    },
+    {
+      "id": "windows-subprocess-array-args",
+      "title": "Use array args for Windows subprocesses",
+      "pattern": "Windows subprocess weirdness",
+      "when": [
+        "A Node or Python subprocess fails only on Windows",
+        "The command mixes shell quoting with file paths",
+        "Spawn or EPERM errors appear in a local run"
+      ],
+      "do": [
+        "Keep subprocess arguments structured instead of shell-joined.",
+        "Prefer direct executable paths and explicit `cwd` values.",
+        "Log the command shape before execution when debugging."
+      ],
+      "avoid": [
+        "Feeding Windows commands through `cmd /c` unless there is no alternative.",
+        "Assuming POSIX shell quoting rules apply on Windows."
+      ],
+      "tags": ["windows", "subprocess", "node", "python"],
+      "source": "slice-2-known-fixes",
+      "updatedAt": "2026-03-29T00:00:00.000Z"
+    }
+  ]
+}

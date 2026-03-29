@@ -14,6 +14,10 @@ export default async function runGraphEngineTests() {
     proposalRequiresApproval,
     createEdge,
     deriveRelationshipVisual,
+    createNode,
+    selectRepresentation,
+    getSketchRepresentation,
+    getWorldRepresentation,
   } = await loadModuleCopy(graphEnginePath, { label: 'graphEngine' });
 
   assert.deepEqual(GRAPH_LAYERS, ['system', 'world']);
@@ -88,6 +92,79 @@ export default async function runGraphEngineTests() {
   assert.equal(rsg.lastStatus, 'rsg-generate');
   assert.equal(proposalRequiresApproval('code-runtime-mutation'), true);
   assert.equal(proposalRequiresApproval('world-structure'), false);
+
+  const canonicalNode = createNode({
+    type: 'task',
+    content: 'Dragon perch intent',
+    metadata: {
+      role: 'task',
+      graphLayer: 'system',
+    },
+    representations: [
+      {
+        rep_id: 'dragon_perch_intent_01_sketch_icon',
+        kind: 'icon',
+        view_tags: ['sketch'],
+        lod_min: 0,
+        lod_max: 0.8,
+        payload: { label: 'Perch' },
+      },
+      {
+        rep_id: 'dragon_perch_intent_01_sketch_ghost',
+        kind: 'ghost',
+        view_tags: ['sketch'],
+        lod_min: 0.25,
+        lod_max: 0.6,
+        payload: { summary: 'Ghost perch scaffold' },
+      },
+      {
+        rep_id: 'dragon_perch_intent_01_world_mesh_stub',
+        kind: 'mesh_stub',
+        view_tags: ['world'],
+        lod_min: 0.8,
+        lod_max: 1.5,
+        payload: { mesh: 'dragon-perch-stub' },
+      },
+    ],
+  });
+  const canonicalNodeId = canonicalNode.id;
+  assert.equal(canonicalNode.representations.length, 3);
+  assert.equal(canonicalNode.representations[0].rep_id, 'dragon_perch_intent_01_sketch_icon');
+  assert.equal(canonicalNode.id, canonicalNodeId);
+  assert.equal(selectRepresentation(canonicalNode, 0.5, 'sketch')?.rep_id, 'dragon_perch_intent_01_sketch_ghost');
+  assert.equal(selectRepresentation(canonicalNode, 0.2, 'sketch')?.rep_id, 'dragon_perch_intent_01_sketch_icon');
+  assert.equal(selectRepresentation(canonicalNode, 1.0, 'world')?.rep_id, 'dragon_perch_intent_01_world_mesh_stub');
+  assert.equal(getSketchRepresentation(canonicalNode, 0.2)?.rep_id, 'dragon_perch_intent_01_sketch_icon');
+  assert.equal(getWorldRepresentation(canonicalNode, 0.2)?.rep_id, 'dragon_perch_intent_01_world_mesh_stub');
+  assert.equal(canonicalNode.id, canonicalNodeId);
+  const fallbackNode = createNode({
+    type: 'task',
+    content: 'Fallback perch',
+    representations: [
+      {
+        rep_id: 'fallback_sketch_icon',
+        kind: 'icon',
+        view_tags: ['sketch'],
+        lod_min: 0,
+        lod_max: 0.8,
+        payload: { label: 'Fallback icon' },
+      },
+      {
+        rep_id: 'fallback_sketch_ghost',
+        kind: 'ghost',
+        view_tags: ['sketch'],
+        lod_min: 0.25,
+        lod_max: 0.4,
+        payload: { label: 'Fallback ghost' },
+      },
+    ],
+  });
+  const fallbackA = selectRepresentation(fallbackNode, 0.95, 'sketch');
+  const fallbackB = selectRepresentation(fallbackNode, 0.95, 'sketch');
+  assert.equal(fallbackA?.rep_id, 'fallback_sketch_icon');
+  assert.equal(fallbackB?.rep_id, fallbackA?.rep_id);
+  assert.equal(selectRepresentation({ id: 'legacy_node', content: 'Legacy node', metadata: {} }, 0.4, 'sketch'), null);
+  assert.equal(getSketchRepresentation({ id: 'legacy_node', content: 'Legacy node', metadata: {} }, 0.4), null);
 
   const ropeEdge = createEdge({
     source: 'node_adapter',

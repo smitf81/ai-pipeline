@@ -111,6 +111,9 @@ import {
   getNodeTypesForLayer,
   createDefaultRsgState,
   deriveRelationshipVisual,
+  getSketchRepresentation,
+  getWorldRepresentation,
+  selectRepresentation,
   normalizeGraphBundle,
   buildRsgState,
 } from ${JSON.stringify(graphEngineModule.url)};

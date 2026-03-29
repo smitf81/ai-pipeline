@@ -1,57 +1,60 @@
 # Next Slice
 
-Generated: 2026-03-27T23:58:00Z
+Generated: 2026-03-29T00:00:00Z
 
 ## Interpreted Task
 
-The active work is currently focused on RGS node status handling, but the broader planning pressure is to avoid another oversized pass and pick the smallest next step that advances the intent-driven spatial direction without reopening compatibility cleanup too early.
+The repo now has repeated-failure tracking plus review-only candidate fixes, and the next useful slice is to surface those candidates in a reviewable desk or archivist view without contaminating the trusted prompt path.
 
 ## Scope Risks
 
-- The roadmap spans orchestration, persistent graph/world modeling, QA drift surfacing, and eventual compatibility cleanup.
-- Trying to fold those into one pass would blur the source of truth and likely produce a partial result that looks complete but is not.
-- The current active slice is already in flight, so the next recommendation should be sequenced after it rather than competing with it.
+- This touches the archivist, known-fixes review path, and desk surfacing all at once.
+- If candidate fixes leak into the trusted prompt path, the repo will silently lose the separation we just created.
+- The right slice is narrow: keep trusted output trusted-only, then show review-only candidates where humans can inspect them.
 
 ## Best Next Slice
 
-Objective: seed one minimal persistent graph/world-model seam that can carry a real relationship from canonical ACE state into planner-visible context.
+Objective: surface repeated-failure candidates in a reviewable view so humans can inspect the evidence without polluting worker prompts.
 
-Exact focus: introduce or wire the smallest durable graph relation or node representation needed for one live slice of world state, then reflect that state in the planner context artifacts.
+Exact focus: show the repeated-failure history and candidate known-fix proposals from `ui/failureMemory.js` and `ui/knownFixes.js`, while keeping normal worker prompts trusted-only.
 
 Likely systems involved:
 
-- `brain/emergence/`
+- `ui/server.js`
+- `ui/failureMemory.js`
+- `ui/knownFixes.js`
+- `ui/archivistWriteback.js`
+- `ui/tests/failureMemory.test.mjs`
 - `brain/context/`
-- the runtime or planner surface that reads canonical world state
 
 Why this comes first:
 
-- It advances the intent-driven direction from the roadmap without requiring the full spatial field layer.
-- It creates a real foothold for later orchestration work instead of another diagnostic-only pass.
-- It keeps compatibility cleanup out of the critical path until the new seam is trustworthy.
+- It keeps the trusted prompt lane clean while still learning from repeated failures.
+- It makes candidate fixes inspectable without auto-promoting them.
+- It keeps the archivist as the review gate for what becomes visible to the rest of ACE.
 
 Explicitly leave out:
 
-- removing `projects/emergence/*` compatibility
-- broader MCP or QA refactors
-- spatial field expansion beyond one durable relationship
-- multi-domain brain work
+- planner policy changes
+- UI redesign work
+- broad prompt architecture changes
+- auto-promotion from candidate fixes into the trusted library
 
 ## Definition of Done
 
-- One persistent graph/world-state relationship is represented canonically and can be read back by the planner or context layer.
-- The slice is visible in the operational context notes so the next pass has a concrete anchor.
-- No placeholder graph model is left behind as if it were complete.
+- Repeated failures are stored locally with stable keys and bounded examples.
+- Candidate fixes appear only in review/debug surfaces unless explicitly requested.
+- The trusted library still feeds worker prompts without candidate contamination.
 
 ## Likely Follow-up Slices
 
-1. Thread the new canonical graph seam into one runtime or planner read path.
-2. Surface graph/world drift or constraint visibility in QA or MCP context.
-3. Decide whether `projects/emergence/*` compatibility can be narrowed or removed.
-4. Expand from one relation into the first useful spatial pressure layer only after the graph seam is stable.
+1. Add a compact review panel for candidate fixes and their failure evidence.
+2. Show repeated-failure counts in the archivist or QA desk surfaces.
+3. Add a manual promotion path from candidate to trusted once a human approves it.
+4. Only then broaden the failure matcher or collapse more paths into the same review surface.
 
 ## Confidence / Uncertainty
 
-- Assumption: the current active RGS-node work is the immediate blocker and should finish before this next slice starts.
-- Assumption: the repo is ready for a minimal persistent graph seam without first deleting legacy compatibility paths.
-- Unclear: whether the canonical graph representation should land in `brain/emergence` first or in the runtime layer first; the safe choice is whichever path already owns current truth.
+- Assumption: stable failure keys are enough to cluster the noisy raw error text we already see.
+- Assumption: candidate fixes should stay review-only until a human explicitly promotes them.
+- Unclear: whether the review surface should live in the archivist desk, the QA department, or both.

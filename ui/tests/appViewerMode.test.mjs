@@ -170,6 +170,55 @@ export default async function runAppViewerModeTest() {
     '/api/tasks': {
       tasks: ['task-1'],
     },
+    '/api/spatial/preflight': ({ options }) => {
+      const body = JSON.parse(String(options.body || '{}'));
+      if (body.stage === 'planner') {
+        return {
+          body: {
+            ok: true,
+            stage: 'planner',
+            guard_status: 'ready',
+            guard_reason: 'Planner preflight passed.',
+            guard_reasons: ['Planner preflight passed.'],
+            cache_status: null,
+          },
+        };
+      }
+      if (body.stage === 'context-manager') {
+        return {
+          body: {
+            ok: false,
+            stage: 'context-manager',
+            guard_status: 'blocked',
+            guard_reason: 'Context bundle is stale.',
+            guard_reasons: ['Context bundle is stale.'],
+            cache_status: null,
+          },
+        };
+      }
+      if (body.stage === 'rebuild') {
+        return {
+          body: {
+            ok: true,
+            stage: 'rebuild',
+            guard_status: 'cache_reused',
+            guard_reason: 'Cached patch already exists; rebuild skipped.',
+            guard_reasons: ['Patch already exists; reuse the cached task artefact instead of rebuilding.', 'Cached patch already exists; rebuild skipped.'],
+            cache_status: 'reused',
+          },
+        };
+      }
+      return {
+        body: {
+          ok: true,
+          stage: body.stage || 'planner',
+          guard_status: 'warning',
+          guard_reason: 'Preflight warning.',
+          guard_reasons: ['Preflight warning.'],
+          cache_status: null,
+        },
+      };
+    },
   };
 
   const qaSandbox = await loadApp('http://localhost/?mode=qa', fetchMap);
@@ -213,6 +262,10 @@ export default async function runAppViewerModeTest() {
   assert.equal(operatorSandbox.document.getElementById('uiModeLabel').textContent, 'legacy shell');
   assert.equal(operatorSandbox.document.getElementById('runProjectBtn').disabled, true);
   assert.match(operatorSandbox.document.getElementById('projectRunStatus').textContent, /topdown-slice static web prototype only/i);
+  assert.equal(operatorSandbox.document.getElementById('preflightStage').textContent, 'planner');
+  assert.equal(operatorSandbox.document.getElementById('preflightStatus').textContent, 'ready');
+  assert.match(operatorSandbox.document.getElementById('preflightReason').textContent, /planner preflight passed/i);
+  assert.equal(operatorSandbox.document.getElementById('preflightCacheStatus').textContent, 'none');
   assert.equal(operatorSandbox.document.getElementById('artifactTaskLabel').textContent, 'Selected legacy task: task-1');
   assert.match(operatorSandbox.document.getElementById('artifactTaskFolder').textContent, /Legacy task folders are debug-only/i);
   assert.match(operatorSandbox.document.getElementById('artifactStatusMeta').textContent, /legacy compatibility only/i);
@@ -226,12 +279,28 @@ export default async function runAppViewerModeTest() {
 
   operatorSandbox.document.getElementById('taskSelect').onchange({ target: { value: 'task-2' } });
   await new Promise((resolve) => setTimeout(resolve, 0));
+  await operatorSandbox.window.__ACE_APP_TEST__.refreshPreflightSummary();
+  assert.equal(operatorSandbox.document.getElementById('preflightStage').textContent, 'planner');
+  assert.equal(operatorSandbox.document.getElementById('preflightStatus').textContent, 'ready');
   assert.equal(operatorSandbox.document.getElementById('artifactTaskLabel').textContent, 'Selected legacy task: task-2');
   assert.match(operatorSandbox.document.getElementById('artifactTaskFolder').textContent, /Legacy task folders are debug-only/i);
   assert.match(operatorSandbox.document.getElementById('artifactStatusMeta').textContent, /legacy compatibility only/i);
   assert.equal(operatorSandbox.document.getElementById('artifact_context_status').textContent, 'legacy-only');
   assert.equal(operatorSandbox.document.getElementById('artifact_plan_status').textContent, 'world-first');
   assert.equal(operatorSandbox.document.getElementById('artifact_patch_status').textContent, 'use-studio');
+
+  operatorSandbox.document.getElementById('actionSelect').value = 'manage';
+  await operatorSandbox.window.__ACE_APP_TEST__.refreshPreflightSummary();
+  assert.equal(operatorSandbox.document.getElementById('preflightStage').textContent, 'context-manager');
+  assert.equal(operatorSandbox.document.getElementById('preflightStatus').textContent, 'blocked');
+  assert.match(operatorSandbox.document.getElementById('preflightReason').textContent, /context bundle is stale/i);
+
+  operatorSandbox.document.getElementById('actionSelect').value = 'build';
+  await operatorSandbox.window.__ACE_APP_TEST__.refreshPreflightSummary();
+  assert.equal(operatorSandbox.document.getElementById('preflightStage').textContent, 'rebuild');
+  assert.equal(operatorSandbox.document.getElementById('preflightStatus').textContent, 'cache reused');
+  assert.match(operatorSandbox.document.getElementById('preflightReason').textContent, /cached patch already exists/i);
+  assert.equal(operatorSandbox.document.getElementById('preflightCacheStatus').textContent, 'reused');
 
   const launchSandbox = await loadApp('http://localhost/', {
     ...fetchMap,
@@ -244,6 +313,19 @@ export default async function runAppViewerModeTest() {
         launchable: true,
         supportedOrigin: 'http://127.0.0.1:4173/',
       }],
+    },
+    '/api/spatial/preflight': ({ options }) => {
+      const body = JSON.parse(String(options.body || '{}'));
+      return {
+        body: {
+          ok: true,
+          stage: body.stage || 'planner',
+          guard_status: 'ready',
+          guard_reason: 'Planner preflight passed.',
+          guard_reasons: ['Planner preflight passed.'],
+          cache_status: null,
+        },
+      };
     },
     '/api/projects/run': ({ options }) => {
       const body = JSON.parse(String(options.body || '{}'));

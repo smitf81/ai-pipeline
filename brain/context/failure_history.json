@@ -1,0 +1,66 @@
+{
+  "version": "ace/failure-memory.v1",
+  "updated_at": "2026-03-29T11:06:01.823Z",
+  "entries": [
+    {
+      "failure_key": "unknown_failure",
+      "stage": "planner",
+      "agent_id": "planner",
+      "agent_version": "ace/agent-attribution.v0",
+      "count": 41,
+      "first_seen": "2026-03-29T10:12:36.572Z",
+      "last_seen": "2026-03-29T11:06:01.823Z",
+      "example_messages": [
+        "M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/architecture-memory.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md",
+        "blocked | M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/architecture-memory.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/studio-state.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md",
+        "blocked | M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/architecture-memory.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md",
+        "blocked | Project key could not be resolved to a concrete project path.",
+        "blocked | M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md"
+      ],
+      "related_tools": [
+        "node",
+        "autonomy-policy",
+        "git"
+      ],
+      "related_stages": [
+        "planner",
+        "builder-preflight"
+      ],
+      "related_runs": [],
+      "related_projects": [
+        "ace-self"
+      ],
+      "related_agents": [
+        "planner",
+        "builder"
+      ],
+      "source_count": 41
+    },
+    {
+      "failure_key": "git_apply_check_failed",
+      "stage": "apply",
+      "agent_id": "executor",
+      "agent_version": "ace/agent-attribution.v0",
+      "count": 15,
+      "first_seen": "2026-03-29T07:59:09.707Z",
+      "last_seen": "2026-03-29T11:05:37.364Z",
+      "example_messages": [
+        "Apply failed after patch drift."
+      ],
+      "related_tools": [
+        "git"
+      ],
+      "related_stages": [
+        "apply"
+      ],
+      "related_runs": [
+        "0001"
+      ],
+      "related_projects": [],
+      "related_agents": [
+        "executor"
+      ],
+      "source_count": 15
+    }
+  ]
+}

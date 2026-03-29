@@ -46,6 +46,8 @@ export default async function runServerTests() {
     normalizeExecutiveEnvelope,
     mapEnvelopeToMaterialModule,
     buildModulePreview,
+    buildGuardSurfacePayload,
+    evaluateStagePreflightSurface,
     readDashboardFileForRoot,
     resolveLegacyFallbackPayload,
     smokeCheckStaticWebBoot,
@@ -1014,6 +1016,63 @@ export default async function runServerTests() {
   });
   assert.equal(stalePreflight.ok, false);
   assert.equal(stalePreflight.code, 'preflight-stale');
+
+  const blockedGuard = buildGuardSurfacePayload({
+    stage: 'executor',
+    preflight: {
+      ok: false,
+      blockers: ['Repository has uncommitted tracked changes.'],
+      checks: {
+        repoClean: { ok: false },
+      },
+    },
+  });
+  assert.equal(blockedGuard.ok, false);
+  assert.equal(blockedGuard.stage, 'executor');
+  assert.equal(blockedGuard.guard_status, 'blocked');
+  assert.equal(blockedGuard.guard_reason, 'Repository has uncommitted tracked changes.');
+  assert.deepEqual(blockedGuard.guard_reasons, ['Repository has uncommitted tracked changes.']);
+
+  const readyGuard = buildGuardSurfacePayload({
+    stage: 'planner',
+    preflight: {
+      ok: true,
+      blockers: [],
+      checks: {
+        repoClean: { ok: true },
+      },
+      summary: 'Planner preflight passed.',
+    },
+  });
+  assert.equal(readyGuard.ok, true);
+  assert.equal(readyGuard.guard_status, 'ready');
+  assert.equal(readyGuard.guard_reason, 'Planner preflight passed.');
+
+  const cacheReusedGuard = buildGuardSurfacePayload({
+    stage: 'rebuild',
+    preflight: {
+      ok: false,
+      blockers: ['Patch already exists; reuse the cached task artefact instead of rebuilding.'],
+      checks: {},
+    },
+    cacheStatus: 'reused',
+    cacheReason: 'Cached patch already exists; rebuild skipped.',
+  });
+  assert.equal(cacheReusedGuard.ok, true);
+  assert.equal(cacheReusedGuard.guard_status, 'cache_reused');
+  assert.equal(cacheReusedGuard.cache_status, 'reused');
+  assert.match(cacheReusedGuard.guard_reason, /cached patch already exists/i);
+
+  const genericPreflight = evaluateStagePreflightSurface({
+    stage: 'planner',
+    projectKey: 'ace-self',
+    projectPath: 'C:/workspace/ace-self',
+  });
+  assert.equal(genericPreflight.stage, 'planner');
+  assert.equal(typeof genericPreflight.guard_status, 'string');
+  assert.equal(Object.prototype.hasOwnProperty.call(genericPreflight, 'preflight'), true);
+  assert.equal(typeof genericPreflight.policy?.decision, 'string');
+  assert.equal(Object.prototype.hasOwnProperty.call(genericPreflight.policy || {}, 'fix_task_created'), true);
 
   const verificationRequired = evaluateApplyGate({
     card: {
