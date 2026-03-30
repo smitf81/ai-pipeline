@@ -3,71 +3,42 @@
 Deterministic failure tracking for repeated recognisable failures. Candidate fixes are review-only.
 
 Version: ace/failure-memory.v1
-Updated: 2026-03-30T08:59:41.931Z
+Updated: 2026-03-30T09:00:21.361Z
 
 ### unknown_failure
-- Count: 10954
+- Count: 10966
 - Stage: planner
 - Agent: planner (ace/agent-attribution.v0)
 - First seen: 2026-03-29T10:12:36.572Z
-- Last seen: 2026-03-30T08:59:41.931Z
+- Last seen: 2026-03-30T09:00:21.361Z
 - Failure class: panel_degraded
-- Last error timestamp: 2026-03-30T08:59:41.931Z
-- Last error: M brain/context/agent_audits/builder/builder_0001.json
- M brain/context/agent_audits/builder/builder_0001.md
- M brain/context/autonomy_fix_tasks.json
- M brain/context/autonomy_fix_tasks.md
- M brain/context/failure_history.json
+- Last error timestamp: 2026-03-30T09:00:21.361Z
+- Last error: M brain/context/failure_history.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/next_slice.md
- M brain/context/ui_backend_drift.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
- M data/spatial/history.json
  M data/spatial/pages.json
- M data/spatial/qa/local-gates/test-unit-latest.json
- M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/failureMemory.js
- M ui/public/spatial/spatialApp.js
- M ui/server.js
- M ui/tests/failureMemory.test.mjs
- M ui/tests/helpers/browser-module-loader.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
- M ui/tests/spatialApp.smoke.test.mjs
 - Related tools: node, autonomy-policy, git
 - Related stages: planner, builder-preflight
 - Related projects: ace-self
 - Related agents: planner, builder
 - Example messages:
-  - M brain/context/agent_audits/builder/builder_0001.json
- M brain/context/agent_audits/builder/builder_0001.md
- M brain/context/autonomy_fix_tasks.json
- M brain/context/autonomy_fix_tasks.md
- M brain/context/failure_history.json
+  - M brain/context/failure_history.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/next_slice.md
- M brain/context/ui_backend_drift.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
- M data/spatial/history.json
  M data/spatial/pages.json
- M data/spatial/qa/local-gates/test-unit-latest.json
- M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/failureMemory.js
- M ui/public/spatial/spatialApp.js
- M ui/server.js
- M ui/tests/failureMemory.test.mjs
- M ui/tests/helpers/browser-module-loader.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
- M ui/tests/spatialApp.smoke.test.mjs
+  - M brain/context/failure_history.json
+ M brain/context/failure_history.md
+ M brain/context/known_fixes_candidates.json
+ M brain/context/known_fixes_candidates.md
+ M data/spatial/workspace.json
   - M  brain/context/agent_audits/builder/builder_0001.json
 M  brain/context/agent_audits/builder/builder_0001.md
 M  brain/context/autonomy_fix_tasks.json
@@ -153,7 +124,7 @@ M  ui/tests/spatialApp.smoke.test.mjs
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
  M brain/context/next_slice.md
- D brain/context/ui_backend_drift.md
+ M brain/context/ui_backend_drift.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
  M data/spatial/history.json
@@ -178,29 +149,7 @@ M  ui/tests/spatialApp.smoke.test.mjs
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
  M brain/context/next_slice.md
- M brain/emergence/slices.json
- M brain/emergence/slices.md
- M data/spatial/history.json
- M data/spatial/pages.json
- M data/spatial/qa/local-gates/test-unit-latest.json
- M data/spatial/ta-department.json
- M data/spatial/workspace.json
- M ui/failureMemory.js
- M ui/public/spatial/spatialApp.js
- M ui/server.js
- M ui/tests/failureMemory.test.mjs
- M ui/tests/helpers/browser-module-loader.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
- M ui/tests/spatialApp.smoke.test.mjs
-  - M brain/context/agent_audits/builder/builder_0001.json
- M brain/context/agent_audits/builder/builder_0001.md
- M brain/context/autonomy_fix_tasks.json
- M brain/context/autonomy_fix_tasks.md
- M brain/context/failure_history.json
- M brain/context/failure_history.md
- M brain/context/known_fixes_candidates.json
- M brain/context/known_fixes_candidates.md
+ D brain/context/ui_backend_drift.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
  M data/spatial/history.json
