@@ -204,6 +204,257 @@ function normalizeDeskEntries(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
+function normalizeRenderObject(value = {}) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function normalizeRenderList(value = []) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function normalizeRenderText(value = '', fallback = '') {
+  return typeof value === 'string' ? value.trim() : fallback;
+}
+
+export function normalizeTruthPayload(truth = {}) {
+  const source = normalizeRenderObject(truth);
+  return {
+      department: normalizeRenderText(source.department) || 'Desk truth',
+    workload: {
+      assignedTasks: Number(source.workload?.assignedTasks ?? 0) || 0,
+      queueSize: Number(source.workload?.queueSize ?? 0) || 0,
+      outputs: Number(source.workload?.outputs ?? 0) || 0,
+    },
+      throughput: normalizeRenderText(source.throughput) || 'No throughput signal',
+    reports: normalizeRenderList(source.reports),
+    scorecards: normalizeRenderList(source.scorecards),
+    assessments: normalizeRenderList(source.assessments),
+    guardrails: normalizeRenderList(source.guardrails),
+    context: source.context && typeof source.context === 'object' ? source.context : source.context ?? null,
+      plannerBrief: normalizeRenderText(source.plannerBrief),
+      statement: normalizeRenderText(source.statement),
+      intentType: normalizeRenderText(source.intentType),
+      rawInput: normalizeRenderText(source.rawInput),
+    requestedOutcomes: normalizeRenderList(source.requestedOutcomes),
+    unresolved: normalizeRenderList(source.unresolved),
+    evidence: normalizeRenderList(source.evidence),
+  };
+}
+
+function normalizeQARunPayload(run = {}) {
+  const source = normalizeRenderObject(run);
+  const failedSteps = normalizeRenderList(source.failedSteps);
+  const steps = normalizeRenderList(source.steps);
+  const findings = normalizeRenderList(source.findings);
+  return {
+    id: normalizeRenderText(source.id, '') || null,
+    scenario: normalizeRenderText(source.scenario, '') || null,
+    mode: normalizeRenderText(source.mode, '') || null,
+    trigger: normalizeRenderText(source.trigger, '') || null,
+    status: normalizeRenderText(source.status, '') || null,
+    verdict: normalizeRenderText(source.verdict, '') || null,
+    error: normalizeRenderText(source.error, '') || null,
+    createdAt: normalizeRenderText(source.createdAt, '') || null,
+    finishedAt: normalizeRenderText(source.finishedAt, '') || null,
+    findingCount: Number(source.findingCount ?? findings.length ?? 0) || 0,
+    highestSeverity: normalizeRenderText(source.highestSeverity, '') || null,
+    primaryScreenshot: source.primaryScreenshot && typeof source.primaryScreenshot === 'object' ? source.primaryScreenshot : null,
+    stepSummary: normalizeRenderList(source.stepSummary),
+    steps,
+    findings,
+    failedSteps,
+    console: normalizeRenderList(source.console),
+    network: normalizeRenderList(source.network),
+  };
+}
+
+export function normalizeQAReportPayload(report = {}) {
+  const source = normalizeRenderObject(report);
+  return {
+      status: normalizeRenderText(source.status) || 'idle',
+      summary: normalizeRenderText(source.summary),
+    desks: normalizeRenderList(source.desks),
+    failures: normalizeRenderList(source.failures).map((failure) => normalizeRenderObject(failure)),
+  };
+}
+
+function normalizeQAUnitGatePayload(unitGate = {}) {
+  const source = normalizeRenderObject(unitGate);
+  return {
+    status: normalizeRenderText(source.status, 'pending'),
+    passedCount: Number(source.passedCount ?? 0) || 0,
+    totalChecks: Number(source.totalChecks ?? 0) || 0,
+    failures: normalizeRenderList(source.failures).map((failure) => normalizeRenderObject(failure)),
+  };
+}
+
+function normalizeQABootGatePayload(studioBootGate = {}) {
+  const source = normalizeRenderObject(studioBootGate);
+  return {
+    verdict: normalizeRenderText(source.verdict, 'pending'),
+    status: normalizeRenderText(source.status, 'pending'),
+    findingCount: Number(source.findingCount ?? 0) || 0,
+    consoleErrorCount: Number(source.consoleErrorCount ?? 0) || 0,
+    networkFailureCount: Number(source.networkFailureCount ?? 0) || 0,
+    failedSteps: normalizeRenderList(source.failedSteps).map((step) => normalizeRenderObject(step)),
+  };
+}
+
+function normalizeQALocalGatePayload(localGate = {}) {
+  const source = normalizeRenderObject(localGate);
+  const unit = source.unit ? normalizeQAUnitGatePayload(source.unit) : null;
+  const studioBoot = source.studioBoot ? normalizeQABootGatePayload(source.studioBoot) : null;
+  return unit || studioBoot ? { unit, studioBoot } : null;
+}
+
+function normalizeQASectionPayload(section = {}) {
+  const source = normalizeRenderObject(section);
+  return {
+    ...source,
+    id: normalizeRenderText(source.id, '') || null,
+    label: normalizeRenderText(source.label, '') || 'QA',
+    kind: normalizeRenderText(source.kind, '') || null,
+    emptyState: normalizeRenderText(source.emptyState, ''),
+    summary: normalizeRenderText(source.summary, ''),
+    suiteSummary: normalizeRenderText(source.suiteSummary, ''),
+    structuredStatus: normalizeRenderText(source.structuredStatus, ''),
+    structuredSummary: normalizeRenderText(source.structuredSummary, ''),
+    busy: Boolean(source.busy),
+    scorecardCount: Number(source.scorecardCount ?? 0) || 0,
+    scorecardDeskCount: Number(source.scorecardDeskCount ?? 0) || 0,
+    report: normalizeRenderObject(source.report),
+    latestBrowserRun: normalizeQARunPayload(source.latestBrowserRun || source.latestRun || null),
+    localGate: normalizeQALocalGatePayload(source.localGate || source.gate || null),
+    cards: normalizeRenderList(source.cards),
+    items: normalizeRenderList(source.items),
+  };
+}
+
+export function normalizeRosterSurfacePayload(rosterSurfaceModel = {}) {
+  const source = normalizeRenderObject(rosterSurfaceModel);
+  const department = normalizeRenderObject(source.department);
+  const summary = normalizeRenderObject(source.summary);
+  const normalizeRosterEntity = (entry = {}) => {
+    const entity = normalizeRenderObject(entry);
+    return {
+      ...entity,
+      entityId: normalizeRenderText(entity.entityId, '') || entity.entityId || null,
+      label: normalizeRenderText(entity.label, '') || 'Unnamed entity',
+      health: normalizeRenderText(entity.health, '') || 'unknown',
+      statusLabel: normalizeRenderText(entity.statusLabel, '') || 'covered',
+      leadLabel: normalizeRenderText(entity.leadLabel, '') || 'n/a',
+      entityType: normalizeRenderText(entity.entityType, '') || 'desk',
+      assignedRoster: normalizeRenderList(entity.assignedRoster),
+      assignedRoles: normalizeRenderList(entity.assignedRoles),
+      roleCoverage: normalizeRenderList(entity.roleCoverage),
+      roster: normalizeRenderList(entity.roster),
+      openSeatCount: Number(entity.openSeatCount ?? 0) || 0,
+    };
+  };
+  const normalizeRosterSignal = (entry = {}) => {
+    const signal = normalizeRenderObject(entry);
+    return {
+      ...signal,
+      id: normalizeRenderText(signal.id, '') || null,
+      label: normalizeRenderText(signal.label, '') || 'Signal',
+      kind: normalizeRenderText(signal.kind, '') || 'signal',
+      scope: normalizeRenderText(signal.scope, '') || 'scope',
+      suggestedHire: normalizeRenderText(signal.suggestedHire, '') || 'Suggested hire unavailable.',
+      reasons: normalizeRenderList(signal.reasons),
+      strandCount: Number(signal.strandCount ?? 0) || 0,
+      blockerCount: Number(signal.blockerCount ?? 0) || 0,
+      staffingGapCount: Number(signal.staffingGapCount ?? 0) || 0,
+      weakRelationshipCount: Number(signal.weakRelationshipCount ?? 0) || 0,
+      priorityScore: Number(signal.priorityScore ?? 0) || 0,
+    };
+  };
+  const departments = normalizeRenderList(source.departments).map(normalizeRosterEntity);
+  const desks = normalizeRenderList(source.desks).map(normalizeRosterEntity);
+  const roster = normalizeRenderList(source.roster).map(normalizeRosterEntity);
+  const openRoles = normalizeRenderList(source.openRoles).map((entry) => ({
+    ...normalizeRenderObject(entry),
+    blocker: Boolean(entry?.blocker),
+    entityLabel: normalizeRenderText(entry?.entityLabel, '') || entry?.entityId || 'Unknown entity',
+    entityType: normalizeRenderText(entry?.entityType, '') || 'desk',
+    entityId: normalizeRenderText(entry?.entityId, '') || null,
+    roleLabel: normalizeRenderText(entry?.roleLabel, '') || normalizeRenderText(entry?.roleId, '') || normalizeRenderText(entry?.kind, '') || 'open seat',
+    roleId: normalizeRenderText(entry?.roleId, '') || null,
+    kind: normalizeRenderText(entry?.kind, '') || 'open-seat',
+    shortfall: Number(entry?.shortfall ?? 0) || 0,
+    urgency: normalizeRenderText(entry?.urgency, '') || 'low',
+  }));
+  const blockers = normalizeRenderList(source.blockers);
+  const hiringSignals = normalizeRenderList(source.hiringSignals).map(normalizeRosterSignal);
+  const resourceSignals = normalizeRenderList(Array.isArray(source.resourceSignals) ? source.resourceSignals : listDepartmentsByPriority(source.resourceSignalModel))
+    .map((entry) => ({
+      ...normalizeRenderObject(entry),
+      departmentId: normalizeRenderText(entry?.departmentId, '') || null,
+      departmentLabel: normalizeRenderText(entry?.departmentLabel, '') || 'Department',
+      resourcePressure: normalizeRenderText(entry?.resourcePressure, '') || 'unknown',
+      reasonSummary: normalizeRenderList(entry?.reasonSummary),
+      priorityScore: Number(entry?.priorityScore ?? 0) || 0,
+      blockerCount: Number(entry?.blockerCount ?? 0) || 0,
+      staffingGapCount: Number(entry?.staffingGapCount ?? 0) || 0,
+      weakRelationshipCount: Number(entry?.weakRelationshipCount ?? 0) || 0,
+    }));
+  const activeDepartmentCards = departments.length ? departments : desks;
+  return {
+    department: {
+        name: normalizeRenderText(department.name) || 'People Plan',
+        summary: normalizeRenderText(department.summary) || 'Who we have and who we still need',
+        updatedAt: normalizeRenderText(department.updatedAt) || 'just now',
+    },
+    summary: {
+      urgency: normalizeRenderText(summary.urgency) || 'low',
+      totalCoverage: Number(summary.totalCoverage ?? 0) || 0,
+      healthyCount: Number(summary.healthyCount ?? 0) || 0,
+      openEntityCount: Number(summary.openEntityCount ?? 0) || 0,
+      openRoleCount: Number(summary.openRoleCount ?? 0) || 0,
+      missingLeadCount: Number(summary.missingLeadCount ?? 0) || 0,
+      blockerCount: Number(summary.blockerCount ?? 0) || 0,
+      rosterCount: Number(summary.rosterCount ?? roster.length) || 0,
+    },
+    departments,
+    desks,
+    roster,
+    openRoles,
+    blockers,
+    hiringSignals,
+    resourceSignals,
+    activeDepartmentCards,
+  };
+}
+
+export function normalizeDeskSectionPayload(section = {}) {
+  const source = normalizeRenderObject(section);
+  const latestBrowserRun = source.latestBrowserRun || source.latestRun
+    ? normalizeQARunPayload(source.latestBrowserRun || source.latestRun || null)
+    : null;
+  return {
+    ...source,
+      id: normalizeRenderText(source.id) || null,
+      label: normalizeRenderText(source.label),
+      kind: normalizeRenderText(source.kind),
+      emptyState: normalizeRenderText(source.emptyState),
+    value: source.value ?? null,
+    truth: source.truth && typeof source.truth === 'object' ? source.truth : null,
+    report: source.report && typeof source.report === 'object' ? normalizeQAReportPayload(source.report) : null,
+    latestBrowserRun,
+    latestRun: latestBrowserRun,
+    localGate: source.localGate || source.gate ? normalizeQALocalGatePayload(source.localGate || source.gate || null) : null,
+    gate: source.gate || source.localGate ? normalizeQALocalGatePayload(source.gate || source.localGate || null) : null,
+    cards: normalizeRenderList(source.cards),
+    items: normalizeRenderList(source.items),
+    economy: normalizeRenderObject(source.economy),
+    suiteSummary: normalizeRenderText(source.suiteSummary),
+    structuredStatus: normalizeRenderText(source.structuredStatus),
+    structuredSummary: normalizeRenderText(source.structuredSummary),
+    busy: Boolean(source.busy),
+    scorecardCount: Number(source.scorecardCount ?? 0) || 0,
+    scorecardDeskCount: Number(source.scorecardDeskCount ?? 0) || 0,
+  };
+}
+
 function normalizeDeskStatus(value) {
   return String(value || '').trim().toLowerCase();
 }
@@ -525,6 +776,15 @@ const EMPTY_SERVER_HEALTH = {
   ok: false,
   pid: null,
   startedAt: null,
+  safeMode: false,
+  bootHealth: {
+    checked: false,
+    ok: true,
+    safeMode: false,
+    reason: '',
+    checkedAt: null,
+    stateShape: null,
+  },
   selfUpgrade: {
     status: 'idle',
     deploy: {
@@ -537,6 +797,385 @@ const EMPTY_SERVER_HEALTH = {
     },
   },
 };
+
+const SPATIAL_SAFE_MODE_SESSION_KEY = 'ace.spatial.safeMode';
+const SPATIAL_SAFE_MODE_REASON_SESSION_KEY = 'ace.spatial.safeModeReason';
+const EMPTY_BOOT_HEALTH = {
+  checked: false,
+  ok: true,
+  safeMode: false,
+  reason: '',
+  checkedAt: null,
+  stateShape: null,
+};
+
+const EMPTY_SAFE_MODE_SNAPSHOT = {
+  safeMode: true,
+  reason: '',
+  checkedAt: null,
+  bootHealth: EMPTY_BOOT_HEALTH,
+  health: EMPTY_SERVER_HEALTH,
+  criticalErrors: [],
+  recentQaResults: [],
+  latestQARun: null,
+  localGate: {
+    unit: null,
+    studioBoot: null,
+  },
+  failingTestNames: [],
+  failureHistory: {
+    updated_at: null,
+    entries: [],
+  },
+  artifactRefs: [],
+};
+
+function getSpatialSessionStorage() {
+  try {
+    return window.sessionStorage || null;
+  } catch {
+    return null;
+  }
+}
+
+function readSpatialSafeModeSession() {
+  const storage = getSpatialSessionStorage();
+  if (!storage) return false;
+  try {
+    return storage.getItem(SPATIAL_SAFE_MODE_SESSION_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function readSpatialSafeModeReasonSession() {
+  const storage = getSpatialSessionStorage();
+  if (!storage) return '';
+  try {
+    return String(storage.getItem(SPATIAL_SAFE_MODE_REASON_SESSION_KEY) || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+function writeSpatialSafeModeSession(safeMode = false, reason = '') {
+  const storage = getSpatialSessionStorage();
+  if (!storage) return;
+  try {
+    if (safeMode) {
+      storage.setItem(SPATIAL_SAFE_MODE_SESSION_KEY, 'true');
+      storage.setItem(SPATIAL_SAFE_MODE_REASON_SESSION_KEY, String(reason || '').trim());
+      return;
+    }
+    storage.removeItem(SPATIAL_SAFE_MODE_SESSION_KEY);
+    storage.removeItem(SPATIAL_SAFE_MODE_REASON_SESSION_KEY);
+  } catch {
+    // session storage is a best-effort convenience
+  }
+}
+
+function normalizeSafeModeList(value = []) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function normalizeSafeModeSnapshot(snapshot = null) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const health = source.health && typeof source.health === 'object' ? source.health : EMPTY_SERVER_HEALTH;
+  const bootHealth = source.bootHealth && typeof source.bootHealth === 'object' ? source.bootHealth : health.bootHealth || EMPTY_BOOT_HEALTH;
+  const localGate = source.localGate && typeof source.localGate === 'object'
+    ? source.localGate
+    : EMPTY_SAFE_MODE_SNAPSHOT.localGate;
+  const failureHistory = source.failureHistory && typeof source.failureHistory === 'object'
+    ? source.failureHistory
+    : EMPTY_SAFE_MODE_SNAPSHOT.failureHistory;
+  return {
+    ...EMPTY_SAFE_MODE_SNAPSHOT,
+    ...source,
+    safeMode: Boolean(source.safeMode || health.safeMode || bootHealth.safeMode),
+    reason: String(source.reason || bootHealth.reason || '').trim(),
+    checkedAt: source.checkedAt || bootHealth.checkedAt || null,
+    bootHealth: {
+      ...EMPTY_BOOT_HEALTH,
+      ...bootHealth,
+    },
+    health: {
+      ...EMPTY_SERVER_HEALTH,
+      ...health,
+      bootHealth: {
+        ...EMPTY_BOOT_HEALTH,
+        ...(health.bootHealth || bootHealth || {}),
+      },
+    },
+    criticalErrors: normalizeSafeModeList(source.criticalErrors).map((entry) => (entry && typeof entry === 'object'
+      ? entry
+      : { source: 'unknown', message: String(entry || '') })).filter(Boolean),
+    recentQaResults: normalizeSafeModeList(source.recentQaResults),
+    latestQARun: source.latestQARun && typeof source.latestQARun === 'object' ? source.latestQARun : null,
+    localGate: {
+      ...EMPTY_SAFE_MODE_SNAPSHOT.localGate,
+      ...localGate,
+    },
+    failingTestNames: normalizeSafeModeList(source.failingTestNames).map((entry) => String(entry || '').trim()).filter(Boolean),
+    failureHistory: {
+      ...EMPTY_SAFE_MODE_SNAPSHOT.failureHistory,
+      ...failureHistory,
+      entries: normalizeSafeModeList(failureHistory.entries).map((entry) => (entry && typeof entry === 'object' ? entry : null)).filter(Boolean),
+    },
+    artifactRefs: normalizeSafeModeList(source.artifactRefs).map((entry) => String(entry || '').trim()).filter(Boolean),
+  };
+}
+
+function buildSafeModeInitialSnapshot({ health = EMPTY_SERVER_HEALTH, reason = '', snapshot = null } = {}) {
+  const baseSnapshot = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  return normalizeSafeModeSnapshot({
+    ...baseSnapshot,
+    safeMode: true,
+    reason: String(baseSnapshot.reason || reason || health.bootHealth?.reason || '').trim(),
+    health,
+    bootHealth: health?.bootHealth || EMPTY_BOOT_HEALTH,
+  });
+}
+
+async function fetchSafeModeSnapshot() {
+  const response = await fetch('/api/spatial/safe-mode/status');
+  if (!response.ok) {
+    throw new Error(`Safe-mode status request failed with ${response.status}.`);
+  }
+  const payload = await response.json();
+  return normalizeSafeModeSnapshot(payload?.snapshot || payload);
+}
+
+function renderSafeModeListSection({ title, emptyState, items = [], renderItem = null, dataQa = '' }) {
+  const normalizedItems = normalizeSafeModeList(items);
+  return h('div', { className: 'utility-window-section', 'data-qa': dataQa || undefined },
+    h('div', { className: 'inspector-label' }, title),
+    normalizedItems.length
+      ? h('div', { className: 'criteria-list' },
+          normalizedItems.map((item, index) => (
+            typeof renderItem === 'function'
+              ? renderItem(item, index)
+              : h('div', { className: 'criteria-row', key: `${title}-${index}` },
+                  h('span', null, String(item || '')),
+                  h('span', { className: 'muted' }, ''),
+                )
+          )))
+      : h('div', { className: 'signal-empty muted' }, emptyState),
+  );
+}
+
+export function evaluateSpatialBootHealthSnapshot(health = null) {
+  const resolvedHealth = health && typeof health === 'object' ? health : {};
+  const selfUpgradeHealth = resolvedHealth.selfUpgrade?.deploy?.health || null;
+  const bootHealth = resolvedHealth.bootHealth && typeof resolvedHealth.bootHealth === 'object'
+    ? resolvedHealth.bootHealth
+    : EMPTY_BOOT_HEALTH;
+  const shapeOk = Boolean(
+    typeof resolvedHealth.ok === 'boolean'
+      && typeof resolvedHealth.pid === 'number'
+      && typeof resolvedHealth.startedAt === 'string'
+      && resolvedHealth.selfUpgrade
+      && typeof resolvedHealth.selfUpgrade === 'object'
+      && resolvedHealth.selfUpgrade.deploy
+      && typeof resolvedHealth.selfUpgrade.deploy === 'object'
+      && selfUpgradeHealth
+      && typeof selfUpgradeHealth === 'object'
+      && typeof selfUpgradeHealth.status === 'string'
+      && typeof bootHealth.checked === 'boolean'
+      && typeof bootHealth.safeMode === 'boolean',
+  );
+  const safeMode = Boolean(resolvedHealth.safeMode) || Boolean(bootHealth.safeMode) || !shapeOk;
+  const reason = String(bootHealth.reason || resolvedHealth.reason || '').trim()
+    || (shapeOk ? '' : 'Spatial health payload shape mismatch.');
+  return {
+    checked: true,
+    ok: shapeOk && !safeMode,
+    safeMode,
+    reason,
+    health: {
+      ...EMPTY_SERVER_HEALTH,
+      ...resolvedHealth,
+      safeMode,
+      bootHealth: {
+        ...EMPTY_BOOT_HEALTH,
+        ...bootHealth,
+        safeMode,
+        reason,
+      },
+    },
+  };
+}
+
+export function SafeShell({
+  health = EMPTY_SERVER_HEALTH,
+  reason = '',
+  initialSnapshot = null,
+  onReturnNormalMode = null,
+} = {}) {
+  const [snapshot, setSnapshot] = useState(() => buildSafeModeInitialSnapshot({
+    health,
+    reason,
+    snapshot: initialSnapshot,
+  }));
+  const [actionState, setActionState] = useState({ busy: null, message: '', error: '' });
+  const mountedRef = useRef(true);
+
+  async function refreshSafeModeSnapshot() {
+    try {
+      const nextSnapshot = await fetchSafeModeSnapshot();
+      if (mountedRef.current) {
+        setSnapshot(nextSnapshot);
+      }
+      return nextSnapshot;
+    } catch (error) {
+      if (mountedRef.current) {
+        setActionState((current) => ({
+          ...current,
+          error: String(error.message || error),
+        }));
+      }
+      return null;
+    }
+  }
+
+  useEffect(() => {
+    mountedRef.current = true;
+    refreshSafeModeSnapshot();
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  async function runSafeModeAction(actionId, endpoint, busyLabel) {
+    setActionState({ busy: actionId, message: busyLabel || '', error: '' });
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ snapshot }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || payload.message || `Safe-mode action failed with ${response.status}.`);
+      }
+      const nextSnapshot = normalizeSafeModeSnapshot(payload.snapshot || payload.diagnosis || payload);
+      if (mountedRef.current) {
+        setSnapshot(nextSnapshot);
+        setActionState({
+          busy: null,
+          message: payload.message || payload.summary || 'Action complete.',
+          error: '',
+        });
+      }
+      await refreshSafeModeSnapshot();
+      return payload;
+    } catch (error) {
+      if (mountedRef.current) {
+        setActionState({
+          busy: null,
+          message: '',
+          error: String(error.message || error),
+        });
+      }
+      return null;
+    }
+  }
+
+  const criticalErrors = normalizeSafeModeList(snapshot.criticalErrors);
+  const recentQaResults = normalizeSafeModeList(snapshot.recentQaResults);
+  const failingTestNames = normalizeSafeModeList(snapshot.failingTestNames);
+  const returnToNormalMode = typeof onReturnNormalMode === 'function'
+    ? onReturnNormalMode
+    : () => {
+      writeSpatialSafeModeSession(false);
+      window.location.reload();
+    };
+
+  return h('section', { className: 'spatial-main ace-shell spatial-safe-mode-shell', 'data-qa': 'spatial-safe-mode-shell' },
+    h('div', { className: 'signal-empty muted' },
+      h('div', { className: 'inspector-label' }, 'SafeShell'),
+      h('div', { className: 'signal-summary' }, 'SpatialNotebook is in safe mode.'),
+      h('div', { className: 'signal-meta muted' }, snapshot.reason || reason || health.bootHealth?.reason || 'A simplified shell is active to keep the tab alive.'),
+      h('div', { className: 'signal-meta muted' }, `Server: ${health.pid || snapshot.health?.pid || 'unknown'} | Started: ${health.startedAt || snapshot.health?.startedAt || 'n/a'}`),
+      actionState.message ? h('div', { className: 'signal-meta muted' }, actionState.message) : null,
+      actionState.error ? h('div', { className: 'signal-meta muted' }, actionState.error) : null,
+      h('div', { className: 'button-row' },
+        h('button', {
+          type: 'button',
+          className: 'mini',
+          onClick: () => runSafeModeAction('diagnosis', '/api/spatial/safe-mode/diagnosis', 'Running diagnosis...'),
+          disabled: Boolean(actionState.busy),
+          'data-qa': 'safe-shell-diagnosis',
+        }, actionState.busy === 'diagnosis' ? 'Running diagnosis...' : 'Run diagnosis'),
+        h('button', {
+          type: 'button',
+          className: 'mini',
+          onClick: () => runSafeModeAction('fix-pass', '/api/spatial/safe-mode/constrained-fix-pass', 'Running constrained fix pass...'),
+          disabled: Boolean(actionState.busy),
+          'data-qa': 'safe-shell-fix-pass',
+        }, actionState.busy === 'fix-pass' ? 'Running constrained fix pass...' : 'Run constrained fix pass'),
+        h('button', {
+          type: 'button',
+          className: 'mini',
+          onClick: returnToNormalMode,
+          disabled: Boolean(actionState.busy),
+          'data-qa': 'safe-shell-return-normal',
+        }, 'Return to normal mode'),
+      ),
+    ),
+    renderSafeModeListSection({
+      title: 'Last critical errors',
+      emptyState: 'No critical errors have been recorded yet.',
+      items: criticalErrors,
+      dataQa: 'safe-shell-critical-errors',
+      renderItem: (entry, index) => h('div', { className: 'criteria-row', key: `critical-${index}` },
+        h('span', null, entry.message || entry.summary || 'Unknown error'),
+        h('span', { className: 'muted' }, [entry.source || 'unknown', entry.stage || null, entry.count ? `x${entry.count}` : null].filter(Boolean).join(' | ')),
+      ),
+    }),
+    renderSafeModeListSection({
+      title: 'Recent QA results',
+      emptyState: 'No QA runs are available yet.',
+      items: recentQaResults,
+      dataQa: 'safe-shell-recent-qa',
+      renderItem: (entry, index) => h('div', { className: 'criteria-row', key: `qa-${index}` },
+        h('span', null, entry.scenario || entry.id || `QA run ${index + 1}`),
+        h('span', { className: 'muted' }, [
+          entry.verdict || entry.status || 'unknown',
+          typeof entry.findingCount === 'number' ? `${entry.findingCount} finding${entry.findingCount === 1 ? '' : 's'}` : null,
+        ].filter(Boolean).join(' | ')),
+      ),
+    }),
+    renderSafeModeListSection({
+      title: 'Failing test names',
+      emptyState: 'No failing test names were surfaced.',
+      items: failingTestNames,
+      dataQa: 'safe-shell-failing-tests',
+      renderItem: (entry, index) => h('div', { className: 'criteria-row', key: `test-${index}` },
+        h('span', null, entry),
+        h('span', { className: 'muted' }, 'failed'),
+      ),
+    }),
+  );
+}
+
+export function buildSpatialSafeModeShell({
+  health = EMPTY_SERVER_HEALTH,
+  reason = '',
+  snapshot = null,
+  initialSnapshot = null,
+  onRetry = null,
+  onReturnNormalMode = null,
+} = {}) {
+  const resolvedSnapshot = snapshot || initialSnapshot || buildSafeModeInitialSnapshot({ health, reason });
+  return h(SafeShell, {
+    health,
+    reason,
+    initialSnapshot: resolvedSnapshot,
+    onReturnNormalMode: onReturnNormalMode || onRetry || null,
+  });
+}
 
 const EMPTY_THROUGHPUT_DEBUG = {
   latestSession: null,
@@ -1251,6 +1890,19 @@ function ThroughputBar({ label, value, max }) {
       h('div', { className: 'throughput-fill', style: { width: `${Math.max(8, ratio * 100)}%` } }),
     ),
   );
+
+  if (serverHealth.safeMode || serverHealth.bootHealth?.safeMode) {
+    return buildSpatialSafeModeShell({
+      health: serverHealth,
+      reason: serverHealth.bootHealth?.reason || 'Spatial notebook boot health failed.',
+      onReturnNormalMode: () => {
+        writeSpatialSafeModeSession(false);
+        window.location.reload();
+      },
+    });
+  }
+
+  return renderSpatialNotebookSectionWithBoundary(renderMainPanel, { boundaryId: 'main-panel', title: 'Main panel unavailable' });
 }
 
 function formatTimestamp(value) {
@@ -1382,6 +2034,56 @@ export function renderRelationshipInspectorPanel(payload = null) {
       ),
     ),
   );
+
+  return renderSpatialNotebookSectionWithBoundary(renderMainPanel, { boundaryId: 'main-panel', title: 'Main panel unavailable' });
+}
+
+function SpatialNotebookSection({ render = null }) {
+  return typeof render === 'function' ? render() : null;
+}
+
+export function buildSpatialNotebookErrorFallback({ boundaryId = 'panel', title = 'Panel unavailable', error = null } = {}) {
+  const summary = error?.message ? `Recovered from: ${error.message}` : 'An unexpected render error occurred.';
+  return h('div', {
+      className: 'signal-empty muted spatial-error-fallback',
+      'data-qa': `spatial-error-fallback-${boundaryId}`,
+    },
+    h('div', { className: 'signal-summary' }, title),
+    h('div', { className: 'signal-meta muted' }, summary),
+    h('div', { className: 'signal-meta muted' }, 'The rest of SpatialNotebook stays alive.'),
+  );
+}
+
+export class SpatialNotebookErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[SpatialNotebookErrorBoundary]', this.props?.boundaryId || 'panel', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return buildSpatialNotebookErrorFallback({
+        boundaryId: this.props?.boundaryId || 'panel',
+        title: this.props?.title || 'Panel unavailable',
+        error: this.state.error,
+      });
+    }
+    return this.props.children;
+  }
+}
+
+function renderSpatialNotebookSectionWithBoundary(render, { boundaryId = 'panel', title = 'Panel unavailable' } = {}) {
+  return h(SpatialNotebookErrorBoundary, { boundaryId, title },
+    h(SpatialNotebookSection, { render }),
+  );
 }
 
 function isStudioViewportOutOfRange(viewport) {
@@ -1400,8 +2102,9 @@ function summarizeGateFailures(entry = null) {
   return Number(entry.failedCount || entry.findingCount || entry.consoleErrorCount || entry.failures?.length || 0);
 }
 
-function renderDeskSection(section, helpers = {}) {
-  if (!section) return null;
+function renderDeskSection(rawSection, helpers = {}) {
+    const section = normalizeDeskSectionPayload(rawSection);
+    if (!section.kind) return null;
   if (section.kind === 'summary') {
     return h('div', { key: section.id, className: 'inspector-block panel-card' },
       h('div', { className: 'inspector-label' }, section.label),
@@ -1409,8 +2112,8 @@ function renderDeskSection(section, helpers = {}) {
       section.detail ? h('div', { className: 'signal-meta muted' }, section.detail) : null,
     );
   }
-  if (section.kind === 'desk-truth') {
-    const truth = section.truth || {};
+    if (section.kind === 'desk-truth') {
+      const truth = normalizeTruthPayload(section.truth || {});
     const listValue = (value) => {
       if (Array.isArray(value)) return value.filter(Boolean);
       if (value == null || value === false) return [];
@@ -1502,8 +2205,8 @@ function renderDeskSection(section, helpers = {}) {
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No intent data.'),
     );
   }
-  if (section.kind === 'truth') {
-    const truth = section.value;
+    if (section.kind === 'truth') {
+      const truth = section.value && typeof section.value === 'object' ? normalizeTruthPayload(section.value) : null;
     return h('div', { key: section.id, className: 'inspector-block panel-card truth-panel' },
       h('div', { className: 'inspector-label' }, section.label),
       truth
@@ -1927,7 +2630,7 @@ function buildLaneState(orchestratorState, studioLinks, selfUpgrade) {
   };
 }
 
-function SpatialNotebook() {
+function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const [graphEngine] = useState(() => new GraphEngine(buildStarterGraph()));
   const [ace] = useState(() => new AceConnector());
   const [memory] = useState(() => new ArchitectureMemory());
@@ -1979,7 +2682,14 @@ function SpatialNotebook() {
   const [orchestratorState, setOrchestratorState] = useState(EMPTY_ORCHESTRATOR_STATE);
   const [teamBoardWallBoardExpanded, setTeamBoardWallBoardExpanded] = useState(false);
   const [selfUpgrade, setSelfUpgrade] = useState(EMPTY_SELF_UPGRADE);
-  const [serverHealth, setServerHealth] = useState(EMPTY_SERVER_HEALTH);
+  const [serverHealth, setServerHealth] = useState(() => ({
+    ...EMPTY_SERVER_HEALTH,
+    ...(initialServerHealth || {}),
+    bootHealth: {
+      ...EMPTY_BOOT_HEALTH,
+      ...(initialServerHealth?.bootHealth || {}),
+    },
+  }));
   const [throughputDebug, setThroughputDebug] = useState(EMPTY_THROUGHPUT_DEBUG);
   const [qaState, setQaState] = useState(EMPTY_QA_STATE);
   const [mutationGate, setMutationGate] = useState(EMPTY_MUTATION_GATE);
@@ -3239,10 +3949,9 @@ function SpatialNotebook() {
       }
       if (healthResponse.ok) {
         const health = await healthResponse.json();
-        setServerHealth({
-          ...EMPTY_SERVER_HEALTH,
-          ...(health || {}),
-        });
+        const bootHealth = evaluateSpatialBootHealthSnapshot(health);
+        writeSpatialSafeModeSession(bootHealth.safeMode, bootHealth.reason);
+        setServerHealth(bootHealth.health);
       }
       if (throughputResponse.ok) {
         const throughput = await throughputResponse.json();
@@ -5426,14 +6135,15 @@ function syncRecentWorldChange(change = null) {
   };
 
   const renderRosterUtility = () => {
-    const department = rosterSurfaceModel.department && typeof rosterSurfaceModel.department === 'object' ? rosterSurfaceModel.department : {};
-    const summary = rosterSurfaceModel.summary && typeof rosterSurfaceModel.summary === 'object' ? rosterSurfaceModel.summary : {};
-    const departments = Array.isArray(rosterSurfaceModel.departments) ? rosterSurfaceModel.departments : [];
-    const desks = Array.isArray(rosterSurfaceModel.desks) ? rosterSurfaceModel.desks : [];
-    const roster = Array.isArray(rosterSurfaceModel.roster) ? rosterSurfaceModel.roster : [];
-    const openRoles = Array.isArray(rosterSurfaceModel.openRoles) ? rosterSurfaceModel.openRoles : [];
-    const blockers = Array.isArray(rosterSurfaceModel.blockers) ? rosterSurfaceModel.blockers : [];
-    const hiringSignals = Array.isArray(rosterSurfaceModel.hiringSignals) ? rosterSurfaceModel.hiringSignals : [];
+      const rosterSurface = normalizeRosterSurfacePayload(rosterSurfaceModel);
+      const department = rosterSurface.department;
+      const summary = rosterSurface.summary;
+      const departments = rosterSurface.departments;
+      const desks = rosterSurface.desks;
+      const roster = rosterSurface.roster;
+      const openRoles = rosterSurface.openRoles;
+      const blockers = rosterSurface.blockers;
+      const hiringSignals = rosterSurface.hiringSignals;
     const prioritizedResourceSignals = listDepartmentsByPriority(resourceSignalModel);
     const resourceSignals = Array.isArray(prioritizedResourceSignals) ? prioritizedResourceSignals : [];
     const activeDepartmentCards = departments.length ? departments : desks;
@@ -5466,7 +6176,7 @@ function syncRecentWorldChange(change = null) {
             },
               h('div', { className: 'signal-summary' }, signal.label),
               h('div', { className: 'signal-meta muted' }, `${signal.kind} | ${signal.scope} | strandCount ${signal.strandCount}`),
-              h('div', { className: 'signal-meta muted' }, `Reasons: ${Array.isArray(signal.reasons) && signal.reasons.length ? signal.reasons.join(', ') : 'n/a'}`),
+                h('div', { className: 'signal-meta muted' }, `Reasons: ${signal.reasons.length ? signal.reasons.join(', ') : 'n/a'}`),
               h('div', { className: 'signal-meta muted' }, signal.suggestedHire || 'Suggested hire unavailable.'),
             ))),
           )
@@ -5495,14 +6205,14 @@ function syncRecentWorldChange(change = null) {
                 h('div', { className: 'signal-summary' }, `${entity.label} | ${entity.health || 'unknown'}`),
                 h('div', { className: 'signal-meta muted' }, `${entity.entityType === 'department' ? 'Department' : 'Desk'} | ${entity.statusLabel || 'covered'}`),
                 h('div', { className: 'signal-meta muted' }, `Lead ${entity.leadLabel || 'n/a'} | Open seats ${entity.openSeatCount || 0}`),
-                h('div', { className: 'signal-meta muted' }, `Rostered ${Array.isArray(entity.assignedRoster) ? entity.assignedRoster.length : 0} | Roles ${Array.isArray(entity.assignedRoles) ? entity.assignedRoles.length : 0}`),
-                Array.isArray(entity.roleCoverage) && entity.roleCoverage.length
+                h('div', { className: 'signal-meta muted' }, `Rostered ${entity.assignedRoster.length} | Roles ${entity.assignedRoles.length}`),
+                entity.roleCoverage.length
                   ? h('div', { className: 'desk-hierarchy-leaf-list' }, entity.roleCoverage.map((role) => h('div', {
                       key: `${entity.entityId}-${role.roleId}`,
                       className: `desk-hierarchy-leaf ${role.covered ? '' : 'draft'}`,
                     }, `${role.roleLabel}${role.isLeadRole ? ' (Lead)' : ''} | ${role.covered ? `x${role.count}` : 'open'}`)))
                   : null,
-                Array.isArray(entity.roster) && entity.roster.length
+                entity.roster.length
                   ? h('div', { className: 'desk-hierarchy-leaf-list' }, entity.roster.map((candidate) => h('div', {
                       key: candidate.id,
                       className: 'desk-hierarchy-leaf',
@@ -5852,7 +6562,10 @@ function syncRecentWorldChange(change = null) {
         if (windowId === 'environment') {
           content = renderEnvironmentUtility();
         } else if (windowId === 'qa') {
-          content = renderQAWorkbenchPanel();
+          content = renderSpatialNotebookSectionWithBoundary(() => renderQAWorkbenchPanel(), {
+            boundaryId: 'utility-qa',
+            title: 'QA Workbench unavailable',
+          });
         } else if (windowId === 'context') {
           content = h('div', { className: 'utility-window-stack' },
             h('div', { className: 'utility-window-section utility-window-hero' },
@@ -5874,7 +6587,10 @@ function syncRecentWorldChange(change = null) {
             renderReportsList(panelData?.reports || []),
           );
         } else if (windowId === 'relationship') {
-          content = renderRelationshipInspectorPanel(selectedRelationshipInspector);
+          content = renderSpatialNotebookSectionWithBoundary(() => renderRelationshipInspectorPanel(selectedRelationshipInspector), {
+            boundaryId: 'utility-relationship',
+            title: 'Relationship Inspector unavailable',
+          });
         } else if (windowId === 'roster') {
           content = renderRosterUtility();
         } else if (windowId === 'studio-map') {
@@ -6535,7 +7251,7 @@ function syncRecentWorldChange(change = null) {
     );
   };
 
-  return h('section', { className: 'spatial-main ace-shell', 'data-qa': 'spatial-root', style: { gridTemplateColumns: 'minmax(0, 1fr)' } },
+  const renderMainPanel = () => h('section', { className: 'spatial-main ace-shell', 'data-qa': 'spatial-root', style: { gridTemplateColumns: 'minmax(0, 1fr)' } },
     h('div', { className: 'canvas-column scene-column' },
       h('div', { className: 'canvas-toolbar ace-toolbar' },
         h('div', { className: 'toolbar-summary-row' },
@@ -7170,9 +7886,9 @@ function syncRecentWorldChange(change = null) {
         ),
       ),
     ),
-    renderUtilityDock(),
-    renderDeskPropertiesPanel(),
-    renderUtilityWindows(),
+    renderSpatialNotebookSectionWithBoundary(renderUtilityDock, { boundaryId: 'utility-dock', title: 'Utility dock unavailable' }),
+    renderSpatialNotebookSectionWithBoundary(renderDeskPropertiesPanel, { boundaryId: 'qa-panels', title: 'QA panels unavailable' }),
+    renderSpatialNotebookSectionWithBoundary(renderUtilityWindows, { boundaryId: 'utility-windows', title: 'Utility windows unavailable' }),
     preview && h('div', { className: 'modal' },
       h('div', { className: 'modal-content card' },
         h('div', { className: 'card-title' }, 'ACE Suggestion Preview'),
@@ -7184,6 +7900,104 @@ function syncRecentWorldChange(change = null) {
       ),
     ),
   );
+
+  return renderSpatialNotebookSectionWithBoundary(renderMainPanel, { boundaryId: 'main-panel', title: 'Main panel unavailable' });
+}
+
+function SpatialNotebookBootstrap() {
+  const [bootState, setBootState] = useState(() => {
+    const safeMode = readSpatialSafeModeSession();
+    const reason = readSpatialSafeModeReasonSession();
+    const health = safeMode
+      ? {
+          ...EMPTY_SERVER_HEALTH,
+          ok: false,
+          safeMode: true,
+          bootHealth: {
+            ...EMPTY_BOOT_HEALTH,
+            checked: true,
+            ok: false,
+            safeMode: true,
+            reason,
+          },
+        }
+      : null;
+    return {
+      checked: safeMode,
+      safeMode,
+      reason,
+      health,
+    };
+  });
+
+  useEffect(() => {
+    if (bootState.checked && bootState.safeMode) return undefined;
+    let cancelled = false;
+    const runBootCheck = async () => {
+      try {
+        const response = await fetch('/api/health');
+        const payload = response.ok ? await response.json() : null;
+        const health = evaluateSpatialBootHealthSnapshot(payload);
+        if (cancelled) return;
+        writeSpatialSafeModeSession(health.safeMode, health.reason);
+        setBootState({
+          checked: true,
+          safeMode: health.safeMode,
+          reason: health.reason,
+          health: health.health,
+        });
+      } catch (error) {
+        if (cancelled) return;
+        const reason = String(error.message || error);
+        const health = {
+          ...EMPTY_SERVER_HEALTH,
+          ok: false,
+          safeMode: true,
+          bootHealth: {
+            ...EMPTY_BOOT_HEALTH,
+            checked: true,
+            ok: false,
+            safeMode: true,
+            reason,
+          },
+        };
+        writeSpatialSafeModeSession(true, reason);
+        setBootState({
+          checked: true,
+          safeMode: true,
+          reason,
+          health,
+        });
+      }
+    };
+    runBootCheck();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!bootState.checked) {
+    return h('section', { className: 'spatial-main ace-shell spatial-boot-shell', 'data-qa': 'spatial-boot-shell' },
+      h('div', { className: 'signal-empty muted' },
+        h('div', { className: 'inspector-label' }, 'SpatialNotebook boot check'),
+        h('div', { className: 'signal-summary' }, 'Checking notebook state shape before mounting the full shell.'),
+        h('div', { className: 'signal-meta muted' }, 'This keeps boot-time failures from taking down the UI.'),
+      ),
+    );
+  }
+
+  if (bootState.safeMode) {
+    return buildSpatialSafeModeShell({
+      health: bootState.health || EMPTY_SERVER_HEALTH,
+      reason: bootState.reason,
+      onReturnNormalMode: () => {
+        writeSpatialSafeModeSession(false);
+        window.location.reload();
+      },
+    });
+  }
+
+  return h(SpatialNotebook, { initialServerHealth: bootState.health || EMPTY_SERVER_HEALTH });
 }
 
 function drawArrowHead(ctx, fromX, fromY, toX, toY, color) {
@@ -7366,7 +8180,7 @@ function drawCanvasScene(canvas, graph, viewport, activeGraphLayer, worldViewMod
   }
 }
 
-ReactDOM.createRoot(document.getElementById('spatial-root')).render(h(SpatialNotebook));
+ReactDOM.createRoot(document.getElementById('spatial-root')).render(h(SpatialNotebookBootstrap));
 
 
 

@@ -48,7 +48,13 @@ export default async function runServerTests() {
     buildModulePreview,
     buildGuardSurfacePayload,
     evaluateStagePreflightSurface,
+    evaluateSpatialBootHealth,
+    buildSafeModeSnapshot,
+    buildConstrainedAutoFixBundle,
+    runSafeModeDiagnosis,
+    runConstrainedSafeModeFixPass,
     readDashboardFileForRoot,
+    getHealthSnapshot,
     resolveLegacyFallbackPayload,
     smokeCheckStaticWebBoot,
     stopProjectRun,
@@ -71,6 +77,9 @@ export default async function runServerTests() {
     addDeskToLayout,
     buildStudioLayoutCatalog,
     listStudioDeskIds,
+    classifyFailureContext,
+    buildFailureUiResponse,
+    recordClassifiedFailure,
   } = require(serverPath);
   const {
     createPlannerHandoff,
@@ -83,9 +92,67 @@ export default async function runServerTests() {
     writeLocalGateReport,
     writeStructuredQAReport,
   } = require(path.resolve(process.cwd(), 'qaRunner.js'));
+  const {
+    writeFailureHistory,
+    readFailureHistory,
+  } = require(path.resolve(process.cwd(), 'failureMemory.js'));
 
   assert.equal(detectMaterialGenerationIntent('Generate a material for wet stone'), true);
   assert.equal(detectMaterialGenerationIntent('Need planning updates for team board'), false);
+  const bootHealth = evaluateSpatialBootHealth();
+  assert.equal(bootHealth.checked, true);
+  assert.equal(typeof bootHealth.safeMode, 'boolean');
+  assert.equal(classifyFailureContext(new TypeError("Cannot read properties of undefined (reading 'length')"), {
+    component: 'SpatialNotebook',
+    stage: 'roster',
+  }), 'panel_degraded');
+  assert.equal(classifyFailureContext(Object.assign(new Error('startup failed'), { statusCode: 503 }), {
+    stage: 'boot',
+    route: '/api/health',
+  }), 'boot_critical');
+  assert.equal(classifyFailureContext(Object.assign(new Error('validation failed'), { statusCode: 400 }), {
+    stage: 'qa',
+    route: '/api/spatial/qa/run',
+  }), 'warning');
+  const autoFixBundle = buildConstrainedAutoFixBundle({
+    reason: 'Cannot read properties of undefined (reading \'length\')',
+    criticalErrors: [{
+      message: 'Cannot read properties of undefined (reading \'length\')',
+      stack: `TypeError: Cannot read properties of undefined (reading 'length')\n    at renderRosterUtility (C:/repo/ui/public/spatial/spatialApp.js:12:3)`,
+      failureClass: 'panel_degraded',
+    }],
+    failingTestNames: ['spatialAppSmoke'],
+  }, {
+    stage: 'safe-mode',
+    changedFiles: ['ui/public/spatial/spatialApp.js'],
+  });
+  assert.ok(autoFixBundle.changedFiles.some((file) => file.endsWith('ui/public/spatial/spatialApp.js')));
+  assert.deepEqual(buildFailureUiResponse('panel_degraded'), {
+    failureClass: 'panel_degraded',
+    uiMode: 'fallback_panel',
+    clientAction: 'showFallbackPanel',
+    safeMode: false,
+    fallbackPanel: true,
+    shell: 'fallback-panel',
+    summary: 'Render a fallback panel and keep the rest of the UI alive.',
+  });
+  const classifiedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-server-failure-'));
+  const classifiedFailure = recordClassifiedFailure(classifiedRoot, new TypeError("Cannot read properties of undefined (reading 'length')"), {
+    stage: 'roster',
+    component: 'SpatialNotebook',
+    route: '/api/spatial/desks/qa-lead/properties',
+    source: 'server-test',
+  });
+  const classifiedHistory = readFailureHistory(classifiedRoot).history;
+  assert.equal(classifiedFailure.failureClass, 'panel_degraded');
+  assert.equal(classifiedHistory.entries[0].failure_class, 'panel_degraded');
+  assert.ok(classifiedHistory.entries[0].last_error.timestamp);
+  assert.match(classifiedHistory.entries[0].last_error.stack || '', /TypeError/);
+  assert.equal(classifiedHistory.entries[0].last_error.ui_response.clientAction, 'showFallbackPanel');
+  const healthSnapshot = getHealthSnapshot();
+  assert.equal(healthSnapshot.safeMode, Boolean(bootHealth.safeMode));
+  assert.equal(healthSnapshot.bootHealth.checked, true);
+  assert.equal(healthSnapshot.bootHealth.safeMode, Boolean(bootHealth.safeMode));
   const oversizedStudioState = {
     handoffs: {
       contextToPlanner: { id: 'handoff_1', title: 'Planner brief' },
@@ -1225,6 +1292,102 @@ export default async function runServerTests() {
   assert.equal(qaState.latestBrowserRun.id, 'qa_manual_1');
   assert.equal(qaState.browserRuns.length, 1);
   assert.equal(qaState.browserRuns[0].id, 'qa_manual_1');
+
+  writeFailureHistory(qaRoot, {
+    version: 'ace/failure-memory.v1',
+    updated_at: '2026-03-25T09:30:00.000Z',
+    entries: [
+      {
+        failure_key: 'windows_spawn_eperm',
+        stage: 'executor',
+        agent_id: 'executor',
+        agent_version: 'ace/executor.v1',
+        count: 4,
+        first_seen: '2026-03-25T08:30:00.000Z',
+        last_seen: '2026-03-25T09:20:00.000Z',
+        related_runs: ['qa_guardrail_1'],
+        related_tools: ['spawn'],
+        related_stages: ['executor'],
+        related_projects: ['ui'],
+        example_messages: ['spawn EPERM'],
+        source_count: 4,
+      },
+    ],
+  });
+  fs.writeFileSync(path.join(qaStorage, 'qa_safe_mode_1.json'), `${JSON.stringify({
+    id: 'qa_safe_mode_1',
+    scenario: 'layout-pass',
+    mode: 'interactive',
+    trigger: 'manual',
+    status: 'failed',
+    verdict: 'failed',
+    error: 'Console errors were captured during the browser pass.',
+    createdAt: '2026-03-25T09:40:00.000Z',
+    finishedAt: '2026-03-25T09:41:00.000Z',
+    findings: [
+      { id: 'console-errors', severity: 'error', summary: 'Console errors were captured during the browser pass.' },
+    ],
+    steps: [
+      { id: 'open', label: 'Open ACE', status: 'completed', verdict: 'pass' },
+      { id: 'analyze', label: 'Analyze layout and runtime', status: 'failed', verdict: 'failed' },
+    ],
+    artifacts: { screenshots: [] },
+    console: [],
+    network: [],
+  }, null, 2)}\n`, 'utf8');
+  const updatedQaState = buildQAStatePayload(qaRoot);
+  const safeModeState = buildSafeModeSnapshot(qaRoot, {
+    healthSnapshot: {
+      ok: false,
+      pid: 1234,
+      startedAt: '2026-03-25T09:00:00.000Z',
+      safeMode: true,
+      reason: 'Spatial health payload shape mismatch.',
+      bootHealth: {
+        checked: true,
+        ok: false,
+        safeMode: true,
+        reason: 'Spatial health payload shape mismatch.',
+        checkedAt: '2026-03-25T09:05:00.000Z',
+        stateShape: { graphs: 2 },
+      },
+      selfUpgrade: {
+        status: 'idle',
+        deploy: {
+          status: 'idle',
+          health: {
+            status: 'ready',
+            pid: 1234,
+            startedAt: '2026-03-25T09:00:00.000Z',
+          },
+        },
+      },
+    },
+  });
+  assert.equal(safeModeState.safeMode, true);
+  assert.equal(safeModeState.criticalErrors[0].source, 'boot-health');
+  assert.ok(safeModeState.criticalErrors.some((entry) => entry.failureKey === 'windows_spawn_eperm'));
+  assert.ok(safeModeState.failingTestNames.includes('Analyze layout and runtime'));
+  assert.ok(safeModeState.failingTestNames.some((entry) => /console errors were captured/i.test(entry)));
+
+  const diagnosis = runSafeModeDiagnosis(qaRoot, {
+    healthSnapshot: safeModeState.health,
+    qaState: updatedQaState,
+  });
+  assert.equal(diagnosis.ok, true);
+  assert.equal(diagnosis.snapshot.safeMode, true);
+  assert.ok(diagnosis.artifactRefs[0].includes('brain/context/safe_mode/diagnosis.json'));
+  assert.equal(fs.existsSync(path.join(qaRoot, 'brain', 'context', 'safe_mode', 'diagnosis.json')), true);
+
+  const constrainedFixPass = runConstrainedSafeModeFixPass(qaRoot, {
+    healthSnapshot: safeModeState.health,
+    qaState: updatedQaState,
+  });
+  assert.equal(constrainedFixPass.ok, true);
+  assert.equal(constrainedFixPass.fixTask.stage, 'safe-mode');
+  assert.equal(constrainedFixPass.fixTask.action, 'constrained-fix-pass');
+  assert.equal(fs.existsSync(path.join(qaRoot, 'brain', 'context', 'safe_mode', 'constrained-fix-pass.json')), true);
+  assert.equal(fs.existsSync(path.join(qaRoot, 'brain', 'context', 'autonomy_fix_tasks.json')), true);
   assert.equal(qaState.localGate.unit.status, 'pass');
   assert.equal(qaState.localGate.studioBoot.id, 'qa_guardrail_1');
   assert.equal(qaState.localGate.studioBoot.source, 'studio-boot-guardrail');

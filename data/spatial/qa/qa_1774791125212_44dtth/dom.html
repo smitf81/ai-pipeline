@@ -1,0 +1,382 @@
+<!DOCTYPE html><html lang="en" data-ui-mode="operator"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACE Studio Overlay</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-ui-mode="operator">
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">ACE</div>
+                <div>
+                    <div class="brand-title">ACE Studio Overlay</div>
+                    <div class="brand-sub">Primary path: canvas intent to interpretation to mutation gate to world state</div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <span class="badge badge-mode" id="mode_badge">STUDIO PRIMARY</span>
+                <span class="badge badge-readonly" id="readonly_badge">READ WRITE</span>
+                <button id="toggleLegacyBtn" class="mini" type="button">Open Legacy Shell</button>
+                <span class="badge ok" id="status_badge">LIVE</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="workspace-shell" aria-label="Sketchpad Workspace">
+        <div id="spatial-root"><section class="spatial-main ace-shell" data-qa="spatial-root" style="grid-template-columns: minmax(0px, 1fr);"><div class="canvas-column scene-column"><div class="canvas-toolbar ace-toolbar"><div class="toolbar-summary-row"><div class="toolbar-summary-primary"><input class="mini toolbar-title-input" type="text" data-qa="toolbar-title-input" aria-label="Workspace banner title" value="ACE Overlay Workspace" style=""><div class="toolbar-caption muted">Page: Migrate to canonical anchor-based ACE system | Orchestrator: needs-attention | Active desks: 3</div></div><div class="toolbar-summary-actions"><div class="scene-switcher"><button class="mini " data-qa="scene-canvas-button" type="button">Canvas</button><button class="mini active" data-qa="scene-studio-button" type="button">ACE Studio</button></div><span class="toolbar-status">ACE Studio | System Graph | Page Migrate to canonical anchor-based ACE system | Canvas 100% | Studio 128% | autosaved 14:32</span></div></div><div class="toolbar-toggle-row"><button class="mini toolbar-section-toggle " type="button" data-qa="toolbar-view-toggle">View Controls</button><button class="mini toolbar-section-toggle " type="button" data-qa="toolbar-launch-toggle">Sim Launch</button><button class="mini " type="button" title="Utilities" data-action-id="toggle_utility_dock" data-qa="toolbar-utilities-button">Utilities</button><button class="mini" data-qa="reset-view-button" type="button">Reset View</button></div><div class="toolbar-quick-access" data-qa="studio-default-controls"><div class="toolbar-caption muted">Quick access</div><div class="toolbar-quick-access-row"><button class="mini quick-access-pill primary " type="button" data-qa="studio-quick-access-department">Visible + Department</button><button class="mini quick-access-pill secondary active" type="button" data-qa="studio-quick-access-desk">Visible + Desk</button><button class="mini quick-access-pill secondary " type="button" data-qa="studio-quick-access-people-plan">People Plan</button><button class="mini quick-access-pill secondary " type="button" data-qa="studio-quick-access-whiteboard">Whiteboard</button><button class="mini quick-access-pill secondary " type="button" data-qa="studio-quick-access-utilities">Utilities</button></div></div><div class="canvas-control-dock toolbar-meta toolbar-meta-bottom"><div class="button-row"><button class="mini" type="button">New Canvas</button><button class="mini " type="button" disabled="">Sketch</button><button class="mini" type="button" disabled="">Clear Marks</button><button class="mini" type="button">Simulate</button></div></div></div><div class="scene-shell"><div class="scene-layer canvas-scene inactive" data-qa="canvas-scene" aria-hidden="true"><div class="canvas-shell" data-qa="canvas-shell"><canvas width="1576" height="741" tabindex="0"></canvas><div class="node text thought layer-system origin-system_generated      " data-representation-id="dragon_perch_intent_01_sketch_icon" data-representation-kind="icon" title="Dragon perch intent | icon | dragon_perch_intent_01_sketch_icon" style="left: 1607.04px; top: 43.2px; transform: scale(1); transform-origin: left top; pointer-events: auto; opacity: 1;"><button class="node-handle input" type="button" title="Drop connector here"></button><button class="node-close" type="button" title="Delete node">X</button><div class="node-header-row"><div class="node-header">SYSTEM | world-structure</div><div class="node-header-tags"><div class="node-origin-badge origin-system_generated">System</div></div></div><textarea class="node-editor" title="Secondary drafting note. Enter refreshes note analysis only." style="">Dragon perch intent</textarea><div class="node-footer"><div class="node-labels">proposal - sketch-ready - context</div><div class="node-intent-summary muted">t_01 | thought</div><div class="node-intent-summary">Secondary drafting only. Canvas Intent owns live world routing.</div></div><button class="node-handle output" type="button" title="Drag connection"></button></div><div class="scene-indicator canvas-indicator"><div class="indicator-title">Canvas Layer</div><div class="muted">Zoom below 48% or press Tab to open ACE Studio.</div></div></div></div><div class="scene-layer studio-scene active" data-qa="studio-scene" aria-hidden="false"><div class="studio-shell" data-qa="studio-shell"><div class="studio-world" data-qa="studio-world" style="width: 1200px; height: 800px; transform: translate(567.04px, -276.8px) scale(1.28);"><div class="studio-floor"></div><svg class="studio-boundary-layer" data-qa="studio-boundary-layer" viewBox="0 0 1200 800" aria-hidden="true"><g class="studio-boundary room-intake"><rect x="92" y="108" width="220" height="238" rx="18" ry="18" class="studio-boundary-rect" data-room-id="dept-intake" data-room-label="Intake" data-room-status="active"></rect><text x="106" y="129" class="studio-boundary-label">Intake</text><g class="studio-boundary-status good"><rect x="196" y="118" width="102" height="18" rx="9" class="studio-boundary-status-pill"></rect><text x="247" y="130" class="studio-boundary-status-text" text-anchor="middle">ACTIVE</text></g></g><g class="studio-boundary room-delivery"><rect x="334" y="86" width="514" height="470" rx="18" ry="18" class="studio-boundary-rect" data-room-id="dept-delivery" data-room-label="Delivery" data-room-status="blocked"></rect><text x="348" y="107" class="studio-boundary-label">Delivery</text><g class="studio-boundary-status blocked"><rect x="732" y="96" width="102" height="18" rx="9" class="studio-boundary-status-pill"></rect><text x="783" y="108" class="studio-boundary-status-text" text-anchor="middle">BLOCKED</text></g><text x="348" y="542" class="studio-boundary-warning">2 desks blocked.</text></g><g class="studio-boundary room-quality"><rect x="92" y="394" width="220" height="232" rx="18" ry="18" class="studio-boundary-rect" data-room-id="dept-quality" data-room-label="Quality" data-room-status="active"></rect><text x="106" y="415" class="studio-boundary-label">Quality</text><g class="studio-boundary-status good"><rect x="196" y="404" width="102" height="18" rx="9" class="studio-boundary-status-pill"></rect><text x="247" y="416" class="studio-boundary-status-text" text-anchor="middle">ACTIVE</text></g></g><g class="studio-boundary room-archive"><rect x="454" y="580" width="312" height="120" rx="18" ry="18" class="studio-boundary-rect" data-room-id="dept-archive" data-room-label="Archive" data-room-status="active"></rect><text x="468" y="601" class="studio-boundary-label">Archive</text><g class="studio-boundary-status good"><rect x="650" y="590" width="102" height="18" rx="9" class="studio-boundary-status-pill"></rect><text x="701" y="602" class="studio-boundary-status-text" text-anchor="middle">ACTIVE</text></g></g><g class="studio-boundary room-control"><rect x="884" y="286" width="214" height="254" rx="18" ry="18" class="studio-boundary-rect" data-room-id="dept-control" data-room-label="Control Centre" data-room-status="active"></rect><text x="898" y="307" class="studio-boundary-label">Control Centre</text><g class="studio-boundary-status good"><rect x="982" y="296" width="102" height="18" rx="9" class="studio-boundary-status-pill"></rect><text x="1033" y="308" class="studio-boundary-status-text" text-anchor="middle">ACTIVE</text></g></g><g class="studio-boundary room-support"><rect x="850" y="86" width="250" height="176" rx="18" ry="18" class="studio-boundary-rect" data-room-id="dept-talent-acquisition" data-room-label="Talent Acquisition" data-room-status="understaffed"></rect><text x="864" y="107" class="studio-boundary-label">Talent Acquisition</text><g class="studio-boundary-status review"><rect x="984" y="96" width="102" height="18" rx="9" class="studio-boundary-status-pill"></rect><text x="1035" y="108" class="studio-boundary-status-text" text-anchor="middle">UNDERSTAFFED</text></g><text x="864" y="248" class="studio-boundary-warning">No live staffing assigned yet.</text></g><g class="studio-boundary-anchor intake"><path d="M 202 227 L 991 413" class="studio-boundary-anchor-line" data-link-id="dept-intake-to-control" data-link-label="Intake -&gt; Control Centre"></path><circle cx="202" cy="227" r="4" class="studio-boundary-anchor-node control"></circle><circle cx="991" cy="413" r="3.5" class="studio-boundary-anchor-node"></circle></g><g class="studio-boundary-anchor delivery"><path d="M 591 321 L 991 413" class="studio-boundary-anchor-line" data-link-id="dept-delivery-to-control" data-link-label="Delivery -&gt; Control Centre"></path><circle cx="591" cy="321" r="4" class="studio-boundary-anchor-node control"></circle><circle cx="991" cy="413" r="3.5" class="studio-boundary-anchor-node"></circle></g><g class="studio-boundary-anchor quality"><path d="M 202 510 L 991 413" class="studio-boundary-anchor-line" data-link-id="dept-quality-to-control" data-link-label="Quality -&gt; Control Centre"></path><circle cx="202" cy="510" r="4" class="studio-boundary-anchor-node control"></circle><circle cx="991" cy="413" r="3.5" class="studio-boundary-anchor-node"></circle></g><g class="studio-boundary-anchor archive"><path d="M 610 640 L 991 413" class="studio-boundary-anchor-line" data-link-id="dept-archive-to-control" data-link-label="Archive -&gt; Control Centre"></path><circle cx="610" cy="640" r="4" class="studio-boundary-anchor-node control"></circle><circle cx="991" cy="413" r="3.5" class="studio-boundary-anchor-node"></circle></g><g class="studio-boundary-anchor support"><path d="M 975 174 L 991 413" class="studio-boundary-anchor-line" data-link-id="dept-talent-acquisition-to-control" data-link-label="Talent Acquisition -&gt; Control Centre"></path><circle cx="975" cy="174" r="4" class="studio-boundary-anchor-node control"></circle><circle cx="991" cy="413" r="3.5" class="studio-boundary-anchor-node"></circle></g></svg><div class="studio-room" data-qa="studio-room" data-stage-x="56" data-stage-y="72" data-stage-width="1088" data-stage-height="664" style="left: 56px; top: 72px; width: 1088px; height: 664px;"><div class="studio-room-label">Studio Floor</div></div><div class="studio-lane lane-top active handoff level-2"></div><div class="studio-lane lane-mid active workflow level-2"></div><div class="studio-lane lane-side active conflict level-2"></div><section class="studio-team-board compact" data-qa="whiteboard-teamBoard" data-whiteboard-id="teamBoard" data-whiteboard-label="Team Board" data-stage-x="284" data-stage-y="88" data-stage-width="584" data-stage-height="208" style="left: 284px; top: 88px; width: 360px; min-height: 132px;"><div class="studio-team-board-hangers" aria-hidden="true"><span></span><span></span></div><div class="studio-team-board-header"><div><div class="studio-team-board-title">Team Board Preview</div><div class="studio-team-board-subtitle muted">Compact wall-board preview. Click to expand the full kanban and pipeline board.</div></div><div class="studio-team-board-meta"><span>Page Migrate to canonical anchor-based ACE system</span><span>Plan 0</span><span>Active 0</span><span>Idle 0</span><span class="selected">Executor Flagged: Update or check the status of RGS nodes</span><button class="mini studio-edit-handle whiteboard-edit-handle" type="button">Open</button></div></div><div class="team-board-preview" role="button" tabindex="0"><div class="team-board-preview-pills"><div class="team-board-preview-pill"><div class="team-board-preview-pill-label">Plan</div><div class="team-board-preview-pill-value">0</div></div><div class="team-board-preview-pill"><div class="team-board-preview-pill-label">Active</div><div class="team-board-preview-pill-value">0</div></div><div class="team-board-preview-pill"><div class="team-board-preview-pill-label">Complete</div><div class="team-board-preview-pill-value">0</div></div><div class="team-board-preview-pill"><div class="team-board-preview-pill-label">Review</div><div class="team-board-preview-pill-value">1</div></div></div><div class="team-board-preview-line">Executor Flagged: Update or check the status of RGS nodes</div><div class="team-board-preview-line muted">Click to expand the full whiteboard.</div></div></section><svg class="studio-links-layer" data-qa="studio-links-layer" viewBox="0 0 1200 800" aria-hidden="true"><g class="studio-link handoff relationship-woven-rope "><path d="M 268 252 C 350 252, 368 252, 450 252" class="studio-link-path relationship-woven-rope " data-qa="studio-link-path" data-link-id="handoff-handoff_1774615405452_2yc7" data-link-label="Problem brief" data-link-kind="handoff" data-from-desk="context-manager" data-to-desk="planner" data-relationship-type="handoff" data-relationship-strength="4" data-relationship-strands="9" data-relationship-health="healthy" data-relationship-form="woven-rope" data-start-x="268" data-start-y="252" data-end-x="450" data-end-y="252" style="stroke-width: 4.8; opacity: 0.96; cursor: pointer;"></path><text x="359" y="242" class="studio-link-label">Problem brief</text></g><g class="studio-link workflow relationship-bundle "><path d="M 622 252 C 564 252, 654 252, 596 252" class="studio-link-path relationship-bundle " data-qa="studio-link-path" data-link-id="planner-executor" data-link-label="1 plan item" data-link-kind="workflow" data-from-desk="planner" data-to-desk="executor" data-relationship-type="workflow" data-relationship-strength="3" data-relationship-strands="1" data-relationship-health="degraded" data-relationship-form="bundle" data-start-x="622" data-start-y="252" data-end-x="596" data-end-y="252" stroke-dasharray="12 6 4 6" style="stroke-width: 3.8; opacity: 0.88; cursor: pointer;"></path></g><g class="studio-link memory relationship-bundle "><path d="M 682 322 C 682 390, 620 504, 620 572" class="studio-link-path relationship-bundle " data-qa="studio-link-path" data-link-id="work-to-memory" data-link-label="1 outputs" data-link-kind="memory" data-from-desk="executor" data-to-desk="memory-archivist" data-relationship-type="memory" data-relationship-strength="2" data-relationship-strands="1" data-relationship-health="degraded" data-relationship-form="bundle" data-start-x="682" data-start-y="322" data-end-x="620" data-end-y="572" stroke-dasharray="12 6 4 6" style="stroke-width: 2.8; opacity: 0.88; cursor: pointer;"></path></g><g class="studio-link conflict relationship-woven-rope "><path d="M 904 422 C 846 422, 326 252, 268 252" class="studio-link-path relationship-woven-rope " data-qa="studio-link-path" data-link-id="conflict-0-context-manager" data-link-label="Low confidence" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="context-manager" data-relationship-type="conflict" data-relationship-strength="4" data-relationship-strands="4" data-relationship-health="blocked" data-relationship-form="woven-rope" data-start-x="904" data-start-y="422" data-end-x="268" data-end-y="252" style="stroke-width: 4.8; opacity: 0.72; cursor: pointer;"></path></g><g class="studio-link conflict relationship-woven-rope "><path d="M 904 422 C 846 422, 680 252, 622 252" class="studio-link-path relationship-woven-rope " data-qa="studio-link-path" data-link-id="conflict-0-planner" data-link-label="Low confidence" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="planner" data-relationship-type="conflict" data-relationship-strength="4" data-relationship-strands="4" data-relationship-health="blocked" data-relationship-form="woven-rope" data-start-x="904" data-start-y="422" data-end-x="622" data-end-y="252" style="stroke-width: 4.8; opacity: 0.72; cursor: pointer;"></path></g><g class="studio-link conflict relationship-woven-rope "><path d="M 904 422 C 904 364, 768 310, 768 252" class="studio-link-path relationship-woven-rope " data-qa="studio-link-path" data-link-id="conflict-0-executor" data-link-label="Low confidence" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="executor" data-relationship-type="conflict" data-relationship-strength="4" data-relationship-strands="4" data-relationship-health="blocked" data-relationship-form="woven-rope" data-start-x="904" data-start-y="422" data-end-x="768" data-end-y="252" style="stroke-width: 4.8; opacity: 0.72; cursor: pointer;"></path></g><g class="studio-link conflict relationship-woven-rope "><path d="M 904 422 C 846 422, 680 252, 622 252" class="studio-link-path relationship-woven-rope " data-qa="studio-link-path" data-link-id="conflict-1-planner" data-link-label="Scope overlap" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="planner" data-relationship-type="conflict" data-relationship-strength="4" data-relationship-strands="3" data-relationship-health="blocked" data-relationship-form="woven-rope" data-start-x="904" data-start-y="422" data-end-x="622" data-end-y="252" style="stroke-width: 4.8; opacity: 0.72; cursor: pointer;"></path></g><g class="studio-link conflict relationship-woven-rope "><path d="M 904 422 C 904 364, 768 310, 768 252" class="studio-link-path relationship-woven-rope " data-qa="studio-link-path" data-link-id="conflict-1-executor" data-link-label="Scope overlap" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="executor" data-relationship-type="conflict" data-relationship-strength="4" data-relationship-strands="3" data-relationship-health="blocked" data-relationship-form="woven-rope" data-start-x="904" data-start-y="422" data-end-x="768" data-end-y="252" style="stroke-width: 4.8; opacity: 0.72; cursor: pointer;"></path></g><g class="studio-link conflict relationship-woven-rope "><path d="M 904 422 C 904 364, 768 310, 768 252" class="studio-link-path relationship-woven-rope " data-qa="studio-link-path" data-link-id="conflict-2-executor" data-link-label="Needs review" data-link-kind="conflict" data-from-desk="cto-architect" data-to-desk="executor" data-relationship-type="conflict" data-relationship-strength="4" data-relationship-strands="4" data-relationship-health="blocked" data-relationship-form="woven-rope" data-start-x="904" data-start-y="422" data-end-x="768" data-end-y="252" style="stroke-width: 4.8; opacity: 0.72; cursor: pointer;"></path></g></svg><div class="agent-station   org-blocked" data-qa="desk-planner" data-desk-id="planner" data-desk-label="Planner" data-desk-status="blocked" data-stage-x="536" data-stage-y="252" role="button" tabindex="0" title="Planner | Migrate to canonical anchor-based ACE system" style="left: 536px; top: 252px; --agent-accent: #ffd36e; --agent-shadow: rgba(180, 132, 54, 0.38);"><div class="desk-thought-bubble blocked" title="Planner status: blocked. Waiting for a clarified handoff.">Planner status: blocked. Waiting for a clarified handoff.</div><div class="desk-card-truth"><div class="desk-card-truth-line">1 related items in workspace</div><div class="desk-card-truth-line muted">0 intake / 0 WIP / 0 reward</div><div class="desk-card-truth-line muted">Migrate to canonical anchor-based ACE system</div><div class="desk-card-truth-line warning">2 desks blocked.</div></div><div class="station-desk"><div class="desk-light  warning"></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar blocked"><span class="pixel-head" style="background: rgb(255, 211, 110);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip blocked">BLOCK</div><div class="org-status-chip blocked">BLOCKED</div><div class="agent-label">Planner</div></div><div class="agent-station   org-blocked" data-qa="desk-executor" data-desk-id="executor" data-desk-label="Executor" data-desk-status="blocked" data-stage-x="682" data-stage-y="252" role="button" tabindex="0" title="Executor | Awaiting approval: Update or check the status of RGS nodes" style="left: 682px; top: 252px; --agent-accent: #5ce29f; --agent-shadow: rgba(49, 132, 94, 0.38);"><div class="desk-thought-bubble blocked" title="Executor status: blocked. Waiting for clearer context.">Executor status: blocked. Waiting for clearer context.</div><div class="desk-card-truth"><div class="desk-card-truth-line">0 related items in workspace</div><div class="desk-card-truth-line muted">0 completion / 1 bottleneck / 0% ready</div><div class="desk-card-truth-line muted">Awaiting approval: Update or check the status of RGS nodes</div><div class="desk-card-truth-line warning">2 desks blocked.</div></div><div class="station-desk"><div class="desk-light  warning"></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar blocked"><span class="pixel-head" style="background: rgb(92, 226, 159);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip blocked">BLOCK</div><div class="org-status-chip blocked">BLOCKED</div><div class="agent-label">Exec</div></div><div class="agent-station selected  org-active" data-qa="desk-qa-lead" data-desk-id="qa-lead" data-desk-label="QA / Test Lead" data-desk-status="active" data-stage-x="182" data-stage-y="510" role="button" tabindex="0" title="QA / Test Lead | Runs suites, surfaces evidence, and rates test quality across desks." style="left: 182px; top: 510px; --agent-accent: #7dd6c8; --agent-shadow: rgba(78, 157, 145, 0.38);"><div class="desk-card-truth"><div class="desk-card-truth-line">1 of 4 desks failed; 1 of 19 checks failed</div><div class="desk-card-truth-line muted">4 scorecards / 8 browser runs / 2 local gates</div><div class="desk-card-truth-line muted">Core desk</div></div><div class="station-desk"><div class="desk-light  warning"></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar review"><span class="pixel-head" style="background: rgb(125, 214, 200);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip review">REVIEW</div><div class="org-status-chip good">ACTIVE</div><div class="agent-label">QA</div></div><div class="agent-station   org-active" data-qa="desk-memory-archivist" data-desk-id="memory-archivist" data-desk-label="Memory Archivist" data-desk-status="active" data-stage-x="620" data-stage-y="642" role="button" tabindex="0" title="Memory Archivist | Capture notes, handoffs, and artifact history" style="left: 620px; top: 642px; --agent-accent: #d2a3ff; --agent-shadow: rgba(126, 87, 160, 0.38);"><div class="desk-thought-bubble processing" title="Archivist status: running. Logging summaries.">Archivist status: running. Logging summaries.</div><div class="desk-card-truth"><div class="desk-card-truth-line">Migrate to canonical anchor-based ACE system</div><div class="desk-card-truth-line muted">0 archive versions / 0 annotations</div><div class="desk-card-truth-line muted">Capture notes, handoffs, and artifact history</div></div><div class="desk-page-badge">Processing</div><div class="station-desk"><div class="desk-light pulse "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar processing"><span class="pixel-head" style="background: rgb(210, 163, 255);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip processing">RUN</div><div class="org-status-chip good">ACTIVE</div><div class="agent-label">Archivist</div></div><div class="agent-station  oversight org-active" data-qa="desk-cto-architect" data-desk-id="cto-architect" data-desk-label="CTO / Architect" data-desk-status="active" data-stage-x="990" data-stage-y="422" role="button" tabindex="0" title="CTO / Architect | Review desk overlap, approval state, and guardrails" style="left: 990px; top: 422px; --agent-accent: #ff8f7a; --agent-shadow: rgba(166, 86, 72, 0.42);"><div class="desk-thought-bubble processing" title="Governance status: blocked. Reviewing blocker: M README_CORE.md
+ M brain/context/next_slice.md
+ M brain/context/recent_change_digest.md
+ M brain/emergence/slices.json
+ M brain/emergence/slices.md
+ M data/spatial/history.json
+ M data/spatial/qa/local-gates/test-unit-latest.json
+ M data/spatial/ta-department.json
+ M data/spatial/workspace.json
+ M ui/agentWorkers.js
+ M ui/archivistWriteback.js
+ M ui/graphMutations.js
+ M ui/public/app.js
+ M ui/public/index.html
+ M ui/public/spatial/graphEngine.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/tests/agentWorkers.test.mjs
+ M ui/tests/appViewerMode.test.mjs
+ M ui/tests/archivistWriteback.test.mjs
+ M ui/tests/graphEngine.test.mjs
+ M ui/tests/helpers/browser-module-loader.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json
+ M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md">Governance status: blocked. Reviewing blocker: M README_CORE.md
+ M brain/â€¦</div><div class="desk-card-truth"><div class="desk-card-truth-line">0 related items in workspace</div><div class="desk-card-truth-line muted">4 scorecards / 2 guardrails</div><div class="desk-card-truth-line muted">Review desk overlap, approval state, and guardrails</div></div><div class="desk-page-badge">Governing</div><div class="station-desk"><div class="desk-light pulse "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar processing"><span class="pixel-head" style="background: rgb(255, 143, 122);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip processing">RUN</div><div class="org-status-chip good">ACTIVE</div><div class="agent-label">CTO</div></div><div class="agent-station   org-understaffed" data-qa="desk-integration_auditor" data-desk-id="integration_auditor" data-desk-label="Integration Auditor" data-desk-status="understaffed" data-stage-x="986" data-stage-y="174" role="button" tabindex="0" title="Integration Auditor | talent desk" style="left: 986px; top: 174px; --agent-accent: #8ee7c1; --agent-shadow: rgba(142, 231, 193, 0.24);"><div class="desk-card-truth"><div class="desk-card-truth-line">coverage / hiring-demand / role-readiness</div><div class="desk-card-truth-line muted">1 assigned agent</div><div class="desk-card-truth-line muted">Core desk</div><div class="desk-card-truth-line warning">No agent assigned +1 more</div></div><div class="station-desk"><div class="desk-light  "></div><div class="station-prop"></div><div class="station-screen"></div></div><div class="pixel-avatar idle"><span class="pixel-head" style="background: rgb(142, 231, 193);"></span><span class="pixel-body"></span><span class="pixel-shadow"></span></div><div class="status-chip idle">IDLE</div><div class="org-status-chip review">UNDERSTAFFED</div><div class="agent-label">Integration Auditor</div></div><div class="studio-plaque"><div class="studio-name">ACE Studio</div><div class="muted">System visualization and control layer</div></div></div><div class="scene-indicator studio-indicator"><div class="indicator-title-row"><div class="indicator-title">Studio Map</div><button class="mini studio-map-toggle " type="button" title="Open studio map in Utilities" aria-label="Open studio map">Map</button></div><div class="muted">Map stays tucked into Utilities. Active layer: System Graph. World domain: gameplay-systems.</div></div></div></div></div></div><div class="utility-dock"><button class="mini utility-dock-toggle " type="button" data-qa="utility-dock-toggle">Utilities</button></div><div class="desk-properties-modal" data-qa="qa-properties-modal" data-desk-id="qa-lead"><div class="desk-properties-card panel-card"><div class="inline review-header"><div><div class="inspector-label">Desk Inspection</div><div class="signal-summary" data-qa="desk-management-target">QA / Test Lead truth surface</div><div class="signal-meta muted" data-qa="desk-focus-summary">Agents 0/1 | Active 0 | Queue 0 | Blockers none | Reports 95 | Windows QA Workbench / Scorecards / Desk Reports</div><div class="signal-meta muted">QA / Test Lead focus | no blockers surfaced | 95 reports linked</div><div class="signal-meta muted">Scoped local context for QA / Test Lead.</div><div class="signal-meta muted">Inspector stays hidden until a desk is clicked, then closes when you leave the desk view.</div></div><button class="mini" type="button">Leave Desk</button></div><div class="button-row desk-utility-actions "><button class="mini" type="button">QA Workbench</button><button class="mini" type="button">Scorecards</button><button class="mini" type="button">Reports</button></div><div class="desk-panel-item desk-truth-summary desk-inspector-truth" data-qa="desk-truth-summary"><div class="inspector-label">Desk Truth</div><div class="signal-summary">QA / Test Lead canonical truth</div><div class="criteria-list desk-metric-list"><div class="criteria-row"><span>Live / assigned agents</span><span class="muted">0 / 1</span></div><div class="criteria-row"><span>Active work</span><span class="muted">0</span></div><div class="criteria-row"><span>Queue</span><span class="muted">0</span></div><div class="criteria-row"><span>Blockers</span><span class="muted">none</span></div><div class="criteria-row"><span>Linked reports</span><span class="muted">95</span></div><div class="criteria-row"><span>Windows available</span><span class="muted">QA Workbench / Scorecards / Desk Reports</span></div><div class="criteria-row"><span>Workload</span><span class="muted">0 / 0 / 95</span></div><div class="criteria-row"><span>Throughput</span><span class="muted">0 complete / 0 in progress</span></div><div class="criteria-row"><span>Reports</span><span class="muted">6</span></div><div class="criteria-row"><span>Scorecards</span><span class="muted">4</span></div><div class="criteria-row"><span>Assessments</span><span class="muted">0</span></div><div class="criteria-row"><span>Context</span><span class="muted">n/a</span></div><div class="criteria-row"><span>Guardrails</span><span class="muted">0</span></div></div></div><div class="scene-switcher desk-tabs"><button class="mini active" type="button">QA</button><button class="mini " type="button">Hierarchy</button><button class="mini " type="button">Agents</button><button class="mini " type="button">Tasks</button><button class="mini " type="button">Tools (Modules)</button><button class="mini " type="button">Reports (Tests)</button></div><div class="desk-panel-list" data-qa="qa-properties-panel"><div class="desk-panel-item desk-truth-summary" data-qa="desk-truth-summary"><div class="inspector-label">Desk Truth</div><div class="signal-summary">QA / Test Lead truth bundle</div><div class="criteria-list desk-metric-list"><div class="criteria-row"><span>Live / assigned agents</span><span class="muted">0 / 1</span></div><div class="criteria-row"><span>Active work</span><span class="muted">0</span></div><div class="criteria-row"><span>Queue</span><span class="muted">0</span></div><div class="criteria-row"><span>Blockers</span><span class="muted">none</span></div><div class="criteria-row"><span>Linked reports</span><span class="muted">95</span></div><div class="criteria-row"><span>Windows available</span><span class="muted">QA Workbench / Scorecards / Desk Reports</span></div><div class="criteria-row"><span>Workload</span><span class="muted">0 / 0 / 95</span></div><div class="criteria-row"><span>Throughput</span><span class="muted">0 complete / 0 in progress</span></div><div class="criteria-row"><span>Reports</span><span class="muted">6</span></div><div class="criteria-row"><span>Scorecards</span><span class="muted">4</span></div><div class="criteria-row"><span>Assessments</span><span class="muted">0</span></div><div class="criteria-row"><span>Context</span><span class="muted">n/a</span></div><div class="criteria-row"><span>Guardrails</span><span class="muted">0</span></div></div></div><div class="desk-panel-item"><div class="signal-summary">1 of 4 desks failed; 1 of 19 checks failed</div><div class="signal-meta muted">Status: fail | Desks 4 | Tests 19</div><ul class="signal-list compact"><li>ui: syntax_load | ui/public/spatial/studioData.js: Unexpected token 'export'</li></ul></div><div class="signal-meta muted">Execution controls live in the QA utility window so desk inspection stays read-only.</div><div class="button-row desk-utility-actions compact"><button class="mini" type="button">QA Workbench</button><button class="mini" type="button">Scorecards</button><button class="mini" type="button">Reports</button></div><div class="desk-panel-item"><div class="signal-summary">Scorecards (4)</div><div class="desk-panel-list"><div class="desk-panel-item"><div class="signal-summary">planner | Planner contract check</div><div class="signal-meta muted">Status pass | Overall 3.5 / 5</div><div class="signal-meta muted">Scorecard schema and metrics are complete.</div></div><div class="desk-panel-item"><div class="signal-summary">runner | Runner contract check</div><div class="signal-meta muted">Status pass | Overall 3.6 / 5</div><div class="signal-meta muted">Scorecard schema and metrics are complete.</div></div><div class="desk-panel-item"><div class="signal-summary">ui | UI contract check</div><div class="signal-meta muted">Status pass | Overall 3.6 / 5</div><div class="signal-meta muted">Scorecard schema and metrics are complete.</div></div><div class="desk-panel-item"><div class="signal-summary">ta | TA contract check</div><div class="signal-meta muted">Status pass | Overall 3.2 / 5</div><div class="signal-meta muted">Scorecard schema and metrics are complete.</div></div></div></div><div class="desk-panel-item"><div class="signal-summary">Browser: studio-smoke | failed</div><div class="signal-meta muted">Findings 9</div><div class="button-row"><button class="mini" type="button">Open latest browser run</button></div></div><div class="desk-panel-item"><div class="signal-summary">Recent Browser Runs (8)</div><div class="desk-panel-list"><div class="desk-panel-item"><div class="signal-summary">studio-smoke | failed</div><div class="signal-meta muted">Trigger manual | Findings 9</div><div class="button-row"><button class="mini" type="button">Open run</button></div></div><div class="desk-panel-item"><div class="signal-summary">layout-pass | failed</div><div class="signal-meta muted">Trigger manual | Findings 22</div><div class="button-row"><button class="mini" type="button">Open run</button></div></div><div class="desk-panel-item"><div class="signal-summary">whiteboard-board-pass | failed</div><div class="signal-meta muted">Trigger manual | Findings 22</div><div class="button-row"><button class="mini" type="button">Open run</button></div></div><div class="desk-panel-item"><div class="signal-summary">layout-pass | failed</div><div class="signal-meta muted">Trigger manual | Findings 22</div><div class="button-row"><button class="mini" type="button">Open run</button></div></div></div></div><div class="desk-panel-item"><div class="signal-summary">Local Gate</div><div class="desk-panel-item"><div class="signal-summary">Fast Unit Gate</div><div class="signal-meta muted">Status pass | 54/54 checks passed</div><div class="signal-meta muted">No failing fast UI checks in the latest run.</div></div><div class="desk-panel-item"><div class="signal-summary">Studio Boot Guardrail</div><div class="signal-meta muted">Status pending | findings 0</div><div class="signal-meta muted">No failing Studio boot steps in the latest guardrail run.</div></div></div><div class="desk-panel-item"><div class="signal-summary">Runnable Suites</div><div class="signal-meta muted">Planner QA | Runner QA | UI QA | TA QA</div></div></div></div></div></section></div>
+    </main>
+
+    <aside id="legacy-ui" class="legacy-hidden legacy-drawer" aria-label="Legacy Debug Drawer">
+        <div class="legacy-drawer-inner">
+            <section id="error_wrap" class="card error" style="display:none;">
+                <div class="card-title">Something went wrong</div>
+                <pre id="error_box"></pre>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Legacy / Debug Shell</div>
+                <div class="muted">This drawer is secondary and debug-only for the current slice. Live scaffold and world intent entry now belongs to Canvas Intent inside Spatial Studio.</div>
+            </section>
+
+            <section class="card refresh-row">
+                <div>
+                    <div class="card-title">Legacy Dashboard Refresh (debug)</div>
+                    <div class="muted" id="refreshMeta">Last refreshed: 29/03/2026, 14:32:16 (every 10s)</div>
+                    <div class="muted" id="refreshErrors"></div>
+                </div>
+                <div class="button-row"><button id="refreshBtn">Refresh now</button></div>
+            </section>
+
+            <section class="card" id="systemStatusCard">
+                <div class="card-title">Legacy Shell Status</div>
+                <div class="status-grid">
+                    <div class="status-row"><span class="muted">UI connection</span><span id="uiConnectionState" class="status-value">connected</span></div>
+                    <div class="status-row"><span class="muted">Last successful refresh</span><span id="uiLastRefresh" class="status-value">29/03/2026, 14:32:16</span></div>
+                    <div class="status-row"><span class="muted">Last refresh error</span><span id="uiLastRefreshError" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Last command summary</span><span id="uiLastCommandSummary" class="status-value">none | idle | exit —</span></div>
+                    <div class="status-row"><span class="muted">Mode</span><span id="uiModeLabel" class="status-value">legacy shell</span></div>
+                </div>
+            </section>
+
+            <section class="grid">
+                <div class="card"><div class="card-title">Current Focus</div><div class="big" id="current_focus">Make repo anchors canonical for manager, context, and intent flow.</div></div>
+                <div class="card"><div class="card-title">Next Actions</div><ul class="list" id="next_actions"><li>Summary: Update or check the status of RGS nodes</li><li>Status: review</li><li>State: Approval required</li><li>Phase: active</li><li>Owner: planner</li><li>Assignee: executor</li><li>Anchor refs: brain/emergence/decisions.md, brain/emergence/project_brain.md, brain/emergence/roadmap.md, brain/emergence/slices.md, brain/emergence/changelog.md, brain/emergence/plan.md, brain/emergence/tasks.md</li></ul></div>
+                <div class="card"><div class="card-title">Blockers</div><ul class="list" id="blockers"><li>None</li></ul></div>
+            </section>
+
+            <section class="two-col">
+                <div class="card"><div class="card-title">Decisions</div><pre class="doc" id="decisions_text"># Decision Log
+
+## 2026-03-15 - Canonical brain moves to brain/emergence
+
+ACE now treats `brain/emergence` as the canonical manager/context anchor bundle.
+`projects/emergence` remains as a deprecated compatibility path during migration.
+
+## 2026-03-15 - External targets move to targets.json
+
+External repos and tools are now configured through `targets.json`.
+`projects.json` remains as a compatibility input until the migration is complete.
+
+## 2026-03-15 - Legacy repo trees move under legacy
+
+Archived repo content now lives under `legacy/`.
+Active runtime resolution must not depend on `legacy/ai-pipeline` or `legacy/Old`.
+
+## 2026-03-25 - Shift to intent-driven spatial system
+
+### Rationale
+
+ACE is moving beyond direct task execution so the system can reason over persistent world state, reconcile competing pressures, and produce more adaptive behavior than fixed pipeline outputs allow.
+
+### Consequences
+
+- Architecture planning now centers on three layers: ACE orchestration, a persistent graph world model, and spatial field systems.
+- New features should prefer continuous evaluation, spatial reasoning, and constrained agent action over one-shot object edits or instant global changes.
+- Success criteria increasingly shift from predefined task completion toward stable, emergent outcomes shaped by world conditions.</pre></div>
+                <div class="card"><div class="card-title">Slices</div><pre class="doc" id="tasks_text"># Active Slices
+
+Canonical source: `brain/emergence/slices.json`
+Generated: 2026-03-29T13:32:15.441Z
+
+Active slice count: 1
+
+## 0001: Update or check the status of RGS nodes
+- Summary: Update or check the status of RGS nodes
+- Status: review
+- State: Approval required
+- Phase: active
+- Owner: planner
+- Assignee: executor
+- Anchor refs: brain/emergence/decisions.md, brain/emergence/project_brain.md, brain/emergence/roadmap.md, brain/emergence/slices.md, brain/emergence/changelog.md, brain/emergence/plan.md, brain/emergence/tasks.md
+- Source handoff: handoff_1774615405452_2yc7
+- Updated: 2026-03-29T13:32:15.422Z</pre></div>
+                <div class="card"><div class="card-title">Roadmap</div><pre class="doc" id="roadmap_text"># Roadmap
+
+## Now
+
+- Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.
+- Keep the manager, runtime, and intent systems on the shared anchor bundle contract.
+- Use anchor provenance and drift detection to block unanchored execution from advancing.
+- Keep archived repo history under `legacy/` and out of active runtime flow.
+
+## Next
+
+- Deepen ACE orchestration so desk activation, team-board seeding, and agent action are driven by evolving world state rather than one-shot task dispatch.
+- Expand the context system from weighted keywords into a persistent graph/world model that supports structured retrieval, spatial relationships, and continuous evaluation.
+- Extend MCP and QA flows to surface graph and field drift, agent constraints, and emergence readiness more explicitly.
+- Decide when to remove `projects/emergence/*` and `projects.json` compatibility once the current contract is stable.
+
+## Later
+
+- Add spatial field layers for cover, visibility, flow, threat, and related distributed pressures once the graph/world model is stable.
+- Add multi-domain brains once a single-domain anchor model is stable.
+- Flatten the outer checkout path after internal layout cleanup is complete.</pre></div>
+                <div class="card"><div class="card-title">Historical Plan</div><pre class="doc" id="plan_text"># Historical Plan
+
+Status: Archived historical slice from 2026-03-15
+
+This file is preserved as historical context only.
+Active slice authority now lives in `brain/emergence/slices.json` and `brain/emergence/slices.md`.
+
+Created: 2026-03-15T00:00:00Z
+
+## Goal
+
+- Make `brain/emergence` the canonical source of truth for ACE manager and context behavior.
+
+## MVP scope (must-haves)
+
+- Add a shared anchor resolver and bundle builder.
+- Route runtime, dashboard, intent analysis, throughput, and tests through canonical anchor resolution.
+- Rename external target config to `targets.json` with `projects.json` fallback.
+- Carry anchor provenance into handoffs, cards, runtime payloads, and drift detection.
+- Stage legacy folders under a dedicated legacy namespace after compatibility checks pass.
+
+## Out of scope (not now)
+
+- Multi-domain manager support.
+- New desk/agent roles.
+- Removing compatibility aliases in the same pass.
+
+## Acceptance criteria
+
+- [x] Runtime and dashboard read canonical anchor files from `brain/emergence`.
+- [x] Intent reports include anchor provenance and manager truth metadata.
+- [x] Unanchored execution cards are blocked from automatic advancement.
+- [x] External target lookup prefers `targets.json` but still works with `projects.json`.
+
+## Risks / notes
+
+- Legacy compatibility must survive the path move.
+- Canonical docs must stay aligned with runtime fields or drift warnings will become noise.
+- Archived content under `legacy/` must stay out of active runtime resolution.</pre></div>
+                <div class="card"><div class="card-title">Project Brain</div><pre class="doc" id="brain_text"># Project Brain - Emergence
+
+Emergence is the active ACE domain brain.
+It tracks the architecture and operating model for ACE as a local-first manager for code, context, tool access, and guarded self-upgrade.
+
+## Current Architecture
+
+- ACE Studio exposes Context Manager, Planner, Executor, Memory Archivist, and CTO/Architect desks.
+- The runtime keeps a persisted workspace, handoffs, team-board state, throughput sessions, and QA history.
+- The runner owns scan, manage, build, run, and apply actions against target repos.
+- MCP exposes ACE runtime state as a tool/resource layer instead of forcing bespoke per-tool wiring.
+
+## Core System Direction
+
+- ACE is shifting from a task and pipeline-driven tool into an intent-driven world system.
+- Intent should be expressed as continuous pressure over a persistent graph-based world rather than as one-shot commands against isolated objects.
+- The core stack is ACE for interpretation and orchestration, a graph layer for persistent world state, and a spatial field layer for distributed pressures such as cover, visibility, flow, and threat.
+- The system should increasingly favor continuous evaluation, spatial reasoning, constrained execution via agents, and emergent outcomes over predefined results.
+
+## Current Focus
+
+- Make repo anchors canonical for manager, context, and intent flow.
+- Separate canonical brain storage from external target-repo configuration.
+- Remove legacy path drift so runtime behavior is not coupled to stale folder structure.
+
+## Current State
+
+- Canonical anchor storage is `brain/emergence/` with compatibility reads from `projects/emergence/`.
+- External targets resolve from `targets.json` first, then `projects.json`.
+- Legacy repo content is archived under `legacy/` and excluded from active runtime resolution.</pre></div>
+                <div class="card"><div class="card-title">Changelog</div><pre class="doc" id="changelog_text"># Changelog
+
+## 2026-03-15
+
+- Added a shared anchor resolver and canonical brain bundle.
+- Switched runtime/dashboard/intent flow to canonical brain paths with legacy fallback.
+- Added anchor provenance and drift metadata for manager/runtime surfaces.
+- Renamed external target config to `targets.json` with `projects.json` fallback.
+- Moved legacy repo trees under `legacy/`.
+
+## 2026-03-25
+
+- Shifted the core vision from task and pipeline execution to an intent-driven spatial world system.
+- Defined ACE orchestration, a persistent graph layer, and spatial fields as the new stack, favoring continuous evaluation and emergent agent-driven outcomes.
+
+## 2026-03-26
+
+&lt;!-- archivist-writeback:start --&gt;
+- Synced repo docs from the live spatial runtime snapshot.
+- Runtime snapshot: page `page_1774440616080_m3p3` has 6 nodes / 4 edges; team board has 0 cards and `slices.md` reports 0 active slices.
+- Latest QA evidence: `qa_1774523588041_da5xzo` (studio-smoke) failed at 2026-03-26T11:13:12.318Z; 22 findings (error).
+- No active slices or team-board cards are currently recorded, so the backlog still needs its next bounded seed.
+&lt;!-- archivist-writeback:end --&gt;</pre></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Legacy Fallback Control (deprecated)</div>
+                <div class="muted">Primary sim launch and scaffold/world intent routing now live in the visible canvas layer. Use this drawer only for old scan/manage/build compatibility.</div>
+                <div class="form-grid">
+                    <label>Project</label>
+                    <div class="inline">
+                        <select id="projectSelect"><option value="bridge">bridge (C:\Users\felix\Desktop\Blender\send_to_unreal_bridge\send_to_unreal_bridge)</option><option value="ace">ace (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline)</option><option value="yt_transcript_exporter">yt_transcript_exporter (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline)</option><option value="topdown-slice">topdown-slice (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline\projects\topdown-slice)</option><option value="ace-self">ace-self (C:\Users\felix\Desktop\Automated_AI_Pipeline\dev\ai-pipeline\ai-pipeline-updated\ai-pipeline)</option></select>
+                        <button id="runProjectBtn" type="button">Run Project</button>
+                    </div>
+                    <div id="projectRunStatus" class="muted">Ready to launch the selected project at the supported origin.</div>
+                    <a id="projectRunLink" class="muted" href="http://127.0.0.1:4173/" target="_blank" rel="noreferrer noopener" style="display: inline-block;">Supported URL: http://127.0.0.1:4173/</a>
+
+                    <label>Task</label>
+                    <div class="inline">
+                        <select id="taskSelect"><option value="0001-Blender-UE-import-hygiene">0001-Blender-UE-import-hygiene</option><option value="9999-smoke-test">9999-smoke-test</option></select>
+                        <input id="taskIdInput" placeholder="Manual task id (e.g. 0001-name)" style="">
+                    </div>
+
+                    <label>Action</label>
+                    <select id="actionSelect">
+                        <option value="scan">Scan</option>
+                        <option value="manage">Manage</option>
+                        <option value="build">Build</option>
+                    </select>
+                </div>
+                <div class="button-row">
+                    <button id="runAllBtn" type="button">Run Legacy Sequence</button>
+                    <button id="executeBtn">Run Legacy scan</button>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Legacy Admin</div>
+                <div class="button-row">
+                    <button id="addIdeaBtn">Add Idea</button>
+                    <button id="addTaskBtn">Add Task</button>
+                    <button id="addProjectBtn">Add Project</button>
+                </div>
+                <div id="addMessage" class="muted"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Talent Acquisition</div>
+                <div class="muted ta-panel-copy">Describe a system gap and ACE will generate candidate profiles that could fill it.</div>
+                <div class="ta-panel">
+                    <label for="talentGapInput" class="muted">Gap description</label>
+                    <textarea id="talentGapInput" placeholder="Example: UI actions appear disconnected from backend execution" style=""></textarea>
+                    <div class="button-row">
+                        <button id="generateCandidatesBtn" type="button">Generate Candidates</button>
+                    </div>
+                    <div id="taCandidateStatus" class="muted">No candidate set generated yet.</div>
+                    <div id="taDepartmentStatus" class="ta-department-status muted">40 open roles across 11 staffing rules. 31 blockers; urgency critical.</div>
+                    <div id="taDepartmentCoverage" class="ta-coverage-grid" aria-live="polite"><article class="ta-gap-summary"><div class="ta-gap-summary-header"><div class="signal-summary">Hiring demand</div><div class="ta-gap-urgency urgency-critical">Urgency: CRITICAL</div></div><div class="ta-gap-stats"><span class="ta-gap-chip">Open roles: 40</span><span class="ta-gap-chip">Blockers: 31</span><span class="ta-gap-chip">Missing leads: 9</span><span class="ta-gap-chip">Understaffed: 22</span><span class="ta-gap-chip">Optional hires: 9</span></div><div class="ta-gap-blocker-label muted">Blocking gaps</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: Planner</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Context Manager</span><span class="ta-gap-chip">understaffed: Planner</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Memory Archivist</span><span class="ta-gap-chip">missing lead: integration_auditor</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: integration_auditor</span><span class="ta-gap-chip">missing lead: CTO / Architect</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: CTO / Architect</span><span class="ta-gap-chip">understaffed: QA / Test Lead</span><span class="ta-gap-chip">missing lead: Context Manager</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Context Manager</span><span class="ta-gap-chip">missing lead: Planner</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Planner</span><span class="ta-gap-chip">missing lead: Memory Archivist</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Memory Archivist</span><span class="ta-gap-chip">missing lead: QA / Test Lead</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: QA / Test Lead</span><span class="ta-gap-chip">missing lead: CTO / Architect</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: CTO / Architect</span><span class="ta-gap-chip">missing lead: integration_auditor</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: integration_auditor</span></div><div class="ta-gap-blocker-label muted">Open roles</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: Planner</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Context Manager</span><span class="ta-gap-chip">understaffed: Planner</span><span class="ta-gap-chip">optional hire: QA / Test Lead</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Memory Archivist</span><span class="ta-gap-chip">optional hire: Planner</span><span class="ta-gap-chip">missing lead: integration_auditor</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: integration_auditor</span><span class="ta-gap-chip">missing lead: CTO / Architect</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: CTO / Architect</span><span class="ta-gap-chip">understaffed: QA / Test Lead</span><span class="ta-gap-chip">optional hire: Memory Archivist</span><span class="ta-gap-chip">missing lead: Context Manager</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Context Manager</span><span class="ta-gap-chip">optional hire: Planner</span><span class="ta-gap-chip">missing lead: Planner</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Planner</span><span class="ta-gap-chip">optional hire: Context Manager</span><span class="ta-gap-chip">optional hire: Planner</span><span class="ta-gap-chip">missing lead: Memory Archivist</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Memory Archivist</span><span class="ta-gap-chip">optional hire: Context Manager</span><span class="ta-gap-chip">missing lead: QA / Test Lead</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: QA / Test Lead</span><span class="ta-gap-chip">optional hire: Memory Archivist</span><span class="ta-gap-chip">missing lead: CTO / Architect</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: CTO / Architect</span><span class="ta-gap-chip">optional hire: QA / Test Lead</span><span class="ta-gap-chip">missing lead: integration_auditor</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: integration_auditor</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">Context Intake</div><div class="ta-coverage-status">missing lead</div><div class="ta-coverage-detail muted">0/1 assigned | 5 open roles | missing lead: Planner | understaffed: n/a | understaffed: Context Manager | understaffed: Planner</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: Planner</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Context Manager</span><span class="ta-gap-chip">understaffed: Planner</span><span class="ta-gap-chip">optional hire: QA / Test Lead</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">Delivery</div><div class="ta-coverage-status">understaffed</div><div class="ta-coverage-detail muted">1/1 assigned | 3 open roles | understaffed: n/a | understaffed: Memory Archivist</div><div class="ta-gap-role-list"><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Memory Archivist</span><span class="ta-gap-chip">optional hire: Planner</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">Talent Acquisition</div><div class="ta-coverage-status">missing lead</div><div class="ta-coverage-detail muted">0/1 assigned | 3 open roles | missing lead: integration_auditor | understaffed: n/a | understaffed: integration_auditor</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: integration_auditor</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: integration_auditor</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">Quality and Governance</div><div class="ta-coverage-status">missing lead</div><div class="ta-coverage-detail muted">0/1 assigned | 5 open roles | missing lead: CTO / Architect | understaffed: n/a | understaffed: CTO / Architect | understaffed: QA / Test Lead</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: CTO / Architect</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: CTO / Architect</span><span class="ta-gap-chip">understaffed: QA / Test Lead</span><span class="ta-gap-chip">optional hire: Memory Archivist</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">Context Manager</div><div class="ta-coverage-status">missing lead</div><div class="ta-coverage-detail muted">0/1 assigned | 4 open roles | missing lead: Context Manager | understaffed: n/a | understaffed: Context Manager</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: Context Manager</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Context Manager</span><span class="ta-gap-chip">optional hire: Planner</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">Planner</div><div class="ta-coverage-status">missing lead</div><div class="ta-coverage-detail muted">0/1 assigned | 4 open roles | missing lead: Planner | understaffed: n/a | understaffed: Planner</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: Planner</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Planner</span><span class="ta-gap-chip">optional hire: Context Manager</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">Executor</div><div class="ta-coverage-status">optional hire</div><div class="ta-coverage-detail muted">1/1 assigned | 1 open role | no blockers</div><div class="ta-gap-role-list"><span class="ta-gap-chip">optional hire: Planner</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">Memory Archivist</div><div class="ta-coverage-status">missing lead</div><div class="ta-coverage-detail muted">0/1 assigned | 4 open roles | missing lead: Memory Archivist | understaffed: n/a | understaffed: Memory Archivist</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: Memory Archivist</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: Memory Archivist</span><span class="ta-gap-chip">optional hire: Context Manager</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">QA / Test Lead</div><div class="ta-coverage-status">missing lead</div><div class="ta-coverage-detail muted">0/1 assigned | 4 open roles | missing lead: QA / Test Lead | understaffed: n/a | understaffed: QA / Test Lead</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: QA / Test Lead</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: QA / Test Lead</span><span class="ta-gap-chip">optional hire: Memory Archivist</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">CTO / Architect</div><div class="ta-coverage-status">missing lead</div><div class="ta-coverage-detail muted">0/1 assigned | 4 open roles | missing lead: CTO / Architect | understaffed: n/a | understaffed: CTO / Architect</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: CTO / Architect</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: CTO / Architect</span><span class="ta-gap-chip">optional hire: QA / Test Lead</span></div></article><article class="ta-coverage-card open"><div class="signal-summary">integration_auditor</div><div class="ta-coverage-status">missing lead</div><div class="ta-coverage-detail muted">0/1 assigned | 3 open roles | missing lead: integration_auditor | understaffed: n/a | understaffed: integration_auditor</div><div class="ta-gap-role-list"><span class="ta-gap-chip">missing lead: integration_auditor</span><span class="ta-gap-chip">understaffed: staffing floor</span><span class="ta-gap-chip">understaffed: integration_auditor</span></div></article></div>
+                    <div id="taCandidateError" class="ta-message ta-message-error hidden"></div>
+                    <div class="ta-roster-panel">
+                        <div class="card-title">Hired Roster</div>
+                        <div id="taDepartmentRoster" class="ta-roster-grid" aria-live="polite"><article class="ta-roster-card"><div class="signal-summary">Taylor Pike</div><div class="muted">Integration Auditor | Desk executor</div><div class="ta-roster-model">Model locked: mistral:latest</div><div class="signal-meta muted">Maps claimed system behavior against actual execution paths and integration seams. Focuses on execution mismatches across ui, server, task pipeline.</div></article></div>
+                    </div>
+                    <div id="taCandidateResults" class="ta-candidate-grid" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Structured QA</div>
+                <div class="muted">Runs deterministic desk-level validation and returns one report.</div>
+                <div class="button-row">
+                    <button id="runQaBtn" type="button">Run QA</button>
+                </div>
+                <div id="qaStatus" class="muted">No QA report yet.</div>
+                <pre id="qaReport" class="console"></pre>
+            </section>
+
+            <section class="card" id="pipelineSummaryCard">
+                <div class="card-title">Legacy Command Summary</div>
+                <div class="pipeline-summary-grid">
+                    <div class="status-row"><span class="muted">Command</span><span id="pipelineCommandName" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Result</span><span id="pipelineCommandState" class="status-value">idle</span></div>
+                    <div class="status-row"><span class="muted">Exit code</span><span id="pipelineCommandExit" class="status-value">—</span></div>
+                    <div class="status-row"><span class="muted">Timestamp</span><span id="pipelineCommandTimestamp" class="status-value">—</span></div>
+                    <div class="status-row"><span class="muted">Error summary</span><span id="pipelineCommandError" class="status-value">none</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="preflightSummaryCard">
+                <div class="card-title">Preflight Guard Summary</div>
+                <div class="preflight-summary">
+                    <div class="status-row"><span class="muted">Stage checked</span><span id="preflightStage" class="status-value">planner</span></div>
+                    <div class="status-row"><span class="muted">Guard status</span><span id="preflightStatus" class="preflight-pill blocked">blocked</span></div>
+                    <div class="status-row"><span class="muted">Reason</span><span id="preflightReason" class="status-value">M brain/context/agent_audits/builder/builder_0001.json</span></div>
+                    <div class="status-row"><span class="muted">Cache state</span><span id="preflightCacheStatus" class="preflight-pill unknown">none</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="artifactStatusCard">
+                <div class="card-title">Legacy Task Observability (deprecated)</div>
+                <div class="artifact-summary">
+                    <div class="muted" id="artifactTaskLabel">Selected legacy task: 0001-Blender-UE-import-hygiene</div>
+                    <div class="muted" id="artifactTaskFolder">Legacy task folders are debug-only. Canonical world routing lives in Canvas Intent and Spatial Studio.</div>
+                    <div class="muted" id="artifactStatusMeta">Artifact lookup disabled. /api/task-artifacts is legacy compatibility only and no longer drives Studio truth.</div>
+                </div>
+                <div class="artifact-status-grid" aria-live="polite">
+                    <div class="artifact-row"><span class="muted">Legacy task artifacts</span><span id="artifact_context_status" class="artifact-pill unknown">legacy-only</span></div>
+                    <div class="artifact-row"><span class="muted">Canonical route</span><span id="artifact_plan_status" class="artifact-pill unknown">world-first</span></div>
+                    <div class="artifact-row"><span class="muted">Studio control tower</span><span id="artifact_patch_status" class="artifact-pill unknown">use-studio</span></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Legacy Output</div>
+                <div class="meta"><div class="meta-item"><div class="meta-label">Status</div><div class="meta-value" id="runStatus">idle</div></div><div class="meta-item"><div class="meta-label">Exit code</div><div class="meta-value" id="runExit">—</div></div><div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value" id="runDuration">—</div></div></div>
+                <div class="muted" id="artifactPath">No artifacts yet.</div>
+                <div class="button-row">
+                    <button id="copyOutputBtn">Copy output</button>
+                    <button id="openTaskFolderBtn">Open legacy task folder</button>
+                </div>
+                <pre id="commandOutput" class="console"></pre>
+            </section>
+        </div>
+    </aside>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="app.js"></script>
+    <script type="module" src="spatial/spatialApp.js"></script>
+
+
+</body></html>

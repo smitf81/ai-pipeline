@@ -38,6 +38,7 @@ const testEntries = [
   { name: 'failureMemory', path: './failureMemory.test.mjs' },
   { name: 'agentAudit', path: './agentAudit.test.mjs' },
   { name: 'agentCapabilities', path: './agentCapabilities.test.mjs' },
+  { name: 'constrainedAutoFix', path: './constrainedAutoFix.test.mjs' },
   { name: 'autonomyPolicy', path: './autonomyPolicy.test.mjs' },
   { name: 'fixTasks', path: './fixTasks.test.mjs' },
   { name: 'taskArtifacts', path: './taskArtifacts.test.mjs' },

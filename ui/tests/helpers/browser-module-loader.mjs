@@ -216,6 +216,17 @@ const buildStudioStatePayload = (payload = {}) => payload;
 const saveStudioState = async () => ({ ok: true });
 const saveArchitectureMemory = async () => ({ ok: true });
 const React = {
+  Component: class Component {
+    constructor(props) {
+      this.props = props || {};
+      this.state = {};
+    }
+
+    setState(updater) {
+      const nextState = typeof updater === 'function' ? updater(this.state, this.props) : updater;
+      this.state = { ...this.state, ...nextState };
+    }
+  },
   createElement: (...args) => ({ args }),
   Fragment: Symbol.for('react.fragment'),
   useEffect: () => undefined,
@@ -230,6 +241,18 @@ const ReactDOM = {
 const fetch = async () => ({ ok: true, json: async () => ({}) });
 const requestAnimationFrame = () => 0;
 const cancelAnimationFrame = () => undefined;
+const sessionStorage = {
+  _store: new Map(),
+  getItem(key) {
+    return this._store.has(key) ? this._store.get(key) : null;
+  },
+  setItem(key, value) {
+    this._store.set(key, String(value));
+  },
+  removeItem(key) {
+    this._store.delete(key);
+  },
+};
 const window = {
   location: { href: ${JSON.stringify(locationHref)}, search: new URL(${JSON.stringify(locationHref)}).search },
   addEventListener: () => undefined,
@@ -238,6 +261,7 @@ const window = {
   innerWidth: 1600,
   innerHeight: 1100,
   prompt: () => null,
+  sessionStorage,
 };
 const document = {
   activeElement: null,

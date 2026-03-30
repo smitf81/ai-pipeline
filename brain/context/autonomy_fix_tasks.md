@@ -3,7 +3,7 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-03-29T12:00:37.596Z
+Updated: 2026-03-30T08:50:07.619Z
 
 ### 0001-Blender-UE-import-hygiene
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -28,7 +28,13 @@ Updated: 2026-03-29T12:00:37.596Z
  M data/spatial/qa/local-gates/test-unit-latest.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
+ M ui/failureMemory.js
  M ui/public/spatial/spatialApp.js
+ M ui/server.js
+ M ui/tests/failureMemory.test.mjs
+ M ui/tests/helpers/browser-module-loader.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
  M ui/tests/spatialApp.smoke.test.mjs
 
 ### 10000
@@ -90,5 +96,11 @@ Updated: 2026-03-29T12:00:37.596Z
  M data/spatial/qa/local-gates/test-unit-latest.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
+ M ui/failureMemory.js
  M ui/public/spatial/spatialApp.js
+ M ui/server.js
+ M ui/tests/failureMemory.test.mjs
+ M ui/tests/helpers/browser-module-loader.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
  M ui/tests/spatialApp.smoke.test.mjs

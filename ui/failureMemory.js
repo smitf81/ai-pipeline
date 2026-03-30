@@ -26,6 +26,35 @@ function uniqueStrings(values = []) {
   return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
 }
 
+function normalizeFailureUiResponse(uiResponse = null) {
+  if (!uiResponse || typeof uiResponse !== 'object') return null;
+  return {
+    ...uiResponse,
+  };
+}
+
+function normalizeFailureEvent(event = {}) {
+  const timestamp = String(event.timestamp || event.created_at || event.updated_at || '').trim() || null;
+  const message = String(event.message || event.error || '').trim() || null;
+  const stack = String(event.stack || '').trim() || null;
+  const failureClass = String(event.failure_class || event.failureClass || '').trim() || null;
+  const route = String(event.route || '').trim() || null;
+  const method = String(event.method || '').trim() || null;
+  const stage = String(event.stage || '').trim() || null;
+  const source = String(event.source || '').trim() || null;
+  return {
+    timestamp,
+    message,
+    stack,
+    failure_class: failureClass,
+    route,
+    method,
+    stage,
+    source,
+    ui_response: normalizeFailureUiResponse(event.ui_response || event.uiResponse || null),
+  };
+}
+
 function normalizeRelativePath(relativePath = '') {
   return String(relativePath || '')
     .replace(/\\/g, '/')
@@ -121,6 +150,8 @@ function normalizeFailureRecord(record = {}, fallback = {}) {
     related_projects: uniqueStrings(Array.isArray(record.related_projects) ? record.related_projects : fallback.related_projects || []).slice(0, 5),
     related_agents: uniqueStrings(Array.isArray(record.related_agents) ? record.related_agents : fallback.related_agents || []).slice(0, 5),
     source_count: Number(record.source_count ?? fallback.source_count ?? 0) || 0,
+    failure_class: String(record.failure_class || record.failureClass || fallback.failure_class || fallback.failureClass || '').trim() || null,
+    last_error: normalizeFailureEvent(record.last_error || fallback.last_error || {}),
   };
 }
 
@@ -169,6 +200,9 @@ function renderFailureHistoryEntry(entry = {}) {
   if (entry.agent_id) lines.push(`- Agent: ${entry.agent_id}${entry.agent_version ? ` (${entry.agent_version})` : ''}`);
   if (entry.first_seen) lines.push(`- First seen: ${entry.first_seen}`);
   if (entry.last_seen) lines.push(`- Last seen: ${entry.last_seen}`);
+  if (entry.failure_class) lines.push(`- Failure class: ${entry.failure_class}`);
+  if (entry.last_error?.timestamp) lines.push(`- Last error timestamp: ${entry.last_error.timestamp}`);
+  if (entry.last_error?.message) lines.push(`- Last error: ${entry.last_error.message}`);
   if ((entry.related_tools || []).length) lines.push(`- Related tools: ${entry.related_tools.join(', ')}`);
   if ((entry.related_stages || []).length) lines.push(`- Related stages: ${entry.related_stages.join(', ')}`);
   if ((entry.related_runs || []).length) lines.push(`- Related runs: ${entry.related_runs.join(', ')}`);
@@ -241,6 +275,8 @@ function upsertFailureRecord(history, observation = {}) {
     related_agents: [],
     source_count: 0,
   });
+  const uiResponse = normalizeFailureUiResponse(observation.ui_response || observation.uiResponse || null);
+  const failureClass = String(observation.failure_class || observation.failureClass || nextEntry.failure_class || '').trim() || null;
 
   nextEntry.failure_key = failureKey;
   nextEntry.stage = stage || nextEntry.stage || null;
@@ -250,6 +286,18 @@ function upsertFailureRecord(history, observation = {}) {
   nextEntry.first_seen = nextEntry.first_seen || now;
   nextEntry.last_seen = now;
   nextEntry.source_count = Number(nextEntry.source_count || 0) + 1;
+  nextEntry.failure_class = failureClass;
+  nextEntry.last_error = normalizeFailureEvent({
+    timestamp: now,
+    message: normalizedMessage || nextEntry.last_error?.message || null,
+    stack: String(observation.stack || observation.errorStack || observation.rawStack || '').trim() || nextEntry.last_error?.stack || null,
+    failure_class: failureClass,
+    route: String(observation.route || observation.path || '').trim() || nextEntry.last_error?.route || null,
+    method: String(observation.method || '').trim() || nextEntry.last_error?.method || null,
+    stage,
+    source: String(observation.source || '').trim() || nextEntry.last_error?.source || null,
+    ui_response: uiResponse || nextEntry.last_error?.ui_response || null,
+  });
   if (normalizedMessage) {
     nextEntry.example_messages = uniqueStrings([normalizedMessage, ...(nextEntry.example_messages || [])]).slice(0, FAILURE_EXAMPLE_LIMIT);
   }

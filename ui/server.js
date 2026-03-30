@@ -49,6 +49,8 @@ const {
 } = require('./preflightGuards');
 const {
   recordFailureOccurrence,
+  normalizeFailureKey,
+  readFailureHistory,
 } = require('./failureMemory');
 const {
   ensureQAStorage,
@@ -112,6 +114,10 @@ const {
   buildAgentAuditRecord,
   writeAgentAuditArtifacts,
 } = require('./agentAudit');
+const {
+  buildConstrainedAutoFixBundle,
+  runConstrainedAutoFixExecutor,
+} = require('./constrainedAutoFix');
 const {
   buildAgentCapabilityProfile,
   readAgentCapabilityProfile,
@@ -247,6 +253,7 @@ const TA_COVERAGE_REQUIREMENTS = [
 ];
 
 let staffingRulesModulePromise = null;
+let spatialBootHealthSnapshot = null;
 
 function loadStaffingRulesModule() {
   if (!staffingRulesModulePromise) {
@@ -1126,6 +1133,141 @@ function classifyLlmFailureStatus(reason = '', usedFallback = false) {
   return usedFallback ? 'degraded_fallback' : 'model_error';
 }
 
+const FAILURE_CLASSES = new Set(['warning', 'panel_degraded', 'runtime_critical', 'boot_critical']);
+
+function normalizeFailureClass(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (FAILURE_CLASSES.has(normalized)) return normalized;
+  return 'runtime_critical';
+}
+
+function extractFailureStack(error = null) {
+  if (!error || typeof error === 'string') return null;
+  const stack = String(error.stack || '').trim();
+  return stack || null;
+}
+
+function classifyFailureContext(error = null, context = {}) {
+  const message = String(error?.message || context.message || error || '').toLowerCase();
+  const code = String(error?.code || context.code || '').trim().toUpperCase();
+  const statusCode = Number(context.statusCode || context.status || error?.statusCode || error?.status || 0) || 0;
+  const route = String(context.route || context.path || '').toLowerCase();
+  const stage = String(context.stage || context.related_stage || context.relatedStage || '').toLowerCase();
+  const component = String(context.component || context.surface || context.panel || '').toLowerCase();
+  const surface = String(context.surface || context.view || context.panel || '').toLowerCase();
+  const source = String(context.source || '').toLowerCase();
+  const scope = `${message} ${code} ${route} ${stage} ${component} ${surface} ${source}`.trim();
+  const isBootContext = /(^|[^a-z])(boot|startup|start-up|health|init|initialize|initialization|server-start)([^a-z]|$)/.test(scope);
+  const isPanelContext = /(^|[^a-z])(panel|utility|roster|truth|qa|notebook|desk|workspace|spatial|render|view)([^a-z]|$)/.test(scope);
+  const warningCodes = new Set(['BAD_REQUEST', 'INVALID_ARGUMENT', 'INVALID_INPUT', 'MISSING_INPUT', 'NOT_FOUND', 'UNSUPPORTED', 'CONFLICT', 'VALIDATION_FAILED']);
+  const warningSignals = [
+    statusCode > 0 && statusCode < 500,
+    warningCodes.has(code),
+    /(^|[^a-z])(expected|recoverable|warning|noncritical|non-critical|skip)([^a-z]|$)/.test(scope),
+  ];
+  if (warningSignals.some(Boolean)) {
+    return 'warning';
+  }
+  if (isBootContext) {
+    return 'boot_critical';
+  }
+  if (isPanelContext) {
+    return 'panel_degraded';
+  }
+  if (['EPERM', 'EACCES', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EPIPE', 'ECONNRESET'].includes(code)) {
+    return isBootContext ? 'boot_critical' : 'runtime_critical';
+  }
+  if (error instanceof SyntaxError) {
+    return isBootContext ? 'boot_critical' : 'runtime_critical';
+  }
+  if (error instanceof TypeError || error instanceof ReferenceError || error instanceof RangeError || error instanceof URIError || error instanceof EvalError) {
+    return isPanelContext ? 'panel_degraded' : (isBootContext ? 'boot_critical' : 'runtime_critical');
+  }
+  if (/cannot read (properties|property)|reading 'length'|reading "length"|map is not a function|filter is not a function|forEach is not a function|join is not a function/.test(message)) {
+    return isPanelContext ? 'panel_degraded' : 'runtime_critical';
+  }
+  return isBootContext ? 'boot_critical' : 'runtime_critical';
+}
+
+function buildFailureUiResponse(failureClass = 'runtime_critical') {
+  const normalized = normalizeFailureClass(failureClass);
+  switch (normalized) {
+    case 'warning':
+      return {
+        failureClass: normalized,
+        uiMode: 'banner',
+        clientAction: 'continue',
+        safeMode: false,
+        fallbackPanel: false,
+        shell: 'current',
+        summary: 'Show a warning banner and keep the current UI mounted.',
+      };
+    case 'panel_degraded':
+      return {
+        failureClass: normalized,
+        uiMode: 'fallback_panel',
+        clientAction: 'showFallbackPanel',
+        safeMode: false,
+        fallbackPanel: true,
+        shell: 'fallback-panel',
+        summary: 'Render a fallback panel and keep the rest of the UI alive.',
+      };
+    case 'boot_critical':
+      return {
+        failureClass: normalized,
+        uiMode: 'safe_mode',
+        clientAction: 'enterSafeMode',
+        safeMode: true,
+        fallbackPanel: false,
+        shell: 'safe-shell',
+        summary: 'Trigger safe mode and mount the simplified shell.',
+      };
+    case 'runtime_critical':
+    default:
+      return {
+        failureClass: normalized,
+        uiMode: 'safe_mode',
+        clientAction: 'enterSafeMode',
+        safeMode: true,
+        fallbackPanel: false,
+        shell: 'safe-shell',
+        summary: 'Escalate to safe mode for a runtime-critical failure.',
+      };
+  }
+}
+
+function recordClassifiedFailure(rootPath, error = null, context = {}) {
+  const failureClass = classifyFailureContext(error, context);
+  const uiResponse = buildFailureUiResponse(failureClass);
+  const message = String(context.message || error?.message || error || 'Unexpected failure.').trim();
+  const stack = extractFailureStack(error) || String(context.stack || '').trim() || null;
+  const observation = {
+    message,
+    stack,
+    timestamp: String(context.timestamp || '').trim() || nowIso(),
+    failure_class: failureClass,
+    ui_response: uiResponse,
+    related_tool: context.tool || context.related_tool || error?.code || null,
+    related_stage: context.stage || context.related_stage || context.relatedStage || null,
+    stage: context.stage || context.related_stage || context.relatedStage || null,
+    agent_id: context.agentId || context.agent_id || null,
+    agent_version: context.agentVersion || context.agent_version || null,
+    related_run: context.runId || context.related_run || context.run || null,
+    related_project: context.projectKey || context.project || context.related_project || null,
+    route: context.route || context.path || null,
+    method: context.method || null,
+    source: context.source || null,
+    component: context.component || context.surface || context.panel || null,
+  };
+  const failureResult = recordFailureOccurrence(rootPath, observation);
+  return {
+    ...failureResult,
+    failureClass,
+    uiResponse,
+    observation,
+  };
+}
+
 function buildWorldScaffoldInterpretationLabel({
   source = 'none',
   attempted = false,
@@ -1517,16 +1659,30 @@ function buildAgentFailurePayload(result, extras = {}) {
   const run = extras.run || result?.run || result?.worker || null;
   const reason = String(result?.reason || run?.reason || extras.error || 'Agent model call failed.').trim();
   try {
-    recordFailureOccurrence(ROOT, {
+    const failureError = result?.error instanceof Error
+      ? result.error
+      : run?.error instanceof Error
+        ? run.error
+        : new Error(reason);
+    const classifiedFailure = recordClassifiedFailure(ROOT, failureError, {
       message: reason,
-      related_tool: extras.tool || run?.backend || run?.model || null,
+      tool: extras.tool || run?.backend || run?.model || null,
       related_stage: extras.stage || run?.stage || run?.outcome || null,
       stage: extras.stage || run?.stage || run?.outcome || null,
-      agent_id: extras.agentId || run?.agent_id || run?.workerId || null,
-      agent_version: extras.agentVersion || run?.agent_version || null,
-      related_run: extras.runId || run?.id || run?.runId || null,
-      related_project: extras.projectKey || extras.project || null,
+      agentId: extras.agentId || run?.agent_id || run?.workerId || null,
+      agentVersion: extras.agentVersion || run?.agent_version || null,
+      runId: extras.runId || run?.id || run?.runId || null,
+      projectKey: extras.projectKey || extras.project || null,
+      route: extras.route || null,
+      component: extras.component || null,
+      source: extras.source || 'agent-run',
+      timestamp: extras.timestamp || null,
     });
+    extras = {
+      ...extras,
+      failureClass: classifiedFailure.failureClass,
+      uiResponse: classifiedFailure.uiResponse,
+    };
   } catch (error) {
     console.warn('[WARN] failure history update failed:', error?.message || error);
   }
@@ -1535,6 +1691,8 @@ function buildAgentFailurePayload(result, extras = {}) {
     status: classifyLlmFailureStatus(reason, Boolean(result?.usedFallback || run?.usedFallback)),
     error: reason,
     reason,
+    failureClass: extras.failureClass || null,
+    uiResponse: extras.uiResponse || null,
     usedFallback: Boolean(result?.usedFallback || run?.usedFallback),
     backend: run?.backend || extras.backend || null,
     model: run?.model || extras.model || null,
@@ -2162,6 +2320,337 @@ function buildQAStatePayload(rootPath = ROOT) {
     browserRuns: interactiveRuns.slice(0, 8).map((run) => summarizeQARun(run)),
     browserBusy: false,
     localGate: buildLocalGatePayload(rootPath),
+  };
+}
+
+function safeModeArtifactDir(rootPath = ROOT) {
+  return path.join(rootPath || ROOT, 'brain', 'context', 'safe_mode');
+}
+
+function writeSafeModeArtifact(rootPath = ROOT, fileName = 'status.json', payload = {}) {
+  const dir = safeModeArtifactDir(rootPath);
+  fs.mkdirSync(dir, { recursive: true });
+  const filePath = path.join(dir, fileName);
+  writeJson(filePath, payload);
+  return {
+    path: relativeToRoot(rootPath || ROOT, filePath),
+    absolutePath: filePath,
+  };
+}
+
+function normalizeSafeModeErrorEntry(entry = {}, fallback = {}) {
+  const message = String(entry.message || entry.summary || entry.error || fallback.message || '').trim();
+  return {
+    source: String(entry.source || fallback.source || 'unknown').trim() || 'unknown',
+    severity: String(entry.severity || fallback.severity || 'warning').trim() || 'warning',
+    message: message || 'Unknown safe-mode issue.',
+    failureKey: String(entry.failureKey || fallback.failureKey || '').trim() || null,
+    stage: String(entry.stage || fallback.stage || '').trim() || null,
+    agent_id: String(entry.agent_id || fallback.agent_id || '').trim() || null,
+    agent_version: String(entry.agent_version || fallback.agent_version || '').trim() || null,
+    failureClass: String(entry.failureClass || entry.failure_class || fallback.failureClass || fallback.failure_class || '').trim() || null,
+    uiResponse: entry.uiResponse || entry.ui_response || fallback.uiResponse || fallback.ui_response || null,
+    stack: String(entry.stack || fallback.stack || '').trim() || null,
+    count: Number(entry.count ?? fallback.count ?? 0) || 0,
+    lastSeen: String(entry.lastSeen || fallback.lastSeen || '').trim() || null,
+    findingCount: Number(entry.findingCount ?? fallback.findingCount ?? 0) || 0,
+    runId: String(entry.runId || fallback.runId || '').trim() || null,
+    scenario: String(entry.scenario || fallback.scenario || '').trim() || null,
+  };
+}
+
+function uniqueSafeModeStrings(values = []) {
+  return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function collectSafeModeFailingTestNames({
+  localGate = null,
+  latestRun = null,
+  qaState = null,
+} = {}) {
+  const names = [];
+  const unitFailures = Array.isArray(localGate?.unit?.failures) ? localGate.unit.failures : [];
+  unitFailures.forEach((failure) => {
+    const name = String(failure?.name || failure?.testName || failure?.id || failure?.label || failure?.error || '').trim();
+    if (name) names.push(name);
+  });
+  if (Number(localGate?.unit?.failedCount || 0) > 0 && String(localGate?.unit?.summary || '').trim()) {
+    names.push(String(localGate.unit.summary).trim());
+  }
+  const studioBootFailures = Array.isArray(localGate?.studioBoot?.failedSteps) ? localGate.studioBoot.failedSteps : [];
+  studioBootFailures.forEach((step) => {
+    const label = String(step?.label || step?.id || '').trim();
+    if (label) names.push(label);
+  });
+  const latestBrowserRun = latestRun || qaState?.latestBrowserRun || null;
+  if (latestBrowserRun) {
+    (latestBrowserRun.failedSteps || []).forEach((step) => {
+      const label = String(step?.label || step?.id || '').trim();
+      if (label) names.push(label);
+    });
+    (Array.isArray(latestBrowserRun.steps) ? latestBrowserRun.steps : [])
+      .filter((step) => ['failed', 'blocked'].includes(String(step?.verdict || step?.status || '').toLowerCase()))
+      .forEach((step) => {
+        const label = String(step?.label || step?.id || '').trim();
+        if (label) names.push(label);
+      });
+    if (latestBrowserRun.error) {
+      names.push(String(latestBrowserRun.error).trim());
+    }
+    (Array.isArray(latestBrowserRun.findings) ? latestBrowserRun.findings : [])
+      .filter((finding) => String(finding?.severity || '').toLowerCase() === 'error')
+      .forEach((finding) => {
+        const label = String(finding?.summary || finding?.id || '').trim();
+        if (label) names.push(label);
+      });
+  }
+  return uniqueSafeModeStrings(names).slice(0, 12);
+}
+
+function collectSafeModeCriticalErrors({
+  healthSnapshot = null,
+  failureHistory = null,
+  latestRun = null,
+  localGate = null,
+} = {}) {
+  const errors = [];
+  const bootReason = String(healthSnapshot?.bootHealth?.reason || healthSnapshot?.reason || '').trim();
+  if (bootReason) {
+    errors.push(normalizeSafeModeErrorEntry({
+      source: 'boot-health',
+      severity: 'critical',
+      message: bootReason,
+      failureKey: 'boot_health_gate_failed',
+      stage: 'boot',
+      agent_id: 'system',
+      agent_version: 'boot-health.v0',
+      failureClass: 'boot_critical',
+      uiResponse: buildFailureUiResponse('boot_critical'),
+    }));
+  }
+
+  const failureEntries = Array.isArray(failureHistory?.history?.entries) ? [...failureHistory.history.entries] : [];
+  failureEntries
+    .sort((left, right) => Number(right.count || 0) - Number(left.count || 0)
+      || String(right.last_seen || '').localeCompare(String(left.last_seen || '')))
+    .slice(0, 4)
+    .forEach((entry) => {
+      errors.push(normalizeSafeModeErrorEntry({
+        source: 'failure-memory',
+        severity: Number(entry.count || 0) >= 3 ? 'critical' : 'warning',
+        message: entry.failure_key,
+      failureKey: entry.failure_key,
+      stage: entry.stage || null,
+      agent_id: entry.agent_id || null,
+      agent_version: entry.agent_version || null,
+      stack: entry.last_error?.stack || null,
+      failureClass: entry.failure_class || null,
+      uiResponse: entry.last_error?.ui_response || buildFailureUiResponse(entry.failure_class || 'warning'),
+      count: entry.count || 0,
+      lastSeen: entry.last_seen || null,
+    }));
+    });
+
+  if (latestRun?.verdict === 'failed') {
+    errors.push(normalizeSafeModeErrorEntry({
+      source: 'qa-run',
+      severity: 'critical',
+      message: latestRun.error || `Latest QA run failed: ${latestRun.scenario || latestRun.id || 'unknown run'}`,
+      runId: latestRun.id || null,
+      scenario: latestRun.scenario || null,
+      findingCount: latestRun.findingCount || 0,
+      failureKey: 'latest_qa_run_failed',
+      failureClass: 'runtime_critical',
+      uiResponse: buildFailureUiResponse('runtime_critical'),
+    }));
+  } else if (latestRun?.highestSeverity === 'error') {
+    errors.push(normalizeSafeModeErrorEntry({
+      source: 'qa-run',
+      severity: 'critical',
+      message: `Latest QA run surfaced ${latestRun.findingCount || 0} findings.`,
+      runId: latestRun.id || null,
+      scenario: latestRun.scenario || null,
+      findingCount: latestRun.findingCount || 0,
+      failureKey: 'latest_qa_run_error_findings',
+      failureClass: 'runtime_critical',
+      uiResponse: buildFailureUiResponse('runtime_critical'),
+    }));
+  }
+
+  const failedCount = Number(localGate?.unit?.failedCount || 0);
+  if (failedCount > 0) {
+    const unitFailures = Array.isArray(localGate?.unit?.failures) ? localGate.unit.failures : [];
+    errors.push(normalizeSafeModeErrorEntry({
+      source: 'unit-qa',
+      severity: 'critical',
+      message: String(localGate?.unit?.summary || `${failedCount} unit checks failed.`).trim(),
+      failureKey: 'unit_qa_failed',
+      count: failedCount,
+      stage: 'qa',
+      findingCount: failedCount,
+      failureClass: 'panel_degraded',
+      uiResponse: buildFailureUiResponse('panel_degraded'),
+    }));
+    unitFailures.slice(0, 4).forEach((failure) => {
+      const name = String(failure?.name || failure?.testName || failure?.id || failure?.label || '').trim();
+      if (!name) return;
+      errors.push(normalizeSafeModeErrorEntry({
+        source: 'unit-qa',
+        severity: 'warning',
+        message: name,
+        failureKey: normalizeFailureKey(name, { stage: 'qa', tool: 'unit-test' }),
+        stage: 'qa',
+        findingCount: 1,
+        failureClass: 'warning',
+        uiResponse: buildFailureUiResponse('warning'),
+      }));
+    });
+  }
+
+  const deduped = new Map();
+  errors.forEach((entry) => {
+    const signature = `${entry.source}:${entry.message}`;
+    if (!deduped.has(signature)) deduped.set(signature, entry);
+  });
+  return Array.from(deduped.values()).slice(0, 8);
+}
+
+function buildSafeModeSnapshot(rootPath = ROOT, overrides = {}) {
+  const healthSnapshot = overrides.healthSnapshot || getHealthSnapshot();
+  const qaState = overrides.qaState || buildQAStatePayload(rootPath);
+  const failureHistory = overrides.failureHistory || readFailureHistory(rootPath);
+  const latestBrowserRun = overrides.latestRun || qaState.latestBrowserRun || null;
+  const latestRunDetails = overrides.latestRunDetails || (latestBrowserRun?.id ? readQARun(rootPath, latestBrowserRun.id) : null);
+  const localGate = overrides.localGate || qaState.localGate || buildLocalGatePayload(rootPath);
+  const criticalErrors = collectSafeModeCriticalErrors({
+    healthSnapshot,
+    failureHistory,
+    latestRun: latestRunDetails || latestBrowserRun,
+    localGate,
+  });
+  return {
+    safeMode: Boolean(healthSnapshot.safeMode || healthSnapshot.bootHealth?.safeMode),
+    reason: String(healthSnapshot.bootHealth?.reason || healthSnapshot.reason || '').trim(),
+    checkedAt: healthSnapshot.bootHealth?.checkedAt || null,
+    bootHealth: healthSnapshot.bootHealth || null,
+    health: healthSnapshot,
+    criticalErrors,
+    recentQaResults: Array.isArray(qaState.browserRuns) ? qaState.browserRuns.slice(0, 5) : [],
+    latestQARun: latestBrowserRun,
+    latestQARunDetails: latestRunDetails,
+    localGate,
+    failingTestNames: collectSafeModeFailingTestNames({
+      localGate,
+      latestRun: latestRunDetails || latestBrowserRun,
+      qaState,
+    }),
+    failureHistory: {
+      updated_at: failureHistory?.history?.updated_at || null,
+      entries: Array.isArray(failureHistory?.history?.entries) ? failureHistory.history.entries.slice(0, 5) : [],
+    },
+  };
+}
+
+function runSafeModeDiagnosis(rootPath = ROOT, overrides = {}) {
+  const snapshot = buildSafeModeSnapshot(rootPath, overrides);
+  const artifact = writeSafeModeArtifact(rootPath, 'diagnosis.json', {
+    version: 'ace/safe-mode.v0',
+    createdAt: nowIso(),
+    type: 'diagnosis',
+    snapshot,
+  });
+  return {
+    ok: true,
+    message: 'Safe-mode diagnosis recorded.',
+    snapshot,
+    artifactRefs: [artifact.path].filter(Boolean),
+  };
+}
+
+function buildSafeModeFixTaskPayload(snapshot = {}) {
+  const primaryError = Array.isArray(snapshot.criticalErrors) ? snapshot.criticalErrors[0] : null;
+  const primaryLabel = String(primaryError?.message || snapshot.reason || 'safe mode').trim();
+  const failureKey = String(primaryError?.failureKey || normalizeFailureKey(primaryLabel, {
+    stage: 'safe-mode',
+    tool: 'safe-shell',
+  }) || 'safe_mode_failure').trim() || 'safe_mode_failure';
+  const bundle = buildConstrainedAutoFixBundle(snapshot, {
+    rootPath: ROOT,
+    stage: 'safe-mode',
+    failureClass: primaryError?.failureClass || primaryError?.failure_class || null,
+  });
+  return {
+    taskId: 'safe-mode',
+    stage: 'safe-mode',
+    action: 'constrained-fix-pass',
+    status: 'pending',
+    decision: 'blocked',
+    source: 'safe_mode_shell',
+    summary: `Constrained fix pass for ${primaryLabel}`,
+    problemStatement: `Investigate the safe-mode failure: ${primaryLabel}.`,
+    requestedOutcomes: [
+      'Reproduce the smallest failing path',
+      'Patch only the narrow broken path',
+      'Keep the rest of SpatialNotebook unchanged',
+    ],
+    constraints: [
+      'Do not redesign the UI.',
+      'Do not widen scope beyond the failing path.',
+      'Use existing artifacts and attribution only.',
+    ],
+    reasons: uniqueSafeModeStrings([
+      snapshot.reason || null,
+      primaryLabel,
+    ]),
+    failureKey,
+    changedFiles: bundle.changedFiles || [],
+    exampleMessages: uniqueSafeModeStrings([
+      primaryLabel,
+    ]),
+    retryCount: 0,
+    retryLimit: 1,
+  };
+}
+
+function runConstrainedSafeModeFixPass(rootPath = ROOT, overrides = {}) {
+  const diagnosis = buildSafeModeSnapshot(rootPath, overrides);
+  const fixTask = createBoundedFixTaskArtifact(rootPath, buildSafeModeFixTaskPayload(diagnosis));
+  const bundle = buildConstrainedAutoFixBundle(diagnosis, {
+    rootPath,
+    taskId: fixTask.entry?.taskId || 'safe-mode',
+    stage: 'safe-mode',
+    changedFiles: fixTask.entry?.changedFiles || [],
+    artifactRefs: [fixTask.jsonPath, fixTask.markdownPath].filter(Boolean),
+  });
+  const autoFix = runConstrainedAutoFixExecutor(rootPath, bundle, {
+    implicatedFiles: bundle.changedFiles,
+    maxFiles: 2,
+  });
+  const artifactRefs = uniqueSafeModeStrings([
+    fixTask.jsonPath || null,
+    fixTask.markdownPath || null,
+  ]);
+  const report = writeSafeModeArtifact(rootPath, 'constrained-fix-pass.json', {
+    version: 'ace/safe-mode.v0',
+    createdAt: nowIso(),
+    type: 'constrained-fix-pass',
+    snapshot: diagnosis,
+    fixTask: fixTask.entry || null,
+    bundle,
+    autoFix,
+    artifactRefs,
+  });
+  return {
+    ok: autoFix.ok,
+    message: autoFix.reason || 'Constrained fix pass queued.',
+    snapshot: diagnosis,
+    fixTask: fixTask.entry || null,
+    bundle,
+    autoFix,
+    artifactRefs: uniqueSafeModeStrings([
+      ...artifactRefs,
+      report.path,
+    ]),
   };
 }
 
@@ -3080,15 +3569,17 @@ function writeTaskApplyResult(taskDir, payload, { recordFailure = true } = {}) {
   }
   if (recordFailure && (String(nextPayload.status || '').toLowerCase() === 'failed' || nextPayload.ok === false)) {
     try {
-      recordFailureOccurrence(ROOT, {
+      recordClassifiedFailure(ROOT, new Error(nextPayload.error || nextPayload.summary || 'Apply failed.'), {
         message: nextPayload.error || nextPayload.summary || 'Apply failed.',
-        related_tool: 'git',
+        tool: 'git',
         related_stage: 'apply',
         stage: 'apply',
-        agent_id: nextPayload.agent_id || 'executor',
-        agent_version: nextPayload.agent_version || null,
-        related_project: nextPayload.projectKey || payload?.projectKey || null,
-        related_run: nextPayload.runId || nextPayload.taskId || null,
+        agentId: nextPayload.agent_id || 'executor',
+        agentVersion: nextPayload.agent_version || null,
+        projectKey: nextPayload.projectKey || payload?.projectKey || null,
+        runId: nextPayload.runId || nextPayload.taskId || null,
+        component: 'builder',
+        source: 'task-apply',
       });
     } catch (error) {
       console.warn('[WARN] failure history update failed:', error?.message || error);
@@ -4606,11 +5097,11 @@ function createPreLlmBlockedResult(reason, workspace, resultShape = {}) {
   const blockedReason = String(reason || 'Pre-LLM guard blocked this generation.').trim();
   if (resultShape.failureObservation) {
     try {
-      recordFailureOccurrence(ROOT, {
+      recordClassifiedFailure(ROOT, new Error(blockedReason), {
         message: blockedReason,
         stage: resultShape.stage || null,
-        agent_id: resultShape.agentId || null,
-        agent_version: resultShape.agentVersion || null,
+        agentId: resultShape.agentId || null,
+        agentVersion: resultShape.agentVersion || null,
         ...resultShape.failureObservation,
       });
     } catch (error) {
@@ -5191,13 +5682,15 @@ function runCardBuilderPipeline(cardId) {
   });
   if (!builderPreflight.ok) {
     try {
-      recordFailureOccurrence(ROOT, {
+      recordClassifiedFailure(ROOT, new Error(builderPreflight.blockers[0] || 'Builder preflight blocked.'), {
         message: builderPreflight.blockers[0] || 'Builder preflight blocked.',
         related_stage: 'builder-preflight',
         stage: 'builder-preflight',
-        agent_id: 'builder',
-        related_tool: 'git',
-        related_project: projectKey,
+        agentId: 'builder',
+        tool: 'git',
+        projectKey,
+        component: 'builder',
+        source: 'builder-preflight',
       });
     } catch (error) {
       console.warn('[WARN] failure history update failed:', error?.message || error);
@@ -6195,13 +6688,69 @@ function executeActionSync(action, body) {
   };
 }
 
+function evaluateSpatialBootHealth() {
+  if (spatialBootHealthSnapshot) {
+    return spatialBootHealthSnapshot;
+  }
+  try {
+    const workspace = readSpatialWorkspace();
+    const runtime = buildSpatialRuntimePayload(workspace);
+    const systemGraph = runtime?.graphs?.system || null;
+    const worldGraph = runtime?.graphs?.world || null;
+    const hasGraphShape = Boolean(
+      runtime
+      && runtime.graphs
+      && systemGraph
+      && worldGraph
+      && Array.isArray(systemGraph.nodes)
+      && Array.isArray(systemGraph.edges)
+      && Array.isArray(worldGraph.nodes)
+      && Array.isArray(worldGraph.edges)
+      && runtime.qaState
+      && runtime.mutationGate
+      && runtime.orchestrator
+      && runtime.teamBoard
+      && runtime.rsg,
+    );
+    spatialBootHealthSnapshot = {
+      checked: true,
+      ok: hasGraphShape,
+      safeMode: !hasGraphShape,
+      reason: hasGraphShape ? '' : 'Spatial runtime shape check failed.',
+      checkedAt: nowIso(),
+      stateShape: hasGraphShape
+        ? {
+            systemNodes: systemGraph.nodes.length,
+            systemEdges: systemGraph.edges.length,
+            worldNodes: worldGraph.nodes.length,
+            worldEdges: worldGraph.edges.length,
+            graphLayers: Object.keys(runtime.graphs || {}).length,
+          }
+        : null,
+    };
+  } catch (error) {
+    spatialBootHealthSnapshot = {
+      checked: true,
+      ok: false,
+      safeMode: true,
+      reason: String(error.message || error),
+      checkedAt: nowIso(),
+      stateShape: null,
+    };
+  }
+  return spatialBootHealthSnapshot;
+}
+
 function getHealthSnapshot() {
   const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
   const selfUpgrade = getSelfUpgradeState(workspace);
+  const bootHealth = evaluateSpatialBootHealth();
   return {
     ok: true,
     pid: process.pid,
     startedAt: SERVER_STARTED_AT,
+    safeMode: Boolean(bootHealth.safeMode),
+    bootHealth,
     selfUpgrade: {
       status: selfUpgrade.status,
       deploy: selfUpgrade.deploy,
@@ -6471,13 +7020,36 @@ app.get('/api/runs', (req, res) => {
   res.json({ runs: getRunsSnapshot() });
 });
 
-app.get('/api/health', (req, res) => {
-  res.json(getHealthSnapshot());
-});
+  app.get('/api/health', (req, res) => {
+    res.json(getHealthSnapshot());
+  });
 
-app.post('/api/qa/run', async (req, res) => {
-  try {
-    const body = req.body || {};
+  app.get('/api/spatial/safe-mode/status', (req, res) => {
+    res.json({
+      ok: true,
+      snapshot: buildSafeModeSnapshot(ROOT),
+    });
+  });
+
+  app.post('/api/spatial/safe-mode/diagnosis', (req, res) => {
+    try {
+      res.json(runSafeModeDiagnosis(ROOT));
+    } catch (error) {
+      res.status(500).json({ error: String(error.message || error) });
+    }
+  });
+
+  app.post('/api/spatial/safe-mode/constrained-fix-pass', (req, res) => {
+    try {
+      res.json(runConstrainedSafeModeFixPass(ROOT));
+    } catch (error) {
+      res.status(500).json({ error: String(error.message || error) });
+    }
+  });
+
+  app.post('/api/qa/run', async (req, res) => {
+    try {
+      const body = req.body || {};
     const report = await runStructuredQA({
       rootPath: ROOT,
       existingApp: app,
@@ -8210,6 +8782,40 @@ app.post('/api/spatial/mutations/apply', (req, res) => {
   }
 });
 
+app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+  const requestPath = String(req?.path || req?.originalUrl || req?.url || '').trim();
+  const failure = recordClassifiedFailure(ROOT, error, {
+    route: requestPath || null,
+    method: req?.method || null,
+    stage: /\/api\/health/.test(requestPath) || /boot/i.test(requestPath)
+      ? 'boot'
+      : (/\/api\/spatial\//.test(requestPath) ? 'runtime' : 'server'),
+    component: /\/api\/spatial\/(desks|layout|qa|agents|runtime|team-board|mutations|archive)/.test(requestPath)
+      ? 'panel'
+      : 'server',
+    source: 'express-error-handler',
+    message: String(error?.message || error || 'Unhandled server error.'),
+  });
+  const status = failure.failureClass === 'warning'
+    ? 400
+    : failure.failureClass === 'panel_degraded'
+      ? 500
+      : failure.failureClass === 'boot_critical'
+        ? 503
+        : 500;
+  return res.status(status).json({
+    ok: false,
+    error: String(error?.message || error || 'Unhandled server error.'),
+    failureClass: failure.failureClass,
+    uiResponse: failure.uiResponse,
+    safeMode: Boolean(failure.uiResponse?.safeMode),
+    route: requestPath || null,
+  });
+});
+
 function startServer() {
   setInterval(() => {
     Promise.resolve()
@@ -8222,6 +8828,10 @@ function startServer() {
       });
   }, 4000);
 
+  const bootHealth = evaluateSpatialBootHealth();
+  if (bootHealth.safeMode) {
+    console.warn(`[${nowIso()}] spatial boot health failed; safe mode enabled: ${bootHealth.reason}`);
+  }
   markServerHealthyOnBoot();
   reconcilePendingThroughputSessions({
     rootPath: ROOT,
@@ -8283,13 +8893,22 @@ module.exports = {
   normalizeExecutiveEnvelope,
   mapEnvelopeToMaterialModule,
   buildModulePreview,
+  buildFailureUiResponse,
+  buildConstrainedAutoFixBundle,
   buildTaskApplyResultRecord,
   buildAgentCapabilityProfile,
+  classifyFailureContext,
   evaluateStagePreflightSurface,
+  evaluateSpatialBootHealth,
+  buildSafeModeSnapshot,
+  runSafeModeDiagnosis,
+  runConstrainedSafeModeFixPass,
   collectTaskArtifacts,
   createRunnerTaskFolder,
   readDashboardFileForRoot,
   readAgentCapabilityProfile,
+  getHealthSnapshot,
+  recordClassifiedFailure,
   readTaskArtifactStatus,
   resolveLegacyFallbackPayload,
   stopProjectRun,

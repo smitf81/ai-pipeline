@@ -46,6 +46,7 @@ export default async function runFailureMemoryTests() {
     related_stage: 'apply',
     related_run: 'run-1',
     agent_id: 'executor',
+    stack: 'TypeError: access denied\n    at run (worker.js:1:1)',
   });
   const second = recordFailureOccurrence(rootPath, {
     message: 'spawn eperm while starting subprocess',
@@ -66,6 +67,8 @@ export default async function runFailureMemoryTests() {
     'spawn eperm while starting subprocess',
     'spawn EPERM: access denied',
   ]);
+  assert.equal(first.record.last_error.timestamp !== null, true);
+  assert.equal(first.record.last_error.stack, 'TypeError: access denied\n    at run (worker.js:1:1)');
 
   const beforeThreshold = readKnownFixCandidates(rootPath).library.entries;
   assert.equal(beforeThreshold.length, 0);

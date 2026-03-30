@@ -15,6 +15,14 @@ export default async function runSpatialAppSmokeTest() {
   assert.equal(typeof spatialApp.renderDeskSection, 'function');
   assert.equal(typeof spatialApp.renderSimLaunchOverlay, 'function');
   assert.equal(typeof spatialApp.buildDeskHierarchyModel, 'function');
+  assert.equal(typeof spatialApp.buildSpatialNotebookErrorFallback, 'function');
+  assert.equal(typeof spatialApp.SpatialNotebookErrorBoundary, 'function');
+  assert.equal(typeof spatialApp.evaluateSpatialBootHealthSnapshot, 'function');
+  assert.equal(typeof spatialApp.buildSpatialSafeModeShell, 'function');
+  assert.equal(typeof spatialApp.normalizeDeskSectionPayload, 'function');
+  assert.equal(typeof spatialApp.normalizeRosterSurfacePayload, 'function');
+  assert.equal(typeof spatialApp.normalizeTruthPayload, 'function');
+  assert.equal(typeof spatialApp.normalizeQAReportPayload, 'function');
   assert.equal(typeof spatialApp.normalizeDeskManagementDraft, 'function');
   assert.equal(typeof spatialApp.updateDeskManagementDraft, 'function');
   assert.equal(typeof spatialApp.clearDeskManagementDraft, 'function');
@@ -28,6 +36,65 @@ export default async function runSpatialAppSmokeTest() {
   assert.equal(typeof spatialApp.resolveSelectedRelationshipInspector, 'function');
   assert.equal(typeof spatialApp.hitTestRelationshipEdgeAtPoint, 'function');
   assert.equal(typeof spatialApp.renderRelationshipInspectorPanel, 'function');
+  const fallback = spatialApp.buildSpatialNotebookErrorFallback({
+    boundaryId: 'qa-panels',
+    title: 'QA panels unavailable',
+    error: new Error('boom'),
+  });
+  assert.equal(fallback.args[1]['data-qa'], 'spatial-error-fallback-qa-panels');
+  assert.equal(spatialApp.SpatialNotebookErrorBoundary.getDerivedStateFromError(new Error('boom')).hasError, true);
+  const healthyBoot = spatialApp.evaluateSpatialBootHealthSnapshot({
+    ok: true,
+    pid: 1234,
+    startedAt: '2026-03-29T00:00:00.000Z',
+    selfUpgrade: {
+      status: 'healthy',
+      deploy: {
+        status: 'healthy',
+        health: { status: 'healthy', pid: 1234, startedAt: '2026-03-29T00:00:00.000Z' },
+      },
+    },
+    mutationGate: { activity: [] },
+    qaState: {},
+    graphs: { system: { nodes: [], edges: [] } },
+    graph: { nodes: [], edges: [] },
+  });
+  assert.equal(healthyBoot.safeMode, false);
+  const brokenBoot = spatialApp.evaluateSpatialBootHealthSnapshot({ ok: true });
+  assert.equal(brokenBoot.safeMode, true);
+  assert.equal(spatialApp.buildSpatialSafeModeShell({ reason: 'boot failed' }).args[0].name, 'SafeShell');
+  const normalizedRoster = spatialApp.normalizeRosterSurfacePayload({
+    department: null,
+    summary: null,
+    departments: null,
+    desks: [{ id: 'desk_1', label: 'Desk 1', assignedRoster: null, roleCoverage: null, roster: null }],
+    openRoles: null,
+    blockers: null,
+    hiringSignals: null,
+  });
+  assert.equal(normalizedRoster.department.name, 'People Plan');
+  assert.deepEqual(normalizedRoster.desks[0].assignedRoster, []);
+  assert.deepEqual(normalizedRoster.desks[0].roleCoverage, []);
+  assert.deepEqual(normalizedRoster.desks[0].roster, []);
+  const normalizedTruth = spatialApp.normalizeTruthPayload({
+    department: null,
+    workload: null,
+    reports: null,
+    scorecards: undefined,
+    assessments: undefined,
+    guardrails: undefined,
+  });
+  assert.equal(normalizedTruth.department, 'Desk truth');
+  assert.deepEqual(normalizedTruth.reports, []);
+  assert.deepEqual(normalizedTruth.scorecards, []);
+  const normalizedQaReport = spatialApp.normalizeQAReportPayload({
+    status: null,
+    summary: null,
+    desks: null,
+    failures: null,
+  });
+  assert.equal(normalizedQaReport.status, 'idle');
+  assert.deepEqual(normalizedQaReport.failures, []);
 
   const layoutModelPath = path.resolve(process.cwd(), 'public', 'spatial', 'studioLayoutModel.js');
   const layoutModel = await loadModuleCopy(layoutModelPath, { label: 'studioLayoutModel-smoke' });

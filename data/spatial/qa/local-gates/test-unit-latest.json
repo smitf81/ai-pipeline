@@ -3,12 +3,12 @@
   "source": "ui-test-runner",
   "command": "npm run test:unit",
   "status": "pass",
-  "summary": "All 54 UI checks passed.",
-  "startedAt": "2026-03-29T12:00:31.424Z",
-  "finishedAt": "2026-03-29T12:00:33.029Z",
-  "durationMs": 1605,
-  "totalChecks": 54,
-  "passedCount": 54,
+  "summary": "All 55 UI checks passed.",
+  "startedAt": "2026-03-29T13:43:21.454Z",
+  "finishedAt": "2026-03-29T13:43:24.086Z",
+  "durationMs": 2631,
+  "totalChecks": 55,
+  "passedCount": 55,
   "failedCount": 0,
   "failures": [],
   "results": [
@@ -16,119 +16,119 @@
       "name": "actionRequestParser",
       "path": "./actionRequestParser.test.mjs",
       "status": "pass",
-      "durationMs": 13,
+      "durationMs": 21,
       "error": null
     },
     {
       "name": "anchorResolver",
       "path": "./anchorResolver.test.mjs",
       "status": "pass",
-      "durationMs": 23,
+      "durationMs": 41,
       "error": null
     },
     {
       "name": "agentRegistry",
       "path": "./agentRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 15,
       "error": null
     },
     {
       "name": "agentWorkers",
       "path": "./agentWorkers.test.mjs",
       "status": "pass",
-      "durationMs": 84,
+      "durationMs": 145,
       "error": null
     },
     {
       "name": "aceConnector",
       "path": "./aceConnector.test.mjs",
       "status": "pass",
-      "durationMs": 25,
+      "durationMs": 37,
       "error": null
     },
     {
       "name": "componentRegistry",
       "path": "./componentRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "agentOwnershipModel",
       "path": "./agentOwnershipModel.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 9,
       "error": null
     },
     {
       "name": "relationshipHiringSignals",
       "path": "./relationshipHiringSignals.test.mjs",
       "status": "pass",
-      "durationMs": 17,
+      "durationMs": 25,
       "error": null
     },
     {
       "name": "resourceSignalModel",
       "path": "./resourceSignalModel.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 9,
       "error": null
     },
     {
       "name": "uiActionRegistry",
       "path": "./uiActionRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 8,
       "error": null
     },
     {
       "name": "studioQuickAccess",
       "path": "./studioQuickAccess.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "testAttributeCards",
       "path": "./testAttributeCards.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "aceRuntimeMcp",
       "path": "./aceRuntimeMcp.test.mjs",
       "status": "pass",
-      "durationMs": 181,
+      "durationMs": 283,
       "error": null
     },
     {
       "name": "llmAdapter",
       "path": "./llmAdapter.test.mjs",
       "status": "pass",
-      "durationMs": 1,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "moduleRunner",
       "path": "./moduleRunner.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 6,
       "error": null
     },
     {
       "name": "graphEngine",
       "path": "./graphEngine.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 12,
       "error": null
     },
     {
       "name": "graphQueries",
       "path": "./graphQueries.test.mjs",
       "status": "pass",
-      "durationMs": 1,
+      "durationMs": 2,
       "error": null
     },
     {
@@ -142,252 +142,259 @@
       "name": "mutationEngine",
       "path": "./mutationEngine.test.mjs",
       "status": "pass",
-      "durationMs": 11,
+      "durationMs": 16,
       "error": null
     },
     {
       "name": "worldScaffoldView",
       "path": "./worldScaffoldView.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 19,
       "error": null
     },
     {
       "name": "persistence",
       "path": "./persistence.test.mjs",
       "status": "pass",
-      "durationMs": 30,
+      "durationMs": 45,
       "error": null
     },
     {
       "name": "utilityWindowState",
       "path": "./utilityWindowState.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "studioLayoutModel",
       "path": "./studioLayoutModel.test.mjs",
       "status": "pass",
-      "durationMs": 16,
+      "durationMs": 26,
       "error": null
     },
     {
       "name": "studioOrgHealthModel",
       "path": "./studioOrgHealthModel.test.mjs",
       "status": "pass",
-      "durationMs": 18,
+      "durationMs": 30,
       "error": null
     },
     {
       "name": "studioLayoutRelationships",
       "path": "./studioLayoutRelationships.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 13,
       "error": null
     },
     {
       "name": "spatialAppSmoke",
       "path": "./spatialApp.smoke.test.mjs",
       "status": "pass",
-      "durationMs": 107,
+      "durationMs": 173,
       "error": null
     },
     {
       "name": "spatialAppRsg",
       "path": "./spatialApp.rsg.test.mjs",
       "status": "pass",
-      "durationMs": 81,
+      "durationMs": 140,
       "error": null
     },
     {
       "name": "sliceRepository",
       "path": "./sliceRepository.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 11,
       "error": null
     },
     {
       "name": "archivistWriteback",
       "path": "./archivistWriteback.test.mjs",
       "status": "pass",
-      "durationMs": 24,
+      "durationMs": 40,
       "error": null
     },
     {
       "name": "knownFixes",
       "path": "./knownFixes.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 11,
       "error": null
     },
     {
       "name": "failureMemory",
       "path": "./failureMemory.test.mjs",
       "status": "pass",
-      "durationMs": 15,
+      "durationMs": 24,
       "error": null
     },
     {
       "name": "agentAudit",
       "path": "./agentAudit.test.mjs",
       "status": "pass",
-      "durationMs": 14,
+      "durationMs": 20,
       "error": null
     },
     {
       "name": "agentCapabilities",
       "path": "./agentCapabilities.test.mjs",
       "status": "pass",
-      "durationMs": 26,
+      "durationMs": 39,
+      "error": null
+    },
+    {
+      "name": "constrainedAutoFix",
+      "path": "./constrainedAutoFix.test.mjs",
+      "status": "pass",
+      "durationMs": 13,
       "error": null
     },
     {
       "name": "autonomyPolicy",
       "path": "./autonomyPolicy.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 14,
       "error": null
     },
     {
       "name": "fixTasks",
       "path": "./fixTasks.test.mjs",
       "status": "pass",
-      "durationMs": 18,
+      "durationMs": 24,
       "error": null
     },
     {
       "name": "taskArtifacts",
       "path": "./taskArtifacts.test.mjs",
       "status": "pass",
-      "durationMs": 138,
+      "durationMs": 191,
       "error": null
     },
     {
       "name": "taskCache",
       "path": "./taskCache.test.mjs",
       "status": "pass",
-      "durationMs": 29,
+      "durationMs": 31,
       "error": null
     },
     {
       "name": "preflightGuards",
       "path": "./preflightGuards.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 8,
       "error": null
     },
     {
       "name": "debugSuite",
       "path": "./debugSuite.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "studioData",
       "path": "./studioData.test.mjs",
       "status": "pass",
-      "durationMs": 51,
+      "durationMs": 73,
       "error": null
     },
     {
       "name": "roleTaxonomy",
       "path": "./roleTaxonomy.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 8,
       "error": null
     },
     {
       "name": "rosterSurface",
       "path": "./rosterSurface.test.mjs",
       "status": "pass",
-      "durationMs": 11,
+      "durationMs": 15,
       "error": null
     },
     {
       "name": "studioMutations",
       "path": "./studioMutations.test.mjs",
       "status": "pass",
-      "durationMs": 7,
+      "durationMs": 8,
       "error": null
     },
     {
       "name": "studioDependencyValidation",
       "path": "./studioDependencyValidation.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "orchestratorState",
       "path": "./orchestratorState.test.mjs",
       "status": "pass",
-      "durationMs": 7,
+      "durationMs": 11,
       "error": null
     },
     {
       "name": "selfUpgrade",
       "path": "./selfUpgrade.test.mjs",
       "status": "pass",
-      "durationMs": 2,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "taCandidates",
       "path": "./taCandidates.test.mjs",
       "status": "pass",
-      "durationMs": 64,
+      "durationMs": 93,
       "error": null
     },
     {
       "name": "talentUi",
       "path": "./talentUi.test.mjs",
       "status": "pass",
-      "durationMs": 2,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "server",
       "path": "./server.test.mjs",
       "status": "pass",
-      "durationMs": 379,
+      "durationMs": 729,
       "error": null
     },
     {
       "name": "intentAnalysis",
       "path": "./intentAnalysis.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "staffingRules",
       "path": "./staffingRules.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 15,
       "error": null
     },
     {
       "name": "throughputDebug",
       "path": "./throughputDebug.test.mjs",
       "status": "pass",
-      "durationMs": 41,
+      "durationMs": 71,
       "error": null
     },
     {
       "name": "qaRunner",
       "path": "./qaRunner.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "appViewerMode",
       "path": "./appViewerMode.test.mjs",
       "status": "pass",
-      "durationMs": 17,
+      "durationMs": 32,
       "error": null
     }
   ]
