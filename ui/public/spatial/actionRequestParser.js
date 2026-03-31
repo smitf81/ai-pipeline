@@ -88,6 +88,7 @@ function buildActionRequest(type, sourceText, details = {}) {
     sourceText: normalizeText(sourceText),
     intent: details.intent || type.replaceAll('_', ' '),
     target: details.target || null,
+    targetRef: details.targetRef || null,
     parameters: details.parameters || {},
     confidence: Number.isFinite(Number(details.confidence)) ? Number(details.confidence) : 0.5,
     rationale: normalizeText(details.rationale),
@@ -141,6 +142,11 @@ function parseAddDepartmentAction(text, options = {}) {
       templateId: departmentTemplateId,
       departmentId: requestedId || null,
     },
+    targetRef: {
+      entityType: 'department',
+      entityId: requestedId || null,
+      templateId: departmentTemplateId,
+    },
     parameters: {
       templateId: departmentTemplateId,
       id: requestedId || null,
@@ -162,6 +168,12 @@ function parseAddDeskAction(text, options = {}) {
       templateId: deskTemplateId,
       departmentTemplateId,
       deskId: requestedId || null,
+    },
+    targetRef: {
+      entityType: 'desk',
+      entityId: requestedId || null,
+      templateId: deskTemplateId,
+      ownerDepartmentTemplateId: departmentTemplateId,
     },
     parameters: {
       templateId: deskTemplateId,
@@ -185,6 +197,12 @@ function parseMoveDeskAction(text, options = {}) {
       deskId: deskId || null,
       departmentId: departmentId || null,
       departmentTemplateId,
+    },
+    targetRef: {
+      entityType: 'desk',
+      entityId: deskId || null,
+      ownerDepartmentId: departmentId || null,
+      ownerDepartmentTemplateId: departmentTemplateId,
     },
     parameters: {
       deskId: deskId || null,

@@ -25,6 +25,14 @@ export default async function runRosterSurfaceTests() {
       optionalHireCount: 0,
       urgency: 'high',
     },
+    organization: {
+      desks: {
+        executor: {
+          id: 'executor',
+          ownerDepartmentId: 'delivery',
+        },
+      },
+    },
     gapModel: {
       openRoles: [
         {
@@ -136,4 +144,5 @@ export default async function runRosterSurfaceTests() {
   assert.equal(model.desks.length, 1);
   assert.equal(model.desks[0].leadLabel, 'Alex | Executor');
   assert.equal(model.roster[0].deskId, 'executor');
+  assert.equal(model.departments[0].assignedRoster.length, 1);
 }

@@ -44,6 +44,17 @@ function buildDeskToDepartmentMap() {
   return deskToDepartment;
 }
 
+function buildDeskToDepartmentMapFromOrganization(organization = null) {
+  const deskToDepartment = new Map();
+  if (!organization || typeof organization !== 'object') return deskToDepartment;
+  Object.values(organization.desks || {}).forEach((desk) => {
+    const deskId = normalizeId(desk?.id);
+    const departmentId = normalizeId(desk?.ownerDepartmentId || desk?.departmentId);
+    if (deskId && departmentId) deskToDepartment.set(deskId, departmentId);
+  });
+  return deskToDepartment;
+}
+
 function buildCoverageRecord(entity = {}, roster = [], deskToDepartment = new Map()) {
   const source = entity && typeof entity === 'object' ? entity : {};
   const entityId = normalizeId(source.entityId);
@@ -118,7 +129,10 @@ export function buildRosterSurfaceModel(payload = {}) {
   const source = payload && typeof payload === 'object' ? payload : {};
   const coverage = Array.isArray(source.coverage) ? source.coverage : [];
   const roster = Array.isArray(source.roster) ? source.roster.map((entry) => normalizeRosterEntry(entry)) : [];
-  const deskToDepartment = buildDeskToDepartmentMap();
+  const deskToDepartment = (() => {
+    const fromOrganization = buildDeskToDepartmentMapFromOrganization(source.organization);
+    return fromOrganization.size ? fromOrganization : buildDeskToDepartmentMap();
+  })();
   const departmentCards = coverage
     .filter((entity) => entity?.entityType === 'department')
     .map((entity) => buildCoverageRecord(entity, roster, deskToDepartment))

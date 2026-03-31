@@ -9,6 +9,14 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
     "integration_auditor",
     "rnd-lead"
   ],
+  "canonicalMappings": {
+    "planner": {
+      "deskId": "planner",
+      "roleId": "planner",
+      "agentId": "planner",
+      "modelProfileId": "model-profile.planner-default"
+    }
+  },
   "departments": [
     {
       "id": "intake",

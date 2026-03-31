@@ -3382,6 +3382,14 @@ function computeTaCoverage(hiredCandidates = []) {
 async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()) {
   const normalizedState = normalizeTaDepartmentState(state);
   const staffingRules = await loadStaffingRulesModule();
+  const canonicalLayout = normalizeStudioLayoutSchema(createDefaultStudioLayoutSchema());
+  const canonicalOrganization = canonicalLayout.organization || {};
+  const canonicalDeskToDepartment = Object.fromEntries(
+    Object.values(canonicalOrganization.desks || {}).map((desk) => [desk.id, desk.ownerDepartmentId || desk.departmentId || null]),
+  );
+  const canonicalDepartmentLabels = Object.fromEntries(
+    Object.values(canonicalOrganization.departments || {}).map((department) => [department.id, department.label || department.id]),
+  );
   const gapModel = staffingRules.computeTaGapModel(staffingRules.STAFFING_RULES, normalizedState.hiredCandidates);
   const coverage = gapModel.coverage || [];
   const healthyCount = coverage.filter((entry) => entry.health === 'healthy').length;
@@ -3420,13 +3428,15 @@ async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()
     gapModel,
     hiredCandidates: normalizedState.hiredCandidates,
     roster: normalizedState.hiredCandidates.map((candidate) => ({
+      deskId: candidate.hiredDeskId || candidate.primaryDeskTarget,
+      departmentId: candidate.departmentId || canonicalDeskToDepartment[candidate.hiredDeskId || candidate.primaryDeskTarget] || null,
       id: candidate.id,
       name: candidate.name,
       role: candidate.role,
       roleId: candidate.roleId || null,
-      department: candidate.department,
-      departmentId: candidate.departmentId || null,
-      deskId: candidate.hiredDeskId || candidate.primaryDeskTarget,
+      department: candidate.department
+        || canonicalDepartmentLabels[candidate.departmentId || canonicalDeskToDepartment[candidate.hiredDeskId || candidate.primaryDeskTarget]]
+        || null,
       assignedModel: candidate.assignedModel,
       hiredAt: candidate.hiredAt,
       summary: candidate.cvCard?.summary || candidate.summary,
@@ -3442,6 +3452,7 @@ async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()
       optionalHireCount: summary.optionalHireCount,
       urgency: summary.urgency,
     },
+    organization: canonicalOrganization,
   };
 }
 
@@ -4019,6 +4030,7 @@ function runConstrainedSafeModeFixPass(rootPath = ROOT, overrides = {}) {
 
 function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
   const layout = normalizeStudioLayoutSchema(workspace?.studio?.layout || {});
+  const organization = layout.organization || {};
   const deskLayout = layout.desks?.[deskId] || null;
   if (!deskLayout) {
     throw new Error(`Unknown desk id: ${deskId}`);
@@ -4103,6 +4115,11 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
       controlCentreDeskId: layout.controlCentreDeskId,
       department: departmentLayout,
       desk: deskLayout,
+      relationships: {
+        desk: organization.desks?.[deskId] || null,
+        department: organization.departments?.[deskLayout.departmentId] || null,
+        planner: organization.planner || null,
+      },
     },
     truth,
     agents,
