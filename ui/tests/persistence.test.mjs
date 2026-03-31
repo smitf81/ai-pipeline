@@ -64,7 +64,7 @@ export default async function runPersistenceTests() {
   assert.deepEqual(JSON.parse(requests[0].options.body), compactPayload);
 
   const emptyWorkspace = persistence.normalizeLoadedWorkspace({ studio: {} });
-  assert.equal(emptyWorkspace.studio.layout.departments.length, 6);
+  assert.equal(emptyWorkspace.studio.layout.departments.length, 7);
   assert.equal(emptyWorkspace.studio.layout.controlCentreDeskId, 'cto-architect');
   assert.deepEqual(
     emptyWorkspace.studio.layout.departments.map((department) => department.id).sort(),
@@ -138,7 +138,7 @@ export default async function runPersistenceTests() {
 
   try {
     const loadedWorkspace = await persistence.loadWorkspace();
-    assert.equal(loadedWorkspace.studio.layout.departments.length, 6);
+    assert.equal(loadedWorkspace.studio.layout.departments.length, 7);
     assert.ok(fetchCalls.includes('/api/spatial/workspace'));
   } finally {
     globalThis.fetch = originalFetchImpl;

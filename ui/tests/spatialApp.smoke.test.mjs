@@ -100,12 +100,12 @@ export default async function runSpatialAppSmokeTest() {
   const layoutModel = await loadModuleCopy(layoutModelPath, { label: 'studioLayoutModel-smoke' });
   const defaultLayout = layoutModel.createDefaultStudioLayout();
   assert.equal(defaultLayout.controlCentreDeskId, 'cto-architect');
-  assert.equal(defaultLayout.departments.length, 6);
+  assert.equal(defaultLayout.departments.length, 7);
   assert.equal(defaultLayout.departments.some((department) => department.id === 'dept-talent-acquisition'), true);
   assert.ok(defaultLayout.desks['integration_auditor']);
   assert.ok(defaultLayout.desks['qa-lead']);
   const layoutRenderModel = layoutModel.buildStudioRenderModel(defaultLayout, []);
-  assert.equal(layoutRenderModel.roomConnections.length, 5);
+  assert.equal(layoutRenderModel.roomConnections.length, 6);
   assert.ok(layoutRenderModel.deskMap['planner']);
   assert.equal(layoutRenderModel.departments.some((department) => department.id === 'dept-talent-acquisition'), true);
   assert.equal(layoutRenderModel.deskMap['integration_auditor'].visible, true);
