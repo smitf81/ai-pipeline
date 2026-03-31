@@ -17,6 +17,12 @@ python3 -m http.server 4173
 
 Open `http://localhost:4173`.
 
+
+## JFA sandbox (Slice 4)
+- A standalone 2D Jump Flood Algorithm authoring sandbox now lives at `jfa-sandbox/index.html`.
+- It supports sketch-to-seed translation with evenly spaced stroke seeds, optional pressure-based density + weighting, stroke tags (`ridge|flow|threat|build`), erase/move editing, ownership texture output, colour regions, border view, and Slice 3 field extraction with influence propagation plus Slice 4 ACE bridge export (anchors, field emitters, connectivity hints, semantic regions, and sketch provenance JSON).
+- Run from the same local server and open `http://localhost:4173/jfa-sandbox/`.
+
 ## Tests
 - Default Node test isolation can fail in the Codex sandbox with `spawn EPERM` because the built-in runner attempts per-file subprocess isolation.
 - For in-process execution, run:

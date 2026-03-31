@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JFA Roadmap v1 — Slice 4 Sandbox</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0a0d12; --panel:#121925; --ink:#d7e2f0; --muted:#8fa1b6; --line:#243247; --accent:#6bc2ff; }
+    body { margin:0; font:14px/1.45 ui-sans-serif,system-ui; color:var(--ink); background:radial-gradient(circle at top,#0f1724,var(--bg)); }
+    .wrap { max-width: 1480px; margin:0 auto; padding:16px; display:grid; gap:14px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; }
+    .controls { display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; }
+    .controls label { color:var(--muted); }
+    button,input[type='number'],select { background:#1a2638; color:var(--ink); border:1px solid #35506e; border-radius:7px; padding:6px 10px; }
+    button { cursor:pointer; }
+    .mode-group button.active { border-color:var(--accent); box-shadow:0 0 0 1px rgba(107,194,255,.2) inset; background:#203850; }
+    .statbar { display:flex; flex-wrap:wrap; gap:12px; color:var(--muted); }
+    .statbar b { color:var(--ink); }
+    .canvas-grid { display:grid; grid-template-columns:minmax(440px,1fr) minmax(280px,.75fr) minmax(280px,.75fr); gap:10px; }
+    canvas { width:100%; aspect-ratio:1; border-radius:8px; border:1px solid var(--line); background:#0a0f17; image-rendering:pixelated; touch-action:none; }
+    .legend { display:flex; flex-wrap:wrap; gap:10px; color:var(--muted); font-size:12px; }
+    .chip { display:inline-flex; align-items:center; gap:6px; }
+    .swatch { width:10px; height:10px; border-radius:2px; border:1px solid #0006; }
+    #bridgeOutput { width:100%; min-height:220px; resize:vertical; background:#0b1320; color:#d9e7f7; border:1px solid var(--line); border-radius:8px; padding:8px; font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
+    small { color:var(--muted); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h2 style="margin:0 0 8px;">JFA Slice 4: ACE Bridge</h2>
+    <div class="controls">
+      <div class="mode-group">
+        <button id="modeDrawBtn" class="active">Draw</button>
+        <button id="modeEraseBtn">Erase</button>
+        <button id="modeMoveBtn">Move</button>
+      </div>
+      <label>tag
+        <select id="tagSelect">
+          <option value="ridge">ridge</option>
+          <option value="flow">flow</option>
+          <option value="threat">threat</option>
+          <option value="build">build</option>
+        </select>
+      </label>
+      <label>seed spacing <input id="spacingInput" type="number" min="1" max="48" step="1" value="8"></label>
+      <label>erase radius <input id="eraseRadiusInput" type="number" min="2" max="80" step="1" value="10"></label>
+      <label>diffusion steps <input id="diffusionStepsInput" type="number" min="4" max="80" step="1" value="24"></label>
+      <label><input type="checkbox" id="pressureWeightToggle" checked> pressure/weight</label>
+      <label><input type="checkbox" id="pressureDensityToggle" checked> pressure/density</label>
+      <label><input type="checkbox" id="bordersToggle" checked> border display</label>
+    </div>
+    <div class="controls" style="margin-top:8px;">
+      <button id="clearBtn">Clear</button>
+      <button id="randomBtn">Add 24 Random Seeds</button>
+      <label>resolution <input id="resolutionInput" type="number" min="64" max="1024" step="64" value="384"></label>
+      <button id="applyResolutionBtn">Apply</button>
+    </div>
+    <p style="margin:8px 0 0;"><small>Bridge output includes anchors, field emitters, connectivity hints, semantic regions, and provenance from sketch strokes.</small></p>
+    <div class="legend" style="margin-top:6px;">
+      <span class="chip"><span class="swatch" style="background:#b28bff"></span>ridge</span>
+      <span class="chip"><span class="swatch" style="background:#5dc4ff"></span>flow</span>
+      <span class="chip"><span class="swatch" style="background:#ff6b6b"></span>threat</span>
+      <span class="chip"><span class="swatch" style="background:#68dd8f"></span>build</span>
+      <span class="chip"><span class="swatch" style="background:#f3d97e"></span>anchor nodes</span>
+    </div>
+  </div>
+
+  <div class="panel statbar" id="stats"></div>
+
+  <div class="canvas-grid">
+    <div class="panel"><canvas id="regionCanvas" width="384" height="384"></canvas></div>
+    <div class="panel"><canvas id="ownerCanvas" width="384" height="384"></canvas></div>
+    <div class="panel"><canvas id="fieldCanvas" width="384" height="384"></canvas></div>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin:0 0 8px;">ACE bridge export</h3>
+    <div class="controls" style="margin-bottom:8px;">
+      <button id="buildBridgeBtn">Build bridge payload</button>
+      <button id="downloadBridgeBtn">Download JSON</button>
+    </div>
+    <textarea id="bridgeOutput" spellcheck="false" placeholder="Bridge payload appears here..."></textarea>
+  </div>
+</div>
+
+<script>
+(() => {
+  const TAGS = {
+    ridge: { color: [178, 139, 255], weightScale: 1.05, axisBias: 'horizontal', axisScale: 0.18 },
+    flow: { color: [93, 196, 255], weightScale: 1.0, axisBias: 'vertical', axisScale: 0.22 },
+    threat: { color: [255, 107, 107], weightScale: 1.35, axisBias: 'radial', axisScale: 0.1 },
+    build: { color: [104, 221, 143], weightScale: 0.86, axisBias: 'manhattan', axisScale: 0.16 },
+  };
+
+  const regionCanvas = document.getElementById('regionCanvas');
+  const ownerCanvas = document.getElementById('ownerCanvas');
+  const fieldCanvas = document.getElementById('fieldCanvas');
+  const bridgeOutput = document.getElementById('bridgeOutput');
+  const regionCtx = regionCanvas.getContext('2d', { alpha: false });
+  const ownerCtx = ownerCanvas.getContext('2d', { alpha: false });
+  const fieldCtx = fieldCanvas.getContext('2d', { alpha: false });
+  const statsEl = document.getElementById('stats');
+
+  const ui = {
+    tagSelect: document.getElementById('tagSelect'),
+    spacingInput: document.getElementById('spacingInput'),
+    eraseRadiusInput: document.getElementById('eraseRadiusInput'),
+    diffusionStepsInput: document.getElementById('diffusionStepsInput'),
+    pressureWeightToggle: document.getElementById('pressureWeightToggle'),
+    pressureDensityToggle: document.getElementById('pressureDensityToggle'),
+    bordersToggle: document.getElementById('bordersToggle'),
+  };
+
+  const state = {
+    width: 384,
+    height: 384,
+    seeds: [],
+    strokes: [],
+    ownerA: new Int32Array(384 * 384),
+    ownerB: new Int32Array(384 * 384),
+    borderMask: new Uint8Array(384 * 384),
+    emitters: new Float32Array(384 * 384),
+    fieldA: new Float32Array(384 * 384),
+    fieldB: new Float32Array(384 * 384),
+    anchors: [],
+    regions: [],
+    connectivityHints: [],
+    bridgePayload: null,
+    showBorders: true,
+    pressureWeightEnabled: true,
+    pressureDensityEnabled: true,
+    mode: 'draw',
+    pointerActive: false,
+    pointerId: null,
+    activeStrokeId: 1,
+    nextStrokeId: 1,
+    nextSeedId: 1,
+    lastStrokePoint: null,
+    strokeCarry: 0,
+    movingStrokeId: null,
+    moveAnchor: null,
+    extractionMs: 0,
+    diffusionMs: 0,
+    jfaMs: 0,
+  };
+
+  const q = (x, max) => Math.max(0, Math.min(max - 1, Math.round(x)));
+  const pidx = (x, y) => y * state.width + x;
+
+  const setMode = (mode) => {
+    state.mode = mode;
+    document.getElementById('modeDrawBtn').classList.toggle('active', mode === 'draw');
+    document.getElementById('modeEraseBtn').classList.toggle('active', mode === 'erase');
+    document.getElementById('modeMoveBtn').classList.toggle('active', mode === 'move');
+  };
+
+  const baseWeight = (pressure) => {
+    const p = Number.isFinite(pressure) ? Math.max(0.01, pressure) : 0.5;
+    return state.pressureWeightEnabled ? (0.3 + p * 2.2) : 1;
+  };
+
+  const seedWeight = (tag, pressure) => baseWeight(pressure) * (TAGS[tag]?.weightScale ?? 1);
+
+  const addSeed = ({ x, y, tag = 'ridge', pressure = 0.5, strokeId = null }) => {
+    state.seeds.push({
+      id: `seed_${state.nextSeedId++}`,
+      x: q(x, state.width),
+      y: q(y, state.height),
+      tag,
+      pressure,
+      weight: seedWeight(tag, pressure),
+      strokeId,
+    });
+  };
+
+  const pointFromEvent = (event) => {
+    const rect = regionCanvas.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * (state.width - 1),
+      y: ((event.clientY - rect.top) / rect.height) * (state.height - 1),
+    };
+  };
+
+  const spacingFromPressure = (pressure) => {
+    const base = Math.max(1, Number(ui.spacingInput.value) || 8);
+    if (!state.pressureDensityEnabled) return base;
+    const p = Number.isFinite(pressure) ? Math.max(0.01, pressure) : 0.5;
+    return Math.max(1, base / (0.45 + p * 1.55));
+  };
+
+  const beginStrokeRecord = (tag, firstPoint, pressure) => {
+    const stroke = {
+      id: `stroke_${state.nextStrokeId}`,
+      tag,
+      startedAt: new Date().toISOString(),
+      points: [{ x: firstPoint.x, y: firstPoint.y, pressure }],
+      source: 'pointer',
+    };
+    state.strokes.push(stroke);
+    return stroke.id;
+  };
+
+  const appendStrokePoint = (strokeId, point, pressure) => {
+    const stroke = state.strokes.find((s) => s.id === strokeId);
+    if (stroke) stroke.points.push({ x: point.x, y: point.y, pressure });
+  };
+
+  const addStrokeSegmentSeeds = (from, to, tag, pressure, strokeId) => {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1e-6) return;
+    const spacing = spacingFromPressure(pressure);
+    let cursor = state.strokeCarry;
+    while (cursor <= dist) {
+      const t = cursor / dist;
+      addSeed({ x: from.x + dx * t, y: from.y + dy * t, tag, pressure, strokeId });
+      cursor += spacing;
+    }
+    state.strokeCarry = cursor - dist;
+  };
+
+  const removeSeedsNear = (point, radius) => {
+    const r2 = radius * radius;
+    state.seeds = state.seeds.filter((s) => {
+      const dx = s.x - point.x;
+      const dy = s.y - point.y;
+      return dx * dx + dy * dy > r2;
+    });
+  };
+
+  const nearestSeedIndex = (point, maxRadius = 18) => {
+    let best = -1;
+    let bestD2 = maxRadius * maxRadius;
+    for (let i = 0; i < state.seeds.length; i += 1) {
+      const s = state.seeds[i];
+      const dx = s.x - point.x;
+      const dy = s.y - point.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 <= bestD2) { bestD2 = d2; best = i; }
+    }
+    return best;
+  };
+
+  const moveStroke = (strokeId, dx, dy) => {
+    for (const seed of state.seeds) {
+      if (seed.strokeId === strokeId) {
+        seed.x = q(seed.x + dx, state.width);
+        seed.y = q(seed.y + dy, state.height);
+      }
+    }
+    const stroke = state.strokes.find((s) => s.id === strokeId);
+    if (stroke) {
+      for (const point of stroke.points) {
+        point.x = q(point.x + dx, state.width);
+        point.y = q(point.y + dy, state.height);
+      }
+    }
+  };
+
+  const metricDistance = (seed, x, y) => {
+    const dx = x - seed.x;
+    const dy = y - seed.y;
+    const base = (dx * dx + dy * dy) / Math.max(0.001, seed.weight);
+    const profile = TAGS[seed.tag] || TAGS.ridge;
+    if (profile.axisBias === 'horizontal') return base + Math.abs(dy) * profile.axisScale;
+    if (profile.axisBias === 'vertical') return base + Math.abs(dx) * profile.axisScale;
+    if (profile.axisBias === 'manhattan') return base + (Math.abs(dx) + Math.abs(dy)) * profile.axisScale;
+    return base + Math.hypot(dx, dy) * profile.axisScale;
+  };
+
+  const runJFA = () => {
+    const t0 = performance.now();
+    state.ownerA.fill(-1);
+    state.ownerB.fill(-1);
+    for (let i = 0; i < state.seeds.length; i += 1) {
+      const seed = state.seeds[i];
+      state.ownerA[pidx(seed.x, seed.y)] = i;
+    }
+
+    let step = 1;
+    const maxDim = Math.max(state.width, state.height);
+    while (step < maxDim) step <<= 1;
+    step >>= 1;
+
+    const dirs = [[-1,-1],[0,-1],[1,-1],[-1,0],[0,0],[1,0],[-1,1],[0,1],[1,1]];
+    let src = state.ownerA;
+    let dst = state.ownerB;
+
+    const consider = (best, x, y, ox, oy, jump) => {
+      const nx = x + ox * jump;
+      const ny = y + oy * jump;
+      if (nx < 0 || ny < 0 || nx >= state.width || ny >= state.height) return best;
+      const candidate = src[pidx(nx, ny)];
+      if (candidate < 0) return best;
+      if (best < 0) return candidate;
+      const bd = metricDistance(state.seeds[best], x, y);
+      const cd = metricDistance(state.seeds[candidate], x, y);
+      return (cd < bd || (cd === bd && candidate < best)) ? candidate : best;
+    };
+
+    while (step >= 1) {
+      for (let y = 0; y < state.height; y += 1) {
+        for (let x = 0; x < state.width; x += 1) {
+          let best = src[pidx(x, y)];
+          for (const [ox, oy] of dirs) best = consider(best, x, y, ox, oy, step);
+          dst[pidx(x, y)] = best;
+        }
+      }
+      [src, dst] = [dst, src];
+      step >>= 1;
+    }
+
+    for (let relax = 0; relax < 2; relax += 1) {
+      for (let y = 0; y < state.height; y += 1) {
+        for (let x = 0; x < state.width; x += 1) {
+          let best = src[pidx(x, y)];
+          for (const [ox, oy] of dirs) best = consider(best, x, y, ox, oy, 1);
+          dst[pidx(x, y)] = best;
+        }
+      }
+      [src, dst] = [dst, src];
+    }
+
+    state.ownerA = src;
+    state.ownerB = dst;
+    state.jfaMs = performance.now() - t0;
+  };
+
+  const extractFields = () => {
+    const t0 = performance.now();
+    state.borderMask.fill(0);
+    state.emitters.fill(0);
+    state.anchors = [];
+    state.regions = [];
+    state.connectivityHints = [];
+
+    const regionMap = new Map();
+    const edgeMap = new Map();
+
+    for (let y = 0; y < state.height; y += 1) {
+      for (let x = 0; x < state.width; x += 1) {
+        const i = pidx(x, y);
+        const owner = state.ownerA[i];
+        if (owner < 0) continue;
+
+        const seed = state.seeds[owner];
+        state.emitters[i] = seed.weight;
+
+        const region = regionMap.get(owner) || { owner, tag: seed.tag, area: 0, sumX: 0, sumY: 0, seedIds: new Set(), strokeIds: new Set() };
+        region.area += 1;
+        region.sumX += x;
+        region.sumY += y;
+        region.seedIds.add(seed.id);
+        if (seed.strokeId) region.strokeIds.add(seed.strokeId);
+        regionMap.set(owner, region);
+
+        const neighbors = [[x + 1, y], [x, y + 1]];
+        for (const [nx, ny] of neighbors) {
+          if (nx >= state.width || ny >= state.height) continue;
+          const nOwner = state.ownerA[pidx(nx, ny)];
+          if (nOwner >= 0 && nOwner !== owner) {
+            state.borderMask[i] = 1;
+            const a = Math.min(owner, nOwner);
+            const b = Math.max(owner, nOwner);
+            const key = `${a}:${b}`;
+            edgeMap.set(key, (edgeMap.get(key) || 0) + 1);
+          }
+        }
+      }
+    }
+
+    for (const region of regionMap.values()) {
+      const cx = region.sumX / Math.max(1, region.area);
+      const cy = region.sumY / Math.max(1, region.area);
+      const semanticRegionId = `region_${region.owner}`;
+      state.regions.push({
+        id: semanticRegionId,
+        ownerIndex: region.owner,
+        tag: region.tag,
+        area: region.area,
+        centroid: { x: cx, y: cy },
+        saliency: Math.sqrt(region.area),
+        sourceSeedIds: [...region.seedIds],
+        sourceStrokeIds: [...region.strokeIds],
+      });
+      state.anchors.push({ id: `anchor_${region.owner}`, regionId: semanticRegionId, x: cx, y: cy, saliency: Math.sqrt(region.area), tag: region.tag });
+    }
+
+    for (const [pair, boundaryPixels] of edgeMap.entries()) {
+      const [a, b] = pair.split(':').map((v) => Number(v));
+      state.connectivityHints.push({
+        fromRegionId: `region_${a}`,
+        toRegionId: `region_${b}`,
+        boundaryPixels,
+        transitionCost: 1 + boundaryPixels / 120,
+        confidence: Math.min(0.99, 0.4 + boundaryPixels / 500),
+      });
+    }
+
+    state.extractionMs = performance.now() - t0;
+  };
+
+  const diffuseInfluence = () => {
+    const t0 = performance.now();
+    const steps = Math.max(4, Number(ui.diffusionStepsInput.value) || 24);
+    for (let i = 0; i < state.fieldA.length; i += 1) {
+      state.fieldA[i] = state.emitters[i] * 0.35;
+      state.fieldB[i] = 0;
+    }
+
+    for (let step = 0; step < steps; step += 1) {
+      for (let y = 0; y < state.height; y += 1) {
+        for (let x = 0; x < state.width; x += 1) {
+          const i = pidx(x, y);
+          const owner = state.ownerA[i];
+          if (owner < 0) { state.fieldB[i] = 0; continue; }
+          let sum = 0;
+          let count = 0;
+          const nb = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
+          for (const [nx, ny] of nb) {
+            if (nx < 0 || ny < 0 || nx >= state.width || ny >= state.height) continue;
+            const ni = pidx(nx, ny);
+            const crossing = state.ownerA[ni] !== owner;
+            const resistance = crossing || state.borderMask[i] ? 0.28 : 1;
+            sum += state.fieldA[ni] * resistance;
+            count += 1;
+          }
+          const emit = state.emitters[i] * 0.09;
+          const local = state.fieldA[i] * 0.35;
+          const spread = count ? (sum / count) * 0.65 : 0;
+          state.fieldB[i] = (local + spread + emit) * 0.985;
+        }
+      }
+      [state.fieldA, state.fieldB] = [state.fieldB, state.fieldA];
+    }
+    state.diffusionMs = performance.now() - t0;
+  };
+
+  const drawViews = () => {
+    const region = regionCtx.createImageData(state.width, state.height);
+    const ownerTex = ownerCtx.createImageData(state.width, state.height);
+    const fieldImg = fieldCtx.createImageData(state.width, state.height);
+
+    let maxField = 0;
+    for (const v of state.fieldA) if (v > maxField) maxField = v;
+    const invField = maxField > 0 ? 1 / maxField : 1;
+
+    for (let y = 0; y < state.height; y += 1) {
+      for (let x = 0; x < state.width; x += 1) {
+        const i = pidx(x, y);
+        const base = i * 4;
+        const owner = state.ownerA[i];
+
+        if (owner >= 0) {
+          const seed = state.seeds[owner];
+          const [r, g, b] = TAGS[seed.tag]?.color ?? [120, 120, 120];
+          region.data[base] = r; region.data[base + 1] = g; region.data[base + 2] = b;
+          const tone = (owner * 37) % 255;
+          ownerTex.data[base] = tone; ownerTex.data[base + 1] = tone; ownerTex.data[base + 2] = tone;
+        } else {
+          region.data[base] = 10; region.data[base + 1] = 12; region.data[base + 2] = 20;
+          ownerTex.data[base] = 0; ownerTex.data[base + 1] = 0; ownerTex.data[base + 2] = 0;
+        }
+
+        if (state.showBorders && state.borderMask[i]) {
+          region.data[base] = 0; region.data[base + 1] = 0; region.data[base + 2] = 0;
+          ownerTex.data[base] = 255; ownerTex.data[base + 1] = 255; ownerTex.data[base + 2] = 255;
+        }
+
+        const heat = Math.max(0, Math.min(1, state.fieldA[i] * invField));
+        fieldImg.data[base] = Math.round(20 + 235 * heat);
+        fieldImg.data[base + 1] = Math.round(30 + 180 * Math.pow(heat, 0.65));
+        fieldImg.data[base + 2] = Math.round(40 + 140 * (1 - heat));
+        if (state.borderMask[i]) {
+          fieldImg.data[base] = Math.min(255, fieldImg.data[base] + 35);
+          fieldImg.data[base + 1] = Math.min(255, fieldImg.data[base + 1] + 20);
+          fieldImg.data[base + 2] = Math.max(0, fieldImg.data[base + 2] - 20);
+        }
+
+        region.data[base + 3] = ownerTex.data[base + 3] = fieldImg.data[base + 3] = 255;
+      }
+    }
+
+    for (const seed of state.seeds) {
+      const base = pidx(seed.x, seed.y) * 4;
+      region.data[base] = 255; region.data[base + 1] = 255; region.data[base + 2] = 255;
+      const [r, g, b] = TAGS[seed.tag]?.color ?? [255, 255, 255];
+      ownerTex.data[base] = r; ownerTex.data[base + 1] = g; ownerTex.data[base + 2] = b;
+    }
+
+    regionCtx.putImageData(region, 0, 0);
+    ownerCtx.putImageData(ownerTex, 0, 0);
+    fieldCtx.putImageData(fieldImg, 0, 0);
+
+    fieldCtx.save();
+    for (const anchor of state.anchors) {
+      const radius = Math.max(1.5, Math.min(8, anchor.saliency / 5));
+      fieldCtx.beginPath();
+      fieldCtx.arc(anchor.x, anchor.y, radius, 0, Math.PI * 2);
+      fieldCtx.fillStyle = 'rgba(243,217,126,0.85)';
+      fieldCtx.fill();
+      fieldCtx.strokeStyle = 'rgba(15,18,25,0.9)';
+      fieldCtx.lineWidth = 1;
+      fieldCtx.stroke();
+    }
+    fieldCtx.restore();
+  };
+
+  const buildBridgePayload = () => {
+    const payload = {
+      schema: 'ace/jfa-bridge.v1',
+      generatedAt: new Date().toISOString(),
+      canvas: { width: state.width, height: state.height },
+      anchors: state.anchors.map((a) => ({ id: a.id, x: a.x, y: a.y, saliency: a.saliency, tag: a.tag, regionId: a.regionId })),
+      fieldEmitters: state.seeds.map((s) => ({ id: `emitter_${s.id}`, seedId: s.id, strokeId: s.strokeId, tag: s.tag, x: s.x, y: s.y, strength: s.weight })),
+      connectivityHints: state.connectivityHints,
+      semanticRegions: state.regions.map((r) => ({
+        id: r.id,
+        tag: r.tag,
+        area: r.area,
+        centroid: r.centroid,
+        saliency: r.saliency,
+        anchorId: `anchor_${r.ownerIndex}`,
+        provenance: { seedIds: r.sourceSeedIds, strokeIds: r.sourceStrokeIds },
+      })),
+      provenance: {
+        sketchInput: state.strokes.map((stroke) => ({ id: stroke.id, tag: stroke.tag, startedAt: stroke.startedAt, pointCount: stroke.points.length, points: stroke.points })),
+        seedCount: state.seeds.length,
+      },
+    };
+    state.bridgePayload = payload;
+    bridgeOutput.value = JSON.stringify(payload, null, 2);
+  };
+
+  const downloadBridgePayload = () => {
+    if (!state.bridgePayload) buildBridgePayload();
+    const blob = new Blob([JSON.stringify(state.bridgePayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ace-jfa-bridge-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const updateStats = () => {
+    const tagCounts = { ridge: 0, flow: 0, threat: 0, build: 0 };
+    for (const s of state.seeds) tagCounts[s.tag] += 1;
+    const borderCount = state.borderMask.reduce((acc, v) => acc + v, 0);
+    statsEl.innerHTML = `
+      <span><b>mode:</b> ${state.mode}</span>
+      <span><b>seeds:</b> ${state.seeds.length}</span>
+      <span><b>strokes:</b> ${state.strokes.length}</span>
+      <span><b>regions:</b> ${state.regions.length}</span>
+      <span><b>anchors:</b> ${state.anchors.length}</span>
+      <span><b>connectivity:</b> ${state.connectivityHints.length}</span>
+      <span><b>border px:</b> ${borderCount.toLocaleString()}</span>
+      <span><b>JFA:</b> ${state.jfaMs.toFixed(2)} ms</span>
+      <span><b>extract:</b> ${state.extractionMs.toFixed(2)} ms</span>
+      <span><b>diffuse:</b> ${state.diffusionMs.toFixed(2)} ms</span>
+      <span><b>ridge:</b> ${tagCounts.ridge}</span>
+      <span><b>flow:</b> ${tagCounts.flow}</span>
+      <span><b>threat:</b> ${tagCounts.threat}</span>
+      <span><b>build:</b> ${tagCounts.build}</span>
+    `;
+  };
+
+  const recompute = () => {
+    if (!state.seeds.length) {
+      state.ownerA.fill(-1);
+      state.ownerB.fill(-1);
+      state.borderMask.fill(0);
+      state.emitters.fill(0);
+      state.fieldA.fill(0);
+      state.anchors = [];
+      state.regions = [];
+      state.connectivityHints = [];
+      drawViews();
+      updateStats();
+      return;
+    }
+    runJFA();
+    extractFields();
+    diffuseInfluence();
+    drawViews();
+    updateStats();
+  };
+
+  const pointerDown = (event) => {
+    event.preventDefault();
+    regionCanvas.setPointerCapture(event.pointerId);
+    state.pointerActive = true;
+    state.pointerId = event.pointerId;
+    const point = pointFromEvent(event);
+    const pressure = event.pressure || 0.5;
+
+    if (state.mode === 'draw') {
+      const strokeId = beginStrokeRecord(ui.tagSelect.value, point, pressure);
+      state.activeStrokeId = strokeId;
+      state.nextStrokeId += 1;
+      state.lastStrokePoint = point;
+      state.strokeCarry = 0;
+      addSeed({ x: point.x, y: point.y, tag: ui.tagSelect.value, pressure, strokeId });
+    }
+    if (state.mode === 'erase') {
+      removeSeedsNear(point, Math.max(2, Number(ui.eraseRadiusInput.value) || 10));
+    }
+    if (state.mode === 'move') {
+      const idx = nearestSeedIndex(point);
+      if (idx >= 0) {
+        state.movingStrokeId = state.seeds[idx].strokeId;
+        state.moveAnchor = point;
+      }
+    }
+    recompute();
+  };
+
+  const pointerMove = (event) => {
+    if (!state.pointerActive || state.pointerId !== event.pointerId) return;
+    const point = pointFromEvent(event);
+    const pressure = event.pressure || 0.5;
+
+    if (state.mode === 'draw') {
+      addStrokeSegmentSeeds(state.lastStrokePoint, point, ui.tagSelect.value, pressure, state.activeStrokeId);
+      appendStrokePoint(state.activeStrokeId, point, pressure);
+      state.lastStrokePoint = point;
+    }
+    if (state.mode === 'erase') {
+      removeSeedsNear(point, Math.max(2, Number(ui.eraseRadiusInput.value) || 10));
+    }
+    if (state.mode === 'move' && state.movingStrokeId) {
+      const dx = Math.round(point.x - state.moveAnchor.x);
+      const dy = Math.round(point.y - state.moveAnchor.y);
+      if (dx || dy) {
+        moveStroke(state.movingStrokeId, dx, dy);
+        state.moveAnchor = point;
+      }
+    }
+    recompute();
+  };
+
+  const pointerUp = (event) => {
+    if (!state.pointerActive || state.pointerId !== event.pointerId) return;
+    state.pointerActive = false;
+    state.pointerId = null;
+    state.lastStrokePoint = null;
+    state.moveAnchor = null;
+    state.movingStrokeId = null;
+    if (regionCanvas.hasPointerCapture(event.pointerId)) regionCanvas.releasePointerCapture(event.pointerId);
+  };
+
+  regionCanvas.addEventListener('pointerdown', pointerDown);
+  regionCanvas.addEventListener('pointermove', pointerMove);
+  regionCanvas.addEventListener('pointerup', pointerUp);
+  regionCanvas.addEventListener('pointercancel', pointerUp);
+
+  document.getElementById('modeDrawBtn').addEventListener('click', () => setMode('draw'));
+  document.getElementById('modeEraseBtn').addEventListener('click', () => setMode('erase'));
+  document.getElementById('modeMoveBtn').addEventListener('click', () => setMode('move'));
+
+  ui.bordersToggle.addEventListener('change', (e) => { state.showBorders = e.target.checked; drawViews(); });
+  ui.pressureWeightToggle.addEventListener('change', (e) => { state.pressureWeightEnabled = e.target.checked; for (const seed of state.seeds) seed.weight = seedWeight(seed.tag, seed.pressure); recompute(); });
+  ui.pressureDensityToggle.addEventListener('change', (e) => { state.pressureDensityEnabled = e.target.checked; });
+  ui.diffusionStepsInput.addEventListener('change', recompute);
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    state.seeds = [];
+    state.strokes = [];
+    state.nextSeedId = 1;
+    state.nextStrokeId = 1;
+    bridgeOutput.value = '';
+    state.bridgePayload = null;
+    recompute();
+  });
+
+  document.getElementById('randomBtn').addEventListener('click', () => {
+    const tags = Object.keys(TAGS);
+    for (let i = 0; i < 24; i += 1) {
+      const tag = tags[i % tags.length];
+      const strokeId = `stroke_${state.nextStrokeId++}`;
+      const x = Math.random() * (state.width - 1);
+      const y = Math.random() * (state.height - 1);
+      state.strokes.push({ id: strokeId, tag, startedAt: new Date().toISOString(), points: [{ x, y, pressure: Math.random() }], source: 'random' });
+      addSeed({ x, y, tag, pressure: Math.random(), strokeId });
+    }
+    recompute();
+  });
+
+  document.getElementById('applyResolutionBtn').addEventListener('click', () => {
+    const requested = Number(document.getElementById('resolutionInput').value) || 384;
+    const size = Math.max(64, Math.min(1024, Math.round(requested / 64) * 64));
+    state.width = size;
+    state.height = size;
+    state.ownerA = new Int32Array(size * size);
+    state.ownerB = new Int32Array(size * size);
+    state.borderMask = new Uint8Array(size * size);
+    state.emitters = new Float32Array(size * size);
+    state.fieldA = new Float32Array(size * size);
+    state.fieldB = new Float32Array(size * size);
+    regionCanvas.width = ownerCanvas.width = fieldCanvas.width = size;
+    regionCanvas.height = ownerCanvas.height = fieldCanvas.height = size;
+    for (const seed of state.seeds) {
+      seed.x = Math.min(size - 1, seed.x);
+      seed.y = Math.min(size - 1, seed.y);
+    }
+    for (const stroke of state.strokes) {
+      for (const point of stroke.points) {
+        point.x = Math.min(size - 1, point.x);
+        point.y = Math.min(size - 1, point.y);
+      }
+    }
+    recompute();
+  });
+
+  document.getElementById('buildBridgeBtn').addEventListener('click', buildBridgePayload);
+  document.getElementById('downloadBridgeBtn').addEventListener('click', downloadBridgePayload);
+
+  setMode('draw');
+  recompute();
+})();
+</script>
+</body>
+</html>
