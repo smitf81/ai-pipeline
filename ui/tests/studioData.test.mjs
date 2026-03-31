@@ -95,6 +95,7 @@ export default async function runStudioDataTests() {
       { id: 'dept-delivery', label: 'Delivery', kind: 'delivery' },
       { id: 'dept-quality', label: 'Quality', kind: 'quality' },
       { id: 'dept-archive', label: 'Archive', kind: 'archive' },
+      { id: 'dept-research', label: 'R&D / Research & Development', kind: 'research' },
       { id: 'dept-control', label: 'Control Centre', kind: 'control' },
       { id: 'dept-talent-acquisition', label: 'Talent Acquisition', kind: 'talent' },
     ],
@@ -106,6 +107,7 @@ export default async function runStudioDataTests() {
       ['planner', 'executor'],
       ['qa-lead'],
       ['memory-archivist'],
+      ['rnd-lead'],
       ['cto-architect'],
       ['integration_auditor'],
     ],
@@ -119,7 +121,7 @@ export default async function runStudioDataTests() {
     width: 1088,
     height: 664,
   });
-  assert.equal(defaultLayout.departments.length, 6);
+  assert.equal(defaultLayout.departments.length, 7);
   assert.equal(defaultLayout.controlCentreDeskId, 'cto-architect');
   assert.deepEqual(defaultLayout.desks['context-manager'].position, { x: 182, y: 252 });
   assert.deepEqual(defaultLayout.desks.planner.position, { x: 536, y: 252 });
@@ -128,8 +130,8 @@ export default async function runStudioDataTests() {
   assert.deepEqual(defaultLayout.desks['cto-architect'].position, { x: 990, y: 422 });
   assert.deepEqual(defaultLayout.whiteboards.teamBoard, { x: 284, y: 88, width: 584, height: 208 });
   const renderModel = layoutModel.buildStudioRenderModel(defaultLayout, []);
-  assert.equal(renderModel.departments.length, 6);
-  assert.equal(renderModel.roomConnections.length, 5);
+  assert.equal(renderModel.departments.length, 7);
+  assert.equal(renderModel.roomConnections.length, 6);
   assert.equal(renderModel.deskMap['qa-lead'].department.label, 'Quality');
   assert.equal(renderModel.desks.some((desk) => desk.id === 'context-manager'), false);
   assert.equal(getStudioAgents().find((agent) => agent.id === 'planner').departmentId, 'delivery');
@@ -573,7 +575,7 @@ export default async function runStudioDataTests() {
   const qaLeadSnapshot = snapshots.find((agent) => agent.id === 'qa-lead');
   const ctoSnapshot = snapshots.find((agent) => agent.id === 'cto-architect');
 
-  assert.equal(snapshots.length, 6);
+  assert.equal(snapshots.length, 10);
   assert.ok(contextSnapshot);
   assert.ok(archivistSnapshot);
   assert.ok(plannerSnapshot);
