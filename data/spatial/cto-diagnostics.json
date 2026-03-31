@@ -1,7 +1,26 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-03-31T11:21:33.882Z",
+  "updated_at": "2026-03-31T14:19:12.686Z",
   "entries": [
+    {
+      "id": "cto_diag_1774966752685",
+      "timestamp": "2026-03-31T14:19:12.685Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774966722668-pi2wo3",
+      "httpStatus": null,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
     {
       "id": "cto_diag_1774956093881",
       "timestamp": "2026-03-31T11:21:33.881Z",
@@ -15,7 +34,7 @@
       "reason": "Ollama generate timed out after 30000ms.",
       "failureKind": "parse",
       "runId": "cto-chat-1774956063873-h6hkc2",
-      "httpStatus": null,
+      "httpStatus": 0,
       "actionId": null,
       "availableActionIds": [
         "hire-planner"

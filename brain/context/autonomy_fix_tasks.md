@@ -3,7 +3,7 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-03-31T10:53:57.933Z
+Updated: 2026-03-31T14:17:42.038Z
 
 ### 0001-Blender-UE-import-hygiene
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -13,9 +13,7 @@ Updated: 2026-03-31T10:53:57.933Z
 - Action: planner
 - Retry count: 0
 - Retry limit: 2
-- Reasons: M brain/context/agent_audits/builder/builder_0001.json
- M brain/context/agent_audits/builder/builder_0001.md
- M brain/context/autonomy_fix_tasks.json
+- Reasons: M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
@@ -23,17 +21,9 @@ Updated: 2026-03-31T10:53:57.933Z
  M brain/context/known_fixes_candidates.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
- M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/pages.json
- M data/spatial/qa/local-gates/test-unit-latest.json
- M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/public/spatial/spatialApp.js
- M ui/public/style.css
- M ui/server.js
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
 
 ### 10000
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -79,9 +69,7 @@ Updated: 2026-03-31T10:53:57.933Z
 - Action: planner
 - Retry count: 0
 - Retry limit: 2
-- Reasons: M brain/context/agent_audits/builder/builder_0001.json
- M brain/context/agent_audits/builder/builder_0001.md
- M brain/context/autonomy_fix_tasks.json
+- Reasons: M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
@@ -89,14 +77,6 @@ Updated: 2026-03-31T10:53:57.933Z
  M brain/context/known_fixes_candidates.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
- M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/pages.json
- M data/spatial/qa/local-gates/test-unit-latest.json
- M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/public/spatial/spatialApp.js
- M ui/public/style.css
- M ui/server.js
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
