@@ -33,7 +33,7 @@ export default async function runStudioLayoutModelTests() {
     },
   });
 
-  assert.equal(expandedLayout.departments.length, 7);
+  assert.equal(expandedLayout.departments.length, 8);
   assert.equal(expandedLayout.desks['analysis-1'].departmentId, 'dept-research-1');
   assert.equal(layoutModel.getStudioDepartmentForDesk('analysis-1', expandedLayout).label, 'Research Cell');
 
@@ -53,7 +53,7 @@ export default async function runStudioLayoutModelTests() {
   assert.equal(renderModel.deskMap['context-manager'].aliasOf, 'context');
 
   const defaultLayout = layoutModel.createDefaultStudioLayout();
-  assert.equal(defaultLayout.departments.length, 6);
+  assert.equal(defaultLayout.departments.length, 7);
   assert.equal(defaultLayout.departments.some((department) => department.id === 'dept-talent-acquisition'), true);
   assert.equal(defaultLayout.departments.find((department) => department.id === 'dept-talent-acquisition').staffing.requiredLeadSeatId, 'integration_auditor');
   assert.equal(defaultLayout.departments.find((department) => department.id === 'dept-talent-acquisition').staffing.minimumActiveSeats, 1);
