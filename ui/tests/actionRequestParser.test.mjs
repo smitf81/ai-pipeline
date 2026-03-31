@@ -28,6 +28,8 @@ export default async function runActionRequestParserTests() {
   assert.equal(departmentActions[0].mutationHelper, 'addDepartmentFromTemplate');
   assert.equal(departmentActions[0].target.kind, 'department');
   assert.equal(departmentActions[0].target.templateId, 'governance');
+  assert.equal(departmentActions[0].targetRef.entityType, 'department');
+  assert.equal(departmentActions[0].targetRef.templateId, 'governance');
   assert.equal(departmentActions[0].status, 'proposed');
   assert.equal(departmentActions[0].execution, 'blocked');
   assert.equal(departmentActions[0].routedTo, 'mutation-helper');
@@ -38,6 +40,8 @@ export default async function runActionRequestParserTests() {
   assert.equal(deskActions[0].mutationHelper, 'addDeskToDepartment');
   assert.equal(deskActions[0].target.kind, 'desk');
   assert.equal(deskActions[0].target.templateId, 'qa-lead');
+  assert.equal(deskActions[0].targetRef.entityType, 'desk');
+  assert.equal(deskActions[0].targetRef.templateId, 'qa-lead');
   assert.equal(deskActions[0].parameters.departmentTemplateId, 'governance');
 
   const moveActions = parseActionRequest('propose move desk to department for the planner desk');
@@ -45,6 +49,7 @@ export default async function runActionRequestParserTests() {
   assert.equal(moveActions[0].type, 'propose_move_desk_to_department');
   assert.equal(moveActions[0].mutationHelper, 'moveDeskToDepartment');
   assert.equal(moveActions[0].target.kind, 'desk');
+  assert.equal(moveActions[0].targetRef.entityType, 'desk');
   assert.equal(moveActions[0].parameters.departmentTemplateId, 'context-intake');
 
   const demoActions = parseActionRequest('', { mode: 'demo' });

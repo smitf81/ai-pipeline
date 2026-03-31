@@ -3,6 +3,13 @@ const STUDIO_ROOM_BOUNDS = { x: 56, y: 72, width: 1088, height: 664 };
 const STUDIO_DESK_SIZE = { width: 172, height: 140 };
 const STUDIO_TEAM_BOARD_FRAME = { x: 284, y: 88, width: 584, height: 208 };
 const CONTROL_CENTRE_DESK_ID = 'cto-architect';
+const DEFAULT_AGENT_MODEL_PROFILE_ID = 'model-profile.default';
+const PLANNER_CANONICAL_IDS = Object.freeze({
+  deskId: 'planner',
+  roleId: 'planner',
+  agentId: 'planner',
+  modelProfileId: 'model-profile.planner-default',
+});
 
 const CORE_DESK_AGENT_DEFAULTS = {
   'context-manager': ['context-manager'],
@@ -473,6 +480,21 @@ function uniqueStrings(values = []) {
   return [...new Set((Array.isArray(values) ? values : []).map((entry) => String(entry || '').trim()).filter(Boolean))];
 }
 
+function normalizeAgentRelationshipRecord(agentId = '', desk = {}) {
+  const normalizedAgentId = String(agentId || '').trim();
+  if (!normalizedAgentId) return null;
+  const roleId = String(desk?.staffing?.roleId || normalizedAgentId).trim() || normalizedAgentId;
+  return {
+    id: normalizedAgentId,
+    roleId,
+    deskId: desk?.id ? String(desk.id).trim() : null,
+    departmentId: desk?.departmentId ? String(desk.departmentId).trim() : null,
+    modelProfileId: normalizedAgentId === PLANNER_CANONICAL_IDS.agentId
+      ? PLANNER_CANONICAL_IDS.modelProfileId
+      : `${DEFAULT_AGENT_MODEL_PROFILE_ID}.${normalizedAgentId}`,
+  };
+}
+
 function getDepartmentTemplate(templateId = '') {
   return DEPARTMENT_TEMPLATE_DEFS[String(templateId || '').trim()] || null;
 }
@@ -705,6 +727,7 @@ function buildDepartmentOrganizationModel(departments = [], desks = {}, controlC
   const departmentById = Object.fromEntries(departmentList.map((department) => [department.id, department]));
   const departmentsModel = {};
   const desksModel = {};
+  const agentsModel = {};
 
   departmentList.forEach((department) => {
     const preset = resolveRelationshipPreset(department);
@@ -750,6 +773,7 @@ function buildDepartmentOrganizationModel(departments = [], desks = {}, controlC
       id: desk.id,
       label: desk.label,
       departmentId: desk.departmentId,
+      ownerDepartmentId: desk.departmentId,
       parentDepartmentId,
       peerDeskIds: uniqueStrings(peerDeskIds),
       supportDepartmentIds: department ? [...(departmentsModel[department.id]?.supportDepartmentIds || [])] : [],
@@ -757,8 +781,14 @@ function buildDepartmentOrganizationModel(departments = [], desks = {}, controlC
       supportDeskIds: department ? [...(departmentsModel[department.id]?.supportDeskIds || [])] : [],
       dependencyDeskIds: department ? [...(departmentsModel[department.id]?.dependencyDeskIds || [])] : [],
       reportsToDeskId: desk.reportsToDeskId || controlCentreDeskId,
+      assignedAgentIds: uniqueStrings(desk.assignedAgentIds || []),
       staffing: cloneJson(desk.staffing, null),
     };
+    uniqueStrings(desk.assignedAgentIds || []).forEach((agentId) => {
+      const relationship = normalizeAgentRelationshipRecord(agentId, desk);
+      if (!relationship) return;
+      agentsModel[relationship.id] = relationship;
+    });
   });
 
   return {
@@ -766,6 +796,13 @@ function buildDepartmentOrganizationModel(departments = [], desks = {}, controlC
     relationshipTypes: DEPARTMENT_RELATIONSHIP_TYPES,
     departments: departmentsModel,
     desks: desksModel,
+    agents: agentsModel,
+    planner: {
+      deskId: PLANNER_CANONICAL_IDS.deskId,
+      roleId: PLANNER_CANONICAL_IDS.roleId,
+      agentId: PLANNER_CANONICAL_IDS.agentId,
+      modelProfileId: PLANNER_CANONICAL_IDS.modelProfileId,
+    },
   };
 }
 
@@ -1329,6 +1366,7 @@ module.exports = {
   STUDIO_DESK_SIZE,
   STUDIO_TEAM_BOARD_FRAME,
   CONTROL_CENTRE_DESK_ID,
+  PLANNER_CANONICAL_IDS,
   DEPARTMENT_RELATIONSHIP_TYPES,
   CORE_DESK_AGENT_DEFAULTS,
   createDefaultStudioLayoutSchema,
