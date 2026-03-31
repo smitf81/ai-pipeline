@@ -1,17 +1,17 @@
 {
   "version": "ace/agent-audit.v0",
   "audit_id": "builder_0001",
-  "created_at": "2026-03-29T13:43:22.948Z",
-  "updated_at": "2026-03-29T13:43:22.948Z",
+  "created_at": "2026-03-30T12:32:09.173Z",
+  "updated_at": "2026-03-30T12:32:09.173Z",
   "agent_id": "executor",
   "agent_version": "ace/agent-attribution.v0",
   "task_id": "0001",
   "stage": "builder",
   "artifact_refs": [
-    "../../../../../../AppData/Local/Temp/ace-task-cache-GRhCTP/work/tasks/0001-cache-apply-result/agent_attribution.json",
-    "../../../../../../AppData/Local/Temp/ace-task-cache-GRhCTP/work/tasks/0001-cache-apply-result/apply_result.json",
-    "../../../../../../AppData/Local/Temp/ace-task-cache-GRhCTP/work/tasks/0001-cache-apply-result/meta.json",
-    "../../../../../../AppData/Local/Temp/ace-task-cache-GRhCTP/work/tasks/0001-cache-apply-result/patch.diff"
+    "../../../../../../AppData/Local/Temp/ace-task-cache-m7t22m/work/tasks/0001-cache-apply-result/agent_attribution.json",
+    "../../../../../../AppData/Local/Temp/ace-task-cache-m7t22m/work/tasks/0001-cache-apply-result/apply_result.json",
+    "../../../../../../AppData/Local/Temp/ace-task-cache-m7t22m/work/tasks/0001-cache-apply-result/meta.json",
+    "../../../../../../AppData/Local/Temp/ace-task-cache-m7t22m/work/tasks/0001-cache-apply-result/patch.diff"
   ],
   "outcome": "failed",
   "pass_fail": "fail",

@@ -1,0 +1,25 @@
+{
+  "version": "ace/cto-diagnostics.v1",
+  "updated_at": "2026-03-30T12:43:27.407Z",
+  "entries": [
+    {
+      "id": "cto_diag_1774874607407",
+      "timestamp": "2026-03-30T12:43:27.407Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774874607405-9so2u1",
+      "httpStatus": null,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    }
+  ]
+}

@@ -88,7 +88,7 @@ export default async function runStaffingRulesTests() {
     },
   });
 
-  assert.equal(report.entities.length, 11);
+  assert.equal(report.entities.length, 13);
   assert.equal(report.summary.healthyCount, 2);
   assert.ok(report.summary.degradedCount >= 1);
   assert.ok(report.summary.blockedCount >= 1);
@@ -106,9 +106,26 @@ export default async function runStaffingRulesTests() {
   assert.equal(assignments.departments['context-intake'].length, 1);
 
   const gapModel = computeTaGapModel(STAFFING_RULES, []);
-  assert.equal(gapModel.coverage.length, 11);
+  assert.equal(gapModel.coverage.length, 13);
   assert.ok(gapModel.openRoles.some((entry) => entry.kind === 'missing lead'));
   assert.ok(gapModel.openRoles.some((entry) => entry.entityId === 'integration_auditor' && entry.kind === 'missing lead'));
   assert.ok(gapModel.blockers.every((entry) => entry.kind !== 'optional hire'));
   assert.ok(['critical', 'high', 'medium', 'low'].includes(gapModel.summary.urgency));
+
+  const researchRule = getStaffingRule('department', 'research');
+  assert.deepEqual(researchRule.requiredRoles, ['prototype-engineer', 'systems-synthesiser', 'validation-analyst']);
+  assert.equal(researchRule.leadRequirement.roleId, 'rnd-lead');
+
+  const researchGap = evaluateStaffingRule(researchRule, []);
+  assert.equal(researchGap.health, 'blocked');
+  assert.ok(researchGap.hiringNeeds.some((need) => need.kind === 'lead' && need.roleId === 'rnd-lead'));
+  assert.ok(researchGap.hiringNeeds.some((need) => need.kind === 'required-role' && need.roleId === 'prototype-engineer'));
+  assert.ok(researchGap.hiringNeeds.some((need) => need.kind === 'required-role' && need.roleId === 'systems-synthesiser'));
+  assert.ok(researchGap.hiringNeeds.some((need) => need.kind === 'required-role' && need.roleId === 'validation-analyst'));
+
+  const researchCoverage = gapModel.coverage.find((entry) => entry.entityId === 'research');
+  assert.equal(researchCoverage.health, 'blocked');
+  assert.ok(researchCoverage.openRoles.some((entry) => entry.roleId === 'prototype-engineer'));
+  assert.ok(researchCoverage.openRoles.some((entry) => entry.roleId === 'systems-synthesiser'));
+  assert.ok(researchCoverage.openRoles.some((entry) => entry.roleId === 'validation-analyst'));
 }

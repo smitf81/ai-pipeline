@@ -6,7 +6,8 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
     "memory-archivist",
     "qa-lead",
     "cto-architect",
-    "integration_auditor"
+    "integration_auditor",
+    "rnd-lead"
   ],
   "departments": [
     {
@@ -50,6 +51,13 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
       "summary": "Identifies, shapes, and validates specialist roles for open desk coverage.",
       "deskIds": [],
       "leadRoleId": "integration_auditor"
+    },
+    {
+      "id": "research",
+      "label": "R&D / Research & Development",
+      "summary": "Sandbox research and prototype work that stays non-delivery and non-production.",
+      "deskIds": ["rnd-lead"],
+      "leadRoleId": "rnd-lead"
     }
   ],
   "roles": [
@@ -259,6 +267,132 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
         "prompt": "Audit the current gap for execution mismatches and report exact drift points.",
         "deskTargets": ["executor", "qa-lead"],
         "department": "Talent Acquisition"
+      }
+    },
+    {
+      "id": "rnd-lead",
+      "label": "R&D Lead",
+      "kind": "operational",
+      "departmentIds": ["research"],
+      "allowedDepartmentIds": ["research"],
+      "allowedDeskIds": ["rnd-lead"],
+      "leadOfDepartmentIds": ["research"],
+      "capabilities": [
+        "run sandbox experiments",
+        "validate prototypes",
+        "capture research findings"
+      ],
+      "station": {
+        "shortLabel": "R&D",
+        "role": "Runs sandbox research, experiments, and prototype validation outside the delivery lane.",
+        "responsibility": "sandbox lab / experiment bench",
+        "scope": ["research", "prototype", "sandbox", "experiment", "exploration"],
+        "theme": { "accent": "#7de6d1", "shadow": "rgba(93, 173, 160, 0.38)" },
+        "position": { "x": 94, "y": 74 },
+        "mission": "Keep a non-production research lane open for exploratory work and prototypes."
+      },
+      "starterTemplate": {
+        "summary": "Default sandbox seat for R&D exploration and prototype validation.",
+        "prompt": "Investigate the idea in a sandbox, document findings, and avoid delivery assumptions.",
+        "responsibility": "sandbox lab / experiment bench"
+      },
+      "panel": {
+        "mission": "Keep a non-production research lane open for exploratory work and prototypes.",
+        "responsibilities": [
+          "Explore ideas in a sandbox before delivery commitments are made.",
+          "Capture findings, prototypes, and validation notes for later review.",
+          "Keep the station focused on research and experimentation rather than shipping."
+        ],
+        "hardRules": [
+          "No direct shipping or deployment from this desk.",
+          "No production mutations or backend write paths from the desk panel.",
+          "Treat outputs as sandbox-only unless they are explicitly promoted into delivery."
+        ],
+        "deliveryRelationship": "Parallel sandbox layer; informs delivery, but does not directly ship."
+      }
+    },
+    {
+      "id": "prototype-engineer",
+      "label": "Prototype Engineer",
+      "kind": "operational",
+      "departmentIds": ["research"],
+      "allowedDepartmentIds": ["research"],
+      "allowedDeskIds": ["rnd-lead"],
+      "leadOfDepartmentIds": [],
+      "capabilities": [
+        "build testable prototypes",
+        "shape reusable proof-of-concept components",
+        "translate ideas into sandbox artifacts"
+      ],
+      "station": {
+        "shortLabel": "Prototype",
+        "role": "Builds sandbox prototypes that remain outside delivery and production.",
+        "responsibility": "prototype bench / build studio",
+        "scope": ["prototype", "sandbox", "proof-of-concept", "build", "experiment"],
+        "theme": { "accent": "#69d2ff", "shadow": "rgba(73, 124, 160, 0.34)" },
+        "position": { "x": 90, "y": 78 },
+        "mission": "Turn research ideas into testable prototypes without crossing into live delivery."
+      },
+      "starterTemplate": {
+        "summary": "Prototype builder for sandbox validation work.",
+        "prompt": "Create a sandbox prototype, keep it read-only, and capture the reusable pieces.",
+        "responsibility": "prototype bench / build studio"
+      }
+    },
+    {
+      "id": "systems-synthesiser",
+      "label": "Systems Synthesiser",
+      "kind": "operational",
+      "departmentIds": ["research"],
+      "allowedDepartmentIds": ["research"],
+      "allowedDeskIds": ["rnd-lead"],
+      "leadOfDepartmentIds": [],
+      "capabilities": [
+        "connect research findings into coherent primitives",
+        "extract reusable ACE-compatible patterns",
+        "summarize system behavior into structured notes"
+      ],
+      "station": {
+        "shortLabel": "Synthesis",
+        "role": "Synthesizes research outputs into reusable system primitives and notes.",
+        "responsibility": "synthesis desk / pattern forge",
+        "scope": ["synthesis", "primitive", "pattern", "structure", "notes"],
+        "theme": { "accent": "#9be17a", "shadow": "rgba(94, 138, 67, 0.34)" },
+        "position": { "x": 92, "y": 80 },
+        "mission": "Turn sandbox findings into reusable primitives and structured guidance."
+      },
+      "starterTemplate": {
+        "summary": "Pattern synthesis seat for turning findings into primitives.",
+        "prompt": "Synthesize the research into reusable primitives and clearly separate them from prototypes.",
+        "responsibility": "synthesis desk / pattern forge"
+      }
+    },
+    {
+      "id": "validation-analyst",
+      "label": "Validation Analyst",
+      "kind": "operational",
+      "departmentIds": ["research"],
+      "allowedDepartmentIds": ["research"],
+      "allowedDeskIds": ["rnd-lead"],
+      "leadOfDepartmentIds": [],
+      "capabilities": [
+        "check experiment evidence",
+        "score readiness and risk",
+        "confirm whether outputs are promotable"
+      ],
+      "station": {
+        "shortLabel": "Validate",
+        "role": "Evaluates sandbox evidence and validates whether a primitive is ready for promotion review.",
+        "responsibility": "validation bench / evidence desk",
+        "scope": ["validation", "evidence", "quality", "risk", "promotion"],
+        "theme": { "accent": "#f3d66b", "shadow": "rgba(150, 131, 53, 0.34)" },
+        "position": { "x": 90, "y": 82 },
+        "mission": "Judge evidence quality and keep prototypes from being mistaken for reusable outputs."
+      },
+      "starterTemplate": {
+        "summary": "Validation seat for sandbox evidence and promotion checks.",
+        "prompt": "Review the experiment evidence, validate the primitive output, and flag any blockers.",
+        "responsibility": "validation bench / evidence desk"
       }
     },
     {

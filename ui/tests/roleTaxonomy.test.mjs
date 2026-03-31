@@ -9,7 +9,7 @@ export default async function runRoleTaxonomyTests() {
   const taxonomy = await loadModuleCopy(taxonomyPath, { label: 'roleTaxonomy' });
 
   assert.equal(taxonomy.ROLE_TAXONOMY.version, 'role-taxonomy.v1');
-  assert.equal(taxonomy.getOperationalRoles().length, 6);
+  assert.equal(taxonomy.getOperationalRoles().length, 10);
   assert.equal(taxonomy.getTalentRoles().length, 6);
   assert.deepEqual(taxonomy.getDesignatedLeadRoleIds(), [
     'context-manager',
@@ -18,6 +18,7 @@ export default async function runRoleTaxonomyTests() {
     'qa-lead',
     'cto-architect',
     'integration_auditor',
+    'rnd-lead',
   ]);
   assert.deepEqual(taxonomy.getAssignableRoleIdsForDesk('executor'), [
     'executor',
@@ -29,6 +30,17 @@ export default async function runRoleTaxonomyTests() {
   assert.equal(planner.label, 'Planner');
   assert.ok(planner.capabilities.includes('break intent into steps'));
   assert.equal(planner.allowedDepartmentIds[0], 'delivery');
+
+  const synthesisRole = taxonomy.getRoleById('systems-synthesiser');
+  assert.equal(synthesisRole.label, 'Systems Synthesiser');
+  assert.equal(synthesisRole.allowedDepartmentIds[0], 'research');
+
+  assert.deepEqual(taxonomy.getAssignableRoleIdsForDesk('rnd-lead'), [
+    'rnd-lead',
+    'prototype-engineer',
+    'systems-synthesiser',
+    'validation-analyst',
+  ]);
 
   const deliveryDepartment = taxonomy.getDepartmentById('delivery');
   assert.equal(deliveryDepartment.leadRoleId, 'planner');

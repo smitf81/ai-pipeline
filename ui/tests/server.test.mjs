@@ -77,9 +77,21 @@ export default async function runServerTests() {
     addDeskToLayout,
     buildStudioLayoutCatalog,
     listStudioDeskIds,
+    resolveCtoGovernanceConfig,
     classifyFailureContext,
     buildFailureUiResponse,
     recordClassifiedFailure,
+    parseCtoStructuredReply,
+    classifyCtoDiagnosticCategory,
+    recordCtoDiagnostic,
+    readCtoDiagnostics,
+    probeCtoBackendStatus,
+    buildCtoGovernanceContext,
+    buildCtoAvailableActions,
+    executeCtoConfirmedAction,
+    runCtoGovernanceChat,
+    normalizeCtoChatHistory,
+    isAffirmativeCtoReply,
   } = require(serverPath);
   const {
     createPlannerHandoff,
@@ -136,6 +148,299 @@ export default async function runServerTests() {
     shell: 'fallback-panel',
     summary: 'Render a fallback panel and keep the rest of the UI alive.',
   });
+  assert.equal(isAffirmativeCtoReply('Yes, do it.'), true);
+  assert.equal(isAffirmativeCtoReply('not yet'), false);
+  assert.equal(normalizeCtoChatHistory([
+    { role: 'user', text: 'Need planner coverage.' },
+    { role: 'ace', text: 'Planner coverage is thin.', action: { id: 'hire-planner', kind: 'hire_candidate' } },
+  ])[1].action.id, 'hire-planner');
+  const ctoContext = await buildCtoGovernanceContext();
+  assert.ok(ctoContext.desks.some((desk) => desk.deskId === 'planner'));
+  const ctoActions = buildCtoAvailableActions({
+    text: 'We need planner coverage. Should TA hire for the planner desk?',
+    context: ctoContext,
+  });
+  assert.equal(ctoActions.some((action) => action.kind === 'hire_candidate' && action.targetDeskId === 'planner'), true);
+  const originalCtoEnv = {
+    backend: process.env.ACE_CTO_BACKEND,
+    model: process.env.ACE_CTO_MODEL,
+    host: process.env.ACE_CTO_OLLAMA_HOST,
+    timeoutMs: process.env.ACE_CTO_TIMEOUT_MS,
+  };
+  process.env.ACE_CTO_BACKEND = 'ollama';
+  process.env.ACE_CTO_MODEL = 'mixtral:latest';
+  process.env.ACE_CTO_OLLAMA_HOST = 'http://127.0.0.1:22445';
+  process.env.ACE_CTO_TIMEOUT_MS = '34567';
+  assert.deepEqual(resolveCtoGovernanceConfig(), {
+    backend: 'ollama',
+    model: 'mixtral:latest',
+    host: 'http://127.0.0.1:22445',
+    timeoutMs: 34567,
+  });
+  assert.equal(parseCtoStructuredReply(JSON.stringify({
+    reply_text: 'Planner owns sequencing.',
+    response_kind: 'actionable',
+    delegation: {
+      desk_id: 'planner',
+      desk_label: 'Planner',
+      why: 'Planner owns sequencing.',
+    },
+    action: { id: 'hire-planner' },
+  }), {
+    availableActions: [{ id: 'hire-planner' }],
+    context: { desks: [{ deskId: 'planner' }] },
+  }).replyText, 'Planner owns sequencing.');
+  assert.equal(parseCtoStructuredReply("```json\n{\n  \"reply_text\": \"Planner owns sequencing.\",\n  \"response_kind\": \"actionable\",\n  \"delegation\": {\n    \"desk_id\": \"planner\",\n    \"desk_label\": \"Planner\",\n    \"why\": \"Planner owns sequencing.\"\n  },\n  \"action\": {\n    \"id\": \"hire-planner\"\n  }\n}\n```").responseKind, 'actionable');
+  assert.throws(() => parseCtoStructuredReply('I think the planner should handle this.'), /prose instead of strict JSON/i);
+  assert.throws(() => parseCtoStructuredReply('{"reply_text":"Planner","response_kind":"actionable",'), /not valid JSON/i);
+  assert.throws(() => parseCtoStructuredReply(JSON.stringify({
+    reply_text: 'Planner owns sequencing.',
+    response_kind: 'actionable',
+    delegation: {
+      desk_id: 'planner',
+    },
+    action: { id: 'hire-planner' },
+  }), {
+    availableActions: [{ id: 'hire-planner' }],
+    context: { desks: [{ deskId: 'planner' }] },
+  }), /delegation did not satisfy the required contract/i);
+  assert.throws(() => parseCtoStructuredReply(JSON.stringify({
+    reply_text: 'Planner owns sequencing.',
+    response_kind: 'unsupported',
+    delegation: null,
+    action: null,
+  })), /invalid response_kind/i);
+  assert.throws(() => parseCtoStructuredReply(JSON.stringify({
+    reply_text: 'Planner owns sequencing.',
+    response_kind: 'actionable',
+    delegation: {
+      desk_id: 'not-a-real-desk',
+      desk_label: 'Unknown',
+      why: 'Unknown',
+    },
+    action: null,
+  }), {
+    context: { desks: [{ deskId: 'planner' }] },
+  }), /unknown desk_id/i);
+  assert.throws(() => parseCtoStructuredReply(JSON.stringify({
+    reply_text: 'Planner owns sequencing.',
+    response_kind: 'actionable',
+    delegation: null,
+    action: { id: 'not-available' },
+  }), {
+    availableActions: [{ id: 'hire-planner' }],
+  }), /unavailable action id/i);
+  assert.equal(classifyCtoDiagnosticCategory({
+    status: 'offline',
+    reason: 'fetch failed',
+  }), 'backend_unreachable');
+  assert.equal(classifyCtoDiagnosticCategory({
+    status: 'offline',
+    reason: 'Ollama status check timed out after 34567ms.',
+  }), 'timeout');
+  assert.equal(classifyCtoDiagnosticCategory({
+    status: 'degraded',
+    reason: 'CTO chat returned prose instead of strict JSON.',
+    failureKind: 'parse',
+  }), 'non_json_output');
+  assert.equal(classifyCtoDiagnosticCategory({
+    status: 'degraded',
+    reason: 'CTO chat response was not valid JSON: Unexpected token',
+    failureKind: 'parse',
+  }), 'malformed_json');
+  assert.equal(classifyCtoDiagnosticCategory({
+    status: 'degraded',
+    reason: 'CTO chat action referenced an unavailable action id: not-available.',
+    failureKind: 'contract',
+  }), 'contract_invalid');
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).includes('/api/tags')) {
+      return {
+        ok: true,
+        json: async () => ({
+          models: [{ name: 'mixtral:latest' }, { name: 'mistral:latest' }],
+        }),
+      };
+    }
+    if (String(url).includes('/api/generate')) {
+      const body = JSON.parse(options.body || '{}');
+      assert.match(body.prompt, /ACE CTO \/ Architect chat utility/);
+      assert.equal(body.model, 'mixtral:latest');
+      return {
+        ok: true,
+        json: async () => ({
+          response: JSON.stringify({
+            reply_text: 'Delivery should route through the planner desk first. Talent Acquisition can hire planner coverage after confirmation.',
+            response_kind: 'actionable',
+            delegation: {
+              desk_id: 'planner',
+              desk_label: 'Planner',
+              why: 'The planner desk owns sequencing and dependency-aware breakdown.',
+            },
+            action: {
+              id: 'hire-planner',
+            },
+          }),
+        }),
+      };
+    }
+    throw new Error(`unexpected CTO fetch: ${url}`);
+  };
+  const ctoChatResult = await runCtoGovernanceChat({
+    text: 'We need a planner for this. Can you handle it?',
+    history: [],
+  });
+  assert.equal(ctoChatResult.ok, true);
+  assert.equal(ctoChatResult.status, 'live');
+  assert.equal(ctoChatResult.replyKind, 'actionable');
+  assert.equal(ctoChatResult.model, 'mixtral:latest');
+  assert.equal(ctoChatResult.delegation.deskId, 'planner');
+  assert.equal(ctoChatResult.action.kind, 'hire_candidate');
+  assert.equal(ctoChatResult.action.targetDeskId, 'planner');
+  const backendStatus = await probeCtoBackendStatus({
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({ models: [{ name: 'mixtral:latest' }, { name: 'mistral:latest' }] }),
+    }),
+  });
+  assert.equal(backendStatus.status, 'live');
+  assert.equal(backendStatus.model, 'mixtral:latest');
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).includes('/api/tags')) {
+      return {
+        ok: true,
+        json: async () => ({
+          models: [{ name: 'mixtral:latest' }, { name: 'mistral:latest' }],
+        }),
+      };
+    }
+    if (String(url).includes('/api/generate')) {
+      const body = JSON.parse(options.body || '{}');
+      assert.match(body.prompt, /ACE CTO \/ Architect chat utility/);
+      return {
+        ok: true,
+        json: async () => ({
+          response: 'I think the planner desk should handle this.',
+        }),
+      };
+    }
+    throw new Error(`unexpected malformed CTO fetch: ${url}`);
+  };
+  const degradedCtoChatResult = await runCtoGovernanceChat({
+    text: 'We need planner coverage.',
+    history: [],
+  });
+  assert.equal(degradedCtoChatResult.ok, false);
+  assert.equal(degradedCtoChatResult.status, 'degraded');
+  assert.equal(degradedCtoChatResult.replyKind, 'blocked');
+  assert.match(degradedCtoChatResult.reply_text, /live CTO model is reachable/i);
+  assert.match(degradedCtoChatResult.reason, /prose instead of strict JSON/i);
+  assert.equal(degradedCtoChatResult.diagnostic.category, 'non_json_output');
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).includes('/api/tags')) {
+      return {
+        ok: true,
+        json: async () => ({
+          models: [{ name: 'mixtral:latest' }, { name: 'mistral:latest' }],
+        }),
+      };
+    }
+    if (String(url).includes('/api/generate')) {
+      const body = JSON.parse(options.body || '{}');
+      assert.match(body.prompt, /ACE CTO \/ Architect chat utility/);
+      return {
+        ok: true,
+        json: async () => ({
+          response: '{"reply_text":"Planner owns sequencing.","response_kind":"actionable","delegation":{"desk_id":"planner"}}',
+        }),
+      };
+    }
+    throw new Error(`unexpected partial CTO fetch: ${url}`);
+  };
+  const partialContractResult = await runCtoGovernanceChat({
+    text: 'We need planner coverage.',
+    history: [],
+  });
+  assert.equal(partialContractResult.ok, false);
+  assert.equal(partialContractResult.status, 'degraded');
+  assert.match(partialContractResult.reason, /delegation did not satisfy the required contract/i);
+  assert.equal(partialContractResult.diagnostic.category, 'contract_invalid');
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).includes('/api/tags')) {
+      return {
+        ok: true,
+        json: async () => ({
+          models: [{ name: 'mixtral:latest' }, { name: 'mistral:latest' }],
+        }),
+      };
+    }
+    if (String(url).includes('/api/generate')) {
+      const body = JSON.parse(options.body || '{}');
+      assert.match(body.prompt, /ACE CTO \/ Architect chat utility/);
+      return {
+        ok: true,
+        json: async () => ({
+          response: '{"reply_text":"Planner owns sequencing.","response_kind":"actionable","delegation":null,"action":{"id":"not-available"}}',
+        }),
+      };
+    }
+    throw new Error(`unexpected invalid-action CTO fetch: ${url}`);
+  };
+  const parseableInvalidResult = await runCtoGovernanceChat({
+    text: 'We need planner coverage.',
+    history: [],
+  });
+  assert.equal(parseableInvalidResult.ok, false);
+  assert.equal(parseableInvalidResult.status, 'degraded');
+  assert.match(parseableInvalidResult.reason, /unavailable action id/i);
+  assert.match(parseableInvalidResult.reply_text, /failed CTO contract validation/i);
+  assert.equal(parseableInvalidResult.diagnostic.category, 'contract_invalid');
+  globalThis.fetch = originalFetch;
+  if (originalCtoEnv.backend === undefined) {
+    delete process.env.ACE_CTO_BACKEND;
+  } else {
+    process.env.ACE_CTO_BACKEND = originalCtoEnv.backend;
+  }
+  if (originalCtoEnv.model === undefined) {
+    delete process.env.ACE_CTO_MODEL;
+  } else {
+    process.env.ACE_CTO_MODEL = originalCtoEnv.model;
+  }
+  if (originalCtoEnv.host === undefined) {
+    delete process.env.ACE_CTO_OLLAMA_HOST;
+  } else {
+    process.env.ACE_CTO_OLLAMA_HOST = originalCtoEnv.host;
+  }
+  if (originalCtoEnv.timeoutMs === undefined) {
+    delete process.env.ACE_CTO_TIMEOUT_MS;
+  } else {
+    process.env.ACE_CTO_TIMEOUT_MS = originalCtoEnv.timeoutMs;
+  }
+  const ctoDiagnosticRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-cto-diagnostics-'));
+  recordCtoDiagnostic({
+    route: '/api/spatial/cto/chat',
+    source: 'server-test',
+    status: 'offline',
+    backend: 'ollama',
+    model: 'mistral:latest',
+    host: 'http://127.0.0.1:11434',
+    reason: 'fetch failed',
+  }, ctoDiagnosticRoot);
+  recordCtoDiagnostic({
+    route: '/api/spatial/cto/chat',
+    source: 'server-test',
+    status: 'degraded',
+    backend: 'ollama',
+    model: 'mistral:latest',
+    host: 'http://127.0.0.1:11434',
+    reason: 'CTO chat returned prose instead of strict JSON.',
+    failureKind: 'parse',
+  }, ctoDiagnosticRoot);
+  const ctoDiagnostics = readCtoDiagnostics(ctoDiagnosticRoot);
+  assert.equal(ctoDiagnostics.entries.length >= 2, true);
+  assert.equal(ctoDiagnostics.entries[0].category, 'non_json_output');
+  assert.equal(ctoDiagnostics.entries[1].category, 'backend_unreachable');
   const classifiedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-server-failure-'));
   const classifiedFailure = recordClassifiedFailure(classifiedRoot, new TypeError("Cannot read properties of undefined (reading 'length')"), {
     stage: 'roster',

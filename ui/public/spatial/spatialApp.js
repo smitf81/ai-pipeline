@@ -171,8 +171,9 @@ const DESK_PROPERTY_BASE_TABS = [
   { id: 'tools', label: 'Tools (Modules)' },
   { id: 'reports', label: 'Reports (Tests)' },
 ];
-const UTILITY_WINDOW_ORDER = ['environment', 'qa', 'context', 'reports', 'relationship', 'roster', 'studio-map', 'scorecards'];
+const UTILITY_WINDOW_ORDER = ['cto-chat', 'environment', 'qa', 'context', 'reports', 'relationship', 'roster', 'studio-map', 'scorecards'];
 const UTILITY_WINDOW_META = {
+  'cto-chat': { title: 'CTO Chat', deskId: 'cto-architect' },
   environment: { title: 'Environment', deskId: 'cto-architect' },
   qa: { title: 'QA Workbench', deskId: 'qa-lead' },
   context: { title: 'Context Archive', deskId: 'memory-archivist' },
@@ -182,6 +183,37 @@ const UTILITY_WINDOW_META = {
   'studio-map': { title: 'Studio Map', deskId: null },
   scorecards: { title: 'Scorecards', deskId: 'qa-lead' },
 };
+
+const CTO_CHAT_STATUS_META = {
+  idle: { label: 'Idle', tone: 'idle' },
+  live: { label: 'Live', tone: 'processing' },
+  degraded: { label: 'Degraded', tone: 'review' },
+  offline: { label: 'Offline', tone: 'blocked' },
+  blocked: { label: 'Blocked', tone: 'blocked' },
+  actionable: { label: 'Actionable', tone: 'processing' },
+  advisory: { label: 'Advisory', tone: 'idle' },
+  'model_error': { label: 'Model Error', tone: 'blocked' },
+  'model_unavailable': { label: 'Offline', tone: 'blocked' },
+  'timed_out': { label: 'Timed Out', tone: 'blocked' },
+};
+
+function normalizeCtoChatStatus(status = null) {
+  const value = String(status || '').trim().toLowerCase();
+  if (!value) return 'idle';
+  if (value === 'model_unavailable') return 'offline';
+  if (value === 'degraded_fallback') return 'degraded';
+  return value;
+}
+
+function buildDefaultCtoChatStatus() {
+  return {
+    status: 'idle',
+    backend: 'ollama',
+    model: null,
+    detail: 'Waiting for the live CTO backend.',
+    checkedAt: null,
+  };
+}
 
 function describeDeskValue(value) {
   if (value == null || value === false) return '';
@@ -2757,9 +2789,10 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   });
   const [daveFixDrafts, setDaveFixDrafts] = useState({});
   const [ctoEditTargetDeskId, setCtoEditTargetDeskId] = useState('planner');
-  const [deskChatDraft, setDeskChatDraft] = useState('');
-  const [deskChatBusy, setDeskChatBusy] = useState(false);
-  const [deskChatLog, setDeskChatLog] = useState([]);
+  const [ctoChatDraft, setCtoChatDraft] = useState('');
+  const [ctoChatBusy, setCtoChatBusy] = useState(false);
+  const [ctoChatHistory, setCtoChatHistory] = useState([]);
+  const [ctoChatStatus, setCtoChatStatus] = useState(() => buildDefaultCtoChatStatus());
 
   const canvasRef = useRef(null);
   const studioRef = useRef(null);
@@ -3255,6 +3288,116 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   useEffect(() => {
     loadModelOptions();
   }, [loadModelOptions]);
+
+  const refreshCtoChatStatus = useCallback(async () => {
+    try {
+      const payload = await ace.getCtoDeskStatus();
+      setCtoChatStatus({
+        status: normalizeCtoChatStatus(payload?.status),
+        backend: payload?.backend || 'ollama',
+        model: payload?.model || null,
+        detail: payload?.reason || (payload?.ok ? 'Local CTO model is available.' : 'Live CTO backend is unavailable.'),
+        checkedAt: payload?.checkedAt || null,
+      });
+    } catch (error) {
+      const payload = error?.payload || {};
+      setCtoChatStatus({
+        status: normalizeCtoChatStatus(payload?.status || 'offline'),
+        backend: payload?.backend || 'ollama',
+        model: payload?.model || null,
+        detail: payload?.reason || payload?.error || error.message,
+        checkedAt: payload?.checkedAt || null,
+      });
+    }
+  }, [ace]);
+
+  const sendCtoChatMessage = useCallback(async ({ text, confirmActionId = null } = {}) => {
+    const prompt = String(text || '').trim();
+    if (!prompt) return;
+    const userEntry = {
+      id: `cto-user-${Date.now()}`,
+      role: 'user',
+      text: prompt,
+      replyKind: null,
+      status: null,
+      action: null,
+      backend: null,
+      model: null,
+      runId: null,
+      detail: null,
+    };
+    const nextHistory = [...ctoChatHistory, userEntry].slice(-12);
+    setCtoChatBusy(true);
+    setCtoChatHistory(nextHistory);
+    setCtoChatDraft('');
+    try {
+      const response = await ace.askCtoDesk({
+        text: prompt,
+        confirmActionId,
+        history: nextHistory.map((entry) => ({
+          id: entry.id,
+          role: entry.role,
+          text: entry.text,
+          action: entry.action || null,
+        })),
+        source: scene === SCENES.STUDIO ? 'studio-cto-utility' : 'canvas-cto-utility',
+      });
+      const backendStatus = response?.backendStatus || {};
+      setCtoChatStatus({
+        status: normalizeCtoChatStatus(backendStatus?.status || response?.status || 'live'),
+        backend: response?.backend || backendStatus?.backend || 'ollama',
+        model: response?.model || backendStatus?.model || null,
+        detail: backendStatus?.reason || (response?.status === 'live' ? 'Live CTO response received.' : 'CTO backend returned a non-live status.'),
+        checkedAt: backendStatus?.checkedAt || null,
+      });
+      setCtoChatHistory((current) => [...current, {
+        id: `cto-assistant-${Date.now()}`,
+        role: 'assistant',
+        text: response?.reply_text || 'No CTO reply text returned.',
+        replyKind: response?.replyKind || 'advisory',
+        status: normalizeCtoChatStatus(response?.status || backendStatus?.status || 'live'),
+        action: response?.action || null,
+        execution: response?.execution || null,
+        delegation: response?.delegation || null,
+        backend: response?.backend || backendStatus?.backend || null,
+        model: response?.model || backendStatus?.model || null,
+        runId: response?.runId || null,
+        detail: backendStatus?.reason || null,
+      }].slice(-12));
+    } catch (error) {
+      const payload = error?.payload || {};
+      const backendStatus = payload?.backendStatus || {};
+      setCtoChatStatus({
+        status: normalizeCtoChatStatus(payload?.status || backendStatus?.status || 'offline'),
+        backend: payload?.backend || backendStatus?.backend || 'ollama',
+        model: payload?.model || backendStatus?.model || null,
+        detail: payload?.reason || payload?.error || backendStatus?.reason || error.message,
+        checkedAt: backendStatus?.checkedAt || null,
+      });
+      setCtoChatHistory((current) => [...current, {
+        id: `cto-assistant-${Date.now()}`,
+        role: 'assistant',
+        text: payload?.reply_text || payload?.error || error.message,
+        replyKind: payload?.replyKind || 'blocked',
+        status: normalizeCtoChatStatus(payload?.status || backendStatus?.status || 'offline'),
+        action: payload?.action || null,
+        execution: payload?.execution || null,
+        delegation: payload?.delegation || null,
+        backend: payload?.backend || backendStatus?.backend || null,
+        model: payload?.model || backendStatus?.model || null,
+        runId: payload?.runId || null,
+        detail: payload?.reason || backendStatus?.reason || null,
+      }].slice(-12));
+    } finally {
+      setCtoChatBusy(false);
+    }
+  }, [ace, ctoChatHistory, scene]);
+
+  useEffect(() => {
+    if (!utilityWindows['cto-chat']?.open) return;
+    refreshCtoChatStatus();
+    loadTaDepartmentPanel({ silent: true });
+  }, [loadTaDepartmentPanel, refreshCtoChatStatus, utilityWindows]);
 
   useEffect(() => {
     if (!rosterUtilityOpen) return;
@@ -6044,11 +6187,159 @@ function syncRecentWorldChange(change = null) {
     );
   };
 
+  const renderDeskPanelMetadata = (panel = null) => {
+    if (!panel) return null;
+    const responsibilities = Array.isArray(panel.responsibilities) ? panel.responsibilities.filter(Boolean) : [];
+    const hardRules = Array.isArray(panel.hardRules) ? panel.hardRules.filter(Boolean) : [];
+    return h('div', { className: 'desk-panel-item desk-guidance-panel', 'data-qa': 'desk-guidance-panel' },
+      h('div', { className: 'signal-summary' }, panel.mission || 'Read-only desk guidance'),
+      h('div', { className: 'signal-meta muted' }, panel.deliveryRelationship || 'Parallel sandbox layer; does not directly ship.'),
+      h('div', { className: 'criteria-list desk-metric-list' },
+        h('div', { className: 'criteria-row' }, h('span', null, 'Mission'), h('span', { className: 'muted' }, panel.mission || 'n/a')),
+        h('div', { className: 'criteria-row' }, h('span', null, 'Visibility'), h('span', { className: 'muted' }, panel.visibility || 'read-only')),
+      ),
+      h('div', { className: 'desk-truth-grid' },
+        h('div', { className: 'desk-truth-column' },
+          h('div', { className: 'inspector-label' }, 'Responsibilities'),
+          responsibilities.length
+            ? h('ul', { className: 'signal-list' }, responsibilities.map((item, index) => h('li', { key: `desk-guidance-responsibility-${index}` }, item)))
+            : h('div', { className: 'signal-empty muted' }, 'No responsibilities surfaced.'),
+        ),
+        h('div', { className: 'desk-truth-column' },
+          h('div', { className: 'inspector-label' }, 'Hard rules'),
+          hardRules.length
+            ? h('ul', { className: 'signal-list' }, hardRules.map((item, index) => h('li', { key: `desk-guidance-rule-${index}` }, item)))
+            : h('div', { className: 'signal-empty muted' }, 'No hard rules surfaced.'),
+        ),
+      ),
+    );
+  };
+
+  const renderRndExperimentCards = (experiments = [], emptyState = 'No R&D experiments are seeded yet.') => {
+    const cards = Array.isArray(experiments) ? experiments.filter((entry) => entry && typeof entry === 'object') : [];
+    const lifecycleTone = (value) => {
+      switch (String(value || 'proposed').trim()) {
+        case 'approved':
+        case 'promoted':
+          return 'good';
+        case 'in_progress':
+          return 'warn';
+        case 'failed':
+          return 'bad';
+        case 'salvaged':
+        case 'archived':
+          return 'neutral';
+        default:
+          return 'warn';
+      }
+    };
+    const lifecycleLabel = (value) => {
+      const normalized = String(value || 'proposed').trim();
+      return normalized
+        .split('_')
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    };
+    const renderRndPrimitiveCards = (primitives = [], primitiveEmptyState = 'No extracted primitives captured yet.') => {
+      const primitiveCards = Array.isArray(primitives) ? primitives.filter((entry) => entry && typeof entry === 'object') : [];
+      return primitiveCards.length
+        ? h('div', { className: 'desk-panel-list', 'data-qa': 'rnd-primitive-list' }, primitiveCards.map((primitive, index) => {
+            const constraints = Array.isArray(primitive.constraints) ? primitive.constraints.filter(Boolean) : [];
+            const confidenceValue = Number(primitive.confidence);
+            const confidenceLabel = Number.isFinite(confidenceValue) ? confidenceValue.toFixed(2) : 'n/a';
+            return h('div', {
+              key: primitive.primitive || `rnd-primitive-${index}`,
+              className: 'desk-panel-item utility-card',
+            },
+              h('div', { className: 'signal-summary' }, primitive.primitive || 'Untitled primitive'),
+              h('div', { className: 'signal-meta muted' }, primitive.description || 'No description provided.'),
+              h('div', { className: 'criteria-list desk-metric-list' },
+                h('div', { className: 'criteria-row' }, h('span', null, 'Data shape'), h('span', { className: 'muted' }, primitive.data_shape || 'n/a')),
+                h('div', { className: 'criteria-row' }, h('span', null, 'Confidence'), h('span', { className: 'muted' }, confidenceLabel)),
+                h('div', { className: 'criteria-row' }, h('span', null, 'Example'), h('span', { className: 'muted' }, primitive.example || 'n/a')),
+              ),
+              h('div', { className: 'inspector-label' }, 'Constraints'),
+              constraints.length
+                ? h('ul', { className: 'signal-list' }, constraints.map((constraint, constraintIndex) => h('li', { key: `rnd-primitive-${index}-constraint-${constraintIndex}` }, constraint)))
+                : h('div', { className: 'signal-empty muted' }, 'No constraints surfaced.'),
+            );
+          }))
+        : h('div', { className: 'signal-empty muted', 'data-qa': 'rnd-primitive-empty' }, primitiveEmptyState);
+    };
+    const renderPromotionReadiness = (readiness = null) => {
+      const state = String(readiness?.state || (readiness?.eligible ? 'eligible' : 'blocked')).trim();
+      const eligible = Boolean(readiness?.eligible);
+      const reasons = Array.isArray(readiness?.reasons) ? readiness.reasons.filter(Boolean) : [];
+      const primitiveCount = Number(readiness?.validPrimitiveCount ?? readiness?.primitiveCount ?? 0);
+      const integrationTarget = String(readiness?.integrationTarget || '').trim() || 'n/a';
+      const qaState = readiness?.basicQaPassed ? 'passed' : 'blocked';
+      const tone = state === 'eligible' || state === 'promoted' ? 'good' : state === 'archived' ? 'neutral' : 'warn';
+      const label = state === 'promoted'
+        ? 'Already promoted'
+        : state === 'archived'
+          ? 'Archived'
+          : eligible
+            ? 'Eligible for promotion'
+            : 'Not eligible for promotion';
+      return h('div', { className: 'criteria-list desk-metric-list', 'data-qa': 'rnd-promotion-readiness' },
+        h('div', { className: 'criteria-row' }, h('span', null, 'Promotion readiness'), h('span', { className: `qa-metric-pill tone-${tone}` }, label)),
+        h('div', { className: 'criteria-row' }, h('span', null, 'Basic QA'), h('span', { className: 'muted' }, qaState)),
+        h('div', { className: 'criteria-row' }, h('span', null, 'Valid primitives'), h('span', { className: 'muted' }, String(primitiveCount))),
+        h('div', { className: 'criteria-row' }, h('span', null, 'Downstream target'), h('span', { className: 'muted' }, integrationTarget)),
+        reasons.length
+          ? h('div', { className: 'signal-empty muted' }, reasons.join(' | '))
+          : h('div', { className: 'signal-empty muted' }, 'Ready for promotion bridge review.'),
+      );
+    };
+    return cards.length
+      ? h('div', { className: 'desk-panel-list', 'data-qa': 'rnd-experiment-list' }, cards.map((experiment, index) => {
+          const scope = Array.isArray(experiment.scope) ? experiment.scope.filter(Boolean) : [];
+          const whatWorked = Array.isArray(experiment.what_worked) ? experiment.what_worked.filter(Boolean) : [];
+          const whatFailed = Array.isArray(experiment.what_failed) ? experiment.what_failed.filter(Boolean) : [];
+          const reusableComponents = Array.isArray(experiment.reusable_components) ? experiment.reusable_components.filter(Boolean) : [];
+          const extractedPrimitives = Array.isArray(experiment.extracted_primitives) ? experiment.extracted_primitives.filter((entry) => entry && typeof entry === 'object') : [];
+          const readiness = experiment.promotion_readiness || null;
+          const status = String(experiment.lifecycle || experiment.status || experiment.state || 'proposed').trim() || 'proposed';
+          const integrationTarget = String(experiment.integration_target || experiment.integrationTarget || 'n/a').trim() || 'n/a';
+          return h('div', {
+            key: experiment.id || `rnd-experiment-${index}`,
+            className: 'desk-panel-item utility-card',
+          },
+            h('div', { className: 'inline review-header' },
+              h('div', null,
+                h('div', { className: 'signal-summary' }, experiment.id || 'Untitled experiment'),
+                h('div', { className: 'signal-meta muted' }, experiment.hypothesis || 'No hypothesis provided.'),
+              ),
+              h('span', { className: `qa-metric-pill tone-${lifecycleTone(status)}` }, lifecycleLabel(status)),
+            ),
+            h('div', { className: 'signal-meta muted' }, `Integration target: ${integrationTarget}`),
+            scope.length
+              ? h('div', { className: 'signal-meta muted' }, `Scope: ${scope.join(' | ')}`)
+              : h('div', { className: 'signal-empty muted' }, 'No scope surfaced.'),
+            h('div', { className: 'criteria-list desk-metric-list' },
+              h('div', { className: 'criteria-row' }, h('span', null, 'What worked'), h('span', { className: 'muted' }, whatWorked.length ? whatWorked.join(' | ') : 'none surfaced')),
+              h('div', { className: 'criteria-row' }, h('span', null, 'What failed'), h('span', { className: 'muted' }, whatFailed.length ? whatFailed.join(' | ') : 'none surfaced')),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Reusable'), h('span', { className: 'muted' }, reusableComponents.length ? reusableComponents.join(' | ') : 'none surfaced')),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Discard reason'), h('span', { className: 'muted' }, String(experiment.discard_reason || '').trim() || 'not provided')),
+            ),
+            renderPromotionReadiness(readiness),
+            h('div', { className: 'desk-panel-item', 'data-qa': 'rnd-primitive-section' },
+              h('div', { className: 'inspector-label' }, `Extracted primitives (${extractedPrimitives.length})`),
+              h('div', { className: 'signal-meta muted' }, 'Reusable ACE-compatible outputs only; prototypes stay inside the experiment record.'),
+              renderRndPrimitiveCards(extractedPrimitives),
+            ),
+          );
+        }))
+      : h('div', { className: 'signal-empty muted', 'data-qa': 'rnd-experiment-empty' }, emptyState);
+  };
+
   const renderDeskUtilityActions = (deskId, options = {}) => {
     if (!deskId) return null;
     const ctoActive = selectedAgentId === 'cto-architect' || deskPanelState.deskId === 'cto-architect';
     const actions = [];
     if (deskId === 'cto-architect') {
+      actions.push({ id: 'cto-chat', label: 'CTO Chat', onClick: () => openUtilityWindow('cto-chat') });
       actions.push({ id: 'environment', label: 'Environment', onClick: () => openUtilityWindow('environment') });
     }
     if (deskId === 'qa-lead') {
@@ -6092,6 +6383,103 @@ function syncRecentWorldChange(change = null) {
         )))
       : h('div', { className: 'signal-empty muted' }, emptyState)
   );
+
+  const renderCtoChatUtility = () => {
+    const ctoDesk = getDeskPayload('cto-architect');
+    const statusKey = normalizeCtoChatStatus(ctoChatStatus.status);
+    const statusMeta = CTO_CHAT_STATUS_META[statusKey] || CTO_CHAT_STATUS_META.idle;
+    const taSummary = taDepartmentPayload?.department?.summary || 'Talent Acquisition summary unavailable until the live roster payload refreshes.';
+    return h('div', { className: 'utility-window-stack cto-chat-window', 'data-qa': 'cto-chat-window' },
+      h('div', { className: 'utility-window-section utility-window-hero' },
+        h('div', { className: 'inspector-label' }, 'CTO / Architect'),
+        h('div', { className: 'signal-summary' }, 'Governance chat over the live local model'),
+        h('div', { className: 'cto-chat-status-row' },
+          h('span', { className: `agent-panel-status ${statusMeta.tone}` }, statusMeta.label),
+          h('span', { className: 'signal-meta muted' }, [
+            ctoChatStatus.backend || null,
+            ctoChatStatus.model || null,
+            ctoChatStatus.checkedAt ? `checked ${new Date(ctoChatStatus.checkedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : null,
+          ].filter(Boolean).join(' | ') || 'CTO backend status pending'),
+        ),
+        h('div', { className: 'signal-meta muted' }, ctoChatStatus.detail || 'The panel reports local-model health honestly.'),
+        h('div', { className: 'signal-meta muted' }, taSummary),
+      ),
+      ctoDesk?.truth ? h('div', { className: 'utility-window-section' },
+        h('div', { className: 'signal-summary' }, 'Current control-desk truth'),
+        renderTruthMetricRows(ctoDesk.truth),
+      ) : null,
+      h('div', { className: 'utility-window-section cto-chat-thread-section' },
+        h('div', { className: 'signal-summary' }, 'Conversation'),
+        h('div', { className: 'comment-thread cto-chat-thread' },
+          ctoChatHistory.length
+            ? ctoChatHistory.map((entry) => h('div', { key: entry.id, className: `comment-entry cto-chat-entry ${entry.role === 'user' ? 'is-user' : 'is-assistant'}` },
+                h('div', { className: 'comment-meta muted' }, entry.role === 'user'
+                  ? 'You'
+                  : `CTO | ${entry.replyKind || entry.status || 'advisory'}`),
+                entry.backend || entry.model || entry.runId || entry.detail
+                  ? h('div', { className: 'signal-meta muted' }, [
+                      entry.backend || null,
+                      entry.model || null,
+                      entry.runId || null,
+                      entry.detail || null,
+                    ].filter(Boolean).join(' | '))
+                  : null,
+                h('div', { className: 'cto-chat-text' }, entry.text),
+                entry.delegation?.deskLabel
+                  ? h('div', { className: 'signal-meta muted' }, `Delegation: ${entry.delegation.deskLabel}${entry.delegation.why ? ` | ${entry.delegation.why}` : ''}`)
+                  : null,
+                entry.action
+                  ? h('div', { className: 'cto-chat-action-block' },
+                      h('div', { className: 'signal-meta muted' }, `${entry.action.label}${entry.action.reason ? ` | ${entry.action.reason}` : ''}`),
+                      h('div', { className: 'button-row cto-chat-action-row' },
+                        entry.action.available && entry.action.requiresConfirmation && entry.action.status === 'pending'
+                          ? h('button', {
+                              className: 'mini',
+                              type: 'button',
+                              disabled: ctoChatBusy,
+                              onClick: () => sendCtoChatMessage({ text: 'Yes, do it.', confirmActionId: entry.action.id }),
+                            }, ctoChatBusy ? 'Submitting...' : 'Confirm Action')
+                          : h('button', {
+                              className: 'mini',
+                              type: 'button',
+                              disabled: true,
+                              title: entry.action.reason || 'This action is not available from CTO chat.',
+                            }, entry.action.status === 'executed' ? 'Executed' : (entry.action.available ? 'Pending' : 'Not Wired')),
+                        entry.action.routeStatus ? h('span', { className: 'signal-meta muted' }, entry.action.routeStatus) : null,
+                      ),
+                    )
+                  : null,
+                entry.execution?.summary
+                  ? h('div', { className: 'signal-meta muted' }, entry.execution.summary)
+                  : null,
+              ))
+            : h('div', { className: 'signal-empty muted' }, 'Ask the CTO about desk coverage, delegation, or whether a real hire path exists for a gap.'),
+        ),
+      ),
+      h('div', { className: 'utility-window-section cto-chat-compose' },
+        h('textarea', {
+          className: 'comment-box cto-chat-box',
+          value: ctoChatDraft,
+          placeholder: 'Ask the CTO about staffing, desk ownership, or delegation...',
+          onChange: (event) => setCtoChatDraft(event.target.value),
+        }),
+        h('div', { className: 'button-row cto-chat-compose-row' },
+          h('button', {
+            className: 'mini',
+            type: 'button',
+            onClick: () => refreshCtoChatStatus(),
+            disabled: ctoChatBusy,
+          }, 'Refresh Status'),
+          h('button', {
+            className: 'mini',
+            type: 'button',
+            disabled: ctoChatBusy || !ctoChatDraft.trim(),
+            onClick: () => sendCtoChatMessage({ text: ctoChatDraft }),
+          }, ctoChatBusy ? 'Asking...' : 'Send'),
+        ),
+      ),
+    );
+  };
 
   const renderStudioMapUtility = () => {
     const desks = studioDeskEntries || [];
@@ -6559,7 +6947,9 @@ function syncRecentWorldChange(change = null) {
           ? `${UTILITY_WINDOW_META[windowId].title} | ${getStudioDeskLabel(targetDeskId)}`
           : UTILITY_WINDOW_META[windowId].title;
         let content = h('div', { className: 'signal-empty muted' }, 'No utility content is available yet.');
-        if (windowId === 'environment') {
+        if (windowId === 'cto-chat') {
+          content = renderCtoChatUtility();
+        } else if (windowId === 'environment') {
           content = renderEnvironmentUtility();
         } else if (windowId === 'qa') {
           content = renderSpatialNotebookSectionWithBoundary(() => renderQAWorkbenchPanel(), {
@@ -6744,6 +7134,15 @@ function syncRecentWorldChange(change = null) {
           h('button', { className: 'mini', type: 'button', onClick: cancelDeskDrafts }, 'Leave Desk'),
         ),
         renderDeskUtilityActions(targetDeskId),
+        renderDeskPanelMetadata(panelData?.desk?.panel),
+        targetDeskId === 'rnd-lead'
+          ? h('div', { className: 'desk-panel-item desk-truth-summary desk-inspector-truth', 'data-qa': 'rnd-experiment-panel' },
+              h('div', { className: 'inspector-label' }, 'R&D Experiments'),
+              h('div', { className: 'signal-summary' }, 'Seeded experiment records'),
+              h('div', { className: 'signal-meta muted' }, 'Read-only cards sourced from canonical spatial storage.'),
+              renderRndExperimentCards(panelData?.experiments),
+            )
+          : null,
         panelData?.truth ? h('div', { className: 'desk-panel-item desk-truth-summary desk-inspector-truth', 'data-qa': 'desk-truth-summary' },
           h('div', { className: 'inspector-label' }, 'Desk Truth'),
           h('div', { className: 'signal-summary' }, `${targetDeskLabel} canonical truth`),
@@ -7182,69 +7581,14 @@ function syncRecentWorldChange(change = null) {
             : h('div', { className: 'signal-empty muted' }, 'no reports available'),
         ) : null,
         isCtoEdit ? h('div', { className: 'desk-chat-panel' },
-          h('div', { className: 'inspector-label' }, 'LLM chatbox'),
-          h('div', { className: 'comment-thread' },
-            deskChatLog.length
-              ? deskChatLog.map((entry) => h('div', { key: entry.id, className: 'comment-entry' },
-                  h('div', { className: 'comment-meta muted' }, `${entry.role}${entry.status ? ` | ${entry.status}` : ''}`),
-                  entry.backend || entry.model || entry.runId || entry.reason
-                    ? h('div', { className: 'signal-meta muted' }, [
-                        entry.backend || null,
-                        entry.model || null,
-                        entry.runId || null,
-                        entry.reason || null,
-                      ].filter(Boolean).join(' | '))
-                    : null,
-                  h('div', null, entry.text),
-                ))
-              : h('div', { className: 'muted' }, 'Ask about desk state and task coordination.'),
-          ),
-          h('textarea', {
-            className: 'comment-box',
-            value: deskChatDraft,
-            placeholder: 'Ask ACE about this desk...',
-            onChange: (event) => setDeskChatDraft(event.target.value),
-          }),
+          h('div', { className: 'signal-summary' }, 'Shared CTO utility'),
+          h('div', { className: 'signal-meta muted' }, 'The live CTO chat now lives in one shared floating panel so Studio and Canvas use the same grounded backend path.'),
           h('div', { className: 'button-row' },
             h('button', {
               className: 'mini',
               type: 'button',
-              disabled: deskChatBusy || !deskChatDraft.trim(),
-              onClick: async () => {
-                const prompt = deskChatDraft.trim();
-                if (!prompt) return;
-                setDeskChatBusy(true);
-                setDeskChatDraft('');
-                setDeskChatLog((current) => [{ id: `chat-${Date.now()}-u`, role: 'user', text: prompt, status: null }, ...current].slice(0, 10));
-                try {
-                  const response = await ace.askCtoDesk({ text: prompt, source: 'desk-properties-chat' });
-                  setDeskChatLog((current) => [{
-                    id: `chat-${Date.now()}-a`,
-                    role: 'ace',
-                    text: response?.reply_text || 'No reply text returned.',
-                    status: response?.status || 'live',
-                    backend: response?.backend || null,
-                    model: response?.model || null,
-                    runId: response?.runId || null,
-                    reason: null,
-                  }, ...current].slice(0, 10));
-                } catch (error) {
-                  const payload = error?.payload || {};
-                  setDeskChatLog((current) => [{
-                    id: `chat-${Date.now()}-e`,
-                    role: 'ace',
-                    text: payload?.error || error.message,
-                    status: payload?.status || 'model_error',
-                    backend: payload?.backend || null,
-                    model: payload?.model || null,
-                    runId: payload?.runId || null,
-                    reason: payload?.reason || null,
-                  }, ...current].slice(0, 10));
-                } finally {
-                  setDeskChatBusy(false);
-                }
-              },
-            }, deskChatBusy ? 'Asking...' : 'Send'),
+              onClick: () => openUtilityWindow('cto-chat'),
+            }, 'Open CTO Chat'),
           ),
         ) : null,
       ),
@@ -7275,6 +7619,12 @@ function syncRecentWorldChange(change = null) {
           ),
         ),
         h('div', { className: 'toolbar-toggle-row' },
+          h('button', {
+            className: `mini toolbar-section-toggle ${utilityWindows['cto-chat']?.open ? 'active' : ''}`,
+            type: 'button',
+            'data-qa': 'toolbar-cto-chat-button',
+            onClick: () => openUtilityWindow('cto-chat', { docked: false }),
+          }, utilityWindows['cto-chat']?.open ? 'CTO Chat Open' : 'CTO Chat'),
           h('button', {
             className: `mini toolbar-section-toggle ${toolbarSectionsOpen.view ? 'active' : ''}`,
             type: 'button',
@@ -7415,6 +7765,12 @@ function syncRecentWorldChange(change = null) {
         h('div', { className: 'canvas-control-dock toolbar-meta toolbar-meta-bottom' },
           h('div', { className: 'button-row' },
             h('button', { className: 'mini', onClick: newCanvas, type: 'button' }, 'New Canvas'),
+            h('button', {
+              className: `mini ${utilityWindows['cto-chat']?.open ? 'active' : ''}`,
+              onClick: () => openUtilityWindow('cto-chat', { docked: false }),
+              type: 'button',
+              'data-qa': 'canvas-cto-chat-button',
+            }, 'CTO Chat'),
             h('button', { className: `mini ${sketchMode ? 'active' : ''}`, onClick: () => setSketchMode((value) => !value), type: 'button', disabled: scene !== SCENES.CANVAS }, sketchMode ? 'Sketch On' : 'Sketch'),
             h('button', { className: 'mini', onClick: clearSketchLayer, type: 'button', disabled: scene !== SCENES.CANVAS }, 'Clear Marks'),
             h('button', { className: 'mini', onClick: () => setSimulating((value) => !value), type: 'button' }, simulating ? 'Stop Sim' : 'Simulate'),

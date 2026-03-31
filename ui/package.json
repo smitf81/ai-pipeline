@@ -9,7 +9,8 @@
     "test:studio-boot": "node tests/run-studio-boot-check.mjs",
     "test:watch": "node --watch tests/run-ui-tests.mjs",
     "start": "node server.js",
-    "mcp:ace": "node aceRuntimeMcp.js"
+    "mcp:ace": "node aceRuntimeMcp.js",
+    "cto:bakeoff": "node scripts/cto-model-bakeoff.js"
   },
   "keywords": [],
   "author": "",

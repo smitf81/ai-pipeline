@@ -1,6 +1,6 @@
 # UI Backend Drift
 
-Last updated: 2026-03-30
+Last updated: 2026-03-31
 
 This file is an operational drift note for ACE work.
 Treat it as audit context, not canonical truth.
@@ -25,6 +25,21 @@ Treat it as audit context, not canonical truth.
 
 ## 2. Frontend with weak or missing backend grounding
 
+### Generic agent-run helper points at a route the server does not define
+- Why it was flagged:
+  The browser connector exposes a generic `runAgentWorker()` helper, but the server only defines explicit per-agent run endpoints. The generic path has no matching backend route in `ui/server.js`.
+- Exact files involved:
+  `ui/public/spatial/aceConnector.js`
+  `ui/server.js`
+- Evidence:
+  `ui/public/spatial/aceConnector.js` posts to `/api/spatial/agents/${id}/run`.
+  `ui/server.js` defines `POST /api/spatial/agents/context-manager/run`, `POST /api/spatial/agents/planner/run`, and `POST /api/spatial/agents/executor/run`, but no `/api/spatial/agents/:id/run` handler.
+  The only direct executor worker call in `ui/public/spatial/spatialApp.js` goes through `ace.runAgentWorker('executor', ...)`, so the mismatch is on an active UI code path.
+- Confidence:
+  high
+- Recommended next validation step:
+  Either retarget the connector to the explicit server routes or add a generic backend run handler if that is the intended contract.
+
 ### Connector code/test generation methods are still local stubs
 - Why it was flagged:
   The connector API still exposes `regenerateCode` and `generateTests`, but both return hardcoded strings and do not call the backend.
@@ -41,14 +56,14 @@ Treat it as audit context, not canonical truth.
 
 ### Planner and context-manager run routes have no direct browser control surface
 - Why it was flagged:
-  The server exposes manual run endpoints for planner and context-manager, but the current browser shell does not surface buttons or connector calls for those routes.
+  The server exposes manual run endpoints for planner and context-manager, but the current browser shell does not surface direct buttons or connector calls for those specific routes.
 - Exact files involved:
   `ui/server.js`
   `ui/public/spatial/spatialApp.js`
   `ui/public/spatial/aceConnector.js`
 - Evidence:
   `ui/server.js` defines `POST /api/spatial/agents/context-manager/run` and `POST /api/spatial/agents/planner/run`.
-  Searches in `ui/public/spatial/spatialApp.js` and `ui/public/spatial/aceConnector.js` find no direct references to those routes.
+  `ui/public/spatial/spatialApp.js` only calls `ace.runAgentWorker('executor', ...)` for manual worker assessment; there are no direct calls to planner or context-manager run endpoints.
   The visible browser controls instead route through higher-level flows such as intent routing, QA, throughput debug, and team-board actions.
 - Confidence:
   medium
@@ -66,22 +81,23 @@ Treat it as audit context, not canonical truth.
   `ui/public/spatial/aceConnector.js`
 - Evidence:
   `ui/server.js` defines `POST /api/spatial/agents/executor/run`.
-  `ui/public/spatial/spatialApp.js` does not reference that route directly in the current shell logic.
-  The browser's visible executor path is mediated by the executive route and mutation apply response, not a standalone executor button.
+  `ui/public/spatial/spatialApp.js` calls `ace.runAgentWorker('executor', ...)` from `runExecutorWorkerAssessment()`, but the connector currently targets `/api/spatial/agents/${id}/run` instead of the server's explicit executor route.
+  The browser's visible executor path is otherwise mediated by the executive route and mutation apply response, not a clearly labeled standalone executor button.
 - Confidence:
-  medium
+  high
 - Recommended next validation step:
-  Confirm whether the manual executor route is intentionally backend-only orchestration or whether a direct Studio control should exist.
+  Decide whether the executor assessment should call the explicit executor route or whether that assessment path should be hidden entirely.
 
 ## 4. Likely placeholders or heuristic bridges
 
-### None beyond the local generation stubs above
+### None beyond the local generation stubs and route mismatch above
 - Why it matters:
   No additional placeholder bridge stood out as a confirmed mismatch in this pass.
 - Exact files involved:
   `ui/public/spatial/aceConnector.js`
+  `ui/server.js`
 - Evidence:
-  The mutation path is backend-grounded, and the remaining gap is limited to the local generation helpers.
+  The mutation path is backend-grounded, while the remaining gaps are limited to the generic worker-run helper, the local generation helpers, and the hidden manual planner/context-manager routes.
 - Confidence:
   high
 - Recommended next validation step:
@@ -89,14 +105,14 @@ Treat it as audit context, not canonical truth.
 
 ## 5. High-risk drift areas
 
-### Manual agent run capabilities are split across backend routes and indirect UI flows
+### Planner and context-manager run capabilities are backend-only primitives
 - Why it was flagged:
-  Separate backend run endpoints exist for planner, context-manager, and executor, but the UI mostly surfaces composite flows rather than the underlying routes.
+  Separate backend run endpoints exist for planner and context-manager, but the UI mostly surfaces composite flows rather than those underlying routes.
 - Exact files involved:
   `ui/server.js`
   `ui/public/spatial/spatialApp.js`
 - Evidence:
-  The current shell exposes intent routing, QA, throughput, and team-board actions, but the per-agent `/run` routes are not exposed as first-class browser controls.
+  The current shell exposes intent routing, QA, throughput, and team-board actions, but the per-agent planner/context-manager `/run` routes are not exposed as first-class browser controls.
 - Confidence:
   medium
 - Recommended next validation step:
@@ -112,7 +128,7 @@ Treat it as audit context, not canonical truth.
   `ui/public/spatial/aceConnector.js`
   `ui/server.js`
 - Evidence:
-  The strongest remaining mismatch is the stubbed generation helpers and the hidden per-agent run routes.
+  The strongest remaining mismatch is the generic worker-run route mismatch, the stubbed generation helpers, and the hidden per-agent run routes.
 - Confidence:
   medium
 - Recommended next validation step:

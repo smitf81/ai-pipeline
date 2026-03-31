@@ -1,4 +1,5 @@
 import { STUDIO_DEPARTMENT_TEMPLATES, STUDIO_DESK_TEMPLATES } from './studioTemplates.js';
+import { getRoleById } from './roleTaxonomy.mjs';
 
 const ENTITY_TYPES = Object.freeze(['department', 'desk']);
 const STAFFING_HEALTH = Object.freeze(['healthy', 'degraded', 'blocked']);
@@ -114,6 +115,17 @@ const DEPARTMENT_STAFFING_RULES = Object.freeze({
     canExist: { minimumStaffing: 1, requiredRoles: ['executor'], optionalRoles: ['memory-archivist'] },
     canOperate: { minimumStaffing: 2, requiredRoles: ['executor'], optionalRoles: ['memory-archivist', 'planner'], allowMissingLead: false },
   }),
+  research: createStaffingRule({
+    entityType: 'department',
+    entityId: 'research',
+    label: buildStudioLabel('department', 'research'),
+    requiredRoles: ['prototype-engineer', 'systems-synthesiser', 'validation-analyst'],
+    optionalRoles: [],
+    minimumStaffing: 1,
+    leadRequirement: { roleId: 'rnd-lead', minimumCount: 1 },
+    canExist: { minimumStaffing: 1, requiredRoles: [], optionalRoles: [] },
+    canOperate: { minimumStaffing: 4, requiredRoles: ['prototype-engineer', 'systems-synthesiser', 'validation-analyst'], optionalRoles: [], allowMissingLead: false },
+  }),
   'talent-acquisition': createStaffingRule({
     entityType: 'department',
     entityId: 'talent-acquisition',
@@ -171,6 +183,17 @@ const DESK_STAFFING_RULES = Object.freeze({
     leadRequirement: { roleId: 'executor', minimumCount: 1 },
     canExist: { minimumStaffing: 0, requiredRoles: [], optionalRoles: ['executor'] },
     canOperate: { minimumStaffing: 1, requiredRoles: ['executor'], optionalRoles: ['planner'], allowMissingLead: false },
+  }),
+  'rnd-lead': createStaffingRule({
+    entityType: 'desk',
+    entityId: 'rnd-lead',
+    label: buildStudioLabel('desk', 'rnd-lead'),
+    requiredRoles: ['rnd-lead'],
+    optionalRoles: [],
+    minimumStaffing: 1,
+    leadRequirement: { roleId: 'rnd-lead', minimumCount: 1 },
+    canExist: { minimumStaffing: 0, requiredRoles: [], optionalRoles: ['rnd-lead'] },
+    canOperate: { minimumStaffing: 1, requiredRoles: ['rnd-lead'], optionalRoles: [], allowMissingLead: false },
   }),
   'memory-archivist': createStaffingRule({
     entityType: 'desk',
@@ -250,7 +273,7 @@ function normalizeAssignments(assignments = []) {
 }
 
 function buildRoleLabel(roleId = '') {
-  return buildStudioLabel('desk', roleId) || normalizeText(roleId);
+  return getRoleById(roleId)?.label || buildStudioLabel('desk', roleId) || normalizeText(roleId);
 }
 
 function countAssignments(assignments = []) {

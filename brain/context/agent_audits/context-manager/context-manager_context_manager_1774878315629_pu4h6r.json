@@ -1,0 +1,22 @@
+{
+  "version": "ace/agent-audit.v0",
+  "audit_id": "context-manager_context_manager_1774878315629_pu4h6r",
+  "created_at": "2026-03-30T13:45:37.437Z",
+  "updated_at": "2026-03-30T13:45:37.437Z",
+  "agent_id": "context-manager",
+  "agent_version": "ace/agent-attribution.v0",
+  "task_id": null,
+  "stage": "context-manager",
+  "artifact_refs": [
+    "data/spatial/agent-runs/context-manager/context_manager_1774878315629_pu4h6r.json"
+  ],
+  "outcome": "completed",
+  "pass_fail": "pass",
+  "scope_discipline_score": 100,
+  "architecture_respect_score": 96,
+  "output_clarity_score": 100,
+  "recovery_burden_score": 100,
+  "validation_rigour_score": 100,
+  "review_summary": "Strong context-manager run: clean pass, completed cleanly.",
+  "recommended_followup": "No immediate follow-up required."
+}

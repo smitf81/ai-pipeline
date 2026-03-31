@@ -1,0 +1,1266 @@
+{
+  "id": "context_manager_1774879394936_l9zlee",
+  "workerId": "context-manager",
+  "agent_id": "context-manager",
+  "agent_version": "ace/agent-attribution.v0",
+  "attribution": {
+    "agent_id": "context-manager",
+    "agent_version": "ace/agent-attribution.v0"
+  },
+  "createdAt": "2026-03-30T14:03:14.937Z",
+  "startedAt": "2026-03-30T14:03:14.937Z",
+  "completedAt": "2026-03-30T14:03:35.326Z",
+  "durationMs": 20389,
+  "mode": "manual",
+  "backend": "ollama",
+  "model": "mistral:latest",
+  "outcome": "completed",
+  "status": "completed",
+  "summary": "Migrate to the canonical anchor-based ACE system",
+  "reason": null,
+  "sourceNodeId": null,
+  "sourceText": "are we actually live??",
+  "plannerFeedback": null,
+  "packet": {
+    "summary": "Migrate to the canonical anchor-based ACE system",
+    "statement": "The current context requires updating the ACE system to use the canonical anchor-based approach for manager, context, and intent flow.",
+    "goal": "The current context requires updating the ACE system to use the canonical anchor-based approach for manager, context, and intent flow.",
+    "requestedOutcomes": [
+      "Update the ACE system to use the shared anchor resolver"
+    ],
+    "tasks": [
+      "Update the ACE system to use the shared anchor resolver"
+    ],
+    "targets": [],
+    "constraints": [
+      "Ensure legacy compatibility during migration"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "signals": {},
+    "clarifications": [
+      "What steps are required for the migration?",
+      "How will the system handle archived content during this transition?"
+    ],
+    "focusTerms": [
+      "ACE",
+      "anchor",
+      "migration"
+    ],
+    "suggestedAnchorRefs": [
+      "brain/emergence/project_brain.md"
+    ]
+  },
+  "extractedIntent": {
+    "id": "extracted_intent_context_manager_1774879394936_l9zlee",
+    "sourceNodeId": null,
+    "sourceText": "are we actually live??",
+    "summary": "Migrate the ACE system to use the canonical anchor-based approach",
+    "explicitClaims": [
+      "The ACE system needs to be updated to use a shared anchor resolver"
+    ],
+    "inferredClaims": [
+      "There is a need for migration planning and potential handling of archived content during transition"
+    ],
+    "candidateNodes": [
+      {
+        "id": "update_ace_system",
+        "label": "Update ACE System",
+        "kind": "module",
+        "basis": "explicit",
+        "rationale": "To use the shared anchor resolver as per the explicit claim",
+        "confidence": 1
+      },
+      {
+        "id": "migration_planning",
+        "label": "Migration Planning",
+        "kind": "module",
+        "basis": "inferred",
+        "rationale": "Since the migration process needs to be planned based on the goal and requested outcomes",
+        "confidence": 0.75
+      },
+      {
+        "id": "archived_content_handling",
+        "label": "Archived Content Handling",
+        "kind": "module",
+        "basis": "inferred",
+        "rationale": "To ensure a smooth transition of the system, archived content might need to be handled",
+        "confidence": 0.65
+      }
+    ],
+    "candidateEdges": [
+      {
+        "sourceCandidateId": "update_ace_system",
+        "targetCandidateId": "migration_planning",
+        "kind": "requires",
+        "basis": "inferred",
+        "rationale": "The migration planning is necessary to ensure the successful update of the ACE system"
+      },
+      {
+        "sourceCandidateId": "update_ace_system",
+        "targetCandidateId": "archived_content_handling",
+        "kind": "may_affect",
+        "basis": "inferred",
+        "rationale": "Handling archived content might be necessary during the migration process"
+      }
+    ],
+    "gaps": [
+      "The urgency and specific steps for the migration"
+    ],
+    "provenance": {
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774879394936_l9zlee",
+      "usedFallback": false,
+      "inferenceMode": "small-inference"
+    },
+    "audit": {
+      "confidence": 0.66,
+      "criteria": [
+        {
+          "id": "project-alignment",
+          "label": "Project alignment",
+          "score": 1,
+          "reason": "Matched project terms: canonical, ace, system, context, intent"
+        },
+        {
+          "id": "actionability",
+          "label": "Actionability",
+          "score": 0.5,
+          "reason": "Detected 1 implementation/planning verb signals."
+        },
+        {
+          "id": "architecture-fit",
+          "label": "Architecture fit",
+          "score": 0.7777777777777778,
+          "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+        },
+        {
+          "id": "constraint-coverage",
+          "label": "Constraint coverage",
+          "score": 0,
+          "reason": "No clear constraints or review gates were stated."
+        },
+        {
+          "id": "clarity",
+          "label": "Clarity",
+          "score": 1,
+          "reason": "Input includes enough detail to classify intent reliably."
+        }
+      ],
+      "classification": {
+        "role": "constraint",
+        "labels": [
+          "context",
+          "ux",
+          "governance"
+        ]
+      },
+      "matchedTerms": [
+        "canonical",
+        "ace",
+        "system",
+        "context",
+        "intent",
+        "anchor",
+        "legacy",
+        "compatibility"
+      ]
+    }
+  },
+  "report": {
+    "agent": {
+      "id": "context-manager",
+      "name": "Context Manager",
+      "criteriaVersion": "ace-intent-v2",
+      "legacyCriteriaVersion": "ace-intent-v1",
+      "remit": "Judge incoming notes against ACE project context and surface confidence-scored intent for the frontend."
+    },
+    "summary": "Migrate to the canonical anchor-based ACE system",
+    "confidence": 0.66,
+    "legacyConfidence": 0.77,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: canonical, ace, system, context, intent"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.5,
+        "reason": "Detected 1 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.7777777777777778,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "legacyCriteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: canonical, ace, system, context, intent"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.8333333333333334,
+        "reason": "Detected 1 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 1,
+        "reason": "References ACE system structure, agents, or implementation surfaces."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.66,
+      "executionReadiness": 0.63,
+      "plannerUsefulness": 0.94,
+      "deployReadiness": 0.11
+    },
+    "truth": {
+      "rawSource": "are we actually live??",
+      "rawInput": "are we actually live??",
+      "statement": "Migrate to the canonical anchor-based ACE system",
+      "goal": "Migrate to the canonical anchor-based ACE system",
+      "intentType": "Constraint / guardrail request",
+      "requestType": "constraint_request",
+      "requestedOutcomes": [
+        "Update the ACE system to use the shared anchor resolver"
+      ],
+      "tasks": [
+        "Update the ACE system to use the shared anchor resolver"
+      ],
+      "targets": [
+        "canonical",
+        "ace",
+        "system",
+        "context",
+        "intent",
+        "anchor",
+        "legacy",
+        "compatibility"
+      ],
+      "constraints": [
+        "Actionability: Detected 1 implementation/planning verb signals.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "urgency": "normal",
+      "signals": {
+        "actionSignals": 0,
+        "constraintSignals": 0,
+        "architectureSignals": 0,
+        "executionSignals": 0,
+        "featureSignals": 0,
+        "matchedProjectTerms": 8,
+        "anchorRefs": 7,
+        "lowConfidenceCriteria": 2,
+        "plannerUsefulness": 0.94,
+        "executionReadiness": 0.63,
+        "deployReadiness": 0.11,
+        "labels": [
+          "context",
+          "ux",
+          "governance"
+        ],
+        "role": "constraint",
+        "requestedOutcomeCount": 1
+      },
+      "unresolved": [
+        "Actionability: Detected 1 implementation/planning verb signals.",
+        "Constraint coverage: No clear constraints or review gates were stated."
+      ],
+      "evidence": [
+        "Project alignment: Matched project terms: canonical, ace, system, context, intent",
+        "Clarity: Input includes enough detail to classify intent reliably.",
+        "Architecture fit: References ACE desks, agents, architecture surfaces, or orchestration flow."
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/slices.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md"
+      ],
+      "plannerBrief": "Planner should treat this as: Update the ACE system to use the shared anchor resolver",
+      "readiness": {
+        "intentConfidence": 0.66,
+        "plannerUsefulness": 0.94,
+        "executionReadiness": 0.63,
+        "deployReadiness": 0.11
+      }
+    },
+    "goal": "The current context requires updating the ACE system to use the canonical anchor-based approach for manager, context, and intent flow.",
+    "targets": [
+      "canonical",
+      "ace",
+      "system",
+      "context",
+      "intent",
+      "anchor",
+      "legacy",
+      "compatibility"
+    ],
+    "constraints": [
+      "Ensure legacy compatibility during migration"
+    ],
+    "urgency": "normal",
+    "requestType": "context_request",
+    "requestedOutcomes": [
+      "Update the ACE system to use the shared anchor resolver"
+    ],
+    "tasks": [
+      "Update the ACE system to use the shared anchor resolver"
+    ],
+    "signals": {},
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/slices.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md"
+    ],
+    "provenance": {
+      "anchors": [
+        {
+          "anchorRef": "brain/emergence/project_brain.md",
+          "sourceRef": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "weight": 3,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "ace",
+            "canonical",
+            "context",
+            "current",
+            "intent",
+            "legacy",
+            "manager",
+            "system"
+          ],
+          "score": 33
+        },
+        {
+          "anchorRef": "brain/emergence/decisions.md",
+          "sourceRef": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "legacy",
+            "ace",
+            "canonical",
+            "compatibility",
+            "migration",
+            "system"
+          ],
+          "score": 19
+        },
+        {
+          "anchorRef": "brain/emergence/roadmap.md",
+          "sourceRef": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "weight": 5,
+          "intentWeight": 4,
+          "matchedTerms": [
+            "anchor",
+            "compatibility",
+            "flow",
+            "ace"
+          ],
+          "score": 17
+        },
+        {
+          "anchorRef": "brain/emergence/slices.md",
+          "sourceRef": "brain/emergence/slices.md",
+          "source": "canonical",
+          "weight": 6,
+          "intentWeight": 5,
+          "matchedTerms": [
+            "update",
+            "anchor",
+            "canonical"
+          ],
+          "score": 16
+        },
+        {
+          "anchorRef": "brain/emergence/changelog.md",
+          "sourceRef": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "weight": 2,
+          "intentWeight": 3,
+          "matchedTerms": [
+            "legacy",
+            "anchor",
+            "canonical",
+            "intent"
+          ],
+          "score": 13
+        },
+        {
+          "anchorRef": "brain/emergence/plan.md",
+          "sourceRef": "brain/emergence/plan.md",
+          "source": "canonical",
+          "weight": 1,
+          "intentWeight": 1,
+          "matchedTerms": [
+            "anchor",
+            "canonical",
+            "legacy",
+            "compatibility",
+            "manager",
+            "archived",
+            "context",
+            "intent"
+          ],
+          "score": 9
+        },
+        {
+          "anchorRef": "brain/emergence/tasks.md",
+          "sourceRef": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "weight": 1,
+          "intentWeight": 1,
+          "matchedTerms": [
+            "compatibility",
+            "use"
+          ],
+          "score": 3
+        }
+      ],
+      "managerSummary": {
+        "current_focus": "Make repo anchors canonical for manager, context, and intent flow.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: review",
+          "State: Approval required",
+          "Phase: active"
+        ],
+        "next_actions": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: review",
+          "State: Approval required",
+          "Phase: active",
+          "Owner: planner",
+          "Assignee: executor",
+          "Anchor refs: brain/emergence/decisions.md, brain/emergence/project_brain.md, brain/emergence/roadmap.md, brain/emergence/slices.md, brain/emergence/changelog.md, brain/emergence/plan.md, brain/emergence/tasks.md"
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      }
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "ux",
+        "governance"
+      ]
+    },
+    "metrics": {
+      "tokenCount": 48,
+      "sentenceCount": 14,
+      "matchedProjectTerms": [
+        "canonical",
+        "ace",
+        "system",
+        "context",
+        "intent",
+        "anchor",
+        "legacy",
+        "compatibility"
+      ],
+      "actionSignals": 1,
+      "featureRequestSignals": 0,
+      "architectureSignals": 4,
+      "constraintSignals": 0,
+      "executionSignals": 0
+    },
+    "projectContext": {
+      "domainKey": "emergence",
+      "brainRoot": "brain/emergence",
+      "currentFocus": "Make repo anchors canonical for manager, context, and intent flow.",
+      "activeMilestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+      "blockers": [],
+      "matchedTerms": [
+        "canonical",
+        "ace",
+        "system",
+        "context",
+        "intent",
+        "anchor",
+        "legacy",
+        "compatibility"
+      ],
+      "referenceKeywords": [
+        "and",
+        "ace",
+        "for",
+        "the",
+        "emergence",
+        "brain",
+        "active",
+        "anchor"
+      ],
+      "sourcesRead": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/slices.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/state.json"
+      ],
+      "anchorRefs": [
+        "brain/emergence/project_brain.md",
+        "brain/emergence/decisions.md",
+        "brain/emergence/roadmap.md",
+        "brain/emergence/slices.md",
+        "brain/emergence/changelog.md",
+        "brain/emergence/plan.md",
+        "brain/emergence/tasks.md"
+      ],
+      "graphMutationsPreview": [],
+      "graphMutationApplyResult": {
+        "graphBundle": {
+          "system": {
+            "nodes": [
+              {
+                "id": "dragon_perch_intent_01",
+                "type": "task",
+                "content": "Dragon perch intent",
+                "position": {
+                  "x": 1040,
+                  "y": 320
+                },
+                "connections": [],
+                "metadata": {
+                  "role": "task",
+                  "graphLayer": "system",
+                  "labels": [
+                    "proposal",
+                    "sketch-ready"
+                  ],
+                  "proposalTarget": "world-structure"
+                },
+                "representations": [
+                  {
+                    "rep_id": "dragon_perch_intent_01_sketch_icon",
+                    "kind": "icon",
+                    "view_tags": [
+                      "sketch"
+                    ],
+                    "lod_min": 0,
+                    "lod_max": 0.8,
+                    "payload": {
+                      "label": "Perch"
+                    },
+                    "derived_from": "dragon_perch_intent_01"
+                  },
+                  {
+                    "rep_id": "dragon_perch_intent_01_sketch_ghost",
+                    "kind": "ghost",
+                    "view_tags": [
+                      "sketch"
+                    ],
+                    "lod_min": 0.25,
+                    "lod_max": 0.6,
+                    "payload": {
+                      "summary": "Ghost perch scaffold"
+                    },
+                    "derived_from": "dragon_perch_intent_01"
+                  },
+                  {
+                    "rep_id": "dragon_perch_intent_01_world_mesh_stub",
+                    "kind": "mesh_stub",
+                    "view_tags": [
+                      "world"
+                    ],
+                    "lod_min": 0.8,
+                    "lod_max": 1.5,
+                    "payload": {
+                      "mesh": "dragon-perch-stub"
+                    },
+                    "derived_from": "dragon_perch_intent_01"
+                  }
+                ]
+              }
+            ],
+            "edges": []
+          },
+          "world": {
+            "nodes": [],
+            "edges": []
+          }
+        },
+        "applied": [],
+        "rejected": []
+      },
+      "truthSources": [
+        {
+          "id": "project_brain",
+          "relativePath": "brain/emergence/project_brain.md",
+          "sourceRelativePath": "brain/emergence/project_brain.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/project_brain.md",
+          "legacyRelativePaths": [
+            "projects/emergence/project_brain.md"
+          ]
+        },
+        {
+          "id": "roadmap",
+          "relativePath": "brain/emergence/roadmap.md",
+          "sourceRelativePath": "brain/emergence/roadmap.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/roadmap.md",
+          "legacyRelativePaths": [
+            "projects/emergence/roadmap.md"
+          ]
+        },
+        {
+          "id": "slices",
+          "relativePath": "brain/emergence/slices.md",
+          "sourceRelativePath": "brain/emergence/slices.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/slices.md",
+          "legacyRelativePaths": [
+            "projects/emergence/slices.md"
+          ]
+        },
+        {
+          "id": "plan",
+          "relativePath": "brain/emergence/plan.md",
+          "sourceRelativePath": "brain/emergence/plan.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/plan.md",
+          "legacyRelativePaths": [
+            "projects/emergence/plan.md"
+          ]
+        },
+        {
+          "id": "tasks",
+          "relativePath": "brain/emergence/tasks.md",
+          "sourceRelativePath": "brain/emergence/tasks.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": false,
+          "canonicalRelativePath": "brain/emergence/tasks.md",
+          "legacyRelativePaths": [
+            "projects/emergence/tasks.md"
+          ]
+        },
+        {
+          "id": "decisions",
+          "relativePath": "brain/emergence/decisions.md",
+          "sourceRelativePath": "brain/emergence/decisions.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/decisions.md",
+          "legacyRelativePaths": [
+            "projects/emergence/decisions.md"
+          ]
+        },
+        {
+          "id": "changelog",
+          "relativePath": "brain/emergence/changelog.md",
+          "sourceRelativePath": "brain/emergence/changelog.md",
+          "source": "canonical",
+          "authority": "canonical-anchor",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/changelog.md",
+          "legacyRelativePaths": [
+            "projects/emergence/changelog.md"
+          ]
+        },
+        {
+          "id": "state",
+          "relativePath": "brain/emergence/state.json",
+          "sourceRelativePath": "brain/emergence/state.json",
+          "source": "canonical",
+          "authority": "derived-state",
+          "exists": true,
+          "required": true,
+          "canonicalRelativePath": "brain/emergence/state.json",
+          "legacyRelativePaths": [
+            "projects/emergence/state.json"
+          ]
+        }
+      ],
+      "drift": [],
+      "managerSummary": {
+        "current_focus": "Make repo anchors canonical for manager, context, and intent flow.",
+        "active_milestone": "Keep `brain/emergence/` canonical while compatibility reads remain available from `projects/emergence/`.",
+        "active_plan_slice": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: review",
+          "State: Approval required",
+          "Phase: active"
+        ],
+        "next_actions": [
+          "Summary: Update or check the status of RGS nodes",
+          "Status: review",
+          "State: Approval required",
+          "Phase: active",
+          "Owner: planner",
+          "Assignee: executor",
+          "Anchor refs: brain/emergence/decisions.md, brain/emergence/project_brain.md, brain/emergence/roadmap.md, brain/emergence/slices.md, brain/emergence/changelog.md, brain/emergence/plan.md, brain/emergence/tasks.md"
+        ],
+        "blockers": [],
+        "drift_flags": [],
+        "last_manager_sync": "2026-03-15T12:00:00Z"
+      },
+      "graphBundle": {
+        "system": {
+          "nodes": [
+            {
+              "id": "dragon_perch_intent_01",
+              "type": "task",
+              "content": "Dragon perch intent",
+              "position": {
+                "x": 1040,
+                "y": 320
+              },
+              "connections": [],
+              "metadata": {
+                "role": "task",
+                "graphLayer": "system",
+                "labels": [
+                  "proposal",
+                  "sketch-ready"
+                ],
+                "proposalTarget": "world-structure"
+              },
+              "representations": [
+                {
+                  "rep_id": "dragon_perch_intent_01_sketch_icon",
+                  "kind": "icon",
+                  "view_tags": [
+                    "sketch"
+                  ],
+                  "lod_min": 0,
+                  "lod_max": 0.8,
+                  "payload": {
+                    "label": "Perch"
+                  },
+                  "derived_from": "dragon_perch_intent_01"
+                },
+                {
+                  "rep_id": "dragon_perch_intent_01_sketch_ghost",
+                  "kind": "ghost",
+                  "view_tags": [
+                    "sketch"
+                  ],
+                  "lod_min": 0.25,
+                  "lod_max": 0.6,
+                  "payload": {
+                    "summary": "Ghost perch scaffold"
+                  },
+                  "derived_from": "dragon_perch_intent_01"
+                },
+                {
+                  "rep_id": "dragon_perch_intent_01_world_mesh_stub",
+                  "kind": "mesh_stub",
+                  "view_tags": [
+                    "world"
+                  ],
+                  "lod_min": 0.8,
+                  "lod_max": 1.5,
+                  "payload": {
+                    "mesh": "dragon-perch-stub"
+                  },
+                  "derived_from": "dragon_perch_intent_01"
+                }
+              ]
+            }
+          ],
+          "edges": []
+        },
+        "world": {
+          "nodes": [],
+          "edges": []
+        }
+      },
+      "plannerFeedback": null
+    },
+    "judgedAt": "2026-03-30T14:03:22.453Z",
+    "nodeId": null,
+    "source": "studio-cto-utility",
+    "createdAt": "2026-03-30T14:03:35.325Z",
+    "contextPacket": {
+      "summary": "Migrate to the canonical anchor-based ACE system",
+      "statement": "The current context requires updating the ACE system to use the canonical anchor-based approach for manager, context, and intent flow.",
+      "goal": "The current context requires updating the ACE system to use the canonical anchor-based approach for manager, context, and intent flow.",
+      "requestedOutcomes": [
+        "Update the ACE system to use the shared anchor resolver"
+      ],
+      "tasks": [
+        "Update the ACE system to use the shared anchor resolver"
+      ],
+      "targets": [],
+      "constraints": [
+        "Ensure legacy compatibility during migration"
+      ],
+      "urgency": "normal",
+      "requestType": "context_request",
+      "signals": {},
+      "clarifications": [
+        "What steps are required for the migration?",
+        "How will the system handle archived content during this transition?"
+      ],
+      "focusTerms": [
+        "ACE",
+        "anchor",
+        "migration"
+      ],
+      "suggestedAnchorRefs": [
+        "brain/emergence/project_brain.md"
+      ],
+      "graphBundle": {
+        "system": {
+          "nodes": [
+            {
+              "id": "dragon_perch_intent_01",
+              "type": "task",
+              "content": "Dragon perch intent",
+              "position": {
+                "x": 1040,
+                "y": 320
+              },
+              "connections": [],
+              "metadata": {
+                "role": "task",
+                "graphLayer": "system",
+                "labels": [
+                  "proposal",
+                  "sketch-ready"
+                ],
+                "proposalTarget": "world-structure"
+              },
+              "representations": [
+                {
+                  "rep_id": "dragon_perch_intent_01_sketch_icon",
+                  "kind": "icon",
+                  "view_tags": [
+                    "sketch"
+                  ],
+                  "lod_min": 0,
+                  "lod_max": 0.8,
+                  "payload": {
+                    "label": "Perch"
+                  },
+                  "derived_from": "dragon_perch_intent_01"
+                },
+                {
+                  "rep_id": "dragon_perch_intent_01_sketch_ghost",
+                  "kind": "ghost",
+                  "view_tags": [
+                    "sketch"
+                  ],
+                  "lod_min": 0.25,
+                  "lod_max": 0.6,
+                  "payload": {
+                    "summary": "Ghost perch scaffold"
+                  },
+                  "derived_from": "dragon_perch_intent_01"
+                },
+                {
+                  "rep_id": "dragon_perch_intent_01_world_mesh_stub",
+                  "kind": "mesh_stub",
+                  "view_tags": [
+                    "world"
+                  ],
+                  "lod_min": 0.8,
+                  "lod_max": 1.5,
+                  "payload": {
+                    "mesh": "dragon-perch-stub"
+                  },
+                  "derived_from": "dragon_perch_intent_01"
+                }
+              ]
+            }
+          ],
+          "edges": []
+        },
+        "world": {
+          "nodes": [],
+          "edges": []
+        }
+      },
+      "plannerFeedbackAction": null
+    },
+    "extractedIntent": {
+      "id": "extracted_intent_context_manager_1774879394936_l9zlee",
+      "sourceNodeId": null,
+      "sourceText": "are we actually live??",
+      "summary": "Migrate the ACE system to use the canonical anchor-based approach",
+      "explicitClaims": [
+        "The ACE system needs to be updated to use a shared anchor resolver"
+      ],
+      "inferredClaims": [
+        "There is a need for migration planning and potential handling of archived content during transition"
+      ],
+      "candidateNodes": [
+        {
+          "id": "update_ace_system",
+          "label": "Update ACE System",
+          "kind": "module",
+          "basis": "explicit",
+          "rationale": "To use the shared anchor resolver as per the explicit claim",
+          "confidence": 1
+        },
+        {
+          "id": "migration_planning",
+          "label": "Migration Planning",
+          "kind": "module",
+          "basis": "inferred",
+          "rationale": "Since the migration process needs to be planned based on the goal and requested outcomes",
+          "confidence": 0.75
+        },
+        {
+          "id": "archived_content_handling",
+          "label": "Archived Content Handling",
+          "kind": "module",
+          "basis": "inferred",
+          "rationale": "To ensure a smooth transition of the system, archived content might need to be handled",
+          "confidence": 0.65
+        }
+      ],
+      "candidateEdges": [
+        {
+          "sourceCandidateId": "update_ace_system",
+          "targetCandidateId": "migration_planning",
+          "kind": "requires",
+          "basis": "inferred",
+          "rationale": "The migration planning is necessary to ensure the successful update of the ACE system"
+        },
+        {
+          "sourceCandidateId": "update_ace_system",
+          "targetCandidateId": "archived_content_handling",
+          "kind": "may_affect",
+          "basis": "inferred",
+          "rationale": "Handling archived content might be necessary during the migration process"
+        }
+      ],
+      "gaps": [
+        "The urgency and specific steps for the migration"
+      ],
+      "provenance": {
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "runId": "context_manager_1774879394936_l9zlee",
+        "usedFallback": false,
+        "inferenceMode": "small-inference"
+      },
+      "audit": {
+        "confidence": 0.66,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: canonical, ace, system, context, intent"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.5,
+            "reason": "Detected 1 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.7777777777777778,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "ux",
+            "governance"
+          ]
+        },
+        "matchedTerms": [
+          "canonical",
+          "ace",
+          "system",
+          "context",
+          "intent",
+          "anchor",
+          "legacy",
+          "compatibility"
+        ]
+      }
+    },
+    "worker": {
+      "id": "context-manager",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "runId": "context_manager_1774879394936_l9zlee",
+      "usedFallback": false
+    }
+  },
+  "handoffId": "handoff_1774879415326_z4d5zt",
+  "handoff": {
+    "id": "handoff_1774879415326_z4d5zt",
+    "sourceAgentId": "context-manager",
+    "targetAgentId": "planner",
+    "createdAt": "2026-03-30T14:03:35.325Z",
+    "sourceNodeId": null,
+    "summary": "Migrate to the canonical anchor-based ACE system",
+    "goal": "The current context requires updating the ACE system to use the canonical anchor-based approach for manager, context, and intent flow.",
+    "problemStatement": "Goal: Migrate to the canonical anchor-based ACE system\nRequested outcomes: Update the ACE system to use the shared anchor resolver.\nWhy ACE believes this: Project alignment 100%, Actionability 50%, Architecture fit 78%.\nConstraints and review signals: Ensure legacy compatibility during migration | Actionability: Detected 1 implementation/planning verb signals. | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: What steps are required for the migration? How will the system handle archived content during this transition?",
+    "anchorRefs": [
+      "brain/emergence/project_brain.md",
+      "brain/emergence/decisions.md",
+      "brain/emergence/roadmap.md",
+      "brain/emergence/slices.md",
+      "brain/emergence/changelog.md",
+      "brain/emergence/plan.md",
+      "brain/emergence/tasks.md"
+    ],
+    "requestedOutcomes": [
+      "Update the ACE system to use the shared anchor resolver"
+    ],
+    "tasks": [
+      "Update the ACE system to use the shared anchor resolver"
+    ],
+    "constraints": [
+      "Ensure legacy compatibility during migration",
+      "Actionability: Detected 1 implementation/planning verb signals.",
+      "Constraint coverage: No clear constraints or review gates were stated."
+    ],
+    "confidence": 0.66,
+    "legacyConfidence": 0.77,
+    "criteria": [
+      {
+        "id": "project-alignment",
+        "label": "Project alignment",
+        "score": 1,
+        "reason": "Matched project terms: canonical, ace, system, context, intent"
+      },
+      {
+        "id": "actionability",
+        "label": "Actionability",
+        "score": 0.5,
+        "reason": "Detected 1 implementation/planning verb signals."
+      },
+      {
+        "id": "architecture-fit",
+        "label": "Architecture fit",
+        "score": 0.7777777777777778,
+        "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+      },
+      {
+        "id": "constraint-coverage",
+        "label": "Constraint coverage",
+        "score": 0,
+        "reason": "No clear constraints or review gates were stated."
+      },
+      {
+        "id": "clarity",
+        "label": "Clarity",
+        "score": 1,
+        "reason": "Input includes enough detail to classify intent reliably."
+      }
+    ],
+    "scores": {
+      "intentConfidence": 0.66,
+      "executionReadiness": 0.63,
+      "plannerUsefulness": 0.94,
+      "deployReadiness": 0.11
+    },
+    "classification": {
+      "role": "constraint",
+      "labels": [
+        "context",
+        "ux",
+        "governance"
+      ]
+    },
+    "requestType": "context_request",
+    "urgency": "normal",
+    "targets": [
+      "canonical",
+      "ace",
+      "system",
+      "context",
+      "intent",
+      "anchor",
+      "legacy",
+      "compatibility"
+    ],
+    "signals": {},
+    "graphBundle": {
+      "system": {
+        "nodes": [
+          {
+            "id": "dragon_perch_intent_01",
+            "type": "task",
+            "content": "Dragon perch intent",
+            "position": {
+              "x": 1040,
+              "y": 320
+            },
+            "connections": [],
+            "metadata": {
+              "role": "task",
+              "graphLayer": "system",
+              "labels": [
+                "proposal",
+                "sketch-ready"
+              ],
+              "proposalTarget": "world-structure"
+            },
+            "representations": [
+              {
+                "rep_id": "dragon_perch_intent_01_sketch_icon",
+                "kind": "icon",
+                "view_tags": [
+                  "sketch"
+                ],
+                "lod_min": 0,
+                "lod_max": 0.8,
+                "payload": {
+                  "label": "Perch"
+                },
+                "derived_from": "dragon_perch_intent_01"
+              },
+              {
+                "rep_id": "dragon_perch_intent_01_sketch_ghost",
+                "kind": "ghost",
+                "view_tags": [
+                  "sketch"
+                ],
+                "lod_min": 0.25,
+                "lod_max": 0.6,
+                "payload": {
+                  "summary": "Ghost perch scaffold"
+                },
+                "derived_from": "dragon_perch_intent_01"
+              },
+              {
+                "rep_id": "dragon_perch_intent_01_world_mesh_stub",
+                "kind": "mesh_stub",
+                "view_tags": [
+                  "world"
+                ],
+                "lod_min": 0.8,
+                "lod_max": 1.5,
+                "payload": {
+                  "mesh": "dragon-perch-stub"
+                },
+                "derived_from": "dragon_perch_intent_01"
+              }
+            ]
+          }
+        ],
+        "edges": []
+      },
+      "world": {
+        "nodes": [],
+        "edges": []
+      }
+    },
+    "status": "needs-clarification"
+  },
+  "usedFallback": false,
+  "llmStatus": "live",
+  "rawResponse": "{\n  \"summary\": \"Migrate to the canonical anchor-based ACE system\",\n  \"statement\": \"The current context requires updating the ACE system to use the canonical anchor-based approach for manager, context, and intent flow.\",\n  \"tasks\": [\"Update the ACE system to use the shared anchor resolver\"],\n  \"constraints\": [\"Ensure legacy compatibility during migration\"],\n  \"clarifications\": [\"What steps are required for the migration?\", \"How will the system handle archived content during this transition?\"],\n  \"focusTerms\": [\"ACE\", \"anchor\", \"migration\"],\n  \"suggestedAnchorRefs\": [\"brain/emergence/project_brain.md\"]\n}",
+  "llmTrace": {
+    "runId": "context_manager_1774879394936_l9zlee",
+    "steps": [
+      {
+        "stage": "context-packet",
+        "at": "2026-03-30T14:03:14.939Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Context Manager worker.\n\nTurn incoming context into a compact structured packet that the deterministic intent layer can score, anchor, and hand off to the Planner.\n\nContract:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay upstream. Do not create execution steps"
+      },
+      {
+        "stage": "context-packet",
+        "at": "2026-03-30T14:03:22.448Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Migrate to the canonical anchor-based ACE system\",\n  \"statement\": \"The current context requires updating the ACE system to use the canonical anchor-based approach for manager, context, and intent flow.\",\n  \"tasks\": [\"Update the ACE system to use the shared anchor resolver\"],\n  \"const"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-30T14:03:22.454Z",
+        "model": "mistral:latest",
+        "promptPreview": "You are the ACE Extracted Intent generator.\n\nTurn one upstream context packet into a compact system-graph brief for canvas generation.\n\nRules:\n- Output JSON only. No markdown fences. No prose outside JSON.\n- Stay system-canvas scoped. Do not create execution steps, patches, apply actions, or deploym"
+      },
+      {
+        "stage": "extracted-intent",
+        "at": "2026-03-30T14:03:35.325Z",
+        "model": "mistral:latest",
+        "textPreview": "{\n  \"summary\": \"Migrate the ACE system to use the canonical anchor-based approach\",\n  \"explicitClaims\": [\"The ACE system needs to be updated to use a shared anchor resolver\"],\n  \"inferredClaims\": [\"There is a need for migration planning and potential handling of archived content during transition\"],"
+      }
+    ]
+  }
+}

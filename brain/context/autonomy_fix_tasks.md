@@ -3,7 +3,7 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-03-30T08:50:07.619Z
+Updated: 2026-03-31T07:19:26.667Z
 
 ### 0001-Blender-UE-import-hygiene
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -28,14 +28,23 @@ Updated: 2026-03-30T08:50:07.619Z
  M data/spatial/qa/local-gates/test-unit-latest.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/failureMemory.js
+ M ui/package.json
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/roleTaxonomy.mjs
  M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/staffingRules.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/studioTemplates.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
  M ui/server.js
- M ui/tests/failureMemory.test.mjs
- M ui/tests/helpers/browser-module-loader.mjs
+ M ui/studioLayoutSchema.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/roleTaxonomy.test.mjs
  M ui/tests/run-ui-tests.mjs
  M ui/tests/server.test.mjs
- M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/staffingRules.test.mjs
+ M ui/tests/utilityWindowState.test.mjs
 
 ### 10000
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -96,11 +105,20 @@ Updated: 2026-03-30T08:50:07.619Z
  M data/spatial/qa/local-gates/test-unit-latest.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/failureMemory.js
+ M ui/package.json
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/roleTaxonomy.mjs
  M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/staffingRules.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/studioTemplates.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
  M ui/server.js
- M ui/tests/failureMemory.test.mjs
- M ui/tests/helpers/browser-module-loader.mjs
+ M ui/studioLayoutSchema.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/roleTaxonomy.test.mjs
  M ui/tests/run-ui-tests.mjs
  M ui/tests/server.test.mjs
- M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/staffingRules.test.mjs
+ M ui/tests/utilityWindowState.test.mjs

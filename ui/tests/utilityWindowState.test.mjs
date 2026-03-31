@@ -13,6 +13,7 @@ export default async function runUtilityWindowStateTests() {
   assert.equal(defaults['studio-map'].open, false);
   assert.equal(defaults['studio-map'].docked, true);
   assert.deepEqual(Object.keys(defaults), [
+    'cto-chat',
     'environment',
     'qa',
     'context',

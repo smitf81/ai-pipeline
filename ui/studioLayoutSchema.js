@@ -9,6 +9,7 @@ const CORE_DESK_AGENT_DEFAULTS = {
   planner: ['planner'],
   executor: ['executor'],
   'memory-archivist': ['memory-archivist', 'dave'],
+  'rnd-lead': ['rnd-lead'],
   'cto-architect': ['cto-architect'],
   'qa-lead': ['qa-lead'],
 };
@@ -75,11 +76,11 @@ const DEPARTMENT_TEMPLATE_DEFS = {
   },
   research: {
     id: 'research',
-    label: 'Research Cell',
+    label: 'R&D / Research & Development',
     kind: 'research',
-    summary: 'Expansion room for exploratory analysis and discovery work.',
+    summary: 'Sandbox room for non-delivery research, prototypes, and experiments.',
     editable: true,
-    allowedDeskTemplateIds: ['analysis-node', 'report-node', 'support-node'],
+    allowedDeskTemplateIds: ['rnd-lead'],
   },
   support: {
     id: 'support',
@@ -253,6 +254,19 @@ const CORE_DEPARTMENTS = [
     },
   },
   {
+    id: 'dept-research',
+    templateId: 'research',
+    label: 'R&D / Research & Development',
+    slotId: 'expansion-b',
+    summary: 'Sandbox department for non-delivery research, experiments, and prototypes.',
+    deskIds: ['rnd-lead'],
+    staffing: {
+      requiredLeadSeatId: 'rnd-lead',
+      minimumActiveSeats: 1,
+      baselineRoleIds: ['rnd-lead'],
+    },
+  },
+  {
     id: 'dept-control',
     templateId: 'control',
     label: 'Control Centre',
@@ -335,6 +349,19 @@ const CORE_DESKS = {
     position: { x: 620, y: 640 },
     assignedAgentIds: ['memory-archivist', 'dave'],
     editable: false,
+    staffing: {
+      seatKind: 'lead',
+    },
+  },
+  'rnd-lead': {
+    id: 'rnd-lead',
+    label: 'R&D Lead',
+    templateId: 'rnd-lead',
+    departmentId: 'dept-research',
+    position: { x: 954, y: 640 },
+    assignedAgentIds: ['rnd-lead'],
+    editable: false,
+    summary: 'Sandbox desk for non-delivery research and prototype work.',
     staffing: {
       seatKind: 'lead',
     },

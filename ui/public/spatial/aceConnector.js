@@ -84,6 +84,17 @@ export class AceConnector {
     return response;
   }
 
+  async getCtoDeskStatus() {
+    const res = await fetch('/api/spatial/cto/status');
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'CTO desk status failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
+  }
+
   async getTaDepartment() {
     const res = await fetch('/api/ta/department');
     const payload = await res.json();

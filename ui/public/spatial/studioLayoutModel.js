@@ -30,6 +30,7 @@ const CORE_DEPARTMENTS = Object.freeze([
   { id: 'dept-delivery', label: 'Delivery', kind: 'delivery', bounds: { x: 334, y: 86, width: 514, height: 470 }, deskIds: ['planner', 'executor'], editable: true },
   { id: 'dept-quality', label: 'Quality', kind: 'quality', bounds: { x: 92, y: 394, width: 220, height: 232 }, deskIds: ['qa-lead'], editable: true },
   { id: 'dept-archive', label: 'Archive', kind: 'archive', bounds: { x: 454, y: 580, width: 312, height: 120 }, deskIds: ['memory-archivist'], editable: true },
+  { id: 'dept-research', label: 'R&D / Research & Development', kind: 'research', bounds: { x: 808, y: 564, width: 292, height: 136 }, deskIds: ['rnd-lead'], editable: true, summary: 'Sandbox department for non-delivery research, experiments, and prototypes.' },
   { id: 'dept-control', label: 'Control Centre', kind: 'control', bounds: { x: 884, y: 286, width: 214, height: 254 }, deskIds: ['cto-architect'], editable: true },
   { id: 'dept-talent-acquisition', label: 'Talent Acquisition', kind: 'talent', bounds: { x: 850, y: 86, width: 250, height: 176 }, deskIds: ['integration_auditor'], editable: false },
 ]);
@@ -40,6 +41,7 @@ const CORE_DESKS = Object.freeze({
   executor: { id: 'executor', label: 'Executor', departmentId: 'dept-delivery', position: { x: 682, y: 252 }, type: 'builder', capabilities: ['execution', 'output'], editable: false, assignedAgentIds: ['executor'], staffing: { seatKind: 'core' } },
   'qa-lead': { id: 'qa-lead', label: 'QA Lead', departmentId: 'dept-quality', position: { x: 182, y: 510 }, type: 'quality', capabilities: ['testing', 'verification'], editable: false, assignedAgentIds: ['qa-lead'], staffing: { seatKind: 'lead' } },
   'memory-archivist': { id: 'memory-archivist', label: 'Memory Archivist', departmentId: 'dept-archive', position: { x: 620, y: 640 }, type: 'archive', capabilities: ['context', 'history'], editable: false, assignedAgentIds: ['memory-archivist', 'dave'], staffing: { seatKind: 'lead' } },
+  'rnd-lead': { id: 'rnd-lead', label: 'R&D Lead', departmentId: 'dept-research', position: { x: 954, y: 640 }, type: 'research', capabilities: ['research', 'experimentation', 'prototyping'], editable: false, assignedAgentIds: ['rnd-lead'], summary: 'Sandbox desk for non-delivery research and prototype work.', staffing: { seatKind: 'lead' } },
   'cto-architect': { id: 'cto-architect', label: 'CTO / Architect', departmentId: 'dept-control', position: { x: 990, y: 422 }, type: 'control', capabilities: ['oversight', 'guardrails'], editable: true, assignedAgentIds: ['cto-architect'], staffing: { seatKind: 'lead' } },
   integration_auditor: { id: 'integration_auditor', label: 'Integration Auditor', departmentId: 'dept-talent-acquisition', position: { x: 986, y: 174 }, type: 'talent', capabilities: ['coverage', 'hiring-demand', 'role-readiness'], editable: false, assignedAgentIds: ['integration_auditor'], staffing: { seatKind: 'lead' } },
 });
@@ -62,6 +64,7 @@ const DESK_TYPE_ACCENTS = Object.freeze({
   builder: { accent: '#72e1a7', shadow: 'rgba(114, 225, 167, 0.26)' },
   quality: { accent: '#ff8f7a', shadow: 'rgba(255, 143, 122, 0.28)' },
   archive: { accent: '#c8a0ff', shadow: 'rgba(200, 160, 255, 0.24)' },
+  research: { accent: '#7de6d1', shadow: 'rgba(93, 173, 160, 0.24)' },
   control: { accent: '#ffb36c', shadow: 'rgba(255, 179, 108, 0.26)' },
   talent: { accent: '#8ee7c1', shadow: 'rgba(142, 231, 193, 0.24)' },
   analysis: { accent: '#7de6d1', shadow: 'rgba(125, 230, 209, 0.24)' },

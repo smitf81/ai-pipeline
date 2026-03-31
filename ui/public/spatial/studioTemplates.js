@@ -57,6 +57,15 @@ export const STUDIO_DESK_TEMPLATES = {
       requiredSupportDeskTemplateIds: [],
     },
   },
+  'rnd-lead': {
+    id: 'rnd-lead',
+    label: 'R&D Lead',
+    role: 'Runs sandbox research, experiments, and prototype validation.',
+    dependencyRules: {
+      requiredLeadDeskTemplateIds: ['context-manager'],
+      requiredSupportDeskTemplateIds: [],
+    },
+  },
   'cto-architect': {
     id: 'cto-architect',
     label: 'CTO / Architect',
@@ -100,6 +109,17 @@ export const STUDIO_DEPARTMENT_TEMPLATES = {
       requiredParentDepartmentTemplateIds: ['delivery'],
       requiredLeadDeskTemplateIds: ['qa-lead'],
       requiredSupportDeskTemplateIds: ['cto-architect'],
+    },
+  },
+  research: {
+    id: 'research',
+    label: 'R&D / Research & Development',
+    bounds: { x: 808, y: 564, width: 292, height: 136 },
+    deskTemplateIds: ['rnd-lead'],
+    dependencyRules: {
+      requiredParentDepartmentTemplateIds: ['control'],
+      requiredLeadDeskTemplateIds: ['rnd-lead'],
+      requiredSupportDeskTemplateIds: [],
     },
   },
   'talent-acquisition': {

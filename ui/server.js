@@ -118,6 +118,177 @@ const {
   buildConstrainedAutoFixBundle,
   runConstrainedAutoFixExecutor,
 } = require('./constrainedAutoFix');
+
+const ROLE_TAXONOMY_PATH = path.join(__dirname, 'public', 'spatial', 'roleTaxonomy.mjs');
+const RND_EXPERIMENTS_FILE = path.join(__dirname, '..', 'data', 'spatial', 'rnd-experiments.json');
+let cachedRoleTaxonomy = null;
+let cachedRndExperiments = null;
+
+function loadRoleTaxonomy() {
+  if (cachedRoleTaxonomy) return cachedRoleTaxonomy;
+  const source = fs.readFileSync(ROLE_TAXONOMY_PATH, 'utf8');
+  const match = source.match(/export const ROLE_TAXONOMY_JSON = String\.raw`([\s\S]*?)`;/);
+  if (!match) {
+    throw new Error('roleTaxonomy.mjs is missing the ROLE_TAXONOMY_JSON export.');
+  }
+  cachedRoleTaxonomy = JSON.parse(match[1]);
+  return cachedRoleTaxonomy;
+}
+
+function buildDeskPanelMetadata(deskId, deskLayout, departmentLayout) {
+  const taxonomy = loadRoleTaxonomy();
+  const role = taxonomy.roles.find((entry) => entry.id === deskId || (Array.isArray(entry.allowedDeskIds) && entry.allowedDeskIds.includes(deskId))) || null;
+  const station = role?.station || {};
+  const panel = station.panel || role?.panel || null;
+  if (!panel) {
+    return null;
+  }
+  return {
+    mission: String(panel.mission || station.mission || deskLayout?.summary || departmentLayout?.summary || '').trim() || null,
+    responsibilities: Array.isArray(panel.responsibilities) ? panel.responsibilities.filter(Boolean) : [],
+    hardRules: Array.isArray(panel.hardRules) ? panel.hardRules.filter(Boolean) : [],
+    deliveryRelationship: String(panel.deliveryRelationship || '').trim() || null,
+    visibility: panel.visibility || 'read-only',
+  };
+}
+
+function normalizeConfidence(value = 0) {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return 0;
+  return Math.min(1, Math.max(0, normalized));
+}
+
+function normalizeRndExperimentPrimitiveRecord(record = {}) {
+  const source = record && typeof record === 'object' && !Array.isArray(record) ? record : {};
+  const normalizeText = (value) => String(value ?? '').trim();
+  const normalizeTextList = (value) => (Array.isArray(value) ? value.map((entry) => normalizeText(entry)).filter(Boolean) : []);
+  return {
+    primitive: normalizeText(source.primitive),
+    description: normalizeText(source.description),
+    data_shape: normalizeText(source.data_shape),
+    constraints: normalizeTextList(source.constraints),
+    example: normalizeText(source.example),
+    confidence: normalizeConfidence(source.confidence),
+  };
+}
+
+function normalizeRndExperimentRecord(record = {}) {
+  const source = record && typeof record === 'object' && !Array.isArray(record) ? record : {};
+  const normalizeText = (value) => String(value ?? '').trim();
+  const normalizeTextList = (value) => (Array.isArray(value) ? value.map((entry) => normalizeText(entry)).filter(Boolean) : []);
+  const lifecycle = normalizeText(source.lifecycle || source.status || 'proposed').toLowerCase();
+  return {
+    id: normalizeText(source.id),
+    hypothesis: normalizeText(source.hypothesis),
+    lifecycle: lifecycle || 'proposed',
+    scope: normalizeTextList(source.scope),
+    inputs: normalizeTextList(source.inputs),
+    expected_output: normalizeText(source.expected_output),
+    success_criteria: normalizeText(source.success_criteria),
+    failure_criteria: normalizeText(source.failure_criteria),
+    salvageable_components: normalizeTextList(source.salvageable_components),
+    integration_target: normalizeText(source.integration_target),
+    what_worked: normalizeTextList(source.what_worked),
+    what_failed: normalizeTextList(source.what_failed),
+    reusable_components: normalizeTextList(source.reusable_components),
+    discard_reason: normalizeText(source.discard_reason),
+    extracted_primitives: Array.isArray(source.extracted_primitives)
+      ? source.extracted_primitives.map(normalizeRndExperimentPrimitiveRecord).filter((entry) => entry.primitive)
+      : [],
+  };
+}
+
+function validateRndExperimentPrimitiveRecord(record = {}) {
+  const normalized = normalizeRndExperimentPrimitiveRecord(record);
+  const issues = [];
+  ['primitive', 'description', 'data_shape', 'example'].forEach((field) => {
+    if (!String(record?.[field] ?? '').trim()) {
+      issues.push(field);
+    }
+  });
+  if (!Array.isArray(record?.constraints)) {
+    issues.push('constraints');
+  } else if (record.constraints.some((entry) => !String(entry ?? '').trim())) {
+    issues.push('constraints-item');
+  }
+  const confidence = Number(record?.confidence);
+  if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+    issues.push('confidence');
+  }
+  return {
+    ok: issues.length === 0,
+    issues,
+    record: normalized,
+  };
+}
+
+function evaluateRndExperimentPromotionReadiness(record = {}) {
+  const normalized = normalizeRndExperimentRecord(record);
+  const lifecycle = String(normalized.lifecycle || '').trim().toLowerCase();
+  const requiredScalars = ['id', 'hypothesis', 'expected_output', 'success_criteria', 'failure_criteria', 'integration_target'];
+  const scalarValid = requiredScalars.every((field) => String(normalized[field] || '').trim());
+  const lifecycleValid = ['proposed', 'approved', 'in_progress', 'failed', 'salvaged', 'promoted', 'archived'].includes(lifecycle);
+  const scopeValid = Array.isArray(normalized.scope);
+  const inputsValid = Array.isArray(normalized.inputs);
+  const salvageableValid = Array.isArray(normalized.salvageable_components);
+  const primitiveResults = Array.isArray(normalized.extracted_primitives)
+    ? normalized.extracted_primitives.map(validateRndExperimentPrimitiveRecord)
+    : [];
+  const validPrimitiveCount = primitiveResults.filter((entry) => entry.ok).length;
+  const hasValidPrimitive = validPrimitiveCount > 0;
+  const explicitQaFlag = ['1', 'true', 'yes', 'y', 'passed', 'pass', 'ok', 'ready'].includes(String(record.basic_qa_passed ?? record.qa_passed ?? record.qa_status ?? record.validation_passed ?? '').trim().toLowerCase())
+    ? true
+    : ['0', 'false', 'no', 'n', 'failed', 'fail', 'blocked', 'not_ready'].includes(String(record.basic_qa_passed ?? record.qa_passed ?? record.qa_status ?? record.validation_passed ?? '').trim().toLowerCase())
+      ? false
+      : null;
+  const basicQaPassed = explicitQaFlag != null
+    ? explicitQaFlag
+    : ['approved', 'in_progress', 'salvaged'].includes(lifecycle);
+  const terminalLifecycle = lifecycle === 'promoted' || lifecycle === 'archived';
+  const contractValid = Boolean(scalarValid && lifecycleValid && scopeValid && inputsValid && salvageableValid);
+  const primitivesValid = primitiveResults.every((entry) => entry.ok);
+  const eligible = contractValid && primitivesValid && basicQaPassed && hasValidPrimitive && Boolean(normalized.integration_target) && !terminalLifecycle;
+  const reasons = [];
+  if (!contractValid) reasons.push('Experiment contract validation failed.');
+  if (!basicQaPassed) reasons.push('Basic QA has not passed.');
+  if (!hasValidPrimitive) reasons.push('At least one extracted primitive is required.');
+  if (!normalized.integration_target) reasons.push('A downstream integration target is required.');
+  if (!primitivesValid) reasons.push('At least one extracted primitive failed validation.');
+  if (lifecycle === 'promoted') reasons.push('Experiment is already promoted.');
+  if (lifecycle === 'archived') reasons.push('Experiment is archived.');
+  return {
+    eligible,
+    state: lifecycle === 'promoted' ? 'promoted' : lifecycle === 'archived' ? 'archived' : eligible ? 'eligible' : 'blocked',
+    contractValid,
+    basicQaPassed,
+    hasIntegrationTarget: Boolean(normalized.integration_target),
+    hasValidPrimitive,
+    primitiveCount: Array.isArray(normalized.extracted_primitives) ? normalized.extracted_primitives.length : 0,
+    validPrimitiveCount,
+    lifecycle,
+    integrationTarget: normalized.integration_target,
+    reasons,
+    primitives: primitiveResults,
+  };
+}
+
+function loadRndExperimentRecords() {
+  if (cachedRndExperiments) return cachedRndExperiments;
+  const seed = readJsonSafe(RND_EXPERIMENTS_FILE, null);
+  const experiments = Array.isArray(seed?.experiments) ? seed.experiments : [];
+  cachedRndExperiments = {
+    contract: String(seed?.contract || 'rnd-experiment.v1'),
+    updatedAt: seed?.updatedAt || null,
+    experiments: experiments
+      .map(normalizeRndExperimentRecord)
+      .filter((record) => record.id)
+      .map((record) => ({
+        ...record,
+        promotion_readiness: evaluateRndExperimentPromotionReadiness(record),
+      })),
+  };
+  return cachedRndExperiments;
+}
 const {
   buildAgentCapabilityProfile,
   readAgentCapabilityProfile,
@@ -172,6 +343,10 @@ const {
   callOllamaGenerate,
 } = require('./llmAdapter');
 const {
+  DEFAULT_OLLAMA_HOST,
+  DEFAULT_OLLAMA_TIMEOUT_MS,
+} = require('./localModelClient');
+const {
   runAll: runStructuredQA,
 } = require('../qa/qaLead');
 const {
@@ -201,6 +376,7 @@ const SPATIAL_INTENT_STATE_FILE = path.join(ROOT, 'data', 'spatial', 'intent-sta
 const SPATIAL_STUDIO_STATE_FILE = path.join(ROOT, 'data', 'spatial', 'studio-state.json');
 const SPATIAL_ARCHITECTURE_MEMORY_FILE = path.join(ROOT, 'data', 'spatial', 'architecture-memory.json');
 const TA_DEPARTMENT_FILE = path.join(ROOT, 'data', 'spatial', 'ta-department.json');
+const CTO_DIAGNOSTICS_FILE = path.join(ROOT, 'data', 'spatial', 'cto-diagnostics.json');
 const SERVER_STARTED_AT = nowIso();
 const DOMAIN_KEY = DEFAULT_DOMAIN_KEY;
 const dashboardFiles = listCanonicalAnchorPaths(DOMAIN_KEY);
@@ -240,6 +416,63 @@ const WORLD_EDIT_ACTION_PATTERN = /\b(add|paint|replace|set|turn|update)\b/i;
 const WORLD_EDIT_TARGET_PATTERN = /\b(grid|scaffold)\b/i;
 const WORLD_EDIT_TILE_NOUN_PATTERN = /\b(tile|tiles|cell|cells)\b/i;
 const WORLD_EDIT_MATERIAL_PATTERN = /\b(water|grass|stone|dirt)\b/i;
+const CTO_DIAGNOSTICS_VERSION = 'ace/cto-diagnostics.v1';
+const CTO_DIAGNOSTIC_HISTORY_LIMIT = 60;
+const CTO_BAKEOFF_DEFAULT_TEXT = 'We need a planner for this. Can you handle it?';
+const CTO_BAKEOFF_MODEL_PREFERENCE = Object.freeze([
+  'mixtral:latest',
+  'mistral:latest',
+  'qwen2.5-coder:1.5b',
+  'llama3:latest',
+  'codellama:latest',
+  'openchat:latest',
+  'gemma3:4b',
+]);
+const CTO_GOVERNANCE_RESPONSE_KIND_VALUES = Object.freeze(['advisory', 'actionable', 'blocked']);
+const CTO_GOVERNANCE_RESPONSE_CONTRACT = Object.freeze({
+  type: 'object',
+  required: ['reply_text', 'response_kind'],
+  optional: ['delegation', 'action'],
+  response_kind: CTO_GOVERNANCE_RESPONSE_KIND_VALUES,
+  delegation: {
+    type: ['object', 'null'],
+    required: ['desk_id', 'desk_label', 'why'],
+  },
+  action: {
+    type: ['object', 'null'],
+    required: ['id'],
+  },
+});
+
+function getDefaultCtoGovernanceBackend() {
+  return String(process.env.ACE_CTO_BACKEND || DEFAULT_CONTEXT_MANAGER_BACKEND).trim() || DEFAULT_CONTEXT_MANAGER_BACKEND;
+}
+
+function getDefaultCtoGovernanceModel() {
+  return String(process.env.ACE_CTO_MODEL || DEFAULT_CONTEXT_MANAGER_MODEL).trim() || DEFAULT_CONTEXT_MANAGER_MODEL;
+}
+
+function getDefaultCtoGovernanceHost() {
+  return String(process.env.ACE_CTO_OLLAMA_HOST || DEFAULT_OLLAMA_HOST).trim() || DEFAULT_OLLAMA_HOST;
+}
+
+function getDefaultCtoGovernanceTimeoutMs() {
+  const configured = Number(process.env.ACE_CTO_TIMEOUT_MS);
+  return configured > 0 ? configured : DEFAULT_OLLAMA_TIMEOUT_MS;
+}
+
+function resolveCtoGovernanceConfig(overrides = {}) {
+  const defaultBackend = getDefaultCtoGovernanceBackend();
+  const defaultModel = getDefaultCtoGovernanceModel();
+  const defaultHost = getDefaultCtoGovernanceHost();
+  const defaultTimeoutMs = getDefaultCtoGovernanceTimeoutMs();
+  return {
+    backend: String(overrides.backend || defaultBackend).trim() || defaultBackend,
+    model: String(overrides.model || defaultModel).trim() || defaultModel,
+    host: String(overrides.host || defaultHost).trim() || defaultHost,
+    timeoutMs: Number(overrides.timeoutMs) > 0 ? Number(overrides.timeoutMs) : defaultTimeoutMs,
+  };
+}
 const SPATIAL_MUTATION_ALLOWED_TYPES = new Set(['create_node', 'modify_node', 'create_edge']);
 const SPATIAL_MUTATION_SAFE_MODIFY_KEYS = new Set(['content', 'position', 'metadata']);
 const SPATIAL_MUTATION_ACTIVITY_LIMIT = 32;
@@ -282,6 +515,7 @@ function ensureSpatialStorage() {
   if (!fs.existsSync(SPATIAL_ARCHITECTURE_MEMORY_FILE)) writeJson(SPATIAL_ARCHITECTURE_MEMORY_FILE, { architectureMemory: {} });
   if (!fs.existsSync(TA_DEPARTMENT_FILE)) writeJson(TA_DEPARTMENT_FILE, { hiredCandidates: [], updatedAt: null, lastGeneratedGap: null });
   if (!fs.existsSync(SPATIAL_HISTORY_FILE)) fs.writeFileSync(SPATIAL_HISTORY_FILE, '[]\n');
+  if (!fs.existsSync(CTO_DIAGNOSTICS_FILE)) writeJson(CTO_DIAGNOSTICS_FILE, { version: CTO_DIAGNOSTICS_VERSION, updated_at: null, entries: [] });
   const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
   const sliceSnapshot = readSliceStore(ROOT, DOMAIN_KEY);
   if (!sliceSnapshot.exists) {
@@ -297,6 +531,188 @@ function appendArchitectureHistory(entry) {
   const history = readJsonSafe(SPATIAL_HISTORY_FILE, []) || [];
   history.push(entry);
   writeJson(SPATIAL_HISTORY_FILE, history.slice(-80));
+}
+
+function ctoDiagnosticsFilePath(rootPath = ROOT) {
+  return path.join(rootPath || ROOT, 'data', 'spatial', 'cto-diagnostics.json');
+}
+
+function normalizeCtoDiagnosticsEntry(entry = {}) {
+  return {
+    id: String(entry.id || `cto_diag_${Date.now()}`).trim() || `cto_diag_${Date.now()}`,
+    timestamp: String(entry.timestamp || nowIso()).trim() || nowIso(),
+    route: String(entry.route || '/api/spatial/cto/chat').trim() || '/api/spatial/cto/chat',
+    source: String(entry.source || 'cto-chat').trim() || 'cto-chat',
+    category: String(entry.category || 'unknown').trim() || 'unknown',
+    status: String(entry.status || 'degraded').trim() || 'degraded',
+    backend: String(entry.backend || '').trim() || null,
+    model: String(entry.model || '').trim() || null,
+    host: String(entry.host || '').trim() || null,
+    reason: String(entry.reason || '').trim() || null,
+    failureKind: String(entry.failureKind || '').trim() || null,
+    runId: String(entry.runId || '').trim() || null,
+    httpStatus: Number.isFinite(Number(entry.httpStatus)) ? Number(entry.httpStatus) : null,
+    actionId: String(entry.actionId || '').trim() || null,
+    availableActionIds: Array.isArray(entry.availableActionIds)
+      ? entry.availableActionIds.map((value) => String(value || '').trim()).filter(Boolean).slice(0, 12)
+      : [],
+  };
+}
+
+function readCtoDiagnostics(rootPath = ROOT) {
+  const filePath = ctoDiagnosticsFilePath(rootPath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  if (!fs.existsSync(filePath)) {
+    writeJson(filePath, { version: CTO_DIAGNOSTICS_VERSION, updated_at: null, entries: [] });
+  }
+  const payload = readJsonSafe(filePath, null);
+  const entries = Array.isArray(payload?.entries)
+    ? payload.entries.map((entry) => normalizeCtoDiagnosticsEntry(entry)).filter(Boolean)
+    : [];
+  return {
+    version: String(payload?.version || CTO_DIAGNOSTICS_VERSION).trim() || CTO_DIAGNOSTICS_VERSION,
+    updated_at: payload?.updated_at || null,
+    entries,
+  };
+}
+
+function summarizeCtoDiagnostics(entries = []) {
+  const counts = {};
+  entries.forEach((entry) => {
+    const key = String(entry?.category || 'unknown').trim() || 'unknown';
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return counts;
+}
+
+function classifyCtoDiagnosticCategory({ status = '', reason = '', failureKind = '' } = {}) {
+  const normalizedStatus = String(status || '').trim().toLowerCase();
+  const normalizedReason = String(reason || '').trim().toLowerCase();
+  const normalizedFailureKind = String(failureKind || '').trim().toLowerCase();
+  if (normalizedFailureKind === 'contract') return 'contract_invalid';
+  if (normalizedFailureKind === 'parse') {
+    if (normalizedReason.includes('prose instead of strict json')) return 'non_json_output';
+    if (normalizedReason.includes('not valid json')) return 'malformed_json';
+  }
+  if (normalizedReason.includes('timed out')) return 'timeout';
+  if (
+    normalizedStatus === 'offline'
+    || normalizedReason.includes('fetch failed')
+    || normalizedReason.includes('econnrefused')
+    || normalizedReason.includes('connection refused')
+    || normalizedReason.includes('unavailable')
+    || normalizedReason.includes('unsupported cto backend')
+    || normalizedReason.includes('no fetch implementation')
+  ) {
+    return 'backend_unreachable';
+  }
+  return 'unknown';
+}
+
+function recordCtoDiagnostic(entry = {}, rootPath = ROOT) {
+  const filePath = ctoDiagnosticsFilePath(rootPath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const current = readCtoDiagnostics(rootPath);
+  const normalized = normalizeCtoDiagnosticsEntry({
+    ...entry,
+    category: entry.category || classifyCtoDiagnosticCategory(entry),
+  });
+  const next = {
+    version: CTO_DIAGNOSTICS_VERSION,
+    updated_at: nowIso(),
+    entries: [normalized, ...current.entries].slice(0, CTO_DIAGNOSTIC_HISTORY_LIMIT),
+  };
+  writeJson(filePath, next);
+  return normalized;
+}
+
+async function listLocalOllamaModels({
+  host = null,
+  timeoutMs = null,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const resolvedConfig = resolveCtoGovernanceConfig({ host, timeoutMs });
+  if (typeof fetchImpl !== 'function') {
+    throw new Error('No fetch implementation is available for Ollama model discovery.');
+  }
+  const { controller, timeout } = createTimeoutController(resolvedConfig.timeoutMs);
+  try {
+    const response = await fetchImpl(`${resolvedConfig.host.replace(/\/+$/, '')}/api/tags`, {
+      method: 'GET',
+      signal: controller?.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`Ollama tags returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    return Array.isArray(payload?.models)
+      ? payload.models.map((entry) => String(entry?.name || '').trim()).filter(Boolean)
+      : [];
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`Ollama model discovery timed out after ${resolvedConfig.timeoutMs}ms.`);
+    }
+    throw error;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+function tryParseCtoRawJson(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw.startsWith('{')) {
+    return { ok: false, reason: 'Output does not start with a raw JSON object.' };
+  }
+  try {
+    return { ok: true, payload: JSON.parse(raw), reason: null };
+  } catch (error) {
+    return { ok: false, reason: `Raw JSON parse failed: ${error.message}` };
+  }
+}
+
+function tryParseCtoFencedJson(text = '') {
+  const raw = String(text || '').trim();
+  const fencedMatch = raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (!fencedMatch) {
+    return { ok: false, reason: 'Output is not a standalone fenced JSON block.' };
+  }
+  try {
+    return { ok: true, payload: JSON.parse(String(fencedMatch[1] || '').trim()), reason: null };
+  } catch (error) {
+    return { ok: false, reason: `Fenced JSON parse failed: ${error.message}` };
+  }
+}
+
+function scoreCtoBakeOffEntry(entry = {}) {
+  if (!entry.reachable) return 0;
+  let score = 1;
+  if (entry.rawJsonParse?.ok) score += 3;
+  if (entry.fencedJsonParse?.ok) score += 2;
+  if (entry.contractValidation?.ok) score += 5;
+  return score;
+}
+
+function summarizeCtoBakeOffResult(results = []) {
+  const sorted = [...results].sort((left, right) => {
+    const scoreDelta = scoreCtoBakeOffEntry(right) - scoreCtoBakeOffEntry(left);
+    if (scoreDelta !== 0) return scoreDelta;
+    const contractDelta = Number(Boolean(right.contractValidation?.ok)) - Number(Boolean(left.contractValidation?.ok));
+    if (contractDelta !== 0) return contractDelta;
+    const rawDelta = Number(Boolean(right.rawJsonParse?.ok)) - Number(Boolean(left.rawJsonParse?.ok));
+    if (rawDelta !== 0) return rawDelta;
+    return String(left.model || '').localeCompare(String(right.model || ''));
+  });
+  const best = sorted[0] || null;
+  return {
+    recommendedModel: best?.contractValidation?.ok ? best.model : null,
+    recommendationBasis: best
+      ? (best.contractValidation?.ok
+        ? `Highest CTO structured-output score (${scoreCtoBakeOffEntry(best)}) with contract-valid output.`
+        : 'No tested model produced contract-valid CTO output.')
+      : 'No models were tested.',
+    testedModels: results.length,
+    contractValidCount: results.filter((entry) => entry.contractValidation?.ok).length,
+  };
 }
 
 const SPATIAL_GRAPH_LAYERS = ['system', 'world'];
@@ -1049,6 +1465,953 @@ function listAgentModelOptions() {
   });
   models.add(DEFAULT_CONTEXT_MANAGER_MODEL);
   return Array.from(models).sort();
+}
+
+const CTO_DESK_IDS = Object.freeze([
+  'context-manager',
+  'planner',
+  'executor',
+  'qa-lead',
+  'memory-archivist',
+  'cto-architect',
+  'integration_auditor',
+]);
+
+const CTO_TEXT_CONFIRM_PATTERN = /^(yes|y|go ahead|do it|confirm|proceed|please do|hire(?: one)?|route it|sounds good|ok(?:ay)?)\b/i;
+
+const CTO_DESK_TARGET_HINTS = Object.freeze([
+  { deskId: 'context-manager', keywords: ['context manager', 'context lane', 'intake lane', 'intake', 'context'] },
+  { deskId: 'planner', keywords: ['planning lane', 'delivery planning lane', 'planner', 'planning'] },
+  { deskId: 'executor', keywords: ['executor', 'execution lane', 'delivery lane', 'builder'] },
+  { deskId: 'qa-lead', keywords: ['qa lead', 'qa desk', 'test lead', 'quality lane', 'qa'] },
+  { deskId: 'memory-archivist', keywords: ['memory archivist', 'archivist', 'archive lane', 'archive'] },
+  { deskId: 'cto-architect', keywords: ['cto', 'architect', 'control centre', 'control center'] },
+  { deskId: 'integration_auditor', keywords: ['talent acquisition', 'ta', 'integration auditor', 'hiring'] },
+]);
+
+function truncatePromptText(value = '', maxLength = 320) {
+  const text = String(value || '').trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+function normalizeCtoChatHistory(history = []) {
+  return (Array.isArray(history) ? history : [])
+    .map((entry, index) => {
+      const role = String(entry?.role || entry?.speaker || '').trim().toLowerCase();
+      const text = String(entry?.text || entry?.content || '').trim();
+      if (!text) return null;
+      return {
+        id: String(entry?.id || `history-${index}`),
+        role: role === 'assistant' || role === 'cto' || role === 'ace' ? 'assistant' : 'user',
+        text,
+        action: normalizeCtoActionRecord(entry?.action || null),
+      };
+    })
+    .filter(Boolean)
+    .slice(-12);
+}
+
+function normalizeCtoActionRecord(action = null) {
+  if (!action || typeof action !== 'object') return null;
+  const id = String(action.id || '').trim();
+  const kind = String(action.kind || '').trim();
+  if (!id || !kind) return null;
+  return {
+    id,
+    kind,
+    label: String(action.label || '').trim() || id,
+    targetDeskId: String(action.targetDeskId || action.deskId || '').trim() || null,
+    targetDeskLabel: String(action.targetDeskLabel || action.deskLabel || '').trim() || null,
+    available: action.available !== false,
+    requiresConfirmation: action.requiresConfirmation !== false,
+    status: String(action.status || 'pending').trim() || 'pending',
+    reason: String(action.reason || '').trim() || null,
+    route: String(action.route || '').trim() || null,
+    routeStatus: String(action.routeStatus || '').trim() || null,
+    gapDescription: String(action.gapDescription || '').trim() || null,
+  };
+}
+
+function isAffirmativeCtoReply(text = '') {
+  return CTO_TEXT_CONFIRM_PATTERN.test(String(text || '').trim());
+}
+
+function findDeskTargetsInText(text = '') {
+  const source = String(text || '').toLowerCase();
+  if (!source.trim()) return [];
+  return CTO_DESK_TARGET_HINTS.filter((entry) => entry.keywords.some((keyword) => source.includes(keyword)))
+    .map((entry) => entry.deskId);
+}
+
+function createTimeoutController(timeoutMs) {
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  return { controller, timeout };
+}
+
+async function probeCtoBackendStatus({
+  backend = null,
+  model = null,
+  host = null,
+  timeoutMs = null,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const checkedAt = nowIso();
+  const resolvedConfig = resolveCtoGovernanceConfig({ backend, model, host, timeoutMs });
+  const normalizedBackend = resolvedConfig.backend;
+  const normalizedModel = resolvedConfig.model;
+  const normalizedHost = resolvedConfig.host;
+  const normalizedTimeout = resolvedConfig.timeoutMs;
+  if (normalizedBackend !== 'ollama') {
+    return {
+      ok: false,
+      status: 'offline',
+      backend: normalizedBackend,
+      model: normalizedModel,
+      host: normalizedHost,
+      checkedAt,
+      reason: `Unsupported CTO backend: ${normalizedBackend}.`,
+      availableModels: [],
+    };
+  }
+  if (typeof fetchImpl !== 'function') {
+    return {
+      ok: false,
+      status: 'offline',
+      backend: normalizedBackend,
+      model: normalizedModel,
+      host: normalizedHost,
+      checkedAt,
+      reason: 'No fetch implementation is available for local backend checks.',
+      availableModels: [],
+    };
+  }
+  const { controller, timeout } = createTimeoutController(normalizedTimeout);
+  try {
+    const response = await fetchImpl(`${normalizedHost.replace(/\/+$/, '')}/api/tags`, {
+      method: 'GET',
+      signal: controller?.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`Ollama tags returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    const availableModels = Array.isArray(payload?.models)
+      ? payload.models.map((entry) => String(entry?.name || '').trim()).filter(Boolean)
+      : [];
+    const modelAvailable = availableModels.includes(normalizedModel);
+    return {
+      ok: modelAvailable,
+      status: modelAvailable ? 'live' : 'degraded',
+      backend: normalizedBackend,
+      model: normalizedModel,
+      host: normalizedHost,
+      checkedAt,
+      reason: modelAvailable ? null : `Model "${normalizedModel}" is not currently available on the local backend.`,
+      availableModels,
+    };
+  } catch (error) {
+    const reason = error?.name === 'AbortError'
+      ? `Ollama status check timed out after ${normalizedTimeout}ms.`
+      : String(error.message || error || 'Ollama status check failed.');
+    return {
+      ok: false,
+      status: 'offline',
+      backend: normalizedBackend,
+      model: normalizedModel,
+      host: normalizedHost,
+      checkedAt,
+      reason,
+      availableModels: [],
+    };
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+function buildCtoDeskRouteSummary(deskId = '') {
+  if (deskId === 'qa-lead') {
+    return {
+      propertiesWritable: false,
+      manualRunRoute: false,
+      advisoryOnly: true,
+      routeNote: 'QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.',
+    };
+  }
+  if (deskId === 'planner' || deskId === 'executor' || deskId === 'context-manager') {
+    return {
+      propertiesWritable: false,
+      manualRunRoute: true,
+      advisoryOnly: true,
+      routeNote: `A manual ${deskId} run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.`,
+    };
+  }
+  if (deskId === 'memory-archivist') {
+    return {
+      propertiesWritable: true,
+      manualRunRoute: false,
+      advisoryOnly: false,
+      routeNote: 'Archivist writeback actions exist, but they are not exposed as chat confirmations in this slice.',
+    };
+  }
+  if (deskId === 'cto-architect') {
+    return {
+      propertiesWritable: true,
+      manualRunRoute: false,
+      advisoryOnly: false,
+      routeNote: 'CTO property actions are available through the desk panel. Hiring is routed separately through Talent Acquisition.',
+    };
+  }
+  return {
+    propertiesWritable: false,
+    manualRunRoute: false,
+    advisoryOnly: true,
+    routeNote: 'No grounded CTO chat action route is wired for this desk yet.',
+  };
+}
+
+async function buildCtoGovernanceContext(workspace = null) {
+  const runtimeWorkspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
+    workspace: workspace || readSpatialWorkspace(),
+  }));
+  const taState = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+  const taPayload = await buildTaDepartmentPayload(taState);
+  const desks = CTO_DESK_IDS.map((deskId) => {
+    const payload = buildDeskPropertiesPayload(runtimeWorkspace, deskId);
+    const taCoverage = Array.isArray(taPayload.coverage)
+      ? taPayload.coverage.find((entry) => entry?.entityType === 'desk' && entry?.entityId === deskId) || null
+      : null;
+    const routeSummary = buildCtoDeskRouteSummary(deskId);
+    const liveAgents = payload.agents.filter((agent) => {
+      const status = String(agent?.status || '').trim().toLowerCase();
+      return status && status !== 'idle';
+    });
+    return {
+      deskId,
+      label: payload.desk?.label || deskId,
+      departmentId: payload.desk?.departmentId || null,
+      departmentLabel: payload.layout?.department?.label || payload.desk?.departmentId || null,
+      exists: true,
+      assignedAgentIds: Array.isArray(payload.desk?.assignedAgentIds) ? payload.desk.assignedAgentIds : [],
+      managedAgents: Array.isArray(payload.agents) ? payload.agents.map((agent) => agent.id).filter(Boolean) : [],
+      liveAgentCount: liveAgents.length,
+      liveAgentStatuses: liveAgents.map((agent) => `${agent.id}:${agent.status}`),
+      taskCount: Array.isArray(payload.tasks) ? payload.tasks.length : 0,
+      reportCount: Array.isArray(payload.reports) ? payload.reports.length : 0,
+      truthContext: payload.truth?.context?.summary || payload.truth?.department?.context || null,
+      guardrailCount: Array.isArray(payload.truth?.guardrails) ? payload.truth.guardrails.length : 0,
+      qaScorecardCount: Array.isArray(payload.truth?.scorecards) ? payload.truth.scorecards.length : 0,
+      readOnly: !routeSummary.propertiesWritable,
+      manualRunRoute: routeSummary.manualRunRoute,
+      routeNote: routeSummary.routeNote,
+      taCoverage: taCoverage ? {
+        health: taCoverage.health,
+        blocked: Boolean(taCoverage.blocked),
+        statusLabel: taCoverage.statusLabel || taCoverage.health,
+        openRoles: Array.isArray(taCoverage.openRoles)
+          ? taCoverage.openRoles.map((entry) => ({
+              roleId: entry.roleId || null,
+              roleLabel: entry.roleLabel || entry.roleId || 'coverage',
+              kind: entry.kind || 'understaffed',
+              urgency: entry.urgency || 'low',
+              blocker: Boolean(entry.blocker),
+            }))
+          : [],
+        blockers: Array.isArray(taCoverage.blockers)
+          ? taCoverage.blockers.map((entry) => entry.roleLabel || entry.roleId || entry.kind || 'staffing blocker')
+          : [],
+      } : null,
+    };
+  });
+  return {
+    workspace: {
+      orchestratorStatus: runtimeWorkspace?.studio?.orchestrator?.status || null,
+      activeDeskIds: Array.isArray(runtimeWorkspace?.studio?.orchestrator?.activeDeskIds) ? runtimeWorkspace.studio.orchestrator.activeDeskIds : [],
+      teamBoardCardCount: Array.isArray(runtimeWorkspace?.studio?.teamBoard?.cards) ? runtimeWorkspace.studio.teamBoard.cards.length : 0,
+      pageTitle: runtimeWorkspace?.pages?.find?.((page) => page.id === runtimeWorkspace?.notebook?.activePageId)?.title || null,
+    },
+    desks,
+    ta: {
+      summary: taPayload.department?.summary || null,
+      urgency: taPayload.department?.urgency || 'low',
+      rosterCount: Array.isArray(taPayload.roster) ? taPayload.roster.length : 0,
+      openRoles: Array.isArray(taPayload.gapModel?.openRoles)
+        ? taPayload.gapModel.openRoles.map((entry) => ({
+            entityId: entry.entityId || null,
+            entityLabel: entry.entityLabel || entry.entityId || null,
+            roleId: entry.roleId || null,
+            roleLabel: entry.roleLabel || entry.roleId || 'coverage',
+            kind: entry.kind || 'understaffed',
+            urgency: entry.urgency || 'low',
+            blocker: Boolean(entry.blocker),
+          }))
+        : [],
+    },
+    generatedAt: nowIso(),
+  };
+}
+
+function findPendingCtoAction(history = [], confirmActionId = '') {
+  const targetId = String(confirmActionId || '').trim();
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const action = normalizeCtoActionRecord(history[index]?.action || null);
+    if (!action) continue;
+    if (targetId && action.id === targetId) return action;
+    if (!targetId && action.available && action.requiresConfirmation && action.status === 'pending') {
+      return action;
+    }
+  }
+  return null;
+}
+
+function buildCtoAvailableActions({ text = '', history = [], context = null } = {}) {
+  const normalizedText = String(text || '').trim().toLowerCase();
+  const deskId = findDeskTargetsInText(normalizedText)[0] || null;
+  const targetDesk = context?.desks?.find((entry) => entry.deskId === deskId) || null;
+  const asksForHiring = /\b(hire|recruit|staff|coverage|understaffed|missing lead|missing planner|headcount)\b/.test(normalizedText);
+  const asksForRouting = /\b(delegate|delegation|route|assign|send|hand off|handoff|have .* handle|ask .* handle)\b/.test(normalizedText);
+  const mentionsNeed = /\b(need|needs|missing|lack|without)\b/.test(normalizedText);
+  const actions = [];
+
+  if (targetDesk && (asksForHiring || mentionsNeed || (targetDesk.taCoverage?.openRoles || []).length)) {
+    const gapDescription = `${targetDesk.label} coverage is needed. Request: ${truncatePromptText(text, 180)}`;
+    actions.push({
+      id: `hire-${targetDesk.deskId}`,
+      kind: 'hire_candidate',
+      label: `Ask Talent Acquisition to hire ${targetDesk.label} coverage`,
+      targetDeskId: targetDesk.deskId,
+      targetDeskLabel: targetDesk.label,
+      available: true,
+      requiresConfirmation: true,
+      status: 'pending',
+      reason: targetDesk.taCoverage?.openRoles?.length
+        ? `${targetDesk.label} staffing is ${targetDesk.taCoverage.health}; open roles: ${targetDesk.taCoverage.openRoles.map((entry) => entry.roleLabel).join(', ')}.`
+        : `A real TA candidate + hire route exists for ${targetDesk.label}.`,
+      route: 'POST /api/ta/hire',
+      routeStatus: 'wired',
+      gapDescription,
+    });
+  }
+
+  if (targetDesk && asksForRouting) {
+    actions.push({
+      id: `route-${targetDesk.deskId}`,
+      kind: 'route_to_desk',
+      label: `Delegate this request to ${targetDesk.label}`,
+      targetDeskId: targetDesk.deskId,
+      targetDeskLabel: targetDesk.label,
+      available: false,
+      requiresConfirmation: false,
+      status: 'unavailable',
+      reason: targetDesk.routeNote,
+      route: null,
+      routeStatus: 'advisory-only',
+      gapDescription: null,
+    });
+  }
+
+  if (!actions.length) {
+    const pending = findPendingCtoAction(history);
+    if (pending) actions.push(pending);
+  }
+
+  return actions;
+}
+
+function selectTaCandidateForDesk(action = null) {
+  const targetDeskId = String(action?.targetDeskId || '').trim();
+  if (!targetDeskId) {
+    return { ok: false, reason: 'targetDeskId is required for a TA hire.' };
+  }
+  const gapDescription = String(action?.gapDescription || `${targetDeskId} coverage is needed.`).trim();
+  const candidates = generateCandidates({
+    description: gapDescription,
+    system_context: 'ACE Studio runtime',
+    affected_components: [targetDeskId, 'staffing', 'talent acquisition'],
+  });
+  const match = candidates.find((candidate) => {
+    const allowedDeskIds = Array.isArray(candidate.allowedDeskIds)
+      ? candidate.allowedDeskIds
+      : (Array.isArray(candidate.allowed_desk_ids) ? candidate.allowed_desk_ids : []);
+    const primaryDeskTarget = String(candidate.primaryDeskTarget || candidate.primary_desk_target || '').trim();
+    return allowedDeskIds.includes(targetDeskId) || primaryDeskTarget === targetDeskId;
+  }) || null;
+  if (!match) {
+    return {
+      ok: false,
+      reason: `Talent Acquisition could not produce a grounded candidate for ${targetDeskId}.`,
+    };
+  }
+  return {
+    ok: true,
+    candidate: normalizeTaCandidateCard(match),
+  };
+}
+
+async function executeCtoConfirmedAction(action = null) {
+  const normalizedAction = normalizeCtoActionRecord(action);
+  if (!normalizedAction) {
+    return {
+      ok: false,
+      status: 'blocked',
+      reason: 'No pending CTO action could be confirmed.',
+    };
+  }
+  if (normalizedAction.kind !== 'hire_candidate') {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      reason: `${normalizedAction.label} is not wired in this slice.`,
+    };
+  }
+  const candidateResult = selectTaCandidateForDesk(normalizedAction);
+  if (!candidateResult.ok) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      reason: candidateResult.reason,
+    };
+  }
+  try {
+    const currentState = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+    if (currentState.hiredCandidates.some((entry) => entry.id === candidateResult.candidate.id)) {
+      throw new Error(`Candidate "${candidateResult.candidate.id}" is already hired.`);
+    }
+    const hiredCandidate = {
+      ...candidateResult.candidate,
+      hiredAt: nowIso(),
+      hiredDeskId: normalizedAction.targetDeskId,
+      contractLocked: true,
+    };
+    const nextState = {
+      ...currentState,
+      hiredCandidates: [...currentState.hiredCandidates, hiredCandidate],
+      updatedAt: nowIso(),
+      lastGeneratedGap: normalizedAction.gapDescription || currentState.lastGeneratedGap || null,
+    };
+    writeJson(TA_DEPARTMENT_FILE, nextState);
+    const department = await buildTaDepartmentPayload(nextState);
+    return {
+      ok: true,
+      status: 'executed',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      deskId: normalizedAction.targetDeskId,
+      deskLabel: normalizedAction.targetDeskLabel,
+      summary: `Talent Acquisition hired ${hiredCandidate.name} for ${normalizedAction.targetDeskLabel || normalizedAction.targetDeskId}.`,
+      hiredCandidate: {
+        id: hiredCandidate.id,
+        name: hiredCandidate.name,
+        role: hiredCandidate.role,
+        deskId: hiredCandidate.hiredDeskId,
+      },
+      departmentSummary: department.department?.summary || null,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      deskId: normalizedAction.targetDeskId,
+      deskLabel: normalizedAction.targetDeskLabel,
+      reason: String(error.message || error),
+    };
+  }
+}
+
+function normalizeCtoDelegation(rawDelegation = null, context = null) {
+  if (!rawDelegation || typeof rawDelegation !== 'object') return null;
+  const deskId = String(rawDelegation.desk_id || rawDelegation.deskId || '').trim();
+  const matchingDesk = context?.desks?.find((entry) => entry.deskId === deskId) || null;
+  if (!deskId && !matchingDesk) return null;
+  return {
+    deskId: matchingDesk?.deskId || deskId || null,
+    deskLabel: matchingDesk?.label || String(rawDelegation.desk_label || rawDelegation.deskLabel || deskId || '').trim() || null,
+    why: String(rawDelegation.why || rawDelegation.reason || '').trim() || null,
+  };
+}
+
+function normalizeCtoResponseAction(rawAction = null, availableActions = [], execution = null) {
+  let matched = null;
+  const requestedId = String(rawAction?.id || '').trim();
+  if (requestedId) {
+    matched = availableActions.find((entry) => entry.id === requestedId) || null;
+  }
+  if (!matched && execution?.actionId) {
+    matched = availableActions.find((entry) => entry.id === execution.actionId) || null;
+  }
+  if (!matched && availableActions.length === 1) {
+    matched = availableActions[0];
+  }
+  if (!matched) return null;
+  if (execution && execution.actionId === matched.id) {
+    return {
+      ...matched,
+      status: execution.ok ? 'executed' : 'blocked',
+      requiresConfirmation: execution.ok ? false : matched.requiresConfirmation,
+      reason: execution.ok ? execution.summary : execution.reason,
+      execution,
+    };
+  }
+  return matched;
+}
+
+function createCtoStructuredReplyError(kind = 'parse', message = 'CTO structured reply failed.') {
+  const error = new Error(String(message || 'CTO structured reply failed.'));
+  error.name = 'CtoStructuredReplyError';
+  error.ctoFailureKind = kind === 'contract' ? 'contract' : 'parse';
+  error.code = error.ctoFailureKind === 'contract' ? 'cto-contract-failed' : 'cto-parse-failed';
+  return error;
+}
+
+function extractStrictCtoStructuredJson(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) {
+    throw createCtoStructuredReplyError('parse', 'CTO chat returned an empty response.');
+  }
+  const fencedMatch = raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fencedMatch) {
+    return String(fencedMatch[1] || '').trim();
+  }
+  if (raw.startsWith('{')) {
+    return raw;
+  }
+  throw createCtoStructuredReplyError('parse', 'CTO chat returned prose instead of strict JSON.');
+}
+
+function validateCtoStructuredReplyShape(payload = null, options = {}) {
+  const availableActionIds = Array.isArray(options.availableActions)
+    ? options.availableActions.map((entry) => String(entry?.id || '').trim()).filter(Boolean)
+    : [];
+  const executionActionId = String(options.execution?.actionId || '').trim();
+  if (executionActionId && !availableActionIds.includes(executionActionId)) {
+    availableActionIds.push(executionActionId);
+  }
+  const knownDeskIds = Array.isArray(options.context?.desks)
+    ? options.context.desks.map((entry) => String(entry?.deskId || '').trim()).filter(Boolean)
+    : [];
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw createCtoStructuredReplyError('contract', 'CTO chat response must be a JSON object.');
+  }
+  const replyText = String(payload.reply_text || payload.replyText || '').trim();
+  if (!replyText) {
+    throw createCtoStructuredReplyError('contract', 'CTO chat response was missing reply_text.');
+  }
+  const responseKind = String(payload.response_kind || payload.responseKind || '').trim();
+  if (!CTO_GOVERNANCE_RESPONSE_KIND_VALUES.includes(responseKind)) {
+    throw createCtoStructuredReplyError(
+      'contract',
+      `CTO chat response had an invalid response_kind. Allowed values: ${CTO_GOVERNANCE_RESPONSE_KIND_VALUES.join(', ')}.`,
+    );
+  }
+  const delegation = payload.delegation;
+  if (delegation !== null && delegation !== undefined) {
+    if (!delegation || typeof delegation !== 'object' || Array.isArray(delegation)) {
+      throw createCtoStructuredReplyError('contract', 'CTO chat response had an invalid delegation object.');
+    }
+    const delegationDeskId = String(delegation.desk_id || delegation.deskId || '').trim();
+    const delegationDeskLabel = String(delegation.desk_label || delegation.deskLabel || '').trim();
+    const delegationWhy = String(delegation.why || delegation.reason || '').trim();
+    if (!delegationDeskId || !delegationDeskLabel || !delegationWhy) {
+      throw createCtoStructuredReplyError('contract', 'CTO chat delegation did not satisfy the required contract.');
+    }
+    if (knownDeskIds.length && !knownDeskIds.includes(delegationDeskId)) {
+      throw createCtoStructuredReplyError('contract', `CTO chat delegation referenced an unknown desk_id: ${delegationDeskId}.`);
+    }
+  }
+  const action = payload.action;
+  if (action !== null && action !== undefined) {
+    if (!action || typeof action !== 'object' || Array.isArray(action)) {
+      throw createCtoStructuredReplyError('contract', 'CTO chat response had an invalid action object.');
+    }
+    const actionId = String(action.id || '').trim();
+    if (!actionId) {
+      throw createCtoStructuredReplyError('contract', 'CTO chat action did not satisfy the required contract.');
+    }
+    if (availableActionIds.length && !availableActionIds.includes(actionId)) {
+      throw createCtoStructuredReplyError('contract', `CTO chat action referenced an unavailable action id: ${actionId}.`);
+    }
+  }
+  return {
+    replyText,
+    responseKind,
+  };
+}
+
+function parseCtoStructuredReply(text = '', options = {}) {
+  const candidate = extractStrictCtoStructuredJson(text);
+  let payload = null;
+  try {
+    payload = JSON.parse(candidate);
+  } catch (error) {
+    throw createCtoStructuredReplyError('parse', `CTO chat response was not valid JSON: ${error.message}`);
+  }
+  const validated = validateCtoStructuredReplyShape(payload, options);
+  return {
+    payload,
+    replyText: validated.replyText,
+    responseKind: validated.responseKind,
+  };
+}
+
+function buildCtoPromptContext(context = null) {
+  return {
+    workspace: context?.workspace || {},
+    desks: (context?.desks || []).map((desk) => ({
+      deskId: desk.deskId,
+      label: desk.label,
+      departmentLabel: desk.departmentLabel,
+      assignedAgentIds: desk.assignedAgentIds,
+      liveAgentCount: desk.liveAgentCount,
+      liveAgentStatuses: desk.liveAgentStatuses,
+      taskCount: desk.taskCount,
+      reportCount: desk.reportCount,
+      readOnly: desk.readOnly,
+      manualRunRoute: desk.manualRunRoute,
+      routeNote: desk.routeNote,
+      truthContext: truncatePromptText(desk.truthContext || '', 160),
+      taCoverage: desk.taCoverage,
+    })),
+    ta: {
+      summary: context?.ta?.summary || null,
+      urgency: context?.ta?.urgency || 'low',
+      rosterCount: context?.ta?.rosterCount || 0,
+      openRoles: (context?.ta?.openRoles || []).slice(0, 12),
+    },
+  };
+}
+
+function buildCtoChatPrompt({
+  text = '',
+  history = [],
+  context = null,
+  availableActions = [],
+  execution = null,
+} = {}) {
+  const promptPayload = {
+    latest_user_message: text,
+    history: history.map((entry) => ({
+      role: entry.role,
+      text: truncatePromptText(entry.text, 220),
+      action: entry.action ? {
+        id: entry.action.id,
+        kind: entry.action.kind,
+        label: entry.action.label,
+        available: entry.action.available,
+        requiresConfirmation: entry.action.requiresConfirmation,
+        status: entry.action.status,
+        reason: entry.action.reason,
+      } : null,
+    })),
+    context: buildCtoPromptContext(context),
+    available_actions: availableActions,
+    execution_result: execution || null,
+  };
+  return [
+    'You are the ACE CTO / Architect chat utility.',
+    'Use only grounded facts from the supplied ACE context.',
+    'Do not invent departments, desks, routes, or completed actions.',
+    'Prefer governance and delegation language over pretending to do all work directly.',
+    'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.',
+    'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.',
+    'If an action is unavailable, explain why in system terms.',
+    'Return JSON only with this exact shape:',
+    '{',
+    '  "reply_text": "string",',
+    '  "response_kind": "advisory|actionable|blocked",',
+    '  "delegation": { "desk_id": "string", "desk_label": "string", "why": "string" } | null,',
+    '  "action": { "id": "string" } | null',
+    '}',
+    'response_kind must be one of advisory, actionable, blocked.',
+    'If action is not null, action.id must be one of the ids listed in available_actions.',
+    'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.',
+    'Do not emit route status fields. Route status is owned by the server, not the model.',
+    '',
+    'ACE context:',
+    JSON.stringify(promptPayload, null, 2),
+  ].join('\n');
+}
+
+async function runCtoGovernanceChat({
+  text = '',
+  history = [],
+  source = 'cto-chat',
+  backend = null,
+  model = null,
+  host = null,
+  timeoutMs = null,
+  confirmActionId = null,
+  workspace = null,
+} = {}) {
+  const promptText = String(text || '').trim();
+  if (!promptText) {
+    throw new Error('text is required.');
+  }
+  const requestedConfig = resolveCtoGovernanceConfig({ backend, model, host, timeoutMs });
+  const requestedBackend = requestedConfig.backend;
+  const requestedModel = requestedConfig.model;
+  const requestedHost = requestedConfig.host;
+  const requestedTimeout = requestedConfig.timeoutMs;
+  const normalizedHistory = normalizeCtoChatHistory(history);
+  const backendStatus = await probeCtoBackendStatus({
+    backend: requestedBackend,
+    model: requestedModel,
+    host: requestedHost,
+    timeoutMs: requestedTimeout,
+  });
+  if (!backendStatus.ok) {
+    const diagnostic = recordCtoDiagnostic({
+      route: '/api/spatial/cto/chat',
+      source,
+      status: backendStatus.status,
+      backend: requestedBackend,
+      model: requestedModel,
+      host: requestedHost,
+      reason: backendStatus.reason,
+    });
+    return {
+      ok: false,
+      status: backendStatus.status,
+      reason: backendStatus.reason,
+      backend: requestedBackend,
+      model: requestedModel,
+      backendStatus,
+      source,
+      diagnostic,
+    };
+  }
+  const context = await buildCtoGovernanceContext(workspace);
+  const availableActions = buildCtoAvailableActions({
+    text: promptText,
+    history: normalizedHistory,
+    context,
+  });
+  const pendingAction = findPendingCtoAction(normalizedHistory, confirmActionId);
+  const shouldExecuteAction = Boolean(pendingAction)
+    && (Boolean(String(confirmActionId || '').trim()) || isAffirmativeCtoReply(promptText));
+  const execution = shouldExecuteAction
+    ? await executeCtoConfirmedAction(pendingAction)
+    : null;
+  const runId = `cto-chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const prompt = buildCtoChatPrompt({
+    text: promptText,
+    history: normalizedHistory,
+    context,
+    availableActions,
+    execution,
+  });
+  try {
+    const modelResult = await callOllamaGenerate({
+      prompt,
+      model: requestedModel,
+      host: requestedHost,
+      timeoutMs: requestedTimeout,
+      expectJson: false,
+    });
+    const parsedReply = parseCtoStructuredReply(modelResult?.text || '', {
+      availableActions,
+      context,
+      execution,
+    });
+    const raw = parsedReply.payload;
+    const replyText = parsedReply.replyText;
+    const responseKind = parsedReply.responseKind;
+    return {
+      ok: true,
+      status: 'live',
+      backend: requestedBackend,
+      model: requestedModel,
+      runId,
+      source,
+      reply_text: replyText,
+      replyKind: responseKind,
+      delegation: normalizeCtoDelegation(raw.delegation, context),
+      action: normalizeCtoResponseAction(raw.action, availableActions, execution),
+      execution,
+      backendStatus,
+    };
+  } catch (error) {
+    const reason = String(error.message || error);
+    const failureDetail = error?.ctoFailureKind === 'contract'
+      ? `returned parseable JSON that failed CTO contract validation`
+      : 'returned an unreadable structured reply';
+    const diagnostic = recordCtoDiagnostic({
+      route: '/api/spatial/cto/chat',
+      source,
+      status: 'degraded',
+      backend: requestedBackend,
+      model: requestedModel,
+      host: requestedHost,
+      reason,
+      failureKind: error?.ctoFailureKind || 'parse',
+      runId,
+      actionId: execution?.actionId || null,
+      availableActionIds: availableActions.map((entry) => entry.id),
+    });
+    return {
+      ok: false,
+      status: 'degraded',
+      backend: requestedBackend,
+      model: requestedModel,
+      runId,
+      source,
+      reason,
+      reply_text: execution?.ok
+        ? `${execution.summary} The live CTO model is reachable, but ${requestedModel} ${failureDetail}, so no additional governance response is available.`
+        : `The live CTO model is reachable, but ${requestedModel} ${failureDetail}. No delegation or internal action was applied.`,
+      replyKind: 'blocked',
+      delegation: null,
+      action: normalizeCtoResponseAction(null, availableActions, execution),
+      execution,
+      backendStatus: {
+        ...backendStatus,
+        ok: false,
+        status: 'degraded',
+        reason,
+      },
+      diagnostic,
+    };
+  }
+}
+
+async function runCtoGovernanceModelBakeOff({
+  models = null,
+  text = CTO_BAKEOFF_DEFAULT_TEXT,
+  history = [],
+  backend = null,
+  host = null,
+  timeoutMs = null,
+  workspace = null,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const config = resolveCtoGovernanceConfig({ backend, host, timeoutMs });
+  const localModels = await listLocalOllamaModels({
+    host: config.host,
+    timeoutMs: config.timeoutMs,
+    fetchImpl,
+  });
+  const requestedModels = Array.isArray(models)
+    ? models.map((value) => String(value || '').trim()).filter(Boolean)
+    : [];
+  const shortlist = requestedModels.length
+    ? requestedModels
+    : [
+        ...CTO_BAKEOFF_MODEL_PREFERENCE.filter((modelName) => localModels.includes(modelName)),
+        ...localModels.filter((modelName) => !CTO_BAKEOFF_MODEL_PREFERENCE.includes(modelName)),
+      ].slice(0, 6);
+  const normalizedHistory = normalizeCtoChatHistory(history);
+  const context = await buildCtoGovernanceContext(workspace);
+  const availableActions = buildCtoAvailableActions({
+    text,
+    history: normalizedHistory,
+    context,
+  });
+  const prompt = buildCtoChatPrompt({
+    text,
+    history: normalizedHistory,
+    context,
+    availableActions,
+    execution: null,
+  });
+  const results = [];
+
+  for (const modelName of shortlist) {
+    const status = await probeCtoBackendStatus({
+      backend: config.backend,
+      model: modelName,
+      host: config.host,
+      timeoutMs: config.timeoutMs,
+      fetchImpl,
+    });
+    if (!status.ok) {
+      results.push({
+        model: modelName,
+        reachable: false,
+        backendStatus: status,
+        rawOutput: null,
+        rawJsonParse: { ok: false, reason: 'Model was not reachable for bake-off.' },
+        fencedJsonParse: { ok: false, reason: 'Model was not reachable for bake-off.' },
+        contractValidation: { ok: false, reason: status.reason || 'Model was not reachable for bake-off.', parsePath: null },
+        score: 0,
+      });
+      continue;
+    }
+
+    let rawOutput = '';
+    let rawJsonParse = { ok: false, reason: 'No output returned.', payload: null };
+    let fencedJsonParse = { ok: false, reason: 'No output returned.', payload: null };
+    let contractValidation = { ok: false, reason: 'No output returned.', parsePath: null };
+
+    try {
+      const generation = await callOllamaGenerate({
+        prompt,
+        model: modelName,
+        host: config.host,
+        timeoutMs: config.timeoutMs,
+        expectJson: false,
+        fetchImpl,
+      });
+      rawOutput = String(generation?.text || '').trim();
+      rawJsonParse = tryParseCtoRawJson(rawOutput);
+      fencedJsonParse = tryParseCtoFencedJson(rawOutput);
+      try {
+        parseCtoStructuredReply(rawOutput, {
+          availableActions,
+          context,
+          execution: null,
+        });
+        contractValidation = {
+          ok: true,
+          reason: null,
+          parsePath: rawJsonParse.ok ? 'raw_json' : (fencedJsonParse.ok ? 'fenced_json' : 'strict_parser'),
+        };
+      } catch (error) {
+        contractValidation = {
+          ok: false,
+          reason: String(error.message || error),
+          parsePath: rawJsonParse.ok ? 'raw_json' : (fencedJsonParse.ok ? 'fenced_json' : null),
+        };
+      }
+    } catch (error) {
+      rawOutput = '';
+      const reason = String(error.message || error);
+      rawJsonParse = { ok: false, reason, payload: null };
+      fencedJsonParse = { ok: false, reason, payload: null };
+      contractValidation = { ok: false, reason, parsePath: null };
+    }
+
+    const entry = {
+      model: modelName,
+      reachable: true,
+      backendStatus: status,
+      rawOutput,
+      rawJsonParse: {
+        ok: rawJsonParse.ok,
+        reason: rawJsonParse.reason || null,
+      },
+      fencedJsonParse: {
+        ok: fencedJsonParse.ok,
+        reason: fencedJsonParse.reason || null,
+      },
+      contractValidation,
+    };
+    entry.score = scoreCtoBakeOffEntry(entry);
+    results.push(entry);
+  }
+
+  return {
+    generatedAt: nowIso(),
+    backend: config.backend,
+    host: config.host,
+    promptText: text,
+    availableModels: localModels,
+    shortlistedModels: shortlist,
+    summary: summarizeCtoBakeOffResult(results),
+    results,
+  };
 }
 
 function detectMaterialGenerationIntent(text) {
@@ -2661,6 +4024,7 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
     throw new Error(`Unknown desk id: ${deskId}`);
   }
   const departmentLayout = layout.departments.find((entry) => entry.id === deskLayout.departmentId) || null;
+  const panel = buildDeskPanelMetadata(deskId, deskLayout, departmentLayout);
   const desk = workspace?.studio?.orchestrator?.desks?.[deskId] || {};
   const deskProperties = normalizeDeskPropertiesState(workspace)?.[deskId] || {
     managedAgents: [],
@@ -2720,6 +4084,7 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
     },
     guardrails: deskProperties.guardrails,
   };
+  const rndExperiments = deskId === 'rnd-lead' ? loadRndExperimentRecords() : null;
   return {
     deskId,
     desk: {
@@ -2732,6 +4097,7 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
       editable: Boolean(deskLayout.editable),
       assignedAgentIds: [...(deskLayout.assignedAgentIds || [])],
       departmentId: deskLayout.departmentId,
+      panel,
     },
     layout: {
       controlCentreDeskId: layout.controlCentreDeskId,
@@ -2746,6 +4112,8 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
       assigned: deskProperties.moduleIds.includes(module.id),
     })),
     reports: collectDeskReports(workspace, deskId),
+    experiments: rndExperiments?.experiments || [],
+    experimentContract: rndExperiments?.contract || null,
     qa: deskId === QA_LEAD_DESK_ID
       ? {
           availableTests: listRunnableQASuites(),
@@ -8585,52 +9953,142 @@ app.post('/api/modules/run', (req, res) => {
   return res.json(result);
 });
 
-app.post('/api/spatial/cto/chat', async (req, res) => {
+app.get('/api/spatial/cto/status', async (req, res) => {
   try {
-    const { text, source } = req.body || {};
-    console.log('[DEBUG] POST /api/spatial/cto/chat received:', { text, source });
-    
-    if (!text || !text.trim()) {
-      return res.json({ reply_text: 'I cannot reply to an empty message.' });
-    }
-
-    const workspace = readSpatialWorkspace();
-    const result = await analyzeIntentWithContextWorker(text, workspace, {
-      source: source || 'cto-chat',
-      backend: String(req.body?.backend || '').trim() || null,
-      model: String(req.body?.model || '').trim() || null,
-      host: String(req.body?.host || '').trim() || null,
-      timeoutMs: Number(req.body?.timeoutMs) > 0 ? Number(req.body.timeoutMs) : null,
+    const { backend, model, host, timeoutMs } = resolveCtoGovernanceConfig(req.query || {});
+    const status = await probeCtoBackendStatus({
+      backend,
+      model,
+      host,
+      timeoutMs,
     });
-    
-    console.log('[DEBUG] Context Manager Raw Response:', typeof result.run?.rawResponse === 'string' ? result.run.rawResponse.slice(0, 100) + '...' : result.run?.rawResponse);
-    console.log('[DEBUG] Context Manager Extracted Report Summary:', result.report?.summary);
-    
-    if (!result.ok || result.run?.usedFallback) {
-      const payload = buildAgentFailurePayload(result, {
-        reply_text: null,
-        report: result.report || null,
-      });
-      return res.status(503).json(payload);
-    }
+    const httpStatus = status.status === 'offline' ? 503 : (status.status === 'degraded' ? 200 : 200);
+    return res.status(httpStatus).json({
+      ok: status.ok,
+      ...status,
+    });
+  } catch (error) {
+    const reason = String(error.message || error);
+    const ctoConfig = resolveCtoGovernanceConfig(req.query || {});
+    return res.status(500).json({
+      ok: false,
+      status: 'offline',
+      error: reason,
+      reason,
+      backend: ctoConfig.backend,
+      model: ctoConfig.model,
+      host: ctoConfig.host,
+    });
+  }
+});
 
-    const reply_text = result.report?.summary || result.run?.summary || 'No text generated.';
+app.get('/api/spatial/cto/diagnostics', (req, res) => {
+  try {
+    const diagnostics = readCtoDiagnostics();
     return res.json({
       ok: true,
-      status: 'live',
-      reply_text,
-      backend: result.run?.backend || 'ollama',
-      model: result.run?.model || null,
-      runId: result.run?.id || null,
+      version: diagnostics.version,
+      updated_at: diagnostics.updated_at,
+      summary: summarizeCtoDiagnostics(diagnostics.entries),
+      entries: diagnostics.entries,
+    });
+  } catch (error) {
+    const reason = String(error.message || error);
+    return res.status(500).json({
+      ok: false,
+      error: reason,
+      reason,
+    });
+  }
+});
+
+app.post('/api/spatial/cto/chat', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const text = String(body.text || '').trim();
+    const source = String(body.source || 'cto-chat').trim() || 'cto-chat';
+    if (!text) {
+      return res.status(400).json({
+        ok: false,
+        status: 'blocked',
+        error: 'text is required.',
+        reason: 'text is required.',
+        reply_text: null,
+      });
+    }
+    const result = await runCtoGovernanceChat({
+      text,
+      history: body.history,
+      source,
+      backend: body.backend,
+      model: body.model,
+      host: body.host,
+      timeoutMs: body.timeoutMs,
+      confirmActionId: body.confirmActionId,
+      workspace: readSpatialWorkspace(),
+    });
+    if (!result.ok) {
+      const httpStatus = result.status === 'offline' ? 503 : 422;
+      return res.status(httpStatus).json({
+        ok: false,
+        status: result.status,
+        error: result.reason,
+        reason: result.reason,
+        reply_text: result.reply_text || null,
+        backend: result.backend || null,
+        model: result.model || null,
+        action: result.action || null,
+        execution: result.execution || null,
+        replyKind: result.replyKind || 'blocked',
+        backendStatus: result.backendStatus || null,
+        diagnostic: result.diagnostic || null,
+      });
+    }
+    return res.json({
+      ok: true,
+      status: result.status,
+      reply_text: result.reply_text,
+      replyKind: result.replyKind,
+      backend: result.backend,
+      model: result.model,
+      runId: result.runId,
+      delegation: result.delegation,
+      action: result.action,
+      execution: result.execution,
+      backendStatus: result.backendStatus,
+      diagnostic: result.diagnostic || null,
     });
   } catch (error) {
     console.error('[ERROR] /api/spatial/cto/chat failed:', error);
     const reason = String(error.message || error);
+    const ctoConfig = resolveCtoGovernanceConfig();
+    const diagnostic = recordCtoDiagnostic({
+      route: '/api/spatial/cto/chat',
+      source: 'cto-chat',
+      status: 'offline',
+      backend: ctoConfig.backend,
+      model: ctoConfig.model,
+      host: ctoConfig.host,
+      reason,
+    });
     return res.status(500).json({
       ok: false,
       status: classifyLlmFailureStatus(reason, false),
       error: reason,
+      reason,
       reply_text: null,
+      replyKind: 'blocked',
+      diagnostic,
+      backendStatus: {
+        ok: false,
+        status: 'offline',
+        backend: ctoConfig.backend,
+        model: ctoConfig.model,
+        host: ctoConfig.host,
+        checkedAt: nowIso(),
+        reason,
+        availableModels: [],
+      },
     });
   }
 });
@@ -8923,4 +10381,17 @@ module.exports = {
   addDeskToLayout,
   buildStudioLayoutCatalog,
   listStudioDeskIds,
+  resolveCtoGovernanceConfig,
+  parseCtoStructuredReply,
+  classifyCtoDiagnosticCategory,
+  recordCtoDiagnostic,
+  readCtoDiagnostics,
+  probeCtoBackendStatus,
+  buildCtoGovernanceContext,
+  buildCtoAvailableActions,
+  executeCtoConfirmedAction,
+  runCtoGovernanceModelBakeOff,
+  runCtoGovernanceChat,
+  normalizeCtoChatHistory,
+  isAffirmativeCtoReply,
 };

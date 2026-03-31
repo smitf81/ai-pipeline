@@ -2884,6 +2884,58 @@ body.qa-mode .status-row:last-child {
   margin-top: 12px;
 }
 
+.cto-chat-window {
+  gap: 14px;
+}
+
+.cto-chat-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cto-chat-thread-section {
+  min-height: 0;
+}
+
+.cto-chat-thread {
+  margin-bottom: 0;
+  max-height: 320px;
+}
+
+.cto-chat-entry.is-user {
+  border-color: rgba(102, 199, 255, 0.18);
+  background: rgba(9, 18, 30, 0.7);
+}
+
+.cto-chat-entry.is-assistant {
+  border-color: rgba(255, 211, 110, 0.14);
+  background: rgba(18, 14, 8, 0.28);
+}
+
+.cto-chat-text {
+  white-space: pre-wrap;
+}
+
+.cto-chat-action-block {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cto-chat-action-row,
+.cto-chat-compose-row {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cto-chat-box {
+  min-height: 96px;
+}
+
 @media (max-width: 1180px) {
   .spatial-main { grid-template-columns: 1fr 300px; }
   .toolbar-status { max-width: 28vw; }

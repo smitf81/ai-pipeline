@@ -1,6 +1,7 @@
 const UTILITY_WINDOW_STORAGE_KEY = 'ace.spatial.utilityWindows.v1';
-const UTILITY_WINDOW_ORDER = ['environment', 'qa', 'context', 'reports', 'roster', 'studio-map', 'scorecards'];
+const UTILITY_WINDOW_ORDER = ['cto-chat', 'environment', 'qa', 'context', 'reports', 'roster', 'studio-map', 'scorecards'];
 const UTILITY_WINDOW_META = {
+  'cto-chat': { deskId: 'cto-architect', title: 'CTO Chat' },
   environment: { deskId: 'cto-architect' },
   qa: { deskId: 'qa-lead' },
   context: { deskId: 'memory-archivist' },

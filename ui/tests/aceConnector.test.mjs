@@ -117,6 +117,20 @@ export default async function runAceConnectorTests() {
         }),
       };
     }
+    if (url === '/api/spatial/cto/status') {
+      return {
+        ok: true,
+        json: async () => ({
+          ok: true,
+          status: 'live',
+          backend: 'ollama',
+          model: 'mistral:latest',
+          checkedAt: '2026-03-30T10:00:00.000Z',
+          reason: null,
+          availableModels: ['mistral:latest'],
+        }),
+      };
+    }
     if (url === '/api/spatial/layout/actions') {
       const body = JSON.parse(options.body || '{}');
       if (body.action === 'add_department') {
@@ -880,6 +894,11 @@ export default async function runAceConnectorTests() {
     const taDepartmentPayload = await ace.getTaDepartment();
     assert.equal(taDepartmentPayload.department.name, 'Talent Acquisition');
     assert.equal(requests.at(-1).url, '/api/ta/department');
+
+    const ctoStatusPayload = await ace.getCtoDeskStatus();
+    assert.equal(ctoStatusPayload.status, 'live');
+    assert.equal(ctoStatusPayload.backend, 'ollama');
+    assert.equal(requests.at(-1).url, '/api/spatial/cto/status');
 
     const departmentPayload = await ace.addDepartment({ templateId: 'research' });
     assert.equal(requests.at(-1).url, '/api/spatial/layout/actions');
