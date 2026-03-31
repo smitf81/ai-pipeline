@@ -25,8 +25,8 @@ export default async function runStudioLayoutRelationshipTests() {
   const defaultLayout = createDefaultStudioLayoutSchema();
   assert.ok(defaultLayout.organization);
   assert.equal(defaultLayout.organization.schemaVersion, 'studio-relationships.v1');
-  assert.equal(defaultLayout.departments.length, 6);
-  assert.equal(listStudioDeskIds(defaultLayout).length, 7);
+  assert.equal(defaultLayout.departments.length, 7);
+  assert.equal(listStudioDeskIds(defaultLayout).length, 8);
   assert.ok(defaultLayout.organization.departments['dept-talent-acquisition']);
   assert.equal(defaultLayout.organization.departments['dept-talent-acquisition'].staffing.requiredLeadSeatId, 'integration_auditor');
   assert.equal(defaultLayout.organization.departments['dept-talent-acquisition'].staffing.minimumActiveSeats, 1);
@@ -38,6 +38,17 @@ export default async function runStudioLayoutRelationshipTests() {
   assert.ok(defaultLayout.organization.departments['dept-delivery'].dependencyDepartmentIds.includes('dept-intake'));
   assert.ok(defaultLayout.organization.departments['dept-delivery'].supportDeskIds.includes('qa-lead'));
   assert.ok(defaultLayout.organization.desks.planner.peerDeskIds.includes('executor'));
+  assert.equal(defaultLayout.organization.desks.planner.ownerDepartmentId, 'dept-delivery');
+  assert.ok(defaultLayout.organization.desks.planner.assignedAgentIds.includes('planner'));
+  assert.equal(defaultLayout.organization.agents.planner.roleId, 'planner');
+  assert.equal(defaultLayout.organization.agents.planner.deskId, 'planner');
+  assert.equal(defaultLayout.organization.agents.planner.modelProfileId, 'model-profile.planner-default');
+  assert.deepEqual(defaultLayout.organization.planner, {
+    deskId: 'planner',
+    roleId: 'planner',
+    agentId: 'planner',
+    modelProfileId: 'model-profile.planner-default',
+  });
   assert.ok(defaultLayout.organization.desks.planner.dependencyDepartmentIds.includes('dept-intake'));
   assert.ok(defaultLayout.organization.desks.planner.supportDeskIds.includes('qa-lead'));
 
