@@ -22,7 +22,7 @@ Review needed for builder: fix task pressure, known failure: git_apply_check_fai
 Address the known avoidable failure (git_apply_check_failed) before retrying this path.
 
 ## Artifact Refs
-- ../../../../../../AppData/Local/Temp/ace-task-cache-m7t22m/work/tasks/0001-cache-apply-result/agent_attribution.json
-- ../../../../../../AppData/Local/Temp/ace-task-cache-m7t22m/work/tasks/0001-cache-apply-result/apply_result.json
-- ../../../../../../AppData/Local/Temp/ace-task-cache-m7t22m/work/tasks/0001-cache-apply-result/meta.json
-- ../../../../../../AppData/Local/Temp/ace-task-cache-m7t22m/work/tasks/0001-cache-apply-result/patch.diff
+- ../../../../../../AppData/Local/Temp/ace-task-cache-dlowl8/work/tasks/0001-cache-apply-result/agent_attribution.json
+- ../../../../../../AppData/Local/Temp/ace-task-cache-dlowl8/work/tasks/0001-cache-apply-result/apply_result.json
+- ../../../../../../AppData/Local/Temp/ace-task-cache-dlowl8/work/tasks/0001-cache-apply-result/meta.json
+- ../../../../../../AppData/Local/Temp/ace-task-cache-dlowl8/work/tasks/0001-cache-apply-result/patch.diff

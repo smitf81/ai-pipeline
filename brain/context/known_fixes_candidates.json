@@ -1,6 +1,6 @@
 {
   "version": "ace/known-fix-candidates.v1",
-  "updatedAt": "2026-03-31T07:30:56.463Z",
+  "updatedAt": "2026-03-31T12:31:47.758Z",
   "entries": [
     {
       "id": "candidate-git_apply_check_failed",
@@ -24,12 +24,12 @@
         "apply"
       ],
       "source": "failure-history",
-      "updatedAt": "2026-03-31T07:30:56.463Z",
+      "updatedAt": "2026-03-31T12:31:47.758Z",
       "status": "candidate",
       "failureKey": "git_apply_check_failed",
-      "count": 35,
+      "count": 36,
       "firstSeen": "2026-03-29T07:59:09.707Z",
-      "lastSeen": "2026-03-30T12:32:09.176Z",
+      "lastSeen": "2026-03-31T09:19:41.797Z",
       "exampleMessages": [
         "Apply failed after patch drift."
       ],

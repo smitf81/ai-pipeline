@@ -2813,6 +2813,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const architectureSaveTimer = useRef(null);
   const utilityWindowSaveTimer = useRef(null);
   const utilityWindowDrag = useRef(null);
+  const ctoChatSubmitLock = useRef(false);
   const lastCanvasViewport = useRef(createDefaultCanvasViewport());
   const lastStudioViewport = useRef(createDefaultStudioViewport());
   const lastScene = useRef(SCENES.CANVAS);
@@ -3314,6 +3315,8 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const sendCtoChatMessage = useCallback(async ({ text, confirmActionId = null } = {}) => {
     const prompt = String(text || '').trim();
     if (!prompt) return;
+    if (ctoChatSubmitLock.current) return;
+    ctoChatSubmitLock.current = true;
     const userEntry = {
       id: `cto-user-${Date.now()}`,
       role: 'user',
@@ -3389,6 +3392,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
         detail: payload?.reason || backendStatus?.reason || null,
       }].slice(-12));
     } finally {
+      ctoChatSubmitLock.current = false;
       setCtoChatBusy(false);
     }
   }, [ace, ctoChatHistory, scene]);
@@ -6462,6 +6466,13 @@ function syncRecentWorldChange(change = null) {
           value: ctoChatDraft,
           placeholder: 'Ask the CTO about staffing, desk ownership, or delegation...',
           onChange: (event) => setCtoChatDraft(event.target.value),
+          onKeyDown: (event) => {
+            if (event.key !== 'Enter' || event.shiftKey) return;
+            event.preventDefault();
+            if (ctoChatBusy || !ctoChatDraft.trim()) return;
+            sendCtoChatMessage({ text: ctoChatDraft });
+          },
+          disabled: ctoChatBusy,
         }),
         h('div', { className: 'button-row cto-chat-compose-row' },
           h('button', {
@@ -6997,7 +7008,7 @@ function syncRecentWorldChange(change = null) {
         }
         return h('section', {
           key: windowId,
-          className: `utility-window ${config.docked ? 'docked' : 'floating'} ${config.minimized ? 'minimized' : ''}`,
+          className: `utility-window ${config.docked ? 'docked' : 'floating'} ${config.minimized ? 'minimized' : ''} ${windowId === 'cto-chat' ? 'cto-chat-shell' : ''}`.trim(),
           style: config.docked ? null : (() => {
             const position = config.position || getDefaultUtilityWindowPosition(windowId);
             return { top: `${position.top}px`, left: `${position.left}px` };
@@ -7026,11 +7037,13 @@ function syncRecentWorldChange(change = null) {
               h('button', {
                 className: 'mini',
                 type: 'button',
-                onClick: () => closeUtilityWindow(windowId),
+              onClick: () => closeUtilityWindow(windowId),
               }, 'Close'),
             ),
           ),
-          !config.minimized ? h('div', { className: 'utility-window-body' }, content) : null,
+          !config.minimized ? h('div', {
+            className: `utility-window-body ${windowId === 'cto-chat' ? 'cto-chat-utility-body' : ''}`.trim(),
+          }, content) : null,
         );
       }),
     );

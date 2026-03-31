@@ -25,26 +25,11 @@
         "Less suited to greenfield product ideation",
         "Can over-index on audit depth when rapid shipping is the priority"
       ],
-      "recommendedTools": [
-        "network inspector",
-        "request logs",
-        "route map",
-        "contract checklist"
-      ],
-      "recommendedSkills": [
-        "integration analysis",
-        "API tracing",
-        "systems debugging",
-        "evidence synthesis"
-      ],
-      "modelPolicy": {
-        "preferred": "hybrid",
-        "reason": "Combines deterministic checks with higher-level reasoning across cross-system behavior."
-      },
-      "whyThisRole": "Integration Auditor is a fit because \"ui actions appear disconnected from backend execution\" suggests a need to maps claimed system behavior against actual execution paths and integration seams. within ace studio runtime.",
-      "riskNotes": [
-        "Needs current endpoint and workflow visibility to avoid stale conclusions."
-      ],
+      "recommendedTools": [],
+      "recommendedSkills": [],
+      "modelPolicy": null,
+      "whyThisRole": "",
+      "riskNotes": [],
       "confidence": 0.82,
       "allowedDepartmentIds": [
         "delivery",
@@ -101,11 +86,198 @@
           "A desk-ready contract for the roster."
         ]
       },
-      "hiredAt": "2026-03-30T12:32:09.356Z",
+      "hiredAt": "2026-03-31T09:19:42.076Z",
       "hiredDeskId": "executor",
+      "contractLocked": true
+    },
+    {
+      "id": "planner-coverage-is-needed-request-shall-we-hire-delivery-analyst",
+      "name": "Morgan Hale",
+      "roleId": "delivery_analyst",
+      "role": "Delivery Analyst",
+      "department": "Talent Acquisition",
+      "departmentId": "talent-acquisition",
+      "deskTargets": [
+        "planner"
+      ],
+      "primaryDeskTarget": "planner",
+      "assignedModel": "mistral:latest",
+      "modelLocked": true,
+      "model_locked": true,
+      "summary": "Connects system gaps to delivery impact, rollout friction, and execution bottlenecks. Focuses on workflow friction and delivery risk across planner, staffing, talent acquisition.",
+      "strengths": [
+        "Translates technical drift into delivery risk",
+        "Highlights missing ownership across workflows",
+        "Prioritizes the smallest intervention that restores flow"
+      ],
+      "weaknesses": [
+        "Not ideal for deep code-level root-cause work",
+        "Can depend on team process signals that are incomplete"
+      ],
+      "recommendedTools": [],
+      "recommendedSkills": [],
+      "modelPolicy": null,
+      "whyThisRole": "",
+      "riskNotes": [],
+      "confidence": 0.74,
+      "allowedDepartmentIds": [
+        "delivery",
+        "control"
+      ],
+      "allowedDeskIds": [
+        "planner"
+      ],
+      "leadRoleIds": [],
+      "capabilities": [
+        "connect system gaps to delivery impact",
+        "spot rollout friction",
+        "prioritize the smallest intervention"
+      ],
+      "cvCard": {
+        "title": "Morgan Hale :: Delivery Analyst",
+        "headline": "Delivery Analyst for planner",
+        "summary": "Connects system gaps to delivery impact, rollout friction, and execution bottlenecks. Focuses on workflow friction and delivery risk across planner, staffing, talent acquisition.",
+        "evidence": [
+          "Gap signal: planner coverage is needed. request: shall we hire a planner then?",
+          "Assigned model: mistral:latest",
+          "Desk targets: planner"
+        ],
+        "controls": [
+          "Model is locked after hiring.",
+          "No fallback model path is allowed.",
+          "Role and desk targets are fixed on the card."
+        ],
+        "contract": {
+          "input": [
+            "A concrete desk gap or workflow issue.",
+            "A target desk or department needing coverage.",
+            "Evidence that the candidate improves the line of work."
+          ],
+          "output": [
+            "A hire-ready CV card.",
+            "An immutable model binding.",
+            "A desk-ready contract for the roster."
+          ]
+        }
+      },
+      "contract": {
+        "input": [
+          "A concrete desk gap or workflow issue.",
+          "A target desk or department needing coverage.",
+          "Evidence that the candidate improves the line of work."
+        ],
+        "output": [
+          "A hire-ready CV card.",
+          "An immutable model binding.",
+          "A desk-ready contract for the roster."
+        ]
+      },
+      "hiredAt": "2026-03-31T09:53:10.598Z",
+      "hiredDeskId": "planner",
+      "contractLocked": true
+    },
+    {
+      "id": "planner-coverage-is-needed-request-what-is-the-d-delivery-analyst",
+      "name": "Casey Rowan",
+      "roleId": "delivery_analyst",
+      "role": "Delivery Analyst",
+      "department": "Talent Acquisition",
+      "departmentId": "talent-acquisition",
+      "deskTargets": [
+        "planner"
+      ],
+      "primaryDeskTarget": "planner",
+      "assignedModel": "mistral:latest",
+      "modelLocked": true,
+      "model_locked": true,
+      "summary": "Connects system gaps to delivery impact, rollout friction, and execution bottlenecks. Focuses on workflow friction and delivery risk across planner, staffing, talent acquisition.",
+      "strengths": [
+        "Translates technical drift into delivery risk",
+        "Highlights missing ownership across workflows",
+        "Prioritizes the smallest intervention that restores flow"
+      ],
+      "weaknesses": [
+        "Not ideal for deep code-level root-cause work",
+        "Can depend on team process signals that are incomplete"
+      ],
+      "recommendedTools": [
+        "run history",
+        "incident timeline",
+        "handoff board",
+        "dependency map"
+      ],
+      "recommendedSkills": [
+        "delivery diagnostics",
+        "workflow analysis",
+        "risk triage",
+        "operational reporting"
+      ],
+      "modelPolicy": {
+        "preferred": "codex",
+        "reason": "Cross-cutting workflow interpretation benefits from richer reasoning over multiple signals."
+      },
+      "whyThisRole": "Delivery Analyst is a fit because \"planner coverage is needed. request: what is the difference between planner department agent count and planner desk agent count right now?\" suggests a need to connects system gaps to delivery impact, rollout friction, and execution bottlenecks. within ace studio runtime.",
+      "riskNotes": [
+        "Recommendations can stay high-level unless paired with implementation owners."
+      ],
+      "confidence": 0.74,
+      "allowedDepartmentIds": [
+        "delivery",
+        "control"
+      ],
+      "allowedDeskIds": [
+        "planner"
+      ],
+      "leadRoleIds": [],
+      "capabilities": [
+        "connect system gaps to delivery impact",
+        "spot rollout friction",
+        "prioritize the smallest intervention"
+      ],
+      "cvCard": {
+        "title": "Casey Rowan :: Delivery Analyst",
+        "headline": "Delivery Analyst for planner",
+        "summary": "Connects system gaps to delivery impact, rollout friction, and execution bottlenecks. Focuses on workflow friction and delivery risk across planner, staffing, talent acquisition.",
+        "evidence": [
+          "Gap signal: planner coverage is needed. request: what is the difference between planner department agent count and planner desk agent count right now?",
+          "Assigned model: mistral:latest",
+          "Desk targets: planner"
+        ],
+        "controls": [
+          "Model is locked after hiring.",
+          "No fallback model path is allowed.",
+          "Role and desk targets are fixed on the card."
+        ],
+        "contract": {
+          "input": [
+            "A concrete desk gap or workflow issue.",
+            "A target desk or department needing coverage.",
+            "Evidence that the candidate improves the line of work."
+          ],
+          "output": [
+            "A hire-ready CV card.",
+            "An immutable model binding.",
+            "A desk-ready contract for the roster."
+          ]
+        }
+      },
+      "contract": {
+        "input": [
+          "A concrete desk gap or workflow issue.",
+          "A target desk or department needing coverage.",
+          "Evidence that the candidate improves the line of work."
+        ],
+        "output": [
+          "A hire-ready CV card.",
+          "An immutable model binding.",
+          "A desk-ready contract for the roster."
+        ]
+      },
+      "hiredAt": "2026-03-31T11:22:10.167Z",
+      "hiredDeskId": "planner",
       "contractLocked": true
     }
   ],
-  "updatedAt": "2026-03-30T12:32:09.356Z",
-  "lastGeneratedGap": "UI actions appear disconnected from backend execution"
+  "updatedAt": "2026-03-31T11:22:10.167Z",
+  "lastGeneratedGap": "Planner coverage is needed. Request: What is the difference between Planner Department agent count and Planner desk agent count right now?"
 }

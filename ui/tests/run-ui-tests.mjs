@@ -58,6 +58,7 @@ const testEntries = [
   { name: 'taCandidates', path: './taCandidates.test.mjs' },
   { name: 'talentUi', path: './talentUi.test.mjs' },
   { name: 'server', path: './server.test.mjs' },
+  { name: 'ctoPipeline', path: './ctoPipeline.test.mjs' },
   { name: 'intentAnalysis', path: './intentAnalysis.test.mjs' },
   { name: 'staffingRules', path: './staffingRules.test.mjs' },
   { name: 'throughputDebug', path: './throughputDebug.test.mjs' },

@@ -1,7 +1,236 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-03-30T12:43:27.407Z",
+  "updated_at": "2026-03-31T11:21:33.882Z",
   "entries": [
+    {
+      "id": "cto_diag_1774956093881",
+      "timestamp": "2026-03-31T11:21:33.881Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774956063873-h6hkc2",
+      "httpStatus": null,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
+    {
+      "id": "cto_diag_1774955855242",
+      "timestamp": "2026-03-31T11:17:35.242Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774955825184-zek84o",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner",
+        "route-planner"
+      ]
+    },
+    {
+      "id": "cto_diag_1774954967152",
+      "timestamp": "2026-03-31T11:02:47.152Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774954937144-npnkop",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
+    {
+      "id": "cto_diag_1774954474107",
+      "timestamp": "2026-03-31T10:54:34.107Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774954444098-3o27wp",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-integration_auditor"
+      ]
+    },
+    {
+      "id": "cto_diag_1774951651979",
+      "timestamp": "2026-03-31T10:07:31.979Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "CTO chat action referenced an unavailable action id: hire-context-manager.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1774951631037-pa93fg",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-integration_auditor"
+      ]
+    },
+    {
+      "id": "cto_diag_1774950820612",
+      "timestamp": "2026-03-31T09:53:40.612Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774950790601-nh09zi",
+      "httpStatus": 0,
+      "actionId": "hire-planner",
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
+    {
+      "id": "cto_diag_1774950435553",
+      "timestamp": "2026-03-31T09:47:15.553Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774950405516-1ek10w",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
+    {
+      "id": "cto_diag_1774950271271",
+      "timestamp": "2026-03-31T09:44:31.271Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774950241212-kldald",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
+    {
+      "id": "cto_diag_1774948870658",
+      "timestamp": "2026-03-31T09:21:10.658Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774948840639-zmh8ln",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
+    {
+      "id": "cto_diag_1774948784438",
+      "timestamp": "2026-03-31T09:19:44.438Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat action referenced an unavailable action id: not-available.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1774948784437-rhtwut",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
+    {
+      "id": "cto_diag_1774948784008",
+      "timestamp": "2026-03-31T09:19:44.008Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat delegation did not satisfy the required contract.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1774948784007-2fm126",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
+    {
+      "id": "cto_diag_1774948783573",
+      "timestamp": "2026-03-31T09:19:43.573Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1774948783544-dfdjyx",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-planner"
+      ]
+    },
     {
       "id": "cto_diag_1774874607407",
       "timestamp": "2026-03-30T12:43:27.407Z",
@@ -15,7 +244,7 @@
       "reason": "CTO chat returned prose instead of strict JSON.",
       "failureKind": "parse",
       "runId": "cto-chat-1774874607405-9so2u1",
-      "httpStatus": null,
+      "httpStatus": 0,
       "actionId": null,
       "availableActionIds": [
         "hire-planner"

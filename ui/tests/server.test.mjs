@@ -152,15 +152,15 @@ export default async function runServerTests() {
   assert.equal(isAffirmativeCtoReply('not yet'), false);
   assert.equal(normalizeCtoChatHistory([
     { role: 'user', text: 'Need planner coverage.' },
-    { role: 'ace', text: 'Planner coverage is thin.', action: { id: 'hire-planner', kind: 'hire_candidate' } },
-  ])[1].action.id, 'hire-planner');
+    { role: 'ace', text: 'Planner coverage is thin.', action: { id: 'hire-role', kind: 'hire-role' } },
+  ])[1].action.id, 'hire-role');
   const ctoContext = await buildCtoGovernanceContext();
   assert.ok(ctoContext.desks.some((desk) => desk.deskId === 'planner'));
   const ctoActions = buildCtoAvailableActions({
     text: 'We need planner coverage. Should TA hire for the planner desk?',
     context: ctoContext,
   });
-  assert.equal(ctoActions.some((action) => action.kind === 'hire_candidate' && action.targetDeskId === 'planner'), true);
+  assert.equal(ctoActions.some((action) => action.kind === 'hire-role' && action.targetDeskId === 'planner'), true);
   const originalCtoEnv = {
     backend: process.env.ACE_CTO_BACKEND,
     model: process.env.ACE_CTO_MODEL,
@@ -185,9 +185,9 @@ export default async function runServerTests() {
       desk_label: 'Planner',
       why: 'Planner owns sequencing.',
     },
-    action: { id: 'hire-planner' },
+    action: { id: 'hire-role' },
   }), {
-    availableActions: [{ id: 'hire-planner' }],
+    availableActions: [{ id: 'hire-role' }],
     context: { desks: [{ deskId: 'planner' }] },
   }).replyText, 'Planner owns sequencing.');
   assert.equal(parseCtoStructuredReply("```json\n{\n  \"reply_text\": \"Planner owns sequencing.\",\n  \"response_kind\": \"actionable\",\n  \"delegation\": {\n    \"desk_id\": \"planner\",\n    \"desk_label\": \"Planner\",\n    \"why\": \"Planner owns sequencing.\"\n  },\n  \"action\": {\n    \"id\": \"hire-planner\"\n  }\n}\n```").responseKind, 'actionable');
@@ -199,9 +199,9 @@ export default async function runServerTests() {
     delegation: {
       desk_id: 'planner',
     },
-    action: { id: 'hire-planner' },
+    action: { id: 'hire-role' },
   }), {
-    availableActions: [{ id: 'hire-planner' }],
+    availableActions: [{ id: 'hire-role' }],
     context: { desks: [{ deskId: 'planner' }] },
   }), /delegation did not satisfy the required contract/i);
   assert.throws(() => parseCtoStructuredReply(JSON.stringify({
@@ -296,7 +296,7 @@ export default async function runServerTests() {
   assert.equal(ctoChatResult.replyKind, 'actionable');
   assert.equal(ctoChatResult.model, 'mixtral:latest');
   assert.equal(ctoChatResult.delegation.deskId, 'planner');
-  assert.equal(ctoChatResult.action.kind, 'hire_candidate');
+  assert.equal(ctoChatResult.action.kind, 'hire-role');
   assert.equal(ctoChatResult.action.targetDeskId, 'planner');
   const backendStatus = await probeCtoBackendStatus({
     fetchImpl: async () => ({

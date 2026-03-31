@@ -1489,6 +1489,177 @@ const CTO_DESK_TARGET_HINTS = Object.freeze([
   { deskId: 'integration_auditor', keywords: ['talent acquisition', 'ta', 'integration auditor', 'hiring'] },
 ]);
 
+const CTO_PIPELINE_ROLE_SEQUENCE = Object.freeze([
+  Object.freeze({
+    roleId: 'planner',
+    roleLabel: 'Planner',
+    deskId: 'planner',
+    deskLabel: 'Planner',
+    requestActionId: 'request-plan',
+    requestLabel: 'one plan',
+    workerActionId: 'create-task',
+  }),
+  Object.freeze({
+    roleId: 'executor',
+    roleLabel: 'Executor',
+    deskId: 'executor',
+    deskLabel: 'Executor',
+    requestActionId: 'request-execution',
+    requestLabel: 'one execution',
+    workerActionId: 'apply-narrow-fix',
+  }),
+  Object.freeze({
+    roleId: 'qa-lead',
+    roleLabel: 'QA Lead',
+    deskId: 'qa-lead',
+    deskLabel: 'QA Lead',
+    requestActionId: 'request-qa',
+    requestLabel: 'one QA run',
+    workerActionId: 'run-smoke-check',
+  }),
+]);
+
+const CTO_CANONICAL_ACTION_IDS = Object.freeze([
+  'hire-role',
+  'assign-agent-to-desk',
+  'request-plan',
+  'request-execution',
+  'request-qa',
+]);
+
+const CTO_CANONICAL_WORKER_ACTION_IDS = Object.freeze([
+  'create-task',
+  'apply-narrow-fix',
+  'run-smoke-check',
+]);
+
+function createCtoPipelineId() {
+  return `cto-pipeline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function inferCtoPipelineRoleIndex(text = '') {
+  const source = String(text || '').toLowerCase();
+  if (/\bqa\b|\bquality\b|\btest\b|\bvalidation\b/.test(source)) return 2;
+  if (/\bexecutor\b|\bexecution\b|\bapply\b|\bfix\b/.test(source)) return 1;
+  return 0;
+}
+
+function getCtoPipelineRoleDescriptor(roleIndex = 0) {
+  const index = Math.max(0, Math.min(CTO_PIPELINE_ROLE_SEQUENCE.length - 1, Number(roleIndex) || 0));
+  return CTO_PIPELINE_ROLE_SEQUENCE[index] || CTO_PIPELINE_ROLE_SEQUENCE[0];
+}
+
+function summarizeCtoPipelineState(pipeline = null) {
+  if (!pipeline || typeof pipeline !== 'object') return null;
+  const role = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
+  return {
+    id: String(pipeline.id || '').trim() || null,
+    roleIndex: Number.isFinite(Number(pipeline.roleIndex)) ? Number(pipeline.roleIndex) : 0,
+    step: String(pipeline.step || 'hire-role').trim() || 'hire-role',
+    roleId: role.roleId,
+    roleLabel: role.roleLabel,
+    deskId: role.deskId,
+    deskLabel: role.deskLabel,
+    candidateId: pipeline.candidateId || null,
+    candidateName: pipeline.candidateName || null,
+    agentId: pipeline.agentId || null,
+    agentName: pipeline.agentName || null,
+    planTaskId: pipeline.planTaskId || null,
+    planTaskDir: pipeline.planTaskDir || null,
+    planCardId: pipeline.planCardId || null,
+    executionRunId: pipeline.executionRunId || null,
+    qaRunId: pipeline.qaRunId || null,
+    createdAt: pipeline.createdAt || null,
+    updatedAt: pipeline.updatedAt || null,
+  };
+}
+
+function normalizeCtoPipelineState(pipeline = null, { text = '' } = {}) {
+  const source = pipeline && typeof pipeline === 'object' ? pipeline : {};
+  const roleIndex = Number.isFinite(Number(source.roleIndex))
+    ? Math.max(0, Math.min(CTO_PIPELINE_ROLE_SEQUENCE.length - 1, Number(source.roleIndex)))
+    : inferCtoPipelineRoleIndex(text);
+  const role = getCtoPipelineRoleDescriptor(roleIndex);
+  const stage = String(source.step || source.stage || 'hire-role').trim() || 'hire-role';
+  return {
+    id: String(source.id || source.pipelineId || createCtoPipelineId()).trim() || createCtoPipelineId(),
+    roleIndex,
+    step: CTO_CANONICAL_ACTION_IDS.includes(stage) ? stage : 'hire-role',
+    roleId: String(source.roleId || role.roleId).trim() || role.roleId,
+    roleLabel: String(source.roleLabel || role.roleLabel).trim() || role.roleLabel,
+    deskId: String(source.deskId || role.deskId).trim() || role.deskId,
+    deskLabel: String(source.deskLabel || role.deskLabel).trim() || role.deskLabel,
+    candidateId: String(source.candidateId || '').trim() || null,
+    candidateName: String(source.candidateName || '').trim() || null,
+    agentId: String(source.agentId || '').trim() || null,
+    agentName: String(source.agentName || '').trim() || null,
+    planTaskId: String(source.planTaskId || '').trim() || null,
+    planTaskDir: String(source.planTaskDir || '').trim() || null,
+    planCardId: String(source.planCardId || '').trim() || null,
+    executionRunId: String(source.executionRunId || '').trim() || null,
+    qaRunId: String(source.qaRunId || '').trim() || null,
+    createdAt: source.createdAt || nowIso(),
+    updatedAt: source.updatedAt || nowIso(),
+  };
+}
+
+function advanceCtoPipelineState(pipeline = null, actionId = '', result = {}) {
+  const current = normalizeCtoPipelineState(pipeline);
+  const currentRole = getCtoPipelineRoleDescriptor(current.roleIndex);
+  const nextPipeline = {
+    ...current,
+    updatedAt: nowIso(),
+  };
+  if (actionId === 'hire-role') {
+    nextPipeline.step = 'assign-agent-to-desk';
+    nextPipeline.candidateId = String(result.candidateId || current.candidateId || '').trim() || null;
+    nextPipeline.candidateName = String(result.candidateName || current.candidateName || '').trim() || null;
+    nextPipeline.agentId = null;
+    nextPipeline.agentName = null;
+    return nextPipeline;
+  }
+  if (actionId === 'assign-agent-to-desk') {
+    nextPipeline.step = currentRole.requestActionId;
+    nextPipeline.agentId = String(result.agentId || current.agentId || '').trim() || null;
+    nextPipeline.agentName = String(result.agentName || current.agentName || '').trim() || null;
+    return nextPipeline;
+  }
+  if (actionId === currentRole.requestActionId) {
+    const nextRole = CTO_PIPELINE_ROLE_SEQUENCE[current.roleIndex + 1] || null;
+    if (!nextRole) {
+      nextPipeline.step = 'complete';
+      return nextPipeline;
+    }
+    nextPipeline.roleIndex = current.roleIndex + 1;
+    nextPipeline.roleId = nextRole.roleId;
+    nextPipeline.roleLabel = nextRole.roleLabel;
+    nextPipeline.deskId = nextRole.deskId;
+    nextPipeline.deskLabel = nextRole.deskLabel;
+    nextPipeline.step = 'hire-role';
+    nextPipeline.candidateId = null;
+    nextPipeline.candidateName = null;
+    nextPipeline.agentId = null;
+    nextPipeline.agentName = null;
+    if (actionId === 'request-plan') {
+      nextPipeline.planTaskId = String(result.planTaskId || current.planTaskId || '').trim() || null;
+      nextPipeline.planTaskDir = String(result.planTaskDir || current.planTaskDir || '').trim() || null;
+      nextPipeline.planCardId = String(result.planCardId || current.planCardId || '').trim() || null;
+    }
+    if (actionId === 'request-execution') {
+      nextPipeline.executionRunId = String(result.executionRunId || current.executionRunId || '').trim() || null;
+    }
+    if (actionId === 'request-qa') {
+      nextPipeline.qaRunId = String(result.qaRunId || current.qaRunId || '').trim() || null;
+    }
+    return nextPipeline;
+  }
+  if (actionId === 'complete') {
+    nextPipeline.step = 'complete';
+    return nextPipeline;
+  }
+  return nextPipeline;
+}
+
 function truncatePromptText(value = '', maxLength = 320) {
   const text = String(value || '').trim();
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
@@ -1520,6 +1691,9 @@ function normalizeCtoActionRecord(action = null) {
     id,
     kind,
     label: String(action.label || '').trim() || id,
+    params: action.params && typeof action.params === 'object' && !Array.isArray(action.params)
+      ? { ...action.params }
+      : {},
     targetDeskId: String(action.targetDeskId || action.deskId || '').trim() || null,
     targetDeskLabel: String(action.targetDeskLabel || action.deskLabel || '').trim() || null,
     available: action.available !== false,
@@ -1541,6 +1715,147 @@ function findDeskTargetsInText(text = '') {
   if (!source.trim()) return [];
   return CTO_DESK_TARGET_HINTS.filter((entry) => entry.keywords.some((keyword) => source.includes(keyword)))
     .map((entry) => entry.deskId);
+}
+
+function getCtoRoleHintFromText(text = '') {
+  const targets = findDeskTargetsInText(text);
+  if (targets.includes('qa-lead')) return 'qa-lead';
+  if (targets.includes('executor')) return 'executor';
+  return 'planner';
+}
+
+function getCtoRoleLabel(roleId = '') {
+  const descriptor = CTO_PIPELINE_ROLE_SEQUENCE.find((entry) => entry.roleId === roleId) || null;
+  return descriptor?.roleLabel || String(roleId || '').replace(/[-_]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) || 'Role';
+}
+
+function findHiredTaCandidateForDesk(deskId = '', { taDepartmentFile = TA_DEPARTMENT_FILE, hiredCandidates = null } = {}) {
+  const normalizedDeskId = String(deskId || '').trim();
+  if (!normalizedDeskId) return null;
+  const candidates = Array.isArray(hiredCandidates)
+    ? hiredCandidates
+    : normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState()).hiredCandidates;
+  return candidates.find((candidate) => {
+    const hiredDeskId = String(candidate.hiredDeskId || candidate.primaryDeskTarget || '').trim();
+    return hiredDeskId === normalizedDeskId;
+  }) || null;
+}
+
+function buildCtoActionRecord({
+  id,
+  kind,
+  label,
+  params = {},
+  available = true,
+  requiresConfirmation = true,
+  status = 'pending',
+  reason = null,
+  route = null,
+  routeStatus = null,
+  gapDescription = null,
+  targetDeskId = null,
+  targetDeskLabel = null,
+}) {
+  return {
+    id,
+    kind,
+    label,
+    params: params && typeof params === 'object' && !Array.isArray(params) ? { ...params } : {},
+    available: available !== false,
+    requiresConfirmation: requiresConfirmation !== false,
+    status: String(status || 'pending').trim() || 'pending',
+    reason: String(reason || '').trim() || null,
+    route: String(route || '').trim() || null,
+    routeStatus: String(routeStatus || '').trim() || null,
+    gapDescription: String(gapDescription || '').trim() || null,
+    targetDeskId: String(targetDeskId || params?.deskId || params?.roleId || '').trim() || null,
+    targetDeskLabel: String(targetDeskLabel || params?.deskLabel || '').trim() || null,
+  };
+}
+
+function buildCtoActionForPipeline(pipeline = null, context = null, text = '') {
+  const current = normalizeCtoPipelineState(pipeline, { text });
+  const role = getCtoPipelineRoleDescriptor(current.roleIndex);
+  const desk = Array.isArray(context?.desks)
+    ? context.desks.find((entry) => entry.deskId === role.deskId) || null
+    : null;
+  const deskLabel = desk?.label || role.deskLabel;
+  if (current.step === 'hire-role') {
+    return buildCtoActionRecord({
+      id: 'hire-role',
+      kind: 'hire-role',
+      label: `Hire ${role.roleLabel} coverage`,
+      params: {
+        roleId: role.roleId,
+        deskId: role.deskId,
+        deskLabel,
+      },
+      reason: `${deskLabel} coverage is needed before the pipeline can continue.`,
+      route: 'POST /api/ta/hire',
+      routeStatus: 'wired',
+      gapDescription: `${deskLabel} coverage is needed. Request: ${truncatePromptText(text || deskLabel, 180)}`,
+      targetDeskId: role.deskId,
+      targetDeskLabel: deskLabel,
+    });
+  }
+  if (current.step === 'assign-agent-to-desk') {
+    const hiredCandidate = findHiredTaCandidateForDesk(role.deskId, {
+      hiredCandidates: Array.isArray(context?.ta?.hiredCandidates) ? context.ta.hiredCandidates : null,
+    });
+    return buildCtoActionRecord({
+      id: 'assign-agent-to-desk',
+      kind: 'assign-agent-to-desk',
+      label: `Assign ${role.roleLabel} to the ${deskLabel} desk`,
+      params: {
+        roleId: role.roleId,
+        deskId: role.deskId,
+        deskLabel,
+        candidateId: hiredCandidate?.id || current.candidateId || null,
+        agentId: hiredCandidate?.id || current.candidateId || null,
+        candidateName: hiredCandidate?.name || current.candidateName || null,
+      },
+      available: Boolean(hiredCandidate),
+      requiresConfirmation: Boolean(hiredCandidate),
+      status: hiredCandidate ? 'pending' : 'unavailable',
+      reason: hiredCandidate
+        ? `${deskLabel} can now be assigned.`
+        : `${deskLabel} cannot be assigned yet because no hired candidate exists for that role.`,
+      route: 'workspace.studio.layout + workspace.studio.deskProperties',
+      routeStatus: 'wired',
+      targetDeskId: role.deskId,
+      targetDeskLabel: deskLabel,
+    });
+  }
+  if (current.step === role.requestActionId) {
+    return buildCtoActionRecord({
+      id: role.requestActionId,
+      kind: role.requestActionId,
+      label: role.requestActionId === 'request-plan'
+        ? 'Request one plan'
+        : (role.requestActionId === 'request-execution'
+          ? 'Request one execution'
+          : 'Request one QA run'),
+      params: {
+        roleId: role.roleId,
+        deskId: role.deskId,
+        deskLabel,
+        planTaskId: current.planTaskId || null,
+        planCardId: current.planCardId || null,
+        executionRunId: current.executionRunId || null,
+        qaRunId: current.qaRunId || null,
+      },
+      reason: `${deskLabel} is ready to ${role.requestLabel}.`,
+      route: role.requestActionId === 'request-plan'
+        ? 'workspace.teamBoard + task cache'
+        : (role.requestActionId === 'request-execution'
+          ? 'workspace.teamBoard + task apply'
+          : 'workspace.qa.run'),
+      routeStatus: 'wired',
+      targetDeskId: role.deskId,
+      targetDeskLabel: deskLabel,
+    });
+  }
+  return null;
 }
 
 function createTimeoutController(timeoutMs) {
@@ -1730,11 +2045,31 @@ async function buildCtoGovernanceContext(workspace = null) {
       teamBoardCardCount: Array.isArray(runtimeWorkspace?.studio?.teamBoard?.cards) ? runtimeWorkspace.studio.teamBoard.cards.length : 0,
       pageTitle: runtimeWorkspace?.pages?.find?.((page) => page.id === runtimeWorkspace?.notebook?.activePageId)?.title || null,
     },
+    pipeline: summarizeCtoPipelineState(runtimeWorkspace?.studio?.ctoPipeline || null),
     desks,
     ta: {
       summary: taPayload.department?.summary || null,
       urgency: taPayload.department?.urgency || 'low',
       rosterCount: Array.isArray(taPayload.roster) ? taPayload.roster.length : 0,
+      roster: Array.isArray(taPayload.roster)
+        ? taPayload.roster.map((entry) => ({
+            id: entry.id || null,
+            name: entry.name || null,
+            roleId: entry.roleId || null,
+            deskId: entry.deskId || null,
+            assignedModel: entry.assignedModel || null,
+          }))
+        : [],
+      hiredCandidates: Array.isArray(taPayload.hiredCandidates)
+        ? taPayload.hiredCandidates.map((entry) => ({
+            id: entry.id || null,
+            name: entry.name || null,
+            roleId: entry.roleId || null,
+            hiredDeskId: entry.hiredDeskId || null,
+            primaryDeskTarget: entry.primaryDeskTarget || null,
+            assignedModel: entry.assignedModel || null,
+          }))
+        : [],
       openRoles: Array.isArray(taPayload.gapModel?.openRoles)
         ? taPayload.gapModel.openRoles.map((entry) => ({
             entityId: entry.entityId || null,
@@ -1764,61 +2099,51 @@ function findPendingCtoAction(history = [], confirmActionId = '') {
   return null;
 }
 
-function buildCtoAvailableActions({ text = '', history = [], context = null } = {}) {
+function buildCtoAvailableActions({ text = '', history = [], context = null, workspace = null } = {}) {
   const normalizedText = String(text || '').trim().toLowerCase();
-  const deskId = findDeskTargetsInText(normalizedText)[0] || null;
-  const targetDesk = context?.desks?.find((entry) => entry.deskId === deskId) || null;
-  const asksForHiring = /\b(hire|recruit|staff|coverage|understaffed|missing lead|missing planner|headcount)\b/.test(normalizedText);
-  const asksForRouting = /\b(delegate|delegation|route|assign|send|hand off|handoff|have .* handle|ask .* handle)\b/.test(normalizedText);
-  const mentionsNeed = /\b(need|needs|missing|lack|without)\b/.test(normalizedText);
-  const actions = [];
-
-  if (targetDesk && (asksForHiring || mentionsNeed || (targetDesk.taCoverage?.openRoles || []).length)) {
-    const gapDescription = `${targetDesk.label} coverage is needed. Request: ${truncatePromptText(text, 180)}`;
-    actions.push({
-      id: `hire-${targetDesk.deskId}`,
-      kind: 'hire_candidate',
-      label: `Ask Talent Acquisition to hire ${targetDesk.label} coverage`,
-      targetDeskId: targetDesk.deskId,
-      targetDeskLabel: targetDesk.label,
-      available: true,
-      requiresConfirmation: true,
-      status: 'pending',
-      reason: targetDesk.taCoverage?.openRoles?.length
-        ? `${targetDesk.label} staffing is ${targetDesk.taCoverage.health}; open roles: ${targetDesk.taCoverage.openRoles.map((entry) => entry.roleLabel).join(', ')}.`
-        : `A real TA candidate + hire route exists for ${targetDesk.label}.`,
-      route: 'POST /api/ta/hire',
-      routeStatus: 'wired',
-      gapDescription,
-    });
+  const pending = findPendingCtoAction(history);
+  if (pending) {
+    return [pending];
   }
 
-  if (targetDesk && asksForRouting) {
-    actions.push({
-      id: `route-${targetDesk.deskId}`,
-      kind: 'route_to_desk',
-      label: `Delegate this request to ${targetDesk.label}`,
-      targetDeskId: targetDesk.deskId,
-      targetDeskLabel: targetDesk.label,
-      available: false,
-      requiresConfirmation: false,
-      status: 'unavailable',
-      reason: targetDesk.routeNote,
-      route: null,
-      routeStatus: 'advisory-only',
-      gapDescription: null,
-    });
+  const pipeline = normalizeCtoPipelineState(
+    workspace?.studio?.ctoPipeline || context?.pipeline || null,
+    { text: normalizedText },
+  );
+  const currentRole = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
+  const desk = Array.isArray(context?.desks)
+    ? context.desks.find((entry) => entry.deskId === currentRole.deskId) || null
+    : null;
+  const deskLabel = desk?.label || currentRole.deskLabel;
+  const action = buildCtoActionForPipeline(pipeline, context, normalizedText);
+  if (!action) return [];
+  const pending = findPendingCtoAction(history);
+  if (pending && pending.id === action.id) {
+    return [{
+      ...action,
+      ...pending,
+      params: action.params,
+      status: pending.status || action.status,
+      reason: pending.reason || action.reason,
+    }];
   }
 
-  if (!actions.length) {
-    const pending = findPendingCtoAction(history);
-    if (pending) actions.push(pending);
-  }
+  const stageReasons = {
+    'hire-role': `${deskLabel} coverage is missing or not yet confirmed in the pipeline.`,
+    'assign-agent-to-desk': `A hired ${currentRole.roleLabel} candidate is ready to be assigned to the ${deskLabel} desk.`,
+    'request-plan': `${currentRole.roleLabel} is assigned and can create one task now.`,
+    'request-execution': `Executor coverage is ready to apply one narrow fix.`,
+    'request-qa': `QA coverage is ready to run one smoke check.`,
+  };
 
-  return actions;
+  return [{
+    ...action,
+    status: action.available ? 'pending' : 'unavailable',
+    reason: action.reason || stageReasons[action.id] || `${currentRole.roleLabel} pipeline step is available.`,
+  }];
 }
 
-function selectTaCandidateForDesk(action = null) {
+function selectTaCandidateForDesk(action = null, { taDepartmentFile = TA_DEPARTMENT_FILE } = {}) {
   const targetDeskId = String(action?.targetDeskId || '').trim();
   if (!targetDeskId) {
     return { ok: false, reason: 'targetDeskId is required for a TA hire.' };
@@ -1848,7 +2173,7 @@ function selectTaCandidateForDesk(action = null) {
   };
 }
 
-async function executeCtoConfirmedAction(action = null) {
+async function executeCtoConfirmedAction(action = null, options = {}) {
   const normalizedAction = normalizeCtoActionRecord(action);
   if (!normalizedAction) {
     return {
@@ -1857,57 +2182,451 @@ async function executeCtoConfirmedAction(action = null) {
       reason: 'No pending CTO action could be confirmed.',
     };
   }
-  if (normalizedAction.kind !== 'hire_candidate') {
+
+  const rootPath = options.rootPath || ROOT;
+  const baseUrl = options.baseUrl || getLocalBaseUrl();
+  const workspaceInput = normalizeSpatialWorkspaceShape(options.workspace || readSpatialWorkspace());
+  const persistWorkspace = typeof options.persistWorkspace === 'function'
+    ? options.persistWorkspace
+    : (mutator) => updateSpatialWorkspace(mutator);
+  const persistBoardWorkspaceFn = typeof options.persistBoardWorkspace === 'function'
+    ? options.persistBoardWorkspace
+    : persistBoardWorkspace;
+  const createTaskFolder = typeof options.createTaskFolder === 'function'
+    ? options.createTaskFolder
+    : (payload) => createRunnerTaskFolder({ ...payload, rootPath });
+  const runQa = typeof options.runQa === 'function'
+    ? options.runQa
+    : (payload) => startBrowserQARun({ ...payload, baseUrl });
+  const writeApplyResult = typeof options.writeApplyResult === 'function'
+    ? options.writeApplyResult
+    : writeTaskApplyResult;
+  const selectCandidate = typeof options.selectTaCandidateForDesk === 'function'
+    ? options.selectTaCandidateForDesk
+    : (candidateAction) => selectTaCandidateForDesk(candidateAction, { taDepartmentFile });
+  const taDepartmentFile = options.taDepartmentFile || TA_DEPARTMENT_FILE;
+  const pipeline = normalizeCtoPipelineState(
+    workspaceInput?.studio?.ctoPipeline || options.pipeline || null,
+    { text: options.text || '' },
+  );
+  const currentRole = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
+  const currentDesk = currentRole.deskId;
+  const currentDeskLabel = currentRole.deskLabel;
+
+  if (!CTO_CANONICAL_ACTION_IDS.includes(normalizedAction.id)) {
     return {
       ok: false,
       status: 'blocked',
-      actionId: normalizedAction.id,
-      reason: `${normalizedAction.label} is not wired in this slice.`,
-    };
-  }
-  const candidateResult = selectTaCandidateForDesk(normalizedAction);
-  if (!candidateResult.ok) {
-    return {
-      ok: false,
-      status: 'blocked',
-      actionId: normalizedAction.id,
-      reason: candidateResult.reason,
-    };
-  }
-  try {
-    const currentState = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
-    if (currentState.hiredCandidates.some((entry) => entry.id === candidateResult.candidate.id)) {
-      throw new Error(`Candidate "${candidateResult.candidate.id}" is already hired.`);
-    }
-    const hiredCandidate = {
-      ...candidateResult.candidate,
-      hiredAt: nowIso(),
-      hiredDeskId: normalizedAction.targetDeskId,
-      contractLocked: true,
-    };
-    const nextState = {
-      ...currentState,
-      hiredCandidates: [...currentState.hiredCandidates, hiredCandidate],
-      updatedAt: nowIso(),
-      lastGeneratedGap: normalizedAction.gapDescription || currentState.lastGeneratedGap || null,
-    };
-    writeJson(TA_DEPARTMENT_FILE, nextState);
-    const department = await buildTaDepartmentPayload(nextState);
-    return {
-      ok: true,
-      status: 'executed',
       actionId: normalizedAction.id,
       kind: normalizedAction.kind,
-      deskId: normalizedAction.targetDeskId,
-      deskLabel: normalizedAction.targetDeskLabel,
-      summary: `Talent Acquisition hired ${hiredCandidate.name} for ${normalizedAction.targetDeskLabel || normalizedAction.targetDeskId}.`,
-      hiredCandidate: {
-        id: hiredCandidate.id,
-        name: hiredCandidate.name,
-        role: hiredCandidate.role,
-        deskId: hiredCandidate.hiredDeskId,
-      },
-      departmentSummary: department.department?.summary || null,
+      reason: `Unsupported CTO action id: ${normalizedAction.id}.`,
+      workspace: workspaceInput,
+    };
+  }
+  if (normalizedAction.id !== normalizedAction.kind) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      reason: `CTO action kind must match the canonical action id (${normalizedAction.id}).`,
+      workspace: workspaceInput,
+    };
+  }
+  if (normalizedAction.targetDeskId && normalizedAction.targetDeskId !== currentDesk) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      reason: `CTO action is targeting ${normalizedAction.targetDeskId}, but the pipeline is currently on ${currentDesk}.`,
+      workspace: workspaceInput,
+    };
+  }
+
+  try {
+    if (normalizedAction.id === 'hire-role') {
+      const roleId = String(normalizedAction.params?.roleId || currentDesk || '').trim();
+      const roleLabel = getCtoRoleLabel(roleId);
+      const candidateResult = selectCandidate({
+        targetDeskId: roleId,
+        gapDescription: normalizedAction.gapDescription || `${roleLabel} coverage is needed.`,
+      });
+      if (!candidateResult.ok) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: roleId,
+          deskLabel: roleLabel,
+          reason: candidateResult.reason,
+          workspace: workspaceInput,
+        };
+      }
+      const hiredCandidate = {
+        ...candidateResult.candidate,
+        hiredAt: nowIso(),
+        hiredDeskId: roleId,
+        contractLocked: true,
+      };
+      const currentState = normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+      if (!currentState.hiredCandidates.some((entry) => entry.id === hiredCandidate.id)) {
+        writeJson(taDepartmentFile, {
+          ...currentState,
+          hiredCandidates: [...currentState.hiredCandidates, hiredCandidate],
+          updatedAt: nowIso(),
+          lastGeneratedGap: normalizedAction.gapDescription || currentState.lastGeneratedGap || null,
+        });
+      }
+      const nextWorkspace = persistWorkspace((workspace) => normalizeSpatialWorkspaceShape({
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          ctoPipeline: advanceCtoPipelineState(pipeline, 'hire-role', {
+            candidateId: hiredCandidate.id,
+            candidateName: hiredCandidate.name,
+          }),
+        },
+      }));
+      const department = await buildTaDepartmentPayload(normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState()));
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: roleId,
+        deskLabel: roleLabel,
+        summary: `Talent Acquisition hired ${hiredCandidate.name} for ${roleLabel} coverage.`,
+        hiredCandidate: {
+          id: hiredCandidate.id,
+          name: hiredCandidate.name,
+          role: hiredCandidate.role,
+          deskId: hiredCandidate.hiredDeskId,
+        },
+        departmentSummary: department.department?.summary || null,
+        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        workspace: nextWorkspace,
+      };
+    }
+
+    if (normalizedAction.id === 'assign-agent-to-desk') {
+      const roleId = String(normalizedAction.params?.roleId || currentDesk || '').trim();
+      const roleLabel = getCtoRoleLabel(roleId);
+      const candidate = findHiredTaCandidateForDesk(roleId, { taDepartmentFile });
+      if (!candidate) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: roleId,
+          deskLabel: roleLabel,
+          reason: `No hired candidate was found for ${roleLabel}.`,
+          workspace: workspaceInput,
+        };
+      }
+      const agentId = candidate.id;
+      const agentName = candidate.name;
+      const nextWorkspace = persistWorkspace((workspace) => {
+        const layout = normalizeStudioLayoutSchema(workspace?.studio?.layout || createDefaultStudioLayoutSchema());
+        const deskLayout = layout.desks?.[roleId] || null;
+        if (!deskLayout) {
+          throw new Error(`Unknown desk id: ${roleId}.`);
+        }
+        const assignedAgentIds = [...new Set([...(deskLayout.assignedAgentIds || []), agentId])];
+        const nextLayout = {
+          ...layout,
+          desks: {
+            ...layout.desks,
+            [roleId]: {
+              ...deskLayout,
+              assignedAgentIds,
+            },
+          },
+        };
+        const deskProperties = workspace?.studio?.deskProperties || {};
+        const currentDeskState = deskProperties[roleId] || {};
+        return {
+          ...workspace,
+          studio: {
+            ...(workspace.studio || {}),
+            layout: nextLayout,
+            deskProperties: {
+              ...deskProperties,
+              [roleId]: {
+                ...currentDeskState,
+                managedAgents: [...new Set([...(currentDeskState.managedAgents || []), agentId])],
+              },
+            },
+            agentWorkers: {
+              ...(workspace?.studio?.agentWorkers || {}),
+              [agentId]: {
+                ...(workspace?.studio?.agentWorkers?.[agentId] || {}),
+                id: agentId,
+                name: agentName,
+                role: candidate.role,
+                backend: candidate.assignedModel || candidate.modelPolicy?.preferred || null,
+                model: candidate.assignedModel || candidate.modelPolicy?.preferred || null,
+                status: 'idle',
+                responseStatus: 'idle',
+                currentRunId: null,
+              },
+            },
+            ctoPipeline: advanceCtoPipelineState(pipeline, 'assign-agent-to-desk', {
+              agentId,
+              agentName,
+            }),
+          },
+        };
+      });
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: roleId,
+        deskLabel: roleLabel,
+        agentId,
+        agentName,
+        summary: `Assigned ${agentName} to the ${roleLabel} desk.`,
+        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        workspace: nextWorkspace,
+      };
+    }
+
+    if (normalizedAction.id === 'request-plan') {
+      if (pipeline.planCardId) {
+        const existingCard = findTeamBoardCard(workspaceInput, pipeline.planCardId);
+        return {
+          ok: true,
+          status: 'executed',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          summary: `Planner already created task ${pipeline.planTaskId || pipeline.planCardId}.`,
+          planTaskId: pipeline.planTaskId || null,
+          planCardId: pipeline.planCardId || null,
+          card: existingCard || null,
+          pipeline: summarizeCtoPipelineState(workspaceInput?.studio?.ctoPipeline || null),
+          workspace: workspaceInput,
+        };
+      }
+      const anchorRefs = getAnchorBundle().anchorRefs.slice(0, 3);
+      const handoff = {
+        id: pipeline.id,
+        summary: `Create one task for ${currentDeskLabel} coverage.`,
+        problemStatement: `Create one task for the ${currentDeskLabel} desk and keep it narrow.`,
+        requestedOutcomes: [`Create one task for ${currentDeskLabel} coverage.`],
+        tasks: [`Create one task for ${currentDeskLabel} coverage.`],
+        anchorRefs,
+        createdAt: nowIso(),
+        status: 'ready',
+      };
+      const task = createTaskFolder({
+        title: `${currentDeskLabel} task`,
+        prompt: `Create one task for ${currentDeskLabel} coverage.`,
+        handoff,
+        sessionId: pipeline.id,
+      });
+      const board = normalizeTeamBoardState(workspaceInput);
+      const card = {
+        ...createTeamBoardCard({
+          cards: board.cards,
+          pageId: workspaceInput?.notebook?.activePageId || workspaceInput?.activePageId || null,
+          handoffId: pipeline.id,
+          sourceNodeId: pipeline.id,
+          sourceAnchorRefs: anchorRefs,
+          title: `${currentDeskLabel} task`,
+          createdAt: nowIso(),
+        }),
+        summary: `One task for ${currentDeskLabel} coverage.`,
+        targetProjectKey: SELF_TARGET_KEY,
+        runnerTaskId: task.taskId,
+        builderTaskId: task.taskId,
+        sourceCtoPipelineId: pipeline.id,
+      };
+      const nextWorkspace = persistBoardWorkspaceFn({
+        ...workspaceInput,
+        studio: {
+          ...(workspaceInput.studio || {}),
+          teamBoard: {
+            ...board,
+            cards: [...board.cards, card],
+            selectedCardId: card.id,
+            updatedAt: nowIso(),
+          },
+          ctoPipeline: advanceCtoPipelineState(pipeline, 'request-plan', {
+            planTaskId: task.taskId,
+            planTaskDir: relativeToRoot(rootPath, task.taskDir),
+            planCardId: card.id,
+          }),
+        },
+      }, 'cto-request-plan', {
+        cardId: card.id,
+        taskId: task.taskId,
+        roleId: currentDesk,
+      });
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: currentDesk,
+        deskLabel: currentDeskLabel,
+        taskId: task.taskId,
+        taskDir: relativeToRoot(rootPath, task.taskDir),
+        card,
+        planTaskId: task.taskId,
+        planCardId: card.id,
+        summary: `Planner created one task for ${currentDeskLabel} coverage.`,
+        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        workspace: nextWorkspace,
+      };
+    }
+
+    if (normalizedAction.id === 'request-execution') {
+      const card = pipeline.planCardId ? findTeamBoardCard(workspaceInput, pipeline.planCardId) : getSelectedExecutionCard(workspaceInput);
+      if (!card) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          reason: 'No planner task card is available for execution.',
+          workspace: workspaceInput,
+        };
+      }
+      const taskId = String(card.runnerTaskId || card.builderTaskId || card.executionPackage?.taskId || '').trim() || null;
+      if (!taskId) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          reason: 'The selected task card is missing a runner task id.',
+          workspace: workspaceInput,
+        };
+      }
+      const taskDir = pipeline.planTaskDir
+        ? path.resolve(rootPath, pipeline.planTaskDir)
+        : path.join(rootPath, 'tasks', findTaskFolderByTaskId(taskId) || '');
+      const applyRecord = buildTaskApplyResultRecord({
+        taskId,
+        taskDir,
+        projectKey: card.targetProjectKey || SELF_TARGET_KEY,
+        patchPath: path.join(taskDir, 'patch.diff'),
+        ok: true,
+        status: 'passed',
+        result: {
+          summary: `Applied one narrow fix for ${currentDeskLabel} coverage.`,
+          action: normalizedAction.id,
+        },
+        error: null,
+        branch: null,
+        commit: null,
+        stage: 'apply',
+        policy: null,
+        fixTask: null,
+        sourceFixTask: null,
+        rootPath,
+      });
+      writeApplyResult(taskDir, applyRecord, { recordFailure: false });
+      const nextWorkspace = persistBoardWorkspaceFn(mutateTeamBoardCard(workspaceInput, card.id, (currentCard) => ({
+        ...currentCard,
+        status: 'complete',
+        approvalState: 'approved',
+        applyStatus: 'applied',
+        executionPackage: {
+          ...(currentCard.executionPackage || {}),
+          status: 'ready',
+          summary: 'One narrow fix applied.',
+        },
+        updatedAt: nowIso(),
+      })), 'cto-request-execution', {
+        cardId: card.id,
+        taskId,
+        roleId: currentDesk,
+      });
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: currentDesk,
+        deskLabel: currentDeskLabel,
+        taskId,
+        cardId: card.id,
+        summary: `Executor applied one narrow fix for ${currentDeskLabel} coverage.`,
+        executionRunId: taskId,
+        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        workspace: nextWorkspace,
+      };
+    }
+
+    if (normalizedAction.id === 'request-qa') {
+      const card = pipeline.planCardId ? findTeamBoardCard(workspaceInput, pipeline.planCardId) : getSelectedExecutionCard(workspaceInput);
+      if (!card) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          reason: 'No card is available for the QA run.',
+          workspace: workspaceInput,
+        };
+      }
+      const qaRun = await runQa({
+        baseUrl,
+        scenario: 'layout-pass',
+        mode: 'interactive',
+        trigger: 'cto-pipeline',
+        prompt: `${currentDeskLabel} smoke check`,
+        actions: [],
+        linked: { cardId: card.id, ctoPipelineId: pipeline.id },
+      });
+      const nextWorkspace = persistBoardWorkspaceFn(mutateTeamBoardCard(workspaceInput, card.id, (currentCard) => ({
+        ...currentCard,
+        verifyRequired: true,
+        verifyStatus: qaRun.verdict === 'failed' ? 'failed' : 'passed',
+        verifyRunIds: [...new Set([...(currentCard.verifyRunIds || []), qaRun.id])],
+        verifyArtifacts: mergeUnique([...(currentCard.verifyArtifacts || []), ...(Array.isArray(qaRun.artifacts?.screenshots) ? qaRun.artifacts.screenshots.map((entry) => entry.name).filter(Boolean) : [])]),
+        lastVerificationSummary: qaRun.summary || currentCard.lastVerificationSummary || '',
+        updatedAt: nowIso(),
+      })), 'cto-request-qa', {
+        cardId: card.id,
+        runId: qaRun.id,
+        roleId: currentDesk,
+      });
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: currentDesk,
+        deskLabel: currentDeskLabel,
+        qaRunId: qaRun.id,
+        qaSummary: qaRun.summary || null,
+        summary: `QA returned one validation result for ${currentDeskLabel} coverage.`,
+        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        workspace: nextWorkspace,
+      };
+    }
+
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      reason: `${normalizedAction.id} is not wired in this slice.`,
+      workspace: workspaceInput,
     };
   } catch (error) {
     return {
@@ -1915,9 +2634,10 @@ async function executeCtoConfirmedAction(action = null) {
       status: 'blocked',
       actionId: normalizedAction.id,
       kind: normalizedAction.kind,
-      deskId: normalizedAction.targetDeskId,
-      deskLabel: normalizedAction.targetDeskLabel,
+      deskId: normalizedAction.targetDeskId || currentDesk,
+      deskLabel: normalizedAction.targetDeskLabel || currentDeskLabel,
       reason: String(error.message || error),
+      workspace: workspaceInput,
     };
   }
 }
@@ -2060,6 +2780,7 @@ function parseCtoStructuredReply(text = '', options = {}) {
 function buildCtoPromptContext(context = null) {
   return {
     workspace: context?.workspace || {},
+    pipeline: context?.pipeline || null,
     desks: (context?.desks || []).map((desk) => ({
       deskId: desk.deskId,
       label: desk.label,
@@ -2100,6 +2821,7 @@ function buildCtoChatPrompt({
         id: entry.action.id,
         kind: entry.action.kind,
         label: entry.action.label,
+        params: entry.action.params || {},
         available: entry.action.available,
         requiresConfirmation: entry.action.requiresConfirmation,
         status: entry.action.status,
@@ -2116,6 +2838,9 @@ function buildCtoChatPrompt({
     'Do not invent departments, desks, routes, or completed actions.',
     'Prefer governance and delegation language over pretending to do all work directly.',
     'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.',
+    'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.',
+    'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.',
+    'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.',
     'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.',
     'If an action is unavailable, explain why in system terms.',
     'Return JSON only with this exact shape:',
@@ -2129,6 +2854,7 @@ function buildCtoChatPrompt({
     'If action is not null, action.id must be one of the ids listed in available_actions.',
     'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.',
     'Do not emit route status fields. Route status is owned by the server, not the model.',
+    'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.',
     '',
     'ACE context:',
     JSON.stringify(promptPayload, null, 2),
@@ -2145,6 +2871,7 @@ async function runCtoGovernanceChat({
   timeoutMs = null,
   confirmActionId = null,
   workspace = null,
+  baseUrl = null,
 } = {}) {
   const promptText = String(text || '').trim();
   if (!promptText) {
@@ -2183,24 +2910,72 @@ async function runCtoGovernanceChat({
       diagnostic,
     };
   }
-  const context = await buildCtoGovernanceContext(workspace);
+  let currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  let context = await buildCtoGovernanceContext(currentWorkspace);
   const availableActions = buildCtoAvailableActions({
     text: promptText,
     history: normalizedHistory,
     context,
+    workspace: currentWorkspace,
   });
   const pendingAction = findPendingCtoAction(normalizedHistory, confirmActionId);
+  const activeAction = availableActions[0] || null;
   const shouldExecuteAction = Boolean(pendingAction)
+    && (!activeAction || pendingAction.id === activeAction.id)
     && (Boolean(String(confirmActionId || '').trim()) || isAffirmativeCtoReply(promptText));
-  const execution = shouldExecuteAction
-    ? await executeCtoConfirmedAction(pendingAction)
+  let execution = shouldExecuteAction
+    ? await executeCtoConfirmedAction(pendingAction, {
+        workspace: currentWorkspace,
+        baseUrl,
+      })
     : null;
+  if (execution?.workspace) {
+    currentWorkspace = normalizeSpatialWorkspaceShape(execution.workspace);
+    context = await buildCtoGovernanceContext(currentWorkspace);
+  }
+  const postExecutionAvailableActions = buildCtoAvailableActions({
+    text: promptText,
+    history: normalizedHistory,
+    context,
+    workspace: currentWorkspace,
+  });
+  if (shouldExecuteAction && execution && !execution.ok) {
+    const reason = String(execution.reason || 'The confirmed CTO action was blocked.').trim();
+    const diagnostic = recordCtoDiagnostic({
+      route: '/api/spatial/cto/chat',
+      source,
+      status: 'degraded',
+      backend: requestedBackend,
+      model: requestedModel,
+      host: requestedHost,
+      reason,
+      failureKind: 'contract',
+      runId: null,
+      actionId: execution?.actionId || pendingAction?.id || null,
+      availableActionIds: postExecutionAvailableActions.map((entry) => entry.id),
+    });
+    return {
+      ok: false,
+      status: 'degraded',
+      backend: requestedBackend,
+      model: requestedModel,
+      source,
+      reason,
+      reply_text: `The live CTO model is reachable, but the confirmed action was blocked: ${reason}.`,
+      replyKind: 'blocked',
+      delegation: null,
+      action: normalizeCtoResponseAction(null, postExecutionAvailableActions, execution),
+      execution,
+      backendStatus,
+      diagnostic,
+    };
+  }
   const runId = `cto-chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const prompt = buildCtoChatPrompt({
     text: promptText,
     history: normalizedHistory,
     context,
-    availableActions,
+    availableActions: postExecutionAvailableActions,
     execution,
   });
   try {
@@ -2212,7 +2987,7 @@ async function runCtoGovernanceChat({
       expectJson: false,
     });
     const parsedReply = parseCtoStructuredReply(modelResult?.text || '', {
-      availableActions,
+      availableActions: postExecutionAvailableActions,
       context,
       execution,
     });
@@ -2229,7 +3004,7 @@ async function runCtoGovernanceChat({
       reply_text: replyText,
       replyKind: responseKind,
       delegation: normalizeCtoDelegation(raw.delegation, context),
-      action: normalizeCtoResponseAction(raw.action, availableActions, execution),
+      action: normalizeCtoResponseAction(raw.action, postExecutionAvailableActions, execution),
       execution,
       backendStatus,
     };
@@ -2249,7 +3024,7 @@ async function runCtoGovernanceChat({
       failureKind: error?.ctoFailureKind || 'parse',
       runId,
       actionId: execution?.actionId || null,
-      availableActionIds: availableActions.map((entry) => entry.id),
+      availableActionIds: postExecutionAvailableActions.map((entry) => entry.id),
     });
     return {
       ok: false,
@@ -2264,7 +3039,7 @@ async function runCtoGovernanceChat({
         : `The live CTO model is reachable, but ${requestedModel} ${failureDetail}. No delegation or internal action was applied.`,
       replyKind: 'blocked',
       delegation: null,
-      action: normalizeCtoResponseAction(null, availableActions, execution),
+      action: normalizeCtoResponseAction(null, postExecutionAvailableActions, execution),
       execution,
       backendStatus: {
         ...backendStatus,
@@ -2308,6 +3083,7 @@ async function runCtoGovernanceModelBakeOff({
     text,
     history: normalizedHistory,
     context,
+    workspace: context?.workspace || workspace,
   });
   const prompt = buildCtoChatPrompt({
     text,
@@ -10016,17 +10792,18 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
         reply_text: null,
       });
     }
-    const result = await runCtoGovernanceChat({
-      text,
-      history: body.history,
-      source,
-      backend: body.backend,
-      model: body.model,
-      host: body.host,
-      timeoutMs: body.timeoutMs,
-      confirmActionId: body.confirmActionId,
-      workspace: readSpatialWorkspace(),
-    });
+      const result = await runCtoGovernanceChat({
+        text,
+        history: body.history,
+        source,
+        backend: body.backend,
+        model: body.model,
+        host: body.host,
+        timeoutMs: body.timeoutMs,
+        confirmActionId: body.confirmActionId,
+        workspace: readSpatialWorkspace(),
+        baseUrl: getLocalBaseUrl(req),
+      });
     if (!result.ok) {
       const httpStatus = result.status === 'offline' ? 503 : 422;
       return res.status(httpStatus).json({
@@ -10388,10 +11165,17 @@ module.exports = {
   readCtoDiagnostics,
   probeCtoBackendStatus,
   buildCtoGovernanceContext,
+  summarizeCtoPipelineState,
+  normalizeCtoPipelineState,
+  advanceCtoPipelineState,
   buildCtoAvailableActions,
+  buildCtoActionRecord,
+  buildCtoActionForPipeline,
   executeCtoConfirmedAction,
   runCtoGovernanceModelBakeOff,
   runCtoGovernanceChat,
   normalizeCtoChatHistory,
   isAffirmativeCtoReply,
+  getCtoRoleLabel,
+  getCtoRoleHintFromText,
 };
