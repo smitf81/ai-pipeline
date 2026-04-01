@@ -1,6 +1,17 @@
 import { STUDIO_DEPARTMENT_TEMPLATES } from './studioTemplates.js';
 import { buildRelationshipHiringSignals } from './relationshipHiringSignals.js';
 
+const CANONICAL_STAFFING_DESK_TO_DEPARTMENT = Object.freeze({
+  'context-manager': 'context-intake',
+  planner: 'delivery',
+  executor: 'delivery',
+  'memory-archivist': 'delivery',
+  'rnd-lead': 'research',
+  'qa-lead': 'governance',
+  'cto-architect': 'governance',
+  integration_auditor: 'talent-acquisition',
+});
+
 function normalizeText(value = '') {
   return String(value || '').trim();
 }
@@ -41,6 +52,9 @@ function buildDeskToDepartmentMap() {
       deskToDepartment.set(normalizeId(deskId), departmentId);
     });
   });
+  Object.entries(CANONICAL_STAFFING_DESK_TO_DEPARTMENT).forEach(([deskId, departmentId]) => {
+    deskToDepartment.set(normalizeId(deskId), normalizeId(departmentId));
+  });
   return deskToDepartment;
 }
 
@@ -58,6 +72,9 @@ function buildDeskToDepartmentMapFromOrganization(organization = null) {
 function buildCoverageRecord(entity = {}, roster = [], deskToDepartment = new Map()) {
   const source = entity && typeof entity === 'object' ? entity : {};
   const entityId = normalizeId(source.entityId);
+  const plannerCoverage = source.plannerCoverage && typeof source.plannerCoverage === 'object'
+    ? source.plannerCoverage
+    : null;
   const assignedRoster = roster.filter((candidate) => {
     if (!candidate?.deskId) return false;
     if (source.entityType === 'desk') {
@@ -122,12 +139,18 @@ function buildCoverageRecord(entity = {}, roster = [], deskToDepartment = new Ma
     optionalOpenRoles,
     openSeatCount: missingRoles.reduce((sum, entry) => sum + Number(entry.shortfall || 0), 0),
     optionalSeatCount: optionalOpenRoles.reduce((sum, entry) => sum + Number(entry.shortfall || 0), 0),
+    plannerCoverage,
   };
 }
 
 export function buildRosterSurfaceModel(payload = {}) {
   const source = payload && typeof payload === 'object' ? payload : {};
   const coverage = Array.isArray(source.coverage) ? source.coverage : [];
+  const plannerCoverage = source.plannerCoverage && typeof source.plannerCoverage === 'object'
+    ? source.plannerCoverage
+    : (source.gapModel?.plannerCoverage && typeof source.gapModel.plannerCoverage === 'object'
+      ? source.gapModel.plannerCoverage
+      : null);
   const roster = Array.isArray(source.roster) ? source.roster.map((entry) => normalizeRosterEntry(entry)) : [];
   const deskToDepartment = (() => {
     const fromOrganization = buildDeskToDepartmentMapFromOrganization(source.organization);
@@ -144,8 +167,9 @@ export function buildRosterSurfaceModel(payload = {}) {
   const summary = source.coverageSummary && typeof source.coverageSummary === 'object'
     ? source.coverageSummary
     : {};
-  const openRoles = Array.isArray(source.gapModel?.openRoles) ? source.gapModel.openRoles : [];
-  const blockers = Array.isArray(source.gapModel?.blockers) ? source.gapModel.blockers : [];
+  const canonicalSeats = Array.isArray(source.gapModel?.canonicalSeats) ? source.gapModel.canonicalSeats : [];
+  const openRoles = canonicalSeats;
+  const blockers = openRoles.filter((entry) => entry && entry.blocker);
   const hiringSignals = buildRelationshipHiringSignals({
     departments: departmentCards,
     desks: deskCards,
@@ -156,9 +180,11 @@ export function buildRosterSurfaceModel(payload = {}) {
     coverage,
     departments: departmentCards,
     desks: deskCards,
+    canonicalSeats,
     openRoles,
     blockers,
     hiringSignals,
+    plannerCoverage,
     summary: {
       totalCoverage: Number(summary.total || coverage.length),
       healthyCount: Number(summary.healthyCount || 0),

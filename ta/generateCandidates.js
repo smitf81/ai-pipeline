@@ -128,18 +128,16 @@ function createCandidateProfile(archetypeKey, parsedGap, index) {
   const nameIndex = (parsedGap.tokens.length + index * 2) % NAME_BANK.length;
   const gapSeed = slugify(parsedGap.description || parsedGap.systemContext || `gap-${index + 1}`);
   const assignedModel = ASSIGNED_MODEL;
-  const deskTargets = Array.isArray(archetype.desk_targets) && archetype.desk_targets.length
-    ? archetype.desk_targets
-    : ['planner'];
-  const primaryDeskTarget = deskTargets[0];
+  const deskTargets = Array.isArray(archetype.desk_targets) ? [...archetype.desk_targets] : [];
+  const primaryDeskTarget = deskTargets[0] || null;
   const cvCard = {
     title: `${NAME_BANK[nameIndex]} :: ${archetype.role}`,
-    headline: `${archetype.role} for ${primaryDeskTarget}`,
+    headline: primaryDeskTarget ? `${archetype.role} for ${primaryDeskTarget}` : archetype.role,
     summary: `${archetype.summary} ${focusLine}`,
     evidence: [
       `Gap signal: ${parsedGap.description || parsedGap.systemContext || 'unspecified'}`,
       `Assigned model: ${assignedModel}`,
-      `Desk targets: ${deskTargets.join(', ')}`,
+      `Desk targets: ${deskTargets.length ? deskTargets.join(', ') : 'none'}`,
     ],
     controls: [
       'Model is locked after hiring.',

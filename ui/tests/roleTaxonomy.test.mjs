@@ -26,6 +26,12 @@ export default async function runRoleTaxonomyTests() {
     agentId: 'planner',
     modelProfileId: 'model-profile.planner-default',
   });
+  assert.deepEqual(taxonomy.ROLE_TAXONOMY.canonicalMappings['qa-lead'], {
+    deskId: 'qa-lead',
+    roleId: 'qa-lead',
+    agentId: 'qa-lead',
+    modelProfileId: 'model-profile.default.qa-lead',
+  });
   assert.deepEqual(taxonomy.getAssignableRoleIdsForDesk('executor'), [
     'executor',
     'integration_auditor',

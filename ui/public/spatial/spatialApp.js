@@ -248,6 +248,39 @@ function normalizeRenderText(value = '', fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
 }
 
+function normalizeQAEvidenceTracePayload(trace = {}) {
+  const source = normalizeRenderObject(trace);
+  return {
+    kind: normalizeRenderText(source.kind, '') || null,
+    label: normalizeRenderText(source.label, '') || null,
+    detail: normalizeRenderText(source.detail, '') || null,
+    sourcePath: normalizeRenderText(source.sourcePath, '') || null,
+    sourceClass: normalizeRenderText(source.sourceClass, '') || null,
+    freshnessClass: normalizeRenderText(source.freshnessClass, '') || null,
+    observedAt: normalizeRenderText(source.observedAt, '') || null,
+    derivedFrom: normalizeRenderText(source.derivedFrom, '') || null,
+    ageMs: Number.isFinite(Number(source.ageMs)) ? Number(source.ageMs) : null,
+    generatedBy: source.generatedBy && typeof source.generatedBy === 'object'
+      ? {
+          system: normalizeRenderText(source.generatedBy.system || source.generatedBy.source || source.generatedBy.kind, '') || null,
+          module: normalizeRenderText(source.generatedBy.module || source.generatedBy.moduleName, '') || null,
+          label: normalizeRenderText(source.generatedBy.label, '') || null,
+        }
+      : null,
+    sourceArtifacts: normalizeRenderList(source.sourceArtifacts).map((artifact) => {
+      const artifactSource = normalizeRenderObject(artifact);
+      return {
+        path: normalizeRenderText(artifactSource.path || artifactSource.sourcePath, '') || null,
+        label: normalizeRenderText(artifactSource.label, '') || normalizeRenderText(artifactSource.path || artifactSource.sourcePath, '') || null,
+        kind: normalizeRenderText(artifactSource.kind, '') || 'artifact',
+        freshnessClass: normalizeRenderText(artifactSource.freshnessClass, '') || null,
+        observedAt: normalizeRenderText(artifactSource.observedAt, '') || null,
+        derivedFrom: normalizeRenderText(artifactSource.derivedFrom, '') || null,
+      };
+    }),
+  };
+}
+
 export function normalizeTruthPayload(truth = {}) {
   const source = normalizeRenderObject(truth);
   return {
@@ -297,16 +330,18 @@ function normalizeQARunPayload(run = {}) {
     failedSteps,
     console: normalizeRenderList(source.console),
     network: normalizeRenderList(source.network),
+    sourceTrace: normalizeQAEvidenceTracePayload(source.sourceTrace),
   };
 }
 
 export function normalizeQAReportPayload(report = {}) {
   const source = normalizeRenderObject(report);
   return {
-      status: normalizeRenderText(source.status) || 'idle',
-      summary: normalizeRenderText(source.summary),
+    status: normalizeRenderText(source.status) || 'idle',
+    summary: normalizeRenderText(source.summary),
     desks: normalizeRenderList(source.desks),
     failures: normalizeRenderList(source.failures).map((failure) => normalizeRenderObject(failure)),
+    sourceTrace: normalizeQAEvidenceTracePayload(source.sourceTrace),
   };
 }
 
@@ -317,6 +352,7 @@ function normalizeQAUnitGatePayload(unitGate = {}) {
     passedCount: Number(source.passedCount ?? 0) || 0,
     totalChecks: Number(source.totalChecks ?? 0) || 0,
     failures: normalizeRenderList(source.failures).map((failure) => normalizeRenderObject(failure)),
+    sourceTrace: normalizeQAEvidenceTracePayload(source.sourceTrace),
   };
 }
 
@@ -329,6 +365,7 @@ function normalizeQABootGatePayload(studioBootGate = {}) {
     consoleErrorCount: Number(source.consoleErrorCount ?? 0) || 0,
     networkFailureCount: Number(source.networkFailureCount ?? 0) || 0,
     failedSteps: normalizeRenderList(source.failedSteps).map((step) => normalizeRenderObject(step)),
+    sourceTrace: normalizeQAEvidenceTracePayload(source.sourceTrace),
   };
 }
 
@@ -336,7 +373,129 @@ function normalizeQALocalGatePayload(localGate = {}) {
   const source = normalizeRenderObject(localGate);
   const unit = source.unit ? normalizeQAUnitGatePayload(source.unit) : null;
   const studioBoot = source.studioBoot ? normalizeQABootGatePayload(source.studioBoot) : null;
-  return unit || studioBoot ? { unit, studioBoot } : null;
+  const evidenceSources = normalizeRenderList(source.evidenceSources).map((entry) => normalizeQAEvidenceTracePayload(entry));
+  return unit || studioBoot || evidenceSources.length
+    ? {
+        unit,
+        studioBoot,
+        evidenceSources,
+        evidenceSummary: normalizeRenderObject(source.evidenceSummary),
+      }
+      : null;
+}
+
+function normalizeQATestRegistryEntry(entry = {}) {
+  const source = normalizeRenderObject(entry);
+  const owner = normalizeRenderObject(source.owner);
+  const qaSource = normalizeRenderObject(source.source);
+  const runtimeTest = normalizeRenderObject(source.runtimeTest);
+  return {
+    ...source,
+    id: normalizeRenderText(source.id, '') || null,
+    deskId: normalizeRenderText(source.deskId, '') || owner.id || null,
+    deskLabel: normalizeRenderText(source.deskLabel, '') || owner.label || 'Unknown desk',
+    testId: normalizeRenderText(source.testId, '') || null,
+    testName: normalizeRenderText(source.testName, '') || 'Unnamed QA test',
+    owner: owner.kind || owner.id || owner.label || qaSource.modulePath
+      ? {
+          ...owner,
+          kind: normalizeRenderText(owner.kind, '') || (owner.id ? 'desk' : 'unknown'),
+          id: normalizeRenderText(owner.id, '') || null,
+          label: normalizeRenderText(owner.label, '') || 'Unknown owner',
+          module: normalizeRenderText(owner.module, '') || null,
+        }
+      : null,
+    source: qaSource.modulePath || qaSource.runtimePath || qaSource.kind
+      ? {
+          ...qaSource,
+          kind: normalizeRenderText(qaSource.kind, '') || 'module',
+          modulePath: normalizeRenderText(qaSource.modulePath, '') || null,
+          runtimePath: normalizeRenderText(qaSource.runtimePath, '') || null,
+          runtimeTestPath: normalizeRenderText(qaSource.runtimeTestPath, '') || null,
+        }
+      : null,
+    currentStatus: normalizeRenderText(source.currentStatus, '') || 'missing',
+    lastExecutionAt: normalizeRenderText(source.lastExecutionAt, '') || null,
+    runtimeReason: normalizeRenderText(source.runtimeReason, '') || null,
+    validityClass: normalizeRenderText(source.validityClass, '') || 'stale_target',
+    validityReason: normalizeRenderText(source.validityReason, '') || '',
+    deprecated: Boolean(source.deprecated),
+    runtimeTest: runtimeTest.status || runtimeTest.reason || runtimeTest.qualityCard
+      ? {
+          ...runtimeTest,
+          status: normalizeRenderText(runtimeTest.status, '') || 'missing',
+          reason: normalizeRenderText(runtimeTest.reason, '') || null,
+        }
+      : null,
+    reportFinishedAt: normalizeRenderText(source.reportFinishedAt, '') || null,
+  };
+}
+
+function normalizeQATestRegistryPayload(testRegistry = null) {
+  const source = normalizeRenderObject(testRegistry);
+  const entries = normalizeRenderList(source.entries).map((entry) => normalizeQATestRegistryEntry(entry));
+  const summary = normalizeRenderObject(source.summary);
+  return entries.length || Object.keys(summary).length
+    ? {
+        ...source,
+        schema: normalizeRenderText(source.schema, '') || 'qa.test-registry.v1',
+        generatedAt: normalizeRenderText(source.generatedAt, '') || null,
+        reportFinishedAt: normalizeRenderText(source.reportFinishedAt, '') || null,
+        entries,
+        summary,
+      }
+    : null;
+}
+
+function normalizeQAAuditArtifactPayload(artifact = {}) {
+  const source = normalizeRenderObject(artifact);
+  return {
+    path: normalizeRenderText(source.path || source.sourcePath, '') || null,
+    label: normalizeRenderText(source.label, '') || normalizeRenderText(source.path || source.sourcePath, '') || 'Artifact',
+    kind: normalizeRenderText(source.kind, '') || 'artifact',
+    freshnessClass: normalizeRenderText(source.freshnessClass, '') || null,
+    observedAt: normalizeRenderText(source.observedAt, '') || null,
+    derivedFrom: normalizeRenderText(source.derivedFrom, '') || null,
+  };
+}
+
+function normalizeQAAuditEntryPayload(entry = {}) {
+  const source = normalizeRenderObject(entry);
+  return {
+    ...source,
+    kind: normalizeRenderText(source.kind, '') || 'qa-output',
+    label: normalizeRenderText(source.label, '') || 'QA output',
+    status: normalizeRenderText(source.status, '') || 'ok',
+    freshnessClass: normalizeRenderText(source.freshnessClass, '') || 'missing',
+    generatedAt: normalizeRenderText(source.generatedAt, '') || null,
+    generator: source.generator && typeof source.generator === 'object'
+      ? {
+          system: normalizeRenderText(source.generator.system, '') || null,
+          module: normalizeRenderText(source.generator.module, '') || null,
+          label: normalizeRenderText(source.generator.label, '') || null,
+        }
+      : null,
+    sourceArtifacts: normalizeRenderList(source.sourceArtifacts).map((artifact) => normalizeQAAuditArtifactPayload(artifact)),
+    mismatch: Boolean(source.mismatch),
+    mismatchReason: normalizeRenderText(source.mismatchReason, '') || null,
+    detail: normalizeRenderText(source.detail, '') || null,
+    sourceTrace: normalizeQAEvidenceTracePayload(source.sourceTrace),
+  };
+}
+
+function normalizeQAAuditTrailPayload(auditTrail = null) {
+  const source = normalizeRenderObject(auditTrail);
+  const entries = normalizeRenderList(source.entries).map((entry) => normalizeQAAuditEntryPayload(entry));
+  const summary = normalizeRenderObject(source.summary);
+  return entries.length || Object.keys(summary).length
+    ? {
+        ...source,
+        schema: normalizeRenderText(source.schema, '') || 'qa.audit-trail.v1',
+        generatedAt: normalizeRenderText(source.generatedAt, '') || null,
+        entries,
+        summary,
+      }
+    : null;
 }
 
 function normalizeQASectionPayload(section = {}) {
@@ -359,6 +518,12 @@ function normalizeQASectionPayload(section = {}) {
     localGate: normalizeQALocalGatePayload(source.localGate || source.gate || null),
     cards: normalizeRenderList(source.cards),
     items: normalizeRenderList(source.items),
+    evidenceSources: normalizeRenderList(source.evidenceSources).map((entry) => normalizeQAEvidenceTracePayload(entry)),
+    evidenceSummary: normalizeRenderObject(source.evidenceSummary),
+    testRegistry: normalizeQATestRegistryPayload(source.testRegistry || null),
+    testRegistrySummary: normalizeRenderObject(source.testRegistrySummary),
+    auditTrail: normalizeQAAuditTrailPayload(source.auditTrail || null),
+    auditTrailSummary: normalizeRenderObject(source.auditTrailSummary),
   };
 }
 
@@ -403,6 +568,20 @@ export function normalizeRosterSurfacePayload(rosterSurfaceModel = {}) {
   const departments = normalizeRenderList(source.departments).map(normalizeRosterEntity);
   const desks = normalizeRenderList(source.desks).map(normalizeRosterEntity);
   const roster = normalizeRenderList(source.roster).map(normalizeRosterEntity);
+  const canonicalSeats = normalizeRenderList(source.canonicalSeats).map((entry) => ({
+    ...normalizeRenderObject(entry),
+    blocker: Boolean(entry?.blocker),
+    entityLabel: normalizeRenderText(entry?.entityLabel, '') || entry?.entityId || 'Unknown entity',
+    entityType: normalizeRenderText(entry?.entityType, '') || 'desk',
+    entityId: normalizeRenderText(entry?.entityId, '') || null,
+    departmentLabel: normalizeRenderText(entry?.departmentLabel, '') || normalizeRenderText(entry?.departmentId, '') || 'Unknown department',
+    departmentId: normalizeRenderText(entry?.departmentId, '') || null,
+    roleLabel: normalizeRenderText(entry?.roleLabel, '') || normalizeRenderText(entry?.roleId, '') || normalizeRenderText(entry?.kind, '') || 'open seat',
+    roleId: normalizeRenderText(entry?.roleId, '') || null,
+    kind: normalizeRenderText(entry?.kind, '') || 'open-seat',
+    shortfall: Number(entry?.shortfall ?? 0) || 0,
+    urgency: normalizeRenderText(entry?.urgency, '') || 'low',
+  }));
   const openRoles = normalizeRenderList(source.openRoles).map((entry) => ({
     ...normalizeRenderObject(entry),
     blocker: Boolean(entry?.blocker),
@@ -429,7 +608,7 @@ export function normalizeRosterSurfacePayload(rosterSurfaceModel = {}) {
       staffingGapCount: Number(entry?.staffingGapCount ?? 0) || 0,
       weakRelationshipCount: Number(entry?.weakRelationshipCount ?? 0) || 0,
     }));
-  const activeDepartmentCards = departments.length ? departments : desks;
+  const activeDepartmentCards = desks.length ? desks : departments;
   return {
     department: {
         name: normalizeRenderText(department.name) || 'People Plan',
@@ -449,9 +628,11 @@ export function normalizeRosterSurfacePayload(rosterSurfaceModel = {}) {
     departments,
     desks,
     roster,
+    canonicalSeats,
     openRoles,
     blockers,
     hiringSignals,
+    plannerCoverage: normalizeRenderObject(source.plannerCoverage),
     resourceSignals,
     activeDepartmentCards,
   };
@@ -1223,6 +1404,15 @@ const EMPTY_QA_STATE = {
   localGate: {
     unit: null,
     studioBoot: null,
+  },
+  evidenceSources: [],
+  evidenceSummary: {
+    total: 0,
+    liveCanonical: 0,
+    derivedCurrent: 0,
+    stale: 0,
+    missing: 0,
+    nonExecutable: 0,
   },
 };
 
@@ -2134,6 +2324,211 @@ function summarizeGateFailures(entry = null) {
   return Number(entry.failedCount || entry.findingCount || entry.consoleErrorCount || entry.failures?.length || 0);
 }
 
+function formatQAEvidenceFreshness(freshnessClass = '') {
+  const normalized = String(freshnessClass || '').trim();
+  if (normalized === 'live_canonical') return 'Live canonical';
+  if (normalized === 'derived_current') return 'Derived current';
+  if (normalized === 'stale') return 'Stale';
+  if (normalized === 'missing') return 'Missing';
+  if (normalized === 'non_executable') return 'Non-executable';
+  return normalized || 'Unknown';
+}
+
+function toneForQAEvidenceFreshness(freshnessClass = '') {
+  const normalized = String(freshnessClass || '').trim();
+  if (normalized === 'live_canonical' || normalized === 'derived_current') return 'good';
+  if (normalized === 'stale') return 'warn';
+  return 'bad';
+}
+
+function formatQATestValidity(validityClass = '') {
+  const normalized = String(validityClass || '').trim();
+  if (normalized === 'executable') return 'Executable';
+  if (normalized === 'missing_dependency') return 'Missing dependency';
+  if (normalized === 'stale_target') return 'Stale target';
+  if (normalized === 'deprecated') return 'Deprecated';
+  if (normalized === 'unknown_owner') return 'Unknown owner';
+  return normalized || 'Unknown';
+}
+
+function toneForQATestValidity(validityClass = '') {
+  const normalized = String(validityClass || '').trim();
+  if (normalized === 'executable') return 'good';
+  if (normalized === 'stale_target') return 'warn';
+  if (normalized === 'missing_dependency' || normalized === 'unknown_owner') return 'bad';
+  if (normalized === 'deprecated') return 'neutral';
+  return 'warn';
+}
+
+function renderQAEvidenceSource(source = null, options = {}) {
+  if (!source) return null;
+  const trace = normalizeQAEvidenceTracePayload(source);
+  const generatedBy = trace.generatedBy
+    ? [trace.generatedBy.system, trace.generatedBy.module].filter(Boolean).join(' | ')
+    : '';
+  const sourceArtifacts = Array.isArray(trace.sourceArtifacts) ? trace.sourceArtifacts : [];
+  return h('div', {
+    key: options.key || `${trace.kind || 'qa-source'}-${trace.sourcePath || trace.label || 'source'}`,
+    className: 'desk-panel-item qa-evidence-source',
+    'data-qa': options.dataQa || 'qa-evidence-source',
+  },
+    h('div', { className: 'inline review-header' },
+      h('div', null,
+        h('div', { className: 'signal-summary' }, trace.label || trace.kind || 'QA evidence'),
+        trace.detail ? h('div', { className: 'signal-meta muted' }, trace.detail) : null,
+      ),
+      h('span', { className: `qa-metric-pill tone-${toneForQAEvidenceFreshness(trace.freshnessClass)}` }, formatQAEvidenceFreshness(trace.freshnessClass)),
+    ),
+    h('div', { className: 'signal-meta muted' }, `Source: ${trace.sourcePath || 'unknown'}`),
+    generatedBy ? h('div', { className: 'signal-meta muted' }, `Generated by: ${generatedBy}`) : null,
+    trace.observedAt ? h('div', { className: 'signal-meta muted' }, `Observed: ${formatTimestamp(trace.observedAt)}`) : null,
+    trace.derivedFrom ? h('div', { className: 'signal-meta muted' }, `Derived from: ${trace.derivedFrom}`) : null,
+    sourceArtifacts.length
+      ? h('div', { className: 'signal-meta muted' }, `Source artifacts: ${sourceArtifacts.map((artifact) => artifact.label || artifact.path || 'artifact').join(' | ')}`)
+      : null,
+  );
+  }
+
+function formatQAAuditStatus(status = '') {
+  const value = String(status || '').trim().toLowerCase();
+  if (value === 'ok') return 'OK';
+  if (value === 'stale') return 'STALE';
+  if (value === 'missing') return 'MISSING';
+  if (value === 'mismatch') return 'MISMATCH';
+  return value ? value.toUpperCase() : 'OK';
+}
+
+function toneForQAAuditStatus(status = '') {
+  const value = String(status || '').trim().toLowerCase();
+  if (value === 'ok') return 'good';
+  if (value === 'stale') return 'warn';
+  if (value === 'missing' || value === 'mismatch') return 'bad';
+  return 'neutral';
+}
+
+function renderQAAuditTrailSummary(auditTrail = null) {
+  const trail = normalizeQAAuditTrailPayload(auditTrail);
+  const summary = trail?.summary || {};
+  return h('div', { className: 'qa-metric-pill-row', 'data-qa': 'qa-audit-summary' },
+    h('span', { className: 'qa-metric-pill tone-good' }, `OK ${Number(summary.ok || 0)}`),
+    h('span', { className: 'qa-metric-pill tone-warn' }, `Stale ${Number(summary.stale || 0)}`),
+    h('span', { className: 'qa-metric-pill tone-bad' }, `Missing ${Number(summary.missing || 0)}`),
+    h('span', { className: 'qa-metric-pill tone-bad' }, `Mismatch ${Number(summary.mismatch || 0)}`),
+    h('span', { className: 'qa-metric-pill tone-neutral' }, `Total ${Number(summary.total || 0)}`),
+  );
+}
+
+function renderQAAuditTrailList(auditTrail = null, emptyState = 'No QA audit trail is recorded yet.') {
+  const trail = normalizeQAAuditTrailPayload(auditTrail);
+  const entries = Array.isArray(trail?.entries) ? [...trail.entries] : [];
+  if (!entries.length) {
+    return h('div', { className: 'signal-empty muted', 'data-qa': 'qa-audit-trail-empty' }, emptyState);
+  }
+  const statusOrder = {
+    mismatch: 0,
+    missing: 1,
+    stale: 2,
+    ok: 3,
+  };
+  const sortedEntries = [...entries].sort((left, right) => {
+    const leftRank = Object.prototype.hasOwnProperty.call(statusOrder, left.status) ? statusOrder[left.status] : 2;
+    const rightRank = Object.prototype.hasOwnProperty.call(statusOrder, right.status) ? statusOrder[right.status] : 2;
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    return String(left.kind || left.label || '').localeCompare(String(right.kind || right.label || ''));
+  });
+  return h('div', { className: 'desk-panel-list utility-list qa-audit-trail-list', 'data-qa': 'qa-audit-trail-list' },
+    sortedEntries.map((entry, index) => h('div', {
+      key: `${entry.kind || 'audit'}-${entry.label || index}`,
+      className: `desk-panel-item utility-card qa-audit-card status-${entry.status || 'ok'}`,
+      'data-status': entry.status || 'ok',
+    },
+      h('div', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'signal-summary' }, entry.label || entry.kind || 'QA output'),
+          h('div', { className: 'signal-meta muted' }, entry.kind || 'qa-output'),
+        ),
+        h('span', { className: `qa-metric-pill tone-${toneForQAAuditStatus(entry.status)}` }, formatQAAuditStatus(entry.status)),
+      ),
+      h('div', { className: 'signal-meta muted' }, `Generated at: ${entry.generatedAt ? formatTimestamp(entry.generatedAt) : 'unknown'}`),
+      entry.generator ? h('div', { className: 'signal-meta muted' }, `Generated by: ${[entry.generator.system, entry.generator.module].filter(Boolean).join(' | ') || 'unknown'}`) : null,
+      h('div', { className: 'signal-meta muted' }, `Freshness: ${formatQAEvidenceFreshness(entry.freshnessClass)}`),
+      entry.detail ? h('div', { className: 'signal-meta muted' }, entry.detail) : null,
+      entry.sourceArtifacts?.length
+        ? h('div', { className: 'signal-meta muted' }, `Source artifacts: ${entry.sourceArtifacts.map((artifact) => artifact.label || artifact.path || 'artifact').join(' | ')}`)
+        : null,
+      entry.mismatchReason ? h('div', { className: 'signal-meta error' }, entry.mismatchReason) : null,
+    )),
+  );
+}
+
+function renderQATestRegistrySummary(registrySummary = null) {
+  const summary = normalizeRenderObject(registrySummary);
+  const total = Number(summary.total ?? 0) || 0;
+  const executable = Number(summary.executable ?? 0) || 0;
+  const missingDependency = Number(summary.missingDependency ?? 0) || 0;
+  const staleTarget = Number(summary.staleTarget ?? 0) || 0;
+  const deprecated = Number(summary.deprecated ?? 0) || 0;
+  const unknownOwner = Number(summary.unknownOwner ?? 0) || 0;
+  return h('div', { className: 'qa-metric-pill-row', 'data-qa': 'qa-test-registry-summary' },
+    h('span', { className: 'qa-metric-pill tone-good' }, `Executable ${executable}`),
+    h('span', { className: 'qa-metric-pill tone-warn' }, `Stale ${staleTarget}`),
+    h('span', { className: 'qa-metric-pill tone-bad' }, `Missing deps ${missingDependency}`),
+    h('span', { className: 'qa-metric-pill tone-neutral' }, `Deprecated ${deprecated}`),
+    h('span', { className: 'qa-metric-pill tone-bad' }, `Unknown owner ${unknownOwner}`),
+    h('span', { className: 'qa-metric-pill tone-neutral' }, `Total ${total}`),
+  );
+}
+
+function renderQATestRegistryList(testRegistry = null, emptyState = 'No QA tests are registered yet.') {
+  const registry = normalizeQATestRegistryPayload(testRegistry);
+  const entries = Array.isArray(registry?.entries) ? [...registry.entries] : [];
+  if (!entries.length) {
+    return h('div', { className: 'signal-empty muted', 'data-qa': 'qa-test-registry-empty' }, emptyState);
+  }
+  const validityOrder = {
+    missing_dependency: 0,
+    stale_target: 1,
+    deprecated: 2,
+    unknown_owner: 3,
+    executable: 4,
+  };
+  const sortedEntries = [...entries].sort((left, right) => {
+    const leftRank = Object.prototype.hasOwnProperty.call(validityOrder, left.validityClass) ? validityOrder[left.validityClass] : 1;
+    const rightRank = Object.prototype.hasOwnProperty.call(validityOrder, right.validityClass) ? validityOrder[right.validityClass] : 1;
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    const leftOwner = String(left.owner?.label || left.deskLabel || left.deskId || '').toLowerCase();
+    const rightOwner = String(right.owner?.label || right.deskLabel || right.deskId || '').toLowerCase();
+    if (leftOwner !== rightOwner) return leftOwner.localeCompare(rightOwner);
+    return String(left.testName || left.testId || '').localeCompare(String(right.testName || right.testId || ''));
+  });
+  return h('div', { className: 'desk-panel-list utility-list qa-test-registry-list', 'data-qa': 'qa-test-registry-list' },
+    sortedEntries.map((entry, index) => {
+      const sourcePath = entry.source?.modulePath || entry.source?.runtimePath || 'unknown source';
+      const runtimePath = entry.source?.runtimePath || 'unknown runtime';
+      const ownerLabel = entry.owner?.label || entry.deskLabel || 'Unknown owner';
+      const ownerDetail = entry.owner?.module || entry.source?.modulePath || null;
+      return h('div', {
+        key: entry.id || `${entry.deskId || 'unknown'}-${entry.testId || index}`,
+        className: `desk-panel-item utility-card qa-test-registry-card validity-${entry.validityClass || 'stale_target'}`,
+        'data-validity': entry.validityClass || 'stale_target',
+      },
+        h('div', { className: 'inline review-header' },
+          h('div', null,
+            h('div', { className: 'signal-summary' }, entry.testName || entry.testId || 'Unnamed QA test'),
+            h('div', { className: 'signal-meta muted' }, `${ownerLabel}${ownerDetail ? ` | ${ownerDetail}` : ''}`),
+          ),
+          h('span', { className: `qa-metric-pill tone-${toneForQATestValidity(entry.validityClass)}` }, formatQATestValidity(entry.validityClass)),
+        ),
+        h('div', { className: 'signal-meta muted' }, `Source: ${sourcePath}`),
+        h('div', { className: 'signal-meta muted' }, `Runtime: ${runtimePath}`),
+        h('div', { className: 'signal-meta muted' }, `Current status: ${entry.currentStatus || 'missing'}`),
+        h('div', { className: 'signal-meta muted' }, `Last execution: ${entry.lastExecutionAt ? formatTimestamp(entry.lastExecutionAt) : 'unknown'}`),
+        entry.validityReason ? h('div', { className: `signal-meta ${entry.validityClass === 'executable' ? 'muted' : 'error'}` }, entry.validityReason) : null,
+      );
+    }),
+  );
+}
+
 function renderDeskSection(rawSection, helpers = {}) {
     const section = normalizeDeskSectionPayload(rawSection);
     if (!section.kind) return null;
@@ -2341,6 +2736,8 @@ function renderDeskSection(rawSection, helpers = {}) {
             latestRun ? h('div', { className: 'signal-meta muted' }, `Browser: ${latestRun.scenario || 'layout-pass'} | ${latestRun.verdict || latestRun.status || 'pending'} | findings ${latestRun.findingCount || 0}`) : null,
             section.localGate?.unit ? h('div', { className: 'signal-meta muted' }, `Unit gate: ${summarizeGateStatus(section.localGate.unit)} | failures ${summarizeGateFailures(section.localGate.unit)}`) : null,
             section.localGate?.studioBoot ? h('div', { className: 'signal-meta muted' }, `Studio boot: ${summarizeGateStatus(section.localGate.studioBoot)} | findings ${section.localGate.studioBoot.findingCount || 0}`) : null,
+            section.evidenceSummary ? h('div', { className: 'signal-meta muted' }, `Evidence freshness: ${section.evidenceSummary.liveCanonical || 0} live canonical | ${section.evidenceSummary.derivedCurrent || 0} derived current | ${section.evidenceSummary.stale || 0} stale | ${section.evidenceSummary.missing || 0} missing | ${section.evidenceSummary.nonExecutable || 0} non-executable`) : null,
+            (section.evidenceSources || []).length ? h('div', { className: 'desk-panel-list' }, section.evidenceSources.map((source, index) => renderQAEvidenceSource(source, { key: `${section.id}-evidence-${index}` }))) : null,
           )
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No QA summary recorded yet.'),
     );
@@ -2353,11 +2750,11 @@ function renderDeskSection(rawSection, helpers = {}) {
           h('div', { className: 'inspector-label' }, section.label),
           h('div', { className: 'signal-summary' }, section.busy ? 'Structured QA suite is running...' : (report?.summary || section.emptyState || 'No structured QA report loaded yet.')),
         ),
-        helpers.runStructuredQA ? h('button', { className: 'mini', type: 'button', disabled: section.busy, onClick: helpers.runStructuredQA }, section.busy ? 'Running...' : 'Run Structured QA') : null,
       ),
       report
         ? h(React.Fragment, null,
             h('div', { className: 'signal-meta muted' }, `Status: ${report.status || 'unknown'} | Desks ${(report.desks || []).length} | Scorecards ${section.scorecardCount || 0}`),
+            report.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${report.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(report.sourceTrace.freshnessClass)}`) : null,
             (report.failures || []).length
               ? h('ul', { className: 'signal-list' }, report.failures.slice(0, 4).map((failure, index) => h('li', { key: `${section.id}-failure-${index}` }, `${failure.desk}: ${failure.test} | ${failure.reason}`)))
               : h('div', { className: 'signal-meta muted' }, 'No structured QA failures are recorded in the latest suite.'),
@@ -2373,6 +2770,7 @@ function renderDeskSection(rawSection, helpers = {}) {
         ? h('div', { className: 'desk-panel-list' }, section.cards.slice(0, 6).map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item' },
             h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
             h('div', { className: 'signal-meta muted' }, `Status: ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+            card.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace.freshnessClass)}`) : null,
             card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
           )))
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No structured QA scorecards recorded yet.'),
@@ -2386,11 +2784,11 @@ function renderDeskSection(rawSection, helpers = {}) {
           h('div', { className: 'inspector-label' }, section.label),
           h('div', { className: 'signal-summary' }, section.busy ? 'Browser QA is running...' : (run ? `${run.scenario || 'layout-pass'} | ${run.verdict || run.status || 'pending'}` : (section.emptyState || 'No browser pass has been recorded yet.'))),
         ),
-        helpers.runBrowserPass ? h('button', { className: 'mini', type: 'button', disabled: section.busy, onClick: helpers.runBrowserPass }, section.busy ? 'Running...' : 'Run Browser Pass') : null,
       ),
       run
         ? h(React.Fragment, null,
             h('div', { className: 'signal-meta muted' }, `Trigger: ${run.trigger || 'manual'} | Findings ${run.findingCount || 0}`),
+            run.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${run.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(run.sourceTrace.freshnessClass)}`) : null,
             run.primaryScreenshot?.url ? h('img', {
               className: 'qa-screenshot-preview',
               alt: 'Latest QA screenshot',
@@ -2412,6 +2810,7 @@ function renderDeskSection(rawSection, helpers = {}) {
       unitGate ? h('div', { className: 'desk-panel-item' },
         h('div', { className: 'signal-summary' }, 'Fast Unit Gate'),
         h('div', { className: 'signal-meta muted' }, `${unitGate.status || 'pending'} | ${unitGate.passedCount || 0}/${unitGate.totalChecks || 0} checks passed`),
+        unitGate.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${unitGate.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(unitGate.sourceTrace.freshnessClass)}`) : null,
         (unitGate.failures || []).length
           ? h('ul', { className: 'signal-list compact' }, unitGate.failures.slice(0, 3).map((failure) => h('li', { key: failure.name }, `${failure.name}: ${failure.error}`)))
           : h('div', { className: 'signal-meta muted' }, 'No failing fast UI checks in the latest run.'),
@@ -2419,6 +2818,7 @@ function renderDeskSection(rawSection, helpers = {}) {
       studioBootGate ? h('div', { className: 'desk-panel-item' },
         h('div', { className: 'signal-summary' }, 'Studio Boot Guardrail'),
         h('div', { className: 'signal-meta muted' }, `${studioBootGate.verdict || studioBootGate.status || 'pending'} | console ${studioBootGate.consoleErrorCount || 0} | network ${studioBootGate.networkFailureCount || 0}`),
+        studioBootGate.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${studioBootGate.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(studioBootGate.sourceTrace.freshnessClass)}`) : null,
         (studioBootGate.failedSteps || []).length
           ? h('ul', { className: 'signal-list compact' }, studioBootGate.failedSteps.map((step) => h('li', { key: step.id }, `${step.label}: ${step.verdict}`)))
           : h('div', { className: 'signal-meta muted' }, 'No failing studio boot steps in the latest guardrail run.'),
@@ -3312,7 +3712,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     }
   }, [ace]);
 
-  const sendCtoChatMessage = useCallback(async ({ text, confirmActionId = null } = {}) => {
+  const sendCtoChatMessage = useCallback(async ({ text, confirmActionId = null, override = null } = {}) => {
     const prompt = String(text || '').trim();
     if (!prompt) return;
     if (ctoChatSubmitLock.current) return;
@@ -3337,6 +3737,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       const response = await ace.askCtoDesk({
         text: prompt,
         confirmActionId,
+        override,
         history: nextHistory.map((entry) => ({
           id: entry.id,
           role: entry.role,
@@ -6062,38 +6463,43 @@ function syncRecentWorldChange(change = null) {
     );
   };
 
-  const renderQAWorkbenchPanel = () => h('div', { className: 'inspector-block panel-card review-panel browser-pass-panel', 'data-qa': 'qa-desk-summary' },
+  const renderQAWorkbenchPanel = () => {
+    const qaDesk = getDeskPayload('qa-lead');
+    return h('div', { className: 'inspector-block panel-card review-panel browser-pass-panel', 'data-qa': 'qa-desk-summary' },
     h('div', { className: 'inspector-label' }, 'QA Workbench'),
+    h('div', { className: 'signal-meta muted' }, 'QA is an observer role: review evidence, flag stale tests, and audit process gaps. Execution and overrides stay with the CTO path.'),
     h('div', { className: 'signal-summary' }, qaState.structuredBusy
       ? 'Structured QA suite is running...'
       : qaState.browserBusy
         ? 'Browser QA is running...'
-        : (qaState.structuredReport?.summary || qaState.localGate?.unit?.summary || latestQARun?.summary || 'Run structured QA or a browser pass to refresh QA truth.')),
+        : (qaState.structuredReport?.summary || qaState.localGate?.unit?.summary || latestQARun?.summary || 'Audit QA evidence freshness and provenance here.')),
+    qaState.evidenceSummary ? h('div', { className: 'signal-meta muted' }, `Evidence freshness: ${qaState.evidenceSummary.liveCanonical || 0} live canonical | ${qaState.evidenceSummary.derivedCurrent || 0} derived current | ${qaState.evidenceSummary.stale || 0} stale | ${qaState.evidenceSummary.missing || 0} missing | ${qaState.evidenceSummary.nonExecutable || 0} non-executable`) : null,
+    qaDesk?.desk?.panel ? renderDeskPanelMetadata(qaDesk.desk.panel) : null,
+    qaState.auditTrail?.summary ? renderQAAuditTrailSummary(qaState.auditTrail) : null,
+    qaState.auditTrail?.entries?.length
+      ? h('div', { className: 'desk-panel-item' },
+          h('div', { className: 'signal-summary' }, `Audit of QA (${qaState.auditTrail.entries.length})`),
+          h('div', { className: 'signal-meta muted' }, 'Read-only provenance and mismatch audit for QA outputs.'),
+          renderQAAuditTrailList(qaState.auditTrail),
+        )
+      : h('div', { className: 'signal-empty muted' }, 'No QA audit trail is recorded yet.'),
+    qaState.testRegistry?.summary ? renderQATestRegistrySummary(qaState.testRegistry.summary) : null,
+    qaState.testRegistry?.entries?.length
+      ? h('div', { className: 'desk-panel-item' },
+          h('div', { className: 'signal-summary' }, `QA Test Registry (${qaState.testRegistry.entries.length})`),
+          h('div', { className: 'signal-meta muted' }, 'Canonical source/module/runtime view of QA checks, owners, and validity states.'),
+          renderQATestRegistryList(qaState.testRegistry),
+        )
+      : h('div', { className: 'signal-empty muted' }, 'No QA tests are registered yet.'),
     h('div', { className: 'signal-meta muted' }, qaState.localGate?.unit
       ? `Unit gate: ${qaState.localGate.unit.status || 'pending'} | ${qaState.localGate.unit.passedCount || 0}/${qaState.localGate.unit.totalChecks || 0} checks passed`
       : 'No local unit gate summary recorded yet.'),
     h('div', { className: 'signal-meta muted' }, qaState.localGate?.studioBoot
       ? `Studio boot: ${qaState.localGate.studioBoot.verdict || qaState.localGate.studioBoot.status || 'pending'} | findings ${qaState.localGate.studioBoot.findingCount || 0}`
       : 'No studio boot guardrail result recorded yet.'),
-    h('div', { className: 'self-upgrade-grid' },
-      h('label', { className: 'muted', htmlFor: 'browser-pass-scenario' }, 'Scenario'),
-      h('select', {
-        id: 'browser-pass-scenario',
-        className: 'mini recent-select',
-        value: qaScenario,
-        onChange: (event) => setQaScenario(event.target.value),
-      },
-        h('option', { value: 'layout-pass' }, 'Layout Pass'),
-        h('option', { value: 'studio-smoke' }, 'Studio Smoke'),
-        h('option', { value: 'throughput-visual-pass' }, 'Throughput Visual Pass'),
-        h('option', { value: 'whiteboard-board-pass' }, 'Whiteboard Board Pass'),
-      ),
-    ),
-    h('div', { className: 'button-row' },
-      h('button', { className: 'mini', type: 'button', disabled: qaState.structuredBusy, onClick: runStructuredQA }, qaState.structuredBusy ? 'Running...' : 'Run Structured QA'),
-      h('button', { className: 'mini', type: 'button', disabled: qaState.browserBusy, onClick: runBrowserPass }, qaState.browserBusy ? 'Running...' : 'Run Browser Pass'),
-      latestQARun?.id ? h('button', { className: 'mini', type: 'button', onClick: () => loadQARunDetails(latestQARun.id) }, 'Refresh run detail') : null,
-    ),
+    (qaState.evidenceSources || []).length
+      ? h('div', { className: 'desk-panel-list' }, qaState.evidenceSources.map((source, index) => renderQAEvidenceSource(source, { key: `qa-workbench-evidence-${index}` })))
+      : h('div', { className: 'signal-empty muted' }, 'No QA evidence sources recorded yet.'),
     latestQARun
       ? h(React.Fragment, null,
           h('div', { className: 'signal-summary' }, `${latestQARun.scenario || 'layout-pass'} | ${latestQARun.verdict || latestQARun.status || 'pending'}`),
@@ -6125,7 +6531,8 @@ function syncRecentWorldChange(change = null) {
             : null,
         )
       : h('div', { className: 'signal-empty muted' }, 'No browser pass has been recorded yet.'),
-  );
+    );
+  };
 
   const renderThroughputDebugPanel = () => h('div', { className: 'inspector-block panel-card review-panel throughput-debug-panel' },
     h('div', { className: 'inspector-label' }, 'Throughput Debug'),
@@ -6383,6 +6790,8 @@ function syncRecentWorldChange(change = null) {
       ? h('div', { className: 'desk-panel-list utility-list' }, (Array.isArray(scorecards) ? scorecards : []).map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item utility-card' },
           h('div', { className: 'signal-summary' }, `${card.desk || 'Desk'} | ${card.testName || card.testId || 'Scorecard'}`),
           h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+          card.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace.freshnessClass)}`) : null,
+          card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
           card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
         )))
       : h('div', { className: 'signal-empty muted' }, emptyState)
@@ -6435,6 +6844,9 @@ function syncRecentWorldChange(change = null) {
                 entry.action
                   ? h('div', { className: 'cto-chat-action-block' },
                       h('div', { className: 'signal-meta muted' }, `${entry.action.label}${entry.action.reason ? ` | ${entry.action.reason}` : ''}`),
+                      entry.action.blockedGates?.length
+                        ? h('div', { className: 'signal-meta muted' }, `Blocked by: ${entry.action.blockedGates.map((gate) => gate.label || gate.code).join(', ')}`)
+                        : null,
                       h('div', { className: 'button-row cto-chat-action-row' },
                         entry.action.available && entry.action.requiresConfirmation && entry.action.status === 'pending'
                           ? h('button', {
@@ -6443,6 +6855,32 @@ function syncRecentWorldChange(change = null) {
                               disabled: ctoChatBusy,
                               onClick: () => sendCtoChatMessage({ text: 'Yes, do it.', confirmActionId: entry.action.id }),
                             }, ctoChatBusy ? 'Submitting...' : 'Confirm Action')
+                          : null,
+                        entry.action.overrideAvailable && entry.action.requiresConfirmation
+                          ? h('button', {
+                              className: 'mini',
+                              type: 'button',
+                              disabled: ctoChatBusy,
+                              title: entry.action.reason || 'Proceed with an explicit operator override.',
+                              onClick: () => sendCtoChatMessage({
+                                text: 'Proceed anyway.',
+                                confirmActionId: entry.action.id,
+                                override: {
+                                  enabled: true,
+                                  origin: 'cto',
+                                  executionMode: 'operator_override',
+                                  execution_mode: 'operator_override',
+                                  overrideReason: entry.action.reason || null,
+                                  override_reason: entry.action.reason || null,
+                                  operatorNote: entry.action.reason || null,
+                                  operator_note: entry.action.reason || null,
+                                  blockedBy: Array.isArray(entry.action.blockedGates) ? entry.action.blockedGates : [],
+                                  blocked_by: Array.isArray(entry.action.blockedGates) ? entry.action.blockedGates.map((gate) => gate.code).filter(Boolean) : [],
+                                  skippedGates: Array.isArray(entry.action.blockedGates) ? entry.action.blockedGates : [],
+                                  skipped_gates: Array.isArray(entry.action.blockedGates) ? entry.action.blockedGates : [],
+                                },
+                              }),
+                            }, ctoChatBusy ? 'Submitting...' : 'Proceed Anyway')
                           : h('button', {
                               className: 'mini',
                               type: 'button',
@@ -6455,6 +6893,26 @@ function syncRecentWorldChange(change = null) {
                   : null,
                 entry.execution?.summary
                   ? h('div', { className: 'signal-meta muted' }, entry.execution.summary)
+                  : null,
+                entry.execution?.executionMode
+                  ? h('div', { className: 'signal-meta muted' }, `execution_mode: ${entry.execution.executionMode}`)
+                  : null,
+                entry.execution?.override
+                  ? h('div', { className: 'signal-meta muted' }, [
+                      entry.execution.override.origin ? `origin: ${entry.execution.override.origin}` : null,
+                      entry.execution.override.execution_mode || entry.execution.override.executionMode
+                        ? `execution_mode: ${entry.execution.override.execution_mode || entry.execution.override.executionMode}`
+                        : null,
+                      entry.execution.override.override_reason || entry.execution.override.operator_note
+                        ? `override_reason: ${entry.execution.override.override_reason || entry.execution.override.operator_note}`
+                        : null,
+                      Array.isArray(entry.execution.override.blocked_by) && entry.execution.override.blocked_by.length
+                        ? `blocked_by: ${entry.execution.override.blocked_by.join(', ')}`
+                        : null,
+                    ].filter(Boolean).join(' | '))
+                  : null,
+                entry.execution?.skippedGates?.length
+                  ? h('div', { className: 'signal-meta muted' }, `Skipped gates: ${entry.execution.skippedGates.map((gate) => gate.label || gate.code).join(', ')}`)
                   : null,
               ))
             : h('div', { className: 'signal-empty muted' }, 'Ask the CTO about desk coverage, delegation, or whether a real hire path exists for a gap.'),
@@ -6540,12 +6998,13 @@ function syncRecentWorldChange(change = null) {
       const departments = rosterSurface.departments;
       const desks = rosterSurface.desks;
       const roster = rosterSurface.roster;
+      const canonicalSeats = rosterSurface.canonicalSeats;
       const openRoles = rosterSurface.openRoles;
       const blockers = rosterSurface.blockers;
       const hiringSignals = rosterSurface.hiringSignals;
     const prioritizedResourceSignals = listDepartmentsByPriority(resourceSignalModel);
-    const resourceSignals = Array.isArray(prioritizedResourceSignals) ? prioritizedResourceSignals : [];
-    const activeDepartmentCards = departments.length ? departments : desks;
+  const resourceSignals = Array.isArray(prioritizedResourceSignals) ? prioritizedResourceSignals : [];
+    const activeDepartmentCards = desks.length ? desks : departments;
     return h('div', { className: 'utility-window-stack', 'data-qa': 'people-plan-window' },
       h('div', { className: 'utility-window-section utility-window-hero' },
         h('div', { className: 'inspector-label' }, department.name || 'People Plan'),
@@ -6559,9 +7018,9 @@ function syncRecentWorldChange(change = null) {
           : h('div', { className: 'criteria-list' },
               h('div', { className: 'criteria-row' }, h('span', null, 'Departments'), h('span', { className: 'muted' }, String(summary.totalCoverage || 0))),
               h('div', { className: 'criteria-row' }, h('span', null, 'Healthy / open'), h('span', { className: 'muted' }, `${summary.healthyCount || 0} / ${summary.openEntityCount || 0}`)),
-              h('div', { className: 'criteria-row' }, h('span', null, 'Open roles'), h('span', { className: 'muted' }, String(summary.openRoleCount || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Canonical open seats'), h('span', { className: 'muted' }, String(summary.openRoleCount || canonicalSeats.length || 0))),
               h('div', { className: 'criteria-row' }, h('span', null, 'Missing leads'), h('span', { className: 'muted' }, String(summary.missingLeadCount || 0))),
-              h('div', { className: 'criteria-row' }, h('span', null, 'Open seats'), h('span', { className: 'muted' }, String(summary.blockerCount || 0))),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Canonical blockers'), h('span', { className: 'muted' }, String(summary.blockerCount || blockers.length || 0))),
               h('div', { className: 'criteria-row' }, h('span', null, 'Rostered hires'), h('span', { className: 'muted' }, String(summary.rosterCount || roster.length || 0))),
             ),
       ),
@@ -6596,7 +7055,7 @@ function syncRecentWorldChange(change = null) {
         : null,
       activeDepartmentCards.length
         ? h('div', { className: 'utility-window-section' },
-            h('div', { className: 'signal-summary' }, departments.length ? 'Department coverage' : 'Desk coverage'),
+            h('div', { className: 'signal-summary' }, desks.length ? 'Canonical desk coverage' : 'Department coverage'),
             h('div', { className: 'desk-panel-list utility-list' }, activeDepartmentCards.map((entity) => h('div', {
                 key: entity.entityId,
                 className: 'desk-panel-item utility-card',
@@ -6623,14 +7082,15 @@ function syncRecentWorldChange(change = null) {
             h('div', { className: 'signal-empty muted' }, 'No department coverage is available yet.'),
           ),
       h('div', { className: 'utility-window-section' },
-        h('div', { className: 'signal-summary' }, 'Open seats'),
+        h('div', { className: 'signal-summary' }, 'Canonical open seats'),
         blockers.length
-          ? h('div', { className: 'desk-panel-list utility-list' }, openRoles.filter((entry) => entry.blocker).map((entry) => h('div', {
+          ? h('div', { className: 'desk-panel-list utility-list' }, canonicalSeats.filter((entry) => entry.blocker).map((entry) => h('div', {
               key: `${entry.entityType}-${entry.entityId}-${entry.roleId || entry.kind}`,
               className: 'desk-panel-item utility-card',
             },
               h('div', { className: 'signal-summary' }, `${entry.entityLabel || entry.entityId} | ${entry.roleLabel || entry.roleId || entry.kind}`),
               h('div', { className: 'signal-meta muted' }, `${entry.kind} | shortfall ${entry.shortfall || 0} | urgency ${entry.urgency || 'low'}`),
+              h('div', { className: 'signal-meta muted' }, `${entry.departmentLabel || entry.departmentId || 'Unknown department'} | ${entry.entityType}`),
             )))
           : h('div', { className: 'signal-empty muted' }, 'No required seats are open right now.'),
       ),
@@ -7003,7 +7463,7 @@ function syncRecentWorldChange(change = null) {
               h('div', { className: 'signal-summary' }, targetDeskId ? getStudioDeskLabel(targetDeskId) : 'QA'),
               h('div', { className: 'signal-meta muted' }, 'Cross-cutting assessments that should stay visible without living on the floor.'),
             ),
-            renderScorecardsList(panelData?.qa?.scorecards || panelData?.truth?.scorecards || []),
+            renderScorecardsList(panelData?.qa?.scorecards || []),
           );
         }
         return h('section', {
@@ -7488,21 +7948,41 @@ function syncRecentWorldChange(change = null) {
                   h('div', { className: 'signal-summary' }, `${targetDeskLabel} truth bundle`),
                   renderTruthMetricRows(panelData.truth || {}, hierarchyModel.focusSummary),
                 ),
-                h('div', { className: 'desk-panel-item' },
-                  h('div', { className: 'signal-summary' }, panelData.qa.structuredSummary?.summary || 'Structured QA'),
-                  h('div', { className: 'signal-meta muted' }, `Status: ${panelData.qa.structuredSummary?.status || 'idle'} | Desks ${panelData.qa.structuredSummary?.deskCount || 0} | Tests ${panelData.qa.structuredSummary?.testCount || 0}`),
-                  (panelData.qa.structuredReport?.failures || []).length
-                    ? h('ul', { className: 'signal-list compact' }, panelData.qa.structuredReport.failures.slice(0, 4).map((failure, index) => h('li', { key: `qa-structured-failure-${index}` }, `${failure.desk || 'desk'}: ${failure.test || failure.id || 'test'} | ${failure.reason || 'Needs review'}`)))
-                    : h('div', { className: 'signal-meta muted' }, 'No structured QA failures are recorded in the latest suite.'),
-                ),
-                h('div', { className: 'signal-meta muted' }, 'Execution controls live in the QA utility window so desk inspection stays read-only.'),
-                renderDeskUtilityActions('qa-lead', { compact: true }),
-                (panelData.qa.scorecards || []).length
+                  h('div', { className: 'desk-panel-item' },
+                    h('div', { className: 'signal-summary' }, panelData.qa.structuredSummary?.summary || 'Structured QA'),
+                    h('div', { className: 'signal-meta muted' }, `Status: ${panelData.qa.structuredSummary?.status || 'idle'} | Desks ${panelData.qa.structuredSummary?.deskCount || 0} | Tests ${panelData.qa.structuredSummary?.testCount || 0}`),
+                    panelData.qa.structuredSummary?.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${panelData.qa.structuredSummary.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(panelData.qa.structuredSummary.sourceTrace.freshnessClass)}`) : null,
+                    panelData.qa.structuredSummary?.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(panelData.qa.structuredSummary.sourceTrace.observedAt)}`) : null,
+                    (panelData.qa.structuredReport?.failures || []).length
+                      ? h('ul', { className: 'signal-list compact' }, panelData.qa.structuredReport.failures.slice(0, 4).map((failure, index) => h('li', { key: `qa-structured-failure-${index}` }, `${failure.desk || 'desk'}: ${failure.test || failure.id || 'test'} | ${failure.reason || 'Needs review'}`)))
+                      : h('div', { className: 'signal-meta muted' }, 'No structured QA failures are recorded in the latest suite.'),
+                  ),
+                  panelData.qa.testRegistry?.summary ? h('div', { className: 'desk-panel-item' },
+                    h('div', { className: 'signal-summary' }, 'QA Test Registry'),
+                    h('div', { className: 'signal-meta muted' }, 'Canonical source/module/runtime view of QA tests and validity states.'),
+                    renderQATestRegistrySummary(panelData.qa.testRegistry.summary),
+                    panelData.qa.testRegistry?.generatedAt ? h('div', { className: 'signal-meta muted' }, `Registry generated: ${formatTimestamp(panelData.qa.testRegistry.generatedAt)}`) : null,
+                  ) : null,
+                panelData.qa.testRegistry?.entries?.length
                   ? h('div', { className: 'desk-panel-item' },
-                      h('div', { className: 'signal-summary' }, `Scorecards (${panelData.qa.scorecards.length})`),
+                      h('div', { className: 'signal-summary' }, `QA Tests (${panelData.qa.testRegistry.entries.length})`),
+                      renderQATestRegistryList(panelData.qa.testRegistry),
+                    )
+                  : h('div', { className: 'signal-empty muted' }, 'No QA tests are registered yet.'),
+                panelData.qa.auditTrail?.summary ? h('div', { className: 'desk-panel-item' },
+                  h('div', { className: 'signal-summary' }, `Audit of QA (${panelData.qa.auditTrail.entries?.length || 0})`),
+                  h('div', { className: 'signal-meta muted' }, 'Read-only provenance and mismatch audit for QA outputs.'),
+                  renderQAAuditTrailSummary(panelData.qa.auditTrail),
+                  renderQAAuditTrailList(panelData.qa.auditTrail),
+                ) : h('div', { className: 'signal-empty muted' }, 'No QA audit trail is recorded yet.'),
+                  (panelData.qa.scorecards || []).length
+                    ? h('div', { className: 'desk-panel-item' },
+                        h('div', { className: 'signal-summary' }, `Scorecards (${panelData.qa.scorecards.length})`),
                       h('div', { className: 'desk-panel-list' }, panelData.qa.scorecards.slice(0, 6).map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item' },
                         h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
                         h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+                        card.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace.freshnessClass)}`) : null,
+                        card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
                         card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
                       ))),
                     )
@@ -7511,6 +7991,7 @@ function syncRecentWorldChange(change = null) {
                   ? h('div', { className: 'desk-panel-item' },
                       h('div', { className: 'signal-summary' }, `Browser: ${panelData.qa.latestBrowserRun.scenario || 'layout-pass'} | ${panelData.qa.latestBrowserRun.verdict || panelData.qa.latestBrowserRun.status || 'pending'}`),
                       h('div', { className: 'signal-meta muted' }, `Findings ${panelData.qa.latestBrowserRun.findingCount || 0}`),
+                      panelData.qa.latestBrowserRun.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${panelData.qa.latestBrowserRun.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(panelData.qa.latestBrowserRun.sourceTrace.freshnessClass)}`) : null,
                       panelData.qa.latestBrowserRun.id
                         ? h('div', { className: 'button-row' },
                             h('button', { className: 'mini', type: 'button', onClick: () => loadQARunDetails(panelData.qa.latestBrowserRun.id) }, 'Open latest browser run'),
@@ -7524,6 +8005,7 @@ function syncRecentWorldChange(change = null) {
                       h('div', { className: 'desk-panel-list' }, panelData.qa.browserRuns.slice(0, 4).map((run) => h('div', { key: run.id || `${run.scenario}-${run.finishedAt || run.createdAt || 'latest'}`, className: 'desk-panel-item' },
                         h('div', { className: 'signal-summary' }, `${run.scenario || 'layout-pass'} | ${run.verdict || run.status || 'pending'}`),
                         h('div', { className: 'signal-meta muted' }, `Trigger ${run.trigger || 'manual'} | Findings ${run.findingCount || 0}`),
+                        run.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${run.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(run.sourceTrace.freshnessClass)}`) : null,
                         run.id ? h('div', { className: 'button-row' },
                           h('button', { className: 'mini', type: 'button', onClick: () => loadQARunDetails(run.id) }, 'Open run'),
                         ) : null,
@@ -7536,6 +8018,7 @@ function syncRecentWorldChange(change = null) {
                       panelData.qa.localGate?.unit ? h('div', { className: 'desk-panel-item' },
                         h('div', { className: 'signal-summary' }, 'Fast Unit Gate'),
                         h('div', { className: 'signal-meta muted' }, `Status ${panelData.qa.localGate.unit.status || 'pending'} | ${panelData.qa.localGate.unit.passedCount || 0}/${panelData.qa.localGate.unit.totalChecks || 0} checks passed`),
+                        panelData.qa.localGate.unit.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${panelData.qa.localGate.unit.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(panelData.qa.localGate.unit.sourceTrace.freshnessClass)}`) : null,
                         (panelData.qa.localGate.unit.failures || []).length
                           ? h('ul', { className: 'signal-list compact' }, panelData.qa.localGate.unit.failures.slice(0, 3).map((failure) => h('li', { key: failure.name || failure.path || failure.error }, `${failure.name || failure.path || 'check'}: ${failure.error || 'failed'}`)))
                           : h('div', { className: 'signal-meta muted' }, 'No failing fast UI checks in the latest run.'),
@@ -7543,6 +8026,7 @@ function syncRecentWorldChange(change = null) {
                       panelData.qa.localGate?.studioBoot ? h('div', { className: 'desk-panel-item' },
                         h('div', { className: 'signal-summary' }, 'Studio Boot Guardrail'),
                         h('div', { className: 'signal-meta muted' }, `Status ${panelData.qa.localGate.studioBoot.verdict || panelData.qa.localGate.studioBoot.status || 'pending'} | findings ${panelData.qa.localGate.studioBoot.findingCount || 0}`),
+                        panelData.qa.localGate.studioBoot.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${panelData.qa.localGate.studioBoot.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(panelData.qa.localGate.studioBoot.sourceTrace.freshnessClass)}`) : null,
                         (panelData.qa.localGate.studioBoot.failedSteps || []).length
                           ? h('ul', { className: 'signal-list compact' }, panelData.qa.localGate.studioBoot.failedSteps.map((step) => h('li', { key: step.id }, `${step.label}: ${step.verdict}`)))
                           : h('div', { className: 'signal-meta muted' }, 'No failing Studio boot steps in the latest guardrail run.'),

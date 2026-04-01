@@ -49,6 +49,14 @@ export default async function runStudioLayoutRelationshipTests() {
     agentId: 'planner',
     modelProfileId: 'model-profile.planner-default',
   });
+  assert.deepEqual(defaultLayout.organization.qaLead, {
+    id: 'qa-lead',
+    agentId: 'qa-lead',
+    roleId: 'qa-lead',
+    deskId: 'qa-lead',
+    departmentId: 'dept-quality',
+    modelProfileId: 'model-profile.default.qa-lead',
+  });
   assert.ok(defaultLayout.organization.desks.planner.dependencyDepartmentIds.includes('dept-intake'));
   assert.ok(defaultLayout.organization.desks.planner.supportDeskIds.includes('qa-lead'));
 

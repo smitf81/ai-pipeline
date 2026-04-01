@@ -34,12 +34,14 @@ export default async function runRosterSurfaceTests() {
       },
     },
     gapModel: {
-      openRoles: [
+      canonicalSeats: [
         {
           kind: 'understaffed',
-          entityType: 'department',
-          entityId: 'delivery',
-          entityLabel: 'Delivery',
+          entityType: 'desk',
+          entityId: 'planner',
+          entityLabel: 'Planner',
+          departmentId: 'delivery',
+          departmentLabel: 'Delivery',
           roleId: 'memory-archivist',
           roleLabel: 'Memory Archivist',
           shortfall: 1,
@@ -50,9 +52,11 @@ export default async function runRosterSurfaceTests() {
       blockers: [
         {
           kind: 'understaffed',
-          entityType: 'department',
-          entityId: 'delivery',
-          entityLabel: 'Delivery',
+          entityType: 'desk',
+          entityId: 'planner',
+          entityLabel: 'Planner',
+          departmentId: 'delivery',
+          departmentLabel: 'Delivery',
           roleId: 'memory-archivist',
           roleLabel: 'Memory Archivist',
           shortfall: 1,
@@ -136,6 +140,7 @@ export default async function runRosterSurfaceTests() {
   assert.equal(model.summary.openRoleCount, 1);
   assert.equal(model.summary.blockerCount, 1);
   assert.equal(model.summary.rosterCount, 1);
+  assert.equal(model.canonicalSeats.length, 1);
   assert.equal(model.departments.length, 1);
   assert.equal(model.departments[0].leadLabel, 'Alex | Executor');
   assert.equal(model.departments[0].openSeatCount, 1);

@@ -13,6 +13,8 @@ function createDepartment({
   staffingGapCount = 0,
   weakRelationshipCount = 0,
   missingLead = false,
+  plannerCoverage = null,
+  qaLeadCoverage = null,
 } = {}) {
   const missingRequirements = [];
   for (let index = 0; index < blockerCount; index += 1) {
@@ -54,6 +56,8 @@ function createDepartment({
       dependency: {
         dependencyBlocked: blockerCount > 0,
       },
+      plannerCoverage,
+      qaLeadCoverage,
     },
     weakRelationshipCount,
   };
@@ -131,6 +135,27 @@ export default async function runResourceSignalModelTests() {
   assert.equal(archive.resourcePressure, 'medium');
   assert.equal(intake.resourcePressure, 'low');
   assert.equal(intake.weakRelationshipCount, 2);
+
+  const canonicalLeadModel = modelModule.buildResourceSignalModel({
+    orgHealthModel: {
+      departments: [
+        createDepartment({
+          id: 'dept-canonical',
+          label: 'Canonical',
+          status: 'missing lead',
+          missingLead: false,
+          qaLeadCoverage: {
+            status: 'covered',
+            failedPredicates: [],
+          },
+        }),
+      ],
+    },
+    relationshipSignals: [],
+  });
+  const canonicalLeadSignal = modelModule.getDepartmentResourceSignal('dept-canonical', canonicalLeadModel);
+  assert.equal(canonicalLeadSignal.status, 'active');
+  assert.equal(canonicalLeadSignal.missingLead, false);
 
   const sortedIds = modelModule.listDepartmentsByPriority(resourceSignalModel).map((entry) => entry.departmentId);
   assert.deepEqual(sortedIds, ['dept-delivery', 'dept-quality', 'dept-archive', 'dept-intake']);

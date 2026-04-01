@@ -369,7 +369,7 @@
       "sourceNodeId": "node_1774615116734_91jfx",
       "summary": "Migrate to canonical anchor-based ACE system",
       "createdAt": "2026-03-27T12:43:25.445Z",
-      "updatedAt": "2026-04-01T08:49:38.955Z"
+      "updatedAt": "2026-04-01T18:04:56.091Z"
     }
   ],
   "activePageId": "page_1774615405445_ect6",
@@ -412,7 +412,7 @@
     "lastSourceNodeId": null,
     "lastGenerationAt": null,
     "lastStatus": "idle",
-    "lastEvaluatedAt": "2026-04-01T08:49:38.955Z"
+    "lastEvaluatedAt": "2026-04-01T18:04:56.091Z"
   },
   "mutationGate": {
     "activity": [],
@@ -34228,7 +34228,7 @@
             "notes": []
           },
           "createdAt": "2026-03-27T12:39:27.479Z",
-          "updatedAt": "2026-04-01T08:49:38.952Z",
+          "updatedAt": "2026-04-01T18:04:56.088Z",
           "desk": "CTO",
           "state": "Flagged",
           "lastHealth": null,
@@ -34261,7 +34261,7 @@
         }
       ],
       "selectedCardId": "0001",
-      "updatedAt": "2026-04-01T08:49:38.952Z",
+      "updatedAt": "2026-04-01T18:04:56.088Z",
       "summary": {
         "plan": 0,
         "active": 0,
@@ -34275,7 +34275,7 @@
     },
     "orchestrator": {
       "status": "needs-attention",
-      "lastTickAt": "2026-04-01T08:49:38.955Z",
+      "lastTickAt": "2026-04-01T18:04:56.091Z",
       "activeDeskIds": [
         "context-manager",
         "memory-archivist",
@@ -34365,7 +34365,7 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T08:49:38.953Z",
+          "freshAt": "2026-04-01T18:04:56.089Z",
           "thoughtBubble": "Context status: queued. Clarification is needed before planner can continue."
         },
         "planner": {
@@ -34416,7 +34416,7 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T08:49:38.953Z",
+          "freshAt": "2026-04-01T18:04:56.090Z",
           "thoughtBubble": "Planner status: blocked. Waiting for a clarified handoff."
         },
         "executor": {
@@ -34473,7 +34473,7 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T08:49:38.954Z",
+          "freshAt": "2026-04-01T18:04:56.090Z",
           "thoughtBubble": "Executor status: blocked. Waiting for clearer context."
         },
         "memory-archivist": {
@@ -34521,7 +34521,7 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T08:49:38.954Z",
+          "freshAt": "2026-04-01T18:04:56.091Z",
           "thoughtBubble": "Archivist status: running. Logging summaries."
         },
         "cto-architect": {
@@ -34572,7 +34572,7 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T08:49:38.954Z",
+          "freshAt": "2026-04-01T18:04:56.091Z",
           "thoughtBubble": "Governance status: blocked. Reviewing blocker: M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md"
         }
       },
@@ -35811,30 +35811,30 @@
       }
     },
     "scene": "studio",
-    "selectedAgentId": "qa-lead",
+    "selectedAgentId": null,
     "selectedTab": "qa",
     "canvasViewport": {
-      "x": -57.49999999999994,
-      "y": -51.77999999999997,
+      "x": 361.50000000000006,
+      "y": -53.77999999999997,
       "zoom": 1
     },
     "studioViewport": {
-      "x": -57.49999999999994,
-      "y": -51.77999999999997,
+      "x": 361.50000000000006,
+      "y": -53.77999999999997,
       "zoom": 0.82
     },
     "activeGraphLayer": "system",
     "worldViewMode": "2d"
   },
-  "selectedDeskId": "qa-lead",
+  "selectedDeskId": null,
   "selectedTab": "qa",
   "scene": "studio",
   "activeGraphLayer": "system",
   "worldViewMode": "2d",
   "camera": {
     "zoom": 0.82,
-    "x": -57.49999999999994,
-    "y": -51.77999999999997
+    "x": 361.50000000000006,
+    "y": -53.77999999999997
   },
   "zoom": 1,
   "openTraceId": null,

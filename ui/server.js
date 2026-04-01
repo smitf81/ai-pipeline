@@ -63,9 +63,19 @@ const {
   writeStructuredQAReport,
 } = require('./qaRunner');
 const {
+  buildQATestRegistry,
+  summarizeQATestRegistry,
+} = require('../qa/testRegistry');
+const {
+  buildQAAuditTrail,
+  summarizeQAAuditTrail,
+} = require('../qa/qaAuditTrail');
+const {
   CORE_DESK_AGENT_DEFAULTS,
   createDefaultStudioLayoutSchema,
   normalizeStudioLayoutSchema,
+  buildCanonicalPlannerCoverageTruth,
+  buildCanonicalQALeadCoverageTruth,
   listStudioDeskIds,
   hasStudioDesk,
   addDepartmentToLayout,
@@ -1703,6 +1713,21 @@ function normalizeCtoActionRecord(action = null) {
     route: String(action.route || '').trim() || null,
     routeStatus: String(action.routeStatus || '').trim() || null,
     gapDescription: String(action.gapDescription || '').trim() || null,
+    overrideAvailable: action.overrideAvailable === true,
+    blockedGates: Array.isArray(action.blockedGates)
+      ? action.blockedGates
+          .map((gate) => {
+            const source = gate && typeof gate === 'object' ? gate : {};
+            const code = String(source.code || '').trim();
+            if (!code) return null;
+            return {
+              code,
+              label: String(source.label || code).trim() || code,
+              reason: String(source.reason || '').trim() || null,
+            };
+          })
+          .filter(Boolean)
+      : [],
   };
 }
 
@@ -1755,6 +1780,8 @@ function buildCtoActionRecord({
   gapDescription = null,
   targetDeskId = null,
   targetDeskLabel = null,
+  overrideAvailable = false,
+  blockedGates = [],
 }) {
   return {
     id,
@@ -1770,17 +1797,181 @@ function buildCtoActionRecord({
     gapDescription: String(gapDescription || '').trim() || null,
     targetDeskId: String(targetDeskId || params?.deskId || params?.roleId || '').trim() || null,
     targetDeskLabel: String(targetDeskLabel || params?.deskLabel || '').trim() || null,
+    overrideAvailable: overrideAvailable === true,
+    blockedGates: Array.isArray(blockedGates) ? blockedGates.filter((gate) => gate && gate.code) : [],
+  };
+}
+
+function buildCtoBlockedGate(code = '', label = '', reason = '') {
+  const normalizedCode = String(code || '').trim();
+  if (!normalizedCode) return null;
+  return {
+    code: normalizedCode,
+    label: String(label || normalizedCode).trim() || normalizedCode,
+    reason: String(reason || '').trim() || null,
+  };
+}
+
+function resolveCtoCoverageTruthForDesk(context = null, deskId = '') {
+  const normalizedDeskId = String(deskId || '').trim();
+  if (normalizedDeskId === 'planner') {
+    return context?.ta?.plannerCoverage || null;
+  }
+  if (normalizedDeskId === 'qa-lead') {
+    return context?.ta?.qaLeadCoverage || null;
+  }
+  return null;
+}
+
+function normalizeCtoGateList(gates = []) {
+  return Array.isArray(gates)
+    ? gates
+        .map((gate) => {
+          if (!gate) return null;
+          if (typeof gate === 'string') {
+            const code = String(gate).trim();
+            return code ? { code, label: code, reason: null } : null;
+          }
+          const source = gate && typeof gate === 'object' ? gate : {};
+          const code = String(source.code || '').trim();
+          if (!code) return null;
+          return {
+            code,
+            label: String(source.label || code).trim() || code,
+            reason: String(source.reason || '').trim() || null,
+          };
+        })
+        .filter(Boolean)
+    : [];
+}
+
+function normalizeCtoExecutionOverride(override = null) {
+  const source = override && typeof override === 'object' ? override : {};
+  const enabled = source.enabled === true
+    || source.operator_override === true
+    || source.execution_mode === 'operator_override'
+    || source.executionMode === 'operator_override';
+  const overrideReason = String(source.overrideReason || source.override_reason || source.reason || source.operatorNote || source.note || '').trim() || null;
+  const skippedGates = normalizeCtoGateList(
+    source.skippedGates || source.skipped_gates || source.blockedBy || source.blocked_by || [],
+  );
+  const blockedBy = normalizeCtoGateList(
+    source.blockedBy || source.blocked_by || source.skippedGates || source.skipped_gates || [],
+  );
+  return {
+    enabled,
+    origin: enabled ? String(source.origin || 'cto').trim() || 'cto' : null,
+    executionMode: enabled ? 'operator_override' : 'standard',
+    execution_mode: enabled ? 'operator_override' : 'standard',
+    overrideReason,
+    override_reason: overrideReason,
+    operatorNote: String(source.operatorNote || source.note || '').trim() || null,
+    operator_note: String(source.operatorNote || source.note || '').trim() || null,
+    blockedBy,
+    blocked_by: blockedBy.map((gate) => gate.code),
+    skippedGates,
+    skipped_gates: skippedGates,
+  };
+}
+
+function buildCtoExecutionOverrideProvenance(executionOverride = null, blockedGates = [], skippedGates = []) {
+  if (!executionOverride?.enabled) return null;
+  const normalizedBlockedGates = normalizeCtoGateList(blockedGates);
+  const normalizedSkippedGates = normalizeCtoGateList(skippedGates);
+  const provenanceGates = normalizedBlockedGates.length ? normalizedBlockedGates : normalizedSkippedGates;
+  const overrideReason = executionOverride.overrideReason || executionOverride.operatorNote || null;
+  return {
+    enabled: true,
+    origin: executionOverride.origin || 'cto',
+    execution_mode: executionOverride.executionMode || 'operator_override',
+    executionMode: executionOverride.executionMode || 'operator_override',
+    override_reason: overrideReason,
+    overrideReason,
+    operator_note: executionOverride.operatorNote || null,
+    operatorNote: executionOverride.operatorNote || null,
+    blocked_by: provenanceGates.map((gate) => gate.code),
+    blockedBy: provenanceGates,
+    skipped_gates: normalizedSkippedGates,
+    skippedGates: normalizedSkippedGates,
   };
 }
 
 function buildCtoActionForPipeline(pipeline = null, context = null, text = '') {
   const current = normalizeCtoPipelineState(pipeline, { text });
   const role = getCtoPipelineRoleDescriptor(current.roleIndex);
+  const canonicalLayout = normalizeStudioLayoutSchema(
+    context?.workspace?.studio?.layout
+    || context?.layout
+    || createDefaultStudioLayoutSchema(),
+  );
+  const layoutPlannerCoverage = buildCanonicalPlannerCoverageTruth(canonicalLayout);
+  const layoutQaLeadCoverage = buildCanonicalQALeadCoverageTruth(canonicalLayout);
+  const coverageTruth = resolveCtoCoverageTruthForDesk(context, role.deskId)
+    || (role.deskId === 'qa-lead' ? layoutQaLeadCoverage : layoutPlannerCoverage);
+  const plannerCoverage = context?.ta?.plannerCoverage && typeof context.ta.plannerCoverage === 'object'
+    ? context.ta.plannerCoverage
+    : layoutPlannerCoverage;
+  const qaLeadCoverage = context?.ta?.qaLeadCoverage && typeof context.ta.qaLeadCoverage === 'object'
+    ? context.ta.qaLeadCoverage
+    : layoutQaLeadCoverage;
   const desk = Array.isArray(context?.desks)
     ? context.desks.find((entry) => entry.deskId === role.deskId) || null
     : null;
   const deskLabel = desk?.label || role.deskLabel;
+  const canonicalSeatBlocker = Array.isArray(context?.ta?.canonicalSeats)
+    ? context.ta.canonicalSeats.find((entry) => entry?.entityId === role.deskId && entry?.blocker) || null
+    : null;
+  const coverageBlocked = coverageTruth ? coverageTruth.covered === false : Boolean(canonicalSeatBlocker);
+  const coverageCovered = coverageTruth ? coverageTruth.covered === true : !coverageBlocked;
+  const hiredCandidate = findHiredTaCandidateForDesk(role.deskId, {
+    hiredCandidates: Array.isArray(context?.ta?.hiredCandidates) ? context.ta.hiredCandidates : null,
+  });
+  if (current.step === 'hire-role' && coverageCovered && hiredCandidate) {
+    return buildCtoActionForPipeline({
+      ...current,
+      step: 'assign-agent-to-desk',
+      candidateId: hiredCandidate.id,
+      candidateName: hiredCandidate.name,
+    }, context, text);
+  }
   if (current.step === 'hire-role') {
+    if (coverageCovered) {
+      return buildCtoActionRecord({
+        id: role.requestActionId,
+        kind: role.requestActionId,
+        label: role.requestActionId === 'request-plan'
+          ? 'Request one plan'
+          : (role.requestActionId === 'request-execution'
+            ? 'Request one execution'
+            : 'Request one QA run'),
+        params: {
+          roleId: role.roleId,
+          deskId: role.deskId,
+          deskLabel,
+          planTaskId: current.planTaskId || null,
+          planCardId: current.planCardId || null,
+          executionRunId: current.executionRunId || null,
+          qaRunId: current.qaRunId || null,
+        },
+        reason: `${deskLabel} coverage is confirmed in canonical staffing truth.`,
+        route: role.requestActionId === 'request-plan'
+          ? 'workspace.teamBoard + task cache'
+          : (role.requestActionId === 'request-execution'
+            ? 'workspace.teamBoard + task apply'
+            : 'workspace.qa.run'),
+        routeStatus: 'wired',
+        targetDeskId: role.deskId,
+        targetDeskLabel: deskLabel,
+      });
+    }
+    const failedPredicateSummary = (coverageTruth?.failedPredicates || plannerCoverage.failedPredicates || qaLeadCoverage.failedPredicates || [])
+      .map((predicate) => predicate.label || predicate.key)
+      .filter(Boolean)
+      .join('; ');
+    const reason = coverageTruth?.reason
+      || `${deskLabel} coverage is needed before the pipeline can continue.${failedPredicateSummary ? ` Failed predicates: ${failedPredicateSummary}.` : ''}`;
+    const gapDescription = coverageTruth?.reason
+      || `${deskLabel} coverage is needed. Request: ${truncatePromptText(text || deskLabel, 180)}`;
     return buildCtoActionRecord({
       id: 'hire-role',
       kind: 'hire-role',
@@ -1789,13 +1980,25 @@ function buildCtoActionForPipeline(pipeline = null, context = null, text = '') {
         roleId: role.roleId,
         deskId: role.deskId,
         deskLabel,
+        plannerCoverage,
       },
-      reason: `${deskLabel} coverage is needed before the pipeline can continue.`,
+      available: true,
+      requiresConfirmation: true,
+      status: 'unavailable',
+      reason,
       route: 'POST /api/ta/hire',
       routeStatus: 'wired',
-      gapDescription: `${deskLabel} coverage is needed. Request: ${truncatePromptText(text || deskLabel, 180)}`,
+      gapDescription,
       targetDeskId: role.deskId,
       targetDeskLabel: deskLabel,
+      overrideAvailable: false,
+      blockedGates: coverageBlocked
+        ? [buildCtoBlockedGate(
+            'canonical-coverage-gap',
+            `${deskLabel} canonical coverage is missing`,
+            reason,
+          )]
+        : [],
     });
   }
   if (current.step === 'assign-agent-to-desk') {
@@ -1824,6 +2027,14 @@ function buildCtoActionForPipeline(pipeline = null, context = null, text = '') {
       routeStatus: 'wired',
       targetDeskId: role.deskId,
       targetDeskLabel: deskLabel,
+      overrideAvailable: !hiredCandidate,
+      blockedGates: !hiredCandidate
+        ? [buildCtoBlockedGate(
+            'hired-candidate-missing',
+            `No hired candidate exists for ${deskLabel}`,
+            `${deskLabel} cannot be assigned yet because no hired candidate exists for that role.`,
+          )]
+        : [],
     });
   }
   if (current.step === role.requestActionId) {
@@ -2050,6 +2261,8 @@ async function buildCtoGovernanceContext(workspace = null) {
     ta: {
       summary: taPayload.department?.summary || null,
       urgency: taPayload.department?.urgency || 'low',
+      plannerCoverage: taPayload.plannerCoverage || null,
+      qaLeadCoverage: taPayload.qaLeadCoverage || null,
       rosterCount: Array.isArray(taPayload.roster) ? taPayload.roster.length : 0,
       roster: Array.isArray(taPayload.roster)
         ? taPayload.roster.map((entry) => ({
@@ -2070,10 +2283,25 @@ async function buildCtoGovernanceContext(workspace = null) {
             assignedModel: entry.assignedModel || null,
           }))
         : [],
-      openRoles: Array.isArray(taPayload.gapModel?.openRoles)
-        ? taPayload.gapModel.openRoles.map((entry) => ({
+      canonicalSeats: Array.isArray(taPayload.gapModel?.canonicalSeats)
+        ? taPayload.gapModel.canonicalSeats.map((entry) => ({
             entityId: entry.entityId || null,
             entityLabel: entry.entityLabel || entry.entityId || null,
+            departmentId: entry.departmentId || null,
+            departmentLabel: entry.departmentLabel || null,
+            roleId: entry.roleId || null,
+            roleLabel: entry.roleLabel || entry.roleId || 'coverage',
+            kind: entry.kind || 'understaffed',
+            urgency: entry.urgency || 'low',
+            blocker: Boolean(entry.blocker),
+          }))
+        : [],
+      openRoles: Array.isArray(taPayload.gapModel?.canonicalSeats)
+        ? taPayload.gapModel.canonicalSeats.map((entry) => ({
+            entityId: entry.entityId || null,
+            entityLabel: entry.entityLabel || entry.entityId || null,
+            departmentId: entry.departmentId || null,
+            departmentLabel: entry.departmentLabel || null,
             roleId: entry.roleId || null,
             roleLabel: entry.roleLabel || entry.roleId || 'coverage',
             kind: entry.kind || 'understaffed',
@@ -2101,13 +2329,34 @@ function findPendingCtoAction(history = [], confirmActionId = '') {
 
 function buildCtoAvailableActions({ text = '', history = [], context = null, workspace = null } = {}) {
   const normalizedText = String(text || '').trim().toLowerCase();
+  const pipelineContext = {
+    ...(context && typeof context === 'object' ? context : {}),
+    workspace: workspace || context?.workspace || null,
+  };
   const pendingAction = findPendingCtoAction(history);
   if (pendingAction) {
+    const currentPipeline = normalizeCtoPipelineState(
+      pipelineContext.workspace?.studio?.ctoPipeline || pipelineContext.pipeline || null,
+      { text: normalizedText },
+    );
+    const canonicalAction = buildCtoActionForPipeline(currentPipeline, pipelineContext, normalizedText);
+    if (canonicalAction) {
+      if (canonicalAction.id !== pendingAction.id) {
+        return [canonicalAction];
+      }
+      return [{
+        ...canonicalAction,
+        ...pendingAction,
+        params: canonicalAction.params,
+        reason: canonicalAction.reason || pendingAction.reason,
+        gapDescription: canonicalAction.gapDescription || pendingAction.gapDescription,
+      }];
+    }
     return [pendingAction];
   }
 
   const pipeline = normalizeCtoPipelineState(
-    workspace?.studio?.ctoPipeline || context?.pipeline || null,
+    pipelineContext.workspace?.studio?.ctoPipeline || pipelineContext.pipeline || null,
     { text: normalizedText },
   );
   const currentRole = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
@@ -2115,7 +2364,7 @@ function buildCtoAvailableActions({ text = '', history = [], context = null, wor
     ? context.desks.find((entry) => entry.deskId === currentRole.deskId) || null
     : null;
   const deskLabel = desk?.label || currentRole.deskLabel;
-  const action = buildCtoActionForPipeline(pipeline, context, normalizedText);
+  const action = buildCtoActionForPipeline(pipeline, pipelineContext, normalizedText);
   if (!action) return [];
   const matchedPendingAction = findPendingCtoAction(history);
   if (matchedPendingAction && matchedPendingAction.id === action.id) {
@@ -2124,7 +2373,8 @@ function buildCtoAvailableActions({ text = '', history = [], context = null, wor
       ...matchedPendingAction,
       params: action.params,
       status: matchedPendingAction.status || action.status,
-      reason: matchedPendingAction.reason || action.reason,
+      reason: action.reason || matchedPendingAction.reason,
+      gapDescription: action.gapDescription || matchedPendingAction.gapDescription,
     }];
   }
 
@@ -2192,6 +2442,15 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
   const persistBoardWorkspaceFn = typeof options.persistBoardWorkspace === 'function'
     ? options.persistBoardWorkspace
     : persistBoardWorkspace;
+  const executionOverride = normalizeCtoExecutionOverride(options.override);
+  const skippedGates = executionOverride.skippedGates.length
+    ? executionOverride.skippedGates
+    : normalizedAction.blockedGates;
+  const overrideProvenance = buildCtoExecutionOverrideProvenance(
+    executionOverride,
+    normalizedAction.blockedGates,
+    skippedGates,
+  );
   const createTaskFolder = typeof options.createTaskFolder === 'function'
     ? options.createTaskFolder
     : (payload) => createRunnerTaskFolder({ ...payload, rootPath });
@@ -2233,7 +2492,9 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
       workspace: workspaceInput,
     };
   }
-  if (normalizedAction.targetDeskId && normalizedAction.targetDeskId !== currentDesk) {
+  const canOverrideGateConflict = executionOverride.enabled
+    && (normalizedAction.overrideAvailable || normalizedAction.blockedGates.length > 0);
+  if (normalizedAction.targetDeskId && normalizedAction.targetDeskId !== currentDesk && !canOverrideGateConflict) {
     return {
       ok: false,
       status: 'blocked',
@@ -2241,6 +2502,22 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
       kind: normalizedAction.kind,
       reason: `CTO action is targeting ${normalizedAction.targetDeskId}, but the pipeline is currently on ${currentDesk}.`,
       workspace: workspaceInput,
+      override: overrideProvenance,
+    };
+  }
+  if (!normalizedAction.available && !executionOverride.enabled) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      deskId: normalizedAction.targetDeskId || currentDesk,
+      deskLabel: normalizedAction.targetDeskLabel || currentDeskLabel,
+      reason: normalizedAction.reason || 'This CTO action is blocked unless an operator override is supplied.',
+      executionMode: executionOverride.executionMode,
+      skippedGates,
+      workspace: workspaceInput,
+      override: overrideProvenance,
     };
   }
 
@@ -2261,7 +2538,10 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           deskId: roleId,
           deskLabel: roleLabel,
           reason: candidateResult.reason,
+          executionMode: executionOverride.executionMode,
+          skippedGates,
           workspace: workspaceInput,
+          override: overrideProvenance,
         };
       }
       const hiredCandidate = {
@@ -2304,6 +2584,9 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           role: hiredCandidate.role,
           deskId: hiredCandidate.hiredDeskId,
         },
+        executionMode: executionOverride.executionMode,
+        skippedGates,
+        override: overrideProvenance,
         departmentSummary: department.department?.summary || null,
         pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
         workspace: nextWorkspace,
@@ -2323,7 +2606,10 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           deskId: roleId,
           deskLabel: roleLabel,
           reason: `No hired candidate was found for ${roleLabel}.`,
+          executionMode: executionOverride.executionMode,
+          skippedGates,
           workspace: workspaceInput,
+          override: overrideProvenance,
         };
       }
       const agentId = candidate.id;
@@ -2390,6 +2676,9 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
         agentId,
         agentName,
         summary: `Assigned ${agentName} to the ${roleLabel} desk.`,
+        executionMode: executionOverride.executionMode,
+        skippedGates,
+        override: overrideProvenance,
         pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
         workspace: nextWorkspace,
       };
@@ -2406,11 +2695,14 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           deskId: currentDesk,
           deskLabel: currentDeskLabel,
           summary: `Planner already created task ${pipeline.planTaskId || pipeline.planCardId}.`,
+          executionMode: executionOverride.executionMode,
+          skippedGates,
           planTaskId: pipeline.planTaskId || null,
           planCardId: pipeline.planCardId || null,
           card: existingCard || null,
           pipeline: summarizeCtoPipelineState(workspaceInput?.studio?.ctoPipeline || null),
           workspace: workspaceInput,
+          override: overrideProvenance,
         };
       }
       const anchorRefs = getAnchorBundle().anchorRefs.slice(0, 3);
@@ -2481,8 +2773,11 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
         planTaskId: task.taskId,
         planCardId: card.id,
         summary: `Planner created one task for ${currentDeskLabel} coverage.`,
+        executionMode: executionOverride.executionMode,
+        skippedGates,
         pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
         workspace: nextWorkspace,
+        override: overrideProvenance,
       };
     }
 
@@ -2497,7 +2792,10 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           deskId: currentDesk,
           deskLabel: currentDeskLabel,
           reason: 'No planner task card is available for execution.',
+          executionMode: executionOverride.executionMode,
+          skippedGates,
           workspace: workspaceInput,
+          override: overrideProvenance,
         };
       }
       const taskId = String(card.runnerTaskId || card.builderTaskId || card.executionPackage?.taskId || '').trim() || null;
@@ -2510,7 +2808,10 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           deskId: currentDesk,
           deskLabel: currentDeskLabel,
           reason: 'The selected task card is missing a runner task id.',
+          executionMode: executionOverride.executionMode,
+          skippedGates,
           workspace: workspaceInput,
+          override: overrideProvenance,
         };
       }
       const taskDir = pipeline.planTaskDir
@@ -2563,9 +2864,12 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
         taskId,
         cardId: card.id,
         summary: `Executor applied one narrow fix for ${currentDeskLabel} coverage.`,
+        executionMode: executionOverride.executionMode,
+        skippedGates,
         executionRunId: taskId,
         pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
         workspace: nextWorkspace,
+        override: overrideProvenance,
       };
     }
 
@@ -2580,7 +2884,10 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           deskId: currentDesk,
           deskLabel: currentDeskLabel,
           reason: 'No card is available for the QA run.',
+          executionMode: executionOverride.executionMode,
+          skippedGates,
           workspace: workspaceInput,
+          override: overrideProvenance,
         };
       }
       const qaRun = await runQa({
@@ -2615,8 +2922,11 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
         qaRunId: qaRun.id,
         qaSummary: qaRun.summary || null,
         summary: `QA returned one validation result for ${currentDeskLabel} coverage.`,
+        executionMode: executionOverride.executionMode,
+        skippedGates,
         pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
         workspace: nextWorkspace,
+        override: overrideProvenance,
       };
     }
 
@@ -2626,7 +2936,10 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
       actionId: normalizedAction.id,
       kind: normalizedAction.kind,
       reason: `${normalizedAction.id} is not wired in this slice.`,
+      executionMode: executionOverride.executionMode,
+      skippedGates,
       workspace: workspaceInput,
+      override: overrideProvenance,
     };
   } catch (error) {
     return {
@@ -2637,7 +2950,10 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
       deskId: normalizedAction.targetDeskId || currentDesk,
       deskLabel: normalizedAction.targetDeskLabel || currentDeskLabel,
       reason: String(error.message || error),
+      executionMode: executionOverride.executionMode,
+      skippedGates,
       workspace: workspaceInput,
+      override: overrideProvenance,
     };
   }
 }
@@ -2799,6 +3115,8 @@ function buildCtoPromptContext(context = null) {
     ta: {
       summary: context?.ta?.summary || null,
       urgency: context?.ta?.urgency || 'low',
+      plannerCoverage: context?.ta?.plannerCoverage || null,
+      qaLeadCoverage: context?.ta?.qaLeadCoverage || null,
       rosterCount: context?.ta?.rosterCount || 0,
       openRoles: (context?.ta?.openRoles || []).slice(0, 12),
     },
@@ -2870,6 +3188,7 @@ async function runCtoGovernanceChat({
   host = null,
   timeoutMs = null,
   confirmActionId = null,
+  override = null,
   workspace = null,
   baseUrl = null,
 } = {}) {
@@ -2927,6 +3246,7 @@ async function runCtoGovernanceChat({
     ? await executeCtoConfirmedAction(pendingAction, {
         workspace: currentWorkspace,
         baseUrl,
+        override,
       })
     : null;
   if (execution?.workspace) {
@@ -4166,8 +4486,10 @@ async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()
   const canonicalDepartmentLabels = Object.fromEntries(
     Object.values(canonicalOrganization.departments || {}).map((department) => [department.id, department.label || department.id]),
   );
-  const gapModel = staffingRules.computeTaGapModel(staffingRules.STAFFING_RULES, normalizedState.hiredCandidates);
+  const gapModel = staffingRules.computeTaGapModel(staffingRules.STAFFING_RULES, normalizedState.hiredCandidates, { layout: canonicalLayout });
   const coverage = gapModel.coverage || [];
+  const plannerCoverage = gapModel.plannerCoverage || buildCanonicalPlannerCoverageTruth(canonicalLayout);
+  const qaLeadCoverage = gapModel.qaLeadCoverage || buildCanonicalQALeadCoverageTruth(canonicalLayout);
   const healthyCount = coverage.filter((entry) => entry.health === 'healthy').length;
   const openEntityCount = coverage.length - healthyCount;
   const summary = gapModel.summary || {
@@ -4185,12 +4507,23 @@ async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()
       : summary.urgency === 'medium'
         ? 'Medium'
         : 'Low';
+  const plannerSeatBlocker = Array.isArray(gapModel.canonicalSeats)
+    ? gapModel.canonicalSeats.find((entry) => entry?.entityId === 'planner' && entry?.blocker) || null
+    : null;
+  const plannerCoverageBlocker = plannerCoverage && plannerSeatBlocker ? {
+    label: 'Hire Planner coverage',
+    reason: `Planner coverage is needed before the pipeline can continue. Failed predicates: ${plannerCoverage.failedPredicateLabels.join('; ')}.`,
+    failedPredicates: plannerCoverage.failedPredicates,
+    canonical: plannerCoverage.canonical,
+    covered: plannerCoverage.covered,
+    seat: plannerSeatBlocker,
+  } : null;
   return {
     department: {
       name: 'Talent Acquisition',
       summary: summary.openRoleCount
-        ? `${summary.openRoleCount} open role${summary.openRoleCount === 1 ? '' : 's'} across ${coverage.length} staffing rules. ${summary.blockerCount} blocker${summary.blockerCount === 1 ? '' : 's'}; urgency ${urgencyText.toLowerCase()}.`
-        : `All ${coverage.length} staffing rules are covered.`,
+        ? `${summary.openRoleCount} canonical open seat${summary.openRoleCount === 1 ? '' : 's'} across ${coverage.filter((entry) => entry.entityType === 'desk').length} desks. ${summary.blockerCount} blocker${summary.blockerCount === 1 ? '' : 's'}; urgency ${urgencyText.toLowerCase()}.`
+        : `All ${coverage.filter((entry) => entry.entityType === 'desk').length} canonical desk seats are covered.`,
       urgency: summary.urgency,
       controls: [
         'Model binding is immutable after hire.',
@@ -4199,9 +4532,13 @@ async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()
       ],
       updatedAt: normalizedState.updatedAt,
       lastGeneratedGap: normalizedState.lastGeneratedGap,
+      blocker: plannerCoverageBlocker,
     },
     coverage,
     gapModel,
+    plannerCoverage,
+    qaLeadCoverage,
+    plannerCoverageBlocker,
     hiredCandidates: normalizedState.hiredCandidates,
     roster: normalizedState.hiredCandidates.map((candidate) => ({
       deskId: candidate.hiredDeskId || candidate.primaryDeskTarget,
@@ -4226,6 +4563,8 @@ async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()
       missingLeadCount: summary.missingLeadCount,
       understaffedCount: summary.understaffedCount,
       optionalHireCount: summary.optionalHireCount,
+      plannerCoverageBlockedCount: summary.plannerCoverageBlockedCount || 0,
+      qaLeadCoverageBlockedCount: summary.qaLeadCoverageBlockedCount || 0,
       urgency: summary.urgency,
     },
     organization: canonicalOrganization,
@@ -4380,6 +4719,14 @@ function listRunnableQASuites() {
         id,
         name: formatQASuiteLabel(id),
         file: path.relative(ROOT, path.join(dir, entry.name)).replace(/\\/g, '/'),
+        sourceTrace: buildQaEvidenceTrace({
+          kind: 'suite-definition',
+          label: formatQASuiteLabel(id),
+          detail: 'Runnable suite definition',
+          sourcePath: path.relative(ROOT, path.join(dir, entry.name)).replace(/\\/g, '/'),
+          sourceClass: 'non_executable',
+          record: { id, name: formatQASuiteLabel(id) },
+        }),
       };
     })
     .sort((left, right) => {
@@ -4401,6 +4748,43 @@ function collectStructuredQAScorecards(qaReport = null) {
         status: test.status || test.qualityCard.status || 'pass',
         testId: test.qualityCard.testId || test.name || null,
         testName: test.qualityCard.testName || test.name || 'Unnamed QA test',
+        sourceTrace: qaReport?.sourceTrace ? {
+          ...qaReport.sourceTrace,
+          kind: 'scorecard',
+          label: test.qualityCard.testName || test.name || 'Structured QA scorecard',
+          detail: `${desk.desk || 'desk'} | ${test.name || test.qualityCard.testId || 'test'}`,
+          freshnessClass: qaReport.sourceTrace.freshnessClass === 'stale'
+            ? 'stale'
+            : (qaReport.sourceTrace.freshnessClass === 'missing'
+              ? 'missing'
+              : 'derived_current'),
+          derivedFrom: qaReport.sourceTrace.sourcePath || null,
+          generatedBy: {
+            system: 'ui',
+            module: 'ui/server.collectStructuredQAScorecards',
+          },
+          sourceArtifacts: [
+            {
+              path: qaReport.sourceTrace.sourcePath || 'data/spatial/qa/structured/latest.json',
+              label: 'Structured QA report',
+              kind: 'report',
+              freshnessClass: qaReport.sourceTrace.freshnessClass === 'stale'
+                ? 'stale'
+                : (qaReport.sourceTrace.freshnessClass === 'missing'
+                  ? 'missing'
+                  : 'derived_current'),
+              observedAt: qaReport.sourceTrace.observedAt || null,
+            },
+            {
+              path: `${desk.desk || 'desk'}:${test.name || test.qualityCard.testId || 'test'}`,
+              label: 'Structured test result',
+              kind: 'test-result',
+              freshnessClass: 'derived_current',
+              observedAt: qaReport.sourceTrace.observedAt || null,
+              derivedFrom: qaReport.sourceTrace.sourcePath || null,
+            },
+          ],
+        } : null,
       });
     }
   }
@@ -4417,6 +4801,314 @@ function buildStructuredQASummary(qaReport = null) {
     startedAt: qaReport?.startedAt || null,
     finishedAt: qaReport?.finishedAt || null,
     durationMs: Number.isFinite(Number(qaReport?.durationMs)) ? Number(qaReport.durationMs) : null,
+  };
+}
+
+const QA_EVIDENCE_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
+function parseQaEvidenceTimestamp(...values) {
+  for (const value of values) {
+    const parsed = Date.parse(String(value || '').trim());
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function buildQaEvidenceTrace({
+  kind = 'evidence',
+  label = '',
+  detail = '',
+  sourcePath = null,
+  sourceClass = 'live_canonical',
+  derivedFrom = null,
+  generatedBy = null,
+  sourceArtifacts = [],
+  record = null,
+  observedAt = null,
+} = {}) {
+  const timestamp = parseQaEvidenceTimestamp(
+    observedAt,
+    record?.finishedAt,
+    record?.updatedAt,
+    record?.createdAt,
+    record?.startedAt,
+    record?.lastSeen,
+  );
+  const ageMs = timestamp == null ? null : Math.max(0, Date.now() - timestamp);
+  const freshnessClass = !record
+    ? 'missing'
+    : sourceClass === 'non_executable'
+      ? 'non_executable'
+      : (ageMs != null && ageMs > QA_EVIDENCE_STALE_AFTER_MS
+        ? 'stale'
+        : sourceClass);
+  return {
+    kind: String(kind || 'evidence').trim() || 'evidence',
+    label: String(label || '').trim() || null,
+    detail: String(detail || '').trim() || null,
+    sourcePath: String(sourcePath || '').trim() || null,
+    sourceClass: String(sourceClass || 'live_canonical').trim() || 'live_canonical',
+    freshnessClass,
+    observedAt: timestamp == null ? null : new Date(timestamp).toISOString(),
+    ageMs,
+    derivedFrom: String(derivedFrom || '').trim() || null,
+    generatedBy: generatedBy && typeof generatedBy === 'object' ? {
+      system: String(generatedBy.system || generatedBy.source || generatedBy.kind || '').trim() || null,
+      module: String(generatedBy.module || generatedBy.moduleName || '').trim() || null,
+      label: String(generatedBy.label || '').trim() || null,
+    } : null,
+    sourceArtifacts: Array.isArray(sourceArtifacts)
+      ? sourceArtifacts.map((artifact) => {
+          if (!artifact) return null;
+          if (typeof artifact === 'string') {
+            const pathValue = String(artifact || '').trim();
+            return pathValue ? { path: pathValue, label: pathValue, kind: 'artifact' } : null;
+          }
+          const source = artifact && typeof artifact === 'object' ? artifact : {};
+          const pathValue = String(source.path || source.sourcePath || '').trim();
+          const labelValue = String(source.label || pathValue || '').trim() || null;
+          return pathValue || labelValue
+            ? {
+                path: pathValue || null,
+                label: labelValue || pathValue || null,
+                kind: String(source.kind || 'artifact').trim() || 'artifact',
+                freshnessClass: String(source.freshnessClass || '').trim() || null,
+                observedAt: String(source.observedAt || '').trim() || null,
+                derivedFrom: String(source.derivedFrom || '').trim() || null,
+              }
+            : null;
+        }).filter(Boolean)
+      : [],
+  };
+}
+
+function summarizeQaEvidenceSources(sources = []) {
+  return (Array.isArray(sources) ? sources : []).reduce((accumulator, source) => {
+    const freshnessClass = String(source?.freshnessClass || 'missing').trim() || 'missing';
+    accumulator.total += 1;
+    if (freshnessClass === 'live_canonical') accumulator.liveCanonical += 1;
+    else if (freshnessClass === 'derived_current') accumulator.derivedCurrent += 1;
+    else if (freshnessClass === 'stale') accumulator.stale += 1;
+    else if (freshnessClass === 'non_executable') accumulator.nonExecutable += 1;
+    else accumulator.missing += 1;
+    return accumulator;
+  }, {
+    total: 0,
+    liveCanonical: 0,
+    derivedCurrent: 0,
+    stale: 0,
+    missing: 0,
+    nonExecutable: 0,
+  });
+}
+
+function buildQaEvidenceOverview({
+  structuredReport = null,
+  structuredSummary = null,
+  scorecards = [],
+  latestBrowserRun = null,
+  browserRuns = [],
+  localGate = null,
+  availableTests = [],
+} = {}) {
+  const sources = [];
+  const structuredTrace = structuredReport?.sourceTrace || null;
+  sources.push(buildQaEvidenceTrace({
+    kind: 'structured-report',
+    label: 'Structured QA report',
+    detail: structuredSummary?.summary || structuredReport?.summary || 'No structured QA summary recorded yet.',
+    sourcePath: 'data/spatial/qa/structured/latest.json',
+    sourceClass: 'live_canonical',
+    generatedBy: structuredTrace?.generatedBy || {
+      system: 'qa',
+      module: 'qa/qaLead.runAll',
+    },
+    sourceArtifacts: structuredTrace?.sourceArtifacts || [
+      {
+        path: 'data/spatial/qa/structured/latest.json',
+        label: 'Structured QA report',
+        kind: 'report',
+        freshnessClass: 'live_canonical',
+        observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+      },
+    ],
+    record: structuredReport,
+    observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'scorecards',
+    label: 'Structured QA scorecards',
+    detail: `${Array.isArray(scorecards) ? scorecards.length : 0} scorecard${Array.isArray(scorecards) && scorecards.length === 1 ? '' : 's'}`,
+    sourcePath: 'data/spatial/qa/structured/latest.json',
+    sourceClass: 'derived_current',
+    derivedFrom: structuredTrace?.sourcePath || 'data/spatial/qa/structured/latest.json',
+    generatedBy: {
+      system: 'ui',
+      module: 'ui/server.collectStructuredQAScorecards',
+    },
+    sourceArtifacts: [
+      {
+        path: structuredTrace?.sourcePath || 'data/spatial/qa/structured/latest.json',
+        label: 'Structured QA report',
+        kind: 'report',
+        freshnessClass: structuredTrace?.freshnessClass === 'stale'
+          ? 'stale'
+          : (structuredTrace?.freshnessClass === 'missing'
+            ? 'missing'
+            : 'derived_current'),
+        observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+      },
+      {
+        path: `${structuredTrace?.sourcePath || 'data/spatial/qa/structured/latest.json'}#scorecards`,
+        label: 'Structured scorecards',
+        kind: 'scorecard-set',
+        freshnessClass: structuredTrace?.freshnessClass === 'stale'
+          ? 'stale'
+          : (structuredTrace?.freshnessClass === 'missing'
+            ? 'missing'
+            : 'derived_current'),
+        observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+        derivedFrom: structuredTrace?.sourcePath || null,
+      },
+    ],
+    record: structuredReport,
+    observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'browser-run',
+    label: 'Latest browser run',
+    detail: latestBrowserRun
+      ? `${latestBrowserRun.scenario || 'layout-pass'} | ${latestBrowserRun.verdict || latestBrowserRun.status || 'pending'}`
+      : 'No browser run recorded yet.',
+    sourcePath: latestBrowserRun?.id ? `data/spatial/qa/${latestBrowserRun.id}.json` : 'data/spatial/qa/*.json',
+    sourceClass: 'live_canonical',
+    generatedBy: latestBrowserRun?.sourceTrace?.generatedBy || {
+      system: 'ui',
+      module: 'ui/qaRunner.runQARun',
+    },
+    sourceArtifacts: latestBrowserRun?.sourceTrace?.sourceArtifacts || (
+      latestBrowserRun?.id ? [{
+        path: `data/spatial/qa/${latestBrowserRun.id}.json`,
+        label: 'Browser run artifact',
+        kind: 'run',
+        freshnessClass: 'live_canonical',
+        observedAt: latestBrowserRun.finishedAt || latestBrowserRun.createdAt || null,
+      }] : []
+    ),
+    record: latestBrowserRun,
+    observedAt: latestBrowserRun?.finishedAt || latestBrowserRun?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'browser-history',
+    label: 'Browser run history',
+    detail: `${Array.isArray(browserRuns) ? browserRuns.length : 0} recorded run${Array.isArray(browserRuns) && browserRuns.length === 1 ? '' : 's'}`,
+    sourcePath: 'data/spatial/qa/*.json',
+    sourceClass: 'derived_current',
+    derivedFrom: latestBrowserRun?.id ? `data/spatial/qa/${latestBrowserRun.id}.json` : 'data/spatial/qa/*.json',
+    generatedBy: {
+      system: 'ui',
+      module: 'ui/qaRunner.runQARun',
+    },
+    sourceArtifacts: [{
+      path: 'data/spatial/qa/*.json',
+      label: 'Browser run history',
+      kind: 'run-history',
+      freshnessClass: latestBrowserRun?.sourceTrace?.freshnessClass === 'stale'
+        ? 'stale'
+        : (latestBrowserRun?.sourceTrace?.freshnessClass === 'missing'
+          ? 'missing'
+          : 'derived_current'),
+      observedAt: latestBrowserRun?.finishedAt || latestBrowserRun?.createdAt || null,
+      derivedFrom: latestBrowserRun?.id ? `data/spatial/qa/${latestBrowserRun.id}.json` : 'data/spatial/qa/*.json',
+    }],
+    record: latestBrowserRun,
+    observedAt: latestBrowserRun?.finishedAt || latestBrowserRun?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'local-gate',
+    label: 'Fast unit gate',
+    detail: localGate?.unit
+      ? `${localGate.unit.status || 'pending'} | ${localGate.unit.passedCount || 0}/${localGate.unit.totalChecks || 0} checks passed`
+      : 'No local unit gate report recorded yet.',
+    sourcePath: 'data/spatial/qa/local-gates/test-unit-latest.json',
+    sourceClass: 'live_canonical',
+    generatedBy: localGate?.unit?.sourceTrace?.generatedBy || {
+      system: 'ui',
+      module: 'ui/qaRunner.writeLocalGateReport',
+    },
+    sourceArtifacts: localGate?.unit?.sourceTrace?.sourceArtifacts || [{
+      path: 'data/spatial/qa/local-gates/test-unit-latest.json',
+      label: 'Fast unit gate report',
+      kind: 'gate',
+      freshnessClass: localGate?.unit?.sourceTrace?.freshnessClass || 'live_canonical',
+      observedAt: localGate?.unit?.finishedAt || localGate?.unit?.updatedAt || localGate?.unit?.createdAt || null,
+    }],
+    record: localGate?.unit || null,
+    observedAt: localGate?.unit?.finishedAt || localGate?.unit?.updatedAt || localGate?.unit?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'guardrail-summary',
+    label: 'Studio boot guardrail',
+    detail: localGate?.studioBoot
+      ? `${localGate.studioBoot.verdict || localGate.studioBoot.status || 'pending'} | findings ${localGate.studioBoot.findingCount || 0}`
+      : 'No studio boot guardrail run recorded yet.',
+    sourcePath: localGate?.studioBoot?.sourceTrace?.sourcePath || (localGate?.studioBoot?.id ? `data/spatial/qa/${localGate.studioBoot.id}.json` : 'data/spatial/qa/*.json'),
+    sourceClass: 'derived_current',
+    derivedFrom: localGate?.studioBoot?.sourceTrace?.derivedFrom || localGate?.studioBoot?.sourceTrace?.sourcePath || null,
+    generatedBy: localGate?.studioBoot?.sourceTrace?.generatedBy || {
+      system: 'ui',
+      module: 'ui/qaRunner.runQARun',
+    },
+    sourceArtifacts: localGate?.studioBoot?.sourceTrace?.sourceArtifacts || [{
+      path: localGate?.studioBoot?.sourceTrace?.sourcePath || (localGate?.studioBoot?.id ? `data/spatial/qa/${localGate.studioBoot.id}.json` : 'data/spatial/qa/*.json'),
+      label: 'Studio boot guardrail report',
+      kind: 'gate',
+      freshnessClass: localGate?.studioBoot?.sourceTrace?.freshnessClass || 'derived_current',
+      observedAt: localGate?.studioBoot?.observedAt || localGate?.studioBoot?.finishedAt || localGate?.studioBoot?.createdAt || null,
+      derivedFrom: localGate?.studioBoot?.sourceTrace?.derivedFrom || null,
+    }],
+    record: localGate?.studioBoot || null,
+    observedAt: localGate?.studioBoot?.observedAt || localGate?.studioBoot?.finishedAt || localGate?.studioBoot?.createdAt || null,
+  }));
+
+  if (Array.isArray(availableTests) && availableTests.length) {
+    sources.push(buildQaEvidenceTrace({
+      kind: 'suite-definition',
+      label: 'Runnable suites',
+      detail: `${availableTests.length} suite definition${availableTests.length === 1 ? '' : 's'}`,
+      sourcePath: 'qa/desks/*.js',
+      sourceClass: 'non_executable',
+      generatedBy: {
+        system: 'ui',
+        module: 'ui/server.listRunnableQASuites',
+      },
+      sourceArtifacts: [{
+        path: 'qa/desks/*.js',
+        label: 'Runnable QA suite definitions',
+        kind: 'source-module',
+        freshnessClass: 'non_executable',
+      }],
+      record: { id: 'suite-definition' },
+    }));
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  for (const source of sources) {
+    const key = `${source.kind}:${source.sourcePath || 'unknown'}:${source.freshnessClass}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(source);
+  }
+
+  return {
+    sources: deduped,
+    summary: summarizeQaEvidenceSources(deduped),
   };
 }
 
@@ -4450,26 +5142,191 @@ function summarizeGuardrailRun(run = null) {
         label: step.label,
         verdict: step.verdict || step.status || 'unknown',
       })),
+    sourceTrace: buildQaEvidenceTrace({
+      kind: 'guardrail-summary',
+      label: 'Studio boot guardrail',
+      detail: summary.summary || 'Studio boot guardrail summary.',
+      sourcePath: run?.id ? `data/spatial/qa/${run.id}.json` : 'data/spatial/qa/*.json',
+      sourceClass: 'derived_current',
+      derivedFrom: run?.id ? `data/spatial/qa/${run.id}.json` : null,
+      generatedBy: {
+        system: 'ui',
+        module: 'ui/qaRunner.runQARun',
+      },
+      sourceArtifacts: run?.id ? [{
+        path: `data/spatial/qa/${run.id}.json`,
+        label: 'Studio boot guardrail report',
+        kind: 'gate',
+        freshnessClass: 'derived_current',
+        observedAt: run?.finishedAt || run?.createdAt || null,
+        derivedFrom: run?.id ? `data/spatial/qa/${run.id}.json` : null,
+      }] : [],
+      record: run,
+      observedAt: run?.finishedAt || run?.createdAt || null,
+    }),
   };
 }
 
 function buildLocalGatePayload(rootPath = ROOT) {
+  const unit = readLocalGateReport(rootPath, 'test-unit-latest');
+  const studioBootRun = findLatestStudioBootGuardrailRun(rootPath);
   return {
-    unit: readLocalGateReport(rootPath, 'test-unit-latest'),
-    studioBoot: summarizeGuardrailRun(findLatestStudioBootGuardrailRun(rootPath)),
+    unit: unit ? {
+      ...unit,
+      sourceTrace: buildQaEvidenceTrace({
+        kind: 'local-gate',
+        label: 'Fast unit gate',
+        detail: String(unit.summary || 'Fast unit gate summary.').trim() || 'Fast unit gate summary.',
+        sourcePath: 'data/spatial/qa/local-gates/test-unit-latest.json',
+        sourceClass: 'live_canonical',
+        generatedBy: {
+          system: 'ui',
+          module: 'ui/qaRunner.writeLocalGateReport',
+        },
+        sourceArtifacts: [{
+          path: 'data/spatial/qa/local-gates/test-unit-latest.json',
+          label: 'Fast unit gate report',
+          kind: 'gate',
+          freshnessClass: 'live_canonical',
+          observedAt: unit.finishedAt || unit.updatedAt || unit.createdAt || null,
+        }],
+        record: unit,
+        observedAt: unit.finishedAt || unit.updatedAt || unit.createdAt || null,
+      }),
+    } : null,
+    studioBoot: summarizeGuardrailRun(studioBootRun),
   };
 }
 
 function buildQAStatePayload(rootPath = ROOT) {
   const structuredReport = readStructuredQAReport(rootPath, 'latest');
   const interactiveRuns = listInteractiveBrowserRuns(rootPath);
-  return {
+  const structuredSummary = buildStructuredQASummary(structuredReport);
+  const testRegistry = buildQATestRegistry({
+    rootPath,
     structuredReport,
+  });
+  const structuredReportWithTrace = structuredReport ? {
+    ...structuredReport,
+    sourceTrace: buildQaEvidenceTrace({
+      kind: 'structured-report',
+      label: 'Structured QA report',
+      detail: structuredSummary.summary || structuredReport.summary || 'Structured QA report.',
+      sourcePath: 'data/spatial/qa/structured/latest.json',
+      sourceClass: 'live_canonical',
+      generatedBy: {
+        system: 'qa',
+        module: 'qa/qaLead.runAll',
+      },
+      sourceArtifacts: [
+        {
+          path: 'qa/desks/*.js',
+          label: 'Desk QA modules',
+          kind: 'source-module',
+          freshnessClass: 'derived_current',
+        },
+        {
+          path: 'qa/qaAuditTrail.js',
+          label: 'QA audit helper',
+          kind: 'source-module',
+          freshnessClass: 'derived_current',
+        },
+        {
+          path: 'data/spatial/qa/structured/latest.json',
+          label: 'Structured QA report',
+          kind: 'report',
+          freshnessClass: 'live_canonical',
+        },
+      ],
+      record: structuredReport,
+      observedAt: structuredSummary.finishedAt || structuredReport.finishedAt || structuredReport.updatedAt || structuredReport.createdAt || null,
+    }),
+  } : null;
+  const latestBrowserRun = summarizeQARun(interactiveRuns[0] || null);
+  const latestBrowserRunWithTrace = latestBrowserRun ? {
+    ...latestBrowserRun,
+    sourceTrace: buildQaEvidenceTrace({
+      kind: 'browser-run',
+      label: 'Latest browser run',
+      detail: `${latestBrowserRun.scenario || 'layout-pass'} | ${latestBrowserRun.verdict || latestBrowserRun.status || 'pending'}`,
+      sourcePath: latestBrowserRun.id ? `data/spatial/qa/${latestBrowserRun.id}.json` : 'data/spatial/qa/*.json',
+      sourceClass: 'live_canonical',
+      generatedBy: {
+        system: 'ui',
+        module: 'ui/qaRunner.runQARun',
+      },
+      sourceArtifacts: latestBrowserRun.id ? [{
+        path: `data/spatial/qa/${latestBrowserRun.id}.json`,
+        label: 'Browser run artifact',
+        kind: 'run',
+        freshnessClass: 'live_canonical',
+        observedAt: latestBrowserRun.finishedAt || latestBrowserRun.createdAt || null,
+      }] : [],
+      record: interactiveRuns[0] || null,
+      observedAt: latestBrowserRun.finishedAt || latestBrowserRun.createdAt || null,
+    }),
+  } : null;
+  const browserRuns = interactiveRuns.slice(0, 8).map((run) => {
+    const summary = summarizeQARun(run);
+    return summary ? {
+      ...summary,
+      sourceTrace: buildQaEvidenceTrace({
+        kind: 'browser-run',
+        label: 'Browser run',
+        detail: `${summary.scenario || 'layout-pass'} | ${summary.verdict || summary.status || 'pending'}`,
+        sourcePath: summary.id ? `data/spatial/qa/${summary.id}.json` : 'data/spatial/qa/*.json',
+        sourceClass: 'live_canonical',
+        generatedBy: {
+          system: 'ui',
+          module: 'ui/qaRunner.runQARun',
+        },
+        sourceArtifacts: summary.id ? [{
+          path: `data/spatial/qa/${summary.id}.json`,
+          label: 'Browser run artifact',
+          kind: 'run',
+          freshnessClass: 'live_canonical',
+          observedAt: summary.finishedAt || summary.createdAt || null,
+        }] : [],
+        record: run,
+        observedAt: summary.finishedAt || summary.createdAt || null,
+      }),
+    } : null;
+  }).filter(Boolean);
+  const localGate = buildLocalGatePayload(rootPath);
+  const qaScorecards = collectStructuredQAScorecards(structuredReportWithTrace);
+  const evidenceAudit = buildQaEvidenceOverview({
+    structuredReport: structuredReportWithTrace,
+    structuredSummary,
+    scorecards: qaScorecards,
+    latestBrowserRun: latestBrowserRunWithTrace,
+    browserRuns,
+    localGate,
+  });
+  const auditTrail = buildQAAuditTrail({
+    structuredReport: structuredReportWithTrace,
+    structuredSummary,
+    scorecards: qaScorecards,
+    latestBrowserRun: latestBrowserRunWithTrace,
+    browserRuns,
+    localGate,
+  });
+  return {
+    structuredReport: structuredReportWithTrace,
     structuredBusy: false,
-    latestBrowserRun: summarizeQARun(interactiveRuns[0] || null),
-    browserRuns: interactiveRuns.slice(0, 8).map((run) => summarizeQARun(run)),
+    structuredSummary: {
+      ...structuredSummary,
+      sourceTrace: structuredReportWithTrace?.sourceTrace || null,
+    },
+    testRegistry,
+    testRegistrySummary: testRegistry.summary || summarizeQATestRegistry(testRegistry),
+    latestBrowserRun: latestBrowserRunWithTrace,
+    browserRuns,
     browserBusy: false,
-    localGate: buildLocalGatePayload(rootPath),
+    localGate,
+    evidenceSources: evidenceAudit.sources,
+    evidenceSummary: evidenceAudit.summary,
+    auditTrail,
+    auditTrailSummary: auditTrail.summary || summarizeQAAuditTrail(auditTrail),
   };
 }
 
@@ -4826,7 +5683,25 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
   const tasks = collectDeskTasks(workspace, deskId);
   const resolvedQAState = deskId === QA_LEAD_DESK_ID ? (qaState || buildQAStatePayload()) : null;
   const structuredReport = resolvedQAState?.structuredReport || null;
+  const testRegistry = resolvedQAState?.testRegistry || buildQATestRegistry({
+    rootPath: ROOT,
+    structuredReport,
+  });
   const qaScorecards = collectStructuredQAScorecards(structuredReport);
+  const auditTrail = resolvedQAState?.auditTrail || buildQAAuditTrail({
+    structuredReport,
+    structuredSummary: resolvedQAState?.structuredSummary || buildStructuredQASummary(structuredReport),
+    scorecards: qaScorecards,
+    latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
+    browserRuns: Array.isArray(resolvedQAState?.browserRuns) ? resolvedQAState.browserRuns : [],
+    localGate: resolvedQAState?.localGate || null,
+  });
+  const availableTests = deskId === QA_LEAD_DESK_ID ? listRunnableQASuites() : [];
+  const evidenceSources = [
+    ...(Array.isArray(resolvedQAState?.evidenceSources) ? resolvedQAState.evidenceSources : []),
+    ...availableTests.map((suite) => suite.sourceTrace).filter(Boolean),
+  ];
+  const evidenceSummary = summarizeQaEvidenceSources(evidenceSources);
   const primaryAgentIds = mergeUnique([...(deskLayout.assignedAgentIds || []), ...(DESK_AGENT_DEFAULTS[deskId] || [])]);
   const agents = [...new Set([...primaryAgentIds, ...deskProperties.managedAgents])]
     .map((agentId) => {
@@ -4865,6 +5740,8 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
         : `${tasks.filter((task) => task.lifecycle === 'complete').length} complete / ${tasks.filter((task) => task.lifecycle === 'in_progress').length} in progress`),
     reports: collectDeskReports(workspace, deskId).slice(0, 6),
     scorecards: deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect' ? qaScorecards : [],
+    testRegistry: deskId === QA_LEAD_DESK_ID ? testRegistry : null,
+    testRegistrySummary: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.testRegistrySummary || testRegistry.summary) : null,
     assessments: deskProperties.manualTests,
     context: {
       summary: deskProperties.departmentContext || desk.currentGoal || desk.mission || null,
@@ -4909,13 +5786,22 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
     experimentContract: rndExperiments?.contract || null,
     qa: deskId === QA_LEAD_DESK_ID
       ? {
-          availableTests: listRunnableQASuites(),
+          availableTests,
           structuredReport,
-          structuredSummary: buildStructuredQASummary(structuredReport),
+          structuredSummary: {
+            ...buildStructuredQASummary(structuredReport),
+            sourceTrace: structuredReport?.sourceTrace || null,
+          },
           scorecards: qaScorecards,
+          testRegistry,
+          testRegistrySummary: resolvedQAState?.testRegistrySummary || testRegistry.summary,
           latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
           browserRuns: Array.isArray(resolvedQAState?.browserRuns) ? resolvedQAState.browserRuns : [],
           localGate: resolvedQAState?.localGate || { unit: null, studioBoot: null },
+          evidenceSources,
+          evidenceSummary,
+          auditTrail,
+          auditTrailSummary: auditTrail.summary || summarizeQAAuditTrail(auditTrail),
         }
       : undefined,
     sources: {
@@ -4923,7 +5809,7 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
       modules: ['modules/**/*.module.json'],
       reports: ['studio.teamBoard.cards.verifyStatus/applyStatus/deployStatus', 'data/spatial/qa/runs/*.json', 'studio.deskProperties.manualTests'],
       agents: ['studio.agentWorkers', 'studio.deskProperties.managedAgents'],
-      ...(deskId === QA_LEAD_DESK_ID ? { qa: ['qa/desks/*.js', 'data/spatial/qa/structured/*.json', 'data/spatial/qa/local-gates/*.json', 'data/spatial/qa/*.json'] } : {}),
+      ...(deskId === QA_LEAD_DESK_ID ? { qa: ['qa/desks/*.js', 'qa/testRegistry.js', 'qa/qaAuditTrail.js', 'data/spatial/qa/structured/*.json', 'data/spatial/qa/local-gates/*.json', 'data/spatial/qa/*.json'] } : {}),
     },
   };
 }
@@ -10818,6 +11704,7 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
         host: body.host,
         timeoutMs: body.timeoutMs,
         confirmActionId: body.confirmActionId,
+        override: body.override,
         workspace: readSpatialWorkspace(),
         baseUrl: getLocalBaseUrl(req),
       });
@@ -11110,6 +11997,10 @@ module.exports = {
   dashboardFiles,
   buildDeskPropertiesPayload,
   buildQAStatePayload,
+  buildQAAuditTrail,
+  summarizeQAAuditTrail,
+  buildQATestRegistry,
+  summarizeQATestRegistry,
   buildProjectRecord,
   buildSpatialRuntimePayload,
   detectRunnableProjectType,

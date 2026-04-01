@@ -15,6 +15,12 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
       "roleId": "planner",
       "agentId": "planner",
       "modelProfileId": "model-profile.planner-default"
+    },
+    "qa-lead": {
+      "deskId": "qa-lead",
+      "roleId": "qa-lead",
+      "agentId": "qa-lead",
+      "modelProfileId": "model-profile.default.qa-lead"
     }
   },
   "departments": [
@@ -207,6 +213,21 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
         "summary": "Default QA seat for evidence and acceptance checks.",
         "prompt": "Run the relevant checks, summarize evidence, and call out failures clearly.",
         "responsibility": "report wall / evidence bench"
+      },
+      "panel": {
+        "mission": "Review QA evidence, flag stale or missing tests, and audit the QA process without taking execution authority.",
+        "responsibilities": [
+          "Review structured QA evidence and runtime scorecards from canonical sources.",
+          "Flag stale, missing, or non-executable tests and report coverage gaps.",
+          "Audit the QA process and surface gaps for CTO review without performing execution."
+        ],
+        "hardRules": [
+          "No run, execute, or retry controls on the QA desk.",
+          "No override authority on QA surfaces.",
+          "QA observations must preserve provenance and freshness."
+        ],
+        "deliveryRelationship": "Observer and auditor for QA evidence; CTO remains the operator override path.",
+        "visibility": "read-only"
       }
     },
     {

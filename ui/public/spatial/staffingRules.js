@@ -92,6 +92,174 @@ function buildStudioLabel(entityType, entityId) {
   return STUDIO_DESK_TEMPLATES[entityId]?.label || entityId;
 }
 
+function buildCanonicalPlannerCoverageTruth(layout = {}) {
+  const organization = layout?.organization && typeof layout.organization === 'object'
+    ? layout.organization
+    : {};
+  const canonical = {
+    deskId: 'planner',
+    roleId: 'planner',
+    agentId: 'planner',
+    modelProfileId: 'model-profile.planner-default',
+    departmentId: 'dept-delivery',
+    requiredLeadSeatId: 'planner',
+  };
+  const plannerRecord = organization.planner && typeof organization.planner === 'object'
+    ? organization.planner
+    : null;
+  const deliveryDepartment = organization.departments?.[canonical.departmentId] || null;
+  const plannerDesk = organization.desks?.[canonical.deskId] || null;
+  const plannerAgent = organization.agents?.[canonical.agentId] || null;
+
+  const predicates = [
+    {
+      key: 'planner-canonical-record',
+      label: 'Canonical planner record exists',
+      passed: Boolean(
+        plannerRecord
+        && plannerRecord.deskId === canonical.deskId
+        && plannerRecord.roleId === canonical.roleId
+        && plannerRecord.agentId === canonical.agentId
+        && plannerRecord.modelProfileId === canonical.modelProfileId,
+      ),
+    },
+    {
+      key: 'planner-desk-present',
+      label: 'Planner desk exists',
+      passed: Boolean(plannerDesk),
+    },
+    {
+      key: 'planner-desk-owned-by-delivery',
+      label: 'Planner desk is owned by delivery',
+      passed: Boolean(plannerDesk && (plannerDesk.departmentId === canonical.departmentId || plannerDesk.ownerDepartmentId === canonical.departmentId)),
+    },
+    {
+      key: 'planner-desk-has-planner-agent',
+      label: 'Planner desk has the planner agent assigned',
+      passed: Boolean(plannerDesk && Array.isArray(plannerDesk.assignedAgentIds) && plannerDesk.assignedAgentIds.includes(canonical.agentId)),
+    },
+    {
+      key: 'planner-agent-present',
+      label: 'Planner agent exists',
+      passed: Boolean(plannerAgent),
+    },
+    {
+      key: 'planner-agent-model-profile',
+      label: 'Planner agent uses the canonical model profile',
+      passed: Boolean(plannerAgent && plannerAgent.modelProfileId === canonical.modelProfileId),
+    },
+    {
+      key: 'delivery-lead-seat-is-planner',
+      label: 'Delivery lead seat is planner',
+      passed: Boolean(deliveryDepartment && deliveryDepartment.staffing && deliveryDepartment.staffing.requiredLeadSeatId === canonical.requiredLeadSeatId),
+    },
+    {
+      key: 'delivery-department-includes-planner-desk',
+      label: 'Delivery department includes the planner desk',
+      passed: Boolean(deliveryDepartment && Array.isArray(deliveryDepartment.deskIds) && deliveryDepartment.deskIds.includes(canonical.deskId)),
+    },
+  ];
+
+  const failedPredicates = predicates.filter((predicate) => !predicate.passed);
+  return {
+    canonical,
+    organization,
+    plannerRecord,
+    deliveryDepartment,
+    plannerDesk,
+    plannerAgent,
+    predicates,
+    failedPredicates,
+    covered: failedPredicates.length === 0,
+    status: failedPredicates.length === 0 ? 'covered' : 'blocked',
+    failedPredicateLabels: failedPredicates.map((predicate) => predicate.label),
+  };
+}
+
+function buildCanonicalQALeadCoverageTruth(layout = {}) {
+  const organization = layout?.organization && typeof layout.organization === 'object'
+    ? layout.organization
+    : {};
+  const canonical = {
+    deskId: 'qa-lead',
+    roleId: 'qa-lead',
+    agentId: 'qa-lead',
+    modelProfileId: 'model-profile.default.qa-lead',
+    departmentId: 'dept-quality',
+    requiredLeadSeatId: 'qa-lead',
+  };
+  const qaLeadRecord = organization.qaLead && typeof organization.qaLead === 'object'
+    ? organization.qaLead
+    : null;
+  const qualityDepartment = organization.departments?.[canonical.departmentId] || null;
+  const qaLeadDesk = organization.desks?.[canonical.deskId] || null;
+  const qaLeadAgent = organization.agents?.[canonical.agentId] || null;
+
+  const predicates = [
+    {
+      key: 'qa-lead-canonical-record',
+      label: 'Canonical QA lead record exists',
+      passed: Boolean(
+        qaLeadRecord
+        && qaLeadRecord.deskId === canonical.deskId
+        && qaLeadRecord.roleId === canonical.roleId
+        && qaLeadRecord.agentId === canonical.agentId
+        && qaLeadRecord.modelProfileId === canonical.modelProfileId,
+      ),
+    },
+    {
+      key: 'qa-lead-desk-present',
+      label: 'QA lead desk exists',
+      passed: Boolean(qaLeadDesk),
+    },
+    {
+      key: 'qa-lead-desk-owned-by-quality',
+      label: 'QA lead desk is owned by quality',
+      passed: Boolean(qaLeadDesk && (qaLeadDesk.departmentId === canonical.departmentId || qaLeadDesk.ownerDepartmentId === canonical.departmentId)),
+    },
+    {
+      key: 'qa-lead-desk-has-agent',
+      label: 'QA lead desk has the QA lead agent assigned',
+      passed: Boolean(qaLeadDesk && Array.isArray(qaLeadDesk.assignedAgentIds) && qaLeadDesk.assignedAgentIds.includes(canonical.agentId)),
+    },
+    {
+      key: 'qa-lead-agent-present',
+      label: 'QA lead agent exists',
+      passed: Boolean(qaLeadAgent),
+    },
+    {
+      key: 'qa-lead-agent-model-profile',
+      label: 'QA lead agent uses the canonical model profile',
+      passed: Boolean(qaLeadAgent && qaLeadAgent.modelProfileId === canonical.modelProfileId),
+    },
+    {
+      key: 'quality-lead-seat-is-qa-lead',
+      label: 'Quality lead seat is QA lead',
+      passed: Boolean(qualityDepartment && qualityDepartment.staffing && qualityDepartment.staffing.requiredLeadSeatId === canonical.requiredLeadSeatId),
+    },
+    {
+      key: 'quality-department-includes-qa-lead-desk',
+      label: 'Quality department includes the QA lead desk',
+      passed: Boolean(qualityDepartment && Array.isArray(qualityDepartment.deskIds) && qualityDepartment.deskIds.includes(canonical.deskId)),
+    },
+  ];
+
+  const failedPredicates = predicates.filter((predicate) => !predicate.passed);
+  return {
+    canonical,
+    organization,
+    qaLeadRecord,
+    qualityDepartment,
+    qaLeadDesk,
+    qaLeadAgent,
+    predicates,
+    failedPredicates,
+    covered: failedPredicates.length === 0,
+    status: failedPredicates.length === 0 ? 'covered' : 'blocked',
+    failedPredicateLabels: failedPredicates.map((predicate) => predicate.label),
+  };
+}
+
 const DEPARTMENT_STAFFING_RULES = Object.freeze({
   'context-intake': createStaffingRule({
     entityType: 'department',
@@ -253,6 +421,17 @@ const TA_GAP_URGENCY_ORDER = Object.freeze({
   low: 0,
 });
 
+const CANONICAL_STAFFING_DESK_TO_DEPARTMENT = Object.freeze({
+  'context-manager': 'context-intake',
+  planner: 'delivery',
+  executor: 'delivery',
+  'memory-archivist': 'delivery',
+  'rnd-lead': 'research',
+  'qa-lead': 'governance',
+  'cto-architect': 'governance',
+  integration_auditor: 'talent-acquisition',
+});
+
 function normalizeAssignment(value = {}) {
   if (typeof value === 'string') {
     return { roleId: normalizeRoleId(value), isLead: false };
@@ -264,6 +443,11 @@ function normalizeAssignment(value = {}) {
     roleId: normalizeRoleId(value.roleId || value.role || value.id || value.templateId),
     isLead: Boolean(value.isLead || value.lead || value.leadRole),
   };
+}
+
+function normalizeDepartmentId(value = '') {
+  const normalized = normalizeRoleId(value);
+  return normalized.startsWith('dept-') ? normalized.slice(5) : normalized;
 }
 
 function normalizeAssignments(assignments = []) {
@@ -406,18 +590,203 @@ export function evaluateStaffingModel(model = STAFFING_RULES, assignmentsByEntit
   };
 }
 
-export function buildStaffingAssignmentsFromTaHires(hiredCandidates = []) {
+function buildCanonicalDeskToDepartmentMap(layout = {}) {
+  const deskToDepartment = new Map();
+  const organization = layout?.organization && typeof layout.organization === 'object'
+    ? layout.organization
+    : null;
+  if (organization) {
+    Object.values(organization.desks || {}).forEach((desk) => {
+      const deskId = normalizeRoleId(desk?.id);
+      const departmentId = normalizeDepartmentId(desk?.ownerDepartmentId || desk?.departmentId);
+      if (deskId && departmentId) deskToDepartment.set(deskId, departmentId);
+    });
+  }
+  Object.entries(CANONICAL_STAFFING_DESK_TO_DEPARTMENT).forEach(([deskId, departmentId]) => {
+    if (!deskToDepartment.has(deskId)) {
+      deskToDepartment.set(deskId, departmentId);
+    }
+  });
+  return deskToDepartment;
+}
+
+function seedCanonicalLeadAssignments(assignmentsByEntity = {}, canonicalCoverage = null, deskToDepartment = new Map()) {
+  if (!canonicalCoverage || canonicalCoverage.covered !== true) return;
+  const canonical = canonicalCoverage.canonical || {};
+  const deskId = normalizeRoleId(canonical.deskId);
+  const roleId = normalizeRoleId(canonical.roleId);
+  if (!deskId || !roleId) return;
+  const assignment = {
+    roleId,
+    isLead: true,
+    agentId: normalizeRoleId(canonical.agentId || roleId),
+    deskId,
+    modelProfileId: normalizeText(canonical.modelProfileId || ''),
+    canonicalSeatId: normalizeRoleId(canonical.agentId || roleId),
+  };
+  const deskAssignments = Array.isArray(assignmentsByEntity.desks?.[deskId])
+    ? assignmentsByEntity.desks[deskId]
+    : (assignmentsByEntity.desks[deskId] = []);
+  if (!deskAssignments.some((entry) => normalizeRoleId(entry?.roleId) === roleId)) {
+    deskAssignments.push(assignment);
+  }
+  const departmentId = deskToDepartment.get(deskId) || null;
+  if (!departmentId) return;
+  const departmentAssignments = Array.isArray(assignmentsByEntity.departments?.[departmentId])
+    ? assignmentsByEntity.departments[departmentId]
+    : (assignmentsByEntity.departments[departmentId] = []);
+  if (!departmentAssignments.some((entry) => normalizeRoleId(entry?.roleId) === roleId)) {
+    departmentAssignments.push(assignment);
+  }
+}
+
+function buildDepartmentLabels(model = STAFFING_RULES) {
+  return Object.fromEntries(
+    Object.entries(model?.departments || {}).map(([departmentId, rule]) => [departmentId, rule?.label || departmentId]),
+  );
+}
+
+function deriveCoverageUrgency(openRoles = []) {
+  if (!Array.isArray(openRoles) || !openRoles.length) return 'low';
+  return openRoles.reduce((current, entry) => (
+    (TA_GAP_URGENCY_ORDER[entry?.urgency] || 0) > (TA_GAP_URGENCY_ORDER[current] || 0)
+      ? entry.urgency
+      : current
+  ), 'low');
+}
+
+function createCanonicalSeatEntry(entity = {}, {
+  kind = 'understaffed',
+  sourceKind = 'required-role',
+  roleId = null,
+  shortfall = 1,
+  urgency = 'high',
+  blocker = true,
+  departmentId = null,
+  departmentLabel = null,
+} = {}) {
+  const normalizedRoleId = roleId ? normalizeRoleId(roleId) : null;
+  const normalizedShortfall = Math.max(1, Number(shortfall || 1));
+  return {
+    kind,
+    sourceKind,
+    entityType: entity.entityType,
+    entityId: entity.entityId,
+    entityLabel: entity.label,
+    departmentId,
+    departmentLabel,
+    roleId: normalizedRoleId,
+    roleLabel: normalizedRoleId ? buildRoleLabel(normalizedRoleId) : '',
+    shortfall: normalizedShortfall,
+    urgency,
+    blocker,
+    covered: false,
+    seatId: `${entity.entityType}:${entity.entityId}:${sourceKind}:${normalizedRoleId || 'coverage'}`,
+  };
+}
+
+function buildCanonicalDeskOpenRoles(entity = {}, { departmentId = null, departmentLabel = null } = {}) {
+  if (!entity || !isPlainObject(entity)) return [];
+  const roleCounts = isPlainObject(entity.roleCounts) ? entity.roleCounts : {};
+  const needs = Array.isArray(entity.hiringNeeds) ? entity.hiringNeeds : [];
+  const openRoles = [];
+  const leadNeed = needs.find((need) => need?.kind === 'lead') || null;
+  const requiredNeed = needs.find((need) => need?.kind === 'required-role' && (!leadNeed || need.roleId !== leadNeed.roleId)) || null;
+  const staffingNeed = (!leadNeed && !requiredNeed)
+    ? (needs.find((need) => need?.kind === 'minimum-staffing') || needs.find((need) => need?.kind === 'existence-floor') || null)
+    : null;
+
+  if (leadNeed) {
+    openRoles.push(createCanonicalSeatEntry(entity, {
+      kind: 'missing lead',
+      sourceKind: 'lead',
+      roleId: leadNeed.roleId,
+      shortfall: leadNeed.shortfall,
+      urgency: 'critical',
+      blocker: true,
+      departmentId,
+      departmentLabel,
+    }));
+  } else if (requiredNeed) {
+    openRoles.push(createCanonicalSeatEntry(entity, {
+      kind: 'understaffed',
+      sourceKind: 'required-role',
+      roleId: requiredNeed.roleId,
+      shortfall: requiredNeed.shortfall,
+      urgency: 'high',
+      blocker: true,
+      departmentId,
+      departmentLabel,
+    }));
+  } else if (staffingNeed) {
+    openRoles.push(createCanonicalSeatEntry(entity, {
+      kind: 'understaffed',
+      sourceKind: staffingNeed.kind,
+      roleId: null,
+      shortfall: staffingNeed.shortfall,
+      urgency: 'high',
+      blocker: true,
+      departmentId,
+      departmentLabel,
+    }));
+  }
+
+  (entity.optionalRoles || []).forEach((roleId) => {
+    if (Number(roleCounts[roleId] || 0) > 0) return;
+    openRoles.push(createCanonicalSeatEntry(entity, {
+      kind: 'optional hire',
+      sourceKind: 'optional-role',
+      roleId,
+      shortfall: 1,
+      urgency: 'low',
+      blocker: false,
+      departmentId,
+      departmentLabel,
+    }));
+  });
+
+  openRoles.sort((left, right) => {
+    const urgencyDelta = (TA_GAP_URGENCY_ORDER[right.urgency] || 0) - (TA_GAP_URGENCY_ORDER[left.urgency] || 0);
+    if (urgencyDelta !== 0) return urgencyDelta;
+    return String(left.roleLabel || left.roleId || '').localeCompare(String(right.roleLabel || right.roleId || ''));
+  });
+  return openRoles;
+}
+
+function buildDepartmentCoverageEntries(staffingModel = {}, deskCoverage = [], model = STAFFING_RULES, options = {}) {
+  const deskToDepartment = buildCanonicalDeskToDepartmentMap(options?.layout || {});
+  return (staffingModel.departments || []).map((entity) => {
+    const departmentId = normalizeDepartmentId(entity.entityId);
+    const openRoles = deskCoverage
+      .filter((deskEntry) => deskToDepartment.get(deskEntry.entityId) === departmentId)
+      .flatMap((deskEntry) => deskEntry.openRoles.map((entry) => ({
+        ...entry,
+        departmentId,
+        departmentLabel: entity.label,
+      })));
+    const blockers = openRoles.filter((entry) => entry.blocker);
+    const urgency = deriveCoverageUrgency(openRoles);
+    const statusLabel = openRoles.length
+      ? (blockers.some((entry) => entry.kind === 'missing lead') ? 'missing lead' : (blockers.length ? 'understaffed' : 'optional hire'))
+      : 'covered';
+    return {
+      ...entity,
+      openRoles,
+      blockers,
+      urgency,
+      blocked: blockers.length > 0,
+      health: blockers.length > 0 ? 'blocked' : (openRoles.length ? 'degraded' : 'healthy'),
+      statusLabel,
+    };
+  });
+}
+
+export function buildStaffingAssignmentsFromTaHires(hiredCandidates = [], options = {}) {
   const assignmentsByEntity = {
     departments: {},
     desks: {},
   };
-  const deskToDepartment = new Map();
-
-  Object.entries(STUDIO_DEPARTMENT_TEMPLATES).forEach(([departmentId, template]) => {
-    (template.deskTemplateIds || []).forEach((deskId) => {
-      deskToDepartment.set(deskId, departmentId);
-    });
-  });
+  const deskToDepartment = buildCanonicalDeskToDepartmentMap(options?.layout || {});
 
   (Array.isArray(hiredCandidates) ? hiredCandidates : []).forEach((candidate) => {
     const deskId = normalizeRoleId(candidate?.hiredDeskId || candidate?.primaryDeskTarget || candidate?.primary_desk_target || candidate?.deskId);
@@ -514,21 +883,25 @@ function deriveOpenRolesForEntity(entity) {
   return openRoles;
 }
 
-export function computeTaGapModel(model = STAFFING_RULES, hiredCandidates = []) {
-  const assignmentsByEntity = buildStaffingAssignmentsFromTaHires(hiredCandidates);
+export function computeTaGapModel(model = STAFFING_RULES, hiredCandidates = [], options = {}) {
+  const assignmentsByEntity = buildStaffingAssignmentsFromTaHires(hiredCandidates, options);
+  const deskToDepartment = buildCanonicalDeskToDepartmentMap(options?.layout || {});
+  const plannerCoverage = buildCanonicalPlannerCoverageTruth(options?.layout || {});
+  const qaLeadCoverage = buildCanonicalQALeadCoverageTruth(options?.layout || {});
+  seedCanonicalLeadAssignments(assignmentsByEntity, plannerCoverage, deskToDepartment);
+  seedCanonicalLeadAssignments(assignmentsByEntity, qaLeadCoverage, deskToDepartment);
   const staffingModel = evaluateStaffingModel(model, assignmentsByEntity);
-  const coverage = staffingModel.entities.map((entity) => {
-    const openRoles = deriveOpenRolesForEntity(entity);
+  const departmentLabels = buildDepartmentLabels(model);
+  const deskCoverage = (staffingModel.desks || []).map((entity) => {
+    const departmentId = deskToDepartment.get(entity.entityId) || null;
+    const departmentLabel = departmentId ? (departmentLabels[departmentId] || departmentId) : null;
+    const openRoles = buildCanonicalDeskOpenRoles(entity, { departmentId, departmentLabel });
     const blockers = openRoles.filter((entry) => entry.blocker);
-    const urgency = openRoles.length
-      ? openRoles.reduce((current, entry) => (
-        (TA_GAP_URGENCY_ORDER[entry.urgency] || 0) > (TA_GAP_URGENCY_ORDER[current] || 0)
-          ? entry.urgency
-          : current
-      ), 'low')
-      : 'low';
+    const urgency = deriveCoverageUrgency(openRoles);
     return {
       ...entity,
+      departmentId,
+      departmentLabel,
       openRoles,
       blockers,
       urgency,
@@ -537,28 +910,34 @@ export function computeTaGapModel(model = STAFFING_RULES, hiredCandidates = []) 
         : 'covered',
     };
   });
-  const openRoles = coverage.flatMap((entity) => entity.openRoles);
+  const departmentCoverage = buildDepartmentCoverageEntries(staffingModel, deskCoverage, model, options);
+  const coverage = [...departmentCoverage, ...deskCoverage];
+  const canonicalSeats = deskCoverage.flatMap((entity) => entity.openRoles);
+  const openRoles = canonicalSeats;
   const blockers = openRoles.filter((entry) => entry.blocker);
-  const urgency = openRoles.length
-    ? openRoles.reduce((current, entry) => (
-      (TA_GAP_URGENCY_ORDER[entry.urgency] || 0) > (TA_GAP_URGENCY_ORDER[current] || 0)
-        ? entry.urgency
-        : current
-    ), 'low')
-    : 'low';
+  const urgency = deriveCoverageUrgency(openRoles);
 
   return {
     staffingModel,
     coverage,
+    canonicalSeats,
     openRoles,
     blockers,
     urgency,
+    plannerCoverage,
+    qaLeadCoverage,
     summary: {
       openRoleCount: openRoles.length,
       blockerCount: blockers.length,
       missingLeadCount: openRoles.filter((entry) => entry.kind === 'missing lead').length,
       understaffedCount: openRoles.filter((entry) => entry.kind === 'understaffed').length,
       optionalHireCount: openRoles.filter((entry) => entry.kind === 'optional hire').length,
+      plannerCoverageBlockedCount: openRoles.some((entry) => entry.entityId === 'planner' && entry.blocker)
+        ? plannerCoverage.failedPredicates.length
+        : 0,
+      qaLeadCoverageBlockedCount: openRoles.some((entry) => entry.entityId === 'qa-lead' && entry.blocker)
+        ? qaLeadCoverage.failedPredicates.length
+        : 0,
       urgency,
     },
   };

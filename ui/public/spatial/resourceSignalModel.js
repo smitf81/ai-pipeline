@@ -16,7 +16,21 @@ function deriveResourcePressure(priorityScore = 0) {
   return 'low';
 }
 
+function getCanonicalLeadCoverageTruth(health = {}) {
+  const canonicalCoverage = health?.plannerCoverage && typeof health.plannerCoverage === 'object'
+    ? health.plannerCoverage
+    : (health?.qaLeadCoverage && typeof health.qaLeadCoverage === 'object'
+      ? health.qaLeadCoverage
+      : null);
+  if (!canonicalCoverage || !Array.isArray(canonicalCoverage.failedPredicates)) return null;
+  return canonicalCoverage;
+}
+
 function countBlockingRequirements(health = {}) {
+  const canonicalCoverage = getCanonicalLeadCoverageTruth(health);
+  if (canonicalCoverage) {
+    return canonicalCoverage.failedPredicates.length;
+  }
   const missingRequirements = Array.isArray(health.missingRequirements) ? health.missingRequirements : [];
   const blockerCount = missingRequirements.filter((entry) => normalizeText(entry?.severity) === 'block').length;
   if (blockerCount > 0) return blockerCount;
@@ -24,6 +38,10 @@ function countBlockingRequirements(health = {}) {
 }
 
 function countStaffingGaps(health = {}) {
+  const canonicalCoverage = getCanonicalLeadCoverageTruth(health);
+  if (canonicalCoverage) {
+    return canonicalCoverage.failedPredicates.length;
+  }
   const staffing = health?.staffing && typeof health.staffing === 'object' ? health.staffing : {};
   const openRoleCount = Number(staffing.openRoleCount || 0);
   const optionalRoleCount = Number(staffing.optionalRoleCount || 0);
@@ -44,6 +62,10 @@ function countWeakRelationships(departmentId = '', relationshipSignals = []) {
 }
 
 function hasMissingLead(health = {}) {
+  const canonicalCoverage = getCanonicalLeadCoverageTruth(health);
+  if (canonicalCoverage) {
+    return canonicalCoverage.failedPredicates.some((entry) => /lead/i.test(normalizeText(entry?.label)) || /lead/i.test(normalizeText(entry?.key)));
+  }
   if (normalizeId(health.status) === 'missing lead') return true;
   const missingRequirements = Array.isArray(health.missingRequirements) ? health.missingRequirements : [];
   return missingRequirements.some((entry) => normalizeId(entry?.code) === 'missing-lead' || (normalizeId(entry?.kind) === 'staffing' && /lead/i.test(normalizeText(entry?.reason))));
@@ -55,8 +77,10 @@ function buildReasonSummary({
   staffingGapCount = 0,
   weakRelationshipCount = 0,
   missingLead = false,
+  leadCoverage = null,
 } = {}) {
   const reasons = [];
+  if (leadCoverage && leadCoverage.status === 'blocked') reasons.push('Lead coverage blocked');
   if (missingLead) reasons.push('Missing lead');
   if (blockerCount > 0) reasons.push(`${blockerCount} blocker${blockerCount === 1 ? '' : 's'}`);
   if (staffingGapCount > 0) reasons.push(`${staffingGapCount} staffing gap${staffingGapCount === 1 ? '' : 's'}`);
@@ -79,10 +103,12 @@ function compareSignals(left, right) {
 function buildDepartmentResourceSignal(department = {}, relationshipSignals = []) {
   const health = department?.health && typeof department.health === 'object' ? department.health : {};
   const status = normalizeId(health.status || department.status || 'draft');
+  const leadCoverage = getCanonicalLeadCoverageTruth(health);
   const blockerCount = countBlockingRequirements(health);
   const staffingGapCount = countStaffingGaps(health);
   const weakRelationshipCount = countWeakRelationships(department.id, relationshipSignals);
   const missingLead = hasMissingLead(health);
+  const effectiveStatus = status === 'missing lead' && !missingLead ? 'active' : status;
   const statusBase = {
     blocked: 35,
     'missing lead': 35,
@@ -90,7 +116,7 @@ function buildDepartmentResourceSignal(department = {}, relationshipSignals = []
     draft: 12,
     'support-only': 8,
     active: 0,
-  }[status] ?? 0;
+  }[effectiveStatus] ?? 0;
   const priorityScore = clampScore(
     statusBase
       + (blockerCount * 12)
@@ -102,19 +128,21 @@ function buildDepartmentResourceSignal(department = {}, relationshipSignals = []
   return {
     departmentId: normalizeId(department.id),
     departmentLabel: normalizeText(department.label) || normalizeText(department.name) || normalizeId(department.id),
-    status,
+    status: effectiveStatus,
     priorityScore,
     resourcePressure: deriveResourcePressure(priorityScore),
     blockerCount,
     staffingGapCount,
     weakRelationshipCount,
     missingLead,
+    leadCoverage,
     reasonSummary: buildReasonSummary({
-      status,
+      status: effectiveStatus,
       blockerCount,
       staffingGapCount,
       weakRelationshipCount,
       missingLead,
+      leadCoverage,
     }),
   };
 }

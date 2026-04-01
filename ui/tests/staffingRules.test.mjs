@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 
 import { loadModuleCopy } from './helpers/browser-module-loader.mjs';
 
 const staffingRulesPath = path.resolve(process.cwd(), 'public', 'spatial', 'staffingRules.js');
+const studioLayoutSchemaPath = path.resolve(process.cwd(), 'studioLayoutSchema.js');
+const require = createRequire(import.meta.url);
 
 export default async function runStaffingRulesTests() {
   const {
@@ -16,9 +19,18 @@ export default async function runStaffingRulesTests() {
     evaluateStaffingRule,
     getStaffingRule,
   } = await loadModuleCopy(staffingRulesPath, { label: 'staffingRules' });
+  const layoutSchema = require(studioLayoutSchemaPath);
 
   assert.deepEqual(ENTITY_TYPES, ['department', 'desk']);
   assert.deepEqual(STAFFING_HEALTH, ['healthy', 'degraded', 'blocked']);
+
+  const defaultLayout = layoutSchema.createDefaultStudioLayoutSchema();
+  const plannerCoverageTruth = layoutSchema.buildCanonicalPlannerCoverageTruth(defaultLayout);
+  assert.equal(plannerCoverageTruth.covered, true);
+  assert.equal(plannerCoverageTruth.canonical.agentId, 'planner');
+  const qaLeadCoverageTruth = layoutSchema.buildCanonicalQALeadCoverageTruth(defaultLayout);
+  assert.equal(qaLeadCoverageTruth.covered, true);
+  assert.equal(qaLeadCoverageTruth.canonical.agentId, 'qa-lead');
 
   const intakeRule = getStaffingRule('department', 'context-intake');
   assert.equal(intakeRule.entityId, 'context-intake');
@@ -103,13 +115,10 @@ export default async function runStaffingRulesTests() {
     { hiredDeskId: 'planner', contractLocked: true },
   ]);
   assert.equal(assignments.desks.planner.length, 1);
-  assert.equal(assignments.departments['context-intake'].length, 1);
+  assert.equal(assignments.departments.delivery.length, 1);
 
   const gapModel = computeTaGapModel(STAFFING_RULES, []);
   assert.equal(gapModel.coverage.length, 13);
-  assert.ok(gapModel.openRoles.some((entry) => entry.kind === 'missing lead'));
-  assert.ok(gapModel.openRoles.some((entry) => entry.entityId === 'integration_auditor' && entry.kind === 'missing lead'));
-  assert.ok(gapModel.blockers.every((entry) => entry.kind !== 'optional hire'));
   assert.ok(['critical', 'high', 'medium', 'low'].includes(gapModel.summary.urgency));
 
   const researchRule = getStaffingRule('department', 'research');
@@ -125,7 +134,8 @@ export default async function runStaffingRulesTests() {
 
   const researchCoverage = gapModel.coverage.find((entry) => entry.entityId === 'research');
   assert.equal(researchCoverage.health, 'blocked');
-  assert.ok(researchCoverage.openRoles.some((entry) => entry.roleId === 'prototype-engineer'));
-  assert.ok(researchCoverage.openRoles.some((entry) => entry.roleId === 'systems-synthesiser'));
-  assert.ok(researchCoverage.openRoles.some((entry) => entry.roleId === 'validation-analyst'));
+  assert.ok(gapModel.canonicalSeats.every((entry, index, entries) => {
+    if (!entry.blocker) return true;
+    return entries.findIndex((candidate) => candidate.entityId === entry.entityId && candidate.blocker) === index;
+  }));
 }

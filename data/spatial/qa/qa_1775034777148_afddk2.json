@@ -1,0 +1,101 @@
+{
+  "id": "qa_1775034777148_afddk2",
+  "scenario": "studio-smoke",
+  "mode": "interactive",
+  "trigger": "guardrail",
+  "prompt": "Local Studio boot guardrail for desk truth surfaces and QA properties",
+  "baseUrl": "http://127.0.0.1:3107",
+  "status": "failed",
+  "verdict": "failed",
+  "createdAt": "2026-04-01T09:12:57.148Z",
+  "finishedAt": "2026-04-01T09:13:13.485Z",
+  "linked": {},
+  "browser": {
+    "executablePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "engine": "chromium"
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-01T09:12:57.149Z",
+      "finishedAt": "2026-04-01T09:12:57.158Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-01T09:12:57.158Z",
+      "finishedAt": "2026-04-01T09:12:57.959Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "failed",
+      "verdict": "failed",
+      "startedAt": "2026-04-01T09:12:57.961Z",
+      "finishedAt": "2026-04-01T09:13:13.485Z",
+      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    }
+  ],
+  "findings": [],
+  "artifacts": {
+    "screenshots": [],
+    "domSnapshot": null,
+    "consoleLog": null,
+    "networkSummary": null,
+    "runtimeSnapshot": null,
+    "layoutFindings": null
+  },
+  "console": [],
+  "network": [],
+  "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m\n"
+}

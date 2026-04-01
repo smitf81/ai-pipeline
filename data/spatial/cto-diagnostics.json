@@ -1,7 +1,193 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-04-01T08:46:29.303Z",
+  "updated_at": "2026-04-01T18:00:52.838Z",
   "entries": [
+    {
+      "id": "cto_diag_1775066452838",
+      "timestamp": "2026-04-01T18:00:52.838Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "CTO action is targeting qa-lead, but the pipeline is currently on planner.",
+      "failureKind": "contract",
+      "runId": null,
+      "httpStatus": null,
+      "actionId": "hire-role",
+      "availableActionIds": [
+        "hire-role"
+      ]
+    },
+    {
+      "id": "cto_diag_1775062060625",
+      "timestamp": "2026-04-01T16:47:40.625Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "unknown",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Model \"mistral:latest\" is not currently available on the local backend.",
+      "failureKind": null,
+      "runId": null,
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": []
+    },
+    {
+      "id": "cto_diag_1775062043840",
+      "timestamp": "2026-04-01T16:47:23.840Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "unknown",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Model \"mistral:latest\" is not currently available on the local backend.",
+      "failureKind": null,
+      "runId": null,
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": []
+    },
+    {
+      "id": "cto_diag_1775061641959",
+      "timestamp": "2026-04-01T16:40:41.959Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "CTO action is targeting qa-lead, but the pipeline is currently on planner.",
+      "failureKind": "contract",
+      "runId": null,
+      "httpStatus": 0,
+      "actionId": "hire-role",
+      "availableActionIds": [
+        "hire-role"
+      ]
+    },
+    {
+      "id": "cto_diag_1775060902027",
+      "timestamp": "2026-04-01T16:28:22.027Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat action referenced an unavailable action id: not-available.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1775060902025-7lhfx4",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-role"
+      ]
+    },
+    {
+      "id": "cto_diag_1775060901530",
+      "timestamp": "2026-04-01T16:28:21.530Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat delegation did not satisfy the required contract.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1775060901527-btsuu4",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-role"
+      ]
+    },
+    {
+      "id": "cto_diag_1775060901047",
+      "timestamp": "2026-04-01T16:28:21.047Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775060901044-9f1ald",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-role"
+      ]
+    },
+    {
+      "id": "cto_diag_1775060867701",
+      "timestamp": "2026-04-01T16:27:47.701Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat action referenced an unavailable action id: hire-planner.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1775060867698-eiz8y9",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-role"
+      ]
+    },
+    {
+      "id": "cto_diag_1775058657209",
+      "timestamp": "2026-04-01T15:50:57.209Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "CTO action is targeting qa-lead, but the pipeline is currently on planner.",
+      "failureKind": "contract",
+      "runId": null,
+      "httpStatus": 0,
+      "actionId": "hire-role",
+      "availableActionIds": [
+        "hire-role"
+      ]
+    },
+    {
+      "id": "cto_diag_1775037118853",
+      "timestamp": "2026-04-01T09:51:58.853Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775037088841-rz7shl",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "hire-role"
+      ]
+    },
     {
       "id": "cto_diag_1775033189303",
       "timestamp": "2026-04-01T08:46:29.303Z",
@@ -15,7 +201,7 @@
       "reason": "Ollama generate timed out after 30000ms.",
       "failureKind": "parse",
       "runId": "cto-chat-1775033159276-l3ioov",
-      "httpStatus": null,
+      "httpStatus": 0,
       "actionId": null,
       "availableActionIds": [
         "hire-role"

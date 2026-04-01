@@ -3,43 +3,23 @@
   "source": "ui-test-runner",
   "command": "npm run test:unit",
   "status": "fail",
-  "summary": "6 of 58 UI checks failed.",
-  "startedAt": "2026-03-31T09:19:40.341Z",
-  "finishedAt": "2026-03-31T09:19:44.613Z",
-  "durationMs": 4271,
-  "totalChecks": 58,
-  "passedCount": 52,
-  "failedCount": 6,
+  "summary": "2 of 59 UI checks failed.",
+  "startedAt": "2026-04-01T10:34:58.358Z",
+  "finishedAt": "2026-04-01T10:35:00.678Z",
+  "durationMs": 2319,
+  "totalChecks": 59,
+  "passedCount": 57,
+  "failedCount": 2,
   "failures": [
-    {
-      "name": "persistence",
-      "path": "./persistence.test.mjs",
-      "error": "Expected values to be strictly equal:\n\n7 !== 6\n"
-    },
-    {
-      "name": "studioLayoutModel",
-      "path": "./studioLayoutModel.test.mjs",
-      "error": "Expected values to be strictly equal:\n\n8 !== 7\n"
-    },
-    {
-      "name": "studioLayoutRelationships",
-      "path": "./studioLayoutRelationships.test.mjs",
-      "error": "Expected values to be strictly equal:\n\n7 !== 6\n"
-    },
-    {
-      "name": "spatialAppSmoke",
-      "path": "./spatialApp.smoke.test.mjs",
-      "error": "Expected values to be strictly equal:\n\n7 !== 6\n"
-    },
-    {
-      "name": "studioData",
-      "path": "./studioData.test.mjs",
-      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    {\n      id: 'dept-intake',\n      kind: 'intake',\n      label: 'Intake'\n...\n    {\n+     id: 'dept-research',\n+     kind: 'research',\n+     label: 'R&D / Research & Development'\n+   },\n+   {\n      id: 'dept-control',\n      kind: 'control',\n      label: 'Control Centre'\n    },\n    {\n"
-    },
     {
       "name": "server",
       "path": "./server.test.mjs",
-      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    'context-manager',\n    'cto-architect',\n    'executor',\n    'integration_auditor',\n...\n    'qa-lead',\n+   'rnd-lead'\n  ]\n"
+      "error": "Expected values to be strictly equal:\n\ntrue !== false\n"
+    },
+    {
+      "name": "ctoPipeline",
+      "path": "./ctoPipeline.test.mjs",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
     }
   ],
   "results": [
@@ -54,141 +34,141 @@
       "name": "anchorResolver",
       "path": "./anchorResolver.test.mjs",
       "status": "pass",
-      "durationMs": 29,
+      "durationMs": 33,
       "error": null
     },
     {
       "name": "agentRegistry",
       "path": "./agentRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 15,
+      "durationMs": 12,
       "error": null
     },
     {
       "name": "agentWorkers",
       "path": "./agentWorkers.test.mjs",
       "status": "pass",
-      "durationMs": 96,
+      "durationMs": 93,
       "error": null
     },
     {
       "name": "aceConnector",
       "path": "./aceConnector.test.mjs",
       "status": "pass",
-      "durationMs": 34,
+      "durationMs": 31,
       "error": null
     },
     {
       "name": "componentRegistry",
       "path": "./componentRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 11,
+      "durationMs": 6,
       "error": null
     },
     {
       "name": "agentOwnershipModel",
       "path": "./agentOwnershipModel.test.mjs",
       "status": "pass",
-      "durationMs": 13,
+      "durationMs": 8,
       "error": null
     },
     {
       "name": "relationshipHiringSignals",
       "path": "./relationshipHiringSignals.test.mjs",
       "status": "pass",
-      "durationMs": 32,
+      "durationMs": 21,
       "error": null
     },
     {
       "name": "resourceSignalModel",
       "path": "./resourceSignalModel.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "uiActionRegistry",
       "path": "./uiActionRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "studioQuickAccess",
       "path": "./studioQuickAccess.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "testAttributeCards",
       "path": "./testAttributeCards.test.mjs",
       "status": "pass",
-      "durationMs": 7,
+      "durationMs": 4,
       "error": null
     },
     {
       "name": "aceRuntimeMcp",
       "path": "./aceRuntimeMcp.test.mjs",
       "status": "pass",
-      "durationMs": 413,
+      "durationMs": 237,
       "error": null
     },
     {
       "name": "llmAdapter",
       "path": "./llmAdapter.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 1,
       "error": null
     },
     {
       "name": "moduleRunner",
       "path": "./moduleRunner.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "graphEngine",
       "path": "./graphEngine.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "graphQueries",
       "path": "./graphQueries.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 2,
       "error": null
     },
     {
       "name": "graphMutations",
       "path": "./graphMutations.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 2,
       "error": null
     },
     {
       "name": "mutationEngine",
       "path": "./mutationEngine.test.mjs",
       "status": "pass",
-      "durationMs": 14,
+      "durationMs": 9,
       "error": null
     },
     {
       "name": "worldScaffoldView",
       "path": "./worldScaffoldView.test.mjs",
       "status": "pass",
-      "durationMs": 13,
+      "durationMs": 11,
       "error": null
     },
     {
       "name": "persistence",
       "path": "./persistence.test.mjs",
-      "status": "fail",
-      "durationMs": 35,
-      "error": "Expected values to be strictly equal:\n\n7 !== 6\n"
+      "status": "pass",
+      "durationMs": 38,
+      "error": null
     },
     {
       "name": "utilityWindowState",
@@ -200,85 +180,85 @@
     {
       "name": "studioLayoutModel",
       "path": "./studioLayoutModel.test.mjs",
-      "status": "fail",
-      "durationMs": 17,
-      "error": "Expected values to be strictly equal:\n\n8 !== 7\n"
+      "status": "pass",
+      "durationMs": 27,
+      "error": null
     },
     {
       "name": "studioOrgHealthModel",
       "path": "./studioOrgHealthModel.test.mjs",
       "status": "pass",
-      "durationMs": 24,
+      "durationMs": 22,
       "error": null
     },
     {
       "name": "studioLayoutRelationships",
       "path": "./studioLayoutRelationships.test.mjs",
-      "status": "fail",
-      "durationMs": 2,
-      "error": "Expected values to be strictly equal:\n\n7 !== 6\n"
+      "status": "pass",
+      "durationMs": 12,
+      "error": null
     },
     {
       "name": "spatialAppSmoke",
       "path": "./spatialApp.smoke.test.mjs",
-      "status": "fail",
-      "durationMs": 118,
-      "error": "Expected values to be strictly equal:\n\n7 !== 6\n"
+      "status": "pass",
+      "durationMs": 141,
+      "error": null
     },
     {
       "name": "spatialAppRsg",
       "path": "./spatialApp.rsg.test.mjs",
       "status": "pass",
-      "durationMs": 104,
+      "durationMs": 98,
       "error": null
     },
     {
       "name": "sliceRepository",
       "path": "./sliceRepository.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 8,
       "error": null
     },
     {
       "name": "archivistWriteback",
       "path": "./archivistWriteback.test.mjs",
       "status": "pass",
-      "durationMs": 22,
+      "durationMs": 26,
       "error": null
     },
     {
       "name": "knownFixes",
       "path": "./knownFixes.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 8,
       "error": null
     },
     {
       "name": "failureMemory",
       "path": "./failureMemory.test.mjs",
       "status": "pass",
-      "durationMs": 20,
+      "durationMs": 15,
       "error": null
     },
     {
       "name": "agentAudit",
       "path": "./agentAudit.test.mjs",
       "status": "pass",
-      "durationMs": 18,
+      "durationMs": 12,
       "error": null
     },
     {
       "name": "agentCapabilities",
       "path": "./agentCapabilities.test.mjs",
       "status": "pass",
-      "durationMs": 31,
+      "durationMs": 29,
       "error": null
     },
     {
       "name": "constrainedAutoFix",
       "path": "./constrainedAutoFix.test.mjs",
       "status": "pass",
-      "durationMs": 12,
+      "durationMs": 16,
       "error": null
     },
     {
@@ -292,43 +272,43 @@
       "name": "fixTasks",
       "path": "./fixTasks.test.mjs",
       "status": "pass",
-      "durationMs": 23,
+      "durationMs": 17,
       "error": null
     },
     {
       "name": "taskArtifacts",
       "path": "./taskArtifacts.test.mjs",
       "status": "pass",
-      "durationMs": 250,
+      "durationMs": 183,
       "error": null
     },
     {
       "name": "taskCache",
       "path": "./taskCache.test.mjs",
       "status": "pass",
-      "durationMs": 28,
+      "durationMs": 20,
       "error": null
     },
     {
       "name": "preflightGuards",
       "path": "./preflightGuards.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 10,
       "error": null
     },
     {
       "name": "debugSuite",
       "path": "./debugSuite.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "studioData",
       "path": "./studioData.test.mjs",
-      "status": "fail",
-      "durationMs": 38,
-      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    {\n      id: 'dept-intake',\n      kind: 'intake',\n      label: 'Intake'\n...\n    {\n+     id: 'dept-research',\n+     kind: 'research',\n+     label: 'R&D / Research & Development'\n+   },\n+   {\n      id: 'dept-control',\n      kind: 'control',\n      label: 'Control Centre'\n    },\n    {\n"
+      "status": "pass",
+      "durationMs": 66,
+      "error": null
     },
     {
       "name": "roleTaxonomy",
@@ -355,21 +335,21 @@
       "name": "rndExperimentPayload",
       "path": "./rndExperimentPayload.test.mjs",
       "status": "pass",
-      "durationMs": 67,
+      "durationMs": 65,
       "error": null
     },
     {
       "name": "rosterSurface",
       "path": "./rosterSurface.test.mjs",
       "status": "pass",
-      "durationMs": 14,
+      "durationMs": 13,
       "error": null
     },
     {
       "name": "studioMutations",
       "path": "./studioMutations.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 7,
       "error": null
     },
     {
@@ -383,7 +363,7 @@
       "name": "orchestratorState",
       "path": "./orchestratorState.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 11,
       "error": null
     },
     {
@@ -397,7 +377,7 @@
       "name": "taCandidates",
       "path": "./taCandidates.test.mjs",
       "status": "pass",
-      "durationMs": 70,
+      "durationMs": 97,
       "error": null
     },
     {
@@ -411,42 +391,49 @@
       "name": "server",
       "path": "./server.test.mjs",
       "status": "fail",
-      "durationMs": 2370,
-      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    'context-manager',\n    'cto-architect',\n    'executor',\n    'integration_auditor',\n...\n    'qa-lead',\n+   'rnd-lead'\n  ]\n"
+      "durationMs": 702,
+      "error": "Expected values to be strictly equal:\n\ntrue !== false\n"
+    },
+    {
+      "name": "ctoPipeline",
+      "path": "./ctoPipeline.test.mjs",
+      "status": "fail",
+      "durationMs": 9,
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
     },
     {
       "name": "intentAnalysis",
       "path": "./intentAnalysis.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 4,
       "error": null
     },
     {
       "name": "staffingRules",
       "path": "./staffingRules.test.mjs",
       "status": "pass",
-      "durationMs": 16,
+      "durationMs": 11,
       "error": null
     },
     {
       "name": "throughputDebug",
       "path": "./throughputDebug.test.mjs",
       "status": "pass",
-      "durationMs": 113,
+      "durationMs": 48,
       "error": null
     },
     {
       "name": "qaRunner",
       "path": "./qaRunner.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 6,
       "error": null
     },
     {
       "name": "appViewerMode",
       "path": "./appViewerMode.test.mjs",
       "status": "pass",
-      "durationMs": 12,
+      "durationMs": 20,
       "error": null
     }
   ]

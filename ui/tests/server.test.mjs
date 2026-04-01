@@ -88,6 +88,7 @@ export default async function runServerTests() {
     probeCtoBackendStatus,
     buildCtoGovernanceContext,
     buildCtoAvailableActions,
+    buildCtoActionRecord,
     executeCtoConfirmedAction,
     runCtoGovernanceChat,
     normalizeCtoChatHistory,
@@ -156,11 +157,23 @@ export default async function runServerTests() {
   ])[1].action.id, 'hire-role');
   const ctoContext = await buildCtoGovernanceContext();
   assert.ok(ctoContext.desks.some((desk) => desk.deskId === 'planner'));
+  assert.ok(Array.isArray(ctoContext.ta.canonicalSeats));
+  assert.equal(ctoContext.ta.plannerCoverage.covered, true);
+  assert.equal(ctoContext.ta.qaLeadCoverage.covered, true);
+  assert.equal(ctoContext.ta.canonicalSeats.some((entry) => entry.entityId === 'planner' && entry.kind === 'missing lead'), false);
+  assert.equal(ctoContext.ta.canonicalSeats.some((entry) => entry.entityId === 'qa-lead' && entry.kind === 'missing lead'), false);
   const ctoActions = buildCtoAvailableActions({
     text: 'We need planner coverage. Should TA hire for the planner desk?',
     context: ctoContext,
   });
-  assert.equal(ctoActions.some((action) => action.kind === 'hire-role' && action.targetDeskId === 'planner'), true);
+  assert.equal(ctoActions.some((action) => action.kind === 'hire-role' && action.targetDeskId === 'planner' && action.available), false);
+  assert.equal(ctoActions.some((action) => action.kind === 'assign-agent-to-desk' && action.targetDeskId === 'planner'), false);
+  const qaActions = buildCtoAvailableActions({
+    text: 'smoke test request for QA',
+    context: ctoContext,
+  });
+  assert.equal(qaActions.some((action) => action.kind === 'hire-role' && action.targetDeskId === 'qa-lead'), false);
+  assert.equal(qaActions.some((action) => action.kind === 'request-qa' && action.targetDeskId === 'qa-lead'), true);
   const originalCtoEnv = {
     backend: process.env.ACE_CTO_BACKEND,
     model: process.env.ACE_CTO_MODEL,
@@ -287,17 +300,6 @@ export default async function runServerTests() {
     }
     throw new Error(`unexpected CTO fetch: ${url}`);
   };
-  const ctoChatResult = await runCtoGovernanceChat({
-    text: 'We need a planner for this. Can you handle it?',
-    history: [],
-  });
-  assert.equal(ctoChatResult.ok, true);
-  assert.equal(ctoChatResult.status, 'live');
-  assert.equal(ctoChatResult.replyKind, 'actionable');
-  assert.equal(ctoChatResult.model, 'mixtral:latest');
-  assert.equal(ctoChatResult.delegation.deskId, 'planner');
-  assert.equal(ctoChatResult.action.kind, 'hire-role');
-  assert.equal(ctoChatResult.action.targetDeskId, 'planner');
   const backendStatus = await probeCtoBackendStatus({
     fetchImpl: async () => ({
       ok: true,
@@ -396,6 +398,47 @@ export default async function runServerTests() {
   assert.match(parseableInvalidResult.reason, /unavailable action id/i);
   assert.match(parseableInvalidResult.reply_text, /failed CTO contract validation/i);
   assert.equal(parseableInvalidResult.diagnostic.category, 'contract_invalid');
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).includes('/api/tags')) {
+      return {
+        ok: true,
+        json: async () => ({
+          models: [{ name: 'mixtral:latest' }, { name: 'mistral:latest' }],
+        }),
+      };
+    }
+    if (String(url).includes('/api/generate')) {
+      const body = JSON.parse(options.body || '{}');
+      assert.match(body.prompt, /request-qa/);
+      assert.doesNotMatch(body.prompt, /Hire QA Lead coverage/);
+      return {
+        ok: true,
+        json: async () => ({
+          response: JSON.stringify({
+            reply_text: 'QA coverage is already canonical and the smoke check can proceed.',
+            response_kind: 'advisory',
+            delegation: {
+              desk_id: 'qa-lead',
+              desk_label: 'QA Lead',
+              why: 'QA Lead owns the smoke check.',
+            },
+            action: {
+              id: 'request-qa',
+            },
+          }),
+        }),
+      };
+    }
+    throw new Error(`unexpected QA smoke-test CTO fetch: ${url}`);
+  };
+  const qaSmokeChatResult = await runCtoGovernanceChat({
+    text: 'run a QA smoke test',
+    history: [],
+  });
+  assert.equal(qaSmokeChatResult.ok, true);
+  assert.equal(qaSmokeChatResult.status, 'live');
+  assert.equal(qaSmokeChatResult.action.id, 'request-qa');
+  assert.equal(qaSmokeChatResult.replyKind, 'advisory');
   globalThis.fetch = originalFetch;
   if (originalCtoEnv.backend === undefined) {
     delete process.env.ACE_CTO_BACKEND;
@@ -417,6 +460,135 @@ export default async function runServerTests() {
   } else {
     process.env.ACE_CTO_TIMEOUT_MS = originalCtoEnv.timeoutMs;
   }
+
+  const createCtoOverrideWorkspace = () => ({
+    graph: { nodes: [], edges: [] },
+    graphs: {
+      system: { nodes: [], edges: [] },
+      world: { nodes: [], edges: [] },
+    },
+    sketches: [],
+    annotations: [],
+    pages: [],
+    activePageId: null,
+    intentState: {
+      latest: null,
+      contextReport: null,
+      byNode: {},
+      reports: [],
+    },
+    studio: {
+      layout: createDefaultStudioLayoutSchema(),
+      ctoPipeline: {
+        id: 'cto-pipeline-override',
+        roleIndex: 2,
+        step: 'request-qa',
+        roleId: 'qa-lead',
+        roleLabel: 'QA Lead',
+        deskId: 'qa-lead',
+        deskLabel: 'QA Lead',
+        planTaskId: 'task-qa-1',
+        planCardId: 'card-qa-1',
+        executionRunId: 'exec-1',
+      },
+      teamBoard: {
+        cards: [{
+          id: 'card-qa-1',
+          status: 'pending',
+          runnerTaskId: 'task-qa-1',
+          builderTaskId: 'task-qa-1',
+          targetProjectKey: 'self-target',
+          executionPackage: {},
+        }],
+        selectedCardId: 'card-qa-1',
+        summary: { plan: 1, active: 0, complete: 0, review: 0, assigned: 0, idleWorkers: 0 },
+      },
+      deskProperties: {},
+      agentWorkers: {},
+    },
+  });
+  const blockedQaAction = buildCtoActionRecord({
+    id: 'request-qa',
+    kind: 'request-qa',
+    label: 'Request one QA run',
+    params: {
+      roleId: 'qa-lead',
+      deskId: 'qa-lead',
+      deskLabel: 'QA Lead',
+    },
+    available: false,
+    requiresConfirmation: true,
+    status: 'unavailable',
+    reason: 'QA cannot run until the executor stage is cleared.',
+    route: 'workspace.qa.run',
+    routeStatus: 'wired',
+    targetDeskId: 'qa-lead',
+    targetDeskLabel: 'QA Lead',
+    overrideAvailable: true,
+    blockedGates: [{
+      code: 'pipeline-stage-mismatch',
+      label: 'Pipeline stage mismatch',
+      reason: 'QA cannot run until the executor stage is cleared.',
+    }],
+  });
+  const overridePayload = {
+    enabled: true,
+    origin: 'cto',
+    executionMode: 'operator_override',
+    overrideReason: 'Operator approved the blocked QA run.',
+    blockedBy: [{
+      code: 'pipeline-stage-mismatch',
+      label: 'Pipeline stage mismatch',
+      reason: 'QA cannot run until the executor stage is cleared.',
+    }],
+    skippedGates: [{
+      code: 'pipeline-stage-mismatch',
+      label: 'Pipeline stage mismatch',
+      reason: 'QA cannot run until the executor stage is cleared.',
+    }],
+  };
+  const blockedNoOverride = await executeCtoConfirmedAction(blockedQaAction, {
+    workspace: createCtoOverrideWorkspace(),
+    persistBoardWorkspace: (nextWorkspace) => nextWorkspace,
+    runQa: async () => {
+      throw new Error('runQa should not be called without override.');
+    },
+  });
+  assert.equal(blockedNoOverride.ok, false);
+  assert.equal(blockedNoOverride.status, 'blocked');
+  assert.equal(blockedNoOverride.override, null);
+  const overrideFailure = await executeCtoConfirmedAction(blockedQaAction, {
+    workspace: createCtoOverrideWorkspace(),
+    persistBoardWorkspace: (nextWorkspace) => nextWorkspace,
+    runQa: async () => {
+      throw new Error('QA runtime failed after override.');
+    },
+    override: overridePayload,
+  });
+  assert.equal(overrideFailure.ok, false);
+  assert.equal(overrideFailure.status, 'blocked');
+  assert.equal(overrideFailure.override.origin, 'cto');
+  assert.equal(overrideFailure.override.execution_mode, 'operator_override');
+  assert.deepEqual(overrideFailure.override.blocked_by, ['pipeline-stage-mismatch']);
+  assert.match(overrideFailure.reason, /QA runtime failed after override/i);
+  const overrideSuccess = await executeCtoConfirmedAction(blockedQaAction, {
+    workspace: createCtoOverrideWorkspace(),
+    persistBoardWorkspace: (nextWorkspace) => nextWorkspace,
+    runQa: async () => ({
+      id: 'qa-run-1',
+      verdict: 'passed',
+      summary: 'QA smoke check passed.',
+      artifacts: { screenshots: [] },
+    }),
+    override: overridePayload,
+  });
+  assert.equal(overrideSuccess.ok, true);
+  assert.equal(overrideSuccess.status, 'executed');
+  assert.equal(overrideSuccess.qaRunId, 'qa-run-1');
+  assert.equal(overrideSuccess.override.origin, 'cto');
+  assert.equal(overrideSuccess.override.execution_mode, 'operator_override');
+  assert.deepEqual(overrideSuccess.override.blocked_by, ['pipeline-stage-mismatch']);
+
   const ctoDiagnosticRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-cto-diagnostics-'));
   recordCtoDiagnostic({
     route: '/api/spatial/cto/chat',
@@ -1539,9 +1711,13 @@ export default async function runServerTests() {
 
   const qaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-server-qa-'));
   const qaStorage = ensureQAStorage(qaRoot);
+  const freshTimestamp = new Date().toISOString();
+  const staleTimestamp = new Date(Date.now() - (3 * 24 * 60 * 60 * 1000)).toISOString();
   writeStructuredQAReport(qaRoot, {
     status: 'pass',
     summary: 'All QA suites passed after stabilising the UI gate.',
+    createdAt: staleTimestamp,
+    finishedAt: staleTimestamp,
     desks: [
       {
         desk: 'ui',
@@ -1560,6 +1736,8 @@ export default async function runServerTests() {
     passedCount: 22,
     failedCount: 0,
     failures: [],
+    createdAt: freshTimestamp,
+    finishedAt: freshTimestamp,
   });
   fs.writeFileSync(path.join(qaStorage, 'qa_manual_1.json'), `${JSON.stringify({
     id: 'qa_manual_1',
@@ -1568,8 +1746,8 @@ export default async function runServerTests() {
     trigger: 'manual',
     status: 'completed',
     verdict: 'pass',
-    createdAt: '2026-03-25T09:15:00.000Z',
-    finishedAt: '2026-03-25T09:16:00.000Z',
+    createdAt: freshTimestamp,
+    finishedAt: freshTimestamp,
     findings: [],
     steps: [{ id: 'scenario', label: 'Run QA scenario actions', status: 'completed', verdict: 'pass' }],
     artifacts: { screenshots: [] },
@@ -1583,8 +1761,8 @@ export default async function runServerTests() {
     trigger: 'guardrail',
     status: 'completed',
     verdict: 'pass',
-    createdAt: '2026-03-25T09:10:00.000Z',
-    finishedAt: '2026-03-25T09:11:00.000Z',
+    createdAt: staleTimestamp,
+    finishedAt: staleTimestamp,
     findings: [],
     steps: [
       { id: 'open', label: 'Open ACE', status: 'completed', verdict: 'pass' },
@@ -1600,6 +1778,20 @@ export default async function runServerTests() {
   assert.equal(qaState.latestBrowserRun.id, 'qa_manual_1');
   assert.equal(qaState.browserRuns.length, 1);
   assert.equal(qaState.browserRuns[0].id, 'qa_manual_1');
+  assert.equal(qaState.structuredReport.sourceTrace.freshnessClass, 'stale');
+  assert.equal(qaState.latestBrowserRun.sourceTrace.freshnessClass, 'live_canonical');
+  assert.equal(qaState.localGate.unit.sourceTrace.freshnessClass, 'live_canonical');
+  assert.ok(qaState.evidenceSummary.stale >= 1);
+  assert.ok(qaState.evidenceSummary.liveCanonical >= 2);
+  assert.ok(Array.isArray(qaState.evidenceSources));
+  assert.ok(qaState.evidenceSources.some((source) => source.kind === 'structured-report' && source.freshnessClass === 'stale'));
+  assert.ok(qaState.testRegistry);
+  assert.equal(qaState.testRegistry.summary.total, qaState.testRegistry.entries.length);
+  assert.ok(qaState.auditTrail);
+  assert.equal(qaState.auditTrail.summary.total, qaState.auditTrail.entries.length);
+  assert.ok(qaState.auditTrail.entries.some((entry) => entry.kind === 'structured-report'));
+  assert.ok(qaState.auditTrail.entries.some((entry) => entry.kind === 'scorecard'));
+  assert.ok(qaState.testRegistry.entries.some((entry) => entry.validityClass === 'stale_target'));
 
   writeFailureHistory(qaRoot, {
     version: 'ace/failure-memory.v1',
@@ -1749,6 +1941,20 @@ export default async function runServerTests() {
   assert.equal(qaDeskPayload.qa.browserRuns.length, 1);
   assert.equal(qaDeskPayload.qa.localGate.studioBoot.id, 'qa_guardrail_1');
   assert.ok(Array.isArray(qaDeskPayload.qa.availableTests));
+  assert.ok(Array.isArray(qaDeskPayload.qa.testRegistry.entries));
+  assert.equal(qaDeskPayload.qa.testRegistry.entries.length, qaState.testRegistry.entries.length);
+  assert.ok(Array.isArray(qaDeskPayload.qa.auditTrail.entries));
+  assert.equal(qaDeskPayload.qa.auditTrail.summary.total, qaDeskPayload.qa.auditTrail.entries.length);
+  assert.ok(Array.isArray(qaDeskPayload.qa.scorecards));
+  assert.equal(qaDeskPayload.ta.plannerCoverage.covered, true);
+  assert.equal(qaDeskPayload.ta.qaLeadCoverage.covered, true);
+  assert.ok(qaDeskPayload.qa.scorecards.every((card) => card.sourceTrace && card.sourceTrace.sourcePath));
+  assert.ok(qaDeskPayload.desk.panel);
+  assert.ok(qaDeskPayload.desk.panel.responsibilities.includes('Review structured QA evidence and runtime scorecards from canonical sources.'));
+  assert.ok(qaDeskPayload.desk.panel.hardRules.includes('No run, execute, or retry controls on the QA desk.'));
+  assert.ok(Array.isArray(qaDeskPayload.qa.evidenceSources));
+  assert.ok(qaDeskPayload.qa.evidenceSources.some((source) => source.freshnessClass === 'stale'));
+  assert.ok(qaDeskPayload.qa.evidenceSummary.total >= qaState.evidenceSummary.total);
 
   const ctoWorkspace = {
     ...qaWorkspace,

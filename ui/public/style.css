@@ -1686,6 +1686,18 @@ body.qa-mode .status-row:last-child {
   line-height: 1.4;
 }
 
+.signal-meta.good {
+  color: var(--good);
+}
+
+.signal-meta.warn {
+  color: var(--warn);
+}
+
+.signal-meta.error {
+  color: var(--bad);
+}
+
 .review-panel {
   border-color: rgba(255, 211, 110, 0.28);
   background: linear-gradient(180deg, rgba(50, 39, 14, 0.96), rgba(24, 18, 10, 0.94));
@@ -2630,6 +2642,39 @@ body.qa-mode .status-row:last-child {
 
 .utility-card {
   background: rgba(255, 255, 255, 0.03);
+}
+
+.qa-test-registry-card.validity-executable {
+  border-color: rgba(92, 226, 159, 0.18);
+}
+
+.qa-test-registry-card.validity-stale_target {
+  border-color: rgba(255, 211, 110, 0.22);
+}
+
+.qa-test-registry-card.validity-missing_dependency,
+.qa-test-registry-card.validity-unknown_owner {
+  border-color: rgba(255, 143, 122, 0.24);
+  background: rgba(255, 143, 122, 0.05);
+}
+
+.qa-test-registry-card.validity-deprecated {
+  border-color: rgba(208, 223, 241, 0.18);
+  background: rgba(208, 223, 241, 0.04);
+}
+
+.qa-audit-card.status-ok {
+  border-color: rgba(92, 226, 159, 0.18);
+}
+
+.qa-audit-card.status-stale {
+  border-color: rgba(255, 211, 110, 0.22);
+}
+
+.qa-audit-card.status-missing,
+.qa-audit-card.status-mismatch {
+  border-color: rgba(255, 143, 122, 0.24);
+  background: rgba(255, 143, 122, 0.05);
 }
 
 .desk-tabs {

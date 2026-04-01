@@ -112,6 +112,59 @@ function summarizeHealthReasons(reasons = []) {
   return `${filtered[0]} +${filtered.length - 1} more`;
 }
 
+function uniqueStrings(values = []) {
+  return [...new Set((Array.isArray(values) ? values : []).map((entry) => String(entry || '').trim()).filter(Boolean))];
+}
+
+function buildStudioOrganizationModel(departments = [], desks = {}, controlCentreDeskId = CONTROL_CENTRE_DESK_ID) {
+  const departmentRecords = Array.isArray(departments) ? departments : [];
+  const deskRecords = desks && typeof desks === 'object' ? Object.values(desks) : [];
+  const departmentsModel = Object.fromEntries(departmentRecords.map((department) => [department.id, {
+    id: department.id,
+    label: department.label,
+    kind: department.kind,
+    deskIds: uniqueStrings(department.deskIds || []),
+    controlCentreDeskId: department.controlCentreDeskId || controlCentreDeskId,
+    staffing: department.staffing || null,
+  }]));
+  const desksModel = Object.fromEntries(deskRecords.map((desk) => [desk.id, {
+    id: desk.id,
+    label: desk.label,
+    departmentId: desk.departmentId,
+    ownerDepartmentId: desk.departmentId,
+    reportsToDeskId: desk.reportsToDeskId || controlCentreDeskId,
+    assignedAgentIds: uniqueStrings(desk.assignedAgentIds || []),
+    staffing: desk.staffing || null,
+  }]));
+  const agentsModel = {};
+
+  deskRecords.forEach((desk) => {
+    uniqueStrings(desk.assignedAgentIds || []).forEach((agentId) => {
+      agentsModel[agentId] = {
+        id: agentId,
+        roleId: String(desk.staffing?.roleId || agentId).trim() || agentId,
+        deskId: desk.id,
+        departmentId: desk.departmentId,
+        modelProfileId: agentId === 'planner'
+          ? 'model-profile.planner-default'
+          : `model-profile.default.${agentId}`,
+      };
+    });
+  });
+
+  return {
+    departments: departmentsModel,
+    desks: desksModel,
+    agents: agentsModel,
+    planner: {
+      deskId: 'planner',
+      roleId: 'planner',
+      agentId: 'planner',
+      modelProfileId: 'model-profile.planner-default',
+    },
+  };
+}
+
 function buildDefaultDepartmentStaffingRecord(definition = {}) {
   const deskIds = Array.isArray(definition.deskIds) ? definition.deskIds.map((entry) => String(entry || '').trim()).filter(Boolean) : [];
   const staffing = definition.staffing || {};
@@ -199,6 +252,7 @@ function buildDepartmentHealthRecord({
   department = {},
   departmentDesks = [],
   coverageEntry = null,
+  plannerCoverage = null,
   controlDesk = null,
   controlDeskStatus = '',
   blockedDeskCount = 0,
@@ -210,8 +264,15 @@ function buildDepartmentHealthRecord({
   const missingRequirements = [];
   const staffingOpenRoles = Array.isArray(coverageEntry?.openRoles) ? coverageEntry.openRoles : [];
   const staffingBlockers = Array.isArray(coverageEntry?.blockers) ? coverageEntry.blockers : [];
+  const plannerCoverageBlocked = Boolean(
+    plannerCoverage
+    && plannerCoverage.status === 'blocked'
+    && Array.isArray(plannerCoverage.failedPredicates)
+    && plannerCoverage.failedPredicates.length > 0
+    && String(department.id || '').trim() === 'dept-delivery',
+  );
   const hasControlBlocker = !controlDesk || !controlDesk.liveAgent || ['blocked', 'degraded'].includes(controlDeskStatus) || controlDesk.unresolved;
-  const hasDependencyBlocker = hasControlBlocker || blockedDeskCount > 0 || staffingBlockers.length > 0 || staffingOpenRoles.some((entry) => entry.blocker);
+  const hasDependencyBlocker = hasControlBlocker || plannerCoverageBlocked || blockedDeskCount > 0 || staffingBlockers.length > 0 || staffingOpenRoles.some((entry) => entry.blocker);
   const isSupportDepartment = String(department.kind || '').trim().toLowerCase() === 'support';
 
   if (hasControlBlocker) {
@@ -236,6 +297,15 @@ function buildDepartmentHealthRecord({
       reason: `${blockedDeskCount} desk${blockedDeskCount === 1 ? '' : 's'} blocked.`,
       source: 'relationship',
     }));
+  }
+  if (plannerCoverageBlocked) {
+    const failedPredicateSummary = plannerCoverage.failedPredicates
+      .map((predicate) => predicate.label || predicate.key)
+      .filter(Boolean)
+      .join('; ');
+    statusReasons.push(failedPredicateSummary
+      ? `Planner coverage is needed before the pipeline can continue. Failed predicates: ${failedPredicateSummary}.`
+      : 'Planner coverage is needed before the pipeline can continue.');
   }
   staffingBlockers.forEach((entry) => {
     statusReasons.push(entry.kind === 'missing lead'
@@ -360,6 +430,7 @@ function buildDepartmentHealthRecord({
       staffedDeskCount: liveDeskCount,
       missingDeskCount,
     },
+    plannerCoverage: plannerCoverage || null,
     coverage: coverageEntry || null,
   };
 }
@@ -382,7 +453,7 @@ export function buildStudioOrgHealthModel(layout = {}, agentSnapshots = []) {
       assignedModel: desk.liveAgent?.model || '',
       contractLocked: true,
     }));
-  const staffingGapModel = computeTaGapModel(STAFFING_RULES, staffingCandidates);
+  const staffingGapModel = computeTaGapModel(STAFFING_RULES, staffingCandidates, { layout: normalized });
   const staffingCoverageByEntity = new Map(
     staffingGapModel.coverage.map((entry) => [`${entry.entityType}:${entry.entityId}`, entry]),
   );
@@ -399,6 +470,7 @@ export function buildStudioOrgHealthModel(layout = {}, agentSnapshots = []) {
       department,
       departmentDesks,
       coverageEntry,
+      plannerCoverage: staffingGapModel.plannerCoverage || null,
       controlDesk,
       controlDeskStatus,
       blockedDeskCount: blockedDesks.length,
@@ -848,6 +920,8 @@ export function normalizeStudioLayout(layout = {}) {
     department.deskIds = [...new Set([...(department.deskIds || []), ...memberIds])].filter((deskId) => desks[deskId]?.departmentId === department.id);
   });
 
+  const organization = buildStudioOrganizationModel(departments, desks, String(layout.controlCentreDeskId || CONTROL_CENTRE_DESK_ID));
+
   const staffingCandidates = Object.values(desks)
     .filter((desk) => Boolean(desk.liveAgent))
     .map((desk) => ({
@@ -858,7 +932,7 @@ export function normalizeStudioLayout(layout = {}) {
       assignedModel: desk.liveAgent?.model || '',
       contractLocked: true,
     }));
-  const staffingGapModel = computeTaGapModel(STAFFING_RULES, staffingCandidates);
+  const staffingGapModel = computeTaGapModel(STAFFING_RULES, staffingCandidates, { layout: { organization } });
   const staffingCoverageByEntity = new Map(
     staffingGapModel.coverage.map((entry) => [`${entry.entityType}:${entry.entityId}`, entry]),
   );
@@ -957,6 +1031,7 @@ export function normalizeStudioLayout(layout = {}) {
     controlCentreDeskId: String(layout.controlCentreDeskId || defaults.controlCentreDeskId || CONTROL_CENTRE_DESK_ID),
     departments: enrichedDepartments,
     desks: Object.fromEntries(enrichedDesks.map((desk) => [desk.id, desk])),
+    organization,
   };
 }
 

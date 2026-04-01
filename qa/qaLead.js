@@ -4,6 +4,7 @@ const taQA = require('./desks/taQA');
 const { TEST_METRIC_DEFINITIONS } = require('./testMetricDefinitions');
 const uiQA = require('./desks/uiQA');
 const { closeContext, createContext } = require('./shared/debugSuite');
+const { buildQATestRegistry } = require('./testRegistry');
 
 const DESK_RUNNERS = [
   plannerQA,
@@ -44,15 +45,29 @@ async function runAll(options = {}) {
       desks.push(await runner.runTests(context));
     }
     const failures = collectFailures(desks);
-    return {
+    const finishedAt = new Date().toISOString();
+    const baseReport = {
       status: failures.length ? 'fail' : 'pass',
       summary: buildSummary(desks, failures),
       failures,
       desks,
       metricDefinitions: TEST_METRIC_DEFINITIONS,
+      generatedAt: finishedAt,
+      generatedBy: {
+        system: 'qa',
+        module: 'qa/qaLead.runAll',
+      },
       startedAt: context.startedAt,
-      finishedAt: new Date().toISOString(),
+      finishedAt,
       durationMs: Date.now() - context.startedMs,
+    };
+    const testRegistry = buildQATestRegistry({
+      rootPath: context.rootPath,
+      structuredReport: baseReport,
+    });
+    return {
+      ...baseReport,
+      testRegistry,
     };
   } finally {
     console.debug = originalConsoleDebug;

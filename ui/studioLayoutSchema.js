@@ -11,6 +11,13 @@ const PLANNER_CANONICAL_IDS = Object.freeze({
   modelProfileId: 'model-profile.planner-default',
 });
 
+const QA_LEAD_CANONICAL_IDS = Object.freeze({
+  deskId: 'qa-lead',
+  roleId: 'qa-lead',
+  agentId: 'qa-lead',
+  modelProfileId: 'model-profile.default.qa-lead',
+});
+
 const CORE_DESK_AGENT_DEFAULTS = {
   'context-manager': ['context-manager'],
   planner: ['planner'],
@@ -486,6 +493,7 @@ function normalizeAgentRelationshipRecord(agentId = '', desk = {}) {
   const roleId = String(desk?.staffing?.roleId || normalizedAgentId).trim() || normalizedAgentId;
   return {
     id: normalizedAgentId,
+    agentId: normalizedAgentId,
     roleId,
     deskId: desk?.id ? String(desk.id).trim() : null,
     departmentId: desk?.departmentId ? String(desk.departmentId).trim() : null,
@@ -803,6 +811,245 @@ function buildDepartmentOrganizationModel(departments = [], desks = {}, controlC
       agentId: PLANNER_CANONICAL_IDS.agentId,
       modelProfileId: PLANNER_CANONICAL_IDS.modelProfileId,
     },
+    qaLead: normalizeAgentRelationshipRecord(QA_LEAD_CANONICAL_IDS.agentId, desksModel[QA_LEAD_CANONICAL_IDS.deskId] || {}),
+  };
+}
+
+function buildCanonicalPlannerCoverageTruth(layout = {}) {
+  const normalized = normalizeStudioLayoutSchema(layout);
+  const organization = normalized.organization && typeof normalized.organization === 'object'
+    ? normalized.organization
+    : {};
+  const canonical = {
+    deskId: PLANNER_CANONICAL_IDS.deskId,
+    roleId: PLANNER_CANONICAL_IDS.roleId,
+    agentId: PLANNER_CANONICAL_IDS.agentId,
+    modelProfileId: PLANNER_CANONICAL_IDS.modelProfileId,
+    departmentId: 'dept-delivery',
+    requiredLeadSeatId: 'planner',
+  };
+  const plannerRecord = organization.planner && typeof organization.planner === 'object'
+    ? organization.planner
+    : null;
+  const deliveryDepartment = organization.departments?.[canonical.departmentId] || null;
+  const plannerDesk = organization.desks?.[canonical.deskId] || null;
+  const plannerAgent = organization.agents?.[canonical.agentId] || null;
+
+  const predicates = [
+    {
+      key: 'planner-canonical-record',
+      label: 'Canonical planner record exists',
+      passed: Boolean(
+        plannerRecord
+        && plannerRecord.deskId === canonical.deskId
+        && plannerRecord.roleId === canonical.roleId
+        && plannerRecord.agentId === canonical.agentId
+        && plannerRecord.modelProfileId === canonical.modelProfileId,
+      ),
+      expected: canonical,
+      actual: plannerRecord ? { ...plannerRecord } : null,
+      source: 'organization.planner',
+    },
+    {
+      key: 'planner-desk-present',
+      label: 'Planner desk exists',
+      passed: Boolean(plannerDesk),
+      expected: canonical.deskId,
+      actual: plannerDesk ? {
+        id: plannerDesk.id,
+        departmentId: plannerDesk.departmentId || plannerDesk.ownerDepartmentId || null,
+        assignedAgentIds: uniqueStrings(plannerDesk.assignedAgentIds || []),
+        staffing: cloneJson(plannerDesk.staffing, null),
+      } : null,
+      source: 'organization.desks.planner',
+    },
+    {
+      key: 'planner-desk-owned-by-delivery',
+      label: 'Planner desk is owned by delivery',
+      passed: Boolean(plannerDesk && (plannerDesk.departmentId === canonical.departmentId || plannerDesk.ownerDepartmentId === canonical.departmentId)),
+      expected: canonical.departmentId,
+      actual: plannerDesk?.departmentId || plannerDesk?.ownerDepartmentId || null,
+      source: 'organization.desks.planner.departmentId',
+    },
+    {
+      key: 'planner-desk-has-planner-agent',
+      label: 'Planner desk has the planner agent assigned',
+      passed: Boolean(plannerDesk && Array.isArray(plannerDesk.assignedAgentIds) && plannerDesk.assignedAgentIds.includes(canonical.agentId)),
+      expected: canonical.agentId,
+      actual: uniqueStrings(plannerDesk?.assignedAgentIds || []),
+      source: 'organization.desks.planner.assignedAgentIds',
+    },
+    {
+      key: 'planner-agent-present',
+      label: 'Planner agent exists',
+      passed: Boolean(plannerAgent),
+      expected: canonical.agentId,
+      actual: plannerAgent ? {
+        id: plannerAgent.id,
+        deskId: plannerAgent.deskId || null,
+        departmentId: plannerAgent.departmentId || null,
+        modelProfileId: plannerAgent.modelProfileId || null,
+      } : null,
+      source: 'organization.agents.planner',
+    },
+    {
+      key: 'planner-agent-model-profile',
+      label: 'Planner agent uses the canonical model profile',
+      passed: Boolean(plannerAgent && plannerAgent.modelProfileId === canonical.modelProfileId),
+      expected: canonical.modelProfileId,
+      actual: plannerAgent?.modelProfileId || null,
+      source: 'organization.agents.planner.modelProfileId',
+    },
+    {
+      key: 'delivery-lead-seat-is-planner',
+      label: 'Delivery lead seat is planner',
+      passed: Boolean(deliveryDepartment && deliveryDepartment.staffing && deliveryDepartment.staffing.requiredLeadSeatId === canonical.requiredLeadSeatId),
+      expected: canonical.requiredLeadSeatId,
+      actual: deliveryDepartment?.staffing?.requiredLeadSeatId || null,
+      source: 'organization.departments.dept-delivery.staffing.requiredLeadSeatId',
+    },
+    {
+      key: 'delivery-department-includes-planner-desk',
+      label: 'Delivery department includes the planner desk',
+      passed: Boolean(deliveryDepartment && Array.isArray(deliveryDepartment.deskIds) && deliveryDepartment.deskIds.includes(canonical.deskId)),
+      expected: canonical.deskId,
+      actual: uniqueStrings(deliveryDepartment?.deskIds || []),
+      source: 'organization.departments.dept-delivery.deskIds',
+    },
+  ];
+
+  const failedPredicates = predicates.filter((predicate) => !predicate.passed);
+  return {
+    canonical,
+    organization,
+    plannerRecord,
+    deliveryDepartment,
+    plannerDesk,
+    plannerAgent,
+    predicates,
+    failedPredicates,
+    covered: failedPredicates.length === 0,
+    status: failedPredicates.length === 0 ? 'covered' : 'blocked',
+    failedPredicateLabels: failedPredicates.map((predicate) => predicate.label),
+  };
+}
+
+function buildCanonicalQALeadCoverageTruth(layout = {}) {
+  const normalized = normalizeStudioLayoutSchema(layout);
+  const organization = normalized.organization && typeof normalized.organization === 'object'
+    ? normalized.organization
+    : {};
+  const canonical = {
+    deskId: QA_LEAD_CANONICAL_IDS.deskId,
+    roleId: QA_LEAD_CANONICAL_IDS.roleId,
+    agentId: QA_LEAD_CANONICAL_IDS.agentId,
+    modelProfileId: QA_LEAD_CANONICAL_IDS.modelProfileId,
+    departmentId: 'dept-quality',
+    requiredLeadSeatId: 'qa-lead',
+  };
+  const qaLeadRecord = organization.qaLead && typeof organization.qaLead === 'object'
+    ? organization.qaLead
+    : null;
+  const qualityDepartment = organization.departments?.[canonical.departmentId] || null;
+  const qaLeadDesk = organization.desks?.[canonical.deskId] || null;
+  const qaLeadAgent = organization.agents?.[canonical.agentId] || null;
+
+  const predicates = [
+    {
+      key: 'qa-lead-canonical-record',
+      label: 'Canonical QA lead record exists',
+      passed: Boolean(
+        qaLeadRecord
+        && qaLeadRecord.deskId === canonical.deskId
+        && qaLeadRecord.roleId === canonical.roleId
+        && qaLeadRecord.agentId === canonical.agentId
+        && qaLeadRecord.modelProfileId === canonical.modelProfileId,
+      ),
+      expected: canonical,
+      actual: qaLeadRecord ? { ...qaLeadRecord } : null,
+      source: 'organization.qaLead',
+    },
+    {
+      key: 'qa-lead-desk-present',
+      label: 'QA lead desk exists',
+      passed: Boolean(qaLeadDesk),
+      expected: canonical.deskId,
+      actual: qaLeadDesk ? {
+        id: qaLeadDesk.id,
+        departmentId: qaLeadDesk.departmentId || qaLeadDesk.ownerDepartmentId || null,
+        assignedAgentIds: uniqueStrings(qaLeadDesk.assignedAgentIds || []),
+        staffing: cloneJson(qaLeadDesk.staffing, null),
+      } : null,
+      source: 'organization.desks.qa-lead',
+    },
+    {
+      key: 'qa-lead-desk-owned-by-quality',
+      label: 'QA lead desk is owned by quality',
+      passed: Boolean(qaLeadDesk && (qaLeadDesk.departmentId === canonical.departmentId || qaLeadDesk.ownerDepartmentId === canonical.departmentId)),
+      expected: canonical.departmentId,
+      actual: qaLeadDesk?.departmentId || qaLeadDesk?.ownerDepartmentId || null,
+      source: 'organization.desks.qa-lead.departmentId',
+    },
+    {
+      key: 'qa-lead-desk-has-qa-lead-agent',
+      label: 'QA lead desk has the QA lead agent assigned',
+      passed: Boolean(qaLeadDesk && Array.isArray(qaLeadDesk.assignedAgentIds) && qaLeadDesk.assignedAgentIds.includes(canonical.agentId)),
+      expected: canonical.agentId,
+      actual: uniqueStrings(qaLeadDesk?.assignedAgentIds || []),
+      source: 'organization.desks.qa-lead.assignedAgentIds',
+    },
+    {
+      key: 'qa-lead-agent-present',
+      label: 'QA lead agent exists',
+      passed: Boolean(qaLeadAgent),
+      expected: canonical.agentId,
+      actual: qaLeadAgent ? {
+        id: qaLeadAgent.id,
+        deskId: qaLeadAgent.deskId || null,
+        departmentId: qaLeadAgent.departmentId || null,
+        modelProfileId: qaLeadAgent.modelProfileId || null,
+      } : null,
+      source: 'organization.agents.qa-lead',
+    },
+    {
+      key: 'qa-lead-agent-model-profile',
+      label: 'QA lead agent uses the canonical model profile',
+      passed: Boolean(qaLeadAgent && qaLeadAgent.modelProfileId === canonical.modelProfileId),
+      expected: canonical.modelProfileId,
+      actual: qaLeadAgent?.modelProfileId || null,
+      source: 'organization.agents.qa-lead.modelProfileId',
+    },
+    {
+      key: 'quality-lead-seat-is-qa-lead',
+      label: 'Quality lead seat is QA lead',
+      passed: Boolean(qualityDepartment && qualityDepartment.staffing && qualityDepartment.staffing.requiredLeadSeatId === canonical.requiredLeadSeatId),
+      expected: canonical.requiredLeadSeatId,
+      actual: qualityDepartment?.staffing?.requiredLeadSeatId || null,
+      source: 'organization.departments.dept-quality.staffing.requiredLeadSeatId',
+    },
+    {
+      key: 'quality-department-includes-qa-lead-desk',
+      label: 'Quality department includes the QA lead desk',
+      passed: Boolean(qualityDepartment && Array.isArray(qualityDepartment.deskIds) && qualityDepartment.deskIds.includes(canonical.deskId)),
+      expected: canonical.deskId,
+      actual: uniqueStrings(qualityDepartment?.deskIds || []),
+      source: 'organization.departments.dept-quality.deskIds',
+    },
+  ];
+
+  const failedPredicates = predicates.filter((predicate) => !predicate.passed);
+  return {
+    canonical,
+    organization,
+    qaLeadRecord,
+    qualityDepartment,
+    qaLeadDesk,
+    qaLeadAgent,
+    predicates,
+    failedPredicates,
+    covered: failedPredicates.length === 0,
+    status: failedPredicates.length === 0 ? 'covered' : 'blocked',
+    failedPredicateLabels: failedPredicates.map((predicate) => predicate.label),
   };
 }
 
@@ -1367,10 +1614,13 @@ module.exports = {
   STUDIO_TEAM_BOARD_FRAME,
   CONTROL_CENTRE_DESK_ID,
   PLANNER_CANONICAL_IDS,
+  QA_LEAD_CANONICAL_IDS,
   DEPARTMENT_RELATIONSHIP_TYPES,
   CORE_DESK_AGENT_DEFAULTS,
   createDefaultStudioLayoutSchema,
   normalizeStudioLayoutSchema,
+  buildCanonicalPlannerCoverageTruth,
+  buildCanonicalQALeadCoverageTruth,
   buildDepartmentOrganizationModel,
   listStudioDeskIds,
   hasStudioDesk,
