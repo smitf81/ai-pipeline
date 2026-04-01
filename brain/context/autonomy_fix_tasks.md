@@ -3,7 +3,7 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-03-31T14:17:42.038Z
+Updated: 2026-04-01T08:45:21.784Z
 
 ### 0001-Blender-UE-import-hygiene
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -24,6 +24,7 @@ Updated: 2026-03-31T14:17:42.038Z
  M data/spatial/history.json
  M data/spatial/pages.json
  M data/spatial/workspace.json
+ M ui/server.js
 
 ### 10000
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -80,3 +81,4 @@ Updated: 2026-03-31T14:17:42.038Z
  M data/spatial/history.json
  M data/spatial/pages.json
  M data/spatial/workspace.json
+ M ui/server.js

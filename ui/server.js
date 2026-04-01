@@ -2101,9 +2101,9 @@ function findPendingCtoAction(history = [], confirmActionId = '') {
 
 function buildCtoAvailableActions({ text = '', history = [], context = null, workspace = null } = {}) {
   const normalizedText = String(text || '').trim().toLowerCase();
-  const pending = findPendingCtoAction(history);
-  if (pending) {
-    return [pending];
+  const pendingAction = findPendingCtoAction(history);
+  if (pendingAction) {
+    return [pendingAction];
   }
 
   const pipeline = normalizeCtoPipelineState(
@@ -2117,14 +2117,14 @@ function buildCtoAvailableActions({ text = '', history = [], context = null, wor
   const deskLabel = desk?.label || currentRole.deskLabel;
   const action = buildCtoActionForPipeline(pipeline, context, normalizedText);
   if (!action) return [];
-  const pending = findPendingCtoAction(history);
-  if (pending && pending.id === action.id) {
+  const matchedPendingAction = findPendingCtoAction(history);
+  if (matchedPendingAction && matchedPendingAction.id === action.id) {
     return [{
       ...action,
-      ...pending,
+      ...matchedPendingAction,
       params: action.params,
-      status: pending.status || action.status,
-      reason: pending.reason || action.reason,
+      status: matchedPendingAction.status || action.status,
+      reason: matchedPendingAction.reason || action.reason,
     }];
   }
 

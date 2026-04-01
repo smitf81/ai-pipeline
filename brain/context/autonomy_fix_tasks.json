@@ -1,6 +1,6 @@
 {
   "version": "ace/autonomy-policy.v0",
-  "updatedAt": "2026-03-31T14:17:42.038Z",
+  "updatedAt": "2026-04-01T08:45:21.784Z",
   "entries": [
     {
       "version": "ace/autonomy-policy.v0",
@@ -13,7 +13,7 @@
       "decision": "blocked",
       "status": "blocked",
       "reasons": [
-        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json"
+        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json\n M ui/server.js"
       ],
       "policy_rule_hits": [
         "project_resolved",
@@ -55,10 +55,10 @@
       "consumedAt": null,
       "resolvedAt": null,
       "reEscalatedAt": null,
-      "blockedAt": "2026-03-31T14:17:42.038Z",
-      "updatedAt": "2026-03-31T14:17:42.038Z",
+      "blockedAt": "2026-04-01T08:45:21.784Z",
+      "updatedAt": "2026-04-01T08:45:21.784Z",
       "queuedAt": "2026-03-29T10:12:42.205Z",
-      "createdAt": "2026-03-31T14:17:42.038Z"
+      "createdAt": "2026-04-01T08:45:21.784Z"
     },
     {
       "version": "ace/autonomy-policy.v0",
@@ -129,7 +129,7 @@
       "decision": "blocked",
       "status": "blocked",
       "reasons": [
-        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json"
+        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json\n M ui/server.js"
       ],
       "policy_rule_hits": [
         "project_resolved",
@@ -171,10 +171,10 @@
       "consumedAt": null,
       "resolvedAt": null,
       "reEscalatedAt": null,
-      "blockedAt": "2026-03-31T14:17:40.825Z",
-      "updatedAt": "2026-03-31T14:17:40.826Z",
+      "blockedAt": "2026-04-01T08:45:20.696Z",
+      "updatedAt": "2026-04-01T08:45:20.697Z",
       "queuedAt": "2026-03-29T08:30:24.022Z",
-      "createdAt": "2026-03-31T14:17:40.826Z"
+      "createdAt": "2026-04-01T08:45:20.696Z"
     }
   ]
 }

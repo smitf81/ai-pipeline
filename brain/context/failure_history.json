@@ -1,21 +1,21 @@
 {
   "version": "ace/failure-memory.v1",
-  "updated_at": "2026-03-31T14:30:38.276Z",
+  "updated_at": "2026-04-01T08:49:38.927Z",
   "entries": [
     {
       "failure_key": "unknown_failure",
       "stage": "planner",
       "agent_id": "planner",
       "agent_version": "ace/agent-attribution.v0",
-      "count": 30795,
+      "count": 38802,
       "first_seen": "2026-03-29T10:12:36.572Z",
-      "last_seen": "2026-03-31T14:30:38.276Z",
+      "last_seen": "2026-04-01T08:49:38.927Z",
       "example_messages": [
-        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/cto-diagnostics.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json",
-        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json",
-        "blocked | M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json",
-        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/pages.json\n M data/spatial/workspace.json",
-        "blocked | M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/pages.json\n M data/spatial/workspace.json"
+        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/cto-diagnostics.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json\n M ui/server.js",
+        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json\n M ui/server.js",
+        "blocked | M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json\n M ui/server.js",
+        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/workspace.json\n M ui/server.js",
+        "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/workspace.json\n M ui/server.js"
       ],
       "related_tools": [
         "node",
@@ -36,12 +36,12 @@
         "dave",
         "builder"
       ],
-      "source_count": 30795,
+      "source_count": 38802,
       "failure_class": "panel_degraded",
       "last_error": {
-        "timestamp": "2026-03-31T14:30:38.276Z",
-        "message": "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/cto-diagnostics.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json",
-        "stack": "Error: M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/cto-diagnostics.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json\n    at createPreLlmBlockedResult (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\server.js:6468:37)\n    at maybeRunPlannerWorker (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\server.js:5756:12)\n    at pumpAutomatedTeamBoardAsync (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\server.js:8287:30)\n    at C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\server.js:10281:33",
+        "timestamp": "2026-04-01T08:49:38.927Z",
+        "message": "M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/cto-diagnostics.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json\n M ui/server.js",
+        "stack": "Error: M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/cto-diagnostics.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/workspace.json\n M ui/server.js\n    at createPreLlmBlockedResult (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\server.js:7261:37)\n    at maybeRunPlannerWorker (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\server.js:6549:12)\n    at pumpAutomatedTeamBoardAsync (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\server.js:9080:30)\n    at refreshSpatialRuntime (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\server.js:5921:76)\n    at C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\server.js:9945:18\n    at Layer.handleRequest (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\node_modules\\router\\lib\\layer.js:152:17)\n    at next (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\node_modules\\router\\lib\\route.js:157:13)\n    at Route.dispatch (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\node_modules\\router\\lib\\route.js:117:3)\n    at handle (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\node_modules\\router\\index.js:435:11)\n    at Layer.handleRequest (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\node_modules\\router\\lib\\layer.js:152:17)",
         "failure_class": "panel_degraded",
         "route": "/api/spatial/cto/chat",
         "method": "POST",

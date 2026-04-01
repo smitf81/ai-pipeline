@@ -3,16 +3,16 @@
 Deterministic failure tracking for repeated recognisable failures. Candidate fixes are review-only.
 
 Version: ace/failure-memory.v1
-Updated: 2026-03-31T14:30:38.276Z
+Updated: 2026-04-01T08:49:38.927Z
 
 ### unknown_failure
-- Count: 30795
+- Count: 38802
 - Stage: planner
 - Agent: planner (ace/agent-attribution.v0)
 - First seen: 2026-03-29T10:12:36.572Z
-- Last seen: 2026-03-31T14:30:38.276Z
+- Last seen: 2026-04-01T08:49:38.927Z
 - Failure class: panel_degraded
-- Last error timestamp: 2026-03-31T14:30:38.276Z
+- Last error timestamp: 2026-04-01T08:49:38.927Z
 - Last error: M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
@@ -25,6 +25,7 @@ Updated: 2026-03-31T14:30:38.276Z
  M data/spatial/history.json
  M data/spatial/pages.json
  M data/spatial/workspace.json
+ M ui/server.js
 - Related tools: node, autonomy-policy, git
 - Related stages: planner, runtime, builder-preflight
 - Related projects: ace-self
@@ -42,6 +43,7 @@ Updated: 2026-03-31T14:30:38.276Z
  M data/spatial/history.json
  M data/spatial/pages.json
  M data/spatial/workspace.json
+ M ui/server.js
   - M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
@@ -53,6 +55,7 @@ Updated: 2026-03-31T14:30:38.276Z
  M data/spatial/history.json
  M data/spatial/pages.json
  M data/spatial/workspace.json
+ M ui/server.js
   - blocked | M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
@@ -64,6 +67,7 @@ Updated: 2026-03-31T14:30:38.276Z
  M data/spatial/history.json
  M data/spatial/pages.json
  M data/spatial/workspace.json
+ M ui/server.js
   - M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
@@ -72,9 +76,10 @@ Updated: 2026-03-31T14:30:38.276Z
  M brain/context/known_fixes_candidates.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
- M data/spatial/pages.json
+ M data/spatial/history.json
  M data/spatial/workspace.json
-  - blocked | M brain/context/autonomy_fix_tasks.json
+ M ui/server.js
+  - M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
@@ -82,8 +87,8 @@ Updated: 2026-03-31T14:30:38.276Z
  M brain/context/known_fixes_candidates.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
- M data/spatial/pages.json
  M data/spatial/workspace.json
+ M ui/server.js
 
 ### git_apply_check_failed
 - Count: 36
