@@ -1,7 +1,26 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-04-01T18:00:52.838Z",
+  "updated_at": "2026-04-01T18:15:25.271Z",
   "entries": [
+    {
+      "id": "cto_diag_1775067325270",
+      "timestamp": "2026-04-01T18:15:25.270Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "CTO action is targeting qa-lead, but the pipeline is currently on planner.",
+      "failureKind": "contract",
+      "runId": null,
+      "httpStatus": null,
+      "actionId": "hire-role",
+      "availableActionIds": [
+        "hire-role"
+      ]
+    },
     {
       "id": "cto_diag_1775066452838",
       "timestamp": "2026-04-01T18:00:52.838Z",
@@ -15,7 +34,7 @@
       "reason": "CTO action is targeting qa-lead, but the pipeline is currently on planner.",
       "failureKind": "contract",
       "runId": null,
-      "httpStatus": null,
+      "httpStatus": 0,
       "actionId": "hire-role",
       "availableActionIds": [
         "hire-role"

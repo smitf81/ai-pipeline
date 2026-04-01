@@ -174,6 +174,32 @@ export default async function runServerTests() {
   });
   assert.equal(qaActions.some((action) => action.kind === 'hire-role' && action.targetDeskId === 'qa-lead'), false);
   assert.equal(qaActions.some((action) => action.kind === 'request-qa' && action.targetDeskId === 'qa-lead'), true);
+  const staleQaHireHistory = normalizeCtoChatHistory([
+    {
+      role: 'assistant',
+      text: 'A QA Lead hire is currently pending before we can proceed.',
+      action: {
+        id: 'hire-role',
+        kind: 'hire-role',
+        label: 'Hire QA Lead coverage',
+        targetDeskId: 'qa-lead',
+        targetDeskLabel: 'QA Lead',
+        available: true,
+        requiresConfirmation: true,
+        status: 'pending',
+        reason: 'QA Lead coverage is needed before the pipeline can continue.',
+        gapDescription: 'QA Lead coverage is needed.',
+      },
+    },
+  ]);
+  const reconciledQaActions = buildCtoAvailableActions({
+    text: 'run a QA smoke test',
+    history: staleQaHireHistory,
+    context: ctoContext,
+  });
+  assert.equal(reconciledQaActions.length, 1);
+  assert.equal(reconciledQaActions[0].id, 'request-qa');
+  assert.equal(reconciledQaActions[0].targetDeskId, 'qa-lead');
   const originalCtoEnv = {
     backend: process.env.ACE_CTO_BACKEND,
     model: process.env.ACE_CTO_MODEL,
@@ -411,6 +437,7 @@ export default async function runServerTests() {
       const body = JSON.parse(options.body || '{}');
       assert.match(body.prompt, /request-qa/);
       assert.doesNotMatch(body.prompt, /Hire QA Lead coverage/);
+      assert.doesNotMatch(body.prompt, /A QA Lead hire is currently pending/i);
       return {
         ok: true,
         json: async () => ({
@@ -433,7 +460,7 @@ export default async function runServerTests() {
   };
   const qaSmokeChatResult = await runCtoGovernanceChat({
     text: 'run a QA smoke test',
-    history: [],
+    history: staleQaHireHistory,
   });
   assert.equal(qaSmokeChatResult.ok, true);
   assert.equal(qaSmokeChatResult.status, 'live');

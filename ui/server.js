@@ -1812,17 +1812,6 @@ function buildCtoBlockedGate(code = '', label = '', reason = '') {
   };
 }
 
-function resolveCtoCoverageTruthForDesk(context = null, deskId = '') {
-  const normalizedDeskId = String(deskId || '').trim();
-  if (normalizedDeskId === 'planner') {
-    return context?.ta?.plannerCoverage || null;
-  }
-  if (normalizedDeskId === 'qa-lead') {
-    return context?.ta?.qaLeadCoverage || null;
-  }
-  return null;
-}
-
 function normalizeCtoGateList(gates = []) {
   return Array.isArray(gates)
     ? gates
@@ -1906,8 +1895,7 @@ function buildCtoActionForPipeline(pipeline = null, context = null, text = '') {
   );
   const layoutPlannerCoverage = buildCanonicalPlannerCoverageTruth(canonicalLayout);
   const layoutQaLeadCoverage = buildCanonicalQALeadCoverageTruth(canonicalLayout);
-  const coverageTruth = resolveCtoCoverageTruthForDesk(context, role.deskId)
-    || (role.deskId === 'qa-lead' ? layoutQaLeadCoverage : layoutPlannerCoverage);
+  const coverageTruth = role.deskId === 'qa-lead' ? layoutQaLeadCoverage : layoutPlannerCoverage;
   const plannerCoverage = context?.ta?.plannerCoverage && typeof context.ta.plannerCoverage === 'object'
     ? context.ta.plannerCoverage
     : layoutPlannerCoverage;
@@ -2201,7 +2189,9 @@ async function buildCtoGovernanceContext(workspace = null) {
     workspace: workspace || readSpatialWorkspace(),
   }));
   const taState = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
-  const taPayload = await buildTaDepartmentPayload(taState);
+  const taPayload = await buildTaDepartmentPayload(taState, {
+    workspace: runtimeWorkspace,
+  });
   const desks = CTO_DESK_IDS.map((deskId) => {
     const payload = buildDeskPropertiesPayload(runtimeWorkspace, deskId);
     const taCoverage = Array.isArray(taPayload.coverage)
@@ -2327,31 +2317,70 @@ function findPendingCtoAction(history = [], confirmActionId = '') {
   return null;
 }
 
+function resolveCanonicalPendingCtoAction({ history = [], context = null, workspace = null, text = '', confirmActionId = '' } = {}) {
+  const normalizedText = String(text || '').trim().toLowerCase();
+  const pipelineContext = {
+    ...(context && typeof context === 'object' ? context : {}),
+    workspace: workspace || context?.workspace || null,
+  };
+  const pipeline = normalizeCtoPipelineState(
+    pipelineContext.workspace?.studio?.ctoPipeline || pipelineContext.pipeline || null,
+    { text: normalizedText },
+  );
+  const canonicalAction = buildCtoActionForPipeline(pipeline, pipelineContext, normalizedText);
+  if (!canonicalAction) return null;
+
+  const historicalAction = findPendingCtoAction(history, confirmActionId);
+  if (!historicalAction || historicalAction.id !== canonicalAction.id) {
+    return null;
+  }
+
+  return {
+    ...canonicalAction,
+    status: historicalAction.status || canonicalAction.status,
+    requiresConfirmation: historicalAction.requiresConfirmation !== false,
+  };
+}
+
+function reconcileCtoHistoryAgainstCanonicalState(history = [], { context = null, workspace = null, text = '' } = {}) {
+  const canonicalPendingAction = resolveCanonicalPendingCtoAction({
+    history,
+    context,
+    workspace,
+    text,
+  });
+  return (Array.isArray(history) ? history : []).map((entry) => {
+    if (!entry?.action) return entry;
+    const action = normalizeCtoActionRecord(entry.action);
+    if (!action) return { ...entry, action: null };
+    const isPendingConfirmation = action.available && action.requiresConfirmation && action.status === 'pending';
+    if (!isPendingConfirmation) return entry;
+    if (!canonicalPendingAction || action.id !== canonicalPendingAction.id) {
+      return {
+        ...entry,
+        action: null,
+      };
+    }
+    return {
+      ...entry,
+      action: canonicalPendingAction,
+    };
+  });
+}
+
 function buildCtoAvailableActions({ text = '', history = [], context = null, workspace = null } = {}) {
   const normalizedText = String(text || '').trim().toLowerCase();
   const pipelineContext = {
     ...(context && typeof context === 'object' ? context : {}),
     workspace: workspace || context?.workspace || null,
   };
-  const pendingAction = findPendingCtoAction(history);
+  const pendingAction = resolveCanonicalPendingCtoAction({
+    history,
+    context: pipelineContext,
+    workspace: pipelineContext.workspace,
+    text: normalizedText,
+  });
   if (pendingAction) {
-    const currentPipeline = normalizeCtoPipelineState(
-      pipelineContext.workspace?.studio?.ctoPipeline || pipelineContext.pipeline || null,
-      { text: normalizedText },
-    );
-    const canonicalAction = buildCtoActionForPipeline(currentPipeline, pipelineContext, normalizedText);
-    if (canonicalAction) {
-      if (canonicalAction.id !== pendingAction.id) {
-        return [canonicalAction];
-      }
-      return [{
-        ...canonicalAction,
-        ...pendingAction,
-        params: canonicalAction.params,
-        reason: canonicalAction.reason || pendingAction.reason,
-        gapDescription: canonicalAction.gapDescription || pendingAction.gapDescription,
-      }];
-    }
     return [pendingAction];
   }
 
@@ -2366,17 +2395,6 @@ function buildCtoAvailableActions({ text = '', history = [], context = null, wor
   const deskLabel = desk?.label || currentRole.deskLabel;
   const action = buildCtoActionForPipeline(pipeline, pipelineContext, normalizedText);
   if (!action) return [];
-  const matchedPendingAction = findPendingCtoAction(history);
-  if (matchedPendingAction && matchedPendingAction.id === action.id) {
-    return [{
-      ...action,
-      ...matchedPendingAction,
-      params: action.params,
-      status: matchedPendingAction.status || action.status,
-      reason: action.reason || matchedPendingAction.reason,
-      gapDescription: action.gapDescription || matchedPendingAction.gapDescription,
-    }];
-  }
 
   const stageReasons = {
     'hire-role': `${deskLabel} coverage is missing or not yet confirmed in the pipeline.`,
@@ -2569,7 +2587,10 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           }),
         },
       }));
-      const department = await buildTaDepartmentPayload(normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState()));
+      const department = await buildTaDepartmentPayload(
+        normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState()),
+        { workspace: nextWorkspace },
+      );
       return {
         ok: true,
         status: 'executed',
@@ -3231,13 +3252,24 @@ async function runCtoGovernanceChat({
   }
   let currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
   let context = await buildCtoGovernanceContext(currentWorkspace);
+  const reconciledHistory = reconcileCtoHistoryAgainstCanonicalState(normalizedHistory, {
+    context,
+    workspace: currentWorkspace,
+    text: promptText,
+  });
   const availableActions = buildCtoAvailableActions({
     text: promptText,
-    history: normalizedHistory,
+    history: reconciledHistory,
     context,
     workspace: currentWorkspace,
   });
-  const pendingAction = findPendingCtoAction(normalizedHistory, confirmActionId);
+  const pendingAction = resolveCanonicalPendingCtoAction({
+    history: reconciledHistory,
+    context,
+    workspace: currentWorkspace,
+    text: promptText,
+    confirmActionId,
+  });
   const activeAction = availableActions[0] || null;
   const shouldExecuteAction = Boolean(pendingAction)
     && (!activeAction || pendingAction.id === activeAction.id)
@@ -3255,7 +3287,7 @@ async function runCtoGovernanceChat({
   }
   const postExecutionAvailableActions = buildCtoAvailableActions({
     text: promptText,
-    history: normalizedHistory,
+    history: reconciledHistory,
     context,
     workspace: currentWorkspace,
   });
@@ -3293,7 +3325,7 @@ async function runCtoGovernanceChat({
   const runId = `cto-chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const prompt = buildCtoChatPrompt({
     text: promptText,
-    history: normalizedHistory,
+    history: reconciledHistory,
     context,
     availableActions: postExecutionAvailableActions,
     execution,
@@ -4475,10 +4507,14 @@ function computeTaCoverage(hiredCandidates = []) {
   });
 }
 
-async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()) {
+async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState(), options = {}) {
   const normalizedState = normalizeTaDepartmentState(state);
   const staffingRules = await loadStaffingRulesModule();
-  const canonicalLayout = normalizeStudioLayoutSchema(createDefaultStudioLayoutSchema());
+  const canonicalLayout = normalizeStudioLayoutSchema(
+    options?.workspace?.studio?.layout
+    || options?.layout
+    || createDefaultStudioLayoutSchema(),
+  );
   const canonicalOrganization = canonicalLayout.organization || {};
   const canonicalDeskToDepartment = Object.fromEntries(
     Object.values(canonicalOrganization.desks || {}).map((desk) => [desk.id, desk.ownerDepartmentId || desk.departmentId || null]),
@@ -10417,7 +10453,9 @@ app.post('/api/ta/candidates', (req, res) => {
 app.get('/api/ta/department', async (req, res) => {
   try {
     const state = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
-    res.json(await buildTaDepartmentPayload(state));
+    res.json(await buildTaDepartmentPayload(state, {
+      workspace: readSpatialWorkspace(),
+    }));
   } catch (error) {
     res.status(500).json({ error: String(error.message || error) });
   }
@@ -10452,7 +10490,9 @@ app.post('/api/ta/hire', async (req, res) => {
     res.status(201).json({
       ok: true,
       hiredCandidate,
-      department: await buildTaDepartmentPayload(nextState),
+      department: await buildTaDepartmentPayload(nextState, {
+        workspace: readSpatialWorkspace(),
+      }),
     });
   } catch (error) {
     res.status(400).json({ error: String(error.message || error) });

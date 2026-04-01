@@ -3,7 +3,7 @@
 Review-only proposals promoted from repeated failures. These are not prompt-fed by default.
 
 Version: ace/known-fix-candidates.v1
-Updated: 2026-04-01T18:04:56.065Z
+Updated: 2026-04-01T21:57:08.230Z
 
 ### Rebuild or rebase a patch that no longer applies cleanly
 - Status: candidate

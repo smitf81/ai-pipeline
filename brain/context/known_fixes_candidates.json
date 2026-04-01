@@ -1,6 +1,6 @@
 {
   "version": "ace/known-fix-candidates.v1",
-  "updatedAt": "2026-04-01T18:04:56.065Z",
+  "updatedAt": "2026-04-01T21:57:08.230Z",
   "entries": [
     {
       "id": "candidate-git_apply_check_failed",
@@ -24,7 +24,7 @@
         "apply"
       ],
       "source": "failure-history",
-      "updatedAt": "2026-04-01T18:04:56.065Z",
+      "updatedAt": "2026-04-01T21:57:08.230Z",
       "status": "candidate",
       "failureKey": "git_apply_check_failed",
       "count": 38,
