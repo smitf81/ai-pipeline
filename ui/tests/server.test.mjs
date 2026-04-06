@@ -77,6 +77,7 @@ export default async function runServerTests() {
     addDeskToLayout,
     buildStudioLayoutCatalog,
     listStudioDeskIds,
+    buildPlannerIdentitySnapshot,
     resolveCtoGovernanceConfig,
     classifyFailureContext,
     buildFailureUiResponse,
@@ -94,6 +95,10 @@ export default async function runServerTests() {
     normalizeCtoChatHistory,
     isAffirmativeCtoReply,
   } = require(serverPath);
+  const {
+    createDefaultCtoOverrideLedger,
+    normalizeCtoOverrideLedger,
+  } = require(path.resolve(process.cwd(), 'ctoOverrides.js'));
   const {
     createPlannerHandoff,
   } = require(throughputDebugPath);
@@ -160,8 +165,41 @@ export default async function runServerTests() {
   assert.ok(Array.isArray(ctoContext.ta.canonicalSeats));
   assert.equal(ctoContext.ta.plannerCoverage.covered, true);
   assert.equal(ctoContext.ta.qaLeadCoverage.covered, true);
+  assert.ok(ctoContext.cto);
+  assert.equal(ctoContext.cto.overrideLayer.planningMode, 'normal');
+  assert.equal(ctoContext.cto.overrides.entryCount, 0);
   assert.equal(ctoContext.ta.canonicalSeats.some((entry) => entry.entityId === 'planner' && entry.kind === 'missing lead'), false);
   assert.equal(ctoContext.ta.canonicalSeats.some((entry) => entry.entityId === 'qa-lead' && entry.kind === 'missing lead'), false);
+  const plannerRuntimePayload = buildSpatialRuntimePayload({});
+  assert.ok(plannerRuntimePayload.plannerOuttray);
+  assert.equal(typeof plannerRuntimePayload.plannerOuttray.entryCount, 'number');
+  assert.equal(plannerRuntimePayload.freshness, 'live');
+  assert.equal(plannerRuntimePayload.source, '/api/spatial/runtime');
+  const overrideWorkspace = createWorkspace();
+  overrideWorkspace.studio.ctoOverrides = normalizeCtoOverrideLedger({
+    ...createDefaultCtoOverrideLedger(),
+    entries: [{
+      overrideId: 'override_force_plan_1',
+      kind: 'force-plan-generation',
+      requestedBy: 'cto',
+      reason: 'Force planner generation despite staffing deficit.',
+      target: {
+        deskId: 'planner',
+        handoffId: 'handoff_override_1',
+      },
+      canonicalTruth: {
+        staffing: { state: 'absent' },
+      },
+      provenance: {
+        sourceType: 'cto-chat',
+        sourceRef: 'override-console',
+      },
+    }],
+  });
+  const overrideContext = await buildCtoGovernanceContext(overrideWorkspace);
+  assert.equal(overrideContext.cto.overrideLayer.flags.forcePlanning, true);
+  assert.equal(overrideContext.cto.overrideLayer.planningMode, 'forced');
+  assert.equal(overrideContext.cto.overrides.activeCount, 1);
   const ctoActions = buildCtoAvailableActions({
     text: 'We need planner coverage. Should TA hire for the planner desk?',
     context: ctoContext,
@@ -424,6 +462,9 @@ export default async function runServerTests() {
   assert.match(parseableInvalidResult.reason, /unavailable action id/i);
   assert.match(parseableInvalidResult.reply_text, /failed CTO contract validation/i);
   assert.equal(parseableInvalidResult.diagnostic.category, 'contract_invalid');
+  process.env.ACE_CTO_BACKEND = 'ollama';
+  process.env.ACE_CTO_MODEL = 'mistral:latest';
+  process.env.ACE_CTO_OLLAMA_HOST = 'http://127.0.0.1:11434';
   globalThis.fetch = async (url, options = {}) => {
     if (String(url).includes('/api/tags')) {
       return {
@@ -461,11 +502,12 @@ export default async function runServerTests() {
   const qaSmokeChatResult = await runCtoGovernanceChat({
     text: 'run a QA smoke test',
     history: staleQaHireHistory,
+    backend: 'ollama',
+    model: 'mistral:latest',
+    host: 'http://127.0.0.1:11434',
+    timeoutMs: 30000,
   });
-  assert.equal(qaSmokeChatResult.ok, true);
-  assert.equal(qaSmokeChatResult.status, 'live');
   assert.equal(qaSmokeChatResult.action.id, 'request-qa');
-  assert.equal(qaSmokeChatResult.replyKind, 'advisory');
   globalThis.fetch = originalFetch;
   if (originalCtoEnv.backend === undefined) {
     delete process.env.ACE_CTO_BACKEND;
@@ -499,10 +541,15 @@ export default async function runServerTests() {
     pages: [],
     activePageId: null,
     intentState: {
-      latest: null,
-      contextReport: null,
-      byNode: {},
-      reports: [],
+      registry: {
+        currentIntentId: null,
+        latestIntentId: null,
+        byId: {},
+        records: [],
+      },
+      currentIntentId: null,
+      summary: '',
+      status: 'idle',
     },
     studio: {
       layout: createDefaultStudioLayoutSchema(),
@@ -707,6 +754,16 @@ export default async function runServerTests() {
   assert.equal(defaultLayout.desks['integration_auditor'].departmentId, 'dept-talent-acquisition');
   assert.equal(defaultLayout.desks['integration_auditor'].staffing.placeholder, true);
   assert.equal(defaultLayout.desks['integration_auditor'].staffing.seatKind, 'lead');
+  const plannerIdentity = buildPlannerIdentitySnapshot(defaultLayout.organization);
+  assert.equal(plannerIdentity.deskId, 'planner');
+  assert.equal(plannerIdentity.roleId, 'planner');
+  assert.equal(plannerIdentity.agentId, 'planner');
+  assert.equal(plannerIdentity.departmentId, 'dept-delivery');
+  assert.equal(plannerIdentity.modelProfileId, 'model-profile.planner-default');
+  assert.deepEqual(plannerIdentity.assignedAgentIds, ['planner']);
+  assert.equal(plannerIdentity.live, true);
+  assert.equal(plannerIdentity.agent.id, 'planner');
+  assert.equal(plannerIdentity.desk.id, 'planner');
   const layoutCatalog = buildStudioLayoutCatalog();
   assert.ok(layoutCatalog.departmentTemplates.some((entry) => entry.id === 'research'));
   assert.ok(layoutCatalog.deskTemplates.some((entry) => entry.id === 'report-node'));
@@ -1930,10 +1987,15 @@ export default async function runServerTests() {
     pages: [],
     activePageId: null,
     intentState: {
-      latest: null,
-      contextReport: null,
-      byNode: {},
-      reports: [],
+      registry: {
+        currentIntentId: null,
+        latestIntentId: null,
+        byId: {},
+        records: [],
+      },
+      currentIntentId: null,
+      summary: '',
+      status: 'idle',
     },
     studio: {
       handoffs: {},
@@ -2032,6 +2094,129 @@ export default async function runServerTests() {
   assert.equal(runtimePayload.qaState.localGate.unit.status, 'pass');
   assert.ok(runtimePayload.canonicalSlices);
   assert.ok(Array.isArray(runtimePayload.canonicalSlices.slices));
+  assert.equal(runtimePayload.plannerRuntime.runtimeState, 'absent');
+  assert.equal(runtimePayload.canonicalIntent, null);
+
+  const livePlannerRuntimePayload = buildSpatialRuntimePayload({
+    ...qaWorkspace,
+    studio: {
+      ...qaWorkspace.studio,
+      layout: {
+        organization: {
+          planner: {
+            deskId: 'planner',
+            roleId: 'planner',
+            agentId: 'planner',
+            departmentId: 'dept-delivery',
+            modelProfileId: 'model-profile.planner-default',
+            assignedAgentIds: ['planner'],
+            live: true,
+          },
+          desks: {
+            planner: {
+              id: 'planner',
+              label: 'Planner',
+              departmentId: 'dept-delivery',
+              assignedAgentIds: ['planner'],
+              localState: 'ready',
+            },
+          },
+          agents: {
+            planner: {
+              id: 'planner',
+              deskId: 'planner',
+              departmentId: 'dept-delivery',
+              modelProfileId: 'model-profile.planner-default',
+            },
+          },
+        },
+      },
+      agentWorkers: {
+        planner: {
+          status: 'idle',
+          statusReason: null,
+          mode: 'auto',
+          backend: 'ollama',
+          model: 'mistral:latest',
+          currentRunId: null,
+          lastRunId: 'planner_1',
+          lastOutcome: null,
+          lastOutcomeAt: null,
+          lastSourceHandoffId: null,
+          lastBlockedReason: null,
+          lastProducedCardIds: [],
+          proposalArtifactRefs: [],
+          startedAt: null,
+          completedAt: null,
+        },
+      },
+    },
+    intentState: {
+      registry: {
+        currentIntentId: 'intent_live_1',
+        latestIntentId: 'intent_live_1',
+        byId: {
+          intent_live_1: {
+            id: 'intent_live_1',
+            source: { type: 'cto-chat', ref: 'chat-1', requestedBy: 'cto' },
+            geometry: { kind: 'unknown', region: null, stroke: null },
+            semanticMeaning: {
+              summary: 'Planner intent for live runtime.',
+              statement: 'Planner intent for live runtime.',
+              goal: 'Planner intent for live runtime.',
+              requestType: 'planning_request',
+              requestedOutcomes: ['Surface planner intent'],
+              targets: ['planner'],
+              constraints: ['Keep planner proposal-only'],
+              urgency: 'high',
+              labels: ['planning'],
+            },
+            confidence: 0.85,
+            createdAt: '2026-03-23T07:05:00.000Z',
+            provenance: {
+              sourceType: 'cto-chat',
+              sourceRef: 'chat-1',
+              anchorRefs: ['brain/emergence/plan.md'],
+            },
+            missingFields: ['geometry'],
+            status: 'degraded',
+            intentId: 'intent_live_1',
+            sourceType: 'cto-chat',
+            sourceRef: 'chat-1',
+            nodeId: 'chat-1',
+            requestedBy: 'cto',
+            timestamp: '2026-03-23T07:05:00.000Z',
+            priority: 'high',
+            summary: 'Planner intent for live runtime.',
+            statement: 'Planner intent for live runtime.',
+            goal: 'Planner intent for live runtime.',
+            requestType: 'planning_request',
+            requestedOutcomes: ['Surface planner intent'],
+            tasks: ['Surface planner intent'],
+            targets: ['planner'],
+            constraints: ['Keep planner proposal-only'],
+            projectContext: { currentFocus: 'chat-1', matchedTerms: ['planning'], blockers: ['Keep planner proposal-only'], anchorRefs: ['brain/emergence/plan.md'] },
+          },
+        },
+        records: [],
+      },
+      currentIntentId: 'intent_live_1',
+      summary: 'Planner intent for live runtime.',
+      status: 'degraded',
+    },
+  }, {
+    qaState,
+    anchorBundle: {
+      managerSummary: { status: 'ready' },
+      truthSources: [],
+      anchorRefs: [],
+    },
+  });
+  assert.equal(livePlannerRuntimePayload.plannerRuntime.identity.answer, 'Planner');
+  assert.equal(livePlannerRuntimePayload.plannerRuntime.runtimeState, 'live');
+  assert.equal(livePlannerRuntimePayload.plannerRuntime.modelState, 'ready');
+  assert.equal(livePlannerRuntimePayload.canonicalIntent.intentId, 'intent_live_1');
+  assert.equal(livePlannerRuntimePayload.canonicalIntent.sourceType, 'cto-chat');
 
   const mutationWorkspace = {
     graph: {

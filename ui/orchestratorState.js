@@ -1,4 +1,9 @@
 const { normalizeAgentWorkersState } = require('./agentWorkers');
+const {
+  buildPlannerIdentitySnapshot,
+  createDefaultStudioLayoutSchema,
+  normalizeStudioLayoutSchema,
+} = require('./studioLayoutSchema');
 const RSG_ACTIVITY_LIMIT = 24;
 const MUTATION_ACTIVITY_LIMIT = 32;
 const MUTATION_APPROVAL_LIMIT = 16;
@@ -8,7 +13,9 @@ function makeId(prefix) {
 }
 
 function latestIntentReport(workspace) {
-  return workspace?.intentState?.contextReport || workspace?.intentState?.latest || workspace?.intentState?.reports?.[0] || null;
+  const registry = workspace?.intentState?.registry || null;
+  if (!registry?.currentIntentId) return null;
+  return registry.byId?.[registry.currentIntentId] || null;
 }
 
 function buildEmptyGraph() {
@@ -180,6 +187,98 @@ function normalizeMutationGateState(state = {}) {
     ...(state || {}),
     activity: normalizeMutationGateEntries((state || {}).activity, MUTATION_ACTIVITY_LIMIT),
     approvalQueue: normalizeMutationGateEntries((state || {}).approvalQueue, MUTATION_APPROVAL_LIMIT),
+  };
+}
+
+function normalizePlannerRuntimeState(workspace = {}) {
+  const rawStudio = workspace?.studio || {};
+  const rawLayout = rawStudio?.layout || workspace?.layout || {};
+  const normalizedLayout = normalizeStudioLayoutSchema(rawLayout || createDefaultStudioLayoutSchema());
+  const plannerIdentity = buildPlannerIdentitySnapshot(normalizedLayout.organization || {});
+  const agentWorkers = normalizeAgentWorkersState(rawStudio.agentWorkers);
+  const plannerWorker = agentWorkers.planner || {};
+  const rawPlannerWorker = rawStudio?.agentWorkers?.planner || null;
+  const rawPlannerRecord = rawLayout?.organization?.planner || rawLayout?.planner || null;
+  const plannerDesk = normalizedLayout.organization?.desks?.[plannerIdentity.deskId] || null;
+  const plannerAgent = normalizedLayout.organization?.agents?.[plannerIdentity.agentId] || null;
+  const assignedAgentIds = Array.isArray(plannerIdentity.assignedAgentIds)
+    ? plannerIdentity.assignedAgentIds.filter(Boolean)
+    : [];
+  const rawPresence = Boolean(rawPlannerWorker || rawPlannerRecord);
+  const staffingState = rawPresence ? 'present' : 'absent';
+  const policyReason = String(plannerWorker.statusReason || plannerWorker.lastBlockedReason || '').trim();
+  const modelReason = String(
+    plannerWorker.statusReason
+    || plannerWorker.lastBlockedReason
+    || rawPlannerWorker?.statusReason
+    || rawPlannerWorker?.lastBlockedReason
+    || '',
+  ).trim();
+  const policyBlocked = Boolean(
+    plannerWorker.status === 'blocked'
+    || /policy|gate|gating|approval|confirm|permission/i.test(policyReason),
+  );
+  const modelState = staffingState !== 'present'
+    ? 'unknown'
+    : plannerWorker.status === 'degraded'
+      ? 'degraded'
+      : /model unavailable|unavailable|offline|fetch failed|econnrefused|timed out|timeout|fallback/i.test(modelReason)
+        ? 'degraded'
+        : 'ready';
+  const runtimeState = staffingState === 'absent'
+    ? 'absent'
+    : policyBlocked
+      ? 'blocked'
+      : modelState === 'ready'
+        ? 'live'
+        : 'degraded';
+  const summary = staffingState === 'absent'
+    ? 'Planner is absent from runtime.'
+    : policyBlocked
+      ? 'Planner exists but is blocked by policy or gating.'
+      : modelState === 'ready'
+        ? 'Planner is live.'
+        : 'Planner exists but the model is degraded.';
+  return {
+    identity: {
+      deskId: plannerIdentity.deskId,
+      roleId: plannerIdentity.roleId,
+      agentId: plannerIdentity.agentId,
+      departmentId: plannerIdentity.departmentId,
+      modelProfileId: plannerIdentity.modelProfileId,
+      assignedAgentIds,
+      live: Boolean(plannerIdentity.live),
+      label: 'Planner',
+      answer: 'Planner',
+    },
+    staffingState,
+    runtimeState,
+    modelState,
+    policyState: policyBlocked ? 'blocked' : 'allowed',
+    summary,
+    desk: plannerDesk ? {
+      id: plannerDesk.id,
+      label: plannerDesk.label || 'Planner',
+      departmentId: plannerDesk.departmentId || plannerDesk.ownerDepartmentId || null,
+      localState: plannerDesk.localState || null,
+      assignedAgentIds: Array.isArray(plannerDesk.assignedAgentIds) ? plannerDesk.assignedAgentIds.filter(Boolean) : [],
+    } : null,
+    worker: {
+      status: plannerWorker.status || 'idle',
+      statusReason: plannerWorker.statusReason || null,
+      mode: plannerWorker.mode || 'auto',
+      backend: plannerWorker.backend || null,
+      model: plannerWorker.model || null,
+      currentRunId: plannerWorker.currentRunId || null,
+      lastRunId: plannerWorker.lastRunId || null,
+      lastBlockedReason: plannerWorker.lastBlockedReason || null,
+      startedAt: plannerWorker.startedAt || null,
+      completedAt: plannerWorker.completedAt || null,
+    },
+    source: {
+      rawLayoutHasPlannerRecord: Boolean(rawPlannerRecord),
+      rawAgentWorkersHavePlanner: Boolean(rawPlannerWorker),
+    },
   };
 }
 
@@ -584,8 +683,19 @@ function deriveCardState(card = {}) {
   return 'Ready';
 }
 
-function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, sourceAnchorRefs = [], title, createdAt = null }) {
+function createTeamBoardCard({
+  cards = [],
+  pageId,
+  handoffId,
+  sourceNodeId,
+  sourceIntentId = null,
+  sourceIntakeId = null,
+  sourceAnchorRefs = [],
+  title,
+  createdAt = null,
+}) {
   const now = createdAt || new Date().toISOString();
+  const canonicalSourceIntentId = sourceIntentId || sourceNodeId || null;
   const capturedFlow = createTaskFlowEntry({
     phase: 'captured',
     assignmentState: 'unassigned',
@@ -601,7 +711,8 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, sour
     pageId,
     sourceHandoffId: handoffId || null,
     sourceNodeId: sourceNodeId || null,
-    sourceIntentId: sourceNodeId || null,
+    sourceIntentId: canonicalSourceIntentId,
+    sourceIntakeId: sourceIntakeId || null,
     sourceAnchorRefs: Array.isArray(sourceAnchorRefs) ? sourceAnchorRefs.filter(Boolean) : [],
     title,
     status: 'plan',
@@ -613,7 +724,7 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, sour
       assignmentState: 'unassigned',
       ownerDeskId: 'context-manager',
       assigneeDeskId: 'planner',
-      sourceIntentId: sourceNodeId || null,
+      sourceIntentId: canonicalSourceIntentId,
       sourceHandoffId: handoffId || null,
       lastTransitionAt: now,
       lastTransitionLabel: 'Captured from intent',
@@ -665,6 +776,7 @@ function normalizeTeamBoardState(workspace = {}) {
     phaseTicks: Number(card.phaseTicks || 0),
     targetProjectKey: card.targetProjectKey || 'ace-self',
     sourceAnchorRefs: Array.isArray(card.sourceAnchorRefs) ? card.sourceAnchorRefs.filter(Boolean) : [],
+    sourceIntakeId: card.sourceIntakeId || null,
     sourceIntentId: card.sourceIntentId || card.sourceNodeId || null,
     builderTaskId: card.builderTaskId || card.runnerTaskId || null,
     runnerTaskId: card.runnerTaskId || null,
@@ -1542,11 +1654,20 @@ function buildRuntimePayload(workspace = {}) {
     graphs,
   };
   const notebook = normalizeNotebookState(normalizedWorkspace);
+  const latestIntent = latestIntentReport(normalizedWorkspace);
+  const canonicalIntent = latestIntent?.spatialIntent
+    || latestIntent?.canonicalIntent
+    || latestIntent?.intentContract
+    || latestIntent
+    || normalizedWorkspace?.studio?.handoffs?.contextToPlanner?.intentContract
+    || null;
   return {
     activePageId: notebook.activePageId,
     pages: notebook.pages,
     handoffs: normalizedWorkspace?.studio?.handoffs || {},
     agentWorkers: normalizeAgentWorkersState(normalizedWorkspace?.studio?.agentWorkers),
+    canonicalIntent,
+    plannerRuntime: normalizePlannerRuntimeState(normalizedWorkspace),
     selfUpgrade: normalizedWorkspace?.studio?.selfUpgrade || null,
     teamBoard: normalizeTeamBoardState(normalizedWorkspace),
     mutationGate: normalizeMutationGateState(normalizedWorkspace?.mutationGate),
@@ -1579,4 +1700,5 @@ module.exports = {
   advanceOrchestratorWorkspace,
   buildRuntimePayload,
   deriveExecutorBlocker,
+  normalizePlannerRuntimeState,
 };

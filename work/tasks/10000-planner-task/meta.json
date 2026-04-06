@@ -1,0 +1,61 @@
+{
+  "id": "10000",
+  "title": "Planner task",
+  "created_utc": "2026-04-02T10:43:57.049Z",
+  "source": "throughput-debug",
+  "sessionId": "cto-pipeline-1775126637045-pchod3",
+  "handoffId": "cto-pipeline-1775126637045-pchod3",
+  "parentTaskId": null,
+  "sourceFixTaskId": null,
+  "sourceFixTaskParentTaskId": null,
+  "sourceFixTaskQueueKey": null,
+  "sourceFixTaskLocation": null,
+  "sourceFixTaskStatus": null,
+  "artifactAttributionPath": "work/tasks/10000-planner-task/agent_attribution.json",
+  "artifactAttribution": {
+    "version": "ace/agent-attribution.v0",
+    "taskId": "10000",
+    "taskDir": "work/tasks/10000-planner-task",
+    "created_utc": "2026-04-02T10:43:57.049Z",
+    "updated_utc": "2026-04-02T10:43:57.049Z",
+    "artifacts": {
+      "idea.txt": {
+        "agent_id": "planner",
+        "agent_version": "ace/agent-attribution.v0",
+        "stage": "planner"
+      },
+      "context.md": {
+        "agent_id": "planner",
+        "agent_version": "ace/agent-attribution.v0",
+        "stage": "planner"
+      },
+      "plan.md": {
+        "agent_id": "planner",
+        "agent_version": "ace/agent-attribution.v0",
+        "stage": "planner"
+      },
+      "patch.diff": {
+        "agent_id": "builder",
+        "agent_version": "ace/agent-attribution.v0",
+        "stage": "builder"
+      },
+      "apply_result.json": {
+        "agent_id": "executor",
+        "agent_version": "ace/agent-attribution.v0",
+        "stage": "executor"
+      },
+      "agent_attribution.json": {
+        "agent_id": "dave",
+        "agent_version": "ace/agent-attribution.v0",
+        "stage": "planner"
+      }
+    },
+    "agent_id": "planner",
+    "agent_version": "ace/agent-attribution.v0",
+    "attribution": {
+      "agent_id": "planner",
+      "agent_version": "ace/agent-attribution.v0"
+    }
+  },
+  "anchorRefs": []
+}

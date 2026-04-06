@@ -132,10 +132,22 @@ export default async function runAgentWorkersTests() {
     runContextManagerWorker,
     runExecutorWorker,
     runPlannerWorker,
+    buildCanonicalIntentContract,
+    buildPlannerArtifactContract,
   } = require(agentWorkersPath);
   const {
     buildFixTaskPlannerHandoff,
   } = require(path.resolve(process.cwd(), 'fixTasks.js'));
+  const {
+    createDefaultCtoOverrideLedger,
+    normalizeCtoOverrideLedger,
+  } = require(path.resolve(process.cwd(), 'ctoOverrides.js'));
+  const {
+    readTaHireRequestQueue,
+  } = require(path.resolve(process.cwd(), 'taHireRequests.js'));
+  const {
+    readPlannerOuttray,
+  } = require(path.resolve(process.cwd(), 'plannerOuttray.js'));
   const { buildAnchorBundle } = require(anchorResolverPath);
   const { analyzeSpatialIntent, buildIntentProjectContext } = require(intentAnalysisPath);
 
@@ -143,6 +155,44 @@ export default async function runAgentWorkersTests() {
   seedAgents(rootPath);
   const anchorBundle = buildAnchorBundle({ rootPath });
   const workspace = createWorkspace();
+  const readyIntentContract = buildCanonicalIntentContract({
+    report: {
+      summary: 'Planner handoff ready.',
+      goal: 'Goal: add the planner worker.',
+      requestedOutcomes: ['Create planner cards', 'Persist proposals'],
+      tasks: ['Create planner cards', 'Persist proposals'],
+      targets: ['planner'],
+      constraints: ['Keep planner proposal-only'],
+      urgency: 'normal',
+      requestType: 'planning_request',
+      nodeId: 'node_ctx_1',
+      requestedBy: 'cto-user',
+      priority: 'high',
+      anchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
+    },
+    packet: {
+      summary: 'Planner handoff ready.',
+      goal: 'Goal: add the planner worker.',
+      requestedOutcomes: ['Create planner cards', 'Persist proposals'],
+      tasks: ['Create planner cards', 'Persist proposals'],
+      targets: ['planner'],
+      constraints: ['Keep planner proposal-only'],
+      urgency: 'normal',
+      requestType: 'planning_request',
+      sourceType: 'cto-chat',
+      sourceRef: 'chat-1',
+      requestedBy: 'cto-user',
+      priority: 'high',
+      anchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
+    },
+    sourceType: 'cto-chat',
+    sourceRef: 'chat-1',
+    requestedBy: 'cto-user',
+    priority: 'high',
+    timestamp: '2026-03-23T07:05:00.000Z',
+    provenance: { channel: 'cto-chat' },
+    intentId: 'intent_cto_chat_1',
+  });
   const readyHandoff = {
     id: 'handoff_ready',
     status: 'ready',
@@ -151,6 +201,61 @@ export default async function runAgentWorkersTests() {
     requestedOutcomes: ['Create planner cards', 'Persist proposals'],
     constraints: ['Keep planner proposal-only'],
     anchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
+    intentId: readyIntentContract.intentId,
+    sourceType: readyIntentContract.sourceType,
+    sourceRef: readyIntentContract.sourceRef,
+    requestedBy: readyIntentContract.requestedBy,
+    priority: readyIntentContract.priority,
+    timestamp: readyIntentContract.timestamp,
+    intentContract: readyIntentContract,
+    contextLanes: {
+      narrow: {
+        lane: 'local',
+        currentDesk: 'planner',
+        currentTask: 'Create planner cards',
+        activeIntent: {
+          intentId: readyIntentContract.intentId,
+          sourceType: readyIntentContract.sourceType,
+          sourceRef: readyIntentContract.sourceRef,
+          requestedBy: readyIntentContract.requestedBy,
+          priority: readyIntentContract.priority,
+          statement: readyIntentContract.canonicalIntent.statement,
+          goal: readyIntentContract.canonicalIntent.goal,
+        },
+        selectedAnchorRefs: ['brain/emergence/plan.md'],
+        taskId: 'task-0001',
+      },
+      department: {
+        lane: 'department',
+        departmentId: 'dept-delivery',
+        currentFocus: 'Planner worker coverage',
+        activeMilestone: 'Slice rollout',
+        blockers: ['QA coverage is pending'],
+        recentHandoff: {
+          id: 'handoff_previous',
+          sourceAgentId: 'context-manager',
+          sourceNodeId: 'node-1',
+          summary: 'Previous planner handoff.',
+          status: 'ready',
+          requestedOutcomes: ['Seed planner'],
+        },
+        recentHandoffs: ['handoff_previous'],
+        orchestratorState: 'running',
+        teamBoardSummary: { plan: 2, review: 1 },
+      },
+      broad: {
+        lane: 'broad',
+        brainRoot: 'brain/emergence',
+        currentFocus: 'Planner worker coverage',
+        activeMilestone: 'Slice rollout',
+        projectBrain: [{ relativePath: 'brain/emergence/project_brain.md', summary: 'Project brain summary.' }],
+        roadmap: [{ relativePath: 'brain/emergence/roadmap.md', summary: 'Roadmap summary.' }],
+        recentDecisions: [{ relativePath: 'brain/emergence/decisions.md', summary: 'Decision summary.' }],
+        truthSources: [{ relativePath: 'brain/emergence/project_brain.md', summary: 'Project brain summary.' }],
+        anchorRefs: ['brain/emergence/plan.md', 'brain/emergence/tasks.md'],
+        graphSummary: { nodes: 2, edges: 1 },
+      },
+    },
   };
 
   assert.equal(getAgentWorkerConfig(rootPath, 'planner').model, 'mistral:latest');
@@ -199,6 +304,39 @@ export default async function runAgentWorkersTests() {
   assert.match(plannerPrompt, /## Fix Task Intake/);
   assert.match(plannerPrompt, /Parent task: 0007/);
   assert.match(plannerPrompt, /Retry count: 1/);
+  assert.match(plannerPrompt, /## Canonical Intent Contract/);
+  assert.match(plannerPrompt, /intent_cto_chat_1/);
+  assert.match(plannerPrompt, /Treat this contract as the source of truth/i);
+  assert.match(plannerPrompt, /## Planner Context Lanes/);
+  assert.match(plannerPrompt, /local/);
+  assert.match(plannerPrompt, /department/);
+  assert.match(plannerPrompt, /broad/);
+  assert.match(plannerPrompt, /## CTO Override Layer/);
+  assert.match(plannerPrompt, /canonical truth/i);
+  assert.match(plannerPrompt, /## Required Planner Output Contract/);
+  assert.match(plannerPrompt, /planBundle/i);
+  assert.match(plannerPrompt, /taskBundle/i);
+  assert.match(plannerPrompt, /hireRequest/i);
+
+  const talentAcquisition = {
+    department: {
+      summary: 'QA coverage is missing and needs an asynchronous hire request.',
+      urgency: 'high',
+    },
+    plannerCoverage: {
+      covered: true,
+      urgency: 'low',
+      blocker: false,
+      canonical: { roleId: 'planner' },
+    },
+    qaLeadCoverage: {
+      covered: false,
+      urgency: 'high',
+      blocker: true,
+      reason: 'QA lead coverage is missing.',
+      canonical: { roleId: 'qa-lead' },
+    },
+  };
 
   const successResult = await runPlannerWorker({
     rootPath,
@@ -206,8 +344,147 @@ export default async function runAgentWorkersTests() {
     workspace,
     anchorBundle,
     runId: 'planner_success',
+    talentAcquisition,
     generator: async () => ({
       summary: 'Planner generated anchored cards.',
+      planBundle: {
+        planId: 'plan_bundle_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        summary: 'Planner output bundle for QA and archivist consumption.',
+        items: [
+          {
+            planId: 'plan_1',
+            intentId: readyHandoff.intentContract.intentId,
+            status: 'ready',
+            priority: 'high',
+            summary: 'Create planner worker runtime',
+            acceptanceCriteria: ['Planner runtime is available', 'Planner identity stays canonical'],
+            dependencies: [],
+            targetDesk: 'planner',
+            targetRole: 'Planner',
+            handoffState: 'ready',
+            provenance: { sourceHandoffId: readyHandoff.id, sourceIntentId: readyHandoff.intentContract.intentId },
+            createdBy: 'planner',
+            createdAt: '2026-03-23T07:06:00.000Z',
+          },
+          {
+            planId: 'plan_2',
+            intentId: readyHandoff.intentContract.intentId,
+            status: 'ready',
+            priority: 'normal',
+            summary: 'Coordinate QA follow-up',
+            acceptanceCriteria: ['QA can inspect structured planner output'],
+            dependencies: ['plan_1'],
+            targetDesk: 'qa-lead',
+            targetRole: 'QA Lead',
+            handoffState: 'ready',
+            provenance: { sourceHandoffId: readyHandoff.id, sourceIntentId: readyHandoff.intentContract.intentId },
+            createdBy: 'planner',
+            createdAt: '2026-03-23T07:06:00.000Z',
+          },
+        ],
+      },
+      taskBundle: {
+        taskBundleId: 'task_bundle_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        tasks: [
+          {
+            taskId: 'task_1',
+            planId: 'plan_1',
+            intentId: readyHandoff.intentContract.intentId,
+            status: 'planned',
+            priority: 'high',
+            summary: 'Create planner worker runtime',
+            acceptanceCriteria: ['Planner runtime is available', 'Planner identity stays canonical'],
+            dependencies: [],
+            targetDesk: 'executor',
+            targetRole: 'Executor',
+            handoffState: 'ready',
+            provenance: { sourceHandoffId: readyHandoff.id, sourceIntentId: readyHandoff.intentContract.intentId },
+            createdBy: 'planner',
+            createdAt: '2026-03-23T07:06:00.000Z',
+          },
+          {
+            taskId: 'task_2',
+            planId: 'plan_2',
+            intentId: readyHandoff.intentContract.intentId,
+            status: 'planned',
+            priority: 'normal',
+            summary: 'Coordinate QA follow-up',
+            acceptanceCriteria: ['QA can inspect structured planner output'],
+            dependencies: ['plan_1'],
+            targetDesk: 'qa-lead',
+            targetRole: 'QA Lead',
+            handoffState: 'ready',
+            provenance: { sourceHandoffId: readyHandoff.id, sourceIntentId: readyHandoff.intentContract.intentId },
+            createdBy: 'planner',
+            createdAt: '2026-03-23T07:06:00.000Z',
+          },
+        ],
+      },
+      dependencyMap: {
+        dependencyMapId: 'dependency_map_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        edges: [
+          {
+            dependencyId: 'dependency_1',
+            sourcePlanId: 'plan_1',
+            targetPlanId: 'plan_2',
+            type: 'depends_on',
+            status: 'active',
+            provenance: { sourceHandoffId: readyHandoff.id },
+            createdBy: 'planner',
+            createdAt: '2026-03-23T07:06:00.000Z',
+          },
+        ],
+      },
+      staffingRequest: {
+        staffingRequestId: 'staffing_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        summary: 'QA coverage request for planner output.',
+        targetDesk: 'qa-lead',
+        targetRole: 'QA Lead',
+        requiredCoverage: ['QA review'],
+        provenance: { sourceHandoffId: readyHandoff.id },
+        createdBy: 'planner',
+        createdAt: '2026-03-23T07:06:00.000Z',
+      },
+      qaRequest: {
+        qaRequestId: 'qa_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        summary: 'QA should validate the planner output contract.',
+        acceptanceCriteria: ['QA can inspect structured planner output'],
+        targetDesk: 'qa-lead',
+        targetRole: 'QA Lead',
+        provenance: { sourceHandoffId: readyHandoff.id },
+        createdBy: 'planner',
+        createdAt: '2026-03-23T07:06:00.000Z',
+      },
+      archivalSummary: {
+        archivalSummaryId: 'archive_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        summary: 'Archive planner output with provenance.',
+        provenance: { sourceHandoffId: readyHandoff.id },
+        createdBy: 'planner',
+        createdAt: '2026-03-23T07:06:00.000Z',
+      },
+      contextUpdatePacket: {
+        contextUpdatePacketId: 'context_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        summary: 'Context manager can index planner output against the current scope.',
+        requestedOutcomes: ['Create planner worker runtime', 'Coordinate QA follow-up'],
+        constraints: ['Keep planner proposal-only'],
+        provenance: { sourceHandoffId: readyHandoff.id },
+        createdBy: 'planner',
+        createdAt: '2026-03-23T07:06:00.000Z',
+      },
       cards: [
         { title: 'Create planner worker runtime', summary: 'Add the worker runtime shell.', anchorRefs: ['brain/emergence/plan.md'] },
         { title: 'Persist planner proposals', summary: 'Store proposal artifacts beside the run.', anchorRefs: ['brain/emergence/tasks.md'] },
@@ -240,9 +517,201 @@ export default async function runAgentWorkersTests() {
   assert.equal(successResult.outcome, 'completed');
   assert.equal(successResult.run.outcome, 'completed');
   assert.equal(successResult.cards.length, 3);
+  assert.equal(successResult.planBundle.items.length, 2);
+  assert.equal(successResult.taskBundle.tasks.length, 2);
+  assert.equal(successResult.dependencyMap.edges.length, 1);
+  assert.equal(successResult.staffingRequest.targetDesk, 'qa-lead');
+  assert.equal(successResult.qaRequest.acceptanceCriteria[0], 'QA can inspect structured planner output');
+  assert.equal(successResult.archivalSummary.summary, 'Archive planner output with provenance.');
+  assert.deepEqual(successResult.contextUpdatePacket.requestedOutcomes, ['Create planner worker runtime', 'Coordinate QA follow-up']);
+  assert.equal(successResult.qaStatus, 'pending');
+  assert.equal(successResult.qaCoverageRequired, true);
+  assert.equal(successResult.qaBlocker, false);
+  assert.equal(successResult.releaseBlocker, false);
+  assert.ok(successResult.outtray);
+  assert.equal(successResult.outtray.entryCount, 1);
+  assert.equal(successResult.outtray.depositedCount, 1);
+  assert.ok(successResult.hireRequest);
+  assert.equal(successResult.hireRequest.requestedRoleId, 'qa-lead');
+  assert.equal(successResult.hireRequest.originDeskId, 'planner');
+  assert.equal(successResult.hireRequest.originDepartmentId, 'dept-delivery');
+  assert.equal(successResult.hireRequest.status, 'queued');
+  assert.equal(successResult.hireRequest.blockingLevel, 'handoff_risk');
+  assert.ok(successResult.hireRequest.reason.includes('QA coverage is missing'));
+  assert.ok(successResult.hireRequestQueue);
+  assert.equal(successResult.hireRequestQueue.entryCount, 1);
+  assert.equal(successResult.hireRequestQueue.queuedCount, 1);
+  const hireQueue = readTaHireRequestQueue(rootPath);
+  assert.equal(hireQueue.entries.length, 1);
+  assert.equal(hireQueue.entries[0].hireRequestId, successResult.hireRequest.hireRequestId);
+  const outtrayQueue = readPlannerOuttray(rootPath);
+  assert.equal(outtrayQueue.entries.length, 1);
+  assert.equal(outtrayQueue.entries[0].status, 'deposited');
+  assert.equal(outtrayQueue.entries[0].items.length, 5);
+  assert.equal(outtrayQueue.entries[0].items[0].status, 'ready_for_handoff');
   assert.equal(successResult.proposalArtifactRefs.length, 2);
   assert.ok(successResult.proposalArtifactRefs.every((artifactRef) => fs.existsSync(path.join(rootPath, ...artifactRef.split('/')))));
   assert.equal(fs.existsSync(path.join(rootPath, 'brain', 'emergence', 'plan.md')), true);
+  assert.equal(successResult.run.intentId, readyHandoff.intentContract.intentId);
+  assert.ok(successResult.run.intentContract);
+  assert.ok(successResult.run.planBundle);
+  assert.ok(successResult.run.contextLanes);
+  assert.equal(successResult.run.contextLanes.narrow.currentDesk, 'planner');
+  assert.equal(successResult.run.contextLanes.department.departmentId, 'dept-delivery');
+  assert.equal(successResult.run.contextLanes.broad.projectBrain[0].relativePath, 'brain/emergence/project_brain.md');
+  assert.equal(successResult.run.archivalSummary.contextLanes.broad.brainRoot, 'brain/emergence');
+  assert.equal(successResult.run.contextUpdatePacket.contextLanes.narrow.currentTask, 'Create planner cards');
+  assert.equal(successResult.run.qaStatus, 'pending');
+  assert.equal(successResult.run.qaCoverageRequired, true);
+  assert.equal(successResult.run.qaBlocker, false);
+  assert.equal(successResult.run.releaseBlocker, false);
+  assert.equal(successResult.run.hireRequest.hireRequestId, successResult.hireRequest.hireRequestId);
+  assert.equal(successResult.run.hireRequestQueue.entryCount, 1);
+  assert.ok(successResult.run.outtray);
+  assert.equal(successResult.run.outtray.entryCount, 1);
+  assert.equal(successResult.run.outtray.depositedCount, 1);
+  assert.equal(successResult.run.outtray.latestEntry.status, 'deposited');
+  assert.equal(successResult.run.outtray.latestEntry.items.length, 5);
+  assert.ok(successResult.run.qaQueue);
+  assert.equal(successResult.run.qaQueue.qaStatus, 'pending');
+  assert.equal(successResult.run.qaQueue.qaBlocker, false);
+  assert.equal(successResult.run.planBundle.items[0].planId, 'plan_1');
+  assert.equal(successResult.run.taskBundle.tasks[0].taskId, 'task_1');
+  assert.equal(successResult.run.dependencyMap.edges[0].targetPlanId, 'plan_2');
+  assert.equal(successResult.run.qaRequest.targetDesk, 'qa-lead');
+  assert.equal(successResult.run.archivalSummary.archivalSummaryId, 'archive_1');
+  assert.equal(successResult.run.contextUpdatePacket.contextUpdatePacketId, 'context_1');
+  assert.equal(successResult.run.planCount, 2);
+  assert.equal(successResult.run.taskCount, 2);
+  assert.equal(successResult.run.dependencyCount, 1);
+
+  const overrideWorkspace = {
+    ...workspace,
+    studio: {
+      ...workspace.studio,
+      ctoOverrides: normalizeCtoOverrideLedger({
+        ...createDefaultCtoOverrideLedger(),
+        entries: [{
+          overrideId: 'override_force_planner_1',
+          kind: 'force-plan-generation',
+          requestedBy: 'cto',
+          reason: 'Force a new planner pass even though this handoff already ran.',
+          target: {
+            deskId: 'planner',
+            planId: 'plan_bundle_override',
+            handoffId: readyHandoff.id,
+            intentId: readyHandoff.intentContract.intentId,
+          },
+          canonicalTruth: {
+            staffing: { state: 'absent', note: 'Planner coverage is still missing.' },
+            handoff: { state: 'blocked', note: 'Planner has already seen this handoff.' },
+          },
+          provenance: {
+            sourceType: 'cto-chat',
+            sourceRef: 'override-console',
+            sourceActionId: 'force-plan-generation',
+          },
+        }],
+      }),
+    },
+  };
+  const overrideResult = await runPlannerWorker({
+    rootPath,
+    handoff: { ...readyHandoff, status: 'stale' },
+    workspace: overrideWorkspace,
+    anchorBundle,
+    runId: 'planner_override',
+    generator: async () => ({
+      summary: 'Planner forced run with override provenance.',
+      planBundle: {
+        planId: 'plan_bundle_override',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        summary: 'Forced planner bundle.',
+        items: [{
+          planId: 'plan_override_1',
+          intentId: readyHandoff.intentContract.intentId,
+          status: 'ready',
+          priority: 'high',
+          summary: 'Planner forced run.',
+          acceptanceCriteria: ['Override provenance is visible'],
+          dependencies: [],
+          targetDesk: 'planner',
+          targetRole: 'Planner',
+          handoffState: 'ready',
+          provenance: { sourceHandoffId: readyHandoff.id, sourceIntentId: readyHandoff.intentContract.intentId },
+          createdBy: 'planner',
+          createdAt: '2026-03-23T07:06:00.000Z',
+        }],
+      },
+      taskBundle: {
+        taskBundleId: 'task_bundle_override',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        tasks: [{
+          taskId: 'task_override_1',
+          planId: 'plan_override_1',
+          intentId: readyHandoff.intentContract.intentId,
+          status: 'planned',
+          priority: 'high',
+          summary: 'Planner forced run.',
+          acceptanceCriteria: ['Override provenance is visible'],
+          dependencies: [],
+          targetDesk: 'executor',
+          targetRole: 'Executor',
+          handoffState: 'ready',
+          provenance: { sourceHandoffId: readyHandoff.id, sourceIntentId: readyHandoff.intentContract.intentId },
+          createdBy: 'planner',
+          createdAt: '2026-03-23T07:06:00.000Z',
+        }],
+      },
+      qaRequest: {
+        qaRequestId: 'qa_override_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        summary: 'QA should see override provenance.',
+        acceptanceCriteria: ['Override provenance is visible'],
+        targetDesk: 'qa-lead',
+        targetRole: 'QA Lead',
+        provenance: { sourceHandoffId: readyHandoff.id },
+        createdBy: 'planner',
+        createdAt: '2026-03-23T07:06:00.000Z',
+      },
+      archivalSummary: {
+        archivalSummaryId: 'archive_override_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        summary: 'Archive forced run.',
+        provenance: { sourceHandoffId: readyHandoff.id },
+        createdBy: 'planner',
+        createdAt: '2026-03-23T07:06:00.000Z',
+      },
+      contextUpdatePacket: {
+        contextUpdatePacketId: 'context_override_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        summary: 'Context packet for forced planning.',
+        requestedOutcomes: ['Planner forced run.'],
+        constraints: ['Keep override provenance visible'],
+        provenance: { sourceHandoffId: readyHandoff.id },
+        createdBy: 'planner',
+        createdAt: '2026-03-23T07:06:00.000Z',
+      },
+      overrideLayer: overrideWorkspace.studio.ctoOverrides ? {
+        ...overrideWorkspace.studio.ctoOverrides,
+        planningMode: 'forced',
+      } : null,
+      planningMode: 'forced',
+    }),
+  });
+  assert.equal(overrideResult.ok, true);
+  assert.equal(overrideResult.outcome, 'completed');
+  assert.equal(overrideResult.planningMode, 'forced');
+  assert.equal(overrideResult.overrideLayer.flags.forcePlanning, true);
+  assert.equal(overrideResult.run.overrideLayer.flags.forcePlanning, true);
+  assert.equal(overrideResult.run.planBundle.overrideLayer.flags.forcePlanning, true);
+  assert.ok(overrideResult.run.planBundle.items[0].provenance.overrideIds.includes('override_force_planner_1'));
+  assert.ok(overrideResult.run.taskBundle.tasks[0].provenance.overrideIds.includes('override_force_planner_1'));
 
   const blockedFirst = await runPlannerWorker({
     rootPath,
@@ -478,6 +947,8 @@ export default async function runAgentWorkersTests() {
   assert.equal(contextSuccess.usedFallback, false);
   assert.equal(contextSuccess.report.contextPacket.constraints[0], 'Keep planner proposal-only');
   assert.deepEqual(contextSuccess.report.requestedOutcomes, ['Clarify planner acceptance criteria', 'Expose review state in Studio']);
+  assert.ok(contextSuccess.report.intentContract);
+  assert.ok(contextSuccess.report.canonicalIntent);
   assert.ok(contextSuccess.extractedIntent);
   assert.equal(contextSuccess.extractedIntent.provenance.usedFallback, false);
   assert.ok(contextSuccess.report.extractedIntent);
@@ -487,10 +958,14 @@ export default async function runAgentWorkersTests() {
   assert.equal(contextSuccess.report.extractedIntent.audit.classification.role, contextSuccess.report.classification.role);
   assert.equal(contextSuccess.handoff.sourceAgentId, 'context-manager');
   assert.equal(contextSuccess.handoff.targetAgentId, 'planner');
+  assert.ok(contextSuccess.handoff.intentContract);
+  assert.equal(contextSuccess.handoff.intentContract.intentId, contextSuccess.report.intentContract.intentId);
   assert.deepEqual(contextSuccess.handoff.requestedOutcomes, ['Clarify planner acceptance criteria', 'Expose review state in Studio']);
   assert.ok(contextSuccess.handoff.constraints.includes('Keep planner proposal-only'));
   assert.ok(contextSuccess.handoff.problemStatement.includes('Still unclear: Need an explicit success signal'));
   assert.equal(contextSuccess.run.handoffId, contextSuccess.handoff.id);
+  assert.equal(contextSuccess.run.intentId, contextSuccess.handoff.intentContract.intentId);
+  assert.ok(contextSuccess.run.intentContract);
   assert.equal(fs.existsSync(path.join(rootPath, 'data', 'spatial', 'agent-runs', 'context-manager', 'context_success.json')), true);
 
   const contextFallback = await runContextManagerWorker({

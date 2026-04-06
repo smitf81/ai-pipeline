@@ -1,0 +1,44 @@
+{
+  "status": "fail",
+  "summary": "External proof QA follow-up decisions recorded.",
+  "desks": [
+    {
+      "desk": "qa-lead",
+      "status": "fail",
+      "tests": [
+        {
+          "name": "fail_case",
+          "status": "fail",
+          "qualityCard": {
+            "schema": "qa.test-attribute-card.v1",
+            "id": "qa.fail_case",
+            "desk": "qa-lead",
+            "testId": "fail_case",
+            "testName": "Fail case",
+            "status": "fail",
+            "sourceCardId": "card_fail",
+            "sourceIntentId": "intent_fail",
+            "sourceHandoffId": "handoff_fail",
+            "summary": "Planner must revise the bounded slice."
+          }
+        },
+        {
+          "name": "cto_case",
+          "status": "needs_cto_approval",
+          "qualityCard": {
+            "schema": "qa.test-attribute-card.v1",
+            "id": "qa.cto_case",
+            "desk": "qa-lead",
+            "testId": "cto_case",
+            "testName": "CTO approval case",
+            "status": "needs_cto_approval",
+            "sourceCardId": "card_cto",
+            "sourceIntentId": "intent_cto",
+            "sourceHandoffId": "handoff_cto",
+            "summary": "CTO approval is required before proceeding."
+          }
+        }
+      ]
+    }
+  ]
+}

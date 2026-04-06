@@ -264,9 +264,25 @@ export class AceConnector {
   async getDeskProperties(deskId) {
     const id = String(deskId || '').trim();
     if (!id) throw new Error('Desk id is required');
+    let externalValidationResponse = null;
+    if (id === 'qa-lead') {
+      try {
+        const validationRes = await fetch('/api/qa/external-probe-check');
+        externalValidationResponse = await validationRes.json();
+      } catch {
+        externalValidationResponse = null;
+      }
+    }
     const res = await fetch(`/api/spatial/desks/${encodeURIComponent(id)}/properties`);
     const payload = await res.json();
     if (!res.ok) throw new Error(payload.error || 'Unable to load desk properties');
+      if (id === 'qa-lead' && payload && typeof payload === 'object' && payload.qa && typeof payload.qa === 'object') {
+        const externalValidation = externalValidationResponse?.externalValidation || null;
+        payload.qa = {
+          ...payload.qa,
+          externalValidation: externalValidation || payload.qa.externalValidation || null,
+        };
+      }
     return payload;
   }
 

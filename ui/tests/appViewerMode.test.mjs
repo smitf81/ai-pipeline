@@ -164,6 +164,89 @@ export default async function runAppViewerModeTest() {
       }],
     },
     '/api/health': { ok: true },
+    '/api/spatial/cto/diagnostics': {
+      ok: true,
+      version: 'ace/cto-diagnostics.v1',
+      updated_at: '2026-03-23T07:04:00.000Z',
+      summary: { total: 0, healthyCount: 0, warningCount: 0, blockerCount: 0 },
+      entries: [],
+      plannerIdentity: {
+        schemaVersion: 'planner-identity.v1',
+        deskId: 'planner',
+        roleId: 'planner',
+        agentId: 'planner',
+        departmentId: 'dept-delivery',
+        modelProfileId: 'model-profile.planner-default',
+        assignedAgentIds: ['planner'],
+        live: true,
+        canonical: {
+          deskId: 'planner',
+          roleId: 'planner',
+          agentId: 'planner',
+          modelProfileId: 'model-profile.planner-default',
+          departmentId: 'dept-delivery',
+        },
+      },
+    },
+    '/api/spatial/runtime': {
+      activePageId: 'page_1',
+      pages: [],
+      handoffs: {},
+      agentWorkers: {
+        planner: {
+          status: 'idle',
+          statusReason: null,
+          mode: 'auto',
+          backend: 'ollama',
+          model: 'mistral:latest',
+          currentRunId: null,
+          lastRunId: 'planner_1',
+          lastOutcome: null,
+          lastOutcomeAt: null,
+          lastSourceHandoffId: null,
+          lastBlockedReason: null,
+          lastProducedCardIds: [],
+          proposalArtifactRefs: [],
+          startedAt: null,
+          completedAt: null,
+        },
+      },
+      plannerRuntime: {
+        identity: {
+          answer: 'Planner',
+          label: 'Planner',
+        },
+        runtimeState: 'live',
+        staffingState: 'present',
+        modelState: 'ready',
+        policyState: 'allowed',
+        worker: { status: 'idle', currentRunId: null, lastBlockedReason: null, statusReason: null },
+      },
+      canonicalIntent: {
+        intentId: 'intent_live_1',
+        sourceType: 'cto-chat',
+        sourceRef: 'chat-1',
+        canonicalIntent: {
+          statement: 'Planner intent for live runtime.',
+          goal: 'Planner intent for live runtime.',
+          requestType: 'planning_request',
+          requestedOutcomes: ['Surface planner intent'],
+          targets: ['planner'],
+          constraints: ['Keep planner proposal-only'],
+          priority: 'high',
+          requestedBy: 'cto',
+          timestamp: '2026-03-23T07:05:00.000Z',
+          sourceType: 'cto-chat',
+          sourceRef: 'chat-1',
+          anchorRefs: ['brain/emergence/plan.md'],
+        },
+        provenance: { sourceType: 'cto-chat', sourceRef: 'chat-1' },
+        constraints: ['Keep planner proposal-only'],
+        priority: 'high',
+        requestedBy: 'cto',
+        timestamp: '2026-03-23T07:05:00.000Z',
+      },
+    },
     '/api/projects': {
       projects: [{ key: 'demo', name: 'Demo Project', path: 'C:/demo' }],
     },
@@ -231,6 +314,18 @@ export default async function runAppViewerModeTest() {
   assert.match(qaSandbox.document.getElementById('uiLastCommandSummary').textContent, /scan task-1/);
   assert.equal(qaSandbox.document.getElementById('pipelineCommandState').textContent, 'success');
   assert.match(qaSandbox.document.getElementById('pipelineCommandError').textContent, /stderr line one/);
+  await qaSandbox.window.__ACE_APP_TEST__.refreshPlannerIdentityDiagnostics();
+  assert.equal(qaSandbox.document.getElementById('plannerDeskId').textContent, 'planner');
+  assert.equal(qaSandbox.document.getElementById('plannerRoleId').textContent, 'planner');
+  assert.equal(qaSandbox.document.getElementById('plannerAgentId').textContent, 'planner');
+  assert.equal(qaSandbox.document.getElementById('plannerDepartmentId').textContent, 'dept-delivery');
+  assert.equal(qaSandbox.document.getElementById('plannerModelProfileId').textContent, 'model-profile.planner-default');
+  assert.equal(qaSandbox.document.getElementById('plannerAssignedAgentIds').textContent, 'planner');
+  assert.equal(qaSandbox.document.getElementById('plannerLiveStatus').textContent, 'live');
+  assert.equal(qaSandbox.document.getElementById('plannerRuntimeState').textContent, 'live');
+  assert.equal(qaSandbox.document.getElementById('canonicalIntentId').textContent, 'intent_live_1');
+  assert.equal(qaSandbox.document.getElementById('canonicalIntentSourceType').textContent, 'cto-chat');
+  assert.equal(qaSandbox.document.getElementById('canonicalIntentStatement').textContent, 'Planner intent for live runtime.');
 
   qaSandbox.window.__ACE_APP_TEST__.renderCommandSummary({
     name: 'custom command',

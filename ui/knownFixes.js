@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { writeJsonIfChanged, writeTextIfChanged } = require('./changeHygiene');
 
 const KNOWN_FIXES_RELATIVE_DIR = path.join('brain', 'context');
 const KNOWN_FIXES_JSON_NAME = 'known_fixes.json';
@@ -222,8 +223,7 @@ function readJson(filePath, fallback = null) {
 }
 
 function writeJson(filePath, payload) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  writeJsonIfChanged(filePath, payload);
 }
 
 function ensureKnownFixLibrarySeed(rootPath) {
@@ -399,7 +399,7 @@ function writeKnownFixLibrary(rootPath, library = {}) {
     updatedAt: nowIso(),
   });
   writeJson(libraryJsonPath(rootPath), normalized);
-  fs.writeFileSync(libraryMarkdownPath(rootPath), renderKnownFixLibraryMarkdown(normalized), 'utf8');
+  writeTextIfChanged(libraryMarkdownPath(rootPath), renderKnownFixLibraryMarkdown(normalized));
   return normalized;
 }
 
@@ -409,7 +409,7 @@ function writeKnownFixCandidates(rootPath, library = {}) {
     updatedAt: nowIso(),
   });
   writeJson(candidateLibraryJsonPath(rootPath), normalized);
-  fs.writeFileSync(candidateLibraryMarkdownPath(rootPath), renderKnownFixCandidatesMarkdown(normalized), 'utf8');
+  writeTextIfChanged(candidateLibraryMarkdownPath(rootPath), renderKnownFixCandidatesMarkdown(normalized));
   return normalized;
 }
 

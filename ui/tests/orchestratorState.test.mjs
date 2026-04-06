@@ -32,16 +32,68 @@ export default async function runOrchestratorStateTests() {
     annotations: [],
     sketches: [],
     intentState: {
-      latest: {
-        nodeId: 'node_ctx',
-        summary: 'Clarify desk overlap',
-        confidence: 0.42,
-        tasks: ['Clarify desk overlap', 'Show current desk job'],
-        projectContext: { matchedTerms: ['desk'], blockers: [] },
+      registry: {
+        currentIntentId: 'intent_1',
+        latestIntentId: 'intent_1',
+        byId: {
+          intent_1: {
+            id: 'intent_1',
+            source: { type: 'cto-chat', ref: 'chat-1', requestedBy: 'cto' },
+            geometry: { kind: 'unknown', region: null, stroke: null },
+            semanticMeaning: {
+              summary: 'Clarify desk overlap',
+              statement: 'Clarify desk overlap',
+              goal: 'Clarify desk overlap',
+              requestType: 'planning_request',
+              requestedOutcomes: ['Clarify desk overlap', 'Show current desk job'],
+              targets: ['planner'],
+              constraints: [],
+              urgency: 'high',
+              labels: ['desk'],
+            },
+            confidence: 0.42,
+            createdAt: '2026-03-16T08:30:00.000Z',
+            provenance: {
+              sourceType: 'cto-chat',
+              sourceRef: 'chat-1',
+              requestedBy: 'cto',
+              anchorRefs: ['brain/emergence/plan.md'],
+            },
+            missingFields: ['geometry'],
+            status: 'degraded',
+            intentId: 'intent_1',
+            sourceType: 'cto-chat',
+            sourceRef: 'chat-1',
+            nodeId: 'node_ctx',
+            requestedBy: 'cto',
+            timestamp: '2026-03-16T08:30:00.000Z',
+            priority: 'high',
+            summary: 'Clarify desk overlap',
+            statement: 'Clarify desk overlap',
+            goal: 'Clarify desk overlap',
+            requestType: 'planning_request',
+            requestedOutcomes: ['Clarify desk overlap', 'Show current desk job'],
+            tasks: ['Clarify desk overlap', 'Show current desk job'],
+            targets: ['planner'],
+            constraints: [],
+            projectContext: { currentFocus: 'chat-1', matchedTerms: ['desk'], blockers: [], anchorRefs: ['brain/emergence/plan.md'] },
+            truth: {
+              plannerBrief: 'Planner should treat this as: Clarify desk overlap; Show current desk job',
+              requestedOutcomes: ['Clarify desk overlap', 'Show current desk job'],
+              readiness: {
+                intentConfidence: 0.42,
+                plannerUsefulness: 0.5,
+                executionReadiness: 0.2,
+                deployReadiness: 0.1,
+              },
+            },
+          },
+        },
+        records: [],
       },
-      contextReport: null,
-      byNode: {},
-      reports: [],
+      currentIntentId: 'intent_1',
+      summary: 'Clarify desk overlap',
+      status: 'degraded',
     },
     rsg: {
       ...createDefaultRsgState(),
@@ -66,6 +118,36 @@ export default async function runOrchestratorStateTests() {
       lastStatus: 'rsg-generate',
     },
     studio: {
+      layout: {
+        organization: {
+          planner: {
+            deskId: 'planner',
+            roleId: 'planner',
+            agentId: 'planner',
+            departmentId: 'dept-delivery',
+            modelProfileId: 'model-profile.planner-default',
+            assignedAgentIds: ['planner'],
+            live: true,
+          },
+          desks: {
+            planner: {
+              id: 'planner',
+              label: 'Planner',
+              departmentId: 'dept-delivery',
+              assignedAgentIds: ['planner'],
+              localState: 'ready',
+            },
+          },
+          agents: {
+            planner: {
+              id: 'planner',
+              deskId: 'planner',
+              departmentId: 'dept-delivery',
+              modelProfileId: 'model-profile.planner-default',
+            },
+          },
+        },
+      },
       handoffs: {
         contextToPlanner: {
           id: 'handoff_1',
@@ -159,12 +241,66 @@ export default async function runOrchestratorStateTests() {
   assert.equal(runtime.agentWorkers['context-manager'].lastUsedFallback, true);
   assert.equal(runtime.agentWorkers.planner.status, 'idle');
   assert.deepEqual(runtime.agentWorkers.planner.proposalArtifactRefs, []);
+  assert.equal(runtime.plannerRuntime.identity.answer, 'Planner');
+  assert.equal(runtime.plannerRuntime.runtimeState, 'live');
+  assert.equal(runtime.plannerRuntime.staffingState, 'present');
+  assert.equal(runtime.plannerRuntime.modelState, 'ready');
+  assert.equal(runtime.canonicalIntent.intentId, 'intent_1');
+  assert.equal(runtime.canonicalIntent.sourceType, 'cto-chat');
   assert.equal(runtime.selfUpgrade.status, 'ready-to-apply');
   assert.equal(runtime.graphs.system.nodes[0].id, 'node_ctx');
   assert.equal(runtime.graphs.world.nodes[0].id, 'node_world');
   assert.equal(runtime.rsg.summary.worldStructure, 1);
   assert.equal(runtime.rsg.activity[0].id, 'rsg_activity_1');
   assert.equal(runtime.rsg.lastStatus, 'rsg-generate');
+
+  const degradedRuntime = buildRuntimePayload({
+    ...workspace,
+    studio: {
+      ...workspace.studio,
+      agentWorkers: {
+        ...workspace.studio.agentWorkers,
+        planner: {
+          ...workspace.studio.agentWorkers.planner,
+          status: 'degraded',
+          statusReason: 'Model unavailable on local backend.',
+          lastBlockedReason: 'Model unavailable on local backend.',
+        },
+      },
+    },
+  });
+  assert.equal(degradedRuntime.plannerRuntime.runtimeState, 'degraded');
+  assert.equal(degradedRuntime.plannerRuntime.modelState, 'degraded');
+  assert.equal(degradedRuntime.plannerRuntime.policyState, 'allowed');
+
+  const blockedRuntime = buildRuntimePayload({
+    ...workspace,
+    studio: {
+      ...workspace.studio,
+      agentWorkers: {
+        ...workspace.studio.agentWorkers,
+        planner: {
+          ...workspace.studio.agentWorkers.planner,
+          status: 'blocked',
+          statusReason: 'Policy gate requires approval.',
+          lastBlockedReason: 'Policy gate requires approval.',
+        },
+      },
+    },
+  });
+  assert.equal(blockedRuntime.plannerRuntime.runtimeState, 'blocked');
+  assert.equal(blockedRuntime.plannerRuntime.policyState, 'blocked');
+
+  const absentRuntime = buildRuntimePayload({
+    ...workspace,
+    studio: {
+      ...workspace.studio,
+      layout: {},
+      agentWorkers: {},
+    },
+  });
+  assert.equal(absentRuntime.plannerRuntime.runtimeState, 'absent');
+  assert.equal(absentRuntime.plannerRuntime.staffingState, 'absent');
 
   const board = normalizeTeamBoardState({
     ...workspace,

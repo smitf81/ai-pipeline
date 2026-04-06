@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { buildCanonicalIntentContract } = require('./intentAnalysis');
 
 const THROUGHPUT_RELATIVE_DIR = path.join('data', 'spatial', 'throughput');
 
@@ -21,6 +22,12 @@ function makeId(prefix) {
 
 function uniqueStrings(values = []) {
   return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function getCurrentIntentRecord(intentState = {}) {
+  const registry = intentState?.registry || null;
+  if (!registry?.currentIntentId) return null;
+  return registry.byId?.[registry.currentIntentId] || null;
 }
 
 function createExecutionProvenance({
@@ -291,6 +298,101 @@ function collectConstraints(report, dashboardState) {
   return [...new Set([...blockers, ...dashboardBlockers, ...packetConstraints, ...lowCriteria])].slice(0, 8);
 }
 
+function firstLine(text = '') {
+  return String(text || '').split(/\r?\n/).find((line) => String(line || '').trim()) || '';
+}
+
+function summarizeTruthSources(truthSources = []) {
+  return (Array.isArray(truthSources) ? truthSources : [])
+    .filter((source) => source && typeof source === 'object' && source.exists)
+    .map((source) => ({
+      relativePath: source.relativePath || null,
+      summary: firstLine(source.content || ''),
+    }))
+    .filter((entry) => entry.relativePath)
+    .slice(0, 6);
+}
+
+function buildPlannerContextLanes(report = {}, dashboardState = {}, previousHandoff = null) {
+  const projectContext = report?.projectContext || {};
+  const canonicalIntent = report?.intentContract?.canonicalIntent || {};
+  const requestedOutcomes = uniqueStrings(
+    Array.isArray(report.requestedOutcomes) && report.requestedOutcomes.length
+      ? report.requestedOutcomes
+      : (Array.isArray(report.tasks) ? report.tasks : []),
+  ).slice(0, 6);
+  const truthSources = Array.isArray(projectContext.truthSources) ? projectContext.truthSources : [];
+  const brainSources = truthSources.filter((source) => /project_brain\.md$/i.test(String(source?.relativePath || '')));
+  const roadmapSources = truthSources.filter((source) => /roadmap\.md$/i.test(String(source?.relativePath || '')));
+  const decisionSources = truthSources.filter((source) => /decisions\.md$/i.test(String(source?.relativePath || '')));
+  return {
+    narrow: {
+      lane: 'local',
+      currentDesk: 'planner',
+      currentTask: requestedOutcomes[0] || report.summary || report.goal || 'Plan the next action.',
+      activeIntent: {
+        intentId: report?.intentContract?.intentId || report?.id || null,
+        sourceType: report?.intentContract?.sourceType || report?.source || 'context-manager',
+        sourceRef: report?.intentContract?.sourceRef || report?.nodeId || null,
+        requestedBy: report?.intentContract?.requestedBy || report?.worker?.id || 'context-manager',
+        priority: report?.intentContract?.priority || report?.urgency || 'normal',
+        statement: canonicalIntent.statement || report.summary || '',
+        goal: canonicalIntent.goal || report.goal || report.summary || '',
+      },
+      selectedAnchorRefs: Array.isArray(report.anchorRefs) ? report.anchorRefs.filter(Boolean).slice(0, 8) : [],
+      taskId: report?.nodeId || previousHandoff?.sourceNodeId || null,
+    },
+    department: {
+      lane: 'department',
+      departmentId: 'dept-delivery',
+      currentFocus: projectContext.currentFocus || dashboardState.current_focus || '',
+      activeMilestone: projectContext.activeMilestone || '',
+      blockers: uniqueStrings([
+        ...(Array.isArray(projectContext.blockers) ? projectContext.blockers : []),
+        ...(Array.isArray(dashboardState.blockers) ? dashboardState.blockers : []),
+      ]).slice(0, 8),
+      recentHandoff: previousHandoff ? {
+        id: previousHandoff.id || null,
+        sourceAgentId: previousHandoff.sourceAgentId || null,
+        sourceNodeId: previousHandoff.sourceNodeId || null,
+        summary: previousHandoff.summary || '',
+        status: previousHandoff.status || 'unknown',
+        requestedOutcomes: Array.isArray(previousHandoff.requestedOutcomes) ? previousHandoff.requestedOutcomes.slice(0, 6) : [],
+      } : null,
+      recentHandoffs: uniqueStrings([
+        previousHandoff?.id || '',
+        ...(Array.isArray(projectContext.recentHandoffs) ? projectContext.recentHandoffs.map((handoff) => handoff?.id || handoff?.summary || '') : []),
+      ]).slice(0, 6),
+      orchestratorState: dashboardState?.status || dashboardState?.current_focus || 'unknown',
+      teamBoardSummary: dashboardState?.teamBoardSummary || {},
+    },
+    broad: {
+      lane: 'broad',
+      brainRoot: projectContext.brainRoot || null,
+      currentFocus: projectContext.currentFocus || '',
+      activeMilestone: projectContext.activeMilestone || '',
+      projectBrain: brainSources.map((source) => ({
+        relativePath: source.relativePath || null,
+        summary: firstLine(source.content || ''),
+      })).filter((entry) => entry.relativePath),
+      roadmap: roadmapSources.map((source) => ({
+        relativePath: source.relativePath || null,
+        summary: firstLine(source.content || ''),
+      })).filter((entry) => entry.relativePath),
+      recentDecisions: decisionSources.map((source) => ({
+        relativePath: source.relativePath || null,
+        summary: firstLine(source.content || ''),
+      })).filter((entry) => entry.relativePath),
+      truthSources: summarizeTruthSources(truthSources),
+      anchorRefs: Array.isArray(projectContext.anchorRefs) ? projectContext.anchorRefs.slice(0, 8) : [],
+      graphSummary: {
+        nodes: projectContext.graphBundle?.system?.nodes?.length || 0,
+        edges: projectContext.graphBundle?.system?.edges?.length || 0,
+      },
+    },
+  };
+}
+
 function createPlannerHandoff(report, dashboardState = {}, previousHandoff = null) {
   if (!report) return null;
   const graphBundle = report?.projectContext?.graphBundle || null;
@@ -307,6 +409,17 @@ function createPlannerHandoff(report, dashboardState = {}, previousHandoff = nul
   const clarifications = Array.isArray(report?.contextPacket?.clarifications)
     ? report.contextPacket.clarifications.filter(Boolean)
     : [];
+  const intentContract = report?.intentContract || buildCanonicalIntentContract({
+    report,
+    packet: report?.contextPacket || {},
+    sourceType: report?.intentContract?.sourceType || report?.source || 'context-intake',
+    sourceRef: report?.intentContract?.sourceRef || report?.nodeId || null,
+    requestedBy: report?.intentContract?.requestedBy || report?.worker?.id || 'context-manager',
+    priority: report?.intentContract?.priority || report?.urgency || 'normal',
+    timestamp: report?.intentContract?.timestamp || report?.createdAt || nowIso(),
+    provenance: report?.intentContract?.provenance || {},
+    intentId: report?.intentContract?.intentId || report?.id || null,
+  });
   const plannerUsefulness = Number(report?.scores?.plannerUsefulness || 0);
   const executionReadiness = Number(report?.scores?.executionReadiness || 0);
   if (plannerUsefulness < 0.55) clarifications.push('Planner usefulness is low and needs tighter scope before execution expands.');
@@ -324,6 +437,7 @@ function createPlannerHandoff(report, dashboardState = {}, previousHandoff = nul
     constraints.length ? `Constraints and review signals: ${constraints.join(' | ')}.` : 'Constraints and review signals: none surfaced from the latest report.',
     clarifications.length ? `Still unclear: ${clarifications.join(' ')}` : 'Still unclear: no immediate clarification requested.',
   ].filter(Boolean).join('\n');
+  const contextLanes = buildPlannerContextLanes(report, dashboardState, previousHandoff);
 
   return {
     id: previousHandoff?.sourceNodeId === report.nodeId ? (previousHandoff.id || makeId('handoff')) : makeId('handoff'),
@@ -331,6 +445,15 @@ function createPlannerHandoff(report, dashboardState = {}, previousHandoff = nul
     targetAgentId: 'planner',
     createdAt: report.createdAt || nowIso(),
     sourceNodeId: report.nodeId || null,
+    intentId: intentContract.intentId,
+    sourceType: intentContract.sourceType,
+    sourceRef: intentContract.sourceRef,
+    requestedBy: intentContract.requestedBy,
+    priority: intentContract.priority,
+    timestamp: intentContract.timestamp,
+    intentContract,
+    canonicalIntent: intentContract.canonicalIntent,
+    contextLanes,
     summary: report.summary || 'Intent ready for planner review.',
     goal: report.goal || report.truth?.goal || report.summary || '',
     problemStatement,
@@ -353,7 +476,7 @@ function createPlannerHandoff(report, dashboardState = {}, previousHandoff = nul
 }
 
 function buildRuntimeSnapshot({ workspace, runs = [], health = null }) {
-  const latestIntent = workspace?.intentState?.contextReport || workspace?.intentState?.latest || null;
+  const latestIntent = getCurrentIntentRecord(workspace?.intentState || {});
   const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
   const teamBoard = workspace?.studio?.teamBoard || null;
   const orchestrator = workspace?.studio?.orchestrator || null;
@@ -446,11 +569,12 @@ function buildSinkVerification({ rootPath, workspace, history = [], session, tas
   const selfUpgrade = workspace?.studio?.selfUpgrade || {};
   const artifacts = collectRunnerArtifacts(taskDir);
   const managerSummary = report?.projectContext?.managerSummary || report?.provenance?.managerSummary || null;
+  const latestIntent = getCurrentIntentRecord(workspace?.intentState || {});
   return {
     'workspace.intentState': {
       read: true,
-      write: Boolean(workspace?.intentState?.latest || workspace?.intentState?.contextReport),
-      summary: workspace?.intentState?.latest?.summary || workspace?.intentState?.contextReport?.summary || 'No intent report recorded.',
+      write: Boolean(latestIntent),
+      summary: latestIntent?.summary || 'No intent report recorded.',
     },
     'workspace.studio.handoffs.contextToPlanner': {
       read: true,
@@ -659,13 +783,25 @@ async function runThroughputSession(options = {}) {
       },
       intentState: {
         ...(workspace.intentState || {}),
-        latest: report,
-        contextReport: report,
-        byNode: {
-          ...((workspace.intentState || {}).byNode || {}),
-          [nodeId]: report,
+        registry: {
+          currentIntentId: report?.id || nodeId,
+          latestIntentId: report?.id || nodeId,
+          byId: {
+            ...((workspace.intentState || {}).registry?.byId || {}),
+            [report?.id || nodeId]: {
+              ...report,
+              id: report?.id || nodeId,
+            },
+          },
+          records: [
+            {
+              ...report,
+              id: report?.id || nodeId,
+            },
+            ...((((workspace.intentState || {}).registry?.records) || []).filter((entry) => (entry?.id || entry?.nodeId) !== (report?.id || nodeId))),
+          ].slice(0, 24),
         },
-        reports: [report, ...(((workspace.intentState || {}).reports || []).filter((entry) => entry.nodeId !== nodeId))].slice(0, 24),
+        currentIntentId: report?.id || nodeId,
       },
     }, session);
     workspace = await persistWorkspace(workspace);
@@ -1076,6 +1212,7 @@ async function reconcilePendingThroughputSessions({
 module.exports = {
   THROUGHPUT_RELATIVE_DIR,
   classifyExecutionProvenance,
+  buildPlannerContextLanes,
   createExecutionProvenance,
   createPlannerHandoff,
   createSession,

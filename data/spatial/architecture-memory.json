@@ -1,38 +1,36 @@
 {
   "architectureMemory": {
-    "system": "ACE",
+    "adapters": [],
     "layers": {
-      "interface": [
-        "Spatial IDE Interface Layer"
+      "execution": [
+        "Code Generator",
+        "Test Generator"
       ],
       "intelligence": [
         "Intent Engine",
         "Task Planner"
       ],
-      "execution": [
-        "Code Generator",
-        "Test Generator"
+      "interface": [
+        "Spatial IDE Interface Layer"
       ]
     },
-    "subsystems": [],
     "modules": [],
-    "world": {
-      "domain": "gameplay-systems",
-      "systems": [],
-      "mechanics": [],
-      "quests": [],
-      "items": [],
-      "constraints": []
-    },
-    "adapters": [],
-    "proposals": [
-      "world-structure: Dragon perch intent"
-    ],
+    "proposals": [],
     "rules": [
       "modular architecture",
       "no circular dependencies",
       "stateless services"
     ],
-    "versions": []
+    "subsystems": [],
+    "system": "ACE",
+    "versions": [],
+    "world": {
+      "constraints": [],
+      "domain": "gameplay-systems",
+      "items": [],
+      "mechanics": [],
+      "quests": [],
+      "systems": []
+    }
   }
 }

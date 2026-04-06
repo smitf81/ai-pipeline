@@ -1,39 +1,32 @@
 [
   {
-    "at": "2026-03-31T09:59:37.437Z",
-    "type": "workspace-save",
+    "at": "2026-04-02T10:43:57.122Z",
+    "type": "cto-request-plan",
     "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0002",
+      "taskId": "10000",
+      "roleId": "planner"
     }
   },
   {
-    "at": "2026-03-31T09:59:47.253Z",
-    "type": "workspace-save",
+    "at": "2026-04-02T10:43:58.140Z",
+    "type": "team-board-builder-preflight-blocked",
     "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0002",
+      "taskId": "10000"
     }
   },
   {
-    "at": "2026-03-31T10:02:00.251Z",
-    "type": "workspace-save",
+    "at": "2026-04-02T10:45:56.230Z",
+    "type": "cto-request-execution",
     "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
+      "cardId": "0002",
+      "taskId": "10000",
+      "roleId": "executor"
     }
   },
   {
-    "at": "2026-03-31T10:02:03.621Z",
+    "at": "2026-04-02T10:47:32.318Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -44,7 +37,7 @@
     }
   },
   {
-    "at": "2026-03-31T10:16:36.345Z",
+    "at": "2026-04-02T10:49:17.020Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -55,7 +48,7 @@
     }
   },
   {
-    "at": "2026-03-31T10:53:56.118Z",
+    "at": "2026-04-02T10:49:21.130Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -66,7 +59,7 @@
     }
   },
   {
-    "at": "2026-03-31T10:53:58.682Z",
+    "at": "2026-04-02T10:49:27.349Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -77,7 +70,7 @@
     }
   },
   {
-    "at": "2026-03-31T10:54:32.779Z",
+    "at": "2026-04-02T10:49:47.553Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -88,7 +81,7 @@
     }
   },
   {
-    "at": "2026-03-31T10:54:34.635Z",
+    "at": "2026-04-02T10:49:49.958Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -99,7 +92,7 @@
     }
   },
   {
-    "at": "2026-03-31T10:54:38.106Z",
+    "at": "2026-04-02T10:49:59.542Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -110,7 +103,7 @@
     }
   },
   {
-    "at": "2026-03-31T10:56:39.545Z",
+    "at": "2026-04-02T10:50:35.388Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -121,7 +114,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:07:25.481Z",
+    "at": "2026-04-02T10:50:42.676Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -132,7 +125,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:07:52.549Z",
+    "at": "2026-04-02T10:50:58.081Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -143,7 +136,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:08:04.149Z",
+    "at": "2026-04-02T10:51:01.069Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -154,7 +147,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:08:20.278Z",
+    "at": "2026-04-02T10:51:13.190Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -165,7 +158,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:14:31.139Z",
+    "at": "2026-04-02T10:51:15.591Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -176,7 +169,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:17:35.234Z",
+    "at": "2026-04-02T10:51:20.820Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -187,7 +180,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:23:39.482Z",
+    "at": "2026-04-02T10:51:27.032Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -198,7 +191,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:24:01.435Z",
+    "at": "2026-04-02T10:51:28.229Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -209,7 +202,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:24:11.699Z",
+    "at": "2026-04-02T10:51:29.386Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -220,7 +213,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:24:14.292Z",
+    "at": "2026-04-02T10:51:37.784Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -231,7 +224,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:25:04.824Z",
+    "at": "2026-04-02T10:51:39.645Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -242,7 +235,7 @@
     }
   },
   {
-    "at": "2026-03-31T11:27:02.753Z",
+    "at": "2026-04-02T10:53:08.600Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 1,
@@ -253,10 +246,10 @@
     }
   },
   {
-    "at": "2026-03-31T12:16:10.393Z",
+    "at": "2026-04-06T09:16:13.627Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -264,10 +257,10 @@
     }
   },
   {
-    "at": "2026-03-31T12:32:35.082Z",
+    "at": "2026-04-06T09:16:52.491Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -275,10 +268,10 @@
     }
   },
   {
-    "at": "2026-03-31T12:34:50.639Z",
+    "at": "2026-04-06T09:17:01.640Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -286,10 +279,10 @@
     }
   },
   {
-    "at": "2026-03-31T12:34:51.621Z",
+    "at": "2026-04-06T09:17:18.747Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -297,10 +290,10 @@
     }
   },
   {
-    "at": "2026-03-31T12:34:55.104Z",
+    "at": "2026-04-06T09:17:26.083Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -308,10 +301,10 @@
     }
   },
   {
-    "at": "2026-03-31T12:34:58.118Z",
+    "at": "2026-04-06T09:17:29.367Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -319,10 +312,10 @@
     }
   },
   {
-    "at": "2026-03-31T12:35:01.955Z",
+    "at": "2026-04-06T09:17:32.779Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -330,10 +323,10 @@
     }
   },
   {
-    "at": "2026-03-31T12:35:11.882Z",
+    "at": "2026-04-06T09:17:34.309Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -341,10 +334,10 @@
     }
   },
   {
-    "at": "2026-03-31T12:35:13.969Z",
+    "at": "2026-04-06T09:17:36.172Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -352,10 +345,10 @@
     }
   },
   {
-    "at": "2026-03-31T14:17:42.045Z",
+    "at": "2026-04-06T09:17:56.686Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -363,10 +356,10 @@
     }
   },
   {
-    "at": "2026-03-31T14:17:55.994Z",
+    "at": "2026-04-06T09:18:11.592Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -374,10 +367,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:44:27.600Z",
+    "at": "2026-04-06T09:18:14.172Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -385,10 +378,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:44:29.145Z",
+    "at": "2026-04-06T09:18:35.342Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -396,10 +389,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:45:21.790Z",
+    "at": "2026-04-06T09:18:39.981Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -407,10 +400,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:45:24.059Z",
+    "at": "2026-04-06T09:18:42.194Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -418,10 +411,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:45:25.827Z",
+    "at": "2026-04-06T09:18:52.157Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -429,10 +422,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:45:28.963Z",
+    "at": "2026-04-06T09:18:53.020Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -440,10 +433,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:45:37.215Z",
+    "at": "2026-04-06T09:18:58.700Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -451,10 +444,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:45:39.824Z",
+    "at": "2026-04-06T09:19:01.917Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -462,10 +455,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:46:21.757Z",
+    "at": "2026-04-06T09:20:05.389Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -473,10 +466,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:52:06.667Z",
+    "at": "2026-04-06T09:20:08.561Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -484,10 +477,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:52:26.888Z",
+    "at": "2026-04-06T09:20:26.921Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -495,10 +488,10 @@
     }
   },
   {
-    "at": "2026-04-01T08:54:31.923Z",
+    "at": "2026-04-06T09:20:28.659Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -506,10 +499,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:11:00.533Z",
+    "at": "2026-04-06T09:20:30.651Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -517,10 +510,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:11:01.575Z",
+    "at": "2026-04-06T09:20:31.348Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -528,10 +521,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:16:18.250Z",
+    "at": "2026-04-06T09:20:33.116Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -539,10 +532,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:16:20.623Z",
+    "at": "2026-04-06T09:20:34.639Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -550,10 +543,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:17:08.622Z",
+    "at": "2026-04-06T09:20:35.876Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -561,10 +554,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:17:20.304Z",
+    "at": "2026-04-06T09:20:41.880Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -572,10 +565,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:19:11.838Z",
+    "at": "2026-04-06T09:20:58.104Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -583,10 +576,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:19:13.063Z",
+    "at": "2026-04-06T09:20:59.609Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -594,10 +587,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:19:29.541Z",
+    "at": "2026-04-06T09:21:02.327Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -605,10 +598,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:19:34.156Z",
+    "at": "2026-04-06T09:21:04.344Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -616,10 +609,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:19:36.340Z",
+    "at": "2026-04-06T09:21:08.217Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -627,10 +620,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:19:41.614Z",
+    "at": "2026-04-06T09:21:18.906Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -638,10 +631,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:19:43.524Z",
+    "at": "2026-04-06T09:21:20.350Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -649,10 +642,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:19:47.715Z",
+    "at": "2026-04-06T09:21:23.273Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -660,10 +653,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:39:18.831Z",
+    "at": "2026-04-06T09:21:28.100Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -671,10 +664,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:39:20.552Z",
+    "at": "2026-04-06T09:21:29.851Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -682,10 +675,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:50:19.714Z",
+    "at": "2026-04-06T09:21:31.323Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -693,10 +686,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:50:26.861Z",
+    "at": "2026-04-06T09:21:32.957Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -704,10 +697,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:50:32.020Z",
+    "at": "2026-04-06T09:21:35.457Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -715,10 +708,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:50:36.533Z",
+    "at": "2026-04-06T09:21:37.139Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -726,10 +719,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:50:41.589Z",
+    "at": "2026-04-06T09:21:39.261Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -737,10 +730,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:50:44.785Z",
+    "at": "2026-04-06T09:21:40.259Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -748,10 +741,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:50:53.817Z",
+    "at": "2026-04-06T09:21:42.873Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -759,10 +752,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:51:06.210Z",
+    "at": "2026-04-06T09:21:43.939Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -770,10 +763,10 @@
     }
   },
   {
-    "at": "2026-04-01T09:51:08.610Z",
+    "at": "2026-04-06T09:21:44.955Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -781,10 +774,10 @@
     }
   },
   {
-    "at": "2026-04-01T10:15:20.675Z",
+    "at": "2026-04-06T09:21:52.871Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -792,10 +785,10 @@
     }
   },
   {
-    "at": "2026-04-01T10:15:23.122Z",
+    "at": "2026-04-06T09:21:58.899Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -803,10 +796,10 @@
     }
   },
   {
-    "at": "2026-04-01T10:45:55.190Z",
+    "at": "2026-04-06T09:22:21.170Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -814,10 +807,10 @@
     }
   },
   {
-    "at": "2026-04-01T10:47:17.592Z",
+    "at": "2026-04-06T09:22:24.557Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -825,10 +818,10 @@
     }
   },
   {
-    "at": "2026-04-01T10:47:34.063Z",
+    "at": "2026-04-06T09:22:28.972Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -836,10 +829,10 @@
     }
   },
   {
-    "at": "2026-04-01T15:50:10.840Z",
+    "at": "2026-04-06T09:22:31.788Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -847,10 +840,10 @@
     }
   },
   {
-    "at": "2026-04-01T16:39:55.604Z",
+    "at": "2026-04-06T09:22:34.664Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -858,10 +851,10 @@
     }
   },
   {
-    "at": "2026-04-01T17:59:44.766Z",
+    "at": "2026-04-06T09:22:36.139Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,
@@ -869,10 +862,10 @@
     }
   },
   {
-    "at": "2026-04-01T18:14:41.518Z",
+    "at": "2026-04-06T09:22:39.327Z",
     "type": "workspace-save",
     "summary": {
-      "nodes": 1,
+      "nodes": 0,
       "edges": 0,
       "versions": [],
       "sketches": 0,

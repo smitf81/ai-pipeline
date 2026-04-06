@@ -1,7 +1,176 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-04-01T18:15:25.271Z",
+  "updated_at": "2026-04-06T14:57:55.110Z",
   "entries": [
+    {
+      "id": "cto_diag_1775487475110",
+      "timestamp": "2026-04-06T14:57:55.110Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "interval-guard",
+      "category": "timeout",
+      "status": "offline",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama status check timed out after 100ms.",
+      "failureKind": null,
+      "runId": null,
+      "httpStatus": null,
+      "actionId": null,
+      "availableActionIds": []
+    },
+    {
+      "id": "cto_diag_1775126786872",
+      "timestamp": "2026-04-02T10:46:26.872Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775126756847-e8wvaj",
+      "httpStatus": 0,
+      "actionId": "request-execution",
+      "availableActionIds": [
+        "request-execution"
+      ]
+    },
+    {
+      "id": "cto_diag_1775126728861",
+      "timestamp": "2026-04-02T10:45:28.861Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775126698833-xxzjfl",
+      "httpStatus": 0,
+      "actionId": "assign-agent-to-desk",
+      "availableActionIds": [
+        "request-execution"
+      ]
+    },
+    {
+      "id": "cto_diag_1775126667808",
+      "timestamp": "2026-04-02T10:44:27.808Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775126637780-a6ddxa",
+      "httpStatus": 0,
+      "actionId": "request-plan",
+      "availableActionIds": [
+        "assign-agent-to-desk"
+      ]
+    },
+    {
+      "id": "cto_diag_1775126616930",
+      "timestamp": "2026-04-02T10:43:36.930Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775126586919-zmbk4b",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ]
+    },
+    {
+      "id": "cto_diag_1775122356484",
+      "timestamp": "2026-04-02T09:32:36.484Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "backend_unreachable",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "The input was expected to not match the regular expression /A QA Lead hire is currently pending/i. Input:\n\n'You are the ACE CTO / Architect chat utility.\\n' +\n  'Use only grounded facts from the supplied ACE context.\\n' +\n  'Do not invent departments, desks, routes, or completed actions.\\n' +\n  'Prefer governance and delegation language over pretending to do all work directly.\\n' +\n  'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.\\n' +\n  'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.\\n' +\n  'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.\\n' +\n  'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.\\n' +\n  'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.\\n' +\n  'If an action is unavailable, explain why in system terms.\\n' +\n  'Return JSON only with this exact shape:\\n' +\n  '{\\n' +\n  '  \"reply_text\": \"string\",\\n' +\n  '  \"response_kind\": \"advisory|actionable|blocked\",\\n' +\n  '  \"delegation\": { \"desk_id\": \"string\", \"desk_label\": \"string\", \"why\": \"string\" } | null,\\n' +\n  '  \"action\": { \"id\": \"string\" } | null\\n' +\n  '}\\n' +\n  'response_kind must be one of advisory, actionable, blocked.\\n' +\n  'If action is not null, action.id must be one of the ids listed in available_actions.\\n' +\n  'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.\\n' +\n  'Do not emit route status fields. Route status is owned by the server, not the model.\\n' +\n  'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.\\n' +\n  '\\n' +\n  'ACE context:\\n' +\n  '{\\n' +\n  '  \"latest_user_message\": \"run a QA smoke test\",\\n' +\n  '  \"history\": [\\n' +\n  '    {\\n' +\n  '      \"role\": \"assistant\",\\n' +\n  '      \"text\": \"A QA Lead hire is currently pending before we can proceed.\",\\n' +\n  '      \"action\": null\\n' +\n  '    }\\n' +\n  '  ],\\n' +\n  '  \"context\": {\\n' +\n  '    \"workspace\": {\\n' +\n  '      \"orchestratorStatus\": \"needs-attention\",\\n' +\n  '      \"activeDeskIds\": [\\n' +\n  '        \"context-manager\",\\n' +\n  '        \"memory-archivist\",\\n' +\n  '        \"cto-architect\"\\n' +\n  '      ],\\n' +\n  '      \"teamBoardCardCount\": 1,\\n' +\n  '      \"pageTitle\": null\\n' +\n  '    },\\n' +\n  '    \"pipeline\": null,\\n' +\n  '    \"desks\": [\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"context-manager\",\\n' +\n  '        \"label\": \"Context Manager\",\\n' +\n  '        \"departmentLabel\": \"Intake\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"context-manager\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 111,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual context-manager run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"degraded\",\\n' +\n  '          \"blocked\": true,\\n' +\n  '          \"statusLabel\": \"missing lead\",\\n' +\n  '          \"openRoles\": [\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"context-manager\",\\n' +\n  '              \"roleLabel\": \"Context Manager\",\\n' +\n  '              \"kind\": \"missing lead\",\\n' +\n  '              \"urgency\": \"critical\",\\n' +\n  '              \"blocker\": true\\n' +\n  '            },\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"planner\",\\n' +\n  '              \"roleLabel\": \"Planner\",\\n' +\n  '              \"kind\": \"optional hire\",\\n' +\n  '              \"urgency\": \"low\",\\n' +\n  '              \"blocker\": false\\n' +\n  '            }\\n' +\n  '          ],\\n' +\n  '          \"blockers\": [\\n' +\n  '            \"Context Manager\"\\n' +\n  '          ]\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"planner\",\\n' +\n  '        \"label\": \"Planner\",\\n' +\n  '        \"departmentLabel\": \"Delivery\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"planner\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 111,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual planner run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"optional hire\",\\n' +\n  '          \"openRoles\": [\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"context-manager\",\\n' +\n  '              \"roleLabel\": \"Context Manager\",\\n' +\n  '              \"kind\": \"optional hire\",\\n' +\n  '              \"urgency\": \"low\",\\n' +\n  '              \"blocker\": false\\n' +\n  '            }\\n' +\n  '          ],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"executor\",\\n' +\n  '        \"label\": \"Executor\",\\n' +\n  '        \"departmentLabel\": \"Delivery\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"executor\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 111,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual executor run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Awaiting approval: Update or check the status of RGS nodes\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"optional hire\",\\n' +\n  '          \"openRoles\": [\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"planner\",\\n' +\n  '              \"roleLabel\": \"Planner\",\\n' +\n  '              \"kind\": \"optional hire\",\\n' +\n  '              \"urgency\": \"low\",\\n' +\n  '              \"blocker\": false\\n' +\n  '            }\\n' +\n  '          ],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"qa-lead\",\\n' +\n  '        \"label\": \"QA Lead\",\\n' +\n  '        \"departmentLabel\": \"Quality\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"qa-lead\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 0,\\n' +\n  '        \"reportCount\": 111,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.\",\\n' +\n  '        \"truthContext\": \"Assessment room for QA reports, scorecards, and readiness evidence.\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"optional hire\",\\n' +\n  '          \"openRoles\": [\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"memory-archivist\",\\n' +\n  '              \"roleLabel\": \"Memory Archivist\",\\n' +\n  '              \"kind\": \"optional hire\",\\n' +\n  '              \"urgency\": \"low\",\\n' +\n  '              \"blocker\": false\\n' +\n  '            }\\n' +\n  '          ],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"memory-archivist\",\\n' +\n  '        \"label\": \"Memory Archivist\",\\n' +\n  '        \"departmentLabel\": \"Archive\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"memory-archivist\",\\n' +\n  '          \"dave\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 1,\\n' +\n  '        \"liveAgentStatuses\": [\\n' +\n  '          \"memory-archivist:running\"\\n' +\n  '        ],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 111,\\n' +\n  '        \"readOnly\": false,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"Archivist writeback actions exist, but they are not exposed as chat confirmations in this slice.\",\\n' +\n  '        \"truthContext\": \"Capture notes, handoffs, and artifact history\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"degraded\",\\n' +\n  '          \"blocked\": true,\\n' +\n  '          \"statusLabel\": \"missing lead\",\\n' +\n  '          \"openRoles\": [\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"memory-archivist\",\\n' +\n  '              \"roleLabel\": \"Memory Archivist\",\\n' +\n  '              \"kind\": \"missing lead\",\\n' +\n  '              \"urgency\": \"critical\",\\n' +\n  '              \"blocker\": true\\n' +\n  '            },\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"context-manager\",\\n' +\n  '              \"roleLabel\": \"Context Manager\",\\n' +\n  '              \"kind\": \"optional hire\",\\n' +\n  '              \"urgency\": \"low\",\\n' +\n  '              \"blocker\": false\\n' +\n  '            }\\n' +\n  '          ],\\n' +\n  '          \"blockers\": [\\n' +\n  '            \"Memory Archivist\"\\n' +\n  '          ]\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"cto-architect\",\\n' +\n  '        \"label\": \"CTO / Architect\",\\n' +\n  '        \"departmentLabel\": \"Control Centre\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"cto-architect\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 1,\\n' +\n  '        \"liveAgentStatuses\": [\\n' +\n  '          \"cto-architect:running\"\\n' +\n  '        ],\\n' +\n  '        \"taskCount\": 2,\\n' +\n  '        \"reportCount\": 112,\\n' +\n  '        \"readOnly\": false,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"CTO property actions are available through the desk panel. Hiring is routed separately through Talent Acquisition.\",\\n' +\n  '        \"truthContext\": \"Review desk overlap, approval state, and guardrails\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"degraded\",\\n' +\n  '          \"blocked\": true,\\n' +\n  '          \"statusLabel\": \"missing lead\",\\n' +\n  '          \"openRoles\": [\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"cto-architect\",\\n' +\n  '              \"roleLabel\": \"CTO / Architect\",\\n' +\n  '              \"kind\": \"missing lead\",\\n' +\n  '              \"urgency\": \"critical\",\\n' +\n  '              \"blocker\": true\\n' +\n  '            },\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"qa-lead\",\\n' +\n  '              \"roleLabel\": \"QA / Test Lead\",\\n' +\n  '              \"kind\": \"optional hire\",\\n' +\n  '              \"urgency\": \"low\",\\n' +\n  '              \"blocker\": false\\n' +\n  '            }\\n' +\n  '          ],\\n' +\n  '          \"blockers\": [\\n' +\n  '            \"CTO / Architect\"\\n' +\n  '          ]\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"integration_auditor\",\\n' +\n  '        \"label\": \"Integration Auditor\",\\n' +\n  '        \"departmentLabel\": \"Talent Acquisition\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"integration_auditor\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 0,\\n' +\n  '        \"reportCount\": 111,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"No grounded CTO chat action route is wired for this desk yet.\",\\n' +\n  '        \"truthContext\": \"Hiring-demand room for seat coverage, role fit, and open-role planning.\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"degraded\",\\n' +\n  '          \"blocked\": true,\\n' +\n  '          \"statusLabel\": \"missing lead\",\\n' +\n  '          \"openRoles\": [\\n' +\n  '            {\\n' +\n  '              \"roleId\": \"integration_auditor\",\\n' +\n  '              \"roleLabel\": \"Integration Auditor\",\\n' +\n  '              \"kind\": \"missing lead\",\\n' +\n  '              \"urgency\": \"critical\",\\n' +\n  '              \"blocker\": true\\n' +\n  '            }\\n' +\n  '          ],\\n' +\n  '          \"blockers\": [\\n' +\n  '            \"Integration Auditor\"\\n' +\n  '          ]\\n' +\n  '        }\\n' +\n  '      }\\n'... 74463 more characters",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775122356480-qlypsv",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-qa"
+      ]
+    },
+    {
+      "id": "cto_diag_1775122356022",
+      "timestamp": "2026-04-02T09:32:36.022Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat action referenced an unavailable action id: not-available.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1775122356019-5vkq0w",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ]
+    },
+    {
+      "id": "cto_diag_1775122355577",
+      "timestamp": "2026-04-02T09:32:35.577Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat delegation did not satisfy the required contract.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1775122355576-szjgk6",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ]
+    },
+    {
+      "id": "cto_diag_1775122355135",
+      "timestamp": "2026-04-02T09:32:35.135Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775122355133-rv5xjv",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ]
+    },
     {
       "id": "cto_diag_1775067325270",
       "timestamp": "2026-04-01T18:15:25.270Z",
@@ -15,7 +184,7 @@
       "reason": "CTO action is targeting qa-lead, but the pipeline is currently on planner.",
       "failureKind": "contract",
       "runId": null,
-      "httpStatus": null,
+      "httpStatus": 0,
       "actionId": "hire-role",
       "availableActionIds": [
         "hire-role"

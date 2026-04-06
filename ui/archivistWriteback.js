@@ -5,6 +5,11 @@ const { listQARuns, summarizeQARun } = require('./qaRunner');
 const { listThroughputSessions, summarizeSession } = require('./throughputDebug');
 const { upsertArchivistWritebackBlock } = require('./archivistWritebackMarkers');
 const { refreshCandidateKnownFixesFromFailureHistory, summarizeFailureHistory } = require('./failureMemory');
+const {
+  classifyWorkspacePath,
+  formatPathBucketSummary,
+  writeTextIfChanged,
+} = require('./changeHygiene');
 
 const RECENT_THROUGHPUT_WINDOW_MS = 1000 * 60 * 60 * 24 * 7;
 const ARCHIVIST_CONTEXT_BUNDLE_BASENAME = 'archivist_context_bundle';
@@ -74,8 +79,7 @@ function readText(filePath, fallback = '') {
 }
 
 function writeText(filePath, value) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, value, 'utf8');
+  writeTextIfChanged(filePath, value);
 }
 
 function workspacePath(rootPath) {
@@ -307,22 +311,23 @@ function buildDocumentTrustReport(rootPath, taskBundle = {}) {
       newestModifiedAt = modifiedAt;
     }
     const ageHours = stat ? Math.max(0, (Date.now() - stat.mtimeMs) / (1000 * 60 * 60)) : null;
-    const isCanonicalBrain = normalized.startsWith('brain/emergence/');
-    const isPlannerFuel = normalized.startsWith('brain/context/');
-    const isTaskArtifact = normalized.startsWith('work/tasks/');
+    const classification = classifyWorkspacePath(normalized);
     documents.push({
       path: normalized,
       exists,
-      role: isCanonicalBrain ? 'canonical' : (isPlannerFuel ? 'planner-context' : (isTaskArtifact ? 'task-artifact' : 'support')),
+      role: classification.bucket,
+      signalLabel: classification.label,
+      signalReason: classification.reason,
       modifiedAt,
       ageHours: ageHours == null ? null : Number(ageHours.toFixed(1)),
-      staleCandidate: Boolean(exists && ageHours != null && ageHours > 24 * 14 && (isCanonicalBrain || isPlannerFuel)),
+      staleCandidate: Boolean(exists && ageHours != null && ageHours > 24 * 14 && (classification.bucket === 'behavioral' || classification.bucket === 'operational')),
       redundantCandidate: Boolean(exists && /deprecated compatibility view/i.test(fs.readFileSync(absolute, 'utf8'))),
     });
   });
 
   return {
     documents,
+    classification: formatPathBucketSummary(selectedDocs),
     newestModifiedAt,
     missingCount: documents.filter((doc) => !doc.exists).length,
     staleCandidateCount: documents.filter((doc) => doc.staleCandidate).length,
@@ -341,7 +346,10 @@ function buildArchivistContextBundle(rootPath, snapshot = {}, options = {}) {
     ].map(normalizeWorkspacePath)),
   ];
   const contextWindows = buildContextWindowSets(rootPath, taskBundle);
-  const trust = buildDocumentTrustReport(rootPath, taskBundle);
+  const trust = {
+    ...buildDocumentTrustReport(rootPath, taskBundle),
+    classification: formatPathBucketSummary(targetFiles),
+  };
   return {
     generatedAt: snapshot.generatedAt || nowIso(),
     summary: snapshot.summary || '',
@@ -360,6 +368,7 @@ function buildArchivistContextBundle(rootPath, snapshot = {}, options = {}) {
       enabled: true,
       note: 'Archivist writes the bundle locally, marks freshness, and keeps canonical brain docs read-mostly.',
     },
+    governedRecords: Array.isArray(snapshot.governedOutcomes) ? snapshot.governedOutcomes : [],
   };
 }
 
@@ -399,6 +408,13 @@ function renderArchivistContextBundle(bundle = {}) {
     '```json',
     JSON.stringify(bundle.trust || {}, null, 2),
     '```',
+    '',
+    '## Change Classification',
+    `- Behavioral changes: ${bundle.trust?.classification?.behavioral || 0}`,
+    `- Operational refreshes: ${bundle.trust?.classification?.operational || 0}`,
+    `- Generated snapshot churn: ${bundle.trust?.classification?.generated || 0}`,
+    `- Task artifacts: ${bundle.trust?.classification?.taskArtifacts || 0}`,
+    `- Support files: ${bundle.trust?.classification?.support || 0}`,
     '',
     '## Validated Loop',
     `- ${bundle.validatedLoop?.note || 'Archivist keeps the bundle local and validated.'}`,
@@ -491,6 +507,89 @@ function normalizeLedgerSummary(rootPath, agentId = 'dave') {
   };
 }
 
+function normalizeGovernedOutcomeLifecycle(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return 'queued';
+  if (['done', 'complete', 'completed', 'success'].includes(normalized)) return 'done';
+  if (normalized === 'blocked') return 'blocked';
+  if (normalized.includes('fail') || normalized === 'error') return 'failed';
+  if (['running', 'active', 'in_progress', 'in-progress', 'building', 'applying', 'deploying', 'verifying', 'review'].includes(normalized)) {
+    return 'in_progress';
+  }
+  return 'queued';
+}
+
+function firstNonEmptyString(values = []) {
+  for (const value of values) {
+    const normalized = String(value || '').trim();
+    if (normalized) return normalized;
+  }
+  return '';
+}
+
+function normalizeGovernedOutcomeStatus(card = {}) {
+  const lifecycle = normalizeGovernedOutcomeLifecycle(card.status || card.state || '');
+  if (lifecycle === 'done') return 'completed';
+  if (lifecycle === 'blocked') return 'blocked';
+  return null;
+}
+
+function buildGovernedOutcomeSummary(card = {}, workspace = {}) {
+  const currentIntentId = workspace?.intentState?.currentIntentId || workspace?.intentState?.registry?.currentIntentId || null;
+  const intentRegistry = workspace?.intentState?.registry?.byId || {};
+  const intentId = card.sourceIntentId || card.taskFlow?.sourceIntentId || currentIntentId || null;
+  const intentRecord = intentId ? intentRegistry[intentId] : null;
+  const intentSummary = firstNonEmptyString([
+    intentRecord?.semanticMeaning?.summary,
+    intentRecord?.semanticMeaning?.statement,
+    intentRecord?.semanticMeaning?.goal,
+    card.title,
+  ]);
+  const outcomeStatus = normalizeGovernedOutcomeStatus(card);
+  if (!outcomeStatus) return null;
+  const outcomeSummary = outcomeStatus === 'blocked'
+    ? firstNonEmptyString([
+        card.executorBlocker?.summary,
+        card.executorBlocker?.message,
+        card.executionPackage?.summary,
+        card.state,
+        card.status,
+      ])
+    : firstNonEmptyString([
+        card.executionPackage?.summary,
+        card.state,
+        card.status,
+        'Completed and stable.',
+      ]);
+  return {
+    cardId: card.id || null,
+    taskId: firstNonEmptyString([card.runnerTaskId, card.builderTaskId, card.executionPackage?.taskId]) || null,
+    sourceIntakeId: card.sourceIntakeId || null,
+    sourceIntentId: intentId,
+    sourceHandoffId: card.sourceHandoffId || card.taskFlow?.sourceHandoffId || null,
+    intentSummary: intentSummary || null,
+    outcomeStatus,
+    outcomeSummary: outcomeSummary || null,
+    intentVsOutcomeSummary: firstNonEmptyString([
+      intentSummary && outcomeSummary ? `${intentSummary} -> ${outcomeSummary}` : '',
+      outcomeSummary,
+      intentSummary,
+    ]) || null,
+    archivedAt: null,
+  };
+}
+
+function collectGovernedOutcomeRecords(workspace = {}, generatedAt = nowIso()) {
+  const cards = Array.isArray(workspace?.studio?.teamBoard?.cards) ? workspace.studio.teamBoard.cards : [];
+  return cards
+    .map((card) => buildGovernedOutcomeSummary(card, workspace))
+    .filter(Boolean)
+    .map((record) => ({
+      ...record,
+      archivedAt: generatedAt,
+    }));
+}
+
 function buildSliceSeeds(snapshot) {
   const cues = [];
   if (!snapshot.slices.activeCount && snapshot.qa?.status === 'failed') {
@@ -526,6 +625,7 @@ function buildArchivistSessionSnapshot(rootPath, options = {}) {
     qa: normalizeQASummary(rootPath),
     throughput: normalizeThroughputSummary(rootPath, generatedAt),
     ledger: normalizeLedgerSummary(rootPath, 'dave'),
+    governedOutcomes: collectGovernedOutcomeRecords(workspace, generatedAt),
   };
   snapshot.sliceSeeds = buildSliceSeeds(snapshot);
   snapshot.summary = buildSessionSummary(snapshot);
@@ -596,15 +696,15 @@ function applyArchivistWriteback(rootPath, options = {}) {
   if (!options.dryRun) {
     writes.changelog.forEach((filePath) => {
       const nextText = upsertArchivistWritebackBlock(readText(filePath, '# Changelog\n'), changelogLines, { sectionHeading: changelogHeading });
-      writeText(filePath, nextText);
+      writeTextIfChanged(filePath, nextText);
     });
     if (includeTasks) {
       writes.tasks.forEach((filePath) => {
-        writeText(filePath, tasksDocument);
+        writeTextIfChanged(filePath, tasksDocument);
       });
     }
-    writeText(writes.contextBundle[0], contextBundleDocument);
-    writeText(writes.contextBundle[1], `${JSON.stringify(contextBundle, null, 2)}\n`);
+    writeTextIfChanged(writes.contextBundle[0], contextBundleDocument);
+    writeTextIfChanged(writes.contextBundle[1], `${JSON.stringify(contextBundle, null, 2)}\n`);
   }
 
   return {

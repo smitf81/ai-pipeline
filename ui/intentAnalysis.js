@@ -48,6 +48,564 @@ function uniqueStrings(values = []) {
   return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
 }
 
+function normalizeIntentPriority(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (['low', 'normal', 'medium', 'high'].includes(normalized)) {
+    return normalized === 'medium' ? 'normal' : normalized;
+  }
+  return 'normal';
+}
+
+function normalizeSpatialIntentGeometry(geometryInput = {}, fallbackInput = {}) {
+  const geometry = geometryInput && typeof geometryInput === 'object' ? geometryInput : {};
+  const fallback = fallbackInput && typeof fallbackInput === 'object' ? fallbackInput : {};
+  const region = geometry.region || geometry.bounds || fallback.region || fallback.bounds || null;
+  const stroke = geometry.stroke || geometry.path || fallback.stroke || fallback.path || null;
+  const kind = String(
+    geometry.kind
+    || geometry.type
+    || fallback.kind
+    || fallback.type
+    || (stroke ? 'stroke' : region ? 'region' : 'unknown'),
+  ).trim().toLowerCase() || 'unknown';
+  return {
+    kind,
+    region: region || null,
+    stroke: stroke || null,
+  };
+}
+
+function countGeometryPoints(geometry = {}) {
+  if (Array.isArray(geometry?.stroke)) return geometry.stroke.length;
+  if (Array.isArray(geometry?.region?.points)) return geometry.region.points.length;
+  if (Array.isArray(geometry?.path)) return geometry.path.length;
+  return 0;
+}
+
+function buildSpatialGeometryReasoning({ kind, pointCount, regionPresent, strokePresent, confidence } = {}) {
+  const reasoning = [];
+  reasoning.push(`kind=${kind}`);
+  reasoning.push(`pointCount=${pointCount}`);
+  reasoning.push(regionPresent ? 'region-present' : 'region-missing');
+  reasoning.push(strokePresent ? 'stroke-present' : 'stroke-missing');
+  reasoning.push(`confidence=${Number(confidence).toFixed(2)}`);
+  return reasoning;
+}
+
+function normalizeFieldDimension(value = 7, fallback = 7) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return Math.max(3, Math.round(Number(fallback) || 7));
+  }
+  return Math.max(3, Math.min(11, Math.round(numeric)));
+}
+
+function createFieldGrid(width = 7, height = 7, fallbackValue = 0.08) {
+  const resolvedWidth = normalizeFieldDimension(width, 7);
+  const resolvedHeight = normalizeFieldDimension(height, 7);
+  return Array.from({ length: resolvedHeight }, () => Array.from({ length: resolvedWidth }, () => fallbackValue));
+}
+
+function cloneFieldLayer(values = [], width = 7, height = 7, fallbackValue = 0.08, role = 'build-desirability', resolution = 1) {
+  const resolvedWidth = normalizeFieldDimension(width, 7);
+  const resolvedHeight = normalizeFieldDimension(height, 7);
+  const resolvedValues = Array.from({ length: resolvedHeight }, (_, y) => Array.from({ length: resolvedWidth }, (_, x) => {
+    const sample = values?.[y]?.[x];
+    return Number.isFinite(Number(sample)) ? Number(sample) : fallbackValue;
+  }));
+  return {
+    kind: 'field-layer',
+    role,
+    resolution,
+    width: resolvedWidth,
+    height: resolvedHeight,
+    aggregateStrategy: resolution > 1 ? 'majority' : 'identity',
+    fallbackValue,
+    values: resolvedValues,
+  };
+}
+
+function describeFieldLayer(layer = null) {
+  if (!layer) {
+    return 'missing layer';
+  }
+  return `${layer.role || 'build-desirability'} ${layer.width}x${layer.height} @${layer.resolution || 1}x`;
+}
+
+function deriveCoarseFieldLayer(baseLayer, factor = 2, role = 'build-desirability-coarse') {
+  const resolution = Math.max(1, Math.round(Number(factor) || 2));
+  const width = Math.max(1, Math.ceil(Number(baseLayer?.width || 1) / resolution));
+  const height = Math.max(1, Math.ceil(Number(baseLayer?.height || 1) / resolution));
+  const fallbackValue = Number.isFinite(Number(baseLayer?.fallbackValue)) ? Number(baseLayer.fallbackValue) : 0.08;
+  const values = Array.from({ length: height }, (_, coarseY) => Array.from({ length: width }, (_, coarseX) => {
+    const samples = [];
+    for (let y = coarseY * resolution; y < Math.min(Number(baseLayer?.height || 0), (coarseY + 1) * resolution); y += 1) {
+      for (let x = coarseX * resolution; x < Math.min(Number(baseLayer?.width || 0), (coarseX + 1) * resolution); x += 1) {
+        const sample = baseLayer?.values?.[y]?.[x];
+        if (Number.isFinite(Number(sample))) {
+          samples.push(Number(sample));
+        }
+      }
+    }
+    if (!samples.length) {
+      return fallbackValue;
+    }
+    return Number((samples.reduce((sum, value) => sum + value, 0) / samples.length).toFixed(2));
+  }));
+
+  return cloneFieldLayer(values, width, height, fallbackValue, role, resolution);
+}
+
+function paintFieldCell(values = [], x = 0, y = 0, nextValue = 0.9) {
+  if (!Array.isArray(values) || !values.length) return;
+  if (!Number.isInteger(x) || !Number.isInteger(y)) return;
+  if (y < 0 || y >= values.length) return;
+  if (x < 0 || x >= (values[y] || []).length) return;
+  values[y][x] = nextValue;
+}
+
+function pointFromGeometrySample(sample = {}, fallbackX = 0, fallbackY = 0) {
+  if (Array.isArray(sample)) {
+    const [x = fallbackX, y = fallbackY] = sample;
+    return { x: Number(x), y: Number(y) };
+  }
+  if (sample && typeof sample === 'object') {
+    return {
+      x: Number.isFinite(Number(sample.x)) ? Number(sample.x) : fallbackX,
+      y: Number.isFinite(Number(sample.y)) ? Number(sample.y) : fallbackY,
+    };
+  }
+  return { x: fallbackX, y: fallbackY };
+}
+
+function normalizeGeometryPointList(geometry = {}) {
+  const rawPoints = Array.isArray(geometry?.stroke)
+    ? geometry.stroke
+    : Array.isArray(geometry?.path)
+      ? geometry.path
+      : Array.isArray(geometry?.region?.points)
+        ? geometry.region.points
+        : [];
+  return rawPoints
+    .map((sample, index) => pointFromGeometrySample(sample, index, index))
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+}
+
+function mapPointsToFieldCells(points = [], width = 7, height = 7) {
+  const resolvedWidth = normalizeFieldDimension(width, 7);
+  const resolvedHeight = normalizeFieldDimension(height, 7);
+  if (!points.length) return [];
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const xSpan = maxX - minX || 1;
+  const ySpan = maxY - minY || 1;
+  return points.map((point) => ({
+    x: Math.max(0, Math.min(resolvedWidth - 1, Math.round(((point.x - minX) / xSpan) * (resolvedWidth - 1)))),
+    y: Math.max(0, Math.min(resolvedHeight - 1, Math.round(((point.y - minY) / ySpan) * (resolvedHeight - 1)))),
+  }));
+}
+
+function paintStrokeInfluence(values = [], points = [], activeValue = 0.9, secondaryValue = 0.62) {
+  const cells = mapPointsToFieldCells(points, values?.[0]?.length || 7, values.length || 7);
+  let affected = 0;
+  cells.forEach((cell, index) => {
+    const nextValue = index === cells.length - 1 ? activeValue : Math.max(secondaryValue, activeValue - (index * 0.02));
+    const before = values?.[cell.y]?.[cell.x];
+    paintFieldCell(values, cell.x, cell.y, nextValue);
+    if (before !== values?.[cell.y]?.[cell.x]) affected += 1;
+    paintFieldCell(values, cell.x - 1, cell.y, Math.max(secondaryValue - 0.08, 0.1));
+    paintFieldCell(values, cell.x + 1, cell.y, Math.max(secondaryValue - 0.08, 0.1));
+    paintFieldCell(values, cell.x, cell.y - 1, Math.max(secondaryValue - 0.08, 0.1));
+    paintFieldCell(values, cell.x, cell.y + 1, Math.max(secondaryValue - 0.08, 0.1));
+  });
+  return { affectedCells: affected || cells.length };
+}
+
+function paintRegionInfluence(values = [], region = {}, activeValue = 0.88, secondaryValue = 0.66) {
+  const width = values?.[0]?.length || 7;
+  const height = values.length || 7;
+  const bounds = region?.bounds && typeof region.bounds === 'object' ? region.bounds : {};
+  const rawWidth = Number(bounds.width || bounds.w || region.width || 0);
+  const rawHeight = Number(bounds.height || bounds.h || region.height || 0);
+  const span = normalizeFieldDimension(Math.max(3, Math.round(Math.max(rawWidth, rawHeight, 3) / 8) + 2), 5);
+  const centerX = Math.floor(width / 2);
+  const centerY = Math.floor(height / 2);
+  const halfSpan = Math.floor(span / 2);
+  let affected = 0;
+
+  for (let y = centerY - halfSpan; y <= centerY + halfSpan; y += 1) {
+    for (let x = centerX - halfSpan; x <= centerX + halfSpan; x += 1) {
+      const isEdge = x === centerX - halfSpan || x === centerX + halfSpan || y === centerY - halfSpan || y === centerY + halfSpan;
+      const nextValue = isEdge ? secondaryValue : activeValue;
+      const before = values?.[y]?.[x];
+      paintFieldCell(values, x, y, nextValue);
+      if (before !== values?.[y]?.[x]) affected += 1;
+    }
+  }
+
+  return { affectedCells: affected || (span * span) };
+}
+
+function buildIntentFieldReasoning({ kind, pointCount, affectedCells, confidence, status } = {}) {
+  return [
+    'field=build_desirability',
+    `kind=${kind}`,
+    `pointCount=${pointCount}`,
+    `affectedCells=${affectedCells}`,
+    `confidence=${Number(confidence).toFixed(2)}`,
+    `status=${status}`,
+  ];
+}
+
+function deriveSpatialIntentFieldInfluence(spatialIntent = {}) {
+  const geometry = normalizeSpatialIntentGeometry(spatialIntent.geometry || {}, spatialIntent.geometry || {});
+  const pointCount = countGeometryPoints(geometry);
+  const sourceConfidence = Number(spatialIntent.confidence);
+  const confidence = Number.isFinite(sourceConfidence) ? clamp01(sourceConfidence) : 0;
+  const width = geometry.kind === 'stroke' ? normalizeFieldDimension(Math.max(5, Math.min(11, pointCount + 3)), 7) : 7;
+  const height = width;
+  const fallbackValue = 0.08;
+  const baseValues = createFieldGrid(width, height, fallbackValue);
+  const semanticMeaning = spatialIntent.semanticMeaning || {};
+  const status = spatialIntent.status === 'degraded' || geometry.kind === 'unknown' ? 'degraded' : 'canonical';
+  let affectedCells = 0;
+
+  if (geometry.kind === 'stroke' && geometry.stroke) {
+    const points = normalizeGeometryPointList(geometry);
+    const paintResult = paintStrokeInfluence(baseValues, points.length ? points : [{ x: 0, y: 0 }, { x: 1, y: 1 }], 0.9, 0.62);
+    affectedCells = paintResult.affectedCells;
+  } else if (geometry.kind === 'region' && geometry.region) {
+    const paintResult = paintRegionInfluence(baseValues, geometry.region, 0.88, 0.66);
+    affectedCells = paintResult.affectedCells;
+  }
+
+  const baseLayer = cloneFieldLayer(baseValues, width, height, fallbackValue, 'build-desirability', 1);
+  const coarseLayer = deriveCoarseFieldLayer(baseLayer, 2, 'build-desirability-coarse');
+  const reasoning = buildIntentFieldReasoning({
+    kind: geometry.kind,
+    pointCount,
+    affectedCells,
+    confidence: Number.isFinite(confidence) ? confidence : 0,
+    status,
+  });
+
+  return {
+    kind: 'intent-field-bundle',
+    version: 'v1',
+    fieldKey: 'buildDesirability',
+    status,
+    missingFields: [...new Set([
+      ...(Array.isArray(spatialIntent.missingFields) ? spatialIntent.missingFields : []),
+      ...(geometry.kind === 'unknown' ? ['geometry'] : []),
+      ...(status === 'degraded' && !String(semanticMeaning.summary || semanticMeaning.statement || semanticMeaning.goal || '').trim() ? ['semanticMeaning'] : []),
+    ])],
+    sourceIntentId: spatialIntent.intentId || spatialIntent.id || null,
+    sourceIntentStatus: spatialIntent.status || 'canonical',
+    sourceIntentConfidence: Number.isFinite(confidence) ? Number(confidence.toFixed(2)) : 0,
+    summary: `Build desirability ${describeFieldLayer(baseLayer)} | ${describeFieldLayer(coarseLayer)}`,
+    field: {
+      kind: 'intent-field',
+      version: 'v1',
+      fieldKey: 'buildDesirability',
+      baseLayerKey: '0',
+      coarseLayerKey: '1',
+      layerOrder: ['0', '1'],
+      aggregateStrategy: 'majority',
+      layers: {
+        0: baseLayer,
+        1: coarseLayer,
+      },
+      baseLayer,
+      coarseLayer,
+      summary: `Build desirability ${describeFieldLayer(baseLayer)} | ${describeFieldLayer(coarseLayer)}`,
+    },
+    provenance: {
+      ...(spatialIntent.provenance || {}),
+      field: 'build_desirability',
+      fieldKind: 'intent-field-bundle',
+      interpreter: 'deterministic-geometry-v1',
+      reasoning,
+      usedFallback: false,
+    },
+  };
+}
+
+function interpretSpatialGeometry(geometryInput = {}, provenance = {}) {
+  const geometry = normalizeSpatialIntentGeometry(geometryInput);
+  const pointCount = countGeometryPoints(geometryInput);
+  const regionPresent = geometry.kind === 'region' && Boolean(geometry.region);
+  const strokePresent = geometry.kind === 'stroke' && Boolean(geometry.stroke);
+
+  let semanticMeaning;
+  let confidence;
+  let status = 'canonical';
+
+  if (geometry.kind === 'region') {
+    semanticMeaning = {
+      summary: 'Build pressure over the selected region.',
+      statement: 'Build pressure over the selected region.',
+      goal: 'Build pressure over the selected region.',
+      requestType: 'build_pressure',
+      requestedOutcomes: ['Build pressure over the selected region'],
+      targets: ['selected region'],
+      constraints: [],
+      urgency: 'normal',
+      labels: ['build', 'pressure', 'region'],
+    };
+    confidence = regionPresent ? 0.92 : 0.64;
+    if (!regionPresent) {
+      status = 'degraded';
+    }
+  } else if (geometry.kind === 'stroke') {
+    semanticMeaning = {
+      summary: 'Flow influence along the drawn stroke.',
+      statement: 'Flow influence along the drawn stroke.',
+      goal: 'Flow influence along the drawn stroke.',
+      requestType: 'flow_influence',
+      requestedOutcomes: ['Flow influence along the drawn stroke'],
+      targets: ['drawn stroke'],
+      constraints: [],
+      urgency: 'normal',
+      labels: ['flow', 'influence', 'stroke'],
+    };
+    confidence = strokePresent ? 0.88 : 0.61;
+    if (!strokePresent) {
+      status = 'degraded';
+    }
+  } else {
+    semanticMeaning = {
+      summary: 'Spatial intent is incomplete.',
+      statement: 'Spatial intent is incomplete.',
+      goal: 'Spatial intent is incomplete.',
+      requestType: 'unresolved_spatial_intent',
+      requestedOutcomes: ['Surface missing geometry before execution'],
+      targets: [],
+      constraints: ['geometry missing or unrecognized'],
+      urgency: 'normal',
+      labels: ['unresolved'],
+    };
+    confidence = 0.24;
+    status = 'degraded';
+  }
+
+  const missingFields = [];
+  if (geometry.kind === 'unknown') missingFields.push('geometry');
+  if (!semanticMeaning?.summary) missingFields.push('semanticMeaning');
+  if (!Number.isFinite(Number(confidence))) missingFields.push('confidence');
+  if (status === 'degraded' && !missingFields.includes('semanticMeaning')) missingFields.push('semanticMeaning');
+
+  const reasoning = buildSpatialGeometryReasoning({
+    kind: geometry.kind,
+    pointCount,
+    regionPresent,
+    strokePresent,
+    confidence,
+  });
+
+  return {
+    geometry,
+    semanticMeaning,
+    confidence: Number(clamp01(confidence).toFixed(2)),
+    missingFields,
+    status,
+    provenance: {
+      ...provenance,
+      interpreter: 'deterministic-geometry-v1',
+      reasoning,
+      usedFallback: false,
+    },
+  };
+}
+
+function buildSpatialIntentSemanticMeaning({
+  summary = '',
+  goal = '',
+  requestType = 'context_request',
+  requestedOutcomes = [],
+  targets = [],
+  constraints = [],
+  urgency = 'normal',
+  labels = [],
+} = {}) {
+  return {
+    summary: String(summary || '').trim(),
+    statement: String(summary || goal || '').trim(),
+    goal: String(goal || summary || '').trim(),
+    requestType: String(requestType || 'context_request').trim() || 'context_request',
+    requestedOutcomes: uniqueStrings(requestedOutcomes),
+    targets: uniqueStrings(targets),
+    constraints: uniqueStrings(constraints),
+    urgency: normalizeIntentPriority(urgency),
+    labels: uniqueStrings(labels),
+  };
+}
+
+function buildSpatialIntentMissingFields(spatialIntent = {}) {
+  const missingFields = [];
+  if (!spatialIntent?.geometry || spatialIntent.geometry.kind === 'unknown') missingFields.push('geometry');
+  const meaning = spatialIntent?.semanticMeaning || {};
+  if (!String(meaning.summary || meaning.statement || meaning.goal || '').trim()) {
+    missingFields.push('semanticMeaning');
+  }
+  if (!Number.isFinite(Number(spatialIntent?.confidence))) missingFields.push('confidence');
+  return missingFields;
+}
+
+function buildCanonicalIntentContract({
+  report = {},
+  packet = {},
+  sourceType = 'sanctioned-intent-parser',
+  sourceRef = null,
+  requestedBy = null,
+  priority = null,
+  timestamp = null,
+  provenance = {},
+  intentId = null,
+} = {}) {
+  const resolvedTimestamp = String(timestamp || report.createdAt || report.judgedAt || nowIso()).trim() || nowIso();
+  const resolvedSourceType = String(sourceType || packet.sourceType || report.source || 'sanctioned-intent-parser').trim() || 'sanctioned-intent-parser';
+  const resolvedSourceRef = String(sourceRef || packet.sourceRef || report.nodeId || report.sourceNodeId || report.projectContext?.currentFocus || 'unknown').trim() || 'unknown';
+  const resolvedRequestedBy = String(requestedBy || packet.requestedBy || report.requestedBy || report.agent?.id || 'context-manager').trim() || 'context-manager';
+  const resolvedPriority = normalizeIntentPriority(priority || packet.priority || packet.urgency || report.priority || report.urgency);
+  const requestedOutcomes = uniqueStrings([
+    ...(Array.isArray(packet.requestedOutcomes) ? packet.requestedOutcomes : []),
+    ...(Array.isArray(packet.tasks) ? packet.tasks : []),
+    ...(Array.isArray(report.requestedOutcomes) ? report.requestedOutcomes : []),
+    ...(Array.isArray(report.tasks) ? report.tasks : []),
+  ]).slice(0, 6);
+  const targets = uniqueStrings([
+    ...(Array.isArray(packet.targets) ? packet.targets : []),
+    ...(Array.isArray(report.targets) ? report.targets : []),
+  ]).slice(0, 8);
+  const constraints = uniqueStrings([
+    ...(Array.isArray(packet.constraints) ? packet.constraints : []),
+    ...(Array.isArray(report.constraints) ? report.constraints : []),
+  ]).slice(0, 8);
+  const anchorRefs = uniqueStrings([
+    ...(Array.isArray(report.anchorRefs) ? report.anchorRefs : []),
+    ...(Array.isArray(report.projectContext?.anchorRefs) ? report.projectContext.anchorRefs : []),
+    ...(Array.isArray(packet.anchorRefs) ? packet.anchorRefs : []),
+  ]).slice(0, 8);
+  const contractId = String(intentId || packet.intentId || report.intentId || `intent_${resolvedSourceType}_${resolvedSourceRef}_${resolvedTimestamp}`).trim() || `intent_${resolvedSourceType}_${resolvedSourceRef}_${resolvedTimestamp}`;
+  const geometry = normalizeSpatialIntentGeometry(
+    packet.geometry || report.geometry || packet.region || report.region || packet.stroke || report.stroke || {},
+    {
+      kind: packet.geometry?.kind || report.geometry?.kind || packet.geometry?.type || report.geometry?.type || null,
+      type: packet.geometry?.type || report.geometry?.type || null,
+      region: packet.region || report.region || null,
+      bounds: packet.bounds || report.bounds || null,
+      stroke: packet.stroke || report.stroke || null,
+      path: packet.path || report.path || null,
+    },
+  );
+  const hasMeaning = Boolean(String(report.summary || report.statement || report.goal || packet.summary || packet.statement || packet.goal || '').trim())
+    || requestedOutcomes.length > 0
+    || targets.length > 0
+    || constraints.length > 0
+    || uniqueStrings(report.labels || packet.labels || []).length > 0;
+  const geometryInterpretation = !hasMeaning && geometry.kind !== 'unknown'
+    ? interpretSpatialGeometry(geometry, {
+        sourceType: resolvedSourceType,
+        sourceRef: resolvedSourceRef,
+        requestedBy: resolvedRequestedBy,
+      })
+    : null;
+  const semanticMeaning = hasMeaning
+    ? buildSpatialIntentSemanticMeaning({
+        summary: String(report.statement || report.summary || packet.statement || packet.summary || '').trim(),
+        goal: String(report.goal || packet.goal || report.statement || report.summary || '').trim(),
+        requestType: String(report.requestType || packet.requestType || 'context_request').trim() || 'context_request',
+        requestedOutcomes,
+        targets,
+        constraints,
+        urgency: resolvedPriority,
+        labels: uniqueStrings(report.labels || packet.labels || []),
+      })
+    : geometryInterpretation.semanticMeaning;
+  const confidenceSource = [report.confidence, packet.confidence, geometryInterpretation?.confidence]
+    .find((value) => Number.isFinite(Number(value)) && Number(value) > 0);
+  const normalizedConfidence = Number(clamp01(Number(confidenceSource || 0)).toFixed(2));
+  const mergedProvenance = {
+    ...provenance,
+    anchorRefs,
+    sourceType: resolvedSourceType,
+    sourceRef: resolvedSourceRef,
+    requestedBy: resolvedRequestedBy,
+    usedFallback: Boolean(report?.provenance?.usedFallback || packet?.provenance?.usedFallback || provenance.usedFallback || geometryInterpretation?.provenance?.usedFallback),
+    backend: report?.provenance?.backend || packet?.provenance?.backend || provenance.backend || null,
+    model: report?.provenance?.model || packet?.provenance?.model || provenance.model || null,
+    runId: report?.provenance?.runId || packet?.provenance?.runId || provenance.runId || null,
+    inferenceMode: report?.provenance?.inferenceMode || packet?.provenance?.inferenceMode || provenance.inferenceMode || geometryInterpretation?.provenance?.interpreter || null,
+    interpreter: geometryInterpretation?.provenance?.interpreter || provenance.interpreter || null,
+    reasoning: geometryInterpretation?.provenance?.reasoning || provenance.reasoning || [],
+  };
+  const canonicalIntent = {
+    id: contractId,
+    source: {
+      type: resolvedSourceType,
+      ref: resolvedSourceRef,
+      requestedBy: resolvedRequestedBy,
+    },
+    geometry,
+    semanticMeaning,
+    confidence: normalizedConfidence,
+    createdAt: resolvedTimestamp,
+    provenance: mergedProvenance,
+    missingFields: buildSpatialIntentMissingFields({
+      geometry,
+      semanticMeaning,
+      confidence: normalizedConfidence,
+    }),
+    status: geometryInterpretation?.status || 'canonical',
+    // Compatibility aliases remain read-only and derived from the canonical fields.
+    summary: semanticMeaning.summary,
+    statement: semanticMeaning.statement,
+    goal: semanticMeaning.goal,
+    requestType: semanticMeaning.requestType,
+    requestedOutcomes: semanticMeaning.requestedOutcomes,
+    tasks: semanticMeaning.requestedOutcomes,
+    targets: semanticMeaning.targets,
+    constraints: semanticMeaning.constraints,
+    projectContext: {
+      currentFocus: resolvedSourceRef,
+      matchedTerms: semanticMeaning.labels,
+      blockers: semanticMeaning.constraints,
+      anchorRefs,
+    },
+    priority: resolvedPriority,
+    requestedBy: resolvedRequestedBy,
+    timestamp: resolvedTimestamp,
+    sourceType: resolvedSourceType,
+    sourceRef: resolvedSourceRef,
+    nodeId: provenance.sourceNodeId || resolvedSourceRef,
+    anchorRefs,
+    intentId: contractId,
+  };
+  const fieldInfluence = deriveSpatialIntentFieldInfluence(canonicalIntent);
+  canonicalIntent.fieldInfluence = fieldInfluence;
+  return {
+    intentId: contractId,
+    sourceType: resolvedSourceType,
+    sourceRef: resolvedSourceRef,
+    canonicalIntent,
+    spatialIntent: canonicalIntent,
+    fieldInfluence,
+    provenance: canonicalIntent.provenance,
+    constraints,
+    priority: resolvedPriority,
+    requestedBy: resolvedRequestedBy,
+    timestamp: resolvedTimestamp,
+    confidence: canonicalIntent.confidence,
+    geometry: canonicalIntent.geometry,
+    semanticMeaning: canonicalIntent.semanticMeaning,
+    missingFields: canonicalIntent.missingFields,
+  };
+}
+
 function tokenizeIntentText(text) {
   return [...new Set((String(text || '').toLowerCase().match(/[a-z][a-z0-9_-]{2,}/g) || []).filter((token) => !INTENT_STOPWORDS.has(token)))];
 }
@@ -469,7 +1027,7 @@ function buildIntentTruth({
   };
 }
 
-function analyzeSpatialIntent(text, project) {
+function analyzeSpatialIntent(text, project, intentMeta = {}) {
   const source = String(text || '').trim();
   const safeProject = project || {
     currentFocus: '',
@@ -497,6 +1055,9 @@ function analyzeSpatialIntent(text, project) {
   const projectTerms = new Set(safeProject.keywords || []);
   const matchedTerms = tokens.filter((token) => projectTerms.has(token));
   const anchorMatches = buildAnchorMatches(tokens, safeProject);
+  const anchorRefs = anchorMatches.length
+    ? anchorMatches.map((entry) => entry.anchorRef)
+    : (safeProject.anchorRefs || []).slice(0, 8);
   const sentences = source.split(/[.!?\n]+/).map((entry) => entry.trim()).filter(Boolean);
   const tasks = buildIntentTasks(source);
   const legacyCriteria = buildLegacyCriteria({
@@ -544,9 +1105,50 @@ function analyzeSpatialIntent(text, project) {
     },
     scores,
   });
-  const anchorRefs = anchorMatches.length
-    ? anchorMatches.map((entry) => entry.anchorRef)
-    : (safeProject.anchorRefs || []).slice(0, 8);
+  const intentContract = buildCanonicalIntentContract({
+    report: {
+      ...truth,
+      summary,
+      requestedOutcomes,
+      tasks: requestedOutcomes,
+      targets: truth.targets,
+      constraints: truth.constraints,
+      urgency: truth.urgency,
+      requestType: truth.requestType,
+      anchorRefs,
+      nodeId: safeProject?.sourceNodeId || intentMeta.sourceRef || null,
+      requestedBy: intentMeta.requestedBy || 'context-manager',
+      priority: intentMeta.priority || truth.urgency || 'normal',
+      source: intentMeta.sourceType || 'sanctioned-intent-parser',
+    },
+    packet: {
+      summary,
+      statement: truth.goal,
+      goal: truth.goal,
+      requestedOutcomes,
+      tasks: requestedOutcomes,
+      targets: truth.targets,
+      constraints: truth.constraints,
+      urgency: truth.urgency,
+      requestType: truth.requestType,
+      requestedBy: intentMeta.requestedBy || 'context-manager',
+      sourceType: intentMeta.sourceType || 'sanctioned-intent-parser',
+      sourceRef: intentMeta.sourceRef || safeProject?.sourceNodeId || null,
+      priority: intentMeta.priority || truth.urgency || 'normal',
+      anchorRefs,
+    },
+    sourceType: intentMeta.sourceType || 'sanctioned-intent-parser',
+    sourceRef: intentMeta.sourceRef || safeProject?.sourceNodeId || null,
+    requestedBy: intentMeta.requestedBy || 'context-manager',
+    priority: intentMeta.priority || truth.urgency || 'normal',
+    timestamp: intentMeta.timestamp || nowIso(),
+    provenance: {
+      anchors: anchorMatches,
+      managerSummary: safeProject.managerSummary || null,
+      sourceNodeId: safeProject?.sourceNodeId || intentMeta.sourceRef || null,
+    },
+    intentId: intentMeta.intentId || null,
+  });
   return {
     agent: {
       id: 'context-manager',
@@ -562,6 +1164,8 @@ function analyzeSpatialIntent(text, project) {
     legacyCriteria,
     scores,
     truth,
+    intentContract,
+    canonicalIntent: intentContract.canonicalIntent,
     goal: truth.goal,
     targets: truth.targets,
     constraints: truth.constraints,
@@ -617,9 +1221,12 @@ function analyzeSpatialIntent(text, project) {
 }
 
 module.exports = {
+  buildCanonicalIntentContract,
   buildIntentProjectContext,
   buildIntentTasks,
   buildIntentTruth,
+  deriveSpatialIntentFieldInfluence,
+  interpretSpatialGeometry,
   inferIntentLabels,
   inferIntentRole,
   tokenizeIntentText,

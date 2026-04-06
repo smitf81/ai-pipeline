@@ -26,7 +26,7 @@
     </header>
 
     <main class="workspace-shell" aria-label="Sketchpad Workspace">
-        <div id="spatial-root"></div>
+        <div id="spatial-root" data-boot="shell-ready"></div>
     </main>
 
     <aside id="legacy-ui" class="legacy-hidden legacy-drawer" aria-label="Legacy Debug Drawer">
@@ -58,6 +58,115 @@
                     <div class="status-row"><span class="muted">Last refresh error</span><span id="uiLastRefreshError" class="status-value">none</span></div>
                     <div class="status-row"><span class="muted">Last command summary</span><span id="uiLastCommandSummary" class="status-value">none</span></div>
                     <div class="status-row"><span class="muted">Mode</span><span id="uiModeLabel" class="status-value">legacy shell</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="plannerIdentityCard">
+                <div class="card-title">Planner Canonical Truth</div>
+                <div class="status-grid">
+                    <div class="status-row"><span class="muted">Freshness</span><span id="plannerIdentityFreshness" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Source</span><span id="plannerIdentitySource" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Generated</span><span id="plannerIdentityGeneratedAt" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">View</span><span id="plannerIdentityViewMode" class="status-value">derived</span></div>
+                    <div class="status-row"><span class="muted">Desk ID</span><span id="plannerDeskId" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Role ID</span><span id="plannerRoleId" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Agent ID</span><span id="plannerAgentId" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Department ID</span><span id="plannerDepartmentId" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Model profile</span><span id="plannerModelProfileId" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Assigned agents</span><span id="plannerAssignedAgentIds" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Live status</span><span id="plannerLiveStatus" class="status-value">unknown</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="ctoOverrideCard">
+                <div class="card-title">CTO Override Ledger</div>
+                <div class="status-grid">
+                    <div class="status-row"><span class="muted">Freshness</span><span id="ctoOverrideFreshness" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Source</span><span id="ctoOverrideSource" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Generated</span><span id="ctoOverrideGeneratedAt" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">View</span><span id="ctoOverrideViewMode" class="status-value">derived</span></div>
+                    <div class="status-row"><span class="muted">Entries</span><span id="ctoOverrideCount" class="status-value">0 total</span></div>
+                    <div class="status-row"><span class="muted">Active</span><span id="ctoOverrideActiveCount" class="status-value">0 active</span></div>
+                    <div class="status-row"><span class="muted">Planning mode</span><span id="ctoOverridePlanningMode" class="status-value">normal</span></div>
+                    <div class="status-row"><span class="muted">Latest kind</span><span id="ctoOverrideLatestKind" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Requested by</span><span id="ctoOverrideLatestRequestedBy" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Latest reason</span><span id="ctoOverrideLatestReason" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Latest target</span><span id="ctoOverrideLatestTarget" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Effect</span><span id="ctoOverrideLatestEffect" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Canonical truth</span><span id="ctoOverrideLatestTruth" class="status-value">none</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="plannerRuntimeCard">
+                <div class="card-title">Planner Runtime Presence</div>
+                <div class="status-grid">
+                    <div class="status-row"><span class="muted">Freshness</span><span id="plannerRuntimeFreshness" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Source</span><span id="plannerRuntimeSource" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Generated</span><span id="plannerRuntimeGeneratedAt" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">View</span><span id="plannerRuntimeViewMode" class="status-value">live</span></div>
+                    <div class="status-row"><span class="muted">Who is planner</span><span id="plannerRuntimeAnswer" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Runtime state</span><span id="plannerRuntimeState" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Staffing state</span><span id="plannerStaffingState" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Model state</span><span id="plannerModelState" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Policy state</span><span id="plannerPolicyState" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Worker status</span><span id="plannerWorkerStatus" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Current run</span><span id="plannerCurrentRunId" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Blocked reason</span><span id="plannerBlockedReason" class="status-value">none</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="plannerQaQueueCard">
+                <div class="card-title">Planner QA Outtray</div>
+                <div class="status-grid">
+                    <div class="status-row"><span class="muted">Freshness</span><span id="plannerQaFreshness" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Source</span><span id="plannerQaSource" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Generated</span><span id="plannerQaGeneratedAt" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">View</span><span id="plannerQaViewMode" class="status-value">derived</span></div>
+                    <div class="status-row"><span class="muted">Queue size</span><span id="plannerQaQueueCount" class="status-value">0 total</span></div>
+                    <div class="status-row"><span class="muted">Pending</span><span id="plannerQaQueuePending" class="status-value">0 pending</span></div>
+                    <div class="status-row"><span class="muted">Reviewed</span><span id="plannerQaQueueReviewed" class="status-value">0 reviewed</span></div>
+                    <div class="status-row"><span class="muted">Blocked</span><span id="plannerQaQueueBlocked" class="status-value">0 blocked</span></div>
+                    <div class="status-row"><span class="muted">Latest queue key</span><span id="plannerQaQueueLatestKey" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Latest plan ID</span><span id="plannerQaQueueLatestPlanId" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Latest request</span><span id="plannerQaQueueLatestRequest" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Latest status</span><span id="plannerQaQueueLatestStatus" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Latest summary</span><span id="plannerQaQueueLatestSummary" class="status-value">none</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="plannerOuttrayCard">
+                <div class="card-title">Planner Handoff Outtray</div>
+                <div class="muted">Planner deposits finished work here so QA, Archivist, Execution, CTO, and Context can collect it later.</div>
+                <div class="status-grid">
+                    <div class="status-row"><span class="muted">Freshness</span><span id="plannerOuttrayFreshness" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Source</span><span id="plannerOuttraySource" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Generated</span><span id="plannerOuttrayGeneratedAt" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">View</span><span id="plannerOuttrayViewMode" class="status-value">derived</span></div>
+                    <div class="status-row"><span class="muted">Queue size</span><span id="plannerOuttrayCount" class="status-value">0 total</span></div>
+                    <div class="status-row"><span class="muted">Deposited</span><span id="plannerOuttrayDeposited" class="status-value">0 deposited</span></div>
+                    <div class="status-row"><span class="muted">Collected</span><span id="plannerOuttrayCollected" class="status-value">0 collected</span></div>
+                    <div class="status-row"><span class="muted">Under review</span><span id="plannerOuttrayReviewing" class="status-value">0 under review</span></div>
+                    <div class="status-row"><span class="muted">Latest handoff</span><span id="plannerOuttrayLatestKey" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Latest status</span><span id="plannerOuttrayLatestStatus" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Lane states</span><span id="plannerOuttrayLatestLaneStates" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Latest summary</span><span id="plannerOuttrayLatestSummary" class="status-value">none</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="canonicalIntentCard">
+                <div class="card-title">Canonical Intent Ingress</div>
+                <div class="status-grid">
+                    <div class="status-row"><span class="muted">Freshness</span><span id="canonicalIntentFreshness" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Source</span><span id="canonicalIntentSource" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Generated</span><span id="canonicalIntentGeneratedAt" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">View</span><span id="canonicalIntentViewMode" class="status-value">live</span></div>
+                    <div class="status-row"><span class="muted">Intent ID</span><span id="canonicalIntentId" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Source type</span><span id="canonicalIntentSourceType" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Source ref</span><span id="canonicalIntentSourceRef" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Requested by</span><span id="canonicalIntentRequestedBy" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Priority</span><span id="canonicalIntentPriority" class="status-value">normal</span></div>
+                    <div class="status-row"><span class="muted">Timestamp</span><span id="canonicalIntentTimestamp" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Intent statement</span><span id="canonicalIntentStatement" class="status-value">none</span></div>
                 </div>
             </section>
 
@@ -138,6 +247,26 @@
                 </div>
             </section>
 
+            <section class="card" id="taHireRequestCard">
+                <div class="card-title">TA Hire Requests</div>
+                <div class="muted">Planner queues staffing gaps here so throughput keeps moving while TA reviews asynchronously.</div>
+                <div class="status-grid">
+                    <div class="status-row"><span class="muted">Freshness</span><span id="taHireFreshness" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Source</span><span id="taHireSource" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Generated</span><span id="taHireGeneratedAt" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">View</span><span id="taHireViewMode" class="status-value">derived</span></div>
+                    <div class="status-row"><span class="muted">Queue size</span><span id="taHireQueueCount" class="status-value">0 total</span></div>
+                    <div class="status-row"><span class="muted">Queued</span><span id="taHireQueueQueued" class="status-value">0 queued</span></div>
+                    <div class="status-row"><span class="muted">Reviewing</span><span id="taHireQueueReviewing" class="status-value">0 reviewing</span></div>
+                    <div class="status-row"><span class="muted">Fulfilled</span><span id="taHireQueueFulfilled" class="status-value">0 fulfilled</span></div>
+                    <div class="status-row"><span class="muted">Latest request</span><span id="taHireQueueLatestId" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Requested role</span><span id="taHireQueueLatestRole" class="status-value">none</span></div>
+                    <div class="status-row"><span class="muted">Blocking level</span><span id="taHireQueueLatestBlockingLevel" class="status-value">advisory</span></div>
+                    <div class="status-row"><span class="muted">Latest status</span><span id="taHireQueueLatestStatus" class="status-value">unknown</span></div>
+                    <div class="status-row"><span class="muted">Latest reason</span><span id="taHireQueueLatestReason" class="status-value">none</span></div>
+                </div>
+            </section>
+
             <section class="card">
                 <div class="card-title">Structured QA</div>
                 <div class="muted">Runs deterministic desk-level validation and returns one report.</div>
@@ -199,6 +328,6 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="app.js"></script>
-    <script type="module" src="spatial/spatialApp.js"></script>
+    <script type="module" src="spatial/spatialBootstrap.js"></script>
 </body>
 </html>

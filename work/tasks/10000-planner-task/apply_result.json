@@ -1,0 +1,38 @@
+{
+  "taskId": "10000",
+  "stage": "apply",
+  "status": "passed",
+  "ok": true,
+  "created_utc": "2026-04-02T10:43:57.049Z",
+  "updated_utc": "2026-04-02T10:45:56.167Z",
+  "taskDir": "work/tasks/10000-planner-task",
+  "patchPath": "work/tasks/10000-planner-task/patch.diff",
+  "reuseHint": "Cache hit available. Reuse the existing plan and patch before rerunning apply.",
+  "inputs": {
+    "idea": "idea.txt",
+    "context": "context.md",
+    "plan": "plan.md",
+    "patch": "patch.diff"
+  },
+  "outputs": {
+    "result": "apply_result.json"
+  },
+  "result": {
+    "summary": "Applied one narrow fix for Executor coverage.",
+    "action": "request-execution"
+  },
+  "error": null,
+  "branch": null,
+  "commit": null,
+  "agent_id": "executor",
+  "agent_version": "ace/agent-attribution.v0",
+  "attribution": {
+    "agent_id": "executor",
+    "agent_version": "ace/agent-attribution.v0"
+  },
+  "artifactAttributionPath": "work/tasks/10000-planner-task/agent_attribution.json",
+  "projectKey": "ace-self",
+  "policy": null,
+  "fixTask": null,
+  "sourceFixTask": null
+}

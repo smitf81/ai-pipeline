@@ -3,15 +3,15 @@
 Review-only proposals promoted from repeated failures. These are not prompt-fed by default.
 
 Version: ace/known-fix-candidates.v1
-Updated: 2026-04-01T21:57:08.230Z
+Updated: 2026-04-06T17:45:32.682Z
 
 ### Rebuild or rebase a patch that no longer applies cleanly
 - Status: candidate
 - Failure key: git_apply_check_failed
 - Pattern: Git apply check failed
-- Evidence count: 38
+- Evidence count: 41
 - First seen: 2026-03-29T07:59:09.707Z
-- Last seen: 2026-04-01T10:34:59.544Z
+- Last seen: 2026-04-06T01:43:22.572Z
 - Related tools: git
 - Related stages: apply
 - Example messages:

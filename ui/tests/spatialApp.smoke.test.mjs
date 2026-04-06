@@ -8,6 +8,8 @@ export default async function runSpatialAppSmokeTest() {
   const spatialApp = await smokeLoadSpatialApp(spatialAppPath, { locationHref: 'http://localhost/?mode=qa' });
   assert.equal(spatialApp.default.loaded, true);
   assert.ok(spatialApp.default.firstRender);
+  assert.equal(spatialApp.default.rootElement.getAttribute('data-boot'), 'studio-mounted');
+  assert.equal(spatialApp.default.rootElement.childNodes.length > 0, true);
   assert.equal(typeof spatialApp.buildRsgActivityEntry, 'function');
   assert.equal(typeof spatialApp.pushRsgActivityEntry, 'function');
   assert.equal(typeof spatialApp.shouldRunFocusedRsgLoop, 'function');
@@ -252,6 +254,38 @@ export default async function runSpatialAppSmokeTest() {
     },
   }, helpers));
   assert.ok(spatialApp.renderDeskSection({
+    id: 'qa-overview',
+    label: 'QA Health Overview',
+    kind: 'qa-overview',
+    overview: {
+      status: 'warn',
+      structuredStatus: 'pass',
+      externalStatus: 'warn',
+      openInvestigationsCount: 1,
+      recurringInvestigationsCount: 1,
+      researchBackedInvestigationsCount: 1,
+      latestStructuredAt: '2026-03-25T09:00:00.000Z',
+      latestExternalAt: '2026-03-25T10:00:00.000Z',
+      latestResearchAt: '2026-03-25T11:00:00.000Z',
+      notes: ['Structured report is current.', 'External validation is pending review.'],
+    },
+  }, helpers));
+  assert.ok(spatialApp.renderDeskSection({
+    id: 'qa-hygiene',
+    label: 'Freshness & Hygiene',
+    kind: 'qa-hygiene',
+    surfaces: [{
+      surface_id: 'planner',
+      label: 'Planner',
+      status: 'pass',
+      freshness: 'fresh',
+      last_updated: '2026-03-25T09:00:00.000Z',
+      source: 'data/spatial/qa/structured/latest.json',
+      coverage_hint: '4 scorecards',
+      notes: ['Structured QA report available.'],
+    }],
+  }, helpers));
+  assert.ok(spatialApp.renderDeskSection({
     id: 'structured',
     label: 'Structured QA',
     kind: 'qa-structured',
@@ -269,6 +303,7 @@ export default async function runSpatialAppSmokeTest() {
     label: 'Structured QA Scorecards',
     kind: 'qa-scorecards',
     suiteSummary: '1 scorecard ready.',
+    defaultOpen: false,
     cards: [{
       id: 'ui.contract_check',
       desk: 'ui',
@@ -276,8 +311,50 @@ export default async function runSpatialAppSmokeTest() {
       testName: 'Contract Check',
       status: 'pass',
       overallScore: { value: 4, max: 4 },
+      sourceTrace: { sourcePath: 'data/spatial/qa/structured/latest.json', freshnessClass: 'live_canonical', observedAt: '2026-03-25T09:00:00.000Z' },
       validation: { summary: 'complete' },
     }],
+  }, helpers));
+  assert.ok(spatialApp.renderDeskSection({
+    id: 'investigations',
+    label: 'Investigations',
+    kind: 'qa-investigations',
+    items: [{
+      id: 'qa_inv_1',
+      summary: 'External probe disagrees with internal QA status',
+      trigger: 'external_mismatch',
+      severity: 'medium',
+      status: 'open',
+      repeat_count: 3,
+      first_seen_at: '2026-03-25T09:00:00.000Z',
+      last_seen_at: '2026-03-25T10:00:00.000Z',
+      evidence: {
+        internal: { status: 'pass' },
+        external: { status: 'fail', test_id: 'ollama_ping' },
+        comparison: { status_match: false },
+      },
+      research_available: true,
+      latest_research_at: '2026-03-25T11:00:00.000Z',
+    }],
+  }, helpers));
+  assert.ok(spatialApp.renderDeskSection({
+    id: 'research',
+    label: 'Advisory / Research',
+    kind: 'qa-research',
+    defaultOpen: false,
+    notes: [{
+      id: 'qa_research_1',
+      status: 'available',
+      research_available: true,
+      created_at: '2026-03-25T11:00:00.000Z',
+      summary: 'Likely causes center on stale validation plumbing.',
+      recommendation: 'Add a freshness assertion.',
+      likely_causes: ['stale source trace'],
+      suggested_extra_checks: ['compare source trace timestamps'],
+      suggested_scorecard_additions: ['freshness coverage'],
+      sources: [{ url: 'http://example.com/reference' }],
+    }],
+    researchState: { summary: { availableNotes: 1 } },
   }, helpers));
   assert.ok(spatialApp.renderDeskSection({
     id: 'browser',
