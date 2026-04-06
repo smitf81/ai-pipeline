@@ -336,6 +336,12 @@ export default async function runAppViewerModeTest() {
   });
   assert.equal(qaSandbox.document.getElementById('pipelineCommandName').textContent, 'custom command');
   assert.equal(qaSandbox.document.getElementById('pipelineCommandState').textContent, 'failure');
+
+  assert.doesNotThrow(() => {
+    qaSandbox.window.__ACE_APP_TEST__.renderCanonicalIntentDiagnostics(null);
+  });
+  assert.equal(qaSandbox.document.getElementById('canonicalIntentDiagnosticsState').textContent, 'degraded');
+  assert.equal(qaSandbox.document.getElementById('canonicalIntentDiagnosticsTimestamp').textContent, 'unavailable');
   assert.equal(qaSandbox.document.getElementById('pipelineCommandExit').textContent, '7');
   assert.equal(qaSandbox.document.getElementById('pipelineCommandError').textContent, 'short error');
 

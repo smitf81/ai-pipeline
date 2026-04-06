@@ -8219,6 +8219,10 @@ function buildRuntimeDrift(anchorBundle, workspace) {
   return drift;
 }
 
+function uniqueStrings(values = []) {
+  return [...new Set((values || []).filter(Boolean).map((value) => String(value).trim()).filter(Boolean))];
+}
+
 function buildSpatialRuntimePayload(workspace, options = {}) {
   const anchorBundle = options.anchorBundle || getAnchorBundle();
   const drift = buildRuntimeDrift(anchorBundle, workspace);
@@ -8229,7 +8233,7 @@ function buildSpatialRuntimePayload(workspace, options = {}) {
     ...buildRuntimePayload(workspace),
     manager: {
       ...anchorBundle.managerSummary,
-      drift_flags: drift.map((flag) => flag.id),
+      drift_flags: uniqueStrings(drift.map((flag) => flag.id)),
     },
     canonicalSlices,
     truthSources: anchorBundle.truthSources,
@@ -11656,7 +11660,7 @@ app.get('/api/dashboard', (req, res) => {
     refreshIntervalMs: Number(process.env.DASHBOARD_REFRESH_MS || REFRESH_MS_DEFAULT),
     state: {
       ...anchorBundle.managerSummary,
-      drift_flags: drift.map((flag) => flag.id),
+      drift_flags: uniqueStrings(drift.map((flag) => flag.id)),
     },
     manager: anchorBundle.managerSummary,
     truthSources: anchorBundle.truthSources,

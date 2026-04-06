@@ -160,6 +160,19 @@ function renderCommandSummary(summary = null) {
   setText('uiLastCommandSummary', `${resolved.name} | ${resolved.state} | exit ${resolved.exitCode}`);
 }
 
+function renderCanonicalIntentDiagnostics(payload = null) {
+  const diagnostics = payload && typeof payload === 'object' ? payload : null;
+  const degraded = !diagnostics;
+  const stateLabel = degraded ? 'degraded' : String(diagnostics.state || diagnostics.status || 'ok');
+  const summary = degraded
+    ? 'Canonical intent diagnostics unavailable.'
+    : shortText(diagnostics.summary || diagnostics.message || diagnostics.reason || 'Canonical intent diagnostics available.', 180);
+  const timestamp = diagnostics?.timestamp || diagnostics?.refreshedAt || null;
+  setText('canonicalIntentDiagnosticsState', stateLabel);
+  setText('canonicalIntentDiagnosticsSummary', summary);
+  setText('canonicalIntentDiagnosticsTimestamp', timestamp ? formatTimestamp(timestamp) : 'unavailable');
+}
+
 function selectedPreflightStage() {
   return ACTION_PREFLIGHT_STAGE[actionMode()] || 'rebuild';
 }
@@ -594,7 +607,10 @@ async function refreshDashboard() {
       api('/api/runs'),
       api('/api/health'),
     ]);
-    const data = dashboard || {};
+    const data = dashboard && typeof dashboard === 'object' ? dashboard : null;
+    if (!data) {
+      throw new Error('Dashboard payload was empty.');
+    }
     const s = data.state || {};
     const dashboardSignature = JSON.stringify({
       current_focus: s.current_focus || '',
@@ -631,6 +647,7 @@ async function refreshDashboard() {
       refreshedAt: data.refreshedAt,
       runs: runs?.runs || [],
     });
+    renderCanonicalIntentDiagnostics(data.canonicalIntentDiagnostics || null);
     void refreshPlannerIdentityDiagnostics().catch(() => {});
     void refreshPlannerRuntimeDiagnostics().catch(() => {});
     void refreshPlannerQaQueueDiagnostics().catch(() => {});
@@ -656,6 +673,7 @@ async function refreshDashboard() {
     });
     setText('error_box', message);
     document.getElementById('error_wrap').style.display = 'block';
+    renderCanonicalIntentDiagnostics(null);
   }
 }
 
@@ -1637,6 +1655,7 @@ window.__ACE_APP_TEST__ = {
   syncProjectRunnerUi,
   updateRefreshStatus,
   setModeUi,
+  renderCanonicalIntentDiagnostics,
   renderPlannerIdentityDiagnostics,
   refreshPlannerIdentityDiagnostics,
   renderCtoOverrideDiagnostics,
