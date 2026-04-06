@@ -1,0 +1,40 @@
+{
+  "version": "ace/studio-boot-contract.v1",
+  "root_id": "spatial-root",
+  "mount_marker": {
+    "attribute": "data-boot",
+    "value": "studio-mounted"
+  },
+  "blank_render_timeout_ms": 5000,
+  "entry_module_import": "./spatialApp.js",
+  "assets": [
+    {
+      "path": "/spatial/spatialBootstrap.js",
+      "label": "Studio bootstrap entry",
+      "kind": "boot_entry",
+      "stage": "core_bundle_loaded",
+      "blocking": true
+    },
+    {
+      "path": "/spatial/spatialApp.js",
+      "label": "Spatial app entry module",
+      "kind": "app_entry",
+      "stage": "required_modules_loaded",
+      "blocking": true
+    },
+    {
+      "path": "/spatial/intentContract.browser.js",
+      "label": "Browser intent contract helper",
+      "kind": "required_module",
+      "stage": "required_modules_loaded",
+      "blocking": true
+    },
+    {
+      "path": "/favicon.ico",
+      "label": "Favicon",
+      "kind": "favicon",
+      "stage": "required_modules_loaded",
+      "blocking": false
+    }
+  ]
+}

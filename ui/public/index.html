@@ -26,7 +26,7 @@
     </header>
 
     <main class="workspace-shell" aria-label="Sketchpad Workspace">
-        <div id="spatial-root"></div>
+        <div id="spatial-root" data-boot="shell-ready"></div>
     </main>
 
     <aside id="legacy-ui" class="legacy-hidden legacy-drawer" aria-label="Legacy Debug Drawer">
@@ -328,6 +328,6 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="app.js"></script>
-    <script type="module" src="spatial/spatialApp.js"></script>
+    <script type="module" src="spatial/spatialBootstrap.js"></script>
 </body>
 </html>

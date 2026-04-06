@@ -1,7 +1,24 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-04-02T10:46:26.872Z",
+  "updated_at": "2026-04-06T14:57:55.110Z",
   "entries": [
+    {
+      "id": "cto_diag_1775487475110",
+      "timestamp": "2026-04-06T14:57:55.110Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "interval-guard",
+      "category": "timeout",
+      "status": "offline",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama status check timed out after 100ms.",
+      "failureKind": null,
+      "runId": null,
+      "httpStatus": null,
+      "actionId": null,
+      "availableActionIds": []
+    },
     {
       "id": "cto_diag_1775126786872",
       "timestamp": "2026-04-02T10:46:26.872Z",
@@ -15,7 +32,7 @@
       "reason": "Ollama generate timed out after 30000ms.",
       "failureKind": "parse",
       "runId": "cto-chat-1775126756847-e8wvaj",
-      "httpStatus": null,
+      "httpStatus": 0,
       "actionId": "request-execution",
       "availableActionIds": [
         "request-execution"

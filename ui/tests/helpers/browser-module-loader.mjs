@@ -99,6 +99,8 @@ export async function smokeLoadSpatialApp(modulePath, { locationHref = 'http://l
   const rosterSurfaceModule = await materializeModuleCopy(path.join(spatialDir, 'rosterSurface.js'), { label: 'rosterSurface' });
   const resourceSignalModelModule = await materializeModuleCopy(path.join(spatialDir, 'resourceSignalModel.js'), { label: 'resourceSignalModel' });
   const uiActionRegistryModule = await materializeModuleCopy(path.join(spatialDir, 'uiActionRegistry.js'), { label: 'uiActionRegistry' });
+  const ghostProjectionModule = await materializeModuleCopy(path.join(spatialDir, 'ghostProjection.js'), { label: 'ghostProjection' });
+  const intentContractBrowserModule = await materializeModuleCopy(path.join(spatialDir, 'intentContract.browser.js'), { label: 'intentContractBrowser' });
   const source = await fs.readFile(modulePath, 'utf8');
   const withoutImports = stripImportLines(source);
   const shimmedSource = `
@@ -180,6 +182,15 @@ import {
   listDepartmentsByPriority,
 } from ${JSON.stringify(resourceSignalModelModule.url)};
 import {
+  buildCanonicalIntentContract,
+} from ${JSON.stringify(intentContractBrowserModule.url)};
+import {
+  buildGhostProjectionRegistryPayload,
+  createEmptyGhostProjectionRegistry,
+  getCurrentGhostProjection,
+  summarizeGhostProjection,
+} from ${JSON.stringify(ghostProjectionModule.url)};
+import {
   ActionButton,
   buildActionPayload,
   runUiAction,
@@ -254,7 +265,16 @@ const React = {
   useCallback: (callback) => callback,
 };
 const ReactDOM = {
-  createRoot: () => ({ render: () => undefined }),
+  createRoot: (root) => ({
+    render: () => {
+      if (root && typeof root.setAttribute === 'function') {
+        root.setAttribute('data-boot', 'studio-mounted');
+      }
+      if (root && Array.isArray(root.childNodes)) {
+        root.childNodes.push({ type: 'rendered-child' });
+      }
+    },
+  }),
 };
 const fetch = async () => ({ ok: true, json: async () => ({}) });
 const requestAnimationFrame = () => 0;
@@ -281,15 +301,25 @@ const window = {
   prompt: () => null,
   sessionStorage,
 };
+const rootElement = {
+  attributes: new Map(),
+  childNodes: [],
+  setAttribute(name, value) {
+    this.attributes.set(name, String(value));
+  },
+  getAttribute(name) {
+    return this.attributes.has(name) ? this.attributes.get(name) : null;
+  },
+};
 const document = {
   activeElement: null,
   body: { classList: { add: () => undefined, remove: () => undefined } },
-  getElementById: () => ({}),
+  getElementById: () => rootElement,
 };
 ${withoutImports}
 
 const firstRender = SpatialNotebook();
-export default { loaded: typeof SpatialNotebook === 'function', firstRender };
+export default { loaded: typeof SpatialNotebook === 'function', firstRender, rootElement };
 export { renderDeskSection, renderSimLaunchOverlay };
 `;
   const tempFile = await writeTempModule(shimmedSource, 'spatialApp-smoke');

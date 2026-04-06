@@ -368,6 +368,7 @@ function buildArchivistContextBundle(rootPath, snapshot = {}, options = {}) {
       enabled: true,
       note: 'Archivist writes the bundle locally, marks freshness, and keeps canonical brain docs read-mostly.',
     },
+    governedRecords: Array.isArray(snapshot.governedOutcomes) ? snapshot.governedOutcomes : [],
   };
 }
 
@@ -506,6 +507,89 @@ function normalizeLedgerSummary(rootPath, agentId = 'dave') {
   };
 }
 
+function normalizeGovernedOutcomeLifecycle(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return 'queued';
+  if (['done', 'complete', 'completed', 'success'].includes(normalized)) return 'done';
+  if (normalized === 'blocked') return 'blocked';
+  if (normalized.includes('fail') || normalized === 'error') return 'failed';
+  if (['running', 'active', 'in_progress', 'in-progress', 'building', 'applying', 'deploying', 'verifying', 'review'].includes(normalized)) {
+    return 'in_progress';
+  }
+  return 'queued';
+}
+
+function firstNonEmptyString(values = []) {
+  for (const value of values) {
+    const normalized = String(value || '').trim();
+    if (normalized) return normalized;
+  }
+  return '';
+}
+
+function normalizeGovernedOutcomeStatus(card = {}) {
+  const lifecycle = normalizeGovernedOutcomeLifecycle(card.status || card.state || '');
+  if (lifecycle === 'done') return 'completed';
+  if (lifecycle === 'blocked') return 'blocked';
+  return null;
+}
+
+function buildGovernedOutcomeSummary(card = {}, workspace = {}) {
+  const currentIntentId = workspace?.intentState?.currentIntentId || workspace?.intentState?.registry?.currentIntentId || null;
+  const intentRegistry = workspace?.intentState?.registry?.byId || {};
+  const intentId = card.sourceIntentId || card.taskFlow?.sourceIntentId || currentIntentId || null;
+  const intentRecord = intentId ? intentRegistry[intentId] : null;
+  const intentSummary = firstNonEmptyString([
+    intentRecord?.semanticMeaning?.summary,
+    intentRecord?.semanticMeaning?.statement,
+    intentRecord?.semanticMeaning?.goal,
+    card.title,
+  ]);
+  const outcomeStatus = normalizeGovernedOutcomeStatus(card);
+  if (!outcomeStatus) return null;
+  const outcomeSummary = outcomeStatus === 'blocked'
+    ? firstNonEmptyString([
+        card.executorBlocker?.summary,
+        card.executorBlocker?.message,
+        card.executionPackage?.summary,
+        card.state,
+        card.status,
+      ])
+    : firstNonEmptyString([
+        card.executionPackage?.summary,
+        card.state,
+        card.status,
+        'Completed and stable.',
+      ]);
+  return {
+    cardId: card.id || null,
+    taskId: firstNonEmptyString([card.runnerTaskId, card.builderTaskId, card.executionPackage?.taskId]) || null,
+    sourceIntakeId: card.sourceIntakeId || null,
+    sourceIntentId: intentId,
+    sourceHandoffId: card.sourceHandoffId || card.taskFlow?.sourceHandoffId || null,
+    intentSummary: intentSummary || null,
+    outcomeStatus,
+    outcomeSummary: outcomeSummary || null,
+    intentVsOutcomeSummary: firstNonEmptyString([
+      intentSummary && outcomeSummary ? `${intentSummary} -> ${outcomeSummary}` : '',
+      outcomeSummary,
+      intentSummary,
+    ]) || null,
+    archivedAt: null,
+  };
+}
+
+function collectGovernedOutcomeRecords(workspace = {}, generatedAt = nowIso()) {
+  const cards = Array.isArray(workspace?.studio?.teamBoard?.cards) ? workspace.studio.teamBoard.cards : [];
+  return cards
+    .map((card) => buildGovernedOutcomeSummary(card, workspace))
+    .filter(Boolean)
+    .map((record) => ({
+      ...record,
+      archivedAt: generatedAt,
+    }));
+}
+
 function buildSliceSeeds(snapshot) {
   const cues = [];
   if (!snapshot.slices.activeCount && snapshot.qa?.status === 'failed') {
@@ -541,6 +625,7 @@ function buildArchivistSessionSnapshot(rootPath, options = {}) {
     qa: normalizeQASummary(rootPath),
     throughput: normalizeThroughputSummary(rootPath, generatedAt),
     ledger: normalizeLedgerSummary(rootPath, 'dave'),
+    governedOutcomes: collectGovernedOutcomeRecords(workspace, generatedAt),
   };
   snapshot.sliceSeeds = buildSliceSeeds(snapshot);
   snapshot.summary = buildSessionSummary(snapshot);

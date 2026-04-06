@@ -3,11 +3,11 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-04-04T23:04:15.771Z
+Updated: 2026-04-06T17:42:27.102Z
 
 ### 0001-Blender-UE-import-hygiene
 - Agent: autonomy-policy (ace/agent-attribution.v0)
-- Status: blocked
+- Status: pending
 - Decision: blocked
 - Stage: planner
 - Action: planner
@@ -21,43 +21,31 @@ Updated: 2026-04-04T23:04:15.771Z
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- D brain/emergence/project_brainV2.md
+ M brain/context/recent_change_digest.md
+ M brain/emergence/project_brain.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
  M data/spatial/architecture-memory.json
  M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
+ M data/spatial/intent-state.json
  M data/spatial/pages.json
  M data/spatial/qa/local-gates/test-unit-latest.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/agentWorkers.js
  M ui/archivistWriteback.js
- M ui/failureMemory.js
- M ui/intentAnalysis.js
- M ui/knownFixes.js
+ M ui/externalQaProbe.js
  M ui/orchestratorState.js
- M ui/public/app.js
  M ui/public/index.html
- M ui/public/spatial/mutationEngine.js
+ M ui/public/spatial/aceConnector.js
  M ui/public/spatial/spatialApp.js
  M ui/public/spatial/studioData.js
- M ui/qaRunner.js
+ M ui/public/style.css
  M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/agentWorkers.test.mjs
- M ui/tests/appViewerMode.test.mjs
- M ui/tests/ctoPipeline.test.mjs
  M ui/tests/helpers/browser-module-loader.mjs
- M ui/tests/intentAnalysis.test.mjs
- M ui/tests/orchestratorState.test.mjs
  M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
  M ui/tests/studioData.test.mjs
- M ui/tests/studioLayoutRelationships.test.mjs
- M ui/tests/throughputDebug.test.mjs
- M ui/throughputDebug.js
- M ui/worldScaffold.js
 
 ### 10000
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -106,7 +94,7 @@ Updated: 2026-04-04T23:04:15.771Z
 
 ### planner:planner:0
 - Agent: autonomy-policy (ace/agent-attribution.v0)
-- Status: blocked
+- Status: pending
 - Decision: blocked
 - Stage: planner
 - Action: planner
@@ -120,40 +108,28 @@ Updated: 2026-04-04T23:04:15.771Z
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- D brain/emergence/project_brainV2.md
+ M brain/context/recent_change_digest.md
+ M brain/emergence/project_brain.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
  M data/spatial/architecture-memory.json
  M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
+ M data/spatial/intent-state.json
  M data/spatial/pages.json
  M data/spatial/qa/local-gates/test-unit-latest.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/agentWorkers.js
  M ui/archivistWriteback.js
- M ui/failureMemory.js
- M ui/intentAnalysis.js
- M ui/knownFixes.js
+ M ui/externalQaProbe.js
  M ui/orchestratorState.js
- M ui/public/app.js
  M ui/public/index.html
- M ui/public/spatial/mutationEngine.js
+ M ui/public/spatial/aceConnector.js
  M ui/public/spatial/spatialApp.js
  M ui/public/spatial/studioData.js
- M ui/qaRunner.js
+ M ui/public/style.css
  M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/agentWorkers.test.mjs
- M ui/tests/appViewerMode.test.mjs
- M ui/tests/ctoPipeline.test.mjs
  M ui/tests/helpers/browser-module-loader.mjs
- M ui/tests/intentAnalysis.test.mjs
- M ui/tests/orchestratorState.test.mjs
  M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
  M ui/tests/studioData.test.mjs
- M ui/tests/studioLayoutRelationships.test.mjs
- M ui/tests/throughputDebug.test.mjs
- M ui/throughputDebug.js
- M ui/worldScaffold.js

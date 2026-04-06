@@ -16,48 +16,202 @@
   "sketches": [],
   "annotations": [],
   "architectureMemory": {
-    "system": "ACE",
+    "adapters": [],
     "layers": {
-      "interface": [
-        "Spatial IDE Interface Layer"
+      "execution": [
+        "Code Generator",
+        "Test Generator"
       ],
       "intelligence": [
         "Intent Engine",
         "Task Planner"
       ],
-      "execution": [
-        "Code Generator",
-        "Test Generator"
+      "interface": [
+        "Spatial IDE Interface Layer"
       ]
     },
-    "subsystems": [],
     "modules": [],
-    "world": {
-      "domain": "gameplay-systems",
-      "systems": [],
-      "mechanics": [],
-      "quests": [],
-      "items": [],
-      "constraints": []
-    },
-    "adapters": [],
     "proposals": [],
     "rules": [
       "modular architecture",
       "no circular dependencies",
       "stateless services"
     ],
-    "versions": []
+    "subsystems": [],
+    "system": "ACE",
+    "versions": [],
+    "world": {
+      "constraints": [],
+      "domain": "gameplay-systems",
+      "items": [],
+      "mechanics": [],
+      "quests": [],
+      "systems": []
+    }
   },
   "agentComments": {},
   "intentState": {
     "registry": {
-      "currentIntentId": "intent-current",
-      "latestIntentId": "intent-current",
-      "byId": {},
-      "records": []
+      "currentIntentId": "proof_planner_intent",
+      "latestIntentId": "proof_planner_intent",
+      "byId": {
+        "proof_planner_intent": {
+          "id": "proof_planner_intent",
+          "source": {
+            "type": "canvas-text",
+            "ref": "proof-planner-prompt",
+            "requestedBy": "interval-guard"
+          },
+          "geometry": {
+            "kind": "unknown",
+            "region": null,
+            "stroke": null
+          },
+          "semanticMeaning": {
+            "summary": "Prove planner desk canonical visibility.",
+            "statement": "Prove planner desk canonical visibility.",
+            "goal": "Prove planner desk canonical visibility.",
+            "requestType": "context_request",
+            "requestedOutcomes": [
+              "Show planner-visible canonical work"
+            ],
+            "targets": [
+              "planner-desk"
+            ],
+            "constraints": [
+              "No local synthesis"
+            ],
+            "urgency": "normal",
+            "labels": [
+              "planner"
+            ]
+          },
+          "confidence": 0.88,
+          "createdAt": "2026-04-06T16:00:33.383Z",
+          "provenance": {
+            "sourceType": "canvas-text",
+            "sourceRef": "proof-planner-prompt",
+            "requestedBy": "interval-guard"
+          },
+          "missingFields": [
+            "geometry"
+          ],
+          "status": "degraded",
+          "intentId": "proof_planner_intent",
+          "sourceType": "canvas-text",
+          "sourceRef": "proof-planner-prompt",
+          "nodeId": "proof-planner-prompt",
+          "requestedBy": "interval-guard",
+          "timestamp": "2026-04-06T16:00:33.383Z",
+          "priority": "normal",
+          "summary": "Prove planner desk canonical visibility.",
+          "statement": "Prove planner desk canonical visibility.",
+          "goal": "Prove planner desk canonical visibility.",
+          "requestType": "context_request",
+          "requestedOutcomes": [
+            "Show planner-visible canonical work"
+          ],
+          "tasks": [
+            "Show planner-visible canonical work"
+          ],
+          "targets": [
+            "planner-desk"
+          ],
+          "constraints": [
+            "No local synthesis"
+          ],
+          "projectContext": {
+            "currentFocus": "proof-planner-prompt",
+            "matchedTerms": [
+              "planner"
+            ],
+            "blockers": [
+              "No local synthesis"
+            ],
+            "anchorRefs": []
+          }
+        }
+      },
+      "records": [
+        {
+          "id": "proof_planner_intent",
+          "source": {
+            "type": "canvas-text",
+            "ref": "proof-planner-prompt",
+            "requestedBy": "interval-guard"
+          },
+          "geometry": {
+            "kind": "unknown",
+            "region": null,
+            "stroke": null
+          },
+          "semanticMeaning": {
+            "summary": "Prove planner desk canonical visibility.",
+            "statement": "Prove planner desk canonical visibility.",
+            "goal": "Prove planner desk canonical visibility.",
+            "requestType": "context_request",
+            "requestedOutcomes": [
+              "Show planner-visible canonical work"
+            ],
+            "targets": [
+              "planner-desk"
+            ],
+            "constraints": [
+              "No local synthesis"
+            ],
+            "urgency": "normal",
+            "labels": [
+              "planner"
+            ]
+          },
+          "confidence": 0.88,
+          "createdAt": "2026-04-06T16:00:33.383Z",
+          "provenance": {
+            "sourceType": "canvas-text",
+            "sourceRef": "proof-planner-prompt",
+            "requestedBy": "interval-guard"
+          },
+          "missingFields": [
+            "geometry"
+          ],
+          "status": "degraded",
+          "intentId": "proof_planner_intent",
+          "sourceType": "canvas-text",
+          "sourceRef": "proof-planner-prompt",
+          "nodeId": "proof-planner-prompt",
+          "requestedBy": "interval-guard",
+          "timestamp": "2026-04-06T16:00:33.383Z",
+          "priority": "normal",
+          "summary": "Prove planner desk canonical visibility.",
+          "statement": "Prove planner desk canonical visibility.",
+          "goal": "Prove planner desk canonical visibility.",
+          "requestType": "context_request",
+          "requestedOutcomes": [
+            "Show planner-visible canonical work"
+          ],
+          "tasks": [
+            "Show planner-visible canonical work"
+          ],
+          "targets": [
+            "planner-desk"
+          ],
+          "constraints": [
+            "No local synthesis"
+          ],
+          "projectContext": {
+            "currentFocus": "proof-planner-prompt",
+            "matchedTerms": [
+              "planner"
+            ],
+            "blockers": [
+              "No local synthesis"
+            ],
+            "anchorRefs": []
+          }
+        }
+      ]
     },
-    "currentIntentId": "intent-current",
+    "currentIntentId": "proof_planner_intent",
     "summary": "Migrate to canonical anchor-based ACE system",
     "status": "idle"
   },
@@ -229,13 +383,13 @@
         }
       ],
       "artifactRefs": [],
-      "id": "page_1774615405445_ect6",
-      "title": "Migrate to canonical anchor-based ACE system",
-      "status": "active",
-      "sourceNodeId": "node_1774615116734_91jfx",
-      "summary": "Migrate to canonical anchor-based ACE system",
       "createdAt": "2026-03-27T12:43:25.445Z",
-      "updatedAt": "2026-04-04T23:04:23.850Z"
+      "id": "page_1774615405445_ect6",
+      "sourceNodeId": "proof-planner-prompt",
+      "status": "active",
+      "summary": "Prove planner desk canonical visibility.",
+      "title": "Prove planner desk canonical visibility.",
+      "updatedAt": "2026-04-06T16:00:33.457Z"
     }
   ],
   "activePageId": "page_1774615405445_ect6",
@@ -278,13 +432,542 @@
     "lastSourceNodeId": null,
     "lastGenerationAt": null,
     "lastStatus": "idle",
-    "lastEvaluatedAt": "2026-04-04T23:04:23.850Z"
+    "lastEvaluatedAt": "2026-04-06T16:00:33.457Z"
   },
   "mutationGate": {
     "activity": [],
     "approvalQueue": []
   },
   "studio": {
+    "activeGraphLayer": "system",
+    "agentWorkers": {
+      "context-manager": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastSourceNodeId": null,
+        "lastHandoffId": null,
+        "lastReportNodeId": null,
+        "lastBlockedReason": null,
+        "lastUsedFallback": false,
+        "lastPlannerFeedbackAction": null,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "executor": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastBlockedReason": null,
+        "lastCardId": null,
+        "lastTaskId": null,
+        "lastDecision": null,
+        "lastAssessmentSummary": null,
+        "lastAssessmentBlockers": [],
+        "lastVerifiedCardId": null,
+        "lastAppliedCardId": null,
+        "lastDeployCardId": null,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "planner": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "auto",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastSourceHandoffId": null,
+        "lastBlockedReason": null,
+        "lastProducedCardIds": [],
+        "proposalArtifactRefs": [],
+        "startedAt": null,
+        "completedAt": null
+      },
+      "dave": {
+        "name": "Dave",
+        "role": "Practical learning companion",
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "tokensUsed": 0,
+        "durationMs": 0,
+        "responseStatus": "idle",
+        "contextAlignmentScore": 0,
+        "contextAlignmentReason": null,
+        "startedAt": null,
+        "completedAt": null
+      }
+    },
+    "canvasViewport": {
+      "x": -334.5,
+      "y": -392.4,
+      "zoom": 0.76
+    },
+    "ctoOverrides": {
+      "version": "1",
+      "updatedAt": null,
+      "entries": [
+        {
+          "overrideId": "override_force_plan_1",
+          "kind": "force-plan-generation",
+          "summary": "Force planner generation for the smoke pack.",
+          "reason": "Force planner generation for the smoke pack.",
+          "requestedBy": "cto",
+          "status": "active",
+          "createdAt": "2026-04-06T09:22:33.328Z",
+          "updatedAt": "2026-04-06T09:22:33.328Z",
+          "appliedAt": "2026-04-06T06:46:27.209Z",
+          "explicit": true,
+          "target": {
+            "deskId": "planner",
+            "deskLabel": null,
+            "roleId": null,
+            "agentId": null,
+            "planId": null,
+            "handoffId": "handoff_regression_1",
+            "queueKey": null,
+            "intentId": null
+          },
+          "effect": {
+            "forcePlannerRouting": false,
+            "forcePlanningGeneration": true,
+            "reopenStalePlan": false,
+            "supersedeQueuePriority": false,
+            "requestEmergencyStaffingReview": false,
+            "handoffMode": null,
+            "queuePriority": null
+          },
+          "canonicalTruth": {
+            "staffing": {
+              "state": "absent"
+            }
+          },
+          "provenance": {
+            "sourceActionId": null,
+            "sourceDeskId": null,
+            "sourceHandoffId": null,
+            "sourceIntentId": null,
+            "sourceRef": "chat-regression",
+            "sourceRoute": null,
+            "sourceType": "cto-chat"
+          }
+        }
+      ]
+    },
+    "deskProperties": {
+      "context-manager": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "planner": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "executor": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "qa-lead": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "memory-archivist": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "rnd-lead": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "cto-architect": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "integration_auditor": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      }
+    },
+    "handoffs": {
+      "contextToPlanner": {
+        "id": "handoff_1774615405452_2yc7",
+        "sourceAgentId": "context-manager",
+        "targetAgentId": "planner",
+        "createdAt": "2026-03-27T12:39:27.479Z",
+        "sourceNodeId": "node_1774615116734_91jfx",
+        "summary": "Migrate to canonical anchor-based ACE system",
+        "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
+        "anchorRefs": [
+          "brain/emergence/decisions.md",
+          "brain/emergence/project_brain.md",
+          "brain/emergence/roadmap.md",
+          "brain/emergence/slices.md",
+          "brain/emergence/changelog.md",
+          "brain/emergence/plan.md",
+          "brain/emergence/tasks.md"
+        ],
+        "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
+        "requestedOutcomes": [
+          "Update or check the status of RGS nodes"
+        ],
+        "tasks": [
+          "Update or check the status of RGS nodes"
+        ],
+        "constraints": [
+          "Ensure compatibility during migration",
+          "Constraint coverage: No clear constraints or review gates were stated."
+        ],
+        "confidence": 0.69,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: canonical, ace, system, context, compatibility"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.875,
+            "reason": "Detected 4 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.5555555555555556,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "truth": {
+          "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+          "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+          "statement": "Migrate to canonical anchor-based ACE system",
+          "goal": "Migrate to canonical anchor-based ACE system",
+          "intentType": "Constraint / guardrail request",
+          "requestType": "constraint_request",
+          "requestedOutcomes": [
+            "Update or check the status of RGS nodes"
+          ],
+          "tasks": [
+            "Update or check the status of RGS nodes"
+          ],
+          "targets": [
+            "canonical",
+            "ace",
+            "system",
+            "context",
+            "compatibility",
+            "runtime",
+            "anchor",
+            "and"
+          ],
+          "constraints": [
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "urgency": "normal",
+          "signals": {
+            "actionSignals": 1,
+            "constraintSignals": 0,
+            "architectureSignals": 0,
+            "executionSignals": 0,
+            "featureSignals": 0,
+            "matchedProjectTerms": 7,
+            "anchorRefs": 7,
+            "lowConfidenceCriteria": 1,
+            "plannerUsefulness": 0.89,
+            "executionReadiness": 0.72,
+            "deployReadiness": 0.19,
+            "labels": [
+              "context",
+              "ux",
+              "governance"
+            ],
+            "role": "constraint",
+            "requestedOutcomeCount": 1
+          },
+          "unresolved": [
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "evidence": [
+            "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Actionability: Detected 4 implementation/planning verb signals."
+          ],
+          "anchorRefs": [
+            "brain/emergence/decisions.md",
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/slices.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md"
+          ],
+          "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
+          "readiness": {
+            "intentConfidence": 0.69,
+            "plannerUsefulness": 0.89,
+            "executionReadiness": 0.72,
+            "deployReadiness": 0.19
+          }
+        },
+        "scores": {
+          "intentConfidence": 0.69,
+          "executionReadiness": 0.72,
+          "plannerUsefulness": 0.89,
+          "deployReadiness": 0.19
+        },
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "ux",
+            "governance"
+          ]
+        },
+        "requestType": "context_request",
+        "urgency": "normal",
+        "targets": [
+          "canonical",
+          "ace",
+          "system",
+          "context",
+          "compatibility",
+          "runtime",
+          "anchor",
+          "brain/emergence/project_brain.md"
+        ],
+        "signals": {},
+        "status": "needs-clarification"
+      },
+      "history": [
+        {
+          "id": "handoff_1774615405452_2yc7",
+          "sourceAgentId": "context-manager",
+          "targetAgentId": "planner",
+          "createdAt": "2026-03-27T12:39:27.479Z",
+          "sourceNodeId": "node_1774615116734_91jfx",
+          "summary": "Migrate to canonical anchor-based ACE system",
+          "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
+          "anchorRefs": [
+            "brain/emergence/decisions.md",
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/slices.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md"
+          ],
+          "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
+          "requestedOutcomes": [
+            "Update or check the status of RGS nodes"
+          ],
+          "tasks": [
+            "Update or check the status of RGS nodes"
+          ],
+          "constraints": [
+            "Ensure compatibility during migration",
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "confidence": 0.69,
+          "criteria": [
+            {
+              "id": "project-alignment",
+              "label": "Project alignment",
+              "score": 1,
+              "reason": "Matched project terms: canonical, ace, system, context, compatibility"
+            },
+            {
+              "id": "actionability",
+              "label": "Actionability",
+              "score": 0.875,
+              "reason": "Detected 4 implementation/planning verb signals."
+            },
+            {
+              "id": "architecture-fit",
+              "label": "Architecture fit",
+              "score": 0.5555555555555556,
+              "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+            },
+            {
+              "id": "constraint-coverage",
+              "label": "Constraint coverage",
+              "score": 0,
+              "reason": "No clear constraints or review gates were stated."
+            },
+            {
+              "id": "clarity",
+              "label": "Clarity",
+              "score": 1,
+              "reason": "Input includes enough detail to classify intent reliably."
+            }
+          ],
+          "truth": {
+            "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+            "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+            "statement": "Migrate to canonical anchor-based ACE system",
+            "goal": "Migrate to canonical anchor-based ACE system",
+            "intentType": "Constraint / guardrail request",
+            "requestType": "constraint_request",
+            "requestedOutcomes": [
+              "Update or check the status of RGS nodes"
+            ],
+            "tasks": [
+              "Update or check the status of RGS nodes"
+            ],
+            "targets": [
+              "canonical",
+              "ace",
+              "system",
+              "context",
+              "compatibility",
+              "runtime",
+              "anchor",
+              "and"
+            ],
+            "constraints": [
+              "Constraint coverage: No clear constraints or review gates were stated."
+            ],
+            "urgency": "normal",
+            "signals": {
+              "actionSignals": 1,
+              "constraintSignals": 0,
+              "architectureSignals": 0,
+              "executionSignals": 0,
+              "featureSignals": 0,
+              "matchedProjectTerms": 7,
+              "anchorRefs": 7,
+              "lowConfidenceCriteria": 1,
+              "plannerUsefulness": 0.89,
+              "executionReadiness": 0.72,
+              "deployReadiness": 0.19,
+              "labels": [
+                "context",
+                "ux",
+                "governance"
+              ],
+              "role": "constraint",
+              "requestedOutcomeCount": 1
+            },
+            "unresolved": [
+              "Constraint coverage: No clear constraints or review gates were stated."
+            ],
+            "evidence": [
+              "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
+              "Clarity: Input includes enough detail to classify intent reliably.",
+              "Actionability: Detected 4 implementation/planning verb signals."
+            ],
+            "anchorRefs": [
+              "brain/emergence/decisions.md",
+              "brain/emergence/project_brain.md",
+              "brain/emergence/roadmap.md",
+              "brain/emergence/slices.md",
+              "brain/emergence/changelog.md",
+              "brain/emergence/plan.md",
+              "brain/emergence/tasks.md"
+            ],
+            "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
+            "readiness": {
+              "intentConfidence": 0.69,
+              "plannerUsefulness": 0.89,
+              "executionReadiness": 0.72,
+              "deployReadiness": 0.19
+            }
+          },
+          "scores": {
+            "intentConfidence": 0.69,
+            "executionReadiness": 0.72,
+            "plannerUsefulness": 0.89,
+            "deployReadiness": 0.19
+          },
+          "classification": {
+            "role": "constraint",
+            "labels": [
+              "context",
+              "ux",
+              "governance"
+            ]
+          },
+          "requestType": "context_request",
+          "urgency": "normal",
+          "targets": [
+            "canonical",
+            "ace",
+            "system",
+            "context",
+            "compatibility",
+            "runtime",
+            "anchor",
+            "brain/emergence/project_brain.md"
+          ],
+          "signals": {},
+          "status": "needs-clarification"
+        }
+      ]
+    },
     "layout": {
       "version": "studio-layout.v1",
       "size": {
@@ -1655,333 +2338,337 @@
         }
       }
     },
-    "handoffs": {
-      "contextToPlanner": {
-        "id": "handoff_1774615405452_2yc7",
-        "sourceAgentId": "context-manager",
-        "targetAgentId": "planner",
-        "createdAt": "2026-03-27T12:39:27.479Z",
-        "sourceNodeId": "node_1774615116734_91jfx",
-        "summary": "Migrate to canonical anchor-based ACE system",
-        "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
-        "anchorRefs": [
-          "brain/emergence/decisions.md",
-          "brain/emergence/project_brain.md",
-          "brain/emergence/roadmap.md",
-          "brain/emergence/slices.md",
-          "brain/emergence/changelog.md",
-          "brain/emergence/plan.md",
-          "brain/emergence/tasks.md"
-        ],
-        "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
-        "requestedOutcomes": [
-          "Update or check the status of RGS nodes"
-        ],
-        "tasks": [
-          "Update or check the status of RGS nodes"
-        ],
-        "constraints": [
-          "Ensure compatibility during migration",
-          "Constraint coverage: No clear constraints or review gates were stated."
-        ],
-        "confidence": 0.69,
-        "criteria": [
-          {
-            "id": "project-alignment",
-            "label": "Project alignment",
-            "score": 1,
-            "reason": "Matched project terms: canonical, ace, system, context, compatibility"
-          },
-          {
-            "id": "actionability",
-            "label": "Actionability",
-            "score": 0.875,
-            "reason": "Detected 4 implementation/planning verb signals."
-          },
-          {
-            "id": "architecture-fit",
-            "label": "Architecture fit",
-            "score": 0.5555555555555556,
-            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
-          },
-          {
-            "id": "constraint-coverage",
-            "label": "Constraint coverage",
-            "score": 0,
-            "reason": "No clear constraints or review gates were stated."
-          },
-          {
-            "id": "clarity",
-            "label": "Clarity",
-            "score": 1,
-            "reason": "Input includes enough detail to classify intent reliably."
-          }
-        ],
-        "truth": {
-          "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
-          "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
-          "statement": "Migrate to canonical anchor-based ACE system",
-          "goal": "Migrate to canonical anchor-based ACE system",
-          "intentType": "Constraint / guardrail request",
-          "requestType": "constraint_request",
-          "requestedOutcomes": [
-            "Update or check the status of RGS nodes"
-          ],
-          "tasks": [
-            "Update or check the status of RGS nodes"
-          ],
-          "targets": [
-            "canonical",
-            "ace",
-            "system",
-            "context",
-            "compatibility",
-            "runtime",
-            "anchor",
-            "and"
-          ],
-          "constraints": [
-            "Constraint coverage: No clear constraints or review gates were stated."
-          ],
-          "urgency": "normal",
-          "signals": {
-            "actionSignals": 1,
-            "constraintSignals": 0,
-            "architectureSignals": 0,
-            "executionSignals": 0,
-            "featureSignals": 0,
-            "matchedProjectTerms": 7,
-            "anchorRefs": 7,
-            "lowConfidenceCriteria": 1,
-            "plannerUsefulness": 0.89,
-            "executionReadiness": 0.72,
-            "deployReadiness": 0.19,
-            "labels": [
-              "context",
-              "ux",
-              "governance"
-            ],
-            "role": "constraint",
-            "requestedOutcomeCount": 1
-          },
-          "unresolved": [
-            "Constraint coverage: No clear constraints or review gates were stated."
-          ],
-          "evidence": [
-            "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
-            "Clarity: Input includes enough detail to classify intent reliably.",
-            "Actionability: Detected 4 implementation/planning verb signals."
-          ],
-          "anchorRefs": [
-            "brain/emergence/decisions.md",
-            "brain/emergence/project_brain.md",
-            "brain/emergence/roadmap.md",
-            "brain/emergence/slices.md",
-            "brain/emergence/changelog.md",
-            "brain/emergence/plan.md",
-            "brain/emergence/tasks.md"
-          ],
-          "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
-          "readiness": {
-            "intentConfidence": 0.69,
-            "plannerUsefulness": 0.89,
-            "executionReadiness": 0.72,
-            "deployReadiness": 0.19
-          }
-        },
-        "scores": {
-          "intentConfidence": 0.69,
-          "executionReadiness": 0.72,
-          "plannerUsefulness": 0.89,
-          "deployReadiness": 0.19
-        },
-        "classification": {
-          "role": "constraint",
-          "labels": [
-            "context",
-            "ux",
-            "governance"
-          ]
-        },
-        "requestType": "context_request",
-        "urgency": "normal",
-        "targets": [
-          "canonical",
-          "ace",
-          "system",
-          "context",
-          "compatibility",
-          "runtime",
-          "anchor",
-          "brain/emergence/project_brain.md"
-        ],
-        "signals": {},
-        "status": "needs-clarification"
-      },
-      "history": [
+    "orchestrator": {
+      "status": "needs-attention",
+      "lastTickAt": "2026-04-06T16:00:33.457Z",
+      "activeDeskIds": [
+        "context-manager",
+        "memory-archivist",
+        "cto-architect"
+      ],
+      "conflicts": [
         {
-          "id": "handoff_1774615405452_2yc7",
-          "sourceAgentId": "context-manager",
-          "targetAgentId": "planner",
-          "createdAt": "2026-03-27T12:39:27.479Z",
-          "sourceNodeId": "node_1774615116734_91jfx",
-          "summary": "Migrate to canonical anchor-based ACE system",
-          "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
-          "anchorRefs": [
-            "brain/emergence/decisions.md",
-            "brain/emergence/project_brain.md",
-            "brain/emergence/roadmap.md",
-            "brain/emergence/slices.md",
-            "brain/emergence/changelog.md",
-            "brain/emergence/plan.md",
-            "brain/emergence/tasks.md"
+          "id": "parallel-plan-execution",
+          "kind": "parallel-plan-execution",
+          "severity": "low",
+          "desks": [
+            "planner",
+            "executor"
           ],
-          "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
-          "requestedOutcomes": [
-            "Update or check the status of RGS nodes"
+          "summary": "Planner and Executor are active on the same page and must stay within scoped outputs."
+        },
+        {
+          "id": "ready-to-apply-0001",
+          "kind": "ready-to-apply",
+          "severity": "high",
+          "desks": [
+            "executor",
+            "cto-architect"
           ],
-          "tasks": [
-            "Update or check the status of RGS nodes"
+          "summary": "Update or check the status of RGS nodes is waiting at the apply gate because M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md."
+        }
+      ],
+      "pendingUserActions": [],
+      "desks": {
+        "context-manager": {
+          "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
+          "localState": "ready",
+          "statusLabel": "Clarification needed",
+          "statusDetail": "The current planner handoff still needs clarification before planning can proceed.",
+          "currentGoal": "Migrate to canonical anchor-based ACE system",
+          "allowedActions": [
+            "set-active-page",
+            "slice-context",
+            "publish-handoff",
+            "flag-ambiguity"
           ],
-          "constraints": [
-            "Ensure compatibility during migration",
-            "Constraint coverage: No clear constraints or review gates were stated."
-          ],
-          "confidence": 0.69,
-          "criteria": [
+          "workItems": [
             {
-              "id": "project-alignment",
-              "label": "Project alignment",
-              "score": 1,
-              "reason": "Matched project terms: canonical, ace, system, context, compatibility"
-            },
-            {
-              "id": "actionability",
-              "label": "Actionability",
-              "score": 0.875,
-              "reason": "Detected 4 implementation/planning verb signals."
-            },
-            {
-              "id": "architecture-fit",
-              "label": "Architecture fit",
-              "score": 0.5555555555555556,
-              "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
-            },
-            {
-              "id": "constraint-coverage",
-              "label": "Constraint coverage",
-              "score": 0,
-              "reason": "No clear constraints or review gates were stated."
-            },
-            {
-              "id": "clarity",
-              "label": "Clarity",
-              "score": 1,
-              "reason": "Input includes enough detail to classify intent reliably."
-            }
-          ],
-          "truth": {
-            "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
-            "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
-            "statement": "Migrate to canonical anchor-based ACE system",
-            "goal": "Migrate to canonical anchor-based ACE system",
-            "intentType": "Constraint / guardrail request",
-            "requestType": "constraint_request",
-            "requestedOutcomes": [
-              "Update or check the status of RGS nodes"
-            ],
-            "tasks": [
-              "Update or check the status of RGS nodes"
-            ],
-            "targets": [
-              "canonical",
-              "ace",
-              "system",
-              "context",
-              "compatibility",
-              "runtime",
-              "anchor",
-              "and"
-            ],
-            "constraints": [
-              "Constraint coverage: No clear constraints or review gates were stated."
-            ],
-            "urgency": "normal",
-            "signals": {
-              "actionSignals": 1,
-              "constraintSignals": 0,
-              "architectureSignals": 0,
-              "executionSignals": 0,
-              "featureSignals": 0,
-              "matchedProjectTerms": 7,
-              "anchorRefs": 7,
-              "lowConfidenceCriteria": 1,
-              "plannerUsefulness": 0.89,
-              "executionReadiness": 0.72,
-              "deployReadiness": 0.19,
-              "labels": [
+              "id": "handoff_1774615405452_2yc7-context-clarification",
+              "pageId": "page_1774615405445_ect6",
+              "deskId": "context-manager",
+              "kind": "context-clarification",
+              "status": "ready",
+              "dependsOn": [],
+              "conflictTags": [
                 "context",
-                "ux",
-                "governance"
+                "clarification"
               ],
-              "role": "constraint",
-              "requestedOutcomeCount": 1
-            },
-            "unresolved": [
-              "Constraint coverage: No clear constraints or review gates were stated."
-            ],
-            "evidence": [
-              "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
-              "Clarity: Input includes enough detail to classify intent reliably.",
-              "Actionability: Detected 4 implementation/planning verb signals."
-            ],
-            "anchorRefs": [
-              "brain/emergence/decisions.md",
-              "brain/emergence/project_brain.md",
-              "brain/emergence/roadmap.md",
-              "brain/emergence/slices.md",
-              "brain/emergence/changelog.md",
-              "brain/emergence/plan.md",
-              "brain/emergence/tasks.md"
-            ],
-            "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
-            "readiness": {
-              "intentConfidence": 0.69,
-              "plannerUsefulness": 0.89,
-              "executionReadiness": 0.72,
-              "deployReadiness": 0.19
+              "artifactRefs": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "anchorRefs": [
+                "brain/emergence/decisions.md",
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md",
+                "brain/emergence/changelog.md",
+                "brain/emergence/plan.md",
+                "brain/emergence/tasks.md"
+              ],
+              "title": "Migrate to canonical anchor-based ACE system"
             }
-          },
-          "scores": {
-            "intentConfidence": 0.69,
-            "executionReadiness": 0.72,
-            "plannerUsefulness": 0.89,
-            "deployReadiness": 0.19
-          },
-          "classification": {
-            "role": "constraint",
-            "labels": [
-              "context",
-              "ux",
-              "governance"
+          ],
+          "lastOutput": "Migrate to canonical anchor-based ACE system",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Migrate to canonical anchor-based ACE system",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": [
+              "planner"
             ]
           },
-          "requestType": "context_request",
-          "urgency": "normal",
-          "targets": [
-            "canonical",
-            "ace",
-            "system",
-            "context",
-            "compatibility",
-            "runtime",
-            "anchor",
-            "brain/emergence/project_brain.md"
+          "freshAt": "2026-04-06T16:00:33.455Z",
+          "thoughtBubble": "Context status: queued. Clarification is needed before planner can continue."
+        },
+        "planner": {
+          "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
+          "localState": "blocked",
+          "statusLabel": "Needs clarification",
+          "statusDetail": "Planner cannot decompose work until the current handoff is clarified.",
+          "currentGoal": "Migrate to canonical anchor-based ACE system",
+          "allowedActions": [
+            "expand-plan",
+            "prioritise-work",
+            "publish-plan"
           ],
-          "signals": {},
-          "status": "needs-clarification"
+          "workItems": [
+            {
+              "id": "handoff_1774615405452_2yc7-planner-awaiting-clarification",
+              "pageId": "page_1774615405445_ect6",
+              "deskId": "planner",
+              "kind": "planner-awaiting-clarification",
+              "status": "blocked",
+              "dependsOn": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "conflictTags": [
+                "plan",
+                "clarification"
+              ],
+              "artifactRefs": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "anchorRefs": [
+                "brain/emergence/decisions.md",
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md",
+                "brain/emergence/changelog.md",
+                "brain/emergence/plan.md",
+                "brain/emergence/tasks.md"
+              ],
+              "title": "Migrate to canonical anchor-based ACE system"
+            }
+          ],
+          "lastOutput": "Migrate to canonical anchor-based ACE system",
+          "blockedReason": "Planner is waiting for Context Manager to clarify the current handoff.",
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Migrate to canonical anchor-based ACE system",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": [
+              "planner"
+            ]
+          },
+          "freshAt": "2026-04-06T16:00:33.455Z",
+          "thoughtBubble": "Planner status: blocked. Waiting for a clarified handoff."
+        },
+        "executor": {
+          "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
+          "localState": "blocked",
+          "statusLabel": "Execution gated",
+          "statusDetail": "Missing required files: brain/emergence/project_brain.md",
+          "currentGoal": "Apply approved card: Planner task",
+          "allowedActions": [
+            "apply-package",
+            "run-preflight",
+            "deploy-runtime",
+            "report-blocker"
+          ],
+          "workItems": [
+            {
+              "id": "0002-execution",
+              "pageId": "page_1774615405445_ect6",
+              "deskId": "executor",
+              "kind": "apply",
+              "status": "ready",
+              "dependsOn": [
+                "cto-pipeline-1775126637045-pchod3"
+              ],
+              "conflictTags": [
+                "execute",
+                "0002"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md"
+              ],
+              "blockerMessage": "Missing required files: brain/emergence/project_brain.md",
+              "title": "Apply approved card: Planner task"
+            }
+          ],
+          "lastOutput": "Applied, awaiting deploy: Planner task",
+          "blockedReason": "M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md",
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Migrate to canonical anchor-based ACE system",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": [
+              "planner"
+            ]
+          },
+          "freshAt": "2026-04-06T16:00:33.456Z",
+          "thoughtBubble": "Executor status: blocked. Waiting for clearer context."
+        },
+        "memory-archivist": {
+          "mission": "Persist useful summaries, artifact references, and history for active work.",
+          "localState": "running",
+          "statusLabel": "Processing",
+          "statusDetail": "Desk is actively processing work.",
+          "currentGoal": "Capture notes, handoffs, and artifact history",
+          "allowedActions": [
+            "archive-summary",
+            "record-artifact",
+            "snapshot-history"
+          ],
+          "workItems": [
+            {
+              "id": "page_1774615405445_ect6-memory-sync",
+              "pageId": "page_1774615405445_ect6",
+              "deskId": "memory-archivist",
+              "kind": "memory-sync",
+              "status": "running",
+              "dependsOn": [],
+              "conflictTags": [
+                "memory"
+              ],
+              "artifactRefs": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "anchorRefs": [
+                "brain/emergence/decisions.md",
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md",
+                "brain/emergence/changelog.md",
+                "brain/emergence/plan.md",
+                "brain/emergence/tasks.md"
+              ],
+              "title": "Capture notes, handoffs, and artifact history"
+            }
+          ],
+          "lastOutput": "Capture notes, handoffs, and artifact history",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Migrate to canonical anchor-based ACE system",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": [
+              "planner"
+            ]
+          },
+          "freshAt": "2026-04-06T16:00:33.456Z",
+          "thoughtBubble": "Archivist status: running. Logging summaries."
+        },
+        "cto-architect": {
+          "mission": "Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.",
+          "localState": "running",
+          "statusLabel": "Governing",
+          "statusDetail": "Governance is monitoring active desks and mutation risk.",
+          "currentGoal": "Review desk overlap, approval state, and guardrails",
+          "allowedActions": [
+            "raise-conflict",
+            "approve-apply",
+            "reject-risky-change"
+          ],
+          "workItems": [
+            {
+              "id": "page_1774615405445_ect6-governance-check",
+              "pageId": "page_1774615405445_ect6",
+              "deskId": "cto-architect",
+              "kind": "governance-check",
+              "status": "running",
+              "dependsOn": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "conflictTags": [
+                "review",
+                "governance"
+              ],
+              "artifactRefs": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "anchorRefs": [
+                "brain/emergence/decisions.md",
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md",
+                "brain/emergence/changelog.md",
+                "brain/emergence/plan.md",
+                "brain/emergence/tasks.md"
+              ],
+              "title": "Review desk overlap, approval state, and guardrails"
+            }
+          ],
+          "lastOutput": "Review desk overlap, approval state, and guardrails",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Migrate to canonical anchor-based ACE system",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": [
+              "planner"
+            ]
+          },
+          "freshAt": "2026-04-06T16:00:33.456Z",
+          "thoughtBubble": "Governance status: blocked. Reviewing blocker: M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md"
         }
-      ]
+      },
+      "activePageId": "page_1774615405445_ect6"
+    },
+    "scene": "canvas",
+    "selectedAgentId": null,
+    "selectedTab": "hierarchy",
+    "selfUpgrade": {
+      "status": "idle",
+      "targetProjectKey": "ace-self",
+      "taskId": "",
+      "patchReview": null,
+      "preflight": {
+        "status": "idle",
+        "ok": null,
+        "checkedAt": null,
+        "checks": [],
+        "summary": "Run preflight before applying a self patch."
+      },
+      "apply": {
+        "status": "idle",
+        "ok": null,
+        "appliedAt": null,
+        "branch": null,
+        "commit": null,
+        "taskId": ""
+      },
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": 10972,
+          "startedAt": "2026-04-06T06:46:27.189Z"
+        }
+      },
+      "requiresPermission": "none"
+    },
+    "studioViewport": {
+      "x": -334.5,
+      "y": -392.4,
+      "zoom": 1.2
     },
     "teamBoard": {
       "cards": [
@@ -35214,15 +35901,13 @@
             },
             "provenance": {
               "classification": "mixed",
-              "orchestration": "studio",
-              "execution": "hybrid",
               "engine": "ace-studio-builder-pipeline",
-              "stageIds": [
-                "builder",
-                "scan",
-                "manage",
-                "build"
+              "evidence": [
+                "route:studio",
+                "route:legacy-fallback",
+                "source:team-board-builder"
               ],
+              "execution": "hybrid",
               "legacyActions": [
                 "scan",
                 "manage",
@@ -35231,19 +35916,21 @@
               "nativeActions": [
                 "studio-orchestration"
               ],
-              "evidence": [
-                "route:studio",
-                "route:legacy-fallback",
-                "source:team-board-builder"
-              ],
-              "notes": []
+              "notes": [],
+              "orchestration": "studio",
+              "stageIds": [
+                "builder",
+                "scan",
+                "manage",
+                "build"
+              ]
             },
             "provenanceSummary": "mixed | Studio orchestrates, legacy runs scan, manage, build"
           },
           "executorBlocker": {
             "code": "preflight-blocked",
             "message": "M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md",
-            "updatedAt": "2026-03-29T10:12:36.866Z"
+            "updatedAt": null
           },
           "verifyRequired": false,
           "verifyStatus": "idle",
@@ -35263,15 +35950,13 @@
           "auditSessionId": null,
           "provenance": {
             "classification": "mixed",
-            "orchestration": "studio",
-            "execution": "hybrid",
             "engine": "ace-studio-builder-pipeline",
-            "stageIds": [
-              "builder",
-              "scan",
-              "manage",
-              "build"
+            "evidence": [
+              "route:studio",
+              "route:legacy-fallback",
+              "source:team-board-builder"
             ],
+            "execution": "hybrid",
             "legacyActions": [
               "scan",
               "manage",
@@ -35280,17 +35965,20 @@
             "nativeActions": [
               "studio-orchestration"
             ],
-            "evidence": [
-              "route:studio",
-              "route:legacy-fallback",
-              "source:team-board-builder"
-            ],
-            "notes": []
+            "notes": [],
+            "orchestration": "studio",
+            "stageIds": [
+              "builder",
+              "scan",
+              "manage",
+              "build"
+            ]
           },
-          "createdAt": "2026-03-27T12:39:27.479Z",
-          "updatedAt": "2026-04-04T23:04:23.844Z",
+          "createdAt": "2026-04-06T09:20:36.797Z",
+          "updatedAt": "2026-04-06T16:00:33.454Z",
           "desk": "CTO",
           "state": "Flagged",
+          "sourceIntakeId": null,
           "lastHealth": null
         },
         {
@@ -35383,7 +36071,7 @@
           "executorBlocker": {
             "code": "preflight-blocked",
             "message": "Missing required files: brain/emergence/project_brain.md",
-            "updatedAt": "2026-04-02T10:43:58.088Z"
+            "updatedAt": null
           },
           "verifyRequired": false,
           "verifyStatus": "idle",
@@ -35403,15 +36091,16 @@
           "commit": null,
           "auditSessionId": null,
           "provenance": null,
-          "createdAt": "2026-04-02T10:43:57.059Z",
-          "updatedAt": "2026-04-04T23:04:23.844Z",
+          "createdAt": "2026-04-06T09:20:36.797Z",
+          "updatedAt": "2026-04-06T16:00:33.454Z",
           "desk": "Executor",
           "state": "Applied, awaiting deploy",
+          "sourceIntakeId": null,
           "lastHealth": null
         }
       ],
       "selectedCardId": "0001",
-      "updatedAt": "2026-04-04T23:04:23.844Z",
+      "updatedAt": "2026-04-06T16:00:33.454Z",
       "summary": {
         "plan": 0,
         "active": 0,
@@ -35423,527 +36112,71 @@
         "idleWorkers": 0
       }
     },
-    "agentWorkers": {
-      "context-manager": {
-        "status": "idle",
-        "statusReason": null,
-        "mode": "manual",
-        "backend": "ollama",
-        "model": "mistral:latest",
-        "currentRunId": null,
-        "lastRunId": null,
-        "lastOutcome": null,
-        "lastOutcomeAt": null,
-        "lastSourceNodeId": null,
-        "lastHandoffId": null,
-        "lastReportNodeId": null,
-        "lastBlockedReason": null,
-        "lastUsedFallback": false,
-        "lastPlannerFeedbackAction": null,
-        "startedAt": null,
-        "completedAt": null
-      },
-      "executor": {
-        "status": "idle",
-        "statusReason": null,
-        "mode": "manual",
-        "backend": "ollama",
-        "model": "mistral:latest",
-        "currentRunId": null,
-        "lastRunId": null,
-        "lastOutcome": null,
-        "lastOutcomeAt": null,
-        "lastBlockedReason": null,
-        "lastCardId": null,
-        "lastTaskId": null,
-        "lastDecision": null,
-        "lastAssessmentSummary": null,
-        "lastAssessmentBlockers": [],
-        "lastVerifiedCardId": null,
-        "lastAppliedCardId": null,
-        "lastDeployCardId": null,
-        "startedAt": null,
-        "completedAt": null
-      },
-      "planner": {
-        "status": "idle",
-        "statusReason": null,
-        "mode": "auto",
-        "backend": "ollama",
-        "model": "mistral:latest",
-        "currentRunId": null,
-        "lastRunId": null,
-        "lastOutcome": null,
-        "lastOutcomeAt": null,
-        "lastSourceHandoffId": null,
-        "lastBlockedReason": null,
-        "lastProducedCardIds": [],
-        "proposalArtifactRefs": [],
-        "startedAt": null,
-        "completedAt": null
-      },
-      "dave": {
-        "name": "Dave",
-        "role": "Practical learning companion",
-        "status": "idle",
-        "statusReason": null,
-        "mode": "manual",
-        "backend": "ollama",
-        "model": "mistral:latest",
-        "currentRunId": null,
-        "lastRunId": null,
-        "tokensUsed": 0,
-        "durationMs": 0,
-        "responseStatus": "idle",
-        "contextAlignmentScore": 0,
-        "contextAlignmentReason": null,
-        "startedAt": null,
-        "completedAt": null
-      }
-    },
-    "ctoOverrides": {
-      "version": "1",
-      "updatedAt": null,
-      "entries": [
+    "worldViewMode": "2d",
+    "intake": {
+      "version": "ace/canonical-intake.v1",
+      "records": [
         {
-          "overrideId": "override_force_plan_1",
-          "kind": "force-plan-generation",
-          "summary": "Force planner generation for the smoke pack.",
-          "reason": "Force planner generation for the smoke pack.",
-          "requestedBy": "cto",
-          "status": "active",
-          "createdAt": "2026-04-02T12:28:48.403Z",
-          "updatedAt": "2026-04-02T12:28:48.403Z",
-          "appliedAt": "2026-04-02T12:28:48.403Z",
-          "explicit": true,
-          "target": {
-            "deskId": "planner",
-            "deskLabel": null,
-            "roleId": null,
-            "agentId": null,
-            "planId": null,
-            "handoffId": "handoff_regression_1",
-            "queueKey": null,
-            "intentId": null
+          "id": "proof_planner_intake",
+          "channel": "canvas_text",
+          "text": "Prove planner desk canonical visibility.",
+          "requestedBy": "interval-guard",
+          "sourceType": "canvas-text",
+          "sourceRef": "proof-planner-prompt",
+          "originRoute": "/api/spatial/executive/route",
+          "createdAt": "2026-04-06T16:00:00.000Z",
+          "updatedAt": "2026-04-06T16:00:00.000Z",
+          "acknowledgement": {
+            "status": "recorded",
+            "summary": "Canonical planner proof intake recorded."
           },
-          "effect": {
-            "forcePlannerRouting": false,
-            "forcePlanningGeneration": true,
-            "reopenStalePlan": false,
-            "supersedeQueuePriority": false,
-            "requestEmergencyStaffingReview": false,
-            "handoffMode": null,
-            "queuePriority": null
+          "processingStatus": "routed",
+          "resultSummary": null,
+          "replyKind": null,
+          "actionId": null,
+          "route": "intent-scan",
+          "canonicalIntentId": "proof_planner_intent",
+          "handoffId": "proof_planner_handoff",
+          "intentExtraction": {
+            "status": "extracted",
+            "canonicalIntentId": "proof_planner_intent",
+            "intentStatus": "canonical",
+            "summary": "Prove planner desk canonical visibility.",
+            "sourceType": "canvas-text",
+            "sourceRef": "proof-planner-prompt",
+            "reason": null
           },
-          "canonicalTruth": {
-            "staffing": {
-              "state": "absent"
-            }
-          },
-          "provenance": {
-            "sourceType": "cto-chat",
-            "sourceRef": "chat-regression",
-            "sourceIntentId": null,
-            "sourceHandoffId": null,
-            "sourceActionId": null,
-            "sourceRoute": null,
-            "sourceDeskId": null
+          "governedLoop": {
+            "route": "/api/spatial/governed-loop/contract",
+            "contractVersion": "governed-loop.v1",
+            "domain": "input"
           }
         }
-      ]
-    },
-    "deskProperties": {
-      "context-manager": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "planner": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "executor": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "qa-lead": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "memory-archivist": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "rnd-lead": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "cto-architect": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "integration_auditor": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
+      ],
+      "latestByChannel": {
+        "cto_prompt": null,
+        "canvas_text": "proof_planner_intake"
       }
-    },
-    "selfUpgrade": {
-      "status": "idle",
-      "targetProjectKey": "ace-self",
-      "taskId": "",
-      "patchReview": null,
-      "preflight": {
-        "status": "idle",
-        "ok": null,
-        "checkedAt": null,
-        "checks": [],
-        "summary": "Run preflight before applying a self patch."
-      },
-      "apply": {
-        "status": "idle",
-        "ok": null,
-        "appliedAt": null,
-        "branch": null,
-        "commit": null,
-        "taskId": ""
-      },
-      "deploy": {
-        "status": "idle",
-        "requestedAt": null,
-        "restartedAt": null,
-        "health": {
-          "status": "ready",
-          "pid": 33844,
-          "startedAt": "2026-04-02T12:28:48.357Z"
-        }
-      },
-      "requiresPermission": "none"
-    },
-    "orchestrator": {
-      "status": "needs-attention",
-      "lastTickAt": "2026-04-04T23:04:23.850Z",
-      "activeDeskIds": [
-        "context-manager",
-        "memory-archivist",
-        "cto-architect"
-      ],
-      "conflicts": [
-        {
-          "id": "low-confidence-context",
-          "kind": "low-confidence-context",
-          "severity": "medium",
-          "desks": [
-            "context-manager",
-            "planner",
-            "executor"
-          ],
-          "summary": "Planner and Executor are sharing work against a low-confidence context packet."
-        },
-        {
-          "id": "parallel-plan-execution",
-          "kind": "parallel-plan-execution",
-          "severity": "low",
-          "desks": [
-            "planner",
-            "executor"
-          ],
-          "summary": "Planner and Executor are active on the same page and must stay within scoped outputs."
-        },
-        {
-          "id": "ready-to-apply-0001",
-          "kind": "ready-to-apply",
-          "severity": "high",
-          "desks": [
-            "executor",
-            "cto-architect"
-          ],
-          "summary": "Update or check the status of RGS nodes is waiting at the apply gate because M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md."
-        }
-      ],
-      "pendingUserActions": [
-        "Clarify the active page goal before execution advances further."
-      ],
-      "desks": {
-        "context-manager": {
-          "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
-          "localState": "ready",
-          "statusLabel": "Clarification needed",
-          "statusDetail": "The current planner handoff still needs clarification before planning can proceed.",
-          "currentGoal": "Migrate to canonical anchor-based ACE system",
-          "allowedActions": [
-            "set-active-page",
-            "slice-context",
-            "publish-handoff",
-            "flag-ambiguity"
-          ],
-          "workItems": [
-            {
-              "id": "handoff_1774615405452_2yc7-context-clarification",
-              "pageId": "page_1774615405445_ect6",
-              "deskId": "context-manager",
-              "kind": "context-clarification",
-              "status": "ready",
-              "dependsOn": [],
-              "conflictTags": [
-                "context",
-                "clarification"
-              ],
-              "artifactRefs": [
-                "handoff_1774615405452_2yc7"
-              ],
-              "anchorRefs": [
-                "brain/emergence/decisions.md",
-                "brain/emergence/project_brain.md",
-                "brain/emergence/roadmap.md",
-                "brain/emergence/slices.md",
-                "brain/emergence/changelog.md",
-                "brain/emergence/plan.md",
-                "brain/emergence/tasks.md"
-              ],
-              "title": "Migrate to canonical anchor-based ACE system"
-            }
-          ],
-          "lastOutput": "Migrate to canonical anchor-based ACE system",
-          "blockedReason": null,
-          "contextSlice": {
-            "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Migrate to canonical anchor-based ACE system",
-            "pageGoal": "Migrate to canonical anchor-based ACE system",
-            "matchedTerms": []
-          },
-          "freshAt": "2026-04-04T23:04:23.846Z",
-          "thoughtBubble": "Context status: queued. Clarification is needed before planner can continue."
-        },
-        "planner": {
-          "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
-          "localState": "blocked",
-          "statusLabel": "Needs clarification",
-          "statusDetail": "Planner cannot decompose work until the current handoff is clarified.",
-          "currentGoal": "Migrate to canonical anchor-based ACE system",
-          "allowedActions": [
-            "expand-plan",
-            "prioritise-work",
-            "publish-plan"
-          ],
-          "workItems": [
-            {
-              "id": "handoff_1774615405452_2yc7-planner-awaiting-clarification",
-              "pageId": "page_1774615405445_ect6",
-              "deskId": "planner",
-              "kind": "planner-awaiting-clarification",
-              "status": "blocked",
-              "dependsOn": [
-                "handoff_1774615405452_2yc7"
-              ],
-              "conflictTags": [
-                "plan",
-                "clarification"
-              ],
-              "artifactRefs": [
-                "handoff_1774615405452_2yc7"
-              ],
-              "anchorRefs": [
-                "brain/emergence/decisions.md",
-                "brain/emergence/project_brain.md",
-                "brain/emergence/roadmap.md",
-                "brain/emergence/slices.md",
-                "brain/emergence/changelog.md",
-                "brain/emergence/plan.md",
-                "brain/emergence/tasks.md"
-              ],
-              "title": "Migrate to canonical anchor-based ACE system"
-            }
-          ],
-          "lastOutput": "Migrate to canonical anchor-based ACE system",
-          "blockedReason": "Planner is waiting for Context Manager to clarify the current handoff.",
-          "contextSlice": {
-            "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Migrate to canonical anchor-based ACE system",
-            "pageGoal": "Migrate to canonical anchor-based ACE system",
-            "matchedTerms": []
-          },
-          "freshAt": "2026-04-04T23:04:23.847Z",
-          "thoughtBubble": "Planner status: blocked. Waiting for a clarified handoff."
-        },
-        "executor": {
-          "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
-          "localState": "blocked",
-          "statusLabel": "Execution gated",
-          "statusDetail": "Missing required files: brain/emergence/project_brain.md",
-          "currentGoal": "Apply approved card: Planner task",
-          "allowedActions": [
-            "apply-package",
-            "run-preflight",
-            "deploy-runtime",
-            "report-blocker"
-          ],
-          "workItems": [
-            {
-              "id": "0002-execution",
-              "pageId": "page_1774615405445_ect6",
-              "deskId": "executor",
-              "kind": "apply",
-              "status": "ready",
-              "dependsOn": [
-                "cto-pipeline-1775126637045-pchod3"
-              ],
-              "conflictTags": [
-                "execute",
-                "0002"
-              ],
-              "artifactRefs": [],
-              "anchorRefs": [
-                "brain/emergence/project_brain.md",
-                "brain/emergence/roadmap.md",
-                "brain/emergence/slices.md"
-              ],
-              "blockerMessage": "Missing required files: brain/emergence/project_brain.md",
-              "title": "Apply approved card: Planner task"
-            }
-          ],
-          "lastOutput": "Applied, awaiting deploy: Planner task",
-          "blockedReason": "M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md",
-          "contextSlice": {
-            "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Migrate to canonical anchor-based ACE system",
-            "pageGoal": "Migrate to canonical anchor-based ACE system",
-            "matchedTerms": []
-          },
-          "freshAt": "2026-04-04T23:04:23.847Z",
-          "thoughtBubble": "Executor status: blocked. Waiting for clearer context."
-        },
-        "memory-archivist": {
-          "mission": "Persist useful summaries, artifact references, and history for active work.",
-          "localState": "running",
-          "statusLabel": "Processing",
-          "statusDetail": "Desk is actively processing work.",
-          "currentGoal": "Capture notes, handoffs, and artifact history",
-          "allowedActions": [
-            "archive-summary",
-            "record-artifact",
-            "snapshot-history"
-          ],
-          "workItems": [
-            {
-              "id": "page_1774615405445_ect6-memory-sync",
-              "pageId": "page_1774615405445_ect6",
-              "deskId": "memory-archivist",
-              "kind": "memory-sync",
-              "status": "running",
-              "dependsOn": [],
-              "conflictTags": [
-                "memory"
-              ],
-              "artifactRefs": [
-                "handoff_1774615405452_2yc7"
-              ],
-              "anchorRefs": [
-                "brain/emergence/decisions.md",
-                "brain/emergence/project_brain.md",
-                "brain/emergence/roadmap.md",
-                "brain/emergence/slices.md",
-                "brain/emergence/changelog.md",
-                "brain/emergence/plan.md",
-                "brain/emergence/tasks.md"
-              ],
-              "title": "Capture notes, handoffs, and artifact history"
-            }
-          ],
-          "lastOutput": "Capture notes, handoffs, and artifact history",
-          "blockedReason": null,
-          "contextSlice": {
-            "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Migrate to canonical anchor-based ACE system",
-            "pageGoal": "Migrate to canonical anchor-based ACE system",
-            "matchedTerms": []
-          },
-          "freshAt": "2026-04-04T23:04:23.848Z",
-          "thoughtBubble": "Archivist status: running. Logging summaries."
-        },
-        "cto-architect": {
-          "mission": "Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.",
-          "localState": "running",
-          "statusLabel": "Governing",
-          "statusDetail": "Governance is monitoring active desks and mutation risk.",
-          "currentGoal": "Review desk overlap, approval state, and guardrails",
-          "allowedActions": [
-            "raise-conflict",
-            "approve-apply",
-            "reject-risky-change"
-          ],
-          "workItems": [
-            {
-              "id": "page_1774615405445_ect6-governance-check",
-              "pageId": "page_1774615405445_ect6",
-              "deskId": "cto-architect",
-              "kind": "governance-check",
-              "status": "running",
-              "dependsOn": [
-                "handoff_1774615405452_2yc7"
-              ],
-              "conflictTags": [
-                "review",
-                "governance"
-              ],
-              "artifactRefs": [
-                "handoff_1774615405452_2yc7"
-              ],
-              "anchorRefs": [
-                "brain/emergence/decisions.md",
-                "brain/emergence/project_brain.md",
-                "brain/emergence/roadmap.md",
-                "brain/emergence/slices.md",
-                "brain/emergence/changelog.md",
-                "brain/emergence/plan.md",
-                "brain/emergence/tasks.md"
-              ],
-              "title": "Review desk overlap, approval state, and guardrails"
-            }
-          ],
-          "lastOutput": "Review desk overlap, approval state, and guardrails",
-          "blockedReason": null,
-          "contextSlice": {
-            "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Migrate to canonical anchor-based ACE system",
-            "pageGoal": "Migrate to canonical anchor-based ACE system",
-            "matchedTerms": []
-          },
-          "freshAt": "2026-04-04T23:04:23.849Z",
-          "thoughtBubble": "Governance status: blocked. Reviewing blocker: M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md"
-        }
-      },
-      "activePageId": "page_1774615405445_ect6"
     }
-  }
+  },
+  "activeGraphLayer": "system",
+  "camera": {
+    "x": -334.5,
+    "y": -392.4,
+    "zoom": 1.2
+  },
+  "ghostProjections": {
+    "byId": {},
+    "currentProjectionId": null,
+    "latestProjectionId": null,
+    "records": []
+  },
+  "openReportId": null,
+  "openTaskId": "10000",
+  "openTraceId": "trace_1775467093215_zlb4eb",
+  "scene": "canvas",
+  "selectedDeskId": null,
+  "selectedTab": "hierarchy",
+  "worldViewMode": "2d",
+  "zoom": 0.76
 }

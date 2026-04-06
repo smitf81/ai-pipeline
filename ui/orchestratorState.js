@@ -683,8 +683,19 @@ function deriveCardState(card = {}) {
   return 'Ready';
 }
 
-function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, sourceAnchorRefs = [], title, createdAt = null }) {
+function createTeamBoardCard({
+  cards = [],
+  pageId,
+  handoffId,
+  sourceNodeId,
+  sourceIntentId = null,
+  sourceIntakeId = null,
+  sourceAnchorRefs = [],
+  title,
+  createdAt = null,
+}) {
   const now = createdAt || new Date().toISOString();
+  const canonicalSourceIntentId = sourceIntentId || sourceNodeId || null;
   const capturedFlow = createTaskFlowEntry({
     phase: 'captured',
     assignmentState: 'unassigned',
@@ -700,7 +711,8 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, sour
     pageId,
     sourceHandoffId: handoffId || null,
     sourceNodeId: sourceNodeId || null,
-    sourceIntentId: sourceNodeId || null,
+    sourceIntentId: canonicalSourceIntentId,
+    sourceIntakeId: sourceIntakeId || null,
     sourceAnchorRefs: Array.isArray(sourceAnchorRefs) ? sourceAnchorRefs.filter(Boolean) : [],
     title,
     status: 'plan',
@@ -712,7 +724,7 @@ function createTeamBoardCard({ cards = [], pageId, handoffId, sourceNodeId, sour
       assignmentState: 'unassigned',
       ownerDeskId: 'context-manager',
       assigneeDeskId: 'planner',
-      sourceIntentId: sourceNodeId || null,
+      sourceIntentId: canonicalSourceIntentId,
       sourceHandoffId: handoffId || null,
       lastTransitionAt: now,
       lastTransitionLabel: 'Captured from intent',
@@ -764,6 +776,7 @@ function normalizeTeamBoardState(workspace = {}) {
     phaseTicks: Number(card.phaseTicks || 0),
     targetProjectKey: card.targetProjectKey || 'ace-self',
     sourceAnchorRefs: Array.isArray(card.sourceAnchorRefs) ? card.sourceAnchorRefs.filter(Boolean) : [],
+    sourceIntakeId: card.sourceIntakeId || null,
     sourceIntentId: card.sourceIntentId || card.sourceNodeId || null,
     builderTaskId: card.builderTaskId || card.runnerTaskId || null,
     runnerTaskId: card.runnerTaskId || null,

@@ -612,6 +612,137 @@ export default async function runStudioDataTests() {
           failedSteps: [],
         },
       },
+      repairLoop: {
+        summary: {
+          totalLanes: 4,
+          activeLanes: 1,
+          blockedLanes: 1,
+          stalledLanes: 0,
+          healthyLanes: 1,
+          policyBlocked: 1,
+        },
+        lanes: [
+          {
+            lane_id: 'planner_canonical_integrity',
+            label: 'Planner Canonical Integrity',
+            owner_department: 'QA',
+            status: 'blocked',
+            open_investigations: 1,
+            repair_job_count: 1,
+            latest_attempt_verdict: 'policy_blocked',
+            latest_job_status: 'policy_blocked',
+            policy_blocked_job_count: 1,
+            latest_policy_block_reason: 'Auto-apply is not permitted for this lane trust policy.',
+            latest_attempt_at: '2026-03-24T10:15:00.000Z',
+            trust_level: 'guarded',
+            trust_reason: 'Planner integrity is policy-guarded; executor may inspect and validate, but patches require human review.',
+            auto_apply_allowed: false,
+            human_review_required_on_ambiguity: true,
+            allowed_action_types: ['inspect', 'validate'],
+            required_validation_gate_ids: ['planner-canonical-contract'],
+            allowed_trigger_classes: ['planner_identity_mismatch'],
+            scoped_targets: ['ui/server.js', 'ui/public/spatial/staffingRules.js'],
+            max_attempts: 1,
+            latest_job: {
+              attempt_count: 1,
+              latest_validation_evidence: {
+                summary: 'Auto-apply is not permitted for this lane trust policy.',
+              },
+            },
+          },
+          {
+            lane_id: 'ui_boot_integrity',
+            label: 'UI Boot Integrity',
+            owner_department: 'QA',
+            status: 'healthy',
+            open_investigations: 0,
+            repair_job_count: 1,
+            latest_attempt_verdict: 'accepted',
+            latest_job_status: 'accepted',
+            policy_blocked_job_count: 0,
+            latest_attempt_at: '2026-03-24T10:20:00.000Z',
+            trust_level: 'high',
+            trust_reason: 'Blocking boot failures can auto-apply only inside browser boot entry and asset scope.',
+            auto_apply_allowed: true,
+            human_review_required_on_ambiguity: true,
+            allowed_action_types: ['inspect', 'patch', 'validate'],
+            required_validation_gate_ids: ['ui-boot-contract'],
+            allowed_trigger_classes: ['missing_client_asset'],
+            scoped_targets: ['ui/public/index.html', 'ui/public/spatial/spatialBootstrap.js'],
+            max_attempts: 2,
+            latest_job: {
+              attempt_count: 1,
+              latest_validation_evidence: {
+                summary: 'Boot contract passed after stale reference cleanup.',
+              },
+            },
+          },
+        ],
+      },
+      qaMcpLiveStatus: {
+        status: 'live',
+        usage_state: 'active_gating',
+        freshness: 'fresh',
+        summary: 'QA is live and actively gating with MCP-backed evidence.',
+        heartbeat_at: '2026-03-24T10:20:00.000Z',
+        last_completed_cycle_at: '2026-03-24T10:20:00.000Z',
+        mcp_configured: true,
+        configured_tools: ['external_probe_check', 'qa_research_note'],
+        mcp_reachable: true,
+        last_ping_at: '2026-03-24T10:19:00.000Z',
+        last_ping_status: 'ok',
+        last_ping_source: 'external_mcp',
+        last_call_at: '2026-03-24T10:19:00.000Z',
+        last_call_tool: 'external_probe_check',
+        last_call_status: 'ok',
+        last_call_source: 'external_mcp',
+        last_qa_gate_source: 'external_mcp',
+        using_mcp_for_qa_decisions: true,
+        notes: ['Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.'],
+      },
+      qaCanaries: {
+        last_run_at: '2026-03-24T10:21:00.000Z',
+        overall_status: 'pass',
+        total_canaries: 3,
+        passed_count: 3,
+        failed_count: 0,
+        failing_canary_ids: [],
+        summary: 'All 3 QA lane canaries passed.',
+        results: [
+          {
+            canary_id: 'ui_boot_integrity_missing_asset',
+            label: 'UI boot missing asset route',
+            status: 'pass',
+            checked_at: '2026-03-24T10:21:00.000Z',
+            target_lane_id: 'ui_boot_integrity',
+            target_lane_label: 'UI Boot Integrity',
+            owner_department: 'QA',
+            trigger: 'missing_client_asset',
+            policy_outcome: 'auto_apply_allowed',
+            validation_status: 'accepted',
+            scoped_targets_summary: '2 targets | ui/public/index.html | spatialBootstrap.js',
+            required_validation_gate_ids: ['ui-boot-contract'],
+            latest_validation_summary: 'UI Boot Integrity checks passed.',
+            notes: ['UI boot missing asset route passed.'],
+          },
+          {
+            canary_id: 'planner_canonical_identity_guard',
+            label: 'Planner canonical identity guard',
+            status: 'pass',
+            checked_at: '2026-03-24T10:21:00.000Z',
+            target_lane_id: 'planner_canonical_integrity',
+            target_lane_label: 'Planner Canonical Integrity',
+            owner_department: 'Delivery',
+            trigger: 'planner_identity_mismatch',
+            policy_outcome: 'guarded_manual_review',
+            validation_status: 'accepted',
+            scoped_targets_summary: '2 targets | ui/server.js | staffingRules.js',
+            required_validation_gate_ids: ['planner-canonical-contract', 'planner-staffing-rules'],
+            latest_validation_summary: 'Planner Canonical Integrity checks passed.',
+            notes: ['Planner canonical identity guard passed.'],
+          },
+        ],
+      },
     },
   });
 
@@ -678,12 +809,65 @@ export default async function runStudioDataTests() {
   assert.equal(executorSnapshot.deskSnapshot.taskEconomy.rewardState, plannerSnapshot.deskSnapshot.taskEconomy.rewardState);
   assert.deepEqual(
     qaLeadSnapshot.deskSnapshot.sections.map((section) => section.label),
-    ['Desk Truth', 'Mission', 'Current Goal', 'Structured QA', 'Structured QA Scorecards', 'Browser Pass', 'Local UI Gate', 'Recent QA Runs', 'Waiting On You'],
+    ['QA Health Overview', 'QA MCP Proof of Life', 'QA Live Operator', 'QA Output Feed', 'Lane Canaries', 'Freshness & Hygiene', 'Repair Lanes', 'Scorecards', 'Investigations', 'Advisory / Research'],
   );
+  assert.deepEqual(
+    qaLeadSnapshot.deskSnapshot.sections.map((section) => section.kind),
+    ['qa-overview', 'qa-mcp-live', 'qa-operator', 'qa-output-feed', 'qa-canaries', 'qa-hygiene', 'qa-repair-lanes', 'qa-scorecards', 'qa-investigations', 'qa-research'],
+  );
+  const qaOverviewSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-overview');
+  assert.ok(qaOverviewSection);
+  assert.equal(qaOverviewSection.overview.openInvestigationsCount, 0);
+  assert.equal(qaOverviewSection.overview.researchAvailableCount, 0);
+  const qaMcpLiveSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-mcp-live');
+  assert.ok(qaMcpLiveSection);
+  assert.equal(qaMcpLiveSection.kind, 'qa-mcp-live');
+  assert.equal(qaMcpLiveSection.liveStatus.status, 'live');
+  assert.equal(qaMcpLiveSection.liveStatus.using_mcp_for_qa_decisions, true);
+  assert.equal(qaMcpLiveSection.liveStatus.last_call_tool, 'external_probe_check');
+  const qaOperatorSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-operator');
+  assert.ok(qaOperatorSection);
+  assert.equal(qaOperatorSection.kind, 'qa-operator');
+  assert.match(qaOperatorSection.summary, /QA proof-of-life, browser pass, lane canaries, and loop audit/);
+  assert.ok(Array.isArray(qaOperatorSection.liveRun.output_feed));
+  const qaOutputFeedSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-output-feed');
+  assert.ok(qaOutputFeedSection);
+  assert.equal(qaOutputFeedSection.kind, 'qa-output-feed');
+  assert.ok(Array.isArray(qaOutputFeedSection.feed));
+  assert.equal(qaOutputFeedSection.feed.length, 0);
+  const qaCanarySection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-canaries');
+  assert.ok(qaCanarySection);
+  assert.equal(qaCanarySection.kind, 'qa-canaries');
+  assert.equal(qaCanarySection.canaries.overall_status, 'pass');
+  assert.equal(qaCanarySection.canaries.total_canaries, 3);
+  assert.equal(qaCanarySection.canaries.results.length, 2);
+  const qaHygieneSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-hygiene');
+  assert.ok(qaHygieneSection);
+  assert.equal(qaHygieneSection.surfaces.length >= 5, true);
+  assert.ok(qaHygieneSection.surfaces.some((surface) => surface.surface_id === 'planner'));
+  assert.ok(qaHygieneSection.surfaces.some((surface) => surface.surface_id === 'research'));
+  const qaRepairLaneSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-repair-lanes');
+  assert.ok(qaRepairLaneSection);
+  assert.equal(qaRepairLaneSection.kind, 'qa-repair-lanes');
+  assert.equal(qaRepairLaneSection.lanes.length, 2);
+  assert.equal(qaRepairLaneSection.defaultOpen, true);
+  assert.equal(qaRepairLaneSection.lanes[0].lane_id, 'planner_canonical_integrity');
+  assert.equal(qaRepairLaneSection.lanes[0].outcome_status, 'policy_blocked');
+  assert.match(qaRepairLaneSection.lanes[0].latest_policy_block_reason, /Auto-apply is not permitted/);
+  assert.equal(qaRepairLaneSection.lanes[1].outcome_status, 'success');
+  const qaInvestigationsSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-investigations');
+  assert.ok(qaInvestigationsSection);
+  assert.equal(qaInvestigationsSection.kind, 'qa-investigations');
+  assert.equal(qaInvestigationsSection.items.length, 0);
+  const qaResearchSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-research');
+  assert.ok(qaResearchSection);
+  assert.equal(qaResearchSection.kind, 'qa-research');
+  assert.equal(qaResearchSection.notes.length, 0);
   const qaScorecardSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-scorecards');
   assert.ok(qaScorecardSection);
   assert.equal(qaScorecardSection.kind, 'qa-scorecards');
   assert.equal(qaScorecardSection.cards.length, 4);
+  assert.equal(qaScorecardSection.defaultOpen, false);
   assert.deepEqual(
     qaScorecardSection.cards.map((card) => card.desk),
     ['planner', 'runner', 'ui', 'ta'],
@@ -705,11 +889,6 @@ export default async function runStudioDataTests() {
   assert.equal(qaScorecardSection.definitions.metrics.integrity.label, 'Integrity');
   assert.equal(qaScorecardSection.meta.deskCount, 4);
   assert.equal(qaScorecardSection.meta.testCount, 4);
-  const qaLocalGateSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'local-ui-gates');
-  assert.ok(qaLocalGateSection);
-  assert.equal(qaLocalGateSection.kind, 'qa-local-gates');
-  assert.match(qaLocalGateSection.summary, /unit gate pass/i);
-  assert.equal(qaLocalGateSection.gate.unit.totalChecks, 22);
   assert.equal(qaLeadSnapshot.workload.outputs, 4);
   assert.equal(ctoSnapshot.deskSnapshot.sections[0].label, 'Desk Truth');
   const qaSummarySection = ctoSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-summary');

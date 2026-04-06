@@ -14,7 +14,7 @@ import {
 } from './graphEngine.js';
 import {
   buildCanonicalIntentContract,
-} from '../../intentAnalysis.js';
+} from './intentContract.browser.js';
 import { AceConnector } from './aceConnector.js';
 import { MutationEngine } from './mutationEngine.js';
 import { ArchitectureMemory } from './architectureMemory.js';
@@ -785,6 +785,79 @@ function normalizeQAAuditTrailPayload(auditTrail = null) {
     : null;
 }
 
+function normalizeQAExternalValidationPayload(externalValidation = null) {
+  const source = normalizeRenderObject(externalValidation);
+  const notes = normalizeRenderList(source.notes).map((note) => normalizeRenderText(note, '')).filter(Boolean);
+  return Object.keys(source).length
+    ? {
+        status: normalizeRenderText(source.status, 'unavailable') || 'unavailable',
+        probeStatus: normalizeRenderText(source.probeStatus, 'unavailable') || 'unavailable',
+        lastCheckedAt: normalizeRenderText(source.lastCheckedAt, '') || null,
+        statusMatch: Boolean(source.statusMatch),
+        freshnessKnown: Boolean(source.freshnessKnown),
+        notes,
+        source: normalizeRenderText(source.source, 'external_mcp') || 'external_mcp',
+        errorMessage: normalizeRenderText(source.errorMessage, '') || null,
+    }
+    : null;
+}
+
+function normalizeQAInvestigationPayload(investigation = null) {
+  const source = normalizeRenderObject(investigation);
+  const evidence = normalizeRenderObject(source.evidence);
+  const repeatCount = Number(source.repeat_count ?? source.repeatCount ?? 1) || 1;
+  return Object.keys(source).length
+    ? {
+        ...source,
+        id: normalizeRenderText(source.id, '') || null,
+        type: normalizeRenderText(source.type, '') || 'qa_investigation',
+        trigger: normalizeRenderText(source.trigger, '') || 'external_mismatch',
+        severity: normalizeRenderText(source.severity, '') || 'medium',
+        created_at: normalizeRenderText(source.created_at || source.createdAt || source.first_seen_at || source.firstSeenAt, '') || null,
+        first_seen_at: normalizeRenderText(source.first_seen_at || source.firstSeenAt || source.created_at || source.createdAt, '') || null,
+        last_seen_at: normalizeRenderText(source.last_seen_at || source.lastSeenAt || source.created_at || source.createdAt, '') || null,
+        repeat_count: repeatCount,
+        status: normalizeRenderText(source.status, '') || 'open',
+        summary: normalizeRenderText(source.summary, '') || 'External probe disagrees with internal QA status',
+        evidence: {
+          external: normalizeRenderObject(evidence.external),
+          internal: normalizeRenderObject(evidence.internal),
+          comparison: normalizeRenderObject(evidence.comparison),
+        },
+        latest_evidence: normalizeRenderObject(source.latest_evidence),
+        signature: normalizeRenderText(source.signature, '') || null,
+        evidence_events: normalizeRenderList(source.evidence_events).map((entry) => normalizeRenderObject(entry)),
+        research_available: Boolean(source.research_available),
+        latest_research_at: normalizeRenderText(source.latest_research_at, '') || null,
+        research_note_count: Number(source.research_note_count ?? 0) || 0,
+        research_status: normalizeRenderText(source.research_status, '') || null,
+        research_error_message: normalizeRenderText(source.research_error_message, '') || null,
+        research_summary: normalizeRenderText(source.research_summary, '') || null,
+        research_recommendation: normalizeRenderText(source.research_recommendation, '') || null,
+      }
+    : null;
+}
+
+function normalizeQAInvestigationsPayload(investigations = null) {
+  const items = normalizeRenderList(investigations).map((entry) => normalizeQAInvestigationPayload(entry)).filter(Boolean);
+  if (!items.length) {
+    return [];
+  }
+  return [...items].sort((left, right) => {
+    const leftTime = Date.parse(left.last_seen_at || left.created_at || '');
+    const rightTime = Date.parse(right.last_seen_at || right.created_at || '');
+    const leftKnown = Number.isFinite(leftTime);
+    const rightKnown = Number.isFinite(rightTime);
+    if (leftKnown && rightKnown && leftTime !== rightTime) {
+      return rightTime - leftTime;
+    }
+    if (leftKnown !== rightKnown) {
+      return leftKnown ? -1 : 1;
+    }
+    return String(right.id || '').localeCompare(String(left.id || ''));
+  });
+}
+
 function normalizeQASectionPayload(section = {}) {
   const source = normalizeRenderObject(section);
   return {
@@ -811,6 +884,8 @@ function normalizeQASectionPayload(section = {}) {
     testRegistrySummary: normalizeRenderObject(source.testRegistrySummary),
     auditTrail: normalizeQAAuditTrailPayload(source.auditTrail || null),
     auditTrailSummary: normalizeRenderObject(source.auditTrailSummary),
+    externalValidation: normalizeQAExternalValidationPayload(source.externalValidation || null),
+    investigations: normalizeQAInvestigationsPayload(source.investigations || source.openInvestigations || null),
   };
 }
 
@@ -936,6 +1011,8 @@ export function normalizeDeskSectionPayload(section = {}) {
       label: normalizeRenderText(source.label),
       kind: normalizeRenderText(source.kind),
       emptyState: normalizeRenderText(source.emptyState),
+      summary: normalizeRenderText(source.summary),
+      status: normalizeRenderText(source.status),
     value: source.value ?? null,
     truth: source.truth && typeof source.truth === 'object' ? source.truth : null,
     report: source.report && typeof source.report === 'object' ? normalizeQAReportPayload(source.report) : null,
@@ -945,14 +1022,498 @@ export function normalizeDeskSectionPayload(section = {}) {
     gate: source.gate || source.localGate ? normalizeQALocalGatePayload(source.gate || source.localGate || null) : null,
     cards: normalizeRenderList(source.cards),
     items: normalizeRenderList(source.items),
+    notes: normalizeRenderList(source.notes),
+    surfaces: normalizeRenderList(source.surfaces).map((entry) => normalizeRenderObject(entry)),
+    lanes: normalizeRenderList(source.lanes).map((entry) => normalizeRenderObject(entry)),
+    canaries: normalizeRenderObject(source.canaries),
+    repairLoopSummary: normalizeRenderObject(source.repairLoopSummary),
+    liveStatus: normalizeRenderObject(source.liveStatus || source.mcpLiveStatus),
     economy: normalizeRenderObject(source.economy),
     suiteSummary: normalizeRenderText(source.suiteSummary),
     structuredStatus: normalizeRenderText(source.structuredStatus),
     structuredSummary: normalizeRenderText(source.structuredSummary),
+    externalValidation: normalizeQAExternalValidationPayload(source.externalValidation || null),
+    researchState: normalizeRenderObject(source.researchState),
+    overview: normalizeRenderObject(source.overview),
     busy: Boolean(source.busy),
+    collapsible: source.collapsible !== false,
+    defaultOpen: Boolean(source.defaultOpen),
     scorecardCount: Number(source.scorecardCount ?? 0) || 0,
     scorecardDeskCount: Number(source.scorecardDeskCount ?? 0) || 0,
   };
+}
+
+function normalizeQAHygieneSurfacePayload(surface = {}) {
+  const source = normalizeRenderObject(surface);
+  return {
+    ...source,
+    surface_id: normalizeRenderText(source.surface_id, '') || null,
+    label: normalizeRenderText(source.label, '') || 'Surface',
+    status: normalizeRenderText(source.status, 'unknown') || 'unknown',
+    freshness: normalizeRenderText(source.freshness, 'unknown') || 'unknown',
+    last_updated: normalizeRenderText(source.last_updated, '') || null,
+    source: normalizeRenderText(source.source, 'unknown') || 'unknown',
+    coverage_hint: normalizeRenderText(source.coverage_hint, '') || '',
+    notes: normalizeRenderList(source.notes).map((note) => normalizeRenderText(note, '')).filter(Boolean),
+  };
+}
+
+function normalizeQAMcpLiveStatusPayload(status = {}) {
+  const source = normalizeRenderObject(status);
+  return Object.keys(source).length
+    ? {
+        ...source,
+        status: normalizeRenderText(source.status, 'offline') || 'offline',
+        usage_state: normalizeRenderText(source.usage_state || source.usageState, 'configured_but_unused') || 'configured_but_unused',
+        freshness: normalizeRenderText(source.freshness, 'unknown') || 'unknown',
+        summary: normalizeRenderText(source.summary, 'QA MCP proof-of-life has not been recorded yet.') || 'QA MCP proof-of-life has not been recorded yet.',
+        heartbeat_at: normalizeRenderText(source.heartbeat_at || source.heartbeatAt, '') || null,
+        last_completed_cycle_at: normalizeRenderText(source.last_completed_cycle_at || source.lastCompletedCycleAt, '') || null,
+        mcp_configured: source.mcp_configured !== false,
+        configured_tools: normalizeRenderList(source.configured_tools || source.configuredTools),
+        mcp_reachable: source.mcp_reachable === true,
+        last_ping_at: normalizeRenderText(source.last_ping_at || source.lastPingAt, '') || null,
+        last_ping_status: normalizeRenderText(source.last_ping_status || source.lastPingStatus, 'unavailable') || 'unavailable',
+        last_ping_source: normalizeRenderText(source.last_ping_source || source.lastPingSource, 'external_mcp') || 'external_mcp',
+        last_call_at: normalizeRenderText(source.last_call_at || source.lastCallAt, '') || null,
+        last_call_tool: normalizeRenderText(source.last_call_tool || source.lastCallTool, '') || null,
+        last_call_status: normalizeRenderText(source.last_call_status || source.lastCallStatus, 'unknown') || 'unknown',
+        last_call_source: normalizeRenderText(source.last_call_source || source.lastCallSource, '') || null,
+        last_qa_gate_source: normalizeRenderText(source.last_qa_gate_source || source.lastQaGateSource, 'unknown') || 'unknown',
+        using_mcp_for_qa_decisions: Boolean(source.using_mcp_for_qa_decisions ?? source.usingMcpForQaDecisions),
+        notes: normalizeRenderList(source.notes).map((note) => normalizeRenderText(note, '')).filter(Boolean),
+      }
+    : {
+        status: 'offline',
+        usage_state: 'configured_but_unused',
+        freshness: 'unknown',
+        summary: 'QA MCP proof-of-life has not been recorded yet.',
+        heartbeat_at: null,
+        last_completed_cycle_at: null,
+        mcp_configured: false,
+        configured_tools: [],
+        mcp_reachable: false,
+        last_ping_at: null,
+        last_ping_status: 'unavailable',
+        last_ping_source: 'external_mcp',
+        last_call_at: null,
+        last_call_tool: null,
+        last_call_status: 'unknown',
+        last_call_source: null,
+        last_qa_gate_source: 'unknown',
+        using_mcp_for_qa_decisions: false,
+        notes: [],
+      };
+}
+
+function normalizeQALeadFeedItem(item = {}) {
+  const source = normalizeRenderObject(item);
+  return {
+    id: normalizeRenderText(source.id, '') || null,
+    label: normalizeRenderText(source.label, '') || 'QA tool result',
+    tool: normalizeRenderText(source.tool, '') || 'qa_tool',
+    status: normalizeRenderText(source.status, 'unknown') || 'unknown',
+    verdict: normalizeRenderText(source.verdict || source.status, 'unknown') || 'unknown',
+    summary: normalizeRenderText(source.summary, '') || 'No summary recorded.',
+    detail: normalizeRenderText(source.detail, '') || '',
+    observed_at: normalizeRenderText(source.observed_at || source.observedAt, '') || null,
+    artifact_refs: normalizeRenderList(source.artifact_refs || source.artifactRefs),
+    notes: normalizeRenderList(source.notes),
+  };
+}
+
+function normalizeQALeadRunnerPayload(state = {}) {
+  const source = normalizeRenderObject(state);
+  const outputFeed = normalizeRenderList(source.output_feed || source.outputFeed).map((item) => normalizeQALeadFeedItem(item)).filter((item) => item.id || item.summary);
+  return {
+    source: normalizeRenderText(source.source, 'qa_lead_runner') || 'qa_lead_runner',
+    agent_id: normalizeRenderText(source.agent_id || source.agentId, 'qa-lead') || 'qa-lead',
+    id: normalizeRenderText(source.id || source.run_id, '') || null,
+    run_type: normalizeRenderText(source.run_type || source.runType, 'scheduled_cycle') || 'scheduled_cycle',
+    status: normalizeRenderText(source.status, 'idle') || 'idle',
+    current_task: normalizeRenderText(source.current_task || source.currentTask, 'QA proof-of-life, browser pass, lane canaries, and loop audit') || 'QA proof-of-life, browser pass, lane canaries, and loop audit',
+    current_batch: normalizeRenderText(source.current_batch || source.currentBatch || source.run_id, '') || null,
+    base_url: normalizeRenderText(source.base_url || source.baseUrl, '') || null,
+    probe_url: normalizeRenderText(source.probe_url || source.probeUrl, '') || null,
+    started_at: normalizeRenderText(source.started_at || source.startedAt, '') || null,
+    finished_at: normalizeRenderText(source.finished_at || source.finishedAt, '') || null,
+    last_completed_cycle_at: normalizeRenderText(source.last_completed_cycle_at || source.lastCompletedCycleAt, '') || null,
+    active_tools: normalizeRenderList(source.active_tools || source.activeTools),
+    live_status: normalizeQAMcpLiveStatusPayload(source.live_status || source.liveStatus || null),
+    output_feed: outputFeed,
+    result_paths: normalizeRenderObject(source.result_paths || source.resultPaths),
+    failure_reason: normalizeRenderText(source.failure_reason || source.failureReason, '') || null,
+    summary: normalizeRenderText(source.summary, 'QA lead has not run yet.') || 'QA lead has not run yet.',
+    automation_started: Boolean(source.automation_started ?? source.automationStarted),
+    automation_enabled: Boolean(source.automation_enabled ?? source.automationEnabled),
+    automation_interval_ms: Number(source.automation_interval_ms ?? source.automationIntervalMs) || null,
+    automation_last_kick_at: normalizeRenderText(source.automation_last_kick_at || source.automationLastKickAt, '') || null,
+    automation_last_result: normalizeRenderObject(source.automation_last_result || source.automationLastResult || null),
+  };
+}
+
+function normalizeQALaneCanaryStatePayload(state = {}) {
+  const source = normalizeRenderObject(state);
+  const results = normalizeRenderList(source.results).map((entry) => {
+    const result = normalizeRenderObject(entry);
+    return {
+      canary_id: normalizeRenderText(result.canary_id || result.canaryId, '') || null,
+      label: normalizeRenderText(result.label, '') || 'Lane Canary',
+      status: normalizeRenderText(result.status, 'fail') || 'fail',
+      checked_at: normalizeRenderText(result.checked_at || result.checkedAt, '') || null,
+      target_lane_id: normalizeRenderText(result.target_lane_id || result.targetLaneId, '') || null,
+      target_lane_label: normalizeRenderText(result.target_lane_label || result.targetLaneLabel, '') || null,
+      owner_department: normalizeRenderText(result.owner_department || result.ownerDepartment, 'QA') || 'QA',
+      trigger: normalizeRenderText(result.trigger, '') || null,
+      policy_outcome: normalizeRenderText(result.policy_outcome || result.policyOutcome, '') || null,
+      validation_status: normalizeRenderText(result.validation_status || result.validationStatus, '') || null,
+      trust_level: normalizeRenderText(result.trust_level || result.trustLevel, 'unknown') || 'unknown',
+      summary: normalizeRenderText(result.summary, '') || 'No canary summary recorded.',
+      latest_validation_summary: normalizeRenderText(result.latest_validation_summary || result.latestValidationSummary, '') || null,
+      scoped_targets_summary: normalizeRenderText(result.scoped_targets_summary || result.scopedTargetsSummary, '') || '',
+      required_validation_gate_ids: normalizeRenderList(result.required_validation_gate_ids || result.requiredValidationGateIds),
+      notes: normalizeRenderList(result.notes).map((note) => normalizeRenderText(note, '')).filter(Boolean),
+    };
+  }).filter((result) => result.canary_id);
+  return {
+    last_run_at: normalizeRenderText(source.last_run_at || source.lastRunAt, '') || null,
+    overall_status: normalizeRenderText(source.overall_status || source.overallStatus, 'idle') || 'idle',
+    total_canaries: Number(source.total_canaries ?? source.totalCanaries ?? results.length) || results.length,
+    passed_count: Number(source.passed_count ?? source.passedCount ?? results.filter((result) => result.status === 'pass').length) || 0,
+    failed_count: Number(source.failed_count ?? source.failedCount ?? 0) || 0,
+    failing_canary_ids: normalizeRenderList(source.failing_canary_ids || source.failingCanaryIds),
+    results,
+    summary: normalizeRenderText(source.summary, 'No QA lane canary results are recorded yet.') || 'No QA lane canary results are recorded yet.',
+  };
+}
+
+function normalizeQARepairLaneOutcomeStatus(lane = {}) {
+  const laneStatus = normalizeRenderText(lane.current_status || lane.status, 'idle');
+  const latestJobStatus = normalizeRenderText(lane.latest_job_status || lane.latestJobStatus, '');
+  const latestValidationResult = normalizeRenderText(lane.latest_validation_result || lane.latestValidationResult, '');
+  if (latestJobStatus === 'policy_blocked' || laneStatus === 'blocked') return 'policy_blocked';
+  if (['needs_human_review', 'stalled_after_retries'].includes(latestJobStatus) || laneStatus === 'stalled') return 'safe_stop';
+  if (latestValidationResult === 'accepted' || latestJobStatus === 'accepted' || laneStatus === 'healthy') return 'success';
+  if (['rejected', 'inconclusive'].includes(latestValidationResult)) return 'validation_failed';
+  if (laneStatus === 'active') return 'active';
+  if (laneStatus === 'watching') return 'watching';
+  return 'idle';
+}
+
+function normalizeQARepairLanePayload(lane = {}) {
+  const source = normalizeRenderObject(lane);
+  return Object.keys(source).length
+    ? {
+        ...source,
+        lane_id: normalizeRenderText(source.lane_id || source.laneId, '') || null,
+        label: normalizeRenderText(source.label, '') || normalizeRenderText(source.observability_label, '') || 'Repair Lane',
+        owner_department: normalizeRenderText(source.owner_department || source.ownerDepartment, '') || 'QA',
+        trust_level: normalizeRenderText(source.trust_level || source.trustLevel, '') || 'unknown',
+        trust_reason: normalizeRenderText(source.trust_reason || source.trustReason, '') || '',
+        current_status: normalizeRenderText(source.current_status || source.status, '') || 'idle',
+        latest_job_status: normalizeRenderText(source.latest_job_status || source.latestJobStatus, '') || null,
+        latest_validation_result: normalizeRenderText(source.latest_validation_result || source.latestValidationResult || source.latest_attempt_verdict || source.latestAttemptVerdict, '') || null,
+        latest_attempt_at: normalizeRenderText(source.latest_attempt_at || source.latestAttemptAt, '') || null,
+        latest_stop_reason: normalizeRenderText(source.latest_stop_reason || source.latestStopReason || source.latest_policy_block_reason || source.latestPolicyBlockReason, '') || null,
+        latest_policy_block_reason: normalizeRenderText(source.latest_policy_block_reason || source.latestPolicyBlockReason, '') || null,
+        open_investigations: Number(source.open_investigations ?? source.openInvestigations ?? 0) || 0,
+        repair_job_count: Number(source.repair_job_count ?? source.repairJobCount ?? 0) || 0,
+        attempt_count: Number(source.attempt_count ?? source.attemptCount ?? source.latest_job?.attempt_count ?? 0) || 0,
+        blocked_count: Number(source.blocked_count ?? source.blockedCount ?? source.policy_blocked_job_count ?? source.policyBlockedJobCount ?? 0) || 0,
+        auto_apply_allowed: source.auto_apply_allowed !== false,
+        human_review_required_on_ambiguity: source.human_review_required_on_ambiguity !== false,
+        retry_budget: Number(source.retry_budget ?? source.retryBudget ?? source.max_attempts ?? source.maxAttempts ?? 0) || 0,
+        required_validation_gate_ids: normalizeRenderList(source.required_validation_gate_ids || source.requiredValidationGateIds),
+        allowed_trigger_classes: normalizeRenderList(source.allowed_trigger_classes || source.allowedTriggerClasses),
+        scoped_targets: normalizeRenderList(source.scoped_targets || source.scopedTargets),
+        scoped_targets_summary: normalizeRenderText(source.scoped_targets_summary || source.scopedTargetsSummary, '') || '',
+        trust_summary: normalizeRenderText(source.trust_summary || source.trustSummary, '') || '',
+        eligibility_summary: normalizeRenderText(source.eligibility_summary || source.eligibilitySummary, '') || '',
+        outcome_status: normalizeQARepairLaneOutcomeStatus(source),
+      }
+    : null;
+}
+
+function normalizeQARepairLanePayloadList(lanes = null) {
+  const items = normalizeRenderList(lanes).map((entry) => normalizeQARepairLanePayload(entry)).filter(Boolean);
+  if (!items.length) return [];
+  const rankLane = (lane) => {
+    if (lane.outcome_status === 'policy_blocked') return 0;
+    if (lane.outcome_status === 'safe_stop') return 1;
+    if (lane.current_status === 'active') return 2;
+    if (lane.current_status === 'watching') return 3;
+    if (lane.outcome_status === 'validation_failed') return 4;
+    if (lane.outcome_status === 'success') return 5;
+    return 6;
+  };
+  return [...items].sort((left, right) => {
+    const leftRank = rankLane(left);
+    const rightRank = rankLane(right);
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    const leftTime = Date.parse(left.latest_attempt_at || '');
+    const rightTime = Date.parse(right.latest_attempt_at || '');
+    if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
+      return rightTime - leftTime;
+    }
+    return String(left.label || left.lane_id || '').localeCompare(String(right.label || right.lane_id || ''));
+  });
+}
+
+function buildQAReadableSectionsFromState(source = {}) {
+  const normalized = normalizeRenderObject(source);
+  if (Array.isArray(normalized.sections) && normalized.sections.length) {
+    return normalized.sections.map((section) => normalizeDeskSectionPayload(section));
+  }
+  const structuredReport = normalized.structuredReport ? normalizeQAReportPayload(normalized.structuredReport) : null;
+  const structuredSummary = normalizeRenderObject(normalized.structuredSummary);
+  const latestBrowserRun = normalizeQARunPayload(normalized.latestBrowserRun || normalized.latestRun || null);
+  const browserRuns = normalizeRenderList(normalized.browserRuns);
+  const localGate = normalizeQALocalGatePayload(normalized.localGate || null);
+  const testRegistry = normalizeQATestRegistryPayload(normalized.testRegistry || null);
+  const testRegistrySummary = normalizeRenderObject(normalized.testRegistrySummary);
+  const auditTrail = normalizeQAAuditTrailPayload(normalized.auditTrail || null);
+  const externalValidation = normalizeQAExternalValidationPayload(normalized.externalValidation || null);
+  const openInvestigations = normalizeQAInvestigationsPayload(normalized.openInvestigations || normalized.investigations || null);
+  const repairLoop = normalizeRenderObject(normalized.repairLoop);
+  const repairLanes = normalizeQARepairLanePayloadList(normalized.repairLanes || repairLoop.lanes || []);
+  const repairLoopSummary = normalizeRenderObject(normalized.repairLoopSummary || repairLoop.summary || {});
+  const qaCanaries = normalizeQALaneCanaryStatePayload(normalized.qaCanaries || normalized.canaries || {});
+  const qaMcpLiveStatus = normalizeQAMcpLiveStatusPayload(normalized.qaMcpLiveStatus || normalized.mcpLiveStatus || null);
+  const qaLead = normalizeQALeadRunnerPayload(normalized.qaLead || null);
+  const qaLeadLatestRun = normalizeQALeadRunnerPayload(normalized.qaLeadLatestRun || (Array.isArray(normalized.qaLeadRuns) ? normalized.qaLeadRuns[0] : null) || null);
+  const qaLeadFeed = (qaLeadLatestRun.output_feed.length ? qaLeadLatestRun.output_feed : qaLead.output_feed).map((item) => normalizeQALeadFeedItem(item));
+  const researchState = normalizeRenderObject(normalized.researchState);
+  const researchNotes = normalizeRenderList(normalized.researchNotes || researchState.notes || []);
+  const latestResearchNote = researchNotes[0] || null;
+  const latestIntent = normalizeRenderObject(normalized.intent || normalized.latestIntent || null);
+  const scorecards = normalizeRenderList(normalized.scorecards || structuredReport?.scorecards || []);
+  const plannerStatus = structuredReport?.status || 'unknown';
+  const qaStatus = externalValidation?.status || (openInvestigations.length ? 'warn' : 'unknown');
+  const executorStatus = latestBrowserRun?.verdict || latestBrowserRun?.status || localGate?.studioBoot?.verdict || localGate?.unit?.status || 'unknown';
+  const ctoStatus = auditTrail?.summary?.mismatch > 0
+    ? 'warn'
+    : (auditTrail?.summary?.ok > 0 ? 'pass' : 'unknown');
+  const archiveStatus = Number(testRegistry?.entries?.length || 0) > 0 ? 'pass' : 'unknown';
+  const intentStatus = latestIntent?.summary ? 'pass' : 'unknown';
+  const researchStatus = Number(researchState?.summary?.availableNotes || 0) > 0
+    ? 'pass'
+    : (Number(researchState?.summary?.unavailableNotes || 0) > 0 ? 'warn' : 'unknown');
+  const recurringInvestigations = openInvestigations.filter((entry) => Number(entry.repeat_count || 0) > 1);
+
+  const plannerLastUpdated = structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null;
+  const qaLastUpdated = externalValidation?.lastCheckedAt || null;
+  const executorLastUpdated = latestBrowserRun?.sourceTrace?.observedAt || latestBrowserRun?.finishedAt || latestBrowserRun?.createdAt || localGate?.studioBoot?.sourceTrace?.observedAt || localGate?.unit?.sourceTrace?.observedAt || null;
+  const ctoLastUpdated = auditTrail?.generatedAt || null;
+  const archiveLastUpdated = testRegistry?.generatedAt || testRegistrySummary?.generatedAt || null;
+  const intentLastUpdated = latestIntent?.updatedAt || latestIntent?.createdAt || null;
+  const researchLastUpdated = researchState?.summary?.latestNoteAt || latestResearchNote?.created_at || latestResearchNote?.updated_at || null;
+
+  return [
+    {
+      id: 'qa-overview',
+      label: 'QA Health Overview',
+      kind: 'qa-overview',
+      overview: {
+        status: structuredReport?.status === 'fail' || externalValidation?.status === 'fail'
+          ? 'fail'
+          : (plannerStatus === 'pass' && qaStatus === 'pass' && openInvestigations.length === 0
+              ? 'pass'
+              : (openInvestigations.length || plannerStatus === 'warn' || qaStatus === 'warn'
+                  ? 'warn'
+                  : 'unknown')),
+        structuredStatus: plannerStatus,
+        externalStatus: externalValidation?.status || 'unknown',
+        openInvestigationsCount: openInvestigations.length,
+        recurringInvestigationsCount: recurringInvestigations.length,
+        researchBackedInvestigationsCount: openInvestigations.filter((entry) => Boolean(entry.research_available) || Number(entry.research_note_count || 0) > 0).length,
+        researchAvailableCount: Number(researchState?.summary?.availableNotes || 0),
+        latestStructuredAt: latestKnownTimestamp(plannerLastUpdated),
+        latestExternalAt: latestKnownTimestamp(qaLastUpdated),
+        latestResearchAt: latestKnownTimestamp(researchLastUpdated),
+        notes: [
+          structuredSummary?.summary || structuredReport?.summary || 'Structured QA report unavailable.',
+          externalValidation?.notes?.[0] || externalValidation?.errorMessage || 'External validation snapshot available.',
+        ].filter(Boolean),
+      },
+      summary: 'Overall QA health at a glance.',
+      collapsible: false,
+      defaultOpen: true,
+    },
+    {
+      id: 'qa-mcp-live',
+      label: 'QA MCP Proof of Life',
+      kind: 'qa-mcp-live',
+      liveStatus: qaMcpLiveStatus,
+      summary: qaMcpLiveStatus.summary,
+      collapsible: false,
+      defaultOpen: true,
+    },
+    {
+      id: 'qa-operator',
+      label: 'QA Live Operator',
+      kind: 'qa-operator',
+      lead: qaLeadLatestRun.id ? qaLeadLatestRun : qaLead,
+      summary: qaLead.current_task || qaLead.summary || 'QA lead automation is not running yet.',
+      collapsible: false,
+      defaultOpen: true,
+    },
+    {
+      id: 'qa-output-feed',
+      label: 'QA Output Feed',
+      kind: 'qa-output-feed',
+      feed: qaLeadFeed,
+      summary: qaLeadFeed.length
+        ? `${qaLeadFeed.length} QA output item${qaLeadFeed.length === 1 ? '' : 's'} ready for executor review.`
+        : 'QA output feed is empty until the lead run completes.',
+      emptyState: 'No QA output feed is available yet.',
+      collapsible: true,
+      defaultOpen: qaLeadFeed.length > 0,
+    },
+    {
+      id: 'qa-canaries',
+      label: 'Lane Canaries',
+      kind: 'qa-canaries',
+      canaries: qaCanaries,
+      summary: qaCanaries.summary,
+      emptyState: 'No QA lane canary results are recorded yet.',
+      collapsible: true,
+      defaultOpen: qaCanaries.failed_count > 0,
+    },
+    {
+      id: 'qa-hygiene',
+      label: 'Freshness & Hygiene',
+      kind: 'qa-hygiene',
+      surfaces: [
+        normalizeQAHygieneSurfacePayload({
+          surface_id: 'planner',
+          label: 'Planner',
+          status: plannerStatus,
+          freshness: structuredReport?.sourceTrace?.freshnessClass || (structuredReport ? 'fresh' : 'missing'),
+          last_updated: plannerLastUpdated,
+          source: structuredReport?.sourceTrace?.sourcePath || 'data/spatial/qa/structured/latest.json',
+          coverage_hint: `${scorecards.length} scorecard${scorecards.length === 1 ? '' : 's'} | ${Number(structuredReport?.tests?.length || structuredReport?.desks?.length || 0)} test surface${Number(structuredReport?.tests?.length || structuredReport?.desks?.length || 0) === 1 ? '' : 's'}`,
+          notes: [structuredSummary?.summary || structuredReport?.summary || 'Structured QA report available.'],
+        }),
+        normalizeQAHygieneSurfacePayload({
+          surface_id: 'qa',
+          label: 'QA',
+          status: qaStatus,
+          freshness: externalValidation?.lastCheckedAt ? 'fresh' : (externalValidation ? 'unknown' : 'missing'),
+          last_updated: qaLastUpdated,
+          source: externalValidation?.source || 'external_mcp',
+          coverage_hint: `${openInvestigations.length} open investigation${openInvestigations.length === 1 ? '' : 's'} | ${recurringInvestigations.length} recurring`,
+          notes: [externalValidation?.notes?.[0] || externalValidation?.errorMessage || 'External validation snapshot available.'],
+        }),
+        normalizeQAHygieneSurfacePayload({
+          surface_id: 'executor',
+          label: 'Executor',
+          status: executorStatus,
+          freshness: executorLastUpdated ? 'fresh' : 'missing',
+          last_updated: executorLastUpdated,
+          source: latestBrowserRun?.sourceTrace?.sourcePath || localGate?.studioBoot?.sourceTrace?.sourcePath || localGate?.unit?.sourceTrace?.sourcePath || 'data/spatial/qa/local-gates/*.json',
+          coverage_hint: `${browserRuns.length} browser run${browserRuns.length === 1 ? '' : 's'} | ${localGateOutputCount(localGate)} local gate${localGateOutputCount(localGate) === 1 ? '' : 's'}`,
+          notes: [summarizeQABrowserRun(latestBrowserRun), summarizeLocalGate(localGate)].filter(Boolean),
+        }),
+        normalizeQAHygieneSurfacePayload({
+          surface_id: 'cto',
+          label: 'CTO',
+          status: ctoStatus,
+          freshness: ctoLastUpdated ? 'fresh' : 'missing',
+          last_updated: ctoLastUpdated,
+          source: 'qa/qaAuditTrail.js',
+          coverage_hint: `${Number(auditTrail?.entries?.length || 0)} audit entr${Number(auditTrail?.entries?.length || 0) === 1 ? 'y' : 'ies'}`,
+          notes: [auditTrail?.summary ? `Audit summary: ${auditTrail.summary.ok || 0} ok / ${auditTrail.summary.mismatch || 0} mismatch` : 'QA audit trail available.'],
+        }),
+        normalizeQAHygieneSurfacePayload({
+          surface_id: 'archive',
+          label: 'Archive',
+          status: archiveStatus,
+          freshness: archiveLastUpdated ? 'fresh' : 'missing',
+          last_updated: archiveLastUpdated,
+          source: 'qa/testRegistry.js',
+          coverage_hint: `${Number(testRegistry?.entries?.length || scorecards.length || 0)} registered test${Number(testRegistry?.entries?.length || scorecards.length || 0) === 1 ? '' : 's'}`,
+          notes: [testRegistrySummary?.total ? `Executable ${testRegistrySummary.executable || 0} | stale ${testRegistrySummary.staleTarget || 0}` : 'QA test registry available.'],
+        }),
+        normalizeQAHygieneSurfacePayload({
+          surface_id: 'intent',
+          label: 'Intent',
+          status: intentStatus,
+          freshness: intentLastUpdated ? 'fresh' : 'missing',
+          last_updated: intentLastUpdated,
+          source: 'workspace.intentState.registry',
+          coverage_hint: latestIntent?.summary ? 'Active intent captured' : 'No active intent',
+          notes: [latestIntent?.summary || 'No active intent captured.'],
+        }),
+        normalizeQAHygieneSurfacePayload({
+          surface_id: 'research',
+          label: 'Research',
+          status: researchStatus,
+          freshness: researchLastUpdated ? 'fresh' : 'missing',
+          last_updated: researchLastUpdated,
+          source: 'data/spatial/qa/research-notes.json',
+          coverage_hint: `${Number(researchState?.summary?.availableNotes || 0)} available / ${Number(researchState?.summary?.totalNotes || 0)} total note${Number(researchState?.summary?.totalNotes || 0) === 1 ? '' : 's'}`,
+          notes: [latestResearchNote?.summary || researchState?.research_summary || 'No research notes yet.'],
+        }),
+      ],
+      summary: 'Freshness, provenance, and coverage by surface.',
+      collapsible: false,
+      defaultOpen: true,
+    },
+    {
+      id: 'qa-repair-lanes',
+      label: 'Repair Lanes',
+      kind: 'qa-repair-lanes',
+      lanes: repairLanes,
+      repairLoopSummary,
+      summary: repairLanes.length
+        ? `${repairLanes.length} active or recent lane${repairLanes.length === 1 ? '' : 's'} | ${Number(repairLoopSummary.blockedLanes || 0)} blocked | ${Number(repairLoopSummary.activeLanes || 0)} active`
+        : 'Repair lanes surface trust policy, blocked actions, and validation status.',
+      emptyState: 'No active or recent repair lanes are recorded yet.',
+      collapsible: true,
+      defaultOpen: repairLanes.length > 0,
+    },
+    {
+      id: 'qa-scorecards',
+      label: 'Scorecards',
+      kind: 'qa-scorecards',
+      cards: scorecards,
+      definitions: normalizeRenderObject(normalized.scorecardDefinitions || normalized.definitions || {}),
+      suiteStatus: normalizeRenderText(normalized.suiteStatus || normalized.structuredStatus || structuredReport?.status || ''),
+      suiteSummary: normalizeRenderText(normalized.suiteSummary || structuredSummary?.summary || structuredReport?.summary || ''),
+      meta: {
+        deskCount: Number(normalized.scorecardDeskCount || scorecards.length || 0) || 0,
+        testCount: Number(normalized.scorecardCount || scorecards.length || 0) || 0,
+      },
+      emptyState: structuredReport
+        ? 'Latest structured QA report does not include any scored test cards yet.'
+        : 'Run structured QA to load test quality scorecards.',
+      collapsible: true,
+      defaultOpen: false,
+    },
+    {
+      id: 'qa-investigations',
+      label: 'Investigations',
+      kind: 'qa-investigations',
+      items: openInvestigations,
+      summary: `${openInvestigations.length} open investigation${openInvestigations.length === 1 ? '' : 's'} | ${recurringInvestigations.length} recurring`,
+      emptyState: 'No open QA investigations are recorded yet.',
+      collapsible: true,
+      defaultOpen: openInvestigations.length > 0,
+    },
+    {
+      id: 'qa-research',
+      label: 'Advisory / Research',
+      kind: 'qa-research',
+      notes: researchNotes,
+      researchState,
+      summary: researchLastUpdated
+        ? `Latest research at ${researchLastUpdated}`
+        : 'Research notes stay advisory and read-only.',
+      emptyState: 'No advisory research notes are recorded yet.',
+      collapsible: true,
+      defaultOpen: false,
+    },
+  ];
 }
 
 function normalizeDeskStatus(value) {
@@ -1725,12 +2286,81 @@ const EMPTY_CANVAS_INTENT_RUN_STATE = {
   route: null,
   forceIntentScan: false,
 };
+const EMPTY_CANONICAL_INTAKE_STATE = {
+  version: 'ace/canonical-intake.v1',
+  records: [],
+  latestByChannel: {
+    cto_prompt: null,
+    canvas_text: null,
+  },
+};
 
 function createCanvasIntentRunState(state = null) {
   return {
     ...EMPTY_CANVAS_INTENT_RUN_STATE,
     ...(state && typeof state === 'object' ? state : {}),
   };
+}
+
+function normalizeCanonicalIntakeState(state = null) {
+  const source = state && typeof state === 'object' ? state : EMPTY_CANONICAL_INTAKE_STATE;
+  const records = Array.isArray(source.records)
+    ? source.records
+      .filter((record) => record && typeof record === 'object')
+      .map((record) => ({
+        id: String(record.id || '').trim() || null,
+        channel: String(record.channel || '').trim() || null,
+        text: String(record.text || '').trim() || '',
+        sourceRef: String(record.sourceRef || '').trim() || null,
+        processingStatus: String(record.processingStatus || '').trim() || 'recorded',
+        resultSummary: String(record.resultSummary || '').trim() || null,
+        route: String(record.route || '').trim() || null,
+        createdAt: String(record.createdAt || '').trim() || null,
+        updatedAt: String(record.updatedAt || '').trim() || null,
+        acknowledgement: record.acknowledgement && typeof record.acknowledgement === 'object'
+          ? {
+              status: String(record.acknowledgement.status || '').trim() || 'recorded',
+              summary: String(record.acknowledgement.summary || '').trim() || '',
+            }
+          : null,
+        intentExtraction: record.intentExtraction && typeof record.intentExtraction === 'object'
+          ? {
+              status: String(record.intentExtraction.status || '').trim() || 'pending',
+              canonicalIntentId: String(record.intentExtraction.canonicalIntentId || '').trim() || null,
+              intentStatus: String(record.intentExtraction.intentStatus || '').trim() || null,
+              summary: String(record.intentExtraction.summary || '').trim() || null,
+              sourceType: String(record.intentExtraction.sourceType || '').trim() || null,
+              sourceRef: String(record.intentExtraction.sourceRef || '').trim() || null,
+              reason: String(record.intentExtraction.reason || '').trim() || null,
+            }
+          : null,
+        governedLoop: record.governedLoop && typeof record.governedLoop === 'object'
+          ? {
+              route: String(record.governedLoop.route || '').trim() || null,
+              contractVersion: String(record.governedLoop.contractVersion || '').trim() || null,
+              domain: String(record.governedLoop.domain || '').trim() || null,
+            }
+          : null,
+      }))
+      .filter((record) => record.id && record.channel)
+    : [];
+  return {
+    version: String(source.version || EMPTY_CANONICAL_INTAKE_STATE.version).trim() || EMPTY_CANONICAL_INTAKE_STATE.version,
+    records,
+    latestByChannel: {
+      cto_prompt: String(source.latestByChannel?.cto_prompt || records.find((record) => record.channel === 'cto_prompt')?.id || '').trim() || null,
+      canvas_text: String(source.latestByChannel?.canvas_text || records.find((record) => record.channel === 'canvas_text')?.id || '').trim() || null,
+    },
+  };
+}
+
+function getLatestCanonicalIntakeRecord(intakeState = EMPTY_CANONICAL_INTAKE_STATE, channel = null) {
+  const normalized = normalizeCanonicalIntakeState(intakeState);
+  const targetChannel = String(channel || '').trim();
+  if (!targetChannel) {
+    return normalized.records[0] || null;
+  }
+  return normalized.records.find((record) => record.channel === targetChannel) || null;
 }
 
 function attachTraceId(record = null, traceId = null) {
@@ -2729,6 +3359,96 @@ function renderQATestRegistrySummary(registrySummary = null) {
   );
 }
 
+function renderQAExternalValidationBlock(externalValidation = null) {
+  const validation = normalizeQAExternalValidationPayload(externalValidation);
+  if (!validation) {
+    return h('div', { className: 'signal-empty muted', 'data-qa': 'qa-external-validation-empty' }, 'No external validation snapshot is available yet.');
+  }
+  const statusTone = validation.status === 'pass'
+    ? 'good'
+    : (validation.status === 'fail' ? 'bad' : 'neutral');
+  const probeTone = validation.probeStatus === 'ok'
+    ? 'good'
+    : (validation.probeStatus === 'timeout' ? 'warn' : 'bad');
+  return h('div', { className: 'desk-panel-item qa-external-validation-card', 'data-qa': 'qa-external-validation' },
+    h('div', { className: 'signal-summary' }, 'External validation'),
+    h('div', { className: 'signal-meta muted' }, `Status: ${validation.status} | Match: ${validation.statusMatch ? 'yes' : 'no'} | Freshness known: ${validation.freshnessKnown ? 'yes' : 'no'}`),
+    h('div', { className: 'qa-metric-pill-row' },
+      h('span', { className: `qa-metric-pill tone-${statusTone}` }, validation.status),
+      h('span', { className: `qa-metric-pill tone-${probeTone}` }, `Probe ${validation.probeStatus}`),
+      h('span', { className: 'qa-metric-pill tone-neutral' }, validation.lastCheckedAt ? `Checked ${formatTimestamp(validation.lastCheckedAt)}` : 'Checked —'),
+    ),
+    h('div', { className: 'signal-meta muted' }, `Source: ${validation.source}`),
+    validation.errorMessage ? h('div', { className: 'signal-meta error' }, validation.errorMessage) : null,
+    validation.notes.length
+      ? h('ul', { className: 'signal-list compact' }, validation.notes.slice(0, 4).map((note, index) => h('li', { key: `qa-external-validation-note-${index}` }, note)))
+      : h('div', { className: 'signal-meta muted' }, 'No comparison notes recorded.'),
+  );
+}
+
+function formatQAInvestigationEvidenceHint(investigation = null) {
+  const record = normalizeQAInvestigationPayload(investigation);
+  const externalStatus = record?.evidence?.external?.status || record?.evidence?.external?.result || 'unknown';
+  const internalStatus = record?.evidence?.internal?.status || 'unknown';
+  return `internal=${internalStatus} / external=${externalStatus}`;
+}
+
+function formatQAInvestigationResearchHint(investigation = null) {
+  const record = normalizeQAInvestigationPayload(investigation);
+  if (!record) {
+    return null;
+  }
+  const latestResearchAt = record.latest_research_at ? formatTimestamp(record.latest_research_at) : null;
+  if (record.research_available) {
+    return latestResearchAt ? `Research available - ${latestResearchAt}` : 'Research available';
+  }
+  if (record.research_status === 'unavailable') {
+    return latestResearchAt ? `Research unavailable - ${latestResearchAt}` : 'Research unavailable';
+  }
+  return null;
+}
+
+function renderQAInvestigationInboxBlock(investigations = null) {
+  const items = normalizeQAInvestigationsPayload(investigations);
+  if (!items.length) {
+    return h('div', { className: 'signal-empty muted', 'data-qa': 'qa-investigations-empty' }, 'No open QA investigations are recorded yet.');
+  }
+  const openItems = items.filter((item) => item.status === 'open').slice(0, 5);
+  if (!openItems.length) {
+    return h('div', { className: 'signal-empty muted', 'data-qa': 'qa-investigations-empty' }, 'No open QA investigations are recorded yet.');
+  }
+  return h('div', { className: 'desk-panel-item qa-investigations-card', 'data-qa': 'qa-investigations' },
+    h('div', { className: 'signal-summary' }, `Investigations (${openItems.length})`),
+    h('div', { className: 'signal-meta muted' }, 'Read-only inbox of unresolved QA contradictions.'),
+    h('div', { className: 'desk-panel-list utility-list qa-investigation-list' },
+      openItems.map((item, index) => {
+        const researchHint = formatQAInvestigationResearchHint(item);
+        return h('div', {
+          key: item.id || `${item.trigger}-${index}`,
+          className: `desk-panel-item utility-card qa-investigation-card severity-${item.severity || 'medium'}`,
+          'data-status': item.status || 'open',
+        },
+          h('div', { className: 'inline review-header' },
+            h('div', null,
+              h('div', { className: 'signal-summary' }, item.summary || 'QA investigation'),
+              h('div', { className: 'signal-meta muted' }, `Trigger: ${item.trigger || 'external_mismatch'}`),
+            ),
+            h('div', { className: 'qa-metric-pill-row' },
+              h('span', { className: 'qa-metric-pill tone-neutral' }, item.severity || 'medium'),
+              h('span', { className: 'qa-metric-pill tone-neutral' }, `x${item.repeat_count || 1}`),
+            ),
+          ),
+          h('div', { className: 'signal-meta muted' }, `Created: ${item.first_seen_at || item.created_at ? formatTimestamp(item.first_seen_at || item.created_at) : 'unknown'}`),
+          item.last_seen_at ? h('div', { className: 'signal-meta muted' }, `Last seen: ${formatTimestamp(item.last_seen_at)}`) : null,
+          h('div', { className: 'signal-meta muted' }, `Status: ${item.status || 'open'}`),
+          h('div', { className: 'signal-meta muted' }, formatQAInvestigationEvidenceHint(item)),
+          researchHint ? h('div', { className: 'signal-meta muted' }, researchHint) : null,
+        );
+      }),
+    ),
+  );
+}
+
 function renderQATestRegistryList(testRegistry = null, emptyState = 'No QA tests are registered yet.') {
   const registry = normalizeQATestRegistryPayload(testRegistry);
   const entries = Array.isArray(registry?.entries) ? [...registry.entries] : [];
@@ -2782,6 +3502,63 @@ function renderQATestRegistryList(testRegistry = null, emptyState = 'No QA tests
 function renderDeskSection(rawSection, helpers = {}) {
     const section = normalizeDeskSectionPayload(rawSection);
     if (!section.kind) return null;
+  if (section.kind === 'qa-overview') {
+    const overview = normalizeRenderObject(section.overview);
+    const metricRow = (label, value) => h('div', { className: 'criteria-row' }, h('span', null, label), h('span', { className: 'muted' }, value));
+    const statusTone = overview.status === 'pass' ? 'good' : (overview.status === 'warn' ? 'warn' : (overview.status === 'fail' ? 'bad' : 'neutral'));
+    const structuredTone = overview.structuredStatus === 'pass' ? 'good' : (overview.structuredStatus === 'fail' ? 'bad' : 'neutral');
+    const externalTone = overview.externalStatus === 'pass' ? 'good' : (overview.externalStatus === 'fail' ? 'bad' : 'neutral');
+    return h('div', { key: section.id, className: 'inspector-block panel-card qa-overview-panel' },
+      h('div', { className: 'inspector-label' }, section.label),
+      h('div', { className: 'signal-summary' }, section.summary || 'Overall QA health at a glance.'),
+      h('div', { className: 'qa-metric-pill-row' },
+        h('span', { className: `qa-metric-pill tone-${statusTone}` }, `Overall ${overview.status || 'unknown'}`),
+        h('span', { className: `qa-metric-pill tone-${structuredTone}` }, `Structured ${overview.structuredStatus || 'unknown'}`),
+        h('span', { className: `qa-metric-pill tone-${externalTone}` }, `External ${overview.externalStatus || 'unknown'}`),
+      ),
+      h('div', { className: 'criteria-list desk-metric-list' },
+        metricRow('Open investigations', `${Number(overview.openInvestigationsCount || 0)}`),
+        metricRow('Recurring issues', `${Number(overview.recurringInvestigationsCount || 0)}`),
+        metricRow('Research-backed', `${Number(overview.researchBackedInvestigationsCount || 0)}`),
+        metricRow('Structured updated', overview.latestStructuredAt ? formatTimestamp(overview.latestStructuredAt) : 'unknown'),
+        metricRow('External checked', overview.latestExternalAt ? formatTimestamp(overview.latestExternalAt) : 'unknown'),
+        metricRow('Research updated', overview.latestResearchAt ? formatTimestamp(overview.latestResearchAt) : 'unknown'),
+      ),
+      overview.notes?.length
+        ? h('ul', { className: 'signal-list compact' }, overview.notes.slice(0, 4).map((note, index) => h('li', { key: `${section.id}-note-${index}` }, note)))
+        : h('div', { className: 'signal-empty muted' }, 'No QA summary notes surfaced yet.'),
+    );
+  }
+  if (section.kind === 'qa-hygiene') {
+    const surfaces = normalizeRenderList(section.surfaces).map((surface) => normalizeQAHygieneSurfacePayload(surface));
+    return h('div', { key: section.id, className: 'inspector-block panel-card qa-hygiene-panel' },
+      h('div', { className: 'inspector-label' }, section.label),
+      h('div', { className: 'signal-summary' }, section.summary || 'Freshness, provenance, and coverage by surface.'),
+      surfaces.length
+        ? h('div', { className: 'desk-panel-list utility-list qa-hygiene-list' },
+            surfaces.map((surface) => h('details', {
+              key: surface.surface_id || surface.label,
+              className: `desk-panel-item utility-card qa-hygiene-card status-${surface.status || 'unknown'} freshness-${surface.freshness || 'unknown'}`,
+            },
+              h('summary', { className: 'inline review-header' },
+                h('div', null,
+                  h('div', { className: 'signal-summary' }, surface.label || 'Surface'),
+                  h('div', { className: 'signal-meta muted' }, surface.coverage_hint || 'No coverage hint surfaced.'),
+                ),
+                h('div', { className: 'qa-metric-pill-row' },
+                  h('span', { className: `qa-metric-pill tone-${surface.status === 'pass' ? 'good' : (surface.status === 'warn' ? 'warn' : (surface.status === 'fail' ? 'bad' : 'neutral'))}` }, surface.status || 'unknown'),
+                  h('span', { className: `qa-metric-pill tone-${surface.freshness === 'fresh' ? 'good' : (surface.freshness === 'stale' ? 'warn' : (surface.freshness === 'missing' ? 'bad' : 'neutral'))}` }, surface.freshness || 'unknown'),
+                ),
+              ),
+              h('div', { className: 'signal-meta muted' }, `Source: ${surface.source || 'unknown'}`),
+              h('div', { className: 'signal-meta muted' }, `Last updated: ${surface.last_updated ? formatTimestamp(surface.last_updated) : 'unknown'}`),
+              surface.notes?.length
+                ? h('ul', { className: 'signal-list compact' }, surface.notes.slice(0, 4).map((note, index) => h('li', { key: `${surface.surface_id || 'surface'}-note-${index}` }, note)))
+                : h('div', { className: 'signal-empty muted' }, 'No additional surface notes recorded.'),
+            )))
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No hygiene surfaces recorded yet.'),
+    );
+  }
   if (section.kind === 'summary') {
     return h('div', { key: section.id, className: 'inspector-block panel-card' },
       h('div', { className: 'inspector-label' }, section.label),
@@ -2992,6 +3769,190 @@ function renderDeskSection(rawSection, helpers = {}) {
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No QA summary recorded yet.'),
     );
   }
+  if (section.kind === 'qa-mcp-live') {
+    const liveStatus = normalizeQAMcpLiveStatusPayload(section.liveStatus || section.mcpLiveStatus || null);
+    const metricRow = (label, value) => h('div', { className: 'criteria-row' }, h('span', null, label), h('span', { className: 'muted' }, value));
+    const statusTone = liveStatus.status === 'live'
+      ? 'good'
+      : (liveStatus.status === 'reachable_but_idle'
+          ? 'neutral'
+          : (liveStatus.status === 'stale'
+              ? 'warn'
+              : (['degraded', 'offline'].includes(liveStatus.status) ? 'bad' : 'neutral')));
+    const reachabilityLabel = liveStatus.mcp_configured
+      ? (liveStatus.mcp_reachable ? 'reachable' : 'not reachable')
+      : 'not configured';
+    const usageLabel = liveStatus.usage_state === 'active_gating'
+      ? 'active MCP gating'
+      : (liveStatus.usage_state === 'configured_but_unused'
+          ? 'configured but unused'
+          : liveStatus.usage_state.replace(/_/g, ' '));
+    return h('div', {
+      key: section.id,
+      className: `inspector-block panel-card qa-mcp-live-panel status-${liveStatus.status || 'offline'}`,
+      'data-qa': 'qa-mcp-live',
+    },
+      h('div', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.summary || liveStatus.summary || 'QA MCP proof-of-life has not been recorded yet.'),
+        ),
+        h('div', { className: 'qa-metric-pill-row' },
+          h('span', { className: `qa-metric-pill tone-${statusTone}` }, liveStatus.status || 'offline'),
+          h('span', { className: `qa-metric-pill tone-${liveStatus.mcp_reachable ? 'good' : (liveStatus.mcp_configured ? 'warn' : 'bad')}` }, reachabilityLabel),
+          h('span', { className: `qa-metric-pill tone-${liveStatus.using_mcp_for_qa_decisions ? 'good' : 'neutral'}` }, usageLabel),
+        ),
+      ),
+      h('div', { className: 'criteria-list desk-metric-list' },
+        metricRow('Heartbeat', liveStatus.heartbeat_at ? formatTimestamp(liveStatus.heartbeat_at) : 'unknown'),
+        metricRow('Last completed cycle', liveStatus.last_completed_cycle_at ? formatTimestamp(liveStatus.last_completed_cycle_at) : 'unknown'),
+        metricRow('Configured tools', liveStatus.configured_tools.length ? liveStatus.configured_tools.join(' | ') : 'none'),
+        metricRow('Last ping', liveStatus.last_ping_at ? `${liveStatus.last_ping_status || 'unknown'} @ ${formatTimestamp(liveStatus.last_ping_at)}` : (liveStatus.mcp_configured ? 'not yet recorded' : 'not configured')),
+        metricRow('Last MCP call', liveStatus.last_call_at ? `${liveStatus.last_call_tool || 'unknown'} | ${liveStatus.last_call_status || 'unknown'} @ ${formatTimestamp(liveStatus.last_call_at)}` : 'not yet recorded'),
+        metricRow('Last QA gate source', liveStatus.last_qa_gate_source || 'unknown'),
+        metricRow('Freshness', liveStatus.freshness || 'unknown'),
+      ),
+      liveStatus.notes.length
+        ? h('ul', { className: 'signal-list compact' }, liveStatus.notes.slice(0, 4).map((note, index) => h('li', { key: `${section.id}-note-${index}` }, note)))
+        : h('div', { className: 'signal-empty muted' }, 'No proof-of-life notes recorded yet.'),
+    );
+  }
+  if (section.kind === 'qa-operator') {
+    const lead = normalizeQALeadRunnerPayload(section.lead || section.qaLead || null);
+    const liveStatus = normalizeQAMcpLiveStatusPayload(lead.live_status || null);
+    const metricRow = (label, value) => h('div', { className: 'criteria-row' }, h('span', null, label), h('span', { className: 'muted' }, value));
+    const statusTone = lead.status === 'live'
+      ? 'good'
+      : (['degraded', 'offline', 'stale'].includes(lead.status) ? 'bad' : 'neutral');
+    return h('div', {
+      key: section.id,
+      className: `inspector-block panel-card qa-operator-panel status-${lead.status || 'idle'}`,
+      'data-qa': 'qa-operator',
+    },
+      h('div', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.summary || lead.summary || 'QA lead automation is not running yet.'),
+        ),
+        h('div', { className: 'qa-metric-pill-row' },
+          h('span', { className: `qa-metric-pill tone-${statusTone}` }, lead.status || 'idle'),
+          h('span', { className: `qa-metric-pill tone-${lead.active_tools.length ? 'good' : 'neutral'}` }, lead.active_tools.length ? `${lead.active_tools.length} tools` : 'No tools'),
+          h('span', { className: `qa-metric-pill tone-${liveStatus.using_mcp_for_qa_decisions ? 'good' : 'neutral'}` }, liveStatus.using_mcp_for_qa_decisions ? 'MCP gating' : 'Read-only'),
+        ),
+      ),
+      h('div', { className: 'criteria-list desk-metric-list' },
+        metricRow('Current task', lead.current_task || 'QA lead automation idle.'),
+        metricRow('Batch', lead.current_batch || lead.id || 'unknown'),
+        metricRow('Last completed cycle', lead.last_completed_cycle_at ? formatTimestamp(lead.last_completed_cycle_at) : 'unknown'),
+        metricRow('Started at', lead.started_at ? formatTimestamp(lead.started_at) : 'unknown'),
+        metricRow('Finished at', lead.finished_at ? formatTimestamp(lead.finished_at) : 'unknown'),
+        metricRow('Result paths', Object.keys(lead.result_paths || {}).length ? Object.values(lead.result_paths).filter(Boolean).join(' | ') : 'No result paths recorded yet.'),
+        metricRow('Active tools', lead.active_tools.length ? lead.active_tools.join(' | ') : 'none'),
+        metricRow('Live gate source', liveStatus.last_qa_gate_source || 'unknown'),
+      ),
+      lead.failure_reason ? h('div', { className: 'signal-meta error' }, lead.failure_reason) : null,
+      lead.output_feed.length
+        ? h('div', { className: 'signal-meta muted' }, `Latest output feed is available in the QA Output Feed section and executor read-only surfaces.`)
+        : h('div', { className: 'signal-empty muted' }, 'No QA output feed has been captured yet.'),
+    );
+  }
+  if (section.kind === 'qa-output-feed') {
+    const feed = normalizeRenderList(section.feed || section.items || []).map((item) => normalizeQALeadFeedItem(item));
+    return h('details', {
+      key: section.id,
+      className: 'inspector-block panel-card qa-output-feed-panel',
+      open: Boolean(section.defaultOpen),
+      'data-qa': 'qa-output-feed',
+    },
+      h('summary', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.summary || section.emptyState || 'QA output feed is empty until the lead run completes.'),
+        ),
+        h('div', { className: 'qa-metric-pill-row' },
+          h('span', { className: 'qa-metric-pill tone-neutral' }, `Items ${feed.length}`),
+          h('span', { className: `qa-metric-pill tone-${feed.some((item) => ['degraded', 'blocked', 'fail', 'failed', 'error'].includes(String(item.status || '').toLowerCase())) ? 'bad' : 'good'}` }, feed.some((item) => ['degraded', 'blocked', 'fail', 'failed', 'error'].includes(String(item.status || '').toLowerCase())) ? 'Has failures' : 'Healthy'),
+        ),
+      ),
+      feed.length
+        ? h('div', { className: 'desk-panel-list utility-list qa-output-feed-list' },
+            feed.slice(0, 8).map((item, index) => h('details', {
+              key: item.id || `${section.id}-${index}`,
+              className: `desk-panel-item utility-card qa-output-feed-card status-${item.status || 'unknown'}`,
+            },
+              h('summary', { className: 'inline review-header' },
+                h('div', null,
+                  h('div', { className: 'signal-summary' }, item.label || item.tool || 'QA tool result'),
+                  h('div', { className: 'signal-meta muted' }, `${item.tool || 'qa_tool'} | ${item.verdict || item.status || 'unknown'}`),
+                ),
+                h('span', { className: `qa-metric-pill tone-${['validated', 'available', 'pass'].includes(String(item.verdict || item.status || '').toLowerCase()) ? 'good' : (['degraded', 'blocked', 'fail', 'failed', 'error', 'unavailable'].includes(String(item.verdict || item.status || '').toLowerCase()) ? 'bad' : 'neutral')}` }, item.verdict || item.status || 'unknown'),
+              ),
+              h('div', { className: 'signal-meta muted' }, item.summary || 'No summary recorded.'),
+              item.detail ? h('div', { className: 'signal-meta muted' }, item.detail) : null,
+              item.observed_at ? h('div', { className: 'signal-meta muted' }, `Observed: ${formatTimestamp(item.observed_at)}`) : null,
+              item.artifact_refs?.length
+                ? h('div', { className: 'signal-meta muted' }, `Artifacts: ${item.artifact_refs.slice(0, 4).join(' | ')}`)
+                : null,
+              item.notes?.length
+                ? h('ul', { className: 'signal-list compact' }, item.notes.slice(0, 4).map((note, noteIndex) => h('li', { key: `${item.id || 'qa-feed'}-note-${noteIndex}` }, note)))
+                : null,
+            ))),
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No QA output feed is available yet.'),
+    );
+  }
+  if (section.kind === 'qa-canaries') {
+    const canaries = normalizeQALaneCanaryStatePayload(section.canaries || {});
+    const resultTone = (result) => (result.status === 'pass' ? 'good' : 'bad');
+    return h('details', {
+      key: section.id,
+      className: 'inspector-block panel-card qa-canaries-panel',
+      open: Boolean(section.defaultOpen),
+      'data-qa': 'qa-canaries',
+    },
+      h('summary', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.summary || canaries.summary || section.emptyState || 'No QA lane canary results are recorded yet.'),
+        ),
+        h('div', { className: 'qa-metric-pill-row' },
+          h('span', { className: `qa-metric-pill tone-${canaries.overall_status === 'pass' ? 'good' : (canaries.overall_status === 'fail' ? 'bad' : 'neutral')}` }, canaries.overall_status || 'idle'),
+          h('span', { className: 'qa-metric-pill tone-neutral' }, `Passed ${canaries.passed_count || 0}`),
+          h('span', { className: `qa-metric-pill tone-${Number(canaries.failed_count || 0) > 0 ? 'bad' : 'neutral'}` }, `Failed ${canaries.failed_count || 0}`),
+        ),
+      ),
+      canaries.results.length
+        ? h('div', { className: 'desk-panel-list utility-list qa-canary-list' },
+            canaries.last_run_at ? h('div', { className: 'signal-meta muted' }, `Last run: ${formatTimestamp(canaries.last_run_at)}`) : null,
+            canaries.results.map((result) => h('details', {
+              key: result.canary_id || result.label,
+              className: `desk-panel-item utility-card qa-canary-card status-${result.status || 'fail'}`,
+            },
+              h('summary', { className: 'inline review-header' },
+                h('div', null,
+                  h('div', { className: 'signal-summary' }, result.label || result.canary_id || 'Lane Canary'),
+                  h('div', { className: 'signal-meta muted' }, `${result.target_lane_label || result.target_lane_id || 'unknown lane'} | ${result.owner_department || 'QA'}`),
+                ),
+                h('div', { className: 'qa-metric-pill-row' },
+                  h('span', { className: `qa-metric-pill tone-${resultTone(result)}` }, result.status || 'fail'),
+                  h('span', { className: 'qa-metric-pill tone-neutral' }, result.policy_outcome || 'policy'),
+                  h('span', { className: 'qa-metric-pill tone-neutral' }, result.validation_status || 'validation'),
+                ),
+              ),
+              h('div', { className: 'criteria-list desk-metric-list' },
+                h('div', { className: 'criteria-row' }, h('span', null, 'Trigger'), h('span', { className: 'muted' }, result.trigger || 'unknown')),
+                h('div', { className: 'criteria-row' }, h('span', null, 'Scope'), h('span', { className: 'muted' }, result.scoped_targets_summary || 'No scope summary surfaced.')),
+                h('div', { className: 'criteria-row' }, h('span', null, 'Validation gates'), h('span', { className: 'muted' }, result.required_validation_gate_ids.length ? result.required_validation_gate_ids.join(' | ') : 'none declared')),
+              ),
+              result.latest_validation_summary ? h('div', { className: 'signal-meta muted' }, `Latest validation: ${result.latest_validation_summary}`) : null,
+              result.checked_at ? h('div', { className: 'signal-meta muted' }, `Checked at: ${formatTimestamp(result.checked_at)}`) : null,
+              result.notes.length
+                ? h('ul', { className: 'signal-list compact' }, result.notes.slice(0, 4).map((note, index) => h('li', { key: `${result.canary_id || 'canary'}-note-${index}` }, note)))
+                : null,
+            )),
+          )
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No QA lane canary results are recorded yet.'),
+    );
+  }
   if (section.kind === 'qa-structured') {
     const report = section.report || null;
     return h('div', { key: section.id, className: 'inspector-block panel-card review-panel' },
@@ -3013,17 +3974,166 @@ function renderDeskSection(rawSection, helpers = {}) {
     );
   }
   if (section.kind === 'qa-scorecards') {
-    return h('div', { key: section.id, className: 'inspector-block panel-card' },
-      h('div', { className: 'inspector-label' }, section.label),
-      section.suiteSummary ? h('div', { className: 'signal-summary' }, section.suiteSummary) : null,
-      (section.cards || []).length
-        ? h('div', { className: 'desk-panel-list' }, section.cards.slice(0, 6).map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item' },
-            h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
-            h('div', { className: 'signal-meta muted' }, `Status: ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
-            card.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace.freshnessClass)}`) : null,
+    const cards = normalizeRenderList(section.cards);
+    return h('details', {
+      key: section.id,
+      className: 'inspector-block panel-card qa-scorecards-panel',
+      open: Boolean(section.defaultOpen),
+      'data-qa': 'qa-scorecards',
+    },
+      h('summary', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.suiteSummary || section.emptyState || 'No structured QA scorecards recorded yet.'),
+        ),
+        h('div', { className: 'qa-metric-pill-row' },
+          h('span', { className: 'qa-metric-pill tone-neutral' }, `Tests ${Number(section.meta?.testCount || cards.length || 0)}`),
+          h('span', { className: 'qa-metric-pill tone-neutral' }, `Desks ${Number(section.meta?.deskCount || 0)}`),
+        ),
+      ),
+      cards.length
+        ? h('div', { className: 'desk-panel-list utility-list qa-scorecard-list' }, cards.slice(0, 6).map((card) => h('details', {
+            key: card.id || `${card.desk}-${card.testId}`,
+            className: `desk-panel-item utility-card qa-scorecard-card status-${card.status || 'pass'}`,
+          },
+            h('summary', { className: 'inline review-header' },
+              h('div', null,
+                h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
+                h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+              ),
+              h('span', { className: `qa-metric-pill tone-${card.status === 'pass' ? 'good' : (card.status === 'fail' ? 'bad' : 'neutral')}` }, card.status || 'pass'),
+            ),
+            h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace?.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace?.freshnessClass)}`),
+            card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
             card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
+            card.validation?.issues?.length
+              ? h('ul', { className: 'signal-list compact' }, card.validation.issues.slice(0, 4).map((issue, index) => h('li', { key: `${card.id || 'scorecard'}-issue-${index}` }, issue)))
+              : null,
           )))
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No structured QA scorecards recorded yet.'),
+    );
+  }
+  if (section.kind === 'qa-investigations') {
+    return renderQAInvestigationInboxBlock(section.items || section.investigations || []);
+  }
+  if (section.kind === 'qa-repair-lanes') {
+    const lanes = normalizeQARepairLanePayloadList(section.lanes || []);
+    const repairLoopSummary = normalizeRenderObject(section.repairLoopSummary);
+    const metricRow = (label, value) => h('div', { className: 'criteria-row' }, h('span', null, label), h('span', { className: 'muted' }, value));
+    const outcomeMeta = (lane) => {
+      if (lane.outcome_status === 'policy_blocked') return { label: 'Policy blocked', tone: 'bad' };
+      if (lane.outcome_status === 'safe_stop') return { label: 'Safe stop', tone: 'warn' };
+      if (lane.outcome_status === 'validation_failed') return { label: 'Validation failed', tone: 'warn' };
+      if (lane.outcome_status === 'success') return { label: 'Success', tone: 'good' };
+      if (lane.current_status === 'active') return { label: 'Active', tone: 'neutral' };
+      if (lane.current_status === 'watching') return { label: 'Watching', tone: 'neutral' };
+      return { label: 'Idle', tone: 'neutral' };
+    };
+    return h('details', {
+      key: section.id,
+      className: 'inspector-block panel-card qa-repair-lanes-panel',
+      open: Boolean(section.defaultOpen),
+      'data-qa': 'qa-repair-lanes',
+    },
+      h('summary', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.summary || section.emptyState || 'No active or recent repair lanes are recorded yet.'),
+        ),
+        h('div', { className: 'qa-metric-pill-row' },
+          h('span', { className: 'qa-metric-pill tone-neutral' }, `Visible ${lanes.length}`),
+          h('span', { className: `qa-metric-pill tone-${Number(repairLoopSummary.blockedLanes || 0) > 0 ? 'bad' : 'neutral'}` }, `Blocked ${Number(repairLoopSummary.blockedLanes || 0)}`),
+          h('span', { className: `qa-metric-pill tone-${Number(repairLoopSummary.activeLanes || 0) > 0 ? 'warn' : 'neutral'}` }, `Active ${Number(repairLoopSummary.activeLanes || 0)}`),
+        ),
+      ),
+      lanes.length
+        ? h('div', { className: 'desk-panel-list utility-list qa-repair-lane-list' }, lanes.map((lane) => {
+            const outcome = outcomeMeta(lane);
+            const statusTone = lane.current_status === 'blocked'
+              ? 'bad'
+              : (lane.current_status === 'stalled'
+                  ? 'warn'
+                  : (lane.current_status === 'healthy' ? 'good' : 'neutral'));
+            return h('details', {
+              key: lane.lane_id || lane.label,
+              className: `desk-panel-item utility-card qa-repair-lane-card status-${lane.current_status || 'idle'} outcome-${lane.outcome_status || 'idle'}`,
+            },
+              h('summary', { className: 'inline review-header' },
+                h('div', null,
+                  h('div', { className: 'signal-summary' }, lane.label || lane.lane_id || 'Repair lane'),
+                  h('div', { className: 'signal-meta muted' }, `${lane.lane_id || 'unknown lane'} | ${lane.owner_department || 'QA'}`),
+                ),
+                h('div', { className: 'qa-metric-pill-row' },
+                  h('span', { className: `qa-metric-pill tone-${outcome.tone}` }, outcome.label),
+                  h('span', { className: `qa-metric-pill tone-${statusTone}` }, lane.current_status || 'idle'),
+                  h('span', { className: `qa-metric-pill tone-${lane.auto_apply_allowed ? 'good' : 'bad'}` }, lane.auto_apply_allowed ? 'Auto-apply allowed' : 'Auto-apply blocked'),
+                  h('span', { className: 'qa-metric-pill tone-neutral' }, `Trust ${lane.trust_level || 'unknown'}`),
+                ),
+              ),
+              h('div', { className: 'criteria-list desk-metric-list' },
+                metricRow('Triggers', lane.allowed_trigger_classes.length ? lane.allowed_trigger_classes.join(' | ') : 'unknown'),
+                metricRow('Scope', lane.scoped_targets_summary || (lane.scoped_targets.length ? `${lane.scoped_targets.length} targets` : 'No scoped targets surfaced.')),
+                metricRow('Retry budget', `${lane.retry_budget || 0}`),
+                metricRow('Validation gates', lane.required_validation_gate_ids.length ? lane.required_validation_gate_ids.join(' | ') : 'none declared'),
+                metricRow('Attempt count', `${lane.attempt_count || 0}`),
+                metricRow('Blocked count', `${lane.blocked_count || 0}`),
+                metricRow('Open investigations', `${lane.open_investigations || 0}`),
+                metricRow('Latest validation', lane.latest_validation_result || lane.latest_job_status || 'none'),
+              ),
+              lane.trust_reason ? h('div', { className: 'signal-meta muted' }, `Trust reason: ${lane.trust_reason}`) : null,
+              lane.latest_policy_block_reason ? h('div', { className: 'signal-meta error' }, `Policy block: ${lane.latest_policy_block_reason}`) : null,
+              lane.latest_stop_reason && lane.latest_stop_reason !== lane.latest_policy_block_reason
+                ? h('div', { className: 'signal-meta muted' }, `Latest stop / validation: ${lane.latest_stop_reason}`)
+                : null,
+              lane.latest_attempt_at ? h('div', { className: 'signal-meta muted' }, `Latest attempt: ${formatTimestamp(lane.latest_attempt_at)}`) : null,
+              lane.scoped_targets.length
+                ? h('div', { className: 'signal-meta muted' }, `Scoped targets: ${lane.scoped_targets.join(' | ')}`)
+                : null,
+            );
+          }))
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No active or recent repair lanes are recorded yet.'),
+    );
+  }
+  if (section.kind === 'qa-research') {
+    const notes = normalizeRenderList(section.notes);
+    const researchState = normalizeRenderObject(section.researchState);
+    return h('details', {
+      key: section.id,
+      className: 'inspector-block panel-card qa-research-panel',
+      open: Boolean(section.defaultOpen),
+      'data-qa': 'qa-research',
+    },
+      h('summary', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.summary || section.emptyState || 'No advisory research notes recorded yet.'),
+        ),
+        h('div', { className: 'qa-metric-pill-row' },
+          h('span', { className: 'qa-metric-pill tone-neutral' }, `Notes ${notes.length}`),
+          h('span', { className: 'qa-metric-pill tone-neutral' }, researchState?.summary?.availableNotes != null ? `Available ${researchState.summary.availableNotes}` : 'Advisory'),
+        ),
+      ),
+      notes.length
+        ? h('div', { className: 'desk-panel-list utility-list qa-research-list' }, notes.slice(0, 6).map((note, index) => h('details', {
+            key: note.id || `${section.id}-note-${index}`,
+            className: `desk-panel-item utility-card qa-research-card status-${note.status || 'available'}`,
+          },
+            h('summary', { className: 'inline review-header' },
+              h('div', null,
+                h('div', { className: 'signal-summary' }, note.summary || 'Research note'),
+                h('div', { className: 'signal-meta muted' }, note.recommendation || note.error_message || 'Advisory only.'),
+              ),
+              h('span', { className: `qa-metric-pill tone-${note.research_available ? 'good' : (note.status === 'unavailable' ? 'warn' : 'neutral')}` }, note.research_available ? 'available' : (note.status || 'unknown')),
+            ),
+            note.created_at ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(note.created_at)}`) : null,
+            note.query ? h('div', { className: 'signal-meta muted' }, `Query: ${note.query}`) : null,
+            note.likely_causes?.length ? h('div', { className: 'signal-meta muted' }, `Likely causes: ${note.likely_causes.slice(0, 4).join(' | ')}`) : null,
+            note.suggested_extra_checks?.length ? h('div', { className: 'signal-meta muted' }, `Extra checks: ${note.suggested_extra_checks.slice(0, 4).join(' | ')}`) : null,
+            note.suggested_scorecard_additions?.length ? h('div', { className: 'signal-meta muted' }, `Scorecard additions: ${note.suggested_scorecard_additions.slice(0, 4).join(' | ')}`) : null,
+            note.sources?.length ? h('div', { className: 'signal-meta muted' }, `Sources: ${note.sources.map((source) => source.url || source.source_url || source.title || 'source').join(' | ')}`) : null,
+            note.error_message ? h('div', { className: 'signal-meta error' }, note.error_message) : null,
+          )))
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No advisory research notes recorded yet.'),
     );
   }
   if (section.kind === 'qa-browser') {
@@ -3443,6 +4553,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const [ctoChatBusy, setCtoChatBusy] = useState(false);
   const [ctoChatHistory, setCtoChatHistory] = useState([]);
   const [ctoChatStatus, setCtoChatStatus] = useState(() => buildDefaultCtoChatStatus());
+  const [canonicalIntake, setCanonicalIntake] = useState(EMPTY_CANONICAL_INTAKE_STATE);
 
   const canvasRef = useRef(null);
   const studioRef = useRef(null);
@@ -3574,6 +4685,8 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   );
   const currentCanonicalIntentRecord = getCurrentIntentRecord(intentState);
   const currentFieldInfluence = currentCanonicalIntentRecord?.fieldInfluence || null;
+  const latestCanvasIntakeRecord = getLatestCanonicalIntakeRecord(canonicalIntake, 'canvas_text');
+  const latestCtoIntakeRecord = getLatestCanonicalIntakeRecord(canonicalIntake, 'cto_prompt');
 
   const workspacePayload = useMemo(() => ({
     graph: systemGraph,
@@ -4001,6 +5114,9 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
         })),
         source: scene === SCENES.STUDIO ? 'studio-cto-utility' : 'canvas-cto-utility',
       });
+      if (response?.intakeState) {
+        setCanonicalIntake(normalizeCanonicalIntakeState(response.intakeState));
+      }
       const backendStatus = response?.backendStatus || {};
       setCtoChatStatus({
         status: normalizeCtoChatStatus(backendStatus?.status || response?.status || 'live'),
@@ -4025,6 +5141,9 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       }].slice(-12));
     } catch (error) {
       const payload = error?.payload || {};
+      if (payload?.intakeState) {
+        setCanonicalIntake(normalizeCanonicalIntakeState(payload.intakeState));
+      }
       const backendStatus = payload?.backendStatus || {};
       setCtoChatStatus({
         status: normalizeCtoChatStatus(payload?.status || backendStatus?.status || 'offline'),
@@ -4441,6 +5560,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       });
       setSelfUpgradeTaskId(storedStudio.selfUpgrade?.taskId || '');
       setStudioLayout(normalizeStudioLayout(storedStudio.layout));
+      setCanonicalIntake(normalizeCanonicalIntakeState(storedStudio.intake));
       const contextNode = (graphs.system?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
       const storedIntentState = workspace.intentState || EMPTY_INTENT_STATE;
       const storedGhostProjections = buildGhostProjectionRegistryPayload(
@@ -4467,6 +5587,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       setNormalizedGraphBundlePresent(false);
       activeCanvasIntentTraceId.current = null;
       setCanvasIntentRunState(EMPTY_CANVAS_INTENT_RUN_STATE);
+      setCanonicalIntake(EMPTY_CANONICAL_INTAKE_STATE);
       setGhostProjectionState(EMPTY_GHOST_PROJECTION_REGISTRY);
       mutationEngine.setGhostProjectionRegistry(EMPTY_GHOST_PROJECTION_REGISTRY);
       hasLoadedWorkspace.current = true;
@@ -5123,6 +6244,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     rsg: workspace.rsg || createDefaultRsgState(),
     mutationGate: normalizeMutationGateState(workspace.mutationGate || mutationGate),
     qaState,
+    intake: normalizeCanonicalIntakeState(workspace.studio?.intake),
   });
 
   const syncGraphState = () => setGraph({ ...graphEngine.getState() });
@@ -5280,6 +6402,9 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       contextToPlanner: runtime.handoffs?.contextToPlanner || null,
       history: Array.isArray(runtime.handoffs?.history) ? runtime.handoffs.history : [],
     });
+    if (runtime.intake) {
+      setCanonicalIntake(normalizeCanonicalIntakeState(runtime.intake));
+    }
     setTeamBoard(normalizeTeamBoardState({
       studio: {
         teamBoard: runtime.teamBoard || EMPTY_TEAM_BOARD,
@@ -5447,6 +6572,9 @@ function syncRecentWorldChange(change = null) {
         },
         trace_id: trace.trace_id,
       });
+      if (response?.intakeState) {
+        setCanonicalIntake(normalizeCanonicalIntakeState(response.intakeState));
+      }
       if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
       const tracedResponse = attachTraceId(response, trace.trace_id);
       setExecutiveResult(tracedResponse);
@@ -5607,6 +6735,9 @@ function syncRecentWorldChange(change = null) {
       setStatus(`${forceIntentScan ? 'debug scan' : 'primary route'} | ${Math.round((report.confidence || 0) * 100)}% confidence | ${(report.tasks || []).length} intent items | planner brief ${handoff?.status || 'updated'}`);
     } catch (error) {
       const routePayload = attachTraceId(error?.payload, trace.trace_id);
+      if (routePayload?.intakeState) {
+        setCanonicalIntake(normalizeCanonicalIntakeState(routePayload.intakeState));
+      }
       if (routePayload?.route === 'world-scaffold') {
         if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
         addTraceStep(trace, 'intent_object', routePayload.intent || null);
@@ -6552,7 +7683,23 @@ function syncRecentWorldChange(change = null) {
               h('div', { className: 'team-board-card-title' }, card.title),
               h('div', { className: 'team-board-card-meta muted' }, card.state || 'Ready'),
               h('div', { className: 'team-board-card-meta muted' }, resolvePageTitle(card.pageId)),
+              (card.sourceIntakeId || card.sourceIntentId || card.sourceHandoffId)
+                ? h('div', { className: 'team-board-card-meta muted' }, [
+                    card.sourceIntakeId ? `Intake ${card.sourceIntakeId}` : null,
+                    card.sourceIntentId ? `Intent ${card.sourceIntentId}` : null,
+                    card.sourceHandoffId ? `Handoff ${card.sourceHandoffId}` : null,
+                  ].filter(Boolean).join(' | '))
+                : null,
+              (card.taskFlow?.ownerDeskId || card.taskFlow?.assigneeDeskId)
+                ? h('div', { className: 'team-board-card-meta muted' }, `Owner ${card.taskFlow?.ownerDeskId || 'planner'} → Next ${card.taskFlow?.assigneeDeskId || 'executor'}`)
+                : null,
               taskId ? h('div', { className: 'team-board-card-meta muted' }, `Task ${taskId}`) : null,
+              card.executionState?.status && card.executionState.status !== 'not_requested'
+                ? h('div', { className: 'team-board-card-meta muted' }, `Execution ${card.executionState.status} | Diff ${card.executionState.diff?.status || 'missing'}`)
+                : null,
+              (card.executorBlocker?.summary || card.executorBlocker?.message)
+                ? h('div', { className: 'team-board-card-meta muted' }, `Blocked ${card.executorBlocker.summary || card.executorBlocker.message}`)
+                : null,
               card.riskLevel && card.riskLevel !== 'unknown' ? h('div', { className: 'team-board-card-meta muted' }, `Risk ${card.riskLevel}`) : null,
               card.applyStatus && card.applyStatus !== 'idle' ? h('div', { className: 'team-board-card-meta muted' }, `Apply ${card.applyStatus}`) : null,
               card.deployStatus && card.deployStatus !== 'idle' ? h('div', { className: 'team-board-card-meta muted' }, `Deploy ${card.deployStatus}`) : null,
@@ -6724,72 +7871,16 @@ function syncRecentWorldChange(change = null) {
 
   const renderQAWorkbenchPanel = () => {
     const qaDesk = getDeskPayload('qa-lead');
+    const qaSections = buildQAReadableSectionsFromState(qaState);
     return h('div', { className: 'inspector-block panel-card review-panel browser-pass-panel', 'data-qa': 'qa-desk-summary' },
-    h('div', { className: 'inspector-label' }, 'QA Workbench'),
-    h('div', { className: 'signal-meta muted' }, 'QA is an observer role: review evidence, flag stale tests, and audit process gaps. Execution and overrides stay with the CTO path.'),
-    h('div', { className: 'signal-summary' }, qaState.structuredBusy
-      ? 'Structured QA suite is running...'
-      : qaState.browserBusy
-        ? 'Browser QA is running...'
-        : (qaState.structuredReport?.summary || qaState.localGate?.unit?.summary || latestQARun?.summary || 'Audit QA evidence freshness and provenance here.')),
-    qaState.evidenceSummary ? h('div', { className: 'signal-meta muted' }, `Evidence freshness: ${qaState.evidenceSummary.liveCanonical || 0} live canonical | ${qaState.evidenceSummary.derivedCurrent || 0} derived current | ${qaState.evidenceSummary.stale || 0} stale | ${qaState.evidenceSummary.missing || 0} missing | ${qaState.evidenceSummary.nonExecutable || 0} non-executable`) : null,
-    qaDesk?.desk?.panel ? renderDeskPanelMetadata(qaDesk.desk.panel) : null,
-    qaState.auditTrail?.summary ? renderQAAuditTrailSummary(qaState.auditTrail) : null,
-    qaState.auditTrail?.entries?.length
-      ? h('div', { className: 'desk-panel-item' },
-          h('div', { className: 'signal-summary' }, `Audit of QA (${qaState.auditTrail.entries.length})`),
-          h('div', { className: 'signal-meta muted' }, 'Read-only provenance and mismatch audit for QA outputs.'),
-          renderQAAuditTrailList(qaState.auditTrail),
-        )
-      : h('div', { className: 'signal-empty muted' }, 'No QA audit trail is recorded yet.'),
-    qaState.testRegistry?.summary ? renderQATestRegistrySummary(qaState.testRegistry.summary) : null,
-    qaState.testRegistry?.entries?.length
-      ? h('div', { className: 'desk-panel-item' },
-          h('div', { className: 'signal-summary' }, `QA Test Registry (${qaState.testRegistry.entries.length})`),
-          h('div', { className: 'signal-meta muted' }, 'Canonical source/module/runtime view of QA checks, owners, and validity states.'),
-          renderQATestRegistryList(qaState.testRegistry),
-        )
-      : h('div', { className: 'signal-empty muted' }, 'No QA tests are registered yet.'),
-    h('div', { className: 'signal-meta muted' }, qaState.localGate?.unit
-      ? `Unit gate: ${qaState.localGate.unit.status || 'pending'} | ${qaState.localGate.unit.passedCount || 0}/${qaState.localGate.unit.totalChecks || 0} checks passed`
-      : 'No local unit gate summary recorded yet.'),
-    h('div', { className: 'signal-meta muted' }, qaState.localGate?.studioBoot
-      ? `Studio boot: ${qaState.localGate.studioBoot.verdict || qaState.localGate.studioBoot.status || 'pending'} | findings ${qaState.localGate.studioBoot.findingCount || 0}`
-      : 'No studio boot guardrail result recorded yet.'),
-    (qaState.evidenceSources || []).length
-      ? h('div', { className: 'desk-panel-list' }, qaState.evidenceSources.map((source, index) => renderQAEvidenceSource(source, { key: `qa-workbench-evidence-${index}` })))
-      : h('div', { className: 'signal-empty muted' }, 'No QA evidence sources recorded yet.'),
-    latestQARun
-      ? h(React.Fragment, null,
-          h('div', { className: 'signal-summary' }, `${latestQARun.scenario || 'layout-pass'} | ${latestQARun.verdict || latestQARun.status || 'pending'}`),
-          h('div', { className: 'signal-meta muted' }, `Trigger: ${latestQARun.trigger || 'manual'} | Findings: ${(latestQARun.findings || []).length || latestQARun.findingCount || 0}`),
-          latestQARun.primaryScreenshot?.url || latestQARun.artifacts?.screenshots?.[0]?.url
-            ? h('img', {
-                className: 'qa-screenshot-preview',
-                alt: 'Latest ACE browser pass screenshot',
-                src: latestQARun.primaryScreenshot?.url || latestQARun.artifacts?.screenshots?.[0]?.url,
-              })
-            : null,
-          (latestQARun.findings || []).length
-            ? h('div', { className: 'qa-findings-list' }, latestQARun.findings.slice(0, 6).map((finding, index) => h('button', {
-              key: `${finding.id || 'finding'}-${index}`,
-              className: `qa-finding severity-${finding.severity || 'info'}`,
-              type: 'button',
-              onClick: () => {
-                if (finding.relatedDeskIds?.[0]) {
-                  focusStudioAgent(finding.relatedDeskIds[0]);
-                } else {
-                  setScene(SCENES.STUDIO);
-                }
-              },
-              title: finding.details || finding.summary,
-            }, `${finding.summary}`)))
-            : h('div', { className: 'signal-empty muted' }, 'No browser-pass findings recorded yet.'),
-          (latestQARun.steps || latestQARun.stepSummary || []).length
-            ? h('div', { className: 'qa-step-list' }, (latestQARun.steps || latestQARun.stepSummary || []).map((step) => h('div', { key: step.id, className: 'qa-step-row muted' }, `${step.label}: ${step.verdict || step.status}`)))
-            : null,
-        )
-      : h('div', { className: 'signal-empty muted' }, 'No browser pass has been recorded yet.'),
+      h('div', { className: 'inspector-label' }, 'QA Workbench'),
+      h('div', { className: 'signal-meta muted' }, 'QA lead is a live automated operator: it runs MCP-backed scans, tests, audits, and evidence capture. Outputs stay read-only downstream.'),
+      qaDesk?.desk?.panel ? renderDeskPanelMetadata(qaDesk.desk.panel) : null,
+      h('div', { className: 'desk-panel-list qa-readable-sections' }, qaSections.map((section) => renderDeskSection(section, {
+        focusCanvasNode: (nodeId) => focusStudioAgent(nodeId),
+        openQARun: (runId) => loadQARunDetails(runId),
+      }))),
+      latestQARun ? h('div', { className: 'signal-meta muted' }, `Latest browser run: ${latestQARun.scenario || 'layout-pass'} | ${latestQARun.verdict || latestQARun.status || 'pending'} | findings ${(latestQARun.findings || []).length || latestQARun.findingCount || 0}`) : null,
     );
   };
 
@@ -6834,6 +7925,7 @@ function syncRecentWorldChange(change = null) {
 
   const renderTruthMetricRows = (truth = {}, focusSummary = null) => {
     const workload = truth?.workload && typeof truth.workload === 'object' ? truth.workload : {};
+    const ctoOversight = truth?.ctoOversight && typeof truth.ctoOversight === 'object' ? truth.ctoOversight : null;
     const reports = normalizeDeskEntries(truth?.reports);
     const scorecards = normalizeDeskEntries(truth?.scorecards);
     const assessments = normalizeDeskEntries(truth?.assessments);
@@ -6851,9 +7943,18 @@ function syncRecentWorldChange(change = null) {
       h('div', { className: 'criteria-row' }, h('span', null, 'Throughput'), h('span', { className: 'muted' }, truth?.throughput || 'n/a')),
       h('div', { className: 'criteria-row' }, h('span', null, 'Reports'), h('span', { className: 'muted' }, String(reports.length))),
       h('div', { className: 'criteria-row' }, h('span', null, 'Scorecards'), h('span', { className: 'muted' }, String(scorecards.length))),
+      ctoOversight ? h('div', { className: 'criteria-row' }, h('span', null, 'Approval-needed items'), h('span', { className: 'muted' }, String(ctoOversight.approvalNeededCount || 0))) : null,
+      ctoOversight ? h('div', { className: 'criteria-row' }, h('span', null, 'Completed artefacts'), h('span', { className: 'muted' }, String(ctoOversight.completedArtifactCount || 0))) : null,
+      ctoOversight ? h('div', { className: 'criteria-row' }, h('span', null, 'Latest canonical event'), h('span', { className: 'muted' }, ctoOversight.latestActivityAt || 'n/a')) : null,
       h('div', { className: 'criteria-row' }, h('span', null, 'Assessments'), h('span', { className: 'muted' }, String(assessments.length))),
       h('div', { className: 'criteria-row' }, h('span', null, 'Context'), h('span', { className: 'muted' }, describeDeskValue(truth?.context) || 'n/a')),
       h('div', { className: 'criteria-row' }, h('span', null, 'Guardrails'), h('span', { className: 'muted' }, String(guardrails.length))),
+      ctoOversight?.approvalNeededItems?.length
+        ? h('div', { className: 'criteria-row' }, h('span', null, 'Approval queue'), h('span', { className: 'muted' }, ctoOversight.approvalNeededItems.map((item) => `${item.title} @ ${item.requestedAt || 'n/a'}`).join(' | ')))
+        : null,
+      ctoOversight?.completedArtifacts?.length
+        ? h('div', { className: 'criteria-row' }, h('span', null, 'Archived outcomes'), h('span', { className: 'muted' }, ctoOversight.completedArtifacts.map((item) => `${item.title} @ ${item.archivedAt || item.diffPath || 'n/a'}`).join(' | ')))
+        : null,
     );
   };
 
@@ -7075,6 +8176,18 @@ function syncRecentWorldChange(change = null) {
         ),
         h('div', { className: 'signal-meta muted' }, ctoChatStatus.detail || 'The panel reports local-model health honestly.'),
         h('div', { className: 'signal-meta muted' }, taSummary),
+        latestCtoIntakeRecord ? h('div', { className: 'desk-panel-item utility-card' },
+          h('div', { className: 'signal-summary' }, 'Canonical intake acknowledgement'),
+          h('div', { className: 'signal-meta muted' }, latestCtoIntakeRecord.acknowledgement?.summary || 'Canonical CTO intake recorded.'),
+          h('div', { className: 'signal-meta muted' }, [
+            latestCtoIntakeRecord.processingStatus || null,
+            latestCtoIntakeRecord.updatedAt ? `updated ${formatTimestamp(latestCtoIntakeRecord.updatedAt)}` : null,
+            latestCtoIntakeRecord.route || null,
+          ].filter(Boolean).join(' | ')),
+          latestCtoIntakeRecord.governedLoop?.route
+            ? h('div', { className: 'signal-meta muted' }, `Governed loop: ${latestCtoIntakeRecord.governedLoop.route}`)
+            : null,
+        ) : null,
       ),
       ctoDesk?.truth ? h('div', { className: 'utility-window-section' },
         h('div', { className: 'signal-summary' }, 'Current control-desk truth'),
@@ -7867,6 +8980,27 @@ function syncRecentWorldChange(change = null) {
         ),
         renderDeskUtilityActions(targetDeskId),
         renderDeskPanelMetadata(panelData?.desk?.panel),
+        contextDeskSnapshot?.qa ? h('div', { className: 'desk-panel-item desk-truth-summary desk-inspector-truth qa-evidence-feed', 'data-qa': 'qa-evidence-feed' },
+          h('div', { className: 'inspector-label' }, 'QA Evidence Feed'),
+          h('div', { className: 'signal-summary' }, contextDeskSnapshot.qa.summary || 'QA evidence feed available for downstream review.'),
+          h('div', { className: 'signal-meta muted' }, contextDeskSnapshot.qa.liveStatus?.summary || 'QA live status unavailable.'),
+          h('div', { className: 'criteria-list' },
+            h('div', { className: 'criteria-row' }, h('span', null, 'Live gate'), h('span', { className: 'muted' }, contextDeskSnapshot.qa.liveStatus?.status || 'unknown')),
+            h('div', { className: 'criteria-row' }, h('span', null, 'Feed items'), h('span', { className: 'muted' }, String(contextDeskSnapshot.qa.feed?.length || 0))),
+            h('div', { className: 'criteria-row' }, h('span', null, 'Last completed cycle'), h('span', { className: 'muted' }, contextDeskSnapshot.qa.lead?.last_completed_cycle_at ? formatTimestamp(contextDeskSnapshot.qa.lead.last_completed_cycle_at) : 'unknown')),
+          ),
+          contextDeskSnapshot.qa.feed?.length
+            ? h('div', { className: 'desk-panel-list utility-list qa-output-feed-list' },
+                contextDeskSnapshot.qa.feed.slice(0, 3).map((item, index) => h('div', {
+                  key: item.id || `qa-evidence-${index}`,
+                  className: `desk-panel-item utility-card qa-output-feed-card status-${item.status || 'unknown'}`,
+                },
+                  h('div', { className: 'signal-summary' }, item.label || item.tool || 'QA tool result'),
+                  h('div', { className: 'signal-meta muted' }, `${item.tool || 'qa_tool'} | ${item.verdict || item.status || 'unknown'}`),
+                  h('div', { className: 'signal-meta muted' }, item.summary || 'No summary recorded.'),
+                )))
+            : h('div', { className: 'signal-empty muted' }, 'No QA evidence feed items are available yet.'),
+        ) : null,
         targetDeskId === 'rnd-lead'
           ? h('div', { className: 'desk-panel-item desk-truth-summary desk-inspector-truth', 'data-qa': 'rnd-experiment-panel' },
               h('div', { className: 'inspector-label' }, 'R&D Experiments'),
@@ -8207,97 +9341,9 @@ function syncRecentWorldChange(change = null) {
                   h('div', { className: 'signal-summary' }, `${targetDeskLabel} truth bundle`),
                   renderTruthMetricRows(panelData.truth || {}, hierarchyModel.focusSummary),
                 ),
-                  h('div', { className: 'desk-panel-item' },
-                    h('div', { className: 'signal-summary' }, panelData.qa.structuredSummary?.summary || 'Structured QA'),
-                    h('div', { className: 'signal-meta muted' }, `Status: ${panelData.qa.structuredSummary?.status || 'idle'} | Desks ${panelData.qa.structuredSummary?.deskCount || 0} | Tests ${panelData.qa.structuredSummary?.testCount || 0}`),
-                    panelData.qa.structuredSummary?.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${panelData.qa.structuredSummary.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(panelData.qa.structuredSummary.sourceTrace.freshnessClass)}`) : null,
-                    panelData.qa.structuredSummary?.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(panelData.qa.structuredSummary.sourceTrace.observedAt)}`) : null,
-                    (panelData.qa.structuredReport?.failures || []).length
-                      ? h('ul', { className: 'signal-list compact' }, panelData.qa.structuredReport.failures.slice(0, 4).map((failure, index) => h('li', { key: `qa-structured-failure-${index}` }, `${failure.desk || 'desk'}: ${failure.test || failure.id || 'test'} | ${failure.reason || 'Needs review'}`)))
-                      : h('div', { className: 'signal-meta muted' }, 'No structured QA failures are recorded in the latest suite.'),
-                  ),
-                  panelData.qa.testRegistry?.summary ? h('div', { className: 'desk-panel-item' },
-                    h('div', { className: 'signal-summary' }, 'QA Test Registry'),
-                    h('div', { className: 'signal-meta muted' }, 'Canonical source/module/runtime view of QA tests and validity states.'),
-                    renderQATestRegistrySummary(panelData.qa.testRegistry.summary),
-                    panelData.qa.testRegistry?.generatedAt ? h('div', { className: 'signal-meta muted' }, `Registry generated: ${formatTimestamp(panelData.qa.testRegistry.generatedAt)}`) : null,
-                  ) : null,
-                panelData.qa.testRegistry?.entries?.length
-                  ? h('div', { className: 'desk-panel-item' },
-                      h('div', { className: 'signal-summary' }, `QA Tests (${panelData.qa.testRegistry.entries.length})`),
-                      renderQATestRegistryList(panelData.qa.testRegistry),
-                    )
-                  : h('div', { className: 'signal-empty muted' }, 'No QA tests are registered yet.'),
-                panelData.qa.auditTrail?.summary ? h('div', { className: 'desk-panel-item' },
-                  h('div', { className: 'signal-summary' }, `Audit of QA (${panelData.qa.auditTrail.entries?.length || 0})`),
-                  h('div', { className: 'signal-meta muted' }, 'Read-only provenance and mismatch audit for QA outputs.'),
-                  renderQAAuditTrailSummary(panelData.qa.auditTrail),
-                  renderQAAuditTrailList(panelData.qa.auditTrail),
-                ) : h('div', { className: 'signal-empty muted' }, 'No QA audit trail is recorded yet.'),
-                  (panelData.qa.scorecards || []).length
-                    ? h('div', { className: 'desk-panel-item' },
-                        h('div', { className: 'signal-summary' }, `Scorecards (${panelData.qa.scorecards.length})`),
-                      h('div', { className: 'desk-panel-list' }, panelData.qa.scorecards.slice(0, 6).map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item' },
-                        h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
-                        h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
-                        card.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace.freshnessClass)}`) : null,
-                        card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
-                        card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
-                      ))),
-                    )
-                  : h('div', { className: 'signal-empty muted' }, 'No structured QA scorecards are recorded yet.'),
-                panelData.qa.latestBrowserRun
-                  ? h('div', { className: 'desk-panel-item' },
-                      h('div', { className: 'signal-summary' }, `Browser: ${panelData.qa.latestBrowserRun.scenario || 'layout-pass'} | ${panelData.qa.latestBrowserRun.verdict || panelData.qa.latestBrowserRun.status || 'pending'}`),
-                      h('div', { className: 'signal-meta muted' }, `Findings ${panelData.qa.latestBrowserRun.findingCount || 0}`),
-                      panelData.qa.latestBrowserRun.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${panelData.qa.latestBrowserRun.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(panelData.qa.latestBrowserRun.sourceTrace.freshnessClass)}`) : null,
-                      panelData.qa.latestBrowserRun.id
-                        ? h('div', { className: 'button-row' },
-                            h('button', { className: 'mini', type: 'button', onClick: () => loadQARunDetails(panelData.qa.latestBrowserRun.id) }, 'Open latest browser run'),
-                          )
-                        : null,
-                    )
-                  : h('div', { className: 'signal-empty muted' }, 'No browser QA run is recorded yet.'),
-                (panelData.qa.browserRuns || []).length
-                  ? h('div', { className: 'desk-panel-item' },
-                      h('div', { className: 'signal-summary' }, `Recent Browser Runs (${panelData.qa.browserRuns.length})`),
-                      h('div', { className: 'desk-panel-list' }, panelData.qa.browserRuns.slice(0, 4).map((run) => h('div', { key: run.id || `${run.scenario}-${run.finishedAt || run.createdAt || 'latest'}`, className: 'desk-panel-item' },
-                        h('div', { className: 'signal-summary' }, `${run.scenario || 'layout-pass'} | ${run.verdict || run.status || 'pending'}`),
-                        h('div', { className: 'signal-meta muted' }, `Trigger ${run.trigger || 'manual'} | Findings ${run.findingCount || 0}`),
-                        run.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${run.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(run.sourceTrace.freshnessClass)}`) : null,
-                        run.id ? h('div', { className: 'button-row' },
-                          h('button', { className: 'mini', type: 'button', onClick: () => loadQARunDetails(run.id) }, 'Open run'),
-                        ) : null,
-                      ))),
-                    )
-                  : h('div', { className: 'signal-empty muted' }, 'No browser QA history is recorded yet.'),
-                panelData.qa.localGate?.unit || panelData.qa.localGate?.studioBoot
-                  ? h('div', { className: 'desk-panel-item' },
-                      h('div', { className: 'signal-summary' }, 'Local Gate'),
-                      panelData.qa.localGate?.unit ? h('div', { className: 'desk-panel-item' },
-                        h('div', { className: 'signal-summary' }, 'Fast Unit Gate'),
-                        h('div', { className: 'signal-meta muted' }, `Status ${panelData.qa.localGate.unit.status || 'pending'} | ${panelData.qa.localGate.unit.passedCount || 0}/${panelData.qa.localGate.unit.totalChecks || 0} checks passed`),
-                        panelData.qa.localGate.unit.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${panelData.qa.localGate.unit.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(panelData.qa.localGate.unit.sourceTrace.freshnessClass)}`) : null,
-                        (panelData.qa.localGate.unit.failures || []).length
-                          ? h('ul', { className: 'signal-list compact' }, panelData.qa.localGate.unit.failures.slice(0, 3).map((failure) => h('li', { key: failure.name || failure.path || failure.error }, `${failure.name || failure.path || 'check'}: ${failure.error || 'failed'}`)))
-                          : h('div', { className: 'signal-meta muted' }, 'No failing fast UI checks in the latest run.'),
-                      ) : null,
-                      panelData.qa.localGate?.studioBoot ? h('div', { className: 'desk-panel-item' },
-                        h('div', { className: 'signal-summary' }, 'Studio Boot Guardrail'),
-                        h('div', { className: 'signal-meta muted' }, `Status ${panelData.qa.localGate.studioBoot.verdict || panelData.qa.localGate.studioBoot.status || 'pending'} | findings ${panelData.qa.localGate.studioBoot.findingCount || 0}`),
-                        panelData.qa.localGate.studioBoot.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${panelData.qa.localGate.studioBoot.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(panelData.qa.localGate.studioBoot.sourceTrace.freshnessClass)}`) : null,
-                        (panelData.qa.localGate.studioBoot.failedSteps || []).length
-                          ? h('ul', { className: 'signal-list compact' }, panelData.qa.localGate.studioBoot.failedSteps.map((step) => h('li', { key: step.id }, `${step.label}: ${step.verdict}`)))
-                          : h('div', { className: 'signal-meta muted' }, 'No failing Studio boot steps in the latest guardrail run.'),
-                      ) : null,
-                    )
-                  : h('div', { className: 'signal-empty muted' }, 'No local gate evidence is recorded yet.'),
-                (panelData.qa.availableTests || []).length
-                  ? h('div', { className: 'desk-panel-item' },
-                      h('div', { className: 'signal-summary' }, 'Runnable Suites'),
-                      h('div', { className: 'signal-meta muted' }, panelData.qa.availableTests.map((suite) => suite.name).join(' | ')),
-                    )
-                  : null,
+                buildQAReadableSectionsFromState(panelData.qa).map((section) => renderDeskSection(section, {
+                  openQARun: (runId) => loadQARunDetails(runId),
+                })),
               )
             : h('div', { className: 'signal-empty muted' }, 'No QA properties available.'),
         ) : null,
@@ -8317,6 +9363,54 @@ function syncRecentWorldChange(change = null) {
             ? panelData.tasks.map((task) => h('div', { key: task.id, className: 'desk-panel-item' },
                 h('div', { className: 'signal-summary' }, task.title),
                 h('div', { className: 'signal-meta muted' }, `${task.lifecycle} | ${task.progress?.label || 'n/a'} | source ${task.source}`),
+                (task.sourceIntakeId || task.sourceIntentId || task.sourceHandoffId)
+                  ? h('div', { className: 'signal-meta muted' }, [
+                      task.sourceIntakeId ? `intake ${task.sourceIntakeId}` : null,
+                      task.sourceIntentId ? `intent ${task.sourceIntentId}` : null,
+                      task.sourceHandoffId ? `handoff ${task.sourceHandoffId}` : null,
+                    ].filter(Boolean).join(' | '))
+                  : null,
+                (task.ownerDeskId || task.nextOwnerDeskId || task.taskPhase || task.assignmentState)
+                  ? h('div', { className: 'signal-meta muted' }, [
+                      task.ownerDeskId || task.nextOwnerDeskId ? `owner ${task.ownerDeskId || 'unknown'} → ${task.nextOwnerDeskId || 'unknown'}` : null,
+                      task.taskPhase ? `phase ${task.taskPhase}` : null,
+                      task.assignmentState ? `assignment ${task.assignmentState}` : null,
+                    ].filter(Boolean).join(' | '))
+                  : null,
+                task.blockedReason
+                  ? h('div', { className: 'signal-meta muted' }, `blocked ${task.blockedReason}`)
+                  : null,
+                task.executionState?.status && task.executionState.status !== 'not_requested'
+                  ? h('div', { className: 'signal-meta muted' }, [
+                      `execution ${task.executionState.status}`,
+                      `package ${task.executionState.packageStatus || 'idle'}`,
+                      `diff ${task.executionState.diff?.status || 'missing'}`,
+                      task.executionState.taskId ? `task ${task.executionState.taskId}` : null,
+                    ].filter(Boolean).join(' | '))
+                  : null,
+                task.executionState?.diff?.path
+                  ? h('div', { className: 'signal-meta muted' }, `patch ${task.executionState.diff.path}`)
+                  : null,
+                task.qaState?.status
+                  ? h('div', { className: 'signal-meta muted' }, [
+                      `qa ${task.qaState.status}`,
+                      task.qaState.scorecardId ? `scorecard ${task.qaState.scorecardId}` : null,
+                      task.qaState.qaRunId ? `run ${task.qaState.qaRunId}` : null,
+                    ].filter(Boolean).join(' | '))
+                  : null,
+                task.qaState?.followup?.deskId
+                  ? h('div', { className: 'signal-meta muted' }, `qa route ${task.qaState.followup.deskId}${task.qaState.followup.reason ? ` | ${task.qaState.followup.reason}` : ''}`)
+                  : null,
+                task.archivistState?.status
+                  ? h('div', { className: 'signal-meta muted' }, [
+                      `archivist ${task.archivistState.status}`,
+                      task.archivistState.outcomeStatus ? `outcome ${task.archivistState.outcomeStatus}` : null,
+                      task.archivistState.archivedAt ? `at ${task.archivistState.archivedAt}` : null,
+                    ].filter(Boolean).join(' | '))
+                  : null,
+                task.archivistState?.summary
+                  ? h('div', { className: 'signal-meta muted' }, `archive summary ${task.archivistState.summary}`)
+                  : null,
               ))
             : h('div', { className: 'signal-empty muted' }, 'No backlog tasks assigned to this desk.'),
         ) : null,
@@ -8613,6 +9707,37 @@ function syncRecentWorldChange(change = null) {
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `confidence: ${Number.isFinite(Number(currentCanonicalIntentRecord?.confidence)) ? `${Math.round(Number(currentCanonicalIntentRecord.confidence) * 100)}%` : 'missing'}`),
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `provenance: ${currentCanonicalIntentRecord?.provenance?.sourceType || 'missing'} / ${currentCanonicalIntentRecord?.provenance?.sourceRef || currentCanonicalIntentRecord?.sourceRef || 'missing'}`),
                 currentCanonicalIntentRecord?.missingFields?.length ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#ffcf7a' } }, `missing: ${currentCanonicalIntentRecord.missingFields.join(', ')}`) : null,
+              ),
+              h('div', {
+                className: 'observability-card intake',
+                style: {
+                  background: 'rgba(10, 16, 26, 0.88)',
+                  border: '1px solid rgba(112, 161, 255, 0.22)',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  color: '#d8e7fb',
+                  boxShadow: '0 10px 24px rgba(0, 0, 0, 0.24)',
+                },
+              },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8fb2ff' } },
+                  h('span', null, 'Intake'),
+                  h('span', null, latestCanvasIntakeRecord?.processingStatus || 'missing'),
+                ),
+                h('div', { style: { marginTop: '6px', fontSize: '13px', fontWeight: 600 } }, String(latestCanvasIntakeRecord?.acknowledgement?.summary || 'No canonical canvas intake acknowledgement')),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `id: ${latestCanvasIntakeRecord?.id || 'missing'} | updatedAt: ${latestCanvasIntakeRecord?.updatedAt || latestCanvasIntakeRecord?.createdAt || 'missing'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `sourceRef: ${latestCanvasIntakeRecord?.sourceRef || 'missing'} | route: ${latestCanvasIntakeRecord?.route || 'pending'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `intent extraction: ${latestCanvasIntakeRecord?.intentExtraction?.status || 'pending'}${latestCanvasIntakeRecord?.intentExtraction?.canonicalIntentId ? ` | intentId: ${latestCanvasIntakeRecord.intentExtraction.canonicalIntentId}` : ''}`),
+                latestCanvasIntakeRecord?.intentExtraction?.summary
+                  ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, latestCanvasIntakeRecord.intentExtraction.summary)
+                  : null,
+                ['degraded', 'failed'].includes(String(latestCanvasIntakeRecord?.intentExtraction?.status || '').trim().toLowerCase())
+                  ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#ffcf7a' } }, `raw input: ${latestCanvasIntakeRecord?.text || 'missing'}`)
+                  : null,
+                latestCanvasIntakeRecord?.intentExtraction?.reason
+                  ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#ffcf7a' } }, latestCanvasIntakeRecord.intentExtraction.reason)
+                  : null,
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `governed loop: ${latestCanvasIntakeRecord?.governedLoop?.route || 'missing'}`),
+                latestCanvasIntakeRecord?.resultSummary ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, latestCanvasIntakeRecord.resultSummary) : null,
               ),
               h('div', {
                 className: 'observability-card field',
@@ -9325,6 +10450,22 @@ function drawCanvasScene(canvas, graph, viewport, activeGraphLayer, worldViewMod
 }
 
 ReactDOM.createRoot(document.getElementById('spatial-root')).render(h(SpatialNotebookBootstrap));
+
+function markSpatialStudioMounted() {
+  const root = document.getElementById('spatial-root');
+  if (root && typeof root.setAttribute === 'function') {
+    root.setAttribute('data-boot', 'studio-mounted');
+  }
+  if (document.body && typeof document.body.setAttribute === 'function') {
+    document.body.setAttribute('data-boot', 'studio-mounted');
+  }
+}
+
+if (typeof requestAnimationFrame === 'function') {
+  requestAnimationFrame(() => markSpatialStudioMounted());
+} else {
+  markSpatialStudioMounted();
+}
 
 
 

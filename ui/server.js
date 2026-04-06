@@ -60,13 +60,18 @@ const {
   readStructuredQAReport,
   runQARun,
   summarizeQARun,
+  STRUCTURED_QA_RELATIVE_DIR,
   writeStructuredQAReport,
 } = require('./qaRunner');
 const {
+  PLANNER_QA_RELATIVE_DIR,
+  PLANNER_QA_QUEUE_JSON_NAME,
   readPlannerQaQueue,
   summarizePlannerQaQueue,
 } = require('./plannerQaQueue');
 const {
+  PLANNER_OUTTRAY_RELATIVE_DIR,
+  PLANNER_OUTTRAY_QUEUE_JSON_NAME,
   collectPlannerOuttrayItem,
   readPlannerOuttray,
   summarizePlannerOuttray,
@@ -86,7 +91,39 @@ const {
 } = require('../qa/qaAuditTrail');
 const {
   buildExternalQaProbeCheckPayload,
+  buildExternalValidationSnapshot,
+  readOpenQaInvestigations,
 } = require('./externalQaProbe');
+const {
+  buildQaResearchState,
+  maybeGenerateQaResearchNotesForInvestigations,
+} = require('./qaResearch');
+const {
+  buildQaRepairLoopState,
+  maybeBridgeOpenInvestigationsToRepairJobs,
+  readQaRepairJobs,
+  runQaRepairAttempt,
+} = require('./qaRepairLoop');
+const {
+  runQaLaneCanarySuite,
+} = require('./qaLaneCanaries');
+const {
+  buildQaMcpLiveStatus,
+} = require('./qaMcpLiveStatus');
+const {
+  getQaLeadRunsDir,
+  getQaLeadStateFilePath,
+  readQaLeadOutput,
+  startQaLeadAutomation,
+  runQaLeadCycle,
+} = require('./qaLeadRunner');
+const {
+  maybeBridgePlannerCanonicalIntegrityInvestigations,
+} = require('./plannerCanonicalIntegrity');
+const {
+  UI_BOOT_INTEGRITY_LANE,
+  maybeBridgeUiBootIntegrityInvestigations,
+} = require('./uiBootIntegrity');
 const {
   CORE_DESK_AGENT_DEFAULTS,
   createDefaultStudioLayoutSchema,
@@ -349,6 +386,7 @@ const {
 } = require('./sliceRepository');
 const {
   applyArchivistWriteback,
+  contextBundlePaths,
 } = require('./archivistWriteback');
 const {
   TASK_CACHE_SOURCE,
@@ -429,6 +467,7 @@ const dashboardFiles = listCanonicalAnchorPaths(DOMAIN_KEY);
 const runStore = new Map();
 const runOrder = [];
 const projectRunStore = new Map();
+let latestExternalValidationSnapshot = null;
 const QA_LEAD_DESK_ID = 'qa-lead';
 const STATIC_WEB_PROJECT_KEY = 'topdown-slice';
 const STATIC_WEB_HOST = '127.0.0.1';
@@ -436,6 +475,7 @@ const STATIC_WEB_DEFAULT_PORT = 4173;
 const STATIC_WEB_SUPPORTED_ORIGIN = `http://${STATIC_WEB_HOST}:${STATIC_WEB_DEFAULT_PORT}/`;
 const STATIC_WEB_SHELL_MARKER = 'Top-Down Thin Slice';
 const STATIC_WEB_BOOT_ENTRY_PATHS = ['/src/main.js', '/src/editor/ui.js'];
+const STUDIO_BOOT_MANIFEST_PATH = path.join(__dirname, 'public', 'spatial', 'boot-manifest.json');
 const PROJECT_RUN_START_TIMEOUT_MS = 4000;
 const TASK_ARTIFACT_NAMES = ['idea.txt', 'context.md', 'plan.md', 'patch.diff', 'apply_result.json', 'agent_attribution.json'];
 const DESK_AGENT_DEFAULTS = {
@@ -4492,6 +4532,155 @@ function normalizeStoredStudioState(rawStudioState = {}) {
   return next;
 }
 
+function createDefaultCanonicalIntakeState() {
+  return {
+    version: 'ace/canonical-intake.v1',
+    records: [],
+    latestByChannel: {
+      cto_prompt: null,
+      canvas_text: null,
+    },
+  };
+}
+
+function normalizeCanonicalIntakeChannel(value = '') {
+  const channel = String(value || '').trim().toLowerCase();
+  if (channel === 'cto_prompt' || channel === 'canvas_text') return channel;
+  return 'canvas_text';
+}
+
+function buildCanonicalIntakeAcknowledgement(channel = 'canvas_text', sourceRef = null) {
+  if (channel === 'cto_prompt') {
+    return {
+      status: 'recorded',
+      summary: `Canonical CTO intake recorded${sourceRef ? ` from ${sourceRef}` : ''}.`,
+    };
+  }
+  return {
+    status: 'recorded',
+    summary: `Canonical canvas intake recorded${sourceRef ? ` from ${sourceRef}` : ''}.`,
+  };
+}
+
+function buildCanonicalIntentExtractionState({
+  status = 'pending',
+  canonicalIntent = null,
+  canonicalIntentId = null,
+  intentStatus = null,
+  summary = null,
+  sourceType = null,
+  sourceRef = null,
+  reason = null,
+} = {}) {
+  const normalizedStatus = ['pending', 'extracted', 'degraded', 'failed'].includes(String(status || '').trim().toLowerCase())
+    ? String(status || '').trim().toLowerCase()
+    : 'pending';
+  const normalizedIntent = canonicalIntent ? normalizeSpatialIntentRecord(canonicalIntent) : null;
+  return {
+    status: normalizedStatus,
+    canonicalIntentId: normalizedIntent?.id || String(canonicalIntentId || '').trim() || null,
+    intentStatus: normalizedIntent?.status || String(intentStatus || '').trim() || null,
+    summary: normalizedIntent?.summary || normalizedIntent?.statement || normalizedIntent?.goal || String(summary || '').trim() || null,
+    sourceType: normalizedIntent?.sourceType || String(sourceType || '').trim() || null,
+    sourceRef: normalizedIntent?.sourceRef || String(sourceRef || '').trim() || null,
+    reason: String(reason || '').trim() || null,
+  };
+}
+
+function normalizeCanonicalIntakeRecord(record = {}) {
+  const source = record && typeof record === 'object' ? record : {};
+  const createdAt = String(source.createdAt || nowIso()).trim() || nowIso();
+  const channel = normalizeCanonicalIntakeChannel(source.channel || source.intakeChannel);
+  const sourceRef = String(source.sourceRef || source.nodeId || '').trim() || null;
+  const acknowledgement = source.acknowledgement && typeof source.acknowledgement === 'object'
+    ? source.acknowledgement
+    : buildCanonicalIntakeAcknowledgement(channel, sourceRef);
+  const intentExtraction = source.intentExtraction && typeof source.intentExtraction === 'object'
+    ? buildCanonicalIntentExtractionState({
+        ...source.intentExtraction,
+        canonicalIntentId: source.intentExtraction.canonicalIntentId || source.canonicalIntentId || null,
+      })
+    : buildCanonicalIntentExtractionState({
+        status: source.intentExtractionStatus || 'pending',
+        canonicalIntent: source.intentExtractionIntent || null,
+        reason: source.intentExtractionReason || null,
+      });
+  return {
+    id: String(source.id || `intake_${channel}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).trim(),
+    channel,
+    text: String(source.text || source.prompt || '').trim(),
+    requestedBy: String(source.requestedBy || 'ace').trim() || 'ace',
+    sourceType: String(source.sourceType || channel).trim() || channel,
+    sourceRef,
+    originRoute: String(source.originRoute || '').trim() || null,
+    createdAt,
+    updatedAt: String(source.updatedAt || createdAt).trim() || createdAt,
+    acknowledgement: {
+      status: String(acknowledgement.status || 'recorded').trim() || 'recorded',
+      summary: String(acknowledgement.summary || buildCanonicalIntakeAcknowledgement(channel, sourceRef).summary).trim(),
+    },
+    processingStatus: String(source.processingStatus || 'recorded').trim() || 'recorded',
+    resultSummary: String(source.resultSummary || '').trim() || null,
+    replyKind: String(source.replyKind || '').trim() || null,
+    actionId: String(source.actionId || '').trim() || null,
+    route: String(source.route || source.routeKind || '').trim() || null,
+    canonicalIntentId: String(source.canonicalIntentId || '').trim() || null,
+    handoffId: String(source.handoffId || '').trim() || null,
+    intentExtraction: {
+      ...intentExtraction,
+      canonicalIntentId: String(source.canonicalIntentId || intentExtraction.canonicalIntentId || '').trim() || null,
+    },
+    governedLoop: {
+      route: '/api/spatial/governed-loop/contract',
+      contractVersion: 'governed-loop.v1',
+      domain: 'input',
+    },
+  };
+}
+
+function normalizeCanonicalIntakeState(rawState = null) {
+  const source = rawState && typeof rawState === 'object' ? rawState : createDefaultCanonicalIntakeState();
+  const records = (Array.isArray(source.records) ? source.records : [])
+    .map((record) => normalizeCanonicalIntakeRecord(record))
+    .filter((record) => record.id && record.text)
+    .sort((left, right) => String(right.updatedAt || right.createdAt || '').localeCompare(String(left.updatedAt || left.createdAt || '')))
+    .slice(0, 24);
+  const latestByChannel = {
+    cto_prompt: records.find((record) => record.channel === 'cto_prompt')?.id || null,
+    canvas_text: records.find((record) => record.channel === 'canvas_text')?.id || null,
+  };
+  return {
+    version: String(source.version || 'ace/canonical-intake.v1').trim() || 'ace/canonical-intake.v1',
+    records,
+    latestByChannel,
+  };
+}
+
+function upsertCanonicalIntakeRecord(intakeState = null, record = {}) {
+  const normalizedState = normalizeCanonicalIntakeState(intakeState);
+  const normalizedRecord = normalizeCanonicalIntakeRecord(record);
+  const nextRecords = [...normalizedState.records];
+  const existingIndex = nextRecords.findIndex((entry) => entry.id === normalizedRecord.id);
+  if (existingIndex >= 0) {
+    nextRecords[existingIndex] = {
+      ...nextRecords[existingIndex],
+      ...normalizedRecord,
+      createdAt: nextRecords[existingIndex].createdAt || normalizedRecord.createdAt,
+      updatedAt: normalizedRecord.updatedAt || nowIso(),
+    };
+  } else {
+    nextRecords.unshift(normalizedRecord);
+  }
+  const nextState = normalizeCanonicalIntakeState({
+    version: normalizedState.version,
+    records: nextRecords,
+  });
+  return {
+    state: nextState,
+    record: nextState.records.find((entry) => entry.id === normalizedRecord.id) || normalizedRecord,
+  };
+}
+
 function mergeWorkspacePatch(workspace, patch = {}) {
   const nextStudio = {
     ...(workspace?.studio || {}),
@@ -4839,8 +5028,8 @@ async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()
   };
 }
 
-function listModuleManifests() {
-  const root = path.join(ROOT, 'modules');
+function listModuleManifests(rootPath = ROOT) {
+  const root = path.join(rootPath, 'modules');
   if (!fs.existsSync(root)) return [];
   const manifests = [];
   const stack = [root];
@@ -4860,7 +5049,7 @@ function listModuleManifests() {
         id: String(payload.module_id),
         version: String(payload.version || 'unknown'),
         summary: payload.description || payload.summary || payload.name || payload.module_id,
-        manifestPath: path.relative(ROOT, fullPath),
+        manifestPath: path.relative(rootPath, fullPath),
       });
     });
   }
@@ -4891,7 +5080,402 @@ function deriveTaskProgress(task = {}) {
   return { label: 'in progress', value: null };
 }
 
-function collectDeskTasks(workspace, deskId) {
+function resolveTaskFolders(rootPath = ROOT) {
+  return rootPath === ROOT ? getTaskFolders() : getTaskFoldersFromRoot(path.join(rootPath, 'work', 'tasks'));
+}
+
+function findTaskFolderByTaskId(taskId, rootPath = ROOT) {
+  return resolveTaskFolders(rootPath).find((folder) => folder.startsWith(String(taskId || '').slice(0, 4))) || null;
+}
+
+function readTaskArtifactStatus(taskId = '', rootPath = ROOT) {
+  const normalizedTaskId = String(taskId || '').trim();
+  const folder = normalizedTaskId ? findTaskFolderByTaskId(normalizedTaskId, rootPath) : null;
+  const taskDir = folder ? path.join(rootPath, 'work', 'tasks', folder) : null;
+  const artifacts = TASK_ARTIFACT_NAMES.map((name) => {
+    const fullPath = taskDir ? path.join(taskDir, name) : null;
+    return {
+      name,
+      exists: Boolean(fullPath && fs.existsSync(fullPath)),
+      path: fullPath ? relativeToRoot(rootPath, fullPath) : null,
+    };
+  });
+  return {
+    taskId: normalizedTaskId || null,
+    folder,
+    taskDir: taskDir ? relativeToRoot(rootPath, taskDir) : null,
+    artifacts,
+    presentCount: artifacts.filter((artifact) => artifact.exists).length,
+    totalCount: artifacts.length,
+    taskCache: {
+      planner: summarizeTaskCache(readTaskCache(rootPath, { taskId: normalizedTaskId || null, taskDir, stage: 'planner' })),
+      executor: summarizeTaskCache(readTaskCache(rootPath, { taskId: normalizedTaskId || null, taskDir, stage: 'executor' })),
+    },
+  };
+}
+
+function buildCanonicalExecutionState(card = {}, workspace = {}, { rootPath = ROOT } = {}) {
+  const taskId = String(card.runnerTaskId || card.builderTaskId || card.executionPackage?.taskId || '').trim() || null;
+  if (!taskId) {
+    return {
+      status: 'not_requested',
+      taskId: null,
+      taskDir: null,
+      packageStatus: card.executionPackage?.status || 'idle',
+      verifyStatus: card.verifyStatus || 'idle',
+      applyStatus: card.applyStatus || 'idle',
+      deployStatus: card.deployStatus || 'idle',
+      blocker: null,
+      diff: {
+        status: 'missing',
+        path: null,
+        changedFiles: [],
+        artifactRecorded: false,
+        cacheSource: null,
+      },
+    };
+  }
+
+  const artifactStatus = readTaskArtifactStatus(taskId, rootPath);
+  const executorCache = artifactStatus.taskCache?.executor || null;
+  const patchValid = Boolean(executorCache?.fileStates?.patch?.valid);
+  const patchArtifact = artifactStatus.artifacts.find((artifact) => artifact.name === 'patch.diff') || null;
+  const applyResultState = executorCache?.fileStates?.applyResult || null;
+  const explicitBlocker = card.executorBlocker && typeof card.executorBlocker === 'object'
+    ? {
+      code: card.executorBlocker.code || null,
+      message: card.executorBlocker.message || card.executorBlocker.summary || null,
+    }
+    : null;
+  const queuedSignals = [
+    String(card.verifyStatus || '').trim().toLowerCase(),
+    String(card.applyStatus || '').trim().toLowerCase(),
+    String(card.deployStatus || '').trim().toLowerCase(),
+  ];
+  const packageStatus = String(card.executionPackage?.status || '').trim().toLowerCase();
+  const blocker = explicitBlocker || (packageStatus === 'blocked'
+    ? {
+      code: 'execution_blocked',
+      message: card.executionPackage?.summary || 'Execution is blocked.',
+    }
+    : null);
+  const deferred = queuedSignals.includes('queued') || packageStatus === 'ready';
+  return {
+    status: blocker
+      ? 'blocked'
+      : (deferred ? 'deferred' : 'requested'),
+    taskId,
+    taskDir: artifactStatus.taskDir || card.executionPackage?.taskDir || null,
+    packageStatus: card.executionPackage?.status || 'idle',
+    verifyStatus: card.verifyStatus || 'idle',
+    applyStatus: card.applyStatus || 'idle',
+    deployStatus: card.deployStatus || 'idle',
+    blocker: blocker ? {
+      code: blocker.code || null,
+      message: blocker.message || null,
+    } : null,
+    taskCache: executorCache ? {
+      source: executorCache.source || null,
+      invalidReasons: Array.isArray(executorCache.invalidReasons) ? executorCache.invalidReasons : [],
+    } : null,
+    sources: [
+      {
+        kind: 'workspace',
+        recordPath: 'studio.teamBoard.cards[].executionPackage',
+      },
+      {
+        kind: 'route',
+        route: '/api/task-artifacts',
+        taskId,
+      },
+    ],
+    diff: {
+      status: patchValid ? 'created' : 'missing',
+      path: patchValid ? (patchArtifact?.path || card.executionPackage?.patchPath || null) : null,
+      changedFiles: patchValid ? (card.executionPackage?.changedFiles || []) : [],
+      artifactRecorded: Boolean(patchArtifact?.exists),
+      cacheSource: executorCache?.source || null,
+      applyResultRecorded: Boolean(applyResultState?.exists),
+    },
+  };
+}
+
+const CANONICAL_QA_FEEDBACK_STATUSES = new Set([
+  'pass',
+  'fail',
+  'needs_verification',
+  'needs_cto_approval',
+]);
+
+function normalizeCanonicalQaFeedbackStatus(status = '') {
+  const normalized = String(status || '').trim().toLowerCase();
+  return CANONICAL_QA_FEEDBACK_STATUSES.has(normalized) ? normalized : null;
+}
+
+function collectQaLinkKeys(card = {}, taskId = null) {
+  return uniqueStrings([
+    card.id,
+    card.sourceIntakeId,
+    card.sourceIntentId,
+    card.sourceHandoffId,
+    card.taskFlow?.sourceIntentId,
+    card.taskFlow?.sourceHandoffId,
+    taskId,
+  ]);
+}
+
+function resolveCanonicalQaFollowup(status = null, evidence = {}) {
+  const explicitDeskId = String(
+    evidence.followupDeskId
+    || evidence.routeToDeskId
+    || evidence.nextOwnerDeskId
+    || evidence.targetDesk
+    || '',
+  ).trim() || null;
+  if (explicitDeskId) {
+    return {
+      deskId: explicitDeskId,
+      reason: String(evidence.followupReason || evidence.reason || evidence.summary || '').trim() || null,
+    };
+  }
+  if (status === 'fail' || status === 'needs_verification') {
+    return {
+      deskId: 'planner',
+      reason: String(evidence.reason || evidence.summary || '').trim() || 'QA requires planner follow-up.',
+    };
+  }
+  if (status === 'needs_cto_approval') {
+    return {
+      deskId: 'cto-architect',
+      reason: String(evidence.reason || evidence.summary || '').trim() || 'QA requires CTO approval.',
+    };
+  }
+  return null;
+}
+
+function buildCanonicalQaFeedbackState(card = {}, {
+  taskId = null,
+  qaScorecards = [],
+  qaRuns = [],
+} = {}) {
+  const linkKeys = collectQaLinkKeys(card, taskId);
+  if (!linkKeys.length) return null;
+  const matchingScorecards = (Array.isArray(qaScorecards) ? qaScorecards : [])
+    .filter((scorecard) => {
+      const scorecardKeys = uniqueStrings([
+        scorecard.id,
+        scorecard.sourceCardId,
+        scorecard.cardId,
+        scorecard.sourceIntentId,
+        scorecard.intentId,
+        scorecard.sourceHandoffId,
+        scorecard.handoffId,
+        scorecard.sourceIntakeId,
+        scorecard.intakeId,
+        scorecard.taskId,
+      ]);
+      return scorecardKeys.some((value) => linkKeys.includes(value));
+    })
+    .sort((left, right) => String(right.updatedAt || '').localeCompare(String(left.updatedAt || '')));
+  const matchingRuns = (Array.isArray(qaRuns) ? qaRuns : [])
+    .filter((run) => {
+      const runKeys = uniqueStrings([
+        run.id,
+        run.linked?.cardId,
+        run.linked?.taskId,
+        run.linked?.sourceIntentId,
+        run.linked?.intentId,
+        run.linked?.sourceHandoffId,
+        run.linked?.handoffId,
+        run.linked?.sourceIntakeId,
+        run.linked?.intakeId,
+      ]);
+      return runKeys.some((value) => linkKeys.includes(value));
+    })
+    .sort((left, right) => String(right.finishedAt || right.createdAt || '').localeCompare(String(left.finishedAt || left.createdAt || '')));
+  const scorecard = matchingScorecards[0] || null;
+  const qaRun = matchingRuns[0] || null;
+  const status = normalizeCanonicalQaFeedbackStatus(scorecard?.status)
+    || normalizeCanonicalQaFeedbackStatus(qaRun?.linked?.qaStatus)
+    || null;
+  if (!status && !scorecard && !qaRun) return null;
+  const followup = resolveCanonicalQaFollowup(status, {
+    ...(scorecard && typeof scorecard === 'object' ? scorecard : {}),
+    ...(qaRun?.linked && typeof qaRun.linked === 'object' ? qaRun.linked : {}),
+  });
+  return {
+    status: status || 'observed',
+    observedAt: scorecard?.updatedAt || qaRun?.finishedAt || qaRun?.createdAt || null,
+    summary: String(
+      scorecard?.summary
+      || qaRun?.linked?.summary
+      || qaRun?.scenario
+      || qaRun?.trigger
+      || ''
+    ).trim() || null,
+    scorecardId: scorecard?.id || null,
+    qaRunId: qaRun?.id || null,
+    followup: followup ? {
+      deskId: followup.deskId,
+      reason: followup.reason || null,
+    } : null,
+    sources: [
+      scorecard ? {
+        kind: 'file',
+        path: 'data/spatial/qa/structured/latest.json',
+        recordPath: `desks[].tests[].qualityCard:${scorecard.id}`,
+      } : null,
+      qaRun ? {
+        kind: 'route',
+        route: '/api/spatial/qa/runs',
+        qaRunId: qaRun.id,
+      } : null,
+    ].filter(Boolean),
+  };
+}
+
+function readCanonicalArchivistBundle(rootPath = ROOT) {
+  const archivistPaths = contextBundlePaths(rootPath);
+  const archivistJsonPath = archivistPaths.find((candidatePath) => candidatePath.endsWith('.json')) || null;
+  const bundle = archivistJsonPath ? readJsonSafe(archivistJsonPath, null) : null;
+  return {
+    bundle,
+    archivistJsonPath,
+  };
+}
+
+function buildCanonicalArchivistState(card = {}, {
+  taskId = null,
+  rootPath = ROOT,
+  bundle = null,
+  archivistJsonPath = null,
+} = {}) {
+  const lifecycle = normalizeLifecycleStatus(card.status || card.state || '');
+  const blockedSignal = Boolean(card.executorBlocker) || String(card.executionPackage?.status || '').trim().toLowerCase() === 'blocked';
+  const completedSignal = ['done', 'complete', 'completed'].includes(normalizeLifecycleStatus(card.state || ''))
+    || ['done', 'complete', 'completed'].includes(normalizeLifecycleStatus(card.status || ''))
+    || ['done', 'complete', 'completed'].includes(String(card.taskFlow?.phase || '').trim().toLowerCase());
+  const pendingOutcomeStatus = blockedSignal ? 'blocked' : (completedSignal ? 'completed' : null);
+  const linkKeys = collectQaLinkKeys(card, taskId);
+  const records = Array.isArray(bundle?.governedRecords) ? bundle.governedRecords : [];
+  const matchingRecord = records.find((record) => {
+    const recordKeys = uniqueStrings([
+      record.cardId,
+      record.taskId,
+      record.sourceIntakeId,
+      record.sourceIntentId,
+      record.sourceHandoffId,
+    ]);
+    return recordKeys.some((value) => linkKeys.includes(value));
+  }) || null;
+  if (!matchingRecord && !pendingOutcomeStatus && !['done', 'blocked'].includes(lifecycle)) return null;
+  const summary = String(
+    matchingRecord?.intentVsOutcomeSummary
+    || matchingRecord?.outcomeSummary
+    || matchingRecord?.intentSummary
+    || ''
+  ).trim() || null;
+  return {
+    status: matchingRecord ? 'archived' : 'pending_writeback',
+    archivedAt: matchingRecord?.archivedAt || bundle?.generatedAt || null,
+    outcomeStatus: matchingRecord?.outcomeStatus || pendingOutcomeStatus || (lifecycle === 'blocked' ? 'blocked' : (lifecycle === 'done' ? 'completed' : null)),
+    summary,
+    intentSummary: matchingRecord?.intentSummary || null,
+    outcomeSummary: matchingRecord?.outcomeSummary || null,
+    sources: [
+      matchingRecord && archivistJsonPath ? buildCanonicalFileRef(rootPath, archivistJsonPath, 'governedRecords') : null,
+      buildCanonicalRouteRef('/api/spatial/archive/writeback', matchingRecord ? 'writeback artefact' : 'writeback trigger'),
+    ].filter(Boolean),
+  };
+}
+
+function buildCanonicalCtoOversightState(tasks = [], qaScorecards = []) {
+  const canonicalTasks = (Array.isArray(tasks) ? tasks : []).filter((task) => task?.source === 'team-board');
+  const approvalNeededItems = canonicalTasks
+    .filter((task) => task.qaState?.followup?.deskId === 'cto-architect')
+    .map((task) => ({
+      id: task.id,
+      title: task.title,
+      sourceIntakeId: task.sourceIntakeId || null,
+      sourceIntentId: task.sourceIntentId || null,
+      sourceHandoffId: task.sourceHandoffId || null,
+      qaStatus: task.qaState?.status || null,
+      scorecardId: task.qaState?.scorecardId || null,
+      qaRunId: task.qaState?.qaRunId || null,
+      requestedAt: task.qaState?.observedAt || task.updatedAt || null,
+      reason: task.qaState?.followup?.reason || task.qaState?.summary || null,
+    }));
+  const completedArtifacts = canonicalTasks
+    .filter((task) => task.executionState?.diff?.status === 'created' || task.archivistState?.status === 'archived')
+    .map((task) => ({
+      id: task.id,
+      title: task.title,
+      sourceIntakeId: task.sourceIntakeId || null,
+      sourceIntentId: task.sourceIntentId || null,
+      sourceHandoffId: task.sourceHandoffId || null,
+      taskId: task.executionState?.taskId || null,
+      executionStatus: task.executionState?.status || null,
+      diffStatus: task.executionState?.diff?.status || null,
+      diffPath: task.executionState?.diff?.path || null,
+      archivedStatus: task.archivistState?.status || null,
+      archivedAt: task.archivistState?.archivedAt || null,
+      outcomeStatus: task.archivistState?.outcomeStatus || null,
+      summary: task.archivistState?.summary || task.qaState?.summary || task.blockedReason || null,
+    }));
+  const taskLinkKeys = uniqueStrings(canonicalTasks.flatMap((task) => ([
+    task.id,
+    task.sourceIntakeId,
+    task.sourceIntentId,
+    task.sourceHandoffId,
+  ])));
+  const linkedScorecards = (Array.isArray(qaScorecards) ? qaScorecards : [])
+    .filter((scorecard) => {
+      const scorecardKeys = uniqueStrings([
+        scorecard.id,
+        scorecard.sourceCardId,
+        scorecard.cardId,
+        scorecard.sourceIntentId,
+        scorecard.intentId,
+        scorecard.sourceHandoffId,
+        scorecard.handoffId,
+        scorecard.sourceIntakeId,
+        scorecard.intakeId,
+      ]);
+      return scorecardKeys.some((value) => taskLinkKeys.includes(value));
+    })
+    .map((scorecard) => ({
+      id: scorecard.id,
+      testId: scorecard.testId || null,
+      testName: scorecard.testName || null,
+      status: scorecard.status || null,
+      sourceCardId: scorecard.sourceCardId || scorecard.cardId || null,
+      sourceIntentId: scorecard.sourceIntentId || scorecard.intentId || null,
+      sourceHandoffId: scorecard.sourceHandoffId || scorecard.handoffId || null,
+      updatedAt: scorecard.updatedAt || null,
+      summary: scorecard.summary || null,
+    }));
+  const latestActivityAt = uniqueStrings([
+    ...approvalNeededItems.map((item) => item.requestedAt),
+    ...completedArtifacts.map((item) => item.archivedAt),
+    ...linkedScorecards.map((item) => item.updatedAt),
+  ]).sort((left, right) => String(right).localeCompare(String(left)))[0] || null;
+  return {
+    approvalNeededCount: approvalNeededItems.length,
+    approvalNeededItems: approvalNeededItems.slice(0, 6),
+    completedArtifactCount: completedArtifacts.length,
+    completedArtifacts: completedArtifacts.slice(0, 6),
+    scorecardCount: linkedScorecards.length,
+    scorecards: linkedScorecards.slice(0, 6),
+    latestActivityAt,
+  };
+}
+
+function collectDeskTasks(workspace, deskId, options = {}) {
+  const rootPath = options.rootPath || ROOT;
+  const structuredReport = readStructuredQAReport(rootPath, 'latest');
+  const qaScorecards = collectStructuredQAScorecards(structuredReport);
+  const qaRuns = listQARuns(rootPath).slice(0, 24).map((run) => summarizeQARun(run));
+  const { bundle: archivistBundle, archivistJsonPath } = readCanonicalArchivistBundle(rootPath);
   const orchestratorDesk = workspace?.studio?.orchestrator?.desks?.[deskId];
   const deskWorkItems = (orchestratorDesk?.workItems || []).map((item) => ({
     id: item.id,
@@ -4900,11 +5484,35 @@ function collectDeskTasks(workspace, deskId) {
     stageName: item.kind || null,
     source: 'orchestrator',
     artifactRefs: item.artifactRefs || [],
+    sourceIntentId: null,
+    sourceIntakeId: null,
+    sourceHandoffId: null,
+    ownerDeskId: deskId,
+    nextOwnerDeskId: null,
+    taskPhase: null,
+    assignmentState: null,
+    blockedReason: null,
+    executionState: null,
+    qaState: null,
+    archivistState: null,
   }));
 
   const boardCards = normalizeTeamBoardState(workspace).cards
-    .filter((card) => TEAM_BOARD_DESK_TO_STUDIO_DESK[card.desk] === deskId)
-    .map((card) => ({
+    .map((card) => {
+      const executionState = buildCanonicalExecutionState(card, workspace, { rootPath });
+      const qaState = buildCanonicalQaFeedbackState(card, {
+        taskId: executionState.taskId,
+        qaScorecards,
+        qaRuns,
+      });
+      const archivistState = buildCanonicalArchivistState(card, {
+        taskId: executionState.taskId,
+        rootPath,
+        bundle: archivistBundle,
+        archivistJsonPath,
+      });
+      return {
+      boardDesk: card.desk || null,
       id: card.id,
       title: card.title || card.id,
       status: card.status || card.state || 'queued',
@@ -4912,7 +5520,28 @@ function collectDeskTasks(workspace, deskId) {
       stageProgress: Number.isFinite(Number(card.phaseTicks)) ? Number(card.phaseTicks) : null,
       source: 'team-board',
       artifactRefs: card.artifactRefs || [],
-    }));
+      updatedAt: card.updatedAt || card.createdAt || null,
+      sourceIntentId: card.taskFlow?.sourceIntentId || card.sourceIntentId || null,
+      sourceIntakeId: card.sourceIntakeId || null,
+      sourceHandoffId: card.taskFlow?.sourceHandoffId || card.sourceHandoffId || null,
+      ownerDeskId: qaState?.followup?.deskId || card.taskFlow?.ownerDeskId || null,
+      nextOwnerDeskId: qaState?.followup?.deskId || card.taskFlow?.assigneeDeskId || null,
+      taskPhase: card.taskFlow?.phase || null,
+      assignmentState: card.taskFlow?.assignmentState || null,
+      blockedReason: qaState?.followup?.reason || card.executorBlocker?.summary || card.executorBlocker?.message || null,
+      executionState,
+      qaState,
+      archivistState,
+    };
+    })
+    .filter((task) => {
+      const owningDeskId = TEAM_BOARD_DESK_TO_STUDIO_DESK[task.boardDesk];
+      if (owningDeskId === deskId) return true;
+      if (deskId === 'planner') return Boolean(task.sourceHandoffId || task.sourceIntentId || task.sourceIntakeId);
+      if (deskId === 'cto-architect') return task.qaState?.followup?.deskId === 'cto-architect';
+      if (deskId === 'memory-archivist') return Boolean(task.archivistState);
+      return false;
+    });
 
   const deduped = new Map();
   [...deskWorkItems, ...boardCards].forEach((task) => {
@@ -4923,14 +5552,16 @@ function collectDeskTasks(workspace, deskId) {
     const lifecycle = normalizeLifecycleStatus(task.status);
     return {
       ...task,
+      boardDesk: undefined,
       lifecycle,
       progress: deriveTaskProgress({ ...task, status: lifecycle }),
     };
   });
 }
 
-function collectDeskReports(workspace, deskId) {
-  const taskReports = collectDeskTasks(workspace, deskId)
+function collectDeskReports(workspace, deskId, options = {}) {
+  const rootPath = options.rootPath || ROOT;
+  const taskReports = collectDeskTasks(workspace, deskId, { rootPath })
     .filter((task) => task.source === 'team-board')
     .map((task) => ({
       id: `task-${task.id}`,
@@ -4940,7 +5571,7 @@ function collectDeskReports(workspace, deskId) {
       source: 'team-board',
       detail: task.progress?.label || task.lifecycle,
     }));
-  const qaReports = listQARuns(ROOT)
+  const qaReports = listQARuns(rootPath)
     .map((run) => summarizeQARun(run))
     .filter((run) => !run.linked || !run.linked.deskId || run.linked.deskId === deskId)
     .map((run) => ({
@@ -5466,10 +6097,11 @@ function buildLocalGatePayload(rootPath = ROOT) {
   };
 }
 
-function buildQAStatePayload(rootPath = ROOT) {
+function buildQAStatePayload(rootPath = ROOT, options = {}) {
   const structuredReport = readStructuredQAReport(rootPath, 'latest');
   const interactiveRuns = listInteractiveBrowserRuns(rootPath);
   const structuredSummary = buildStructuredQASummary(structuredReport);
+  const qaLeadOutput = readQaLeadOutput(rootPath);
   const testRegistry = buildQATestRegistry({
     rootPath,
     structuredReport,
@@ -5578,6 +6210,29 @@ function buildQAStatePayload(rootPath = ROOT) {
     browserRuns,
     localGate,
   });
+  const openInvestigations = readOpenQaInvestigations(rootPath, 5);
+  const researchState = buildQaResearchState(rootPath, openInvestigations);
+  const externalValidation = options.externalValidation || latestExternalValidationSnapshot || {
+    status: 'unavailable',
+    probeStatus: 'unavailable',
+    lastCheckedAt: null,
+    statusMatch: false,
+    freshnessKnown: false,
+    notes: ['External QA probe has not been checked yet.'],
+    source: 'external_mcp',
+    errorMessage: 'External QA probe has not been checked yet.',
+  };
+  const repairLoop = buildQaRepairLoopState(rootPath);
+  const qaCanaries = options.qaCanaries || runQaLaneCanarySuite(rootPath);
+  const qaMcpLiveStatus = buildQaMcpLiveStatus({
+    externalValidation,
+    researchState,
+    openInvestigations: researchState.investigations,
+    repairLoop,
+    structuredSummary,
+    latestBrowserRun: latestBrowserRunWithTrace,
+    localGate,
+  });
   return {
     structuredReport: structuredReportWithTrace,
     structuredBusy: false,
@@ -5591,10 +6246,21 @@ function buildQAStatePayload(rootPath = ROOT) {
     browserRuns,
     browserBusy: false,
     localGate,
+    openInvestigations: researchState.investigations,
+    researchNotes: researchState.notes,
+    researchSummary: researchState.summary,
+    researchState,
+    repairLoop,
+    qaLead: qaLeadOutput.state,
+    qaLeadRuns: qaLeadOutput.recentRuns,
+    qaLeadLatestRun: qaLeadOutput.latestRun,
+    qaCanaries,
+    qaMcpLiveStatus,
     evidenceSources: evidenceAudit.sources,
     evidenceSummary: evidenceAudit.summary,
     auditTrail,
     auditTrailSummary: auditTrail.summary || summarizeQAAuditTrail(auditTrail),
+    externalValidation,
   };
 }
 
@@ -5929,7 +6595,281 @@ function runConstrainedSafeModeFixPass(rootPath = ROOT, overrides = {}) {
   };
 }
 
-function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
+const BOOT_RECOVERY_DAEMON_FILE = 'boot-recovery-daemon.json';
+
+function bootRecoveryDaemonFilePath(rootPath = ROOT) {
+  return path.join(safeModeArtifactDir(rootPath), BOOT_RECOVERY_DAEMON_FILE);
+}
+
+function readBootRecoveryDaemonState(rootPath = ROOT) {
+  return readJsonSafe(bootRecoveryDaemonFilePath(rootPath), null);
+}
+
+function writeBootRecoveryDaemonState(rootPath = ROOT, payload = {}) {
+  const previous = readBootRecoveryDaemonState(rootPath) || {};
+  const nextState = {
+    version: 'ace/boot-recovery-daemon.v0',
+    daemon_id: 'autonomous_boot_recovery_daemon',
+    started_at: previous.started_at || nowIso(),
+    updated_at: nowIso(),
+    status: 'idle',
+    phase: 'boot_failed_detected',
+    failure_class: null,
+    failure_stage: null,
+    asset: null,
+    reason: '',
+    selected_lane: null,
+    attempt_count: 0,
+    max_attempts: 2,
+    latest_attempt: null,
+    blocked_reason: null,
+    auto_reload_ready: false,
+    boot_health: null,
+    history: Array.isArray(previous.history) ? previous.history.slice(0, 5) : [],
+    ...previous,
+    ...payload,
+  };
+  const filePath = bootRecoveryDaemonFilePath(rootPath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  writeJson(filePath, nextState);
+  return nextState;
+}
+
+function buildBootRecoveryDaemonState(rootPath = ROOT, overrides = {}) {
+  const existing = readBootRecoveryDaemonState(rootPath) || {};
+  const bootHealth = overrides.bootHealth || evaluateSpatialBootHealth();
+  const repairLoop = overrides.repairLoop || buildQaRepairLoopState(rootPath);
+  const latestJob = repairLoop?.latestJob || (Array.isArray(repairLoop?.jobs) ? repairLoop.jobs[0] : null) || null;
+  return {
+    version: 'ace/boot-recovery-daemon.v0',
+    daemon_id: existing.daemon_id || 'autonomous_boot_recovery_daemon',
+    started_at: existing.started_at || nowIso(),
+    updated_at: nowIso(),
+    status: existing.status || (bootHealth.safeMode ? 'idle' : 'healthy'),
+    phase: existing.phase || (bootHealth.safeMode ? 'boot_failed_detected' : 'healthy'),
+    failure_class: bootHealth.failureClass || existing.failure_class || null,
+    failure_stage: bootHealth.failureStage || existing.failure_stage || null,
+    asset: bootHealth.asset || existing.asset || null,
+    reason: bootHealth.reason || existing.reason || '',
+    selected_lane: existing.selected_lane || latestJob?.lane || null,
+    attempt_count: Number(existing.attempt_count || 0),
+    max_attempts: Math.max(1, Number(overrides.maxAttempts || existing.max_attempts || 2) || 2),
+    latest_attempt: existing.latest_attempt || null,
+    blocked_reason: existing.blocked_reason || null,
+    auto_reload_ready: Boolean(existing.auto_reload_ready),
+    boot_health: bootHealth,
+    history: Array.isArray(existing.history) ? existing.history.slice(0, 5) : [],
+  };
+}
+
+function findEligibleBootRecoveryJob(repairLoop = null) {
+  const jobs = Array.isArray(repairLoop?.jobs) ? repairLoop.jobs : [];
+  return jobs.find((job) => ['open', 'retry_queued'].includes(String(job?.status || '').trim())) || repairLoop?.latestJob || null;
+}
+
+function buildBootRecoveryAttemptRecord({
+  kind = 'bounded_fix',
+  status = 'unknown',
+  summary = '',
+  verdict = null,
+  reason = '',
+  lane = null,
+  jobId = null,
+  artifactRefs = [],
+} = {}) {
+  return {
+    kind,
+    status,
+    summary: String(summary || '').trim() || String(reason || '').trim() || 'No summary recorded.',
+    verdict: String(verdict || '').trim() || null,
+    reason: String(reason || '').trim() || null,
+    lane: String(lane || '').trim() || null,
+    job_id: String(jobId || '').trim() || null,
+    artifact_refs: Array.isArray(artifactRefs) ? artifactRefs.filter(Boolean) : [],
+    at: nowIso(),
+  };
+}
+
+function classifyBootRecoveryBlockedReason({
+  bootHealth = null,
+  repairResult = null,
+  fixResult = null,
+} = {}) {
+  if (String(bootHealth?.failureClass || '').trim() === 'module_load_failure') {
+    return 'blocked_needs_external_patch';
+  }
+  if (repairResult?.job?.status === 'policy_blocked' || repairResult?.safe_stop) {
+    return String(repairResult?.reason || repairResult?.job?.policy_block_reason || 'blocked_by_policy').trim() || 'blocked_by_policy';
+  }
+  if (fixResult?.autoFix?.reason) {
+    return String(fixResult.autoFix.reason).trim();
+  }
+  return String(bootHealth?.reason || 'bounded_recovery_exhausted').trim() || 'bounded_recovery_exhausted';
+}
+
+function runAutonomousBootRecoveryDaemon(rootPath = ROOT, overrides = {}) {
+  const evaluateBootHealth = typeof overrides.bootHealthEvaluator === 'function'
+    ? overrides.bootHealthEvaluator
+    : (() => evaluateSpatialBootHealth());
+  const constrainedFixRunner = typeof overrides.constrainedFixRunner === 'function'
+    ? overrides.constrainedFixRunner
+    : ((runnerOverrides = {}) => runConstrainedSafeModeFixPass(rootPath, runnerOverrides));
+  const repairLoopBuilder = typeof overrides.repairLoopBuilder === 'function'
+    ? overrides.repairLoopBuilder
+    : (() => buildQaRepairLoopState(rootPath));
+  const repairAttemptRunner = typeof overrides.repairAttemptRunner === 'function'
+    ? overrides.repairAttemptRunner
+    : ((runnerOverrides = {}) => runQaRepairAttempt(rootPath, runnerOverrides));
+
+  let bootHealth = overrides.bootHealth || evaluateBootHealth({ phase: 'initial' });
+  let daemonState = buildBootRecoveryDaemonState(rootPath, {
+    bootHealth,
+    repairLoop: overrides.repairLoop || repairLoopBuilder({ phase: 'initial' }),
+    maxAttempts: overrides.maxAttempts,
+  });
+
+  if (!bootHealth.safeMode) {
+    return writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      status: 'healthy',
+      phase: 'healthy',
+      blocked_reason: null,
+      auto_reload_ready: false,
+      boot_health: bootHealth,
+      reason: '',
+    });
+  }
+
+  if (daemonState.attempt_count >= daemonState.max_attempts) {
+    return writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      status: 'blocked',
+      phase: 'blocked',
+      blocked_reason: daemonState.blocked_reason || 'retry_cap_reached',
+      auto_reload_ready: false,
+      boot_health: bootHealth,
+    });
+  }
+
+  daemonState = writeBootRecoveryDaemonState(rootPath, {
+    ...daemonState,
+    status: 'running',
+    phase: 'bounded_fix_running',
+    attempt_count: daemonState.attempt_count + 1,
+    blocked_reason: null,
+    auto_reload_ready: false,
+    boot_health: bootHealth,
+    reason: bootHealth.reason || '',
+  });
+
+  const fixResult = constrainedFixRunner({
+    bootHealth,
+    phase: 'bounded_fix_running',
+  }) || {};
+  const fixAttempt = buildBootRecoveryAttemptRecord({
+    kind: 'bounded_fix',
+    status: fixResult.ok ? 'completed' : 'blocked',
+    summary: fixResult.message || fixResult.autoFix?.summary || fixResult.autoFix?.reason,
+    verdict: fixResult.autoFix?.status || null,
+    reason: fixResult.autoFix?.reason || fixResult.message || '',
+    lane: 'ui_boot_integrity',
+    artifactRefs: fixResult.artifactRefs || [],
+  });
+  daemonState = writeBootRecoveryDaemonState(rootPath, {
+    ...daemonState,
+    latest_attempt: fixAttempt,
+    selected_lane: 'ui_boot_integrity',
+    phase: 'preflight_recheck',
+    history: [fixAttempt, ...(daemonState.history || [])].slice(0, 5),
+  });
+
+  bootHealth = evaluateBootHealth({ phase: 'post_bounded_fix' });
+  if (!bootHealth.safeMode) {
+    return writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      status: 'recovered',
+      phase: 'recovered',
+      blocked_reason: null,
+      auto_reload_ready: true,
+      boot_health: bootHealth,
+      reason: '',
+    });
+  }
+
+  const repairLoop = overrides.repairLoop || repairLoopBuilder({ phase: 'repair_lookup' });
+  const eligibleJob = findEligibleBootRecoveryJob(repairLoop);
+  if (eligibleJob) {
+    daemonState = writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      phase: 'qa_repair_running',
+      selected_lane: eligibleJob.lane || daemonState.selected_lane || null,
+      boot_health: bootHealth,
+    });
+    const repairResult = repairAttemptRunner({
+      repairJobId: eligibleJob.id,
+      investigationId: eligibleJob.investigation_id || null,
+      phase: 'qa_repair_running',
+    }) || {};
+    const repairAttempt = buildBootRecoveryAttemptRecord({
+      kind: 'qa_repair',
+      status: repairResult.ok ? 'completed' : 'blocked',
+      summary: repairResult.validation?.summary || repairResult.reason || repairResult.job?.latest_attempt_summary,
+      verdict: repairResult.verdict || repairResult.validation?.verdict || null,
+      reason: repairResult.reason || repairResult.validation?.summary || '',
+      lane: repairResult.job?.lane || eligibleJob.lane || null,
+      jobId: repairResult.job?.id || eligibleJob.id || null,
+      artifactRefs: [],
+    });
+    daemonState = writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      latest_attempt: repairAttempt,
+      selected_lane: repairAttempt.lane || daemonState.selected_lane || null,
+      phase: 'preflight_recheck',
+      history: [repairAttempt, ...(daemonState.history || [])].slice(0, 5),
+    });
+    bootHealth = evaluateBootHealth({ phase: 'post_qa_repair' });
+    if (!bootHealth.safeMode) {
+      return writeBootRecoveryDaemonState(rootPath, {
+        ...daemonState,
+        status: 'recovered',
+        phase: 'recovered',
+        blocked_reason: null,
+        auto_reload_ready: true,
+        boot_health: bootHealth,
+        reason: '',
+      });
+    }
+    return writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      status: 'blocked',
+      phase: 'blocked',
+      blocked_reason: classifyBootRecoveryBlockedReason({
+        bootHealth,
+        repairResult,
+        fixResult,
+      }),
+      auto_reload_ready: false,
+      boot_health: bootHealth,
+      reason: bootHealth.reason || '',
+    });
+  }
+
+  return writeBootRecoveryDaemonState(rootPath, {
+    ...daemonState,
+    status: 'blocked',
+    phase: 'blocked',
+    blocked_reason: classifyBootRecoveryBlockedReason({
+      bootHealth,
+      fixResult,
+    }),
+    auto_reload_ready: false,
+    boot_health: bootHealth,
+    reason: bootHealth.reason || '',
+  });
+}
+
+function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options = {}) {
+  const rootPath = options.rootPath || ROOT;
   const layout = normalizeStudioLayoutSchema(workspace?.studio?.layout || {});
   const organization = layout.organization || {};
   const deskLayout = layout.desks?.[deskId] || null;
@@ -5947,29 +6887,50 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
     guardrails: [],
     contextSlices: [],
   };
-  const modules = listModuleManifests();
-  const tasks = collectDeskTasks(workspace, deskId);
+  const modules = listModuleManifests(rootPath);
+  const tasks = collectDeskTasks(workspace, deskId, { rootPath });
   const resolvedQAState = deskId === QA_LEAD_DESK_ID ? (qaState || buildQAStatePayload()) : null;
-  const structuredReport = resolvedQAState?.structuredReport || null;
-  const testRegistry = resolvedQAState?.testRegistry || buildQATestRegistry({
-    rootPath: ROOT,
-    structuredReport,
-  });
+  const structuredReport = resolvedQAState?.structuredReport
+    || ((deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect')
+      ? readStructuredQAReport(rootPath, 'latest')
+      : null);
+  const testRegistry = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.testRegistry || buildQATestRegistry({
+      rootPath: ROOT,
+      structuredReport,
+    }))
+    : null;
+  const researchState = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.researchState || buildQaResearchState(rootPath, resolvedQAState?.openInvestigations || []))
+    : null;
+  const repairLoop = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.repairLoop || buildQaRepairLoopState(rootPath))
+    : null;
+  const qaCanaries = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.qaCanaries || runQaLaneCanarySuite(rootPath))
+    : null;
   const qaScorecards = collectStructuredQAScorecards(structuredReport);
-  const auditTrail = resolvedQAState?.auditTrail || buildQAAuditTrail({
-    structuredReport,
-    structuredSummary: resolvedQAState?.structuredSummary || buildStructuredQASummary(structuredReport),
-    scorecards: qaScorecards,
-    latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
-    browserRuns: Array.isArray(resolvedQAState?.browserRuns) ? resolvedQAState.browserRuns : [],
-    localGate: resolvedQAState?.localGate || null,
-  });
+  const ctoOversight = deskId === 'cto-architect'
+    ? buildCanonicalCtoOversightState(tasks, qaScorecards)
+    : null;
+  const auditTrail = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.auditTrail || buildQAAuditTrail({
+      structuredReport,
+      structuredSummary: resolvedQAState?.structuredSummary || buildStructuredQASummary(structuredReport),
+      scorecards: qaScorecards,
+      latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
+      browserRuns: Array.isArray(resolvedQAState?.browserRuns) ? resolvedQAState.browserRuns : [],
+      localGate: resolvedQAState?.localGate || null,
+    }))
+    : null;
   const availableTests = deskId === QA_LEAD_DESK_ID ? listRunnableQASuites() : [];
-  const evidenceSources = [
-    ...(Array.isArray(resolvedQAState?.evidenceSources) ? resolvedQAState.evidenceSources : []),
-    ...availableTests.map((suite) => suite.sourceTrace).filter(Boolean),
-  ];
-  const evidenceSummary = summarizeQaEvidenceSources(evidenceSources);
+  const evidenceSources = deskId === QA_LEAD_DESK_ID
+    ? [
+      ...(Array.isArray(resolvedQAState?.evidenceSources) ? resolvedQAState.evidenceSources : []),
+      ...availableTests.map((suite) => suite.sourceTrace).filter(Boolean),
+    ]
+    : [];
+  const evidenceSummary = deskId === QA_LEAD_DESK_ID ? summarizeQaEvidenceSources(evidenceSources) : null;
   const primaryAgentIds = mergeUnique([...(deskLayout.assignedAgentIds || []), ...(DESK_AGENT_DEFAULTS[deskId] || [])]);
   const agents = [...new Set([...primaryAgentIds, ...deskProperties.managedAgents])]
     .map((agentId) => {
@@ -5999,18 +6960,21 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
     workload: {
       assignedTasks: tasks.length,
       queueSize: tasks.filter((task) => task.lifecycle !== 'complete').length,
-      outputs: collectDeskReports(workspace, deskId).length,
+      outputs: collectDeskReports(workspace, deskId, { rootPath }).length,
     },
     throughput: deskId === 'cto-architect'
-      ? `${qaScorecards.length} scorecards / ${deskProperties.guardrails.length} guardrails`
+      ? `${ctoOversight?.approvalNeededCount || 0} approvals / ${ctoOversight?.completedArtifactCount || 0} completed artefacts / ${ctoOversight?.scorecardCount || 0} scorecards`
       : (deskId === 'memory-archivist'
-        ? `${deskProperties.contextSlices.length} context slices / ${collectDeskReports(workspace, deskId).length} reports`
+        ? `${deskProperties.contextSlices.length} context slices / ${collectDeskReports(workspace, deskId, { rootPath }).length} reports`
         : `${tasks.filter((task) => task.lifecycle === 'complete').length} complete / ${tasks.filter((task) => task.lifecycle === 'in_progress').length} in progress`),
-    reports: collectDeskReports(workspace, deskId).slice(0, 6),
+    reports: collectDeskReports(workspace, deskId, { rootPath }).slice(0, 6),
     scorecards: deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect' ? qaScorecards : [],
     testRegistry: deskId === QA_LEAD_DESK_ID ? testRegistry : null,
     testRegistrySummary: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.testRegistrySummary || testRegistry.summary) : null,
+    openInvestigations: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.openInvestigations || []) : [],
+    repairLoop: deskId === QA_LEAD_DESK_ID ? repairLoop : null,
     assessments: deskProperties.manualTests,
+    ctoOversight,
     context: {
       summary: deskProperties.departmentContext || desk.currentGoal || desk.mission || null,
       slices: deskProperties.contextSlices,
@@ -6049,7 +7013,7 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
       ...module,
       assigned: deskProperties.moduleIds.includes(module.id),
     })),
-    reports: collectDeskReports(workspace, deskId),
+    reports: collectDeskReports(workspace, deskId, { rootPath }),
     experiments: rndExperiments?.experiments || [],
     experimentContract: rndExperiments?.contract || null,
     qa: deskId === QA_LEAD_DESK_ID
@@ -6070,6 +7034,23 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null) {
           evidenceSummary,
           auditTrail,
           auditTrailSummary: auditTrail.summary || summarizeQAAuditTrail(auditTrail),
+          externalValidation: resolvedQAState?.externalValidation || null,
+          qaMcpLiveStatus: resolvedQAState?.qaMcpLiveStatus || buildQaMcpLiveStatus({
+            externalValidation: resolvedQAState?.externalValidation || null,
+            researchState,
+            openInvestigations: researchState.investigations || resolvedQAState?.openInvestigations || [],
+            repairLoop,
+            structuredSummary: resolvedQAState?.structuredSummary || buildStructuredQASummary(structuredReport),
+            latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
+            localGate: resolvedQAState?.localGate || null,
+          }),
+          openInvestigations: researchState.investigations || resolvedQAState?.openInvestigations || [],
+          investigations: researchState.investigations || resolvedQAState?.openInvestigations || [],
+          researchNotes: researchState.notes || [],
+          researchSummary: researchState.summary || null,
+          researchState,
+          repairLoop,
+          qaCanaries,
         }
       : undefined,
     sources: {
@@ -6602,6 +7583,162 @@ function defaultSpatialWorkspace() {
   };
 }
 
+function normalizeStudioBootManifestSource(source = null) {
+  const fallback = {
+    version: 'ace/studio-boot-contract.v1',
+    root_id: 'spatial-root',
+    mount_marker: {
+      attribute: 'data-boot',
+      value: 'studio-mounted',
+    },
+    blank_render_timeout_ms: 5000,
+    entry_module_import: './spatialApp.js',
+    assets: [],
+  };
+  const resolvedSource = source && typeof source === 'object' ? source : fallback;
+  const assets = Array.isArray(resolvedSource.assets) ? resolvedSource.assets : [];
+  return {
+    version: String(resolvedSource.version || fallback.version).trim() || fallback.version,
+    root_id: String(resolvedSource.root_id || fallback.root_id).trim() || fallback.root_id,
+    mount_marker: resolvedSource.mount_marker && typeof resolvedSource.mount_marker === 'object'
+      ? {
+          attribute: String(resolvedSource.mount_marker.attribute || fallback.mount_marker.attribute).trim() || fallback.mount_marker.attribute,
+          value: String(resolvedSource.mount_marker.value || fallback.mount_marker.value).trim() || fallback.mount_marker.value,
+        }
+      : fallback.mount_marker,
+    blank_render_timeout_ms: Math.max(1000, Number(resolvedSource.blank_render_timeout_ms) || fallback.blank_render_timeout_ms),
+    entry_module_import: String(resolvedSource.entry_module_import || fallback.entry_module_import).trim() || fallback.entry_module_import,
+    assets: assets.map((asset, index) => ({
+      id: String(asset?.id || `studio_boot_asset_${index + 1}`).trim() || `studio_boot_asset_${index + 1}`,
+      path: String(asset?.path || '').trim() || '/',
+      label: String(asset?.label || asset?.path || `Studio boot asset ${index + 1}`).trim() || `Studio boot asset ${index + 1}`,
+      kind: String(asset?.kind || 'asset').trim() || 'asset',
+      stage: String(asset?.stage || 'required_modules_loaded').trim() || 'required_modules_loaded',
+      blocking: Boolean(asset?.blocking),
+    })),
+  };
+}
+
+function readStudioBootManifest() {
+  return normalizeStudioBootManifestSource(readJsonSafe(STUDIO_BOOT_MANIFEST_PATH, null));
+}
+
+function probeStudioBootAsset(asset = {}, options = {}) {
+  const normalizedPath = String(asset.path || '/').trim() || '/';
+  const publicRoot = options.publicRoot || path.join(__dirname, 'public');
+  const targetFile = normalizedPath === '/'
+    ? path.join(publicRoot, 'index.html')
+    : path.join(publicRoot, normalizedPath.replace(/^\//, '').replaceAll('/', path.sep));
+  const exists = fs.existsSync(targetFile);
+  return {
+    ...asset,
+    resolved_path: relativeToRoot(ROOT, targetFile),
+    status: exists ? 'ok' : 'missing',
+    ok: exists,
+    http_status: exists ? 200 : 404,
+    reason: exists ? '' : `${normalizedPath} returned 404 (Not Found).`,
+  };
+}
+
+function evaluateStudioClientBootContract(rootPath = ROOT, options = {}) {
+  const manifest = options.manifest ? normalizeStudioBootManifestSource(options.manifest) : readStudioBootManifest();
+  const publicRoot = options.publicRoot || path.join(__dirname, 'public');
+  const indexPath = options.indexPath || path.join(publicRoot, 'index.html');
+  const indexSource = typeof options.indexSource === 'string'
+    ? options.indexSource
+    : (fs.existsSync(indexPath) ? fs.readFileSync(indexPath, 'utf8') : '');
+  const shellLoaded = Boolean(indexSource);
+  const rootMarker = `id="${manifest.root_id}"`;
+  const hasRootDom = shellLoaded && indexSource.includes(rootMarker);
+  const assets = manifest.assets.map((asset) => probeStudioBootAsset(asset, { publicRoot }));
+  const stageState = {
+    html_loaded: {
+      status: shellLoaded ? 'ok' : 'failed',
+      ok: shellLoaded,
+      reason: shellLoaded ? '' : 'Studio shell HTML was not found.',
+    },
+    root_dom_found: {
+      status: hasRootDom ? 'ok' : 'failed',
+      ok: hasRootDom,
+      reason: hasRootDom ? '' : `Studio shell root "${manifest.root_id}" was not found in index.html.`,
+    },
+    core_bundle_loaded: {
+      status: 'ok',
+      ok: true,
+      reason: '',
+    },
+    required_modules_loaded: {
+      status: 'ok',
+      ok: true,
+      reason: '',
+    },
+    app_mounted: {
+      status: 'unknown',
+      ok: null,
+      reason: 'Client watchdog must confirm mount marker visibility.',
+    },
+    first_render_complete: {
+      status: 'unknown',
+      ok: null,
+      reason: 'Client watchdog must confirm first render completion.',
+    },
+  };
+
+  const blockingFailure = assets.find((asset) => !asset.ok && asset.blocking) || null;
+  const coreBlockingFailure = assets.find((asset) => asset.stage === 'core_bundle_loaded' && !asset.ok && asset.blocking) || null;
+  const requiredBlockingFailure = assets.find((asset) => asset.stage === 'required_modules_loaded' && !asset.ok && asset.blocking) || null;
+  const warnings = assets.filter((asset) => !asset.ok && !asset.blocking);
+
+  if (coreBlockingFailure) {
+    stageState.core_bundle_loaded = {
+      status: 'failed',
+      ok: false,
+      reason: `Studio shell mounted, but boot failed because required client asset "${coreBlockingFailure.path}" was missing.`,
+      asset: coreBlockingFailure.path,
+      http_status: coreBlockingFailure.http_status,
+      failure_class: 'missing_client_asset',
+    };
+  }
+  if (requiredBlockingFailure) {
+    stageState.required_modules_loaded = {
+      status: 'failed',
+      ok: false,
+      reason: `Studio shell mounted, but boot failed because required client asset "${requiredBlockingFailure.path}" was missing.`,
+      asset: requiredBlockingFailure.path,
+      http_status: requiredBlockingFailure.http_status,
+      failure_class: 'missing_client_asset',
+    };
+  }
+
+  const ok = shellLoaded && hasRootDom && !blockingFailure;
+  const failureStage = !shellLoaded
+    ? 'html_loaded'
+    : (!hasRootDom ? 'root_dom_found' : (blockingFailure?.stage || null));
+  const reason = !shellLoaded
+    ? 'Studio shell HTML was not found.'
+    : (!hasRootDom
+        ? `Studio shell root "${manifest.root_id}" was not found in index.html.`
+        : (blockingFailure
+            ? `Studio shell mounted, but boot failed because required client asset "${blockingFailure.path}" was missing.`
+            : ''));
+
+  return {
+    version: manifest.version,
+    ok,
+    safeMode: !ok,
+    failure_class: blockingFailure ? 'missing_client_asset' : (!shellLoaded || !hasRootDom ? 'boot_contract_mismatch' : null),
+    failure_stage: failureStage,
+    reason,
+    asset: blockingFailure?.path || null,
+    http_status: blockingFailure?.http_status || null,
+    mount_marker: manifest.mount_marker,
+    root_id: manifest.root_id,
+    stages: stageState,
+    assets,
+    warnings,
+  };
+}
+
 function getSelfUpgradeState(workspace) {
   return normalizeSelfUpgradeState(workspace?.studio?.selfUpgrade, {
     serverStartedAt: SERVER_STARTED_AT,
@@ -6626,6 +7763,7 @@ function normalizeSpatialWorkspaceShape(workspace = {}) {
       layout: normalizeStudioLayoutSchema(baseWorkspace?.studio?.layout || {}),
       deskProperties: normalizeDeskPropertiesState(baseWorkspace),
       ctoOverrides: normalizeCtoOverrideLedger(baseWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
+      intake: normalizeCanonicalIntakeState(baseWorkspace?.studio?.intake),
       selfUpgrade: getSelfUpgradeState(baseWorkspace),
     },
   };
@@ -6671,6 +7809,36 @@ function persistSpatialWorkspace(nextWorkspace) {
     ignoreKeys: SPATIAL_WORKSPACE_VOLATILE_KEYS,
   });
   return advancedWorkspace;
+}
+
+function persistSpatialWorkspaceForRoot(rootPath = ROOT, nextWorkspace) {
+  if (rootPath === ROOT) {
+    return persistSpatialWorkspace(nextWorkspace);
+  }
+  const workspaceFile = path.join(rootPath, 'data', 'spatial', 'workspace.json');
+  const normalizedWorkspace = normalizeSpatialWorkspaceShape(nextWorkspace);
+  fs.mkdirSync(path.dirname(workspaceFile), { recursive: true });
+  writeJson(workspaceFile, normalizedWorkspace, {
+    ignoreKeys: SPATIAL_WORKSPACE_VOLATILE_KEYS,
+  });
+  return normalizedWorkspace;
+}
+
+function persistCanonicalIntakeRecord(record = {}, { rootPath = ROOT, workspace = null } = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace(rootPath));
+  const nextWrite = upsertCanonicalIntakeRecord(currentWorkspace?.studio?.intake, record);
+  const nextWorkspace = persistSpatialWorkspaceForRoot(rootPath, {
+    ...currentWorkspace,
+    studio: {
+      ...(currentWorkspace.studio || {}),
+      intake: nextWrite.state,
+    },
+  });
+  return {
+    workspace: nextWorkspace,
+    intakeState: normalizeCanonicalIntakeState(nextWorkspace?.studio?.intake),
+    intakeRecord: normalizeCanonicalIntakeRecord(nextWrite.record),
+  };
 }
 
 function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = null, anchorRefs = [], tasksDir = TASKS_DIR, rootPath = ROOT }) {
@@ -7074,6 +8242,189 @@ function buildSpatialRuntimePayload(workspace, options = {}) {
     qaState,
     qaDebug: buildQADebugPayload(qaState),
     plannerOuttray: summarizePlannerOuttray(plannerOuttray),
+    intake: normalizeCanonicalIntakeState(workspace?.studio?.intake),
+  };
+}
+
+function buildCanonicalRouteRef(route, recordPath = null) {
+  return {
+    kind: 'route',
+    route,
+    recordPath,
+  };
+}
+
+function buildCanonicalFileRef(rootPath, filePath, recordPath = null) {
+  return {
+    kind: 'file',
+    path: relativeToRoot(rootPath, filePath),
+    recordPath,
+  };
+}
+
+function buildGovernedLoopContract(workspace = null, options = {}) {
+  const rootPath = options.rootPath || ROOT;
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace(rootPath));
+  const workspaceFile = path.join(rootPath, 'data', 'spatial', 'workspace.json');
+  const pagesFile = path.join(rootPath, 'data', 'spatial', 'pages.json');
+  const intentStateFile = path.join(rootPath, 'data', 'spatial', 'intent-state.json');
+  const studioStateFile = path.join(rootPath, 'data', 'spatial', 'studio-state.json');
+  const plannerQaQueueFile = path.join(rootPath, PLANNER_QA_RELATIVE_DIR, PLANNER_QA_QUEUE_JSON_NAME);
+  const plannerOuttrayFile = path.join(rootPath, PLANNER_OUTTRAY_RELATIVE_DIR, PLANNER_OUTTRAY_QUEUE_JSON_NAME);
+  const structuredQaFile = path.join(rootPath, STRUCTURED_QA_RELATIVE_DIR, 'latest.json');
+  const repairJobsFile = path.join(rootPath, 'data', 'spatial', 'qa', 'repair-jobs.json');
+  const repairAttemptsFile = path.join(rootPath, 'data', 'spatial', 'qa', 'repair-attempts.json');
+  const throughputDir = path.join(rootPath, 'data', 'spatial', 'throughput');
+  const throughputSessions = listThroughputSessions(rootPath);
+  const latestSession = throughputSessions[0] || null;
+  const plannerQaQueue = readPlannerQaQueue(rootPath);
+  const plannerOuttray = readPlannerOuttray(rootPath);
+  const plannerVisibleTasks = collectDeskTasks(currentWorkspace, 'planner', { rootPath })
+    .filter((task) => task.source === 'team-board')
+    .slice(0, 12);
+  const ctoVisibleTasks = collectDeskTasks(currentWorkspace, 'cto-architect', { rootPath })
+    .filter((task) => task.source === 'team-board')
+    .slice(0, 12);
+  const qaLeadOutput = readQaLeadOutput(rootPath);
+  const repairLoop = buildQaRepairLoopState(rootPath);
+  const structuredReport = readStructuredQAReport(rootPath, 'latest');
+  const currentIntent = getCurrentSpatialIntent(currentWorkspace.intentState);
+  const archivistPaths = contextBundlePaths(rootPath);
+  const { bundle: archivistBundle, archivistJsonPath } = readCanonicalArchivistBundle(rootPath);
+  const archivistMarkdownPath = archivistPaths.find((candidatePath) => candidatePath.endsWith('.md')) || null;
+  const ctoDiagnostics = readCtoDiagnostics(rootPath);
+  const ctoPipeline = currentWorkspace?.studio?.ctoPipeline || null;
+  const ctoOverrides = currentWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger();
+  return {
+    contractVersion: 'governed-loop.v1',
+    generatedAt: nowIso(),
+    source: '/api/spatial/governed-loop/contract',
+    canonical: true,
+    domains: {
+      input: {
+        canonicalOwner: 'spatial workspace + intent registry',
+        activePageId: currentWorkspace.activePageId || null,
+        pageIds: (Array.isArray(currentWorkspace.pages) ? currentWorkspace.pages : [])
+          .map((page) => String(page?.id || page?.pageId || '').trim())
+          .filter(Boolean),
+        annotationIds: (Array.isArray(currentWorkspace.annotations) ? currentWorkspace.annotations : [])
+          .map((item) => String(item?.id || '').trim())
+          .filter(Boolean),
+        sketchIds: (Array.isArray(currentWorkspace.sketches) ? currentWorkspace.sketches : [])
+          .map((item) => String(item?.id || '').trim())
+          .filter(Boolean),
+        currentIntentId: currentWorkspace.intentState?.currentIntentId || null,
+        currentIntent,
+        intake: normalizeCanonicalIntakeState(currentWorkspace?.studio?.intake),
+        sources: [
+          buildCanonicalFileRef(rootPath, workspaceFile, 'workspace'),
+          buildCanonicalFileRef(rootPath, pagesFile, 'pages'),
+          buildCanonicalFileRef(rootPath, intentStateFile, 'intentState.registry'),
+          buildCanonicalFileRef(rootPath, workspaceFile, 'studio.intake'),
+          buildCanonicalRouteRef('/api/spatial/workspace', 'intentState'),
+          buildCanonicalRouteRef('/api/spatial/governed-loop/contract', 'domains.input.intake'),
+        ],
+      },
+      planner: {
+        canonicalOwner: 'planner handoff queue + planner outtray',
+        contextToPlanner: currentWorkspace?.studio?.handoffs?.contextToPlanner || null,
+        visibleWork: plannerVisibleTasks,
+        qaQueue: {
+          updatedAt: plannerQaQueue.updatedAt || null,
+          latestEntry: plannerQaQueue.entries[0] || null,
+          summary: summarizePlannerQaQueue(plannerQaQueue),
+        },
+        outtray: {
+          updatedAt: plannerOuttray.updatedAt || null,
+          latestEntry: plannerOuttray.entries[0] || null,
+          summary: summarizePlannerOuttray(plannerOuttray),
+        },
+        sources: [
+          buildCanonicalFileRef(rootPath, studioStateFile, 'studio.handoffs.contextToPlanner'),
+          buildCanonicalFileRef(rootPath, plannerQaQueueFile, 'entries'),
+          buildCanonicalFileRef(rootPath, plannerOuttrayFile, 'entries'),
+          buildCanonicalRouteRef('/api/spatial/desks/planner/properties', 'tasks'),
+          buildCanonicalRouteRef('/api/task-artifacts', 'task artifact evidence by taskId'),
+          buildCanonicalRouteRef('/api/spatial/planner/qa-queue', 'queue'),
+          buildCanonicalRouteRef('/api/spatial/planner/outtray', 'queue'),
+        ],
+      },
+      execution: {
+        canonicalOwner: 'throughput sessions',
+        latestSession: latestSession ? {
+          id: latestSession.id,
+          status: latestSession.status,
+          verdict: latestSession.verdict,
+          runnerTaskId: latestSession.runnerTaskId || null,
+          qaRunId: latestSession.qaRunId || null,
+          intentId: latestSession.intentId || latestSession.provenance?.sourceIntentId || null,
+          createdAt: latestSession.createdAt || null,
+          finishedAt: latestSession.finishedAt || null,
+        } : null,
+        sources: [
+          {
+            kind: 'directory',
+            path: relativeToRoot(rootPath, throughputDir),
+            recordPath: latestSession?.id ? `${latestSession.id}.json` : null,
+          },
+          buildCanonicalRouteRef('/api/spatial/debug/throughput', 'sessions'),
+        ],
+      },
+      qa: {
+        canonicalOwner: 'structured qa + qa lead + repair loop',
+        structuredReport,
+        qaLead: {
+          state: qaLeadOutput.state,
+          latestRun: qaLeadOutput.latestRun,
+        },
+        repairLoop: {
+          summary: repairLoop.summary,
+          latestJob: repairLoop.latestJob,
+          latestAttempt: repairLoop.latestAttempt,
+        },
+        sources: [
+          buildCanonicalFileRef(rootPath, structuredQaFile, 'structuredReport'),
+          buildCanonicalFileRef(rootPath, getQaLeadStateFilePath(rootPath), 'state'),
+          {
+            kind: 'directory',
+            path: relativeToRoot(rootPath, getQaLeadRunsDir(rootPath)),
+            recordPath: qaLeadOutput.latestRun?.id ? `${qaLeadOutput.latestRun.id}.json` : null,
+          },
+          buildCanonicalFileRef(rootPath, repairJobsFile, 'jobs'),
+          buildCanonicalFileRef(rootPath, repairAttemptsFile, 'attempts'),
+          buildCanonicalRouteRef('/api/qa/lead/state', 'qaLead'),
+          buildCanonicalRouteRef('/api/qa/repair-loop/state', 'repairLoop'),
+        ],
+      },
+      archivist: {
+        canonicalOwner: 'archivist context bundle',
+        latestBundle: archivistBundle,
+        sources: [
+          archivistJsonPath ? buildCanonicalFileRef(rootPath, archivistJsonPath, 'bundle') : null,
+          archivistMarkdownPath ? buildCanonicalFileRef(rootPath, archivistMarkdownPath, 'markdown') : null,
+          buildCanonicalRouteRef('/api/spatial/archive/writeback', 'writeback trigger'),
+        ].filter(Boolean),
+      },
+      cto: {
+        canonicalOwner: 'studio cto pipeline + cto diagnostics + cto overrides',
+        pipeline: ctoPipeline,
+        pipelineSummary: summarizeCtoPipelineState(ctoPipeline),
+        pendingApprovals: ctoVisibleTasks,
+        diagnostics: {
+          updatedAt: ctoDiagnostics.updated_at || null,
+          latestEntry: ctoDiagnostics.entries[0] || null,
+          counts: summarizeCtoDiagnostics(ctoDiagnostics.entries),
+        },
+        overrides: ctoOverrides,
+        sources: [
+          buildCanonicalFileRef(rootPath, workspaceFile, 'studio.ctoPipeline'),
+          buildCanonicalFileRef(rootPath, workspaceFile, 'studio.ctoOverrides'),
+          buildCanonicalFileRef(rootPath, path.join(rootPath, 'data', 'spatial', 'cto-diagnostics.json'), 'entries'),
+          buildCanonicalRouteRef('/api/spatial/cto/diagnostics', 'diagnostics'),
+          buildCanonicalRouteRef('/api/spatial/desks/cto-architect/properties', 'tasks'),
+        ],
+      },
+    },
   };
 }
 
@@ -7154,13 +8505,18 @@ let contextManagerWorkerAutomationRunning = false;
 let plannerWorkerAutomationRunning = false;
 let executorWorkerAutomationRunning = false;
 
-function readSpatialWorkspace() {
-  ensureSpatialStorage();
-  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
-  const pagesState = readJsonSafe(SPATIAL_PAGES_FILE, null);
-  const intentState = readJsonSafe(SPATIAL_INTENT_STATE_FILE, null);
-  const studioState = normalizeStoredStudioState(readJsonSafe(SPATIAL_STUDIO_STATE_FILE, null));
-  const architectureState = readJsonSafe(SPATIAL_ARCHITECTURE_MEMORY_FILE, null);
+function readSpatialWorkspace(rootPath = ROOT) {
+  if (rootPath === ROOT) ensureSpatialStorage();
+  const workspaceFile = rootPath === ROOT ? SPATIAL_WORKSPACE_FILE : path.join(rootPath, 'data', 'spatial', 'workspace.json');
+  const pagesFile = rootPath === ROOT ? SPATIAL_PAGES_FILE : path.join(rootPath, 'data', 'spatial', 'pages.json');
+  const intentStateFile = rootPath === ROOT ? SPATIAL_INTENT_STATE_FILE : path.join(rootPath, 'data', 'spatial', 'intent-state.json');
+  const studioStateFile = rootPath === ROOT ? SPATIAL_STUDIO_STATE_FILE : path.join(rootPath, 'data', 'spatial', 'studio-state.json');
+  const architectureFile = rootPath === ROOT ? SPATIAL_ARCHITECTURE_MEMORY_FILE : path.join(rootPath, 'data', 'spatial', 'architecture-memory.json');
+  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(workspaceFile, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const pagesState = readJsonSafe(pagesFile, null);
+  const intentState = readJsonSafe(intentStateFile, null);
+  const studioState = normalizeStoredStudioState(readJsonSafe(studioStateFile, null));
+  const architectureState = readJsonSafe(architectureFile, null);
   return normalizeSpatialWorkspaceShape(projectCanonicalSlicesIntoWorkspace({
     ...workspace,
     pages: Array.isArray(pagesState?.pages) ? pagesState.pages : workspace.pages,
@@ -7182,6 +8538,10 @@ function relativeToRoot(rootPathOrTargetPath, maybeTargetPath = null) {
   const targetPath = maybeTargetPath || rootPathOrTargetPath;
   if (!rootPath || !targetPath) return null;
   return path.relative(rootPath, targetPath).replace(/\\/g, '/');
+}
+
+function uniqueStrings(values = []) {
+  return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
 }
 
 function plannerCardSourceKey(pageId, title) {
@@ -7309,6 +8669,8 @@ function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
   const producedCardIds = [];
   const sourceFixTask = handoff?.sourceFixTask || null;
   const sourceFixTaskTaskId = sourceFixTask?.taskDirPath ? sourceFixTask.taskId || null : null;
+  const canonicalSourceIntentId = handoff?.sourceIntentId || handoff?.intentId || handoff?.sourceNodeId || null;
+  const canonicalSourceIntakeId = handoff?.sourceIntakeId || null;
   for (const plannerCard of plannerCards) {
     const sourceKey = plannerCardSourceKey(notebook.activePageId, plannerCard.title);
     const existingIndex = cards.findIndex((card) => card.sourceKey === sourceKey && card.sourceHandoffId === handoff?.id);
@@ -7319,6 +8681,9 @@ function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
         summary: plannerCard.summary || existingCard.summary || '',
         targetProjectKey: plannerCard.targetProjectKey || existingCard.targetProjectKey || SELF_TARGET_KEY,
         sourceAnchorRefs: mergeUnique([...(existingCard.sourceAnchorRefs || []), ...(plannerCard.anchorRefs || [])]),
+        sourceIntentId: existingCard.sourceIntentId || canonicalSourceIntentId,
+        sourceIntakeId: existingCard.sourceIntakeId || canonicalSourceIntakeId,
+        sourceHandoffId: existingCard.sourceHandoffId || handoff?.id || null,
         sourceFixTaskId: existingCard.sourceFixTaskId || handoff?.sourceFixTaskId || null,
         sourceFixTaskParentTaskId: existingCard.sourceFixTaskParentTaskId || handoff?.sourceFixTaskParentTaskId || null,
         sourceFixTaskQueueKey: existingCard.sourceFixTaskQueueKey || handoff?.sourceFixTaskQueueKey || null,
@@ -7334,7 +8699,7 @@ function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
           assignmentState: 'unassigned',
           ownerDeskId: 'planner',
           assigneeDeskId: 'executor',
-          sourceIntentId: handoff?.sourceNodeId || null,
+          sourceIntentId: canonicalSourceIntentId,
           sourceHandoffId: handoff?.id || null,
           lastTransitionAt: handoff?.createdAt || nowIso(),
           lastTransitionLabel: 'Moved to planner board',
@@ -7351,6 +8716,8 @@ function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
         pageId: notebook.activePageId,
         handoffId: handoff?.id || null,
         sourceNodeId: handoff?.sourceNodeId || null,
+        sourceIntentId: canonicalSourceIntentId,
+        sourceIntakeId: canonicalSourceIntakeId,
         sourceAnchorRefs: plannerCard.anchorRefs || handoff?.anchorRefs || [],
         title: plannerCard.title,
         createdAt: handoff?.createdAt || null,
@@ -7811,6 +9178,7 @@ async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffI
 async function maybeRunContextManagerWorker(workspace = null, {
   text,
   sourceNodeId = null,
+  sourceIntakeId = null,
   source = 'context-intake',
   sourceType = 'context-intake',
   sourceRef = null,
@@ -7920,9 +9288,19 @@ async function maybeRunContextManagerWorker(workspace = null, {
       timeoutMs: Number(timeoutMs) > 0 ? Number(timeoutMs) : null,
       runId,
     });
+    const resultWithCanonicalHandoff = result?.handoff
+      ? {
+          ...result,
+          handoff: {
+            ...result.handoff,
+            sourceIntentId: result.handoff.sourceIntentId || result.handoff.intentId || null,
+            sourceIntakeId: result.handoff.sourceIntakeId || sourceIntakeId || null,
+          },
+        }
+      : result;
     const nextWorkspace = persistSpatialWorkspace(applyContextManagerRunResult(
       readSpatialWorkspace(),
-      result,
+      resultWithCanonicalHandoff,
       { runId, mode, previousHandoff, plannerFeedback: activePlannerFeedback },
     ));
     appendArchitectureHistory({
@@ -7937,12 +9315,12 @@ async function maybeRunContextManagerWorker(workspace = null, {
       },
     });
     return {
-      ok: result.ok,
+      ok: resultWithCanonicalHandoff.ok,
       skipped: false,
-      reason: result.reason || '',
+      reason: resultWithCanonicalHandoff.reason || '',
       workspace: nextWorkspace,
       preflight: buildGuardSurfacePayload({ stage: 'context-manager', preflight }),
-      result,
+      result: resultWithCanonicalHandoff,
     };
   } finally {
     contextManagerWorkerAutomationRunning = false;
@@ -8057,36 +9435,6 @@ async function maybeRunExecutorWorker(workspace = null, { mode = 'manual', cardI
   } finally {
     executorWorkerAutomationRunning = false;
   }
-}
-
-function findTaskFolderByTaskId(taskId) {
-  return getTaskFolders().find((folder) => folder.startsWith(String(taskId || '').slice(0, 4))) || null;
-}
-
-function readTaskArtifactStatus(taskId = '') {
-  const normalizedTaskId = String(taskId || '').trim();
-  const folder = normalizedTaskId ? findTaskFolderByTaskId(normalizedTaskId) : null;
-  const taskDir = folder ? path.join(TASKS_DIR, folder) : null;
-  const artifacts = TASK_ARTIFACT_NAMES.map((name) => {
-    const fullPath = taskDir ? path.join(taskDir, name) : null;
-    return {
-      name,
-      exists: Boolean(fullPath && fs.existsSync(fullPath)),
-      path: fullPath ? relativeToRoot(fullPath) : null,
-    };
-  });
-  return {
-    taskId: normalizedTaskId || null,
-    folder,
-    taskDir: taskDir ? relativeToRoot(taskDir) : null,
-    artifacts,
-    presentCount: artifacts.filter((artifact) => artifact.exists).length,
-    totalCount: artifacts.length,
-    taskCache: {
-      planner: summarizeTaskCache(readTaskCache(ROOT, { taskId: normalizedTaskId || null, taskDir, stage: 'planner' })),
-      executor: summarizeTaskCache(readTaskCache(ROOT, { taskId: normalizedTaskId || null, taskDir, stage: 'executor' })),
-    },
-  };
 }
 
 function buildPreLlmGuardInput({
@@ -10017,14 +11365,12 @@ function executeActionSync(action, body) {
 }
 
 function evaluateSpatialBootHealth() {
-  if (spatialBootHealthSnapshot) {
-    return spatialBootHealthSnapshot;
-  }
   try {
     const workspace = readSpatialWorkspace();
     const runtime = buildSpatialRuntimePayload(workspace);
     const systemGraph = runtime?.graphs?.system || null;
     const worldGraph = runtime?.graphs?.world || null;
+    const clientBootContract = evaluateStudioClientBootContract(ROOT);
     const hasGraphShape = Boolean(
       runtime
       && runtime.graphs
@@ -10040,12 +11386,21 @@ function evaluateSpatialBootHealth() {
       && runtime.teamBoard
       && runtime.rsg,
     );
+    const ok = hasGraphShape && clientBootContract.ok;
+    const reason = clientBootContract.ok
+      ? (hasGraphShape ? '' : 'Spatial runtime shape check failed.')
+      : clientBootContract.reason;
     spatialBootHealthSnapshot = {
       checked: true,
-      ok: hasGraphShape,
-      safeMode: !hasGraphShape,
-      reason: hasGraphShape ? '' : 'Spatial runtime shape check failed.',
+      ok,
+      safeMode: !ok,
+      reason,
       checkedAt: nowIso(),
+      failureClass: clientBootContract.failure_class || (!hasGraphShape ? 'runtime_shape_failure' : null),
+      failureStage: clientBootContract.failure_stage || (!hasGraphShape ? 'runtime_shape' : null),
+      asset: clientBootContract.asset || null,
+      httpStatus: clientBootContract.http_status || null,
+      clientBootContract,
       stateShape: hasGraphShape
         ? {
             systemNodes: systemGraph.nodes.length,
@@ -10063,6 +11418,11 @@ function evaluateSpatialBootHealth() {
       safeMode: true,
       reason: String(error.message || error),
       checkedAt: nowIso(),
+      failureClass: 'runtime_shape_failure',
+      failureStage: 'runtime_shape',
+      asset: null,
+      httpStatus: null,
+      clientBootContract: evaluateStudioClientBootContract(ROOT),
       stateShape: null,
     };
   }
@@ -10083,6 +11443,38 @@ function getHealthSnapshot() {
       status: selfUpgrade.status,
       deploy: selfUpgrade.deploy,
     },
+  };
+}
+
+function reconcileUiBootIntegrityRepair(options = {}) {
+  const bootHealth = options.bootHealth || evaluateSpatialBootHealth();
+  const bridgeResult = maybeBridgeUiBootIntegrityInvestigations(ROOT, {
+    bootHealth,
+    checkedAt: nowIso(),
+    limit: options.limit || 10,
+  });
+  if (bridgeResult.investigation) {
+    maybeBridgeOpenInvestigationsToRepairJobs(ROOT, {
+      investigations: readOpenQaInvestigations(ROOT, options.limit || 10),
+    });
+  }
+  let repairResult = null;
+  if (options.attemptRepair !== false) {
+    const repairJob = readQaRepairJobs(ROOT).find((job) => (
+      job.lane === UI_BOOT_INTEGRITY_LANE
+      && job.status === 'open'
+      && Number(job.attempt_count || 0) < Number(job.max_attempts || 1)
+    )) || null;
+    if (repairJob) {
+      repairResult = runQaRepairAttempt(ROOT, {
+        repairJobId: repairJob.id,
+      });
+    }
+  }
+  return {
+    bootHealth,
+    bridgeResult,
+    repairResult,
   };
 }
 
@@ -10359,6 +11751,27 @@ app.get('/api/runs', (req, res) => {
     });
   });
 
+  app.get('/api/spatial/recovery-daemon/state', (req, res) => {
+    res.json({
+      ok: true,
+      daemon: buildBootRecoveryDaemonState(ROOT),
+    });
+  });
+
+  app.post('/api/spatial/recovery-daemon/start', (req, res) => {
+    try {
+      res.json({
+        ok: true,
+        daemon: runAutonomousBootRecoveryDaemon(ROOT),
+      });
+    } catch (error) {
+      res.status(500).json({
+        ok: false,
+        error: String(error.message || error),
+      });
+    }
+  });
+
   app.post('/api/spatial/safe-mode/diagnosis', (req, res) => {
     try {
       res.json(runSafeModeDiagnosis(ROOT));
@@ -10406,15 +11819,38 @@ app.get('/api/runs', (req, res) => {
 
 app.get('/api/qa/external-probe-check', async (req, res) => {
   try {
-    const qaState = buildQAStatePayload(ROOT);
+    const qaState = buildQAStatePayload(ROOT, {
+      externalValidation: latestExternalValidationSnapshot,
+    });
+    const checkedAt = nowIso();
     const payload = await buildExternalQaProbeCheckPayload({
       qaState,
       probeUrl: 'http://127.0.0.1:5051/run_test',
       timeoutMs: 1500,
+      investigationRootPath: ROOT,
     });
-    res.status(payload.ok ? 200 : 503).json(payload);
+    latestExternalValidationSnapshot = buildExternalValidationSnapshot({
+      probeCheck: payload,
+      checkedAt,
+    });
+    maybeBridgeOpenInvestigationsToRepairJobs(ROOT, {
+      investigations: readOpenQaInvestigations(ROOT, 10),
+    });
+    await maybeGenerateQaResearchNotesForInvestigations(ROOT, readOpenQaInvestigations(ROOT, 10));
+    const repairLoop = buildQaRepairLoopState(ROOT);
+    const researchState = buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10));
+    res.status(payload.ok ? 200 : 503).json({
+      ...payload,
+      externalValidation: latestExternalValidationSnapshot,
+      repairLoop,
+      researchState,
+    });
   } catch (error) {
     const reason = String(error?.message || error);
+    latestExternalValidationSnapshot = buildExternalValidationSnapshot({
+      probeCheck: null,
+      checkedAt: nowIso(),
+    });
     res.status(500).json({
       ok: false,
       external_probe: null,
@@ -10433,6 +11869,71 @@ app.get('/api/qa/external-probe-check', async (req, res) => {
         kind: 'route_error',
         message: reason,
       },
+      externalValidation: latestExternalValidationSnapshot,
+    });
+  }
+});
+
+app.get('/api/qa/repair-loop/state', (req, res) => {
+  try {
+    reconcileUiBootIntegrityRepair({ attemptRepair: false });
+    const repairLoop = buildQaRepairLoopState(ROOT);
+    res.json({
+      ok: true,
+      repairLoop,
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  }
+});
+
+app.get('/api/qa/lead/state', (req, res) => {
+  try {
+    const qaLead = readQaLeadOutput(ROOT);
+    res.json({
+      ok: true,
+      qaLead: qaLead.state,
+      latestRun: qaLead.latestRun,
+      runs: qaLead.recentRuns,
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  }
+});
+
+app.post('/api/qa/repair-loop/run', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const repairResult = runQaRepairAttempt(ROOT, {
+      repairJobId: String(body.repairJobId || body.repair_job_id || '').trim() || null,
+      investigationId: String(body.investigationId || body.investigation_id || '').trim() || null,
+      attemptId: String(body.attemptId || body.attempt_id || '').trim() || null,
+    });
+    await maybeGenerateQaResearchNotesForInvestigations(ROOT, readOpenQaInvestigations(ROOT, 10));
+    const repairLoop = buildQaRepairLoopState(ROOT);
+    const researchState = buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10));
+    res.status(repairResult.ok ? 200 : 404).json({
+      ...repairResult,
+      repairLoop,
+      researchState,
+    });
+  } catch (error) {
+    const reason = String(error?.message || error);
+    res.status(500).json({
+      ok: false,
+      verdict: 'inconclusive',
+      reason,
+      error: reason,
+      repairLoop: buildQaRepairLoopState(ROOT),
+      researchState: buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10)),
     });
   }
 });
@@ -10821,6 +12322,19 @@ app.get('/api/spatial/workspace', async (req, res) => {
   workspace.studio = workspace.studio || {};
   workspace.rsg = workspace.rsg || buildRsgState(workspace);
   res.json(workspace);
+});
+
+app.get('/api/spatial/governed-loop/contract', (req, res) => {
+  try {
+    const workspace = readSpatialWorkspace();
+    res.json(buildGovernedLoopContract(workspace));
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  }
 });
 
 app.get('/api/spatial/layout/catalog', (req, res) => {
@@ -11899,17 +13413,67 @@ app.post('/api/spatial/executive/route', async (req, res) => {
     return res.status(400).json({ error: 'prompt node content is required.', envelope });
   }
 
+  const intakeOriginRoute = '/api/spatial/executive/route';
+  const intakeWrite = persistCanonicalIntakeRecord({
+    channel: 'canvas_text',
+    text: promptText,
+    requestedBy: 'canvas-intent',
+    sourceType: 'canvas-text',
+    sourceRef: envelope.nodes.prompt.node_id || null,
+    originRoute: intakeOriginRoute,
+    processingStatus: 'recorded',
+    intentExtraction: buildCanonicalIntentExtractionState({
+      status: 'pending',
+    }),
+  });
+  let intakeWorkspace = intakeWrite.workspace;
+  let intakeRecord = intakeWrite.intakeRecord;
+  let intakeState = intakeWrite.intakeState;
+  const finalizeCanvasIntake = (patch = {}, options = {}) => {
+    const nextWrite = persistCanonicalIntakeRecord({
+      ...intakeRecord,
+      ...patch,
+      id: intakeRecord.id,
+      channel: 'canvas_text',
+      text: promptText,
+      requestedBy: intakeRecord.requestedBy,
+      sourceType: intakeRecord.sourceType,
+      sourceRef: intakeRecord.sourceRef,
+      originRoute: intakeRecord.originRoute || intakeOriginRoute,
+      createdAt: intakeRecord.createdAt,
+      updatedAt: nowIso(),
+    }, {
+      workspace: options.workspace || null,
+    });
+    intakeWorkspace = nextWrite.workspace;
+    intakeRecord = nextWrite.intakeRecord;
+    intakeState = nextWrite.intakeState;
+    return nextWrite;
+  };
+
   const forceIntentScan = Boolean(body.override?.force_intent_scan);
   if (!forceIntentScan) {
-    const workspace = readSpatialWorkspace();
-    const graphs = normalizeGraphBundle(workspace);
+    const graphs = normalizeGraphBundle(intakeWorkspace);
     const scaffoldRoute = await resolveWorldScaffoldExecutiveRoute({
       promptText,
       envelope,
       graphs,
     });
     if (scaffoldRoute?.matched) {
-      return res.status(scaffoldRoute.statusCode).json(scaffoldRoute.body);
+      finalizeCanvasIntake({
+        processingStatus: scaffoldRoute.body?.ok === false ? 'blocked' : 'routed',
+        route: 'world-scaffold',
+        resultSummary: scaffoldRoute.body?.error || scaffoldRoute.body?.reason || scaffoldRoute.body?.summary || 'Executive route selected world scaffold.',
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: scaffoldRoute.body?.error || scaffoldRoute.body?.reason || 'Intent extraction did not run for the world scaffold route.',
+        }),
+      });
+      return res.status(scaffoldRoute.statusCode).json({
+        ...scaffoldRoute.body,
+        intakeRecord,
+        intakeState,
+      });
     }
     const worldEditRoute = resolveWorldEditExecutiveRoute({
       promptText,
@@ -11917,7 +13481,20 @@ app.post('/api/spatial/executive/route', async (req, res) => {
       graphs,
     });
     if (worldEditRoute?.matched) {
-      return res.status(worldEditRoute.statusCode).json(worldEditRoute.body);
+      finalizeCanvasIntake({
+        processingStatus: worldEditRoute.body?.ok === false ? 'blocked' : 'routed',
+        route: 'world-edit',
+        resultSummary: worldEditRoute.body?.error || worldEditRoute.body?.reason || worldEditRoute.body?.summary || 'Executive route selected world edit.',
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: worldEditRoute.body?.error || worldEditRoute.body?.reason || 'Intent extraction did not run for the world edit route.',
+        }),
+      });
+      return res.status(worldEditRoute.statusCode).json({
+        ...worldEditRoute.body,
+        intakeRecord,
+        intakeState,
+      });
     }
   }
   const looksLikeMaterial = detectMaterialGenerationIntent(promptText)
@@ -11930,14 +13507,34 @@ app.post('/api/spatial/executive/route', async (req, res) => {
     });
     if (!moduleRun.ok) {
       const status = moduleRun.error?.code === 'validation-failed' ? 422 : 400;
+      finalizeCanvasIntake({
+        processingStatus: 'blocked',
+        route: 'module',
+        resultSummary: moduleRun.error?.message || moduleRun.error?.reason || 'Module validation failed.',
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: moduleRun.error?.message || moduleRun.error?.reason || 'Intent extraction did not produce a canonical intent.',
+        }),
+      });
       return res.status(status).json({
         ok: false,
         route: 'module',
         envelope,
         moduleEnvelope,
         moduleRun,
+        intakeRecord,
+        intakeState,
       });
     }
+    finalizeCanvasIntake({
+      processingStatus: 'routed',
+      route: 'module',
+      resultSummary: 'Executive route delegated to the material module.',
+      intentExtraction: buildCanonicalIntentExtractionState({
+        status: 'failed',
+        reason: 'Canvas input routed directly to the module path instead of intent extraction.',
+      }),
+    });
     return res.json({
       ok: true,
       route: 'module',
@@ -11945,6 +13542,8 @@ app.post('/api/spatial/executive/route', async (req, res) => {
       moduleEnvelope,
       moduleRun,
       preview: buildModulePreview(moduleRun),
+      intakeRecord,
+      intakeState,
     });
   }
 
@@ -11952,6 +13551,19 @@ app.post('/api/spatial/executive/route', async (req, res) => {
   if (fallbackPayload) {
     try {
       const result = runLegacyFallbackSync(fallbackPayload, { rootPath: ROOT });
+      finalizeCanvasIntake({
+        processingStatus: result.code === 0 ? 'routed' : 'blocked',
+        route: 'legacy-fallback',
+        resultSummary: result.code === 0
+          ? `Legacy fallback "${fallbackPayload.action}" completed.`
+          : `Legacy fallback "${fallbackPayload.action}" failed.`,
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: result.code === 0
+            ? 'Canvas input was handled by the legacy fallback path.'
+            : `Legacy fallback "${fallbackPayload.action}" failed before intent extraction.`,
+        }),
+      });
       return res.status(result.code === 0 ? 200 : 400).json({
         ok: result.code === 0,
         route: 'legacy-fallback',
@@ -11965,31 +13577,88 @@ app.post('/api/spatial/executive/route', async (req, res) => {
           stdout: result.stdout,
           stderr: result.stderr,
         },
+        intakeRecord,
+        intakeState,
       });
     } catch (error) {
+      finalizeCanvasIntake({
+        processingStatus: 'blocked',
+        route: 'legacy-fallback',
+        resultSummary: String(error.message || error),
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: String(error.message || error),
+        }),
+      });
       return res.status(400).json({
         ok: false,
         route: 'legacy-fallback',
         envelope,
         error: String(error.message || error),
+        intakeRecord,
+        intakeState,
       });
     }
   }
 
   try {
-    const cycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
+    const cycle = await maybeRunContextManagerWorker(intakeWorkspace, {
       text: promptText,
       sourceNodeId: envelope.nodes.prompt.node_id,
+      sourceIntakeId: intakeRecord.id,
       source: 'executive-scan-override',
+      sourceType: 'canvas-text',
+      sourceRef: envelope.nodes.prompt.node_id || null,
+      requestedBy: 'canvas-intent',
       mode: 'manual',
     });
     if (!cycle.result?.report) {
-      return res.status(500).json({ error: cycle.reason || 'Context Manager could not produce an intent report.', envelope });
+      finalizeCanvasIntake({
+        processingStatus: 'blocked',
+        route: 'intent-scan',
+        resultSummary: cycle.reason || 'Context Manager could not produce an intent report.',
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: cycle.reason || 'Context Manager could not produce an intent report.',
+        }),
+      });
+      return res.status(500).json({
+        error: cycle.reason || 'Context Manager could not produce an intent report.',
+        envelope,
+        intakeRecord,
+        intakeState,
+      });
     }
-    const runtime = buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+    const runtimeWorkspace = refreshSpatialOrchestrator({
       persist: true,
       workspace: cycle.workspace,
-    }));
+    });
+    const linkedIntentId = cycle.result.handoff?.intentId
+      || runtimeWorkspace?.intentState?.currentIntentId
+      || cycle.result.report?.spatialIntent?.id
+      || null;
+    const extractedCanonicalIntent = getCurrentSpatialIntent(runtimeWorkspace?.intentState)
+      || cycle.result.report?.canonicalIntent
+      || cycle.result.report?.spatialIntent
+      || null;
+    const extractionStatus = extractedCanonicalIntent
+      ? (normalizeSpatialIntentRecord(extractedCanonicalIntent).status === 'degraded' ? 'degraded' : 'extracted')
+      : 'failed';
+    const finalIntakeWrite = finalizeCanvasIntake({
+      processingStatus: cycle.ok ? 'routed' : 'blocked',
+      route: 'intent-scan',
+      canonicalIntentId: linkedIntentId,
+      handoffId: cycle.result.handoff?.id || null,
+      resultSummary: cycle.result.report?.summary || cycle.reason || 'Context Manager processed the canvas intake.',
+      intentExtraction: buildCanonicalIntentExtractionState({
+        status: extractionStatus,
+        canonicalIntent: extractedCanonicalIntent,
+        reason: extractedCanonicalIntent ? null : (cycle.reason || 'Intent extraction did not yield a canonical intent record.'),
+      }),
+    }, {
+      workspace: runtimeWorkspace,
+    });
+    const runtime = buildSpatialRuntimePayload(finalIntakeWrite.workspace);
     return res.json({
       ok: true,
       route: 'intent-scan',
@@ -11999,9 +13668,25 @@ app.post('/api/spatial/executive/route', async (req, res) => {
       worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
       handoff: cycle.result.handoff,
       runtime,
+      intakeRecord,
+      intakeState,
     });
   } catch (error) {
-    return res.status(500).json({ error: String(error.message || error), envelope });
+    finalizeCanvasIntake({
+      processingStatus: 'blocked',
+      route: 'intent-scan',
+      resultSummary: String(error.message || error),
+      intentExtraction: buildCanonicalIntentExtractionState({
+        status: 'failed',
+        reason: String(error.message || error),
+      }),
+    });
+    return res.status(500).json({
+      error: String(error.message || error),
+      envelope,
+      intakeRecord,
+      intakeState,
+    });
   }
 });
 
@@ -12066,7 +13751,7 @@ app.get('/api/spatial/cto/status', async (req, res) => {
   }
 });
 
-app.get('/api/spatial/cto/diagnostics', (req, res) => {
+app.get('/api/spatial/cto/diagnostics', async (req, res) => {
   try {
     const diagnostics = readCtoDiagnostics();
     const workspace = readSpatialWorkspace();
@@ -12075,6 +13760,16 @@ app.get('/api/spatial/cto/diagnostics', (req, res) => {
       || workspace?.layout
       || createDefaultStudioLayoutSchema(),
     );
+    const plannerIntegrity = maybeBridgePlannerCanonicalIntegrityInvestigations(ROOT, {
+      layout: canonicalLayout,
+      checkedAt: nowIso(),
+    });
+    maybeBridgeOpenInvestigationsToRepairJobs(ROOT, {
+      investigations: readOpenQaInvestigations(ROOT, 10),
+    });
+    await maybeGenerateQaResearchNotesForInvestigations(ROOT, readOpenQaInvestigations(ROOT, 10));
+    const repairLoop = buildQaRepairLoopState(ROOT);
+    const researchState = buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10));
     return res.json({
       ok: true,
       version: diagnostics.version,
@@ -12086,9 +13781,13 @@ app.get('/api/spatial/cto/diagnostics', (req, res) => {
       entries: diagnostics.entries,
       plannerIdentity: buildPlannerIdentitySnapshot(canonicalLayout.organization || {}),
       plannerCoverage: buildCanonicalPlannerCoverageTruth(canonicalLayout),
+      plannerIntegrity: plannerIntegrity.state,
+      plannerIntegrityInvestigation: plannerIntegrity.investigation,
       qaLeadCoverage: buildCanonicalQALeadCoverageTruth(canonicalLayout),
       ctoOverrides: summarizeCtoOverrideLedger(workspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
       overrideLayer: deriveCtoOverrideLayer(workspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
+      repairLoop,
+      researchState,
     });
   } catch (error) {
     const reason = String(error.message || error);
@@ -12211,6 +13910,9 @@ app.post('/api/spatial/cto/override', (req, res) => {
 });
 
 app.post('/api/spatial/cto/chat', async (req, res) => {
+  let intakeWorkspace = null;
+  let intakeRecord = null;
+  let intakeState = createDefaultCanonicalIntakeState();
   try {
     const body = req.body || {};
     const text = String(body.text || '').trim();
@@ -12224,21 +13926,62 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
         reply_text: null,
       });
     }
-      const result = await runCtoGovernanceChat({
+    const intakeOriginRoute = '/api/spatial/cto/chat';
+    const intakeWrite = persistCanonicalIntakeRecord({
+      channel: 'cto_prompt',
+      text,
+      requestedBy: 'cto',
+      sourceType: source,
+      sourceRef: body.confirmActionId || source,
+      originRoute: intakeOriginRoute,
+      processingStatus: 'recorded',
+    });
+    intakeWorkspace = intakeWrite.workspace;
+    intakeRecord = intakeWrite.intakeRecord;
+    intakeState = intakeWrite.intakeState;
+    const finalizeCtoIntake = (patch = {}, options = {}) => {
+      const nextWrite = persistCanonicalIntakeRecord({
+        ...intakeRecord,
+        ...patch,
+        id: intakeRecord.id,
+        channel: 'cto_prompt',
         text,
-        history: body.history,
-        source,
-        backend: body.backend,
-        model: body.model,
-        host: body.host,
-        timeoutMs: body.timeoutMs,
-        confirmActionId: body.confirmActionId,
-        override: body.override,
-        workspace: readSpatialWorkspace(),
-        baseUrl: getLocalBaseUrl(req),
+        requestedBy: intakeRecord.requestedBy,
+        sourceType: intakeRecord.sourceType,
+        sourceRef: intakeRecord.sourceRef,
+        originRoute: intakeRecord.originRoute || intakeOriginRoute,
+        createdAt: intakeRecord.createdAt,
+        updatedAt: nowIso(),
+      }, {
+        workspace: options.workspace || null,
       });
+      intakeWorkspace = nextWrite.workspace;
+      intakeRecord = nextWrite.intakeRecord;
+      intakeState = nextWrite.intakeState;
+      return nextWrite;
+    };
+    const result = await runCtoGovernanceChat({
+      text,
+      history: body.history,
+      source,
+      backend: body.backend,
+      model: body.model,
+      host: body.host,
+      timeoutMs: body.timeoutMs,
+      confirmActionId: body.confirmActionId,
+      override: body.override,
+      workspace: intakeWorkspace,
+      baseUrl: getLocalBaseUrl(req),
+    });
     if (!result.ok) {
       const httpStatus = result.status === 'offline' ? 503 : 422;
+      finalizeCtoIntake({
+        processingStatus: result.status || 'blocked',
+        replyKind: result.replyKind || 'blocked',
+        actionId: result.action?.id || null,
+        route: 'cto-chat',
+        resultSummary: result.reason || result.reply_text || 'CTO governance chat blocked.',
+      });
       return res.status(httpStatus).json({
         ok: false,
         status: result.status,
@@ -12252,8 +13995,17 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
         replyKind: result.replyKind || 'blocked',
         backendStatus: result.backendStatus || null,
         diagnostic: result.diagnostic || null,
+        intakeRecord,
+        intakeState,
       });
     }
+    finalizeCtoIntake({
+      processingStatus: result.status || 'live',
+      replyKind: result.replyKind || 'advisory',
+      actionId: result.action?.id || null,
+      route: 'cto-chat',
+      resultSummary: result.reply_text || 'CTO governance chat completed.',
+    });
     return res.json({
       ok: true,
       status: result.status,
@@ -12267,6 +14019,8 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
       execution: result.execution,
       backendStatus: result.backendStatus,
       diagnostic: result.diagnostic || null,
+      intakeRecord,
+      intakeState,
     });
   } catch (error) {
     console.error('[ERROR] /api/spatial/cto/chat failed:', error);
@@ -12281,6 +14035,21 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
       host: ctoConfig.host,
       reason,
     });
+    if (intakeRecord) {
+      const nextWrite = persistCanonicalIntakeRecord({
+        ...intakeRecord,
+        processingStatus: classifyLlmFailureStatus(reason, false),
+        replyKind: 'blocked',
+        route: 'cto-chat',
+        resultSummary: reason,
+        updatedAt: nowIso(),
+      }, {
+        workspace: intakeWorkspace,
+      });
+      intakeWorkspace = nextWrite.workspace;
+      intakeRecord = nextWrite.intakeRecord;
+      intakeState = nextWrite.intakeState;
+    }
     return res.status(500).json({
       ok: false,
       status: classifyLlmFailureStatus(reason, false),
@@ -12299,6 +14068,8 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
         reason,
         availableModels: [],
       },
+      intakeRecord,
+      intakeState,
     });
   }
 });
@@ -12505,10 +14276,28 @@ function startServer() {
       });
   }, 4000);
 
-  const bootHealth = evaluateSpatialBootHealth();
+  let bootHealth = evaluateSpatialBootHealth();
+  const uiBootRepair = reconcileUiBootIntegrityRepair({
+    bootHealth,
+    attemptRepair: true,
+  });
+  if (uiBootRepair?.repairResult?.job?.lane === UI_BOOT_INTEGRITY_LANE) {
+    bootHealth = evaluateSpatialBootHealth();
+  }
   if (bootHealth.safeMode) {
     console.warn(`[${nowIso()}] spatial boot health failed; safe mode enabled: ${bootHealth.reason}`);
   }
+  const bootRecoveryOptions = {
+    bootHealth,
+    bootRepair: uiBootRepair,
+    baseUrl: `http://127.0.0.1:${port}`,
+    intervalMs: Number(process.env.ACE_QA_LEAD_INTERVAL_MS || 20 * 60 * 1000),
+    autoRun: process.env.ACE_QA_LEAD_AUTORUN !== '0',
+    currentTask: bootHealth.safeMode
+      ? `QA boot recovery: ${bootHealth.reason || bootHealth.failureClass || 'boot gate triggered'}`
+      : 'QA proof-of-life, browser pass, lane canaries, and loop audit',
+    runType: bootHealth.safeMode ? 'boot_recovery' : 'scheduled_cycle',
+  };
   markServerHealthyOnBoot();
   reconcilePendingThroughputSessions({
     rootPath: ROOT,
@@ -12520,9 +14309,19 @@ function startServer() {
     console.warn(`[${nowIso()}] throughput session reconcile failed: ${error.message}`);
   });
 
-  return app.listen(port, () => {
+  const httpServer = app.listen(port, () => {
     console.log(`AI Core Engine UI running at http://localhost:${port}`);
   });
+  if (bootHealth.safeMode) {
+    runQaLeadCycle(ROOT, {
+      ...bootRecoveryOptions,
+      runId: `qa_boot_recovery_${Date.now()}`,
+    }).catch((error) => {
+      console.warn(`[${nowIso()}] QA boot recovery cycle failed: ${error.message}`);
+    });
+  }
+  startQaLeadAutomation(ROOT, bootRecoveryOptions);
+  return httpServer;
 }
 
 if (require.main === module) {
@@ -12533,14 +14332,27 @@ module.exports = {
   app,
   startServer,
   dashboardFiles,
+  collectDeskTasks,
   buildDeskPropertiesPayload,
   buildQAStatePayload,
   buildQAAuditTrail,
   summarizeQAAuditTrail,
   buildQATestRegistry,
   summarizeQATestRegistry,
+  buildQaResearchState,
+  maybeGenerateQaResearchNotesForInvestigations,
+  buildQaRepairLoopState,
+  readQaLeadOutput,
+  runQaLeadCycle,
+  maybeBridgeOpenInvestigationsToRepairJobs,
+  runQaRepairAttempt,
   buildProjectRecord,
+  buildGovernedLoopContract,
   buildSpatialRuntimePayload,
+  buildCanonicalIntentExtractionState,
+  normalizeCanonicalIntakeState,
+  persistCanonicalIntakeRecord,
+  readSpatialWorkspace,
   detectRunnableProjectType,
   evaluateApplyGate,
   evaluateVerifyGate,
@@ -12556,6 +14368,7 @@ module.exports = {
   launchProject,
   listProjectsForUi,
   smokeCheckStaticWebBoot,
+  evaluateStudioClientBootContract,
   detectMaterialGenerationIntent,
   detectWorldScaffoldIntent,
   detectPotentialWorldEditPrompt,
@@ -12581,9 +14394,13 @@ module.exports = {
   classifyFailureContext,
   evaluateStagePreflightSurface,
   evaluateSpatialBootHealth,
+  reconcileUiBootIntegrityRepair,
   buildSafeModeSnapshot,
   runSafeModeDiagnosis,
   runConstrainedSafeModeFixPass,
+  buildBootRecoveryDaemonState,
+  readBootRecoveryDaemonState,
+  runAutonomousBootRecoveryDaemon,
   collectTaskArtifacts,
   createRunnerTaskFolder,
   readDashboardFileForRoot,
@@ -12625,4 +14442,5 @@ module.exports = {
   isAffirmativeCtoReply,
   getCtoRoleLabel,
   getCtoRoleHintFromText,
+  readSpatialWorkspace,
 };

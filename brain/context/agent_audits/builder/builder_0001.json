@@ -1,17 +1,17 @@
 {
   "version": "ace/agent-audit.v0",
   "audit_id": "builder_0001",
-  "created_at": "2026-04-02T12:28:48.367Z",
-  "updated_at": "2026-04-02T12:28:48.368Z",
+  "created_at": "2026-04-06T01:43:22.570Z",
+  "updated_at": "2026-04-06T01:43:22.570Z",
   "agent_id": "executor",
   "agent_version": "ace/agent-attribution.v0",
   "task_id": "0001",
   "stage": "builder",
   "artifact_refs": [
-    "../../../../../../AppData/Local/Temp/ace-task-cache-vpySeo/work/tasks/0001-cache-apply-result/agent_attribution.json",
-    "../../../../../../AppData/Local/Temp/ace-task-cache-vpySeo/work/tasks/0001-cache-apply-result/apply_result.json",
-    "../../../../../../AppData/Local/Temp/ace-task-cache-vpySeo/work/tasks/0001-cache-apply-result/meta.json",
-    "../../../../../../AppData/Local/Temp/ace-task-cache-vpySeo/work/tasks/0001-cache-apply-result/patch.diff"
+    "../../../../../../AppData/Local/Temp/ace-task-cache-DN3FRY/work/tasks/0001-cache-apply-result/agent_attribution.json",
+    "../../../../../../AppData/Local/Temp/ace-task-cache-DN3FRY/work/tasks/0001-cache-apply-result/apply_result.json",
+    "../../../../../../AppData/Local/Temp/ace-task-cache-DN3FRY/work/tasks/0001-cache-apply-result/meta.json",
+    "../../../../../../AppData/Local/Temp/ace-task-cache-DN3FRY/work/tasks/0001-cache-apply-result/patch.diff"
   ],
   "outcome": "failed",
   "pass_fail": "fail",

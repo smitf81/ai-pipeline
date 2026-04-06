@@ -1,7 +1,52 @@
 {
-  "intentState": {
-    "currentIntentId": "intent-current",
-    "summary": "Migrate to canonical anchor-based ACE system",
-    "status": "idle"
-  }
+  "currentIntentId": "intent-current",
+  "registry": {
+    "byId": {
+      "proof_planner_intent": {
+        "id": "proof_planner_intent",
+        "source": {
+          "type": "canvas-text",
+          "ref": "proof-planner-prompt",
+          "requestedBy": "interval-guard"
+        },
+        "geometry": {
+          "kind": "unknown",
+          "region": null,
+          "stroke": null
+        },
+        "semanticMeaning": {
+          "summary": "Prove planner desk canonical visibility.",
+          "statement": "Prove planner desk canonical visibility.",
+          "goal": "Prove planner desk canonical visibility.",
+          "requestType": "context_request",
+          "requestedOutcomes": [
+            "Show planner-visible canonical work"
+          ],
+          "targets": [
+            "planner-desk"
+          ],
+          "constraints": [
+            "No local synthesis"
+          ],
+          "urgency": "normal",
+          "labels": [
+            "planner"
+          ]
+        },
+        "confidence": 0.88,
+        "provenance": {
+          "sourceType": "canvas-text",
+          "sourceRef": "proof-planner-prompt",
+          "requestedBy": "interval-guard"
+        },
+        "missingFields": [],
+        "status": "canonical"
+      }
+    },
+    "currentIntentId": "proof_planner_intent",
+    "latestIntentId": "proof_planner_intent",
+    "records": []
+  },
+  "status": "idle",
+  "summary": "Migrate to canonical anchor-based ACE system"
 }
