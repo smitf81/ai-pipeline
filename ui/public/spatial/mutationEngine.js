@@ -1,11 +1,12 @@
-import { createNode, createEdge } from './graphEngine.js';
+import {
+  buildGhostProjectionFromIntent,
+  buildGhostProjectionRegistryPayload,
+  createEmptyGhostProjectionRegistry,
+  removeGhostProjectionBySourceIntentId,
+  upsertGhostProjectionRegistry,
+} from './ghostProjection.js';
 
 const MAX_DRAFT_NODES = 3;
-const DRAFT_X_OFFSET = 280;
-const DRAFT_Y_STEP = 116;
-const OVERLAP_X_THRESHOLD = 210;
-const OVERLAP_Y_THRESHOLD = 92;
-const SYSTEM_NODE_TYPES = new Set(['text', 'task', 'module', 'file', 'constraint', 'adapter', 'ux']);
 
 function normalizeCandidateConfidence(value) {
   const numeric = Number(value);
@@ -18,9 +19,8 @@ function normalizeCandidateBasis(value) {
 
 function normalizeCandidateKind(value) {
   const kind = String(value || '').trim().toLowerCase();
-  if (SYSTEM_NODE_TYPES.has(kind)) return kind;
   if (kind === 'thought') return 'text';
-  return 'text';
+  return kind === 'module' || kind === 'file' || kind === 'constraint' || kind === 'adapter' || kind === 'ux' || kind === 'ghost' ? kind : 'text';
 }
 
 function resolveExtractedIntent(decomposition = {}) {
@@ -67,113 +67,155 @@ function rankCandidateNodes(extractedIntent = {}, sourceNode = null, limit = MAX
     }));
 }
 
-function overlaps(position, nodes = []) {
-  return nodes.some((node) => (
-    Math.abs((node?.position?.x || 0) - position.x) < OVERLAP_X_THRESHOLD
-    && Math.abs((node?.position?.y || 0) - position.y) < OVERLAP_Y_THRESHOLD
-  ));
+function buildGhostProjectionReasoning({
+  parentNode,
+  report,
+  extractedIntent,
+  candidateNode,
+  status,
+}) {
+  return [
+    `sourceIntentId=${String(report?.intentId || report?.id || parentNode?.id || 'unknown').trim() || 'unknown'}`,
+    `candidateId=${candidateNode.id}`,
+    `candidateKind=${candidateNode.kind}`,
+    `basis=${candidateNode.basis}`,
+    `status=${String(status || 'candidate').trim().toLowerCase()}`,
+    String(extractedIntent?.summary || report?.summary || '').trim() ? `summary=${String(extractedIntent.summary || report.summary).trim()}` : null,
+    candidateNode.rationale ? `rationale=${candidateNode.rationale}` : null,
+  ].filter(Boolean);
 }
 
-function resolveDraftPosition(parentNode, existingNodes, total, index) {
-  const centerOffset = ((total - 1) * DRAFT_Y_STEP) / 2;
-  let position = {
-    x: (parentNode?.position?.x || 0) + DRAFT_X_OFFSET,
-    y: (parentNode?.position?.y || 0) - centerOffset + index * DRAFT_Y_STEP,
-  };
-  let attempts = 0;
-  while (overlaps(position, existingNodes) && attempts < 8) {
-    position = {
-      x: position.x,
-      y: position.y + DRAFT_Y_STEP,
-    };
-    attempts += 1;
-  }
-  return position;
-}
-
-function buildDraftMetadata(parentNode, report, extractedIntent, candidateNode, generationId, createdAt, layer = 'system') {
+function buildProposedChange({
+  parentNode,
+  report,
+  extractedIntent,
+  candidateNode,
+  generationId,
+  createdAt,
+  layer,
+}) {
+  const summary = String(candidateNode.label || extractedIntent?.summary || report?.summary || '').trim();
   return {
-    role: candidateNode.kind === 'text' ? 'thought' : candidateNode.kind,
-    origin: 'ai',
-    sourceNodeId: parentNode?.id || null,
-    intentRef: {
-      sourceNodeId: parentNode?.id || null,
-      extractedIntentId: extractedIntent?.id || null,
-      candidateNodeId: candidateNode.id,
-      basis: candidateNode.basis,
-    },
+    summary,
+    description: candidateNode.rationale || String(extractedIntent?.statement || extractedIntent?.goal || report?.statement || report?.goal || '').trim(),
+    targetNodeId: parentNode?.id || null,
+    targetLayer: layer,
+    kind: candidateNode.kind,
     basis: candidateNode.basis,
-    confidence: candidateNode.confidence ?? normalizeCandidateConfidence(report?.confidence),
-    usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || report?.usedFallback),
-    graphLayer: layer,
-    labels: ['proposal', 'generated', 'ai', candidateNode.basis],
-    proposalTarget: 'system-structure',
-    approvalPolicy: 'auto-record',
-    intentStatus: 'ready',
-    lastCommittedContent: '',
-    rsg: {
-      generationId,
-      sourceNodeId: parentNode?.id || null,
-      state: 'linked-draft',
-      createdAt,
-      confidence: candidateNode.confidence ?? normalizeCandidateConfidence(report?.confidence),
-      summary: String(extractedIntent?.summary || report?.summary || '').trim(),
-      usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || report?.usedFallback),
-      intentRef: {
-        sourceNodeId: parentNode?.id || null,
-        extractedIntentId: extractedIntent?.id || null,
-        candidateNodeId: candidateNode.id,
-        basis: candidateNode.basis,
-      },
-    },
+    generationId,
+    createdAt,
   };
+}
+
+function resolveGhostSourceIntentId(parentNode, report, extractedIntent) {
+  return String(report?.intentId || report?.id || extractedIntent?.id || parentNode?.id || '').trim();
 }
 
 export class MutationEngine {
   constructor(graphEngine) {
     this.graphEngine = graphEngine;
+    this.ghostProjectionRegistry = createEmptyGhostProjectionRegistry();
+  }
+
+  getGhostProjectionRegistry() {
+    return buildGhostProjectionRegistryPayload(this.ghostProjectionRegistry);
+  }
+
+  setGhostProjectionRegistry(registry = createEmptyGhostProjectionRegistry()) {
+    this.ghostProjectionRegistry = buildGhostProjectionRegistryPayload(registry);
+    return this.getGhostProjectionRegistry();
+  }
+
+  upsertGhostProjection(projection = null) {
+    this.ghostProjectionRegistry = upsertGhostProjectionRegistry(this.ghostProjectionRegistry, projection);
+    return this.getGhostProjectionRegistry();
+  }
+
+  removeGhostProjectionsForSource(sourceIntentId) {
+    const normalized = String(sourceIntentId || '').trim();
+    if (!normalized) {
+      return {
+        removedProjectionIds: [],
+        registry: this.getGhostProjectionRegistry(),
+      };
+    }
+    const previousRecords = Array.isArray(this.ghostProjectionRegistry.records) ? this.ghostProjectionRegistry.records : [];
+    const removedProjectionIds = previousRecords
+      .filter((record) => Array.isArray(record.sourceIntentIds) && record.sourceIntentIds.includes(normalized))
+      .map((record) => record.id);
+    this.ghostProjectionRegistry = removeGhostProjectionBySourceIntentId(this.ghostProjectionRegistry, normalized);
+    return {
+      removedProjectionIds,
+      registry: this.getGhostProjectionRegistry(),
+    };
   }
 
   buildMutationRequestFromIntent(parentNode, decomposition = {}, options = {}) {
     const extractedIntent = resolveExtractedIntent(decomposition);
     const layer = options.layer || parentNode?.metadata?.graphLayer || 'system';
-    const candidates = rankCandidateNodes(extractedIntent, parentNode, options.maxNodes || MAX_DRAFT_NODES);
-    const generationId = options.generationId || `rsg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const rankedCandidates = rankCandidateNodes(extractedIntent, parentNode, options.maxNodes || MAX_DRAFT_NODES);
+    const generationId = options.generationId || `ghost_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const createdAt = options.createdAt || new Date().toISOString();
-    const baseNodes = [...(this.graphEngine.getState()?.nodes || [])];
-    const mutations = [];
-    candidates.forEach((candidateNode, index) => {
-      const metadata = buildDraftMetadata(parentNode, decomposition, extractedIntent, candidateNode, generationId, createdAt, layer);
-      const newNode = createNode({
-        type: candidateNode.kind,
-        content: candidateNode.label,
-        position: resolveDraftPosition(parentNode, [...baseNodes, ...mutations.filter((entry) => entry.type === 'create_node').map((entry) => entry.node)], candidates.length, index),
-        metadata: {
-          ...metadata,
-          lastCommittedContent: candidateNode.label,
-        },
-      });
-      mutations.push({ type: 'create_node', node: newNode });
-      mutations.push({ type: 'create_edge', edge: createEdge({ source: parentNode.id, target: newNode.id }) });
-    });
-    return mutations;
-  }
-
-  applyMutations(mutations) {
-    for (const mutation of mutations) {
-      if (mutation.type === 'create_node') this.graphEngine.addNode(mutation.node);
-      if (mutation.type === 'modify_node') this.graphEngine.updateNode(mutation.id, mutation.patch);
-      if (mutation.type === 'create_edge') this.graphEngine.addEdge(mutation.edge);
+    const sourceIntentId = resolveGhostSourceIntentId(parentNode, decomposition, extractedIntent);
+    const removal = this.removeGhostProjectionsForSource(sourceIntentId);
+    if (!rankedCandidates.length) {
+      return {
+        generationId,
+        createdAt,
+        projectionRecords: [],
+        replacedProjectionIds: removal.removedProjectionIds,
+        usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || decomposition?.usedFallback),
+        status: 'blocked',
+        reason: 'no-extracted-intent-candidates',
+        registry: this.getGhostProjectionRegistry(),
+      };
     }
+    const candidateNode = rankedCandidates[0];
+    const projectionRecords = [buildGhostProjectionFromIntent({
+      sourceIntent: decomposition?.intentRecord || decomposition?.canonicalIntent || decomposition || parentNode || {},
+      proposedChange: buildProposedChange({
+        parentNode,
+        report: decomposition,
+        extractedIntent,
+        candidateNode,
+        generationId,
+        createdAt,
+        layer,
+      }),
+      confidence: candidateNode.confidence ?? normalizeCandidateConfidence(decomposition?.confidence),
+      status: options.status || 'candidate',
+      reasoning: buildGhostProjectionReasoning({
+        parentNode,
+        report: decomposition,
+        extractedIntent,
+        candidateNode,
+        status: options.status || 'candidate',
+      }),
+      provenance: {
+        sourceType: parentNode?.metadata?.graphLayer || options.sourceType || 'system',
+        sourceRef: parentNode?.id || sourceIntentId || null,
+        sourceNodeId: parentNode?.id || null,
+        sourceIntentId: sourceIntentId || null,
+        generationId,
+        createdAt,
+        usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || decomposition?.usedFallback),
+      },
+    })];
+    projectionRecords.forEach((projection) => this.upsertGhostProjection(projection));
+    return {
+      generationId,
+      createdAt,
+      projectionRecords,
+      replacedProjectionIds: removal.removedProjectionIds,
+      usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || decomposition?.usedFallback),
+      status: 'ready',
+      reason: '',
+      registry: this.getGhostProjectionRegistry(),
+    };
   }
 
-  removeLinkedDraftsForSource(sourceNodeId) {
-    const nodes = this.graphEngine.getState()?.nodes || [];
-    const linkedDraftIds = nodes
-      .filter((node) => node?.metadata?.rsg?.sourceNodeId === sourceNodeId && node?.metadata?.rsg?.state === 'linked-draft')
-      .map((node) => node.id);
-    linkedDraftIds.forEach((nodeId) => this.graphEngine.removeNode(nodeId));
-    return linkedDraftIds;
+  applyMutations() {
+    return [];
   }
 
   syncDraftNodesFromReport(parentNode, report = {}, options = {}) {
@@ -181,45 +223,75 @@ export class MutationEngine {
       return {
         generationId: null,
         createdAt: options.createdAt || new Date().toISOString(),
-        generatedNodes: [],
-        replacedNodeIds: [],
+        projectionRecords: [],
+        replacedProjectionIds: [],
         reason: 'missing-source-node',
+        registry: this.getGhostProjectionRegistry(),
       };
     }
 
     const extractedIntent = resolveExtractedIntent(report);
     const createdAt = options.createdAt || new Date().toISOString();
-    const generationId = options.generationId || `rsg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const generationId = options.generationId || `ghost_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const layer = options.layer || parentNode?.metadata?.graphLayer || 'system';
-    const candidates = rankCandidateNodes(extractedIntent, parentNode, options.maxNodes || MAX_DRAFT_NODES);
-    const replacedNodeIds = this.removeLinkedDraftsForSource(parentNode.id);
-    const generatedNodes = [];
-    const graphState = this.graphEngine.getState();
-    const baseNodes = [...(graphState?.nodes || [])];
+    const rankedCandidates = rankCandidateNodes(extractedIntent, parentNode, options.maxNodes || MAX_DRAFT_NODES);
+    const sourceIntentId = resolveGhostSourceIntentId(parentNode, report, extractedIntent);
+    const removal = this.removeGhostProjectionsForSource(sourceIntentId);
+    if (!rankedCandidates.length) {
+      return {
+        generationId,
+        createdAt,
+        projectionRecords: [],
+        replacedProjectionIds: removal.removedProjectionIds,
+        usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || report?.usedFallback),
+        status: 'blocked',
+        reason: 'no-extracted-intent-candidates',
+        registry: this.getGhostProjectionRegistry(),
+      };
+    }
+    const candidateNode = rankedCandidates[0];
+    const projectionRecords = [buildGhostProjectionFromIntent({
+      sourceIntent: report || extractedIntent || parentNode || {},
+      proposedChange: buildProposedChange({
+        parentNode,
+        report,
+        extractedIntent,
+        candidateNode,
+        generationId,
+        createdAt,
+        layer,
+      }),
+      confidence: candidateNode.confidence ?? normalizeCandidateConfidence(report?.confidence),
+      status: options.status || 'candidate',
+      reasoning: buildGhostProjectionReasoning({
+        parentNode,
+        report,
+        extractedIntent,
+        candidateNode,
+        status: options.status || 'candidate',
+      }),
+      provenance: {
+        sourceType: report?.sourceType || parentNode?.metadata?.graphLayer || options.sourceType || 'system',
+        sourceRef: report?.sourceRef || parentNode?.id || sourceIntentId || null,
+        sourceNodeId: parentNode?.id || report?.nodeId || null,
+        sourceIntentId: sourceIntentId || null,
+        generationId,
+        createdAt,
+        usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || report?.usedFallback),
+      },
+    })];
 
-    candidates.forEach((candidateNode, index) => {
-      const metadata = buildDraftMetadata(parentNode, report, extractedIntent, candidateNode, generationId, createdAt, layer);
-      const draftNode = createNode({
-        type: candidateNode.kind,
-        content: candidateNode.label,
-        position: resolveDraftPosition(parentNode, [...baseNodes, ...generatedNodes], candidates.length, index),
-        metadata: {
-          ...metadata,
-          lastCommittedContent: candidateNode.label,
-        },
-      });
-      generatedNodes.push(draftNode);
-      this.graphEngine.addNode(draftNode);
-      this.graphEngine.addEdge(createEdge({ source: parentNode.id, target: draftNode.id }));
-    });
+    projectionRecords.forEach((projection) => this.upsertGhostProjection(projection));
 
     return {
       generationId,
       createdAt,
-      generatedNodes,
-      replacedNodeIds,
+      projectionRecords,
+      replacedProjectionIds: removal.removedProjectionIds,
       usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || report?.usedFallback),
-      reason: generatedNodes.length || replacedNodeIds.length ? '' : 'no-extracted-intent-candidates',
+      status: 'ready',
+      reason: '',
+      registry: this.getGhostProjectionRegistry(),
     };
   }
 }

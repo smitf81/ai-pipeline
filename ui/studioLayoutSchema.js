@@ -799,19 +799,68 @@ function buildDepartmentOrganizationModel(departments = [], desks = {}, controlC
     });
   });
 
+  const planner = buildPlannerIdentitySnapshot({
+    departments: departmentsModel,
+    desks: desksModel,
+    agents: agentsModel,
+  });
+
   return {
     schemaVersion: 'studio-relationships.v1',
     relationshipTypes: DEPARTMENT_RELATIONSHIP_TYPES,
     departments: departmentsModel,
     desks: desksModel,
     agents: agentsModel,
-    planner: {
-      deskId: PLANNER_CANONICAL_IDS.deskId,
-      roleId: PLANNER_CANONICAL_IDS.roleId,
-      agentId: PLANNER_CANONICAL_IDS.agentId,
-      modelProfileId: PLANNER_CANONICAL_IDS.modelProfileId,
-    },
+    planner,
     qaLead: normalizeAgentRelationshipRecord(QA_LEAD_CANONICAL_IDS.agentId, desksModel[QA_LEAD_CANONICAL_IDS.deskId] || {}),
+  };
+}
+
+function buildPlannerIdentitySnapshot({ departments = {}, desks = {}, agents = {} } = {}) {
+  const canonical = {
+    deskId: PLANNER_CANONICAL_IDS.deskId,
+    roleId: PLANNER_CANONICAL_IDS.roleId,
+    agentId: PLANNER_CANONICAL_IDS.agentId,
+    modelProfileId: PLANNER_CANONICAL_IDS.modelProfileId,
+    departmentId: 'dept-delivery',
+    requiredLeadSeatId: PLANNER_CANONICAL_IDS.roleId,
+  };
+  const desk = desks && typeof desks === 'object' ? desks[canonical.deskId] || null : null;
+  const department = departments && typeof departments === 'object' ? departments[canonical.departmentId] || null : null;
+  const agent = agents && typeof agents === 'object' ? agents[canonical.agentId] || null : null;
+  const assignedAgentIds = uniqueStrings(desk?.assignedAgentIds || []);
+  const resolvedDepartmentId = String(desk?.departmentId || desk?.ownerDepartmentId || department?.id || canonical.departmentId).trim() || canonical.departmentId;
+  const resolvedRoleId = String(desk?.staffing?.roleId || canonical.roleId).trim() || canonical.roleId;
+  const resolvedModelProfileId = String(agent?.modelProfileId || canonical.modelProfileId).trim() || canonical.modelProfileId;
+  const live = Boolean(
+    desk
+    && department
+    && agent
+    && assignedAgentIds.includes(canonical.agentId)
+    && resolvedDepartmentId === canonical.departmentId
+    && resolvedRoleId === canonical.roleId
+    && resolvedModelProfileId === canonical.modelProfileId,
+  );
+
+  return {
+    schemaVersion: 'planner-identity.v1',
+    ...canonical,
+    departmentId: resolvedDepartmentId,
+    modelProfileId: resolvedModelProfileId,
+    assignedAgentIds,
+    live,
+    canonical,
+    desk: cloneJson(desk, null),
+    department: cloneJson(department, null),
+    agent: cloneJson(agent, null),
+    matches: {
+      desk: Boolean(desk && desk.id === canonical.deskId),
+      role: resolvedRoleId === canonical.roleId,
+      agent: Boolean(agent && agent.id === canonical.agentId),
+      department: resolvedDepartmentId === canonical.departmentId,
+      modelProfile: resolvedModelProfileId === canonical.modelProfileId,
+      assignment: assignedAgentIds.includes(canonical.agentId),
+    },
   };
 }
 
@@ -820,7 +869,10 @@ function buildCanonicalPlannerCoverageTruth(layout = {}) {
   const organization = normalized.organization && typeof normalized.organization === 'object'
     ? normalized.organization
     : {};
-  const canonical = {
+  const plannerRecord = organization.planner && typeof organization.planner === 'object'
+    ? organization.planner
+    : buildPlannerIdentitySnapshot(organization);
+  const canonical = plannerRecord.canonical || {
     deskId: PLANNER_CANONICAL_IDS.deskId,
     roleId: PLANNER_CANONICAL_IDS.roleId,
     agentId: PLANNER_CANONICAL_IDS.agentId,
@@ -828,12 +880,9 @@ function buildCanonicalPlannerCoverageTruth(layout = {}) {
     departmentId: 'dept-delivery',
     requiredLeadSeatId: 'planner',
   };
-  const plannerRecord = organization.planner && typeof organization.planner === 'object'
-    ? organization.planner
-    : null;
   const deliveryDepartment = organization.departments?.[canonical.departmentId] || null;
-  const plannerDesk = organization.desks?.[canonical.deskId] || null;
-  const plannerAgent = organization.agents?.[canonical.agentId] || null;
+  const plannerDesk = organization.desks?.[canonical.deskId] || plannerRecord.desk || null;
+  const plannerAgent = organization.agents?.[canonical.agentId] || plannerRecord.agent || null;
 
   const predicates = [
     {
@@ -844,7 +893,10 @@ function buildCanonicalPlannerCoverageTruth(layout = {}) {
         && plannerRecord.deskId === canonical.deskId
         && plannerRecord.roleId === canonical.roleId
         && plannerRecord.agentId === canonical.agentId
-        && plannerRecord.modelProfileId === canonical.modelProfileId,
+        && plannerRecord.modelProfileId === canonical.modelProfileId
+        && plannerRecord.departmentId === canonical.departmentId
+        && Array.isArray(plannerRecord.assignedAgentIds)
+        && plannerRecord.assignedAgentIds.includes(canonical.agentId),
       ),
       expected: canonical,
       actual: plannerRecord ? { ...plannerRecord } : null,
@@ -878,6 +930,14 @@ function buildCanonicalPlannerCoverageTruth(layout = {}) {
       expected: canonical.agentId,
       actual: uniqueStrings(plannerDesk?.assignedAgentIds || []),
       source: 'organization.desks.planner.assignedAgentIds',
+    },
+    {
+      key: 'planner-record-live',
+      label: 'Planner record is live and grounded',
+      passed: Boolean(plannerRecord?.live),
+      expected: true,
+      actual: Boolean(plannerRecord?.live),
+      source: 'organization.planner.live',
     },
     {
       key: 'planner-agent-present',
@@ -1619,6 +1679,7 @@ module.exports = {
   CORE_DESK_AGENT_DEFAULTS,
   createDefaultStudioLayoutSchema,
   normalizeStudioLayoutSchema,
+  buildPlannerIdentitySnapshot,
   buildCanonicalPlannerCoverageTruth,
   buildCanonicalQALeadCoverageTruth,
   buildDepartmentOrganizationModel,

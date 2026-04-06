@@ -3,23 +3,43 @@
   "source": "ui-test-runner",
   "command": "npm run test:unit",
   "status": "fail",
-  "summary": "2 of 59 UI checks failed.",
-  "startedAt": "2026-04-01T10:34:58.358Z",
-  "finishedAt": "2026-04-01T10:35:00.678Z",
-  "durationMs": 2319,
-  "totalChecks": 59,
-  "passedCount": 57,
-  "failedCount": 2,
+  "summary": "6 of 64 UI checks failed.",
+  "startedAt": "2026-04-02T12:28:47.487Z",
+  "finishedAt": "2026-04-02T12:28:49.722Z",
+  "durationMs": 2234,
+  "totalChecks": 64,
+  "passedCount": 58,
+  "failedCount": 6,
   "failures": [
+    {
+      "name": "agentWorkers",
+      "path": "./agentWorkers.test.mjs",
+      "error": "The input did not match the regular expression /intent_cto_chat_1/. Input:\n\n'planner-template\\n' +\n  '\\n' +\n  '## Known Fixes Library\\n' +\n  'Use these trusted fix patterns first when the same failure shape returns.\\n' +\n  '- Quote Windows paths at the shell boundary: Path quoting\\n' +\n  '  - Do: Pass command arguments as arrays where possible. | Use `-LiteralPath` for PowerShell file operations. | Normalize repo-relative paths with forward slashes before prompt serialization.\\n' +\n  '  - Avoid: Building shell commands by string concatenation. | Letting unquoted paths cross a shell boundary.\\n' +\n  '- Create branches from a clean tracked worktree: Branch creation\\n' +\n  \"  - Do: Verify tracked worktree cleanliness before branch creation. | Prefer a `codex/` prefix or the repo's existing branch prefix rule. | Derive a unique branch name before checkout.\\n\" +\n  '  - Avoid: Creating branches on top of unreviewed tracked edits. | Reusing branch names that may already exist remotely or locally.\\n' +\n  '- Treat patch apply failures as rollback events: Patch apply failure\\n' +\n  '  - Do: Validate patch paths before applying. | Apply with `git apply --index` on a clean branch. | Rollback branch state immediately if apply fails.\\n' +\n  '  - Avoid: Retrying the same broken patch without a rollback. | Applying to a dirty tracked worktree.\\n' +\n  '- Resolve test commands from explicit repo-local context: Test command resolution\\n' +\n  '  - Do: Resolve the intended cwd explicitly before running a command. | Prefer repo-local scripts over ambient global tools. | Capture stdout and stderr together for diagnostics.\\n' +\n  '  - Avoid: Assuming the current shell directory is already the project root. | Hiding command selection inside a string-built shell pipeline.\\n' +\n  '- Use array args for Windows subprocesses: Windows subprocess weirdness\\n' +\n  '  - Do: Keep subprocess arguments structured instead of shell-joined. | Prefer direct executable paths and explicit `cwd` values. | Log the command shape before execution when debugging.\\n' +\n  '  - Avoid: Feeding Windows commands through `cmd /c` unless there is no alternative. | Assuming POSIX shell quoting rules apply on Windows.\\n' +\n  '\\n' +\n  '## Fix Task Intake\\n' +\n  'Agent: planner (ace/agent-attribution.v0)\\n' +\n  'Status: consumed\\n' +\n  'Location: task\\n' +\n  'Task: 0009\\n' +\n  'Parent task: 0007\\n' +\n  'Stage: planner\\n' +\n  'Action: fix-task-intake\\n' +\n  'Retry count: 1\\n' +\n  'Retry limit: 2\\n' +\n  'Project: ace-self\\n' +\n  'Title: Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Problem statement:\\n' +\n  'Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Reasons:\\n' +\n  '- Patch is empty or invalid.\\n' +\n  '\\n' +\n  'Changed files:\\n' +\n  '- brain/emergence/plan.md\\n' +\n  '## Canonical Intent Contract\\n' +\n  'Treat this contract as the source of truth. Do not invent tasks from summary text or UI state when this contract is available.\\n' +\n  '{\\n' +\n  '  \"intentId\": \"intent_context-manager_unknown_2026-04-02T12:28:47.577Z\",\\n' +\n  '  \"sourceType\": \"context-manager\",\\n' +\n  '  \"sourceRef\": \"unknown\",\\n' +\n  '  \"canonicalIntent\": {\\n' +\n  '    \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '    \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '    \"requestType\": \"execution_request\",\\n' +\n  '    \"requestedOutcomes\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"targets\": [\\n' +\n  '      \"ace-self\"\\n' +\n  '    ],\\n' +\n  '    \"constraints\": [\\n' +\n  '      \"Patch is empty or invalid.\",\\n' +\n  '      \"Keep scope bounded.\",\\n' +\n  '      \"Do not widen the retry beyond the current failure.\"\\n' +\n  '    ],\\n' +\n  '    \"priority\": \"high\",\\n' +\n  '    \"requestedBy\": \"context-manager\",\\n' +\n  '    \"timestamp\": \"2026-04-02T12:28:47.577Z\",\\n' +\n  '    \"sourceType\": \"context-manager\",\\n' +\n  '    \"sourceRef\": \"unknown\",\\n' +\n  '    \"anchorRefs\": [\\n' +\n  '      \"brain/emergence/plan.md\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '    ]\\n' +\n  '  },\\n' +\n  '  \"provenance\": {\\n' +\n  '    \"anchorRefs\": [\\n' +\n  '      \"brain/emergence/plan.md\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '    ],\\n' +\n  '    \"sourceType\": \"context-manager\",\\n' +\n  '    \"sourceRef\": \"unknown\",\\n' +\n  '    \"requestedBy\": \"context-manager\",\\n' +\n  '    \"usedFallback\": false,\\n' +\n  '    \"backend\": null,\\n' +\n  '    \"model\": null,\\n' +\n  '    \"runId\": null,\\n' +\n  '    \"inferenceMode\": null\\n' +\n  '  },\\n' +\n  '  \"constraints\": [\\n' +\n  '    \"Patch is empty or invalid.\",\\n' +\n  '    \"Keep scope bounded.\",\\n' +\n  '    \"Do not widen the retry beyond the current failure.\"\\n' +\n  '  ],\\n' +\n  '  \"priority\": \"high\",\\n' +\n  '  \"requestedBy\": \"context-manager\",\\n' +\n  '  \"timestamp\": \"2026-04-02T12:28:47.577Z\"\\n' +\n  '}\\n' +\n  '\\n' +\n  '## Planner Context Lanes\\n' +\n  'Use the declared lanes intentionally: local/narrow for the current task and active intent, department/operational for recent handoffs and blockers, and broad/project for project brain, roadmap, and recent decisions.\\n' +\n  '{\\n' +\n  '  \"narrow\": {\\n' +\n  '    \"lane\": \"local\",\\n' +\n  '    \"currentDesk\": \"planner\",\\n' +\n  '    \"currentTask\": \"Retry the bounded fix task.\"\\n' +\n  '  },\\n' +\n  '  \"department\": {\\n' +\n  '    \"lane\": \"department\",\\n' +\n  '    \"departmentId\": \"dept-delivery\",\\n' +\n  '    \"currentFocus\": \"Retry the bounded fix task.\",\\n' +\n  '    \"blockers\": [\\n' +\n  '      \"Patch is empty or invalid.\",\\n' +\n  '      \"Keep scope bounded.\",\\n' +\n  '      \"Do not widen the retry beyond the current failure.\"\\n' +\n  '    ]\\n' +\n  '  },\\n' +\n  '  \"broad\": {\\n' +\n  '    \"lane\": \"broad\",\\n' +\n  '    \"projectBrain\": [],\\n' +\n  '    \"roadmap\": [],\\n' +\n  '    \"recentDecisions\": []\\n' +\n  '  }\\n' +\n  '}\\n' +\n  '\\n' +\n  '## CTO Override Layer\\n' +\n  'Treat overrides as explicit control signals. Do not rewrite canonical truth to make overrides look normal. Keep provenance intact and describe forced planning separately from ordinary planning.\\n' +\n  '{\\n' +\n  '  \"version\": \"1\",\\n' +\n  '  \"activeCount\": 0,\\n' +\n  '  \"flags\": {\\n' +\n  '    \"forcePlannerRouting\": false,\\n' +\n  '    \"forcePlanningGeneration\": false,\\n' +\n  '    \"reopenStalePlan\": false,\\n' +\n  '    \"supersedeQueuePriority\": false,\\n' +\n  '    \"requestEmergencyStaffingReview\": false,\\n' +\n  '    \"handoffMode\": null,\\n' +\n  '    \"forcePlanning\": false\\n' +\n  '  },\\n' +\n  '  \"activeOverrides\": [],\\n' +\n  '  \"planningMode\": \"normal\",\\n' +\n  '  \"canonicalTruthPreserved\": true\\n' +\n  '}\\n' +\n  '\\n' +\n  '## Required Planner Output Contract\\n' +\n  'Return machine-readable planner artefacts. Use the canonical intent to populate every object.\\n' +\n  'The planner must emit planBundle, taskBundle, dependencyMap, staffingRequest, qaRequest, outtray, archivalSummary, and contextUpdatePacket.\\n' +\n  'If staffing coverage is missing or risky, also emit hireRequest so TA can queue the work without blocking planning.\\n' +\n  'Every plan item must include planId, intentId, status, priority, summary, acceptanceCriteria, dependencies, targetDesk, targetRole, handoffState, provenance, createdBy, and createdAt.\\n' +\n  '\\n' +\n  '\\n' +\n  '## Derived Planner Brief\\n' +\n  'Handoff ID: fix-0009\\n' +\n  'Summary: Retry the bounded fix task.\\n' +\n  'Problem statement: Retry the bounded fix task.\\n' +\n  'Reasons: Patch is empty or invalid.\\n' +\n  'Retry count: 1 of 2.\\n' +\n  '\\n' +\n  'Constraints:\\n' +\n  '- Patch is empty or invalid.\\n' +\n  '- Keep scope bounded.\\n' +\n  '- Do not widen the retry beyond the current failure.\\n' +\n  '\\n' +\n  'Anchor refs:\\n' +\n  '- brain/emergence/plan.md\\n' +\n  '- work/tasks/0009-fix-task/fix_task.json\\n' +\n  '- work/tasks/0009-fix-task/fix_task.md\\n' +\n  '\\n' +\n  '## Canonical Anchors\\n' +\n  '\\n' +\n  '\\n' +\n  '## Existing Team Board\\n' +\n  'No current board cards.'\n"
+    },
+    {
+      "name": "taskCache",
+      "path": "./taskCache.test.mjs",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "plannerRegressionPack",
+      "path": "./plannerRegressionPack.test.mjs",
+      "error": "Cannot read properties of undefined (reading 'overrideLayer')"
+    },
     {
       "name": "server",
       "path": "./server.test.mjs",
-      "error": "Expected values to be strictly equal:\n\ntrue !== false\n"
+      "error": "Expected values to be strictly equal:\n\n'forced' !== 'normal'\n"
+    },
+    {
+      "name": "qaAuditTrail",
+      "path": "./qaAuditTrail.test.mjs",
+      "error": "expected one audit mismatch, saw 0"
     },
     {
       "name": "ctoPipeline",
       "path": "./ctoPipeline.test.mjs",
-      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'request-execution'\n- 'hire-role'\n"
     }
   ],
   "results": [
@@ -27,91 +47,91 @@
       "name": "actionRequestParser",
       "path": "./actionRequestParser.test.mjs",
       "status": "pass",
-      "durationMs": 19,
+      "durationMs": 17,
       "error": null
     },
     {
       "name": "anchorResolver",
       "path": "./anchorResolver.test.mjs",
       "status": "pass",
-      "durationMs": 33,
+      "durationMs": 24,
       "error": null
     },
     {
       "name": "agentRegistry",
       "path": "./agentRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 12,
+      "durationMs": 13,
       "error": null
     },
     {
       "name": "agentWorkers",
       "path": "./agentWorkers.test.mjs",
-      "status": "pass",
-      "durationMs": 93,
-      "error": null
+      "status": "fail",
+      "durationMs": 39,
+      "error": "The input did not match the regular expression /intent_cto_chat_1/. Input:\n\n'planner-template\\n' +\n  '\\n' +\n  '## Known Fixes Library\\n' +\n  'Use these trusted fix patterns first when the same failure shape returns.\\n' +\n  '- Quote Windows paths at the shell boundary: Path quoting\\n' +\n  '  - Do: Pass command arguments as arrays where possible. | Use `-LiteralPath` for PowerShell file operations. | Normalize repo-relative paths with forward slashes before prompt serialization.\\n' +\n  '  - Avoid: Building shell commands by string concatenation. | Letting unquoted paths cross a shell boundary.\\n' +\n  '- Create branches from a clean tracked worktree: Branch creation\\n' +\n  \"  - Do: Verify tracked worktree cleanliness before branch creation. | Prefer a `codex/` prefix or the repo's existing branch prefix rule. | Derive a unique branch name before checkout.\\n\" +\n  '  - Avoid: Creating branches on top of unreviewed tracked edits. | Reusing branch names that may already exist remotely or locally.\\n' +\n  '- Treat patch apply failures as rollback events: Patch apply failure\\n' +\n  '  - Do: Validate patch paths before applying. | Apply with `git apply --index` on a clean branch. | Rollback branch state immediately if apply fails.\\n' +\n  '  - Avoid: Retrying the same broken patch without a rollback. | Applying to a dirty tracked worktree.\\n' +\n  '- Resolve test commands from explicit repo-local context: Test command resolution\\n' +\n  '  - Do: Resolve the intended cwd explicitly before running a command. | Prefer repo-local scripts over ambient global tools. | Capture stdout and stderr together for diagnostics.\\n' +\n  '  - Avoid: Assuming the current shell directory is already the project root. | Hiding command selection inside a string-built shell pipeline.\\n' +\n  '- Use array args for Windows subprocesses: Windows subprocess weirdness\\n' +\n  '  - Do: Keep subprocess arguments structured instead of shell-joined. | Prefer direct executable paths and explicit `cwd` values. | Log the command shape before execution when debugging.\\n' +\n  '  - Avoid: Feeding Windows commands through `cmd /c` unless there is no alternative. | Assuming POSIX shell quoting rules apply on Windows.\\n' +\n  '\\n' +\n  '## Fix Task Intake\\n' +\n  'Agent: planner (ace/agent-attribution.v0)\\n' +\n  'Status: consumed\\n' +\n  'Location: task\\n' +\n  'Task: 0009\\n' +\n  'Parent task: 0007\\n' +\n  'Stage: planner\\n' +\n  'Action: fix-task-intake\\n' +\n  'Retry count: 1\\n' +\n  'Retry limit: 2\\n' +\n  'Project: ace-self\\n' +\n  'Title: Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Problem statement:\\n' +\n  'Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Reasons:\\n' +\n  '- Patch is empty or invalid.\\n' +\n  '\\n' +\n  'Changed files:\\n' +\n  '- brain/emergence/plan.md\\n' +\n  '## Canonical Intent Contract\\n' +\n  'Treat this contract as the source of truth. Do not invent tasks from summary text or UI state when this contract is available.\\n' +\n  '{\\n' +\n  '  \"intentId\": \"intent_context-manager_unknown_2026-04-02T12:28:47.577Z\",\\n' +\n  '  \"sourceType\": \"context-manager\",\\n' +\n  '  \"sourceRef\": \"unknown\",\\n' +\n  '  \"canonicalIntent\": {\\n' +\n  '    \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '    \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '    \"requestType\": \"execution_request\",\\n' +\n  '    \"requestedOutcomes\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"targets\": [\\n' +\n  '      \"ace-self\"\\n' +\n  '    ],\\n' +\n  '    \"constraints\": [\\n' +\n  '      \"Patch is empty or invalid.\",\\n' +\n  '      \"Keep scope bounded.\",\\n' +\n  '      \"Do not widen the retry beyond the current failure.\"\\n' +\n  '    ],\\n' +\n  '    \"priority\": \"high\",\\n' +\n  '    \"requestedBy\": \"context-manager\",\\n' +\n  '    \"timestamp\": \"2026-04-02T12:28:47.577Z\",\\n' +\n  '    \"sourceType\": \"context-manager\",\\n' +\n  '    \"sourceRef\": \"unknown\",\\n' +\n  '    \"anchorRefs\": [\\n' +\n  '      \"brain/emergence/plan.md\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '    ]\\n' +\n  '  },\\n' +\n  '  \"provenance\": {\\n' +\n  '    \"anchorRefs\": [\\n' +\n  '      \"brain/emergence/plan.md\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '    ],\\n' +\n  '    \"sourceType\": \"context-manager\",\\n' +\n  '    \"sourceRef\": \"unknown\",\\n' +\n  '    \"requestedBy\": \"context-manager\",\\n' +\n  '    \"usedFallback\": false,\\n' +\n  '    \"backend\": null,\\n' +\n  '    \"model\": null,\\n' +\n  '    \"runId\": null,\\n' +\n  '    \"inferenceMode\": null\\n' +\n  '  },\\n' +\n  '  \"constraints\": [\\n' +\n  '    \"Patch is empty or invalid.\",\\n' +\n  '    \"Keep scope bounded.\",\\n' +\n  '    \"Do not widen the retry beyond the current failure.\"\\n' +\n  '  ],\\n' +\n  '  \"priority\": \"high\",\\n' +\n  '  \"requestedBy\": \"context-manager\",\\n' +\n  '  \"timestamp\": \"2026-04-02T12:28:47.577Z\"\\n' +\n  '}\\n' +\n  '\\n' +\n  '## Planner Context Lanes\\n' +\n  'Use the declared lanes intentionally: local/narrow for the current task and active intent, department/operational for recent handoffs and blockers, and broad/project for project brain, roadmap, and recent decisions.\\n' +\n  '{\\n' +\n  '  \"narrow\": {\\n' +\n  '    \"lane\": \"local\",\\n' +\n  '    \"currentDesk\": \"planner\",\\n' +\n  '    \"currentTask\": \"Retry the bounded fix task.\"\\n' +\n  '  },\\n' +\n  '  \"department\": {\\n' +\n  '    \"lane\": \"department\",\\n' +\n  '    \"departmentId\": \"dept-delivery\",\\n' +\n  '    \"currentFocus\": \"Retry the bounded fix task.\",\\n' +\n  '    \"blockers\": [\\n' +\n  '      \"Patch is empty or invalid.\",\\n' +\n  '      \"Keep scope bounded.\",\\n' +\n  '      \"Do not widen the retry beyond the current failure.\"\\n' +\n  '    ]\\n' +\n  '  },\\n' +\n  '  \"broad\": {\\n' +\n  '    \"lane\": \"broad\",\\n' +\n  '    \"projectBrain\": [],\\n' +\n  '    \"roadmap\": [],\\n' +\n  '    \"recentDecisions\": []\\n' +\n  '  }\\n' +\n  '}\\n' +\n  '\\n' +\n  '## CTO Override Layer\\n' +\n  'Treat overrides as explicit control signals. Do not rewrite canonical truth to make overrides look normal. Keep provenance intact and describe forced planning separately from ordinary planning.\\n' +\n  '{\\n' +\n  '  \"version\": \"1\",\\n' +\n  '  \"activeCount\": 0,\\n' +\n  '  \"flags\": {\\n' +\n  '    \"forcePlannerRouting\": false,\\n' +\n  '    \"forcePlanningGeneration\": false,\\n' +\n  '    \"reopenStalePlan\": false,\\n' +\n  '    \"supersedeQueuePriority\": false,\\n' +\n  '    \"requestEmergencyStaffingReview\": false,\\n' +\n  '    \"handoffMode\": null,\\n' +\n  '    \"forcePlanning\": false\\n' +\n  '  },\\n' +\n  '  \"activeOverrides\": [],\\n' +\n  '  \"planningMode\": \"normal\",\\n' +\n  '  \"canonicalTruthPreserved\": true\\n' +\n  '}\\n' +\n  '\\n' +\n  '## Required Planner Output Contract\\n' +\n  'Return machine-readable planner artefacts. Use the canonical intent to populate every object.\\n' +\n  'The planner must emit planBundle, taskBundle, dependencyMap, staffingRequest, qaRequest, outtray, archivalSummary, and contextUpdatePacket.\\n' +\n  'If staffing coverage is missing or risky, also emit hireRequest so TA can queue the work without blocking planning.\\n' +\n  'Every plan item must include planId, intentId, status, priority, summary, acceptanceCriteria, dependencies, targetDesk, targetRole, handoffState, provenance, createdBy, and createdAt.\\n' +\n  '\\n' +\n  '\\n' +\n  '## Derived Planner Brief\\n' +\n  'Handoff ID: fix-0009\\n' +\n  'Summary: Retry the bounded fix task.\\n' +\n  'Problem statement: Retry the bounded fix task.\\n' +\n  'Reasons: Patch is empty or invalid.\\n' +\n  'Retry count: 1 of 2.\\n' +\n  '\\n' +\n  'Constraints:\\n' +\n  '- Patch is empty or invalid.\\n' +\n  '- Keep scope bounded.\\n' +\n  '- Do not widen the retry beyond the current failure.\\n' +\n  '\\n' +\n  'Anchor refs:\\n' +\n  '- brain/emergence/plan.md\\n' +\n  '- work/tasks/0009-fix-task/fix_task.json\\n' +\n  '- work/tasks/0009-fix-task/fix_task.md\\n' +\n  '\\n' +\n  '## Canonical Anchors\\n' +\n  '\\n' +\n  '\\n' +\n  '## Existing Team Board\\n' +\n  'No current board cards.'\n"
     },
     {
       "name": "aceConnector",
       "path": "./aceConnector.test.mjs",
       "status": "pass",
-      "durationMs": 31,
+      "durationMs": 29,
       "error": null
     },
     {
       "name": "componentRegistry",
       "path": "./componentRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "agentOwnershipModel",
       "path": "./agentOwnershipModel.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "relationshipHiringSignals",
       "path": "./relationshipHiringSignals.test.mjs",
       "status": "pass",
-      "durationMs": 21,
+      "durationMs": 16,
       "error": null
     },
     {
       "name": "resourceSignalModel",
       "path": "./resourceSignalModel.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 4,
       "error": null
     },
     {
       "name": "uiActionRegistry",
       "path": "./uiActionRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "studioQuickAccess",
       "path": "./studioQuickAccess.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "testAttributeCards",
       "path": "./testAttributeCards.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "aceRuntimeMcp",
       "path": "./aceRuntimeMcp.test.mjs",
       "status": "pass",
-      "durationMs": 237,
+      "durationMs": 167,
       "error": null
     },
     {
@@ -146,98 +166,105 @@
       "name": "graphMutations",
       "path": "./graphMutations.test.mjs",
       "status": "pass",
-      "durationMs": 2,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "mutationEngine",
       "path": "./mutationEngine.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 10,
       "error": null
     },
     {
       "name": "worldScaffoldView",
       "path": "./worldScaffoldView.test.mjs",
       "status": "pass",
-      "durationMs": 11,
+      "durationMs": 10,
       "error": null
     },
     {
       "name": "persistence",
       "path": "./persistence.test.mjs",
       "status": "pass",
-      "durationMs": 38,
+      "durationMs": 36,
       "error": null
     },
     {
       "name": "utilityWindowState",
       "path": "./utilityWindowState.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "studioLayoutModel",
       "path": "./studioLayoutModel.test.mjs",
       "status": "pass",
-      "durationMs": 27,
+      "durationMs": 24,
       "error": null
     },
     {
       "name": "studioOrgHealthModel",
       "path": "./studioOrgHealthModel.test.mjs",
       "status": "pass",
-      "durationMs": 22,
+      "durationMs": 19,
       "error": null
     },
     {
       "name": "studioLayoutRelationships",
       "path": "./studioLayoutRelationships.test.mjs",
       "status": "pass",
-      "durationMs": 12,
+      "durationMs": 10,
       "error": null
     },
     {
       "name": "spatialAppSmoke",
       "path": "./spatialApp.smoke.test.mjs",
       "status": "pass",
-      "durationMs": 141,
+      "durationMs": 119,
       "error": null
     },
     {
       "name": "spatialAppRsg",
       "path": "./spatialApp.rsg.test.mjs",
       "status": "pass",
-      "durationMs": 98,
+      "durationMs": 81,
       "error": null
     },
     {
       "name": "sliceRepository",
       "path": "./sliceRepository.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 6,
       "error": null
     },
     {
       "name": "archivistWriteback",
       "path": "./archivistWriteback.test.mjs",
       "status": "pass",
-      "durationMs": 26,
+      "durationMs": 20,
+      "error": null
+    },
+    {
+      "name": "changeHygiene",
+      "path": "./changeHygiene.test.mjs",
+      "status": "pass",
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "knownFixes",
       "path": "./knownFixes.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 6,
       "error": null
     },
     {
       "name": "failureMemory",
       "path": "./failureMemory.test.mjs",
       "status": "pass",
-      "durationMs": 15,
+      "durationMs": 14,
       "error": null
     },
     {
@@ -251,161 +278,189 @@
       "name": "agentCapabilities",
       "path": "./agentCapabilities.test.mjs",
       "status": "pass",
-      "durationMs": 29,
+      "durationMs": 22,
       "error": null
     },
     {
       "name": "constrainedAutoFix",
       "path": "./constrainedAutoFix.test.mjs",
       "status": "pass",
-      "durationMs": 16,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "autonomyPolicy",
       "path": "./autonomyPolicy.test.mjs",
       "status": "pass",
-      "durationMs": 13,
+      "durationMs": 9,
       "error": null
     },
     {
       "name": "fixTasks",
       "path": "./fixTasks.test.mjs",
       "status": "pass",
-      "durationMs": 17,
+      "durationMs": 15,
       "error": null
     },
     {
       "name": "taskArtifacts",
       "path": "./taskArtifacts.test.mjs",
       "status": "pass",
-      "durationMs": 183,
+      "durationMs": 107,
       "error": null
     },
     {
       "name": "taskCache",
       "path": "./taskCache.test.mjs",
+      "status": "fail",
+      "durationMs": 17,
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "plannerOuttray",
+      "path": "./plannerOuttray.test.mjs",
       "status": "pass",
-      "durationMs": 20,
+      "durationMs": 6,
       "error": null
+    },
+    {
+      "name": "plannerRegressionPack",
+      "path": "./plannerRegressionPack.test.mjs",
+      "status": "fail",
+      "durationMs": 41,
+      "error": "Cannot read properties of undefined (reading 'overrideLayer')"
     },
     {
       "name": "preflightGuards",
       "path": "./preflightGuards.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 361,
       "error": null
     },
     {
       "name": "debugSuite",
       "path": "./debugSuite.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "studioData",
       "path": "./studioData.test.mjs",
       "status": "pass",
-      "durationMs": 66,
+      "durationMs": 56,
       "error": null
     },
     {
       "name": "roleTaxonomy",
       "path": "./roleTaxonomy.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 4,
       "error": null
     },
     {
       "name": "rndExperimentContract",
       "path": "./rndExperimentContract.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "rndExperimentSeed",
       "path": "./rndExperimentSeed.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "rndExperimentPayload",
       "path": "./rndExperimentPayload.test.mjs",
       "status": "pass",
-      "durationMs": 65,
+      "durationMs": 44,
       "error": null
     },
     {
       "name": "rosterSurface",
       "path": "./rosterSurface.test.mjs",
       "status": "pass",
-      "durationMs": 13,
+      "durationMs": 10,
       "error": null
     },
     {
       "name": "studioMutations",
       "path": "./studioMutations.test.mjs",
       "status": "pass",
-      "durationMs": 7,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "studioDependencyValidation",
       "path": "./studioDependencyValidation.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 4,
       "error": null
     },
     {
       "name": "orchestratorState",
       "path": "./orchestratorState.test.mjs",
       "status": "pass",
-      "durationMs": 11,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "selfUpgrade",
       "path": "./selfUpgrade.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 2,
       "error": null
     },
     {
       "name": "taCandidates",
       "path": "./taCandidates.test.mjs",
       "status": "pass",
-      "durationMs": 97,
+      "durationMs": 100,
       "error": null
     },
     {
       "name": "talentUi",
       "path": "./talentUi.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 2,
       "error": null
     },
     {
       "name": "server",
       "path": "./server.test.mjs",
       "status": "fail",
-      "durationMs": 702,
-      "error": "Expected values to be strictly equal:\n\ntrue !== false\n"
+      "durationMs": 543,
+      "error": "Expected values to be strictly equal:\n\n'forced' !== 'normal'\n"
+    },
+    {
+      "name": "qaTestRegistry",
+      "path": "./qaTestRegistry.test.mjs",
+      "status": "pass",
+      "durationMs": 9,
+      "error": null
+    },
+    {
+      "name": "qaAuditTrail",
+      "path": "./qaAuditTrail.test.mjs",
+      "status": "fail",
+      "durationMs": 2,
+      "error": "expected one audit mismatch, saw 0"
     },
     {
       "name": "ctoPipeline",
       "path": "./ctoPipeline.test.mjs",
       "status": "fail",
-      "durationMs": 9,
-      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+      "durationMs": 29,
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'request-execution'\n- 'hire-role'\n"
     },
     {
       "name": "intentAnalysis",
       "path": "./intentAnalysis.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 8,
       "error": null
     },
     {
@@ -419,7 +474,7 @@
       "name": "throughputDebug",
       "path": "./throughputDebug.test.mjs",
       "status": "pass",
-      "durationMs": 48,
+      "durationMs": 45,
       "error": null
     },
     {
@@ -433,7 +488,7 @@
       "name": "appViewerMode",
       "path": "./appViewerMode.test.mjs",
       "status": "pass",
-      "durationMs": 20,
+      "durationMs": 19,
       "error": null
     }
   ]

@@ -12,6 +12,9 @@ import {
   normalizeGraphBundle,
   buildRsgState,
 } from './graphEngine.js';
+import {
+  buildCanonicalIntentContract,
+} from '../../intentAnalysis.js';
 import { AceConnector } from './aceConnector.js';
 import { MutationEngine } from './mutationEngine.js';
 import { ArchitectureMemory } from './architectureMemory.js';
@@ -25,6 +28,12 @@ import {
   saveArchitectureMemory,
 } from './persistence.js';
 import { buildRosterSurfaceModel } from './rosterSurface.js';
+import {
+  buildGhostProjectionRegistryPayload,
+  createEmptyGhostProjectionRegistry,
+  getCurrentGhostProjection,
+  summarizeGhostProjection,
+} from './ghostProjection.js';
 import {
   clampUtilityWindowPosition,
   createDefaultUtilityWindowState,
@@ -135,11 +144,289 @@ const NODE_LAYOUT = {
 };
 
 const EMPTY_INTENT_STATE = {
-  latest: null,
-  contextReport: null,
-  byNode: {},
-  reports: [],
+  registry: {
+    currentIntentId: null,
+    latestIntentId: null,
+    byId: {},
+    records: [],
+  },
+  currentIntentId: null,
+  summary: '',
+  status: 'idle',
 };
+const EMPTY_GHOST_PROJECTION_REGISTRY = createEmptyGhostProjectionRegistry();
+
+export function normalizeSketchPath(path = []) {
+  return (Array.isArray(path) ? path : [])
+    .map((point) => ({
+      x: Number(point?.x),
+      y: Number(point?.y),
+    }))
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+}
+
+export function boundsToSketchPath(bounds = null) {
+  if (!bounds || typeof bounds !== 'object') return [];
+  const left = Number(bounds.left ?? bounds.x ?? bounds.minX);
+  const top = Number(bounds.top ?? bounds.y ?? bounds.minY);
+  const width = Number(bounds.width);
+  const height = Number(bounds.height);
+  if (![left, top, width, height].every(Number.isFinite)) return [];
+  return [
+    { x: left, y: top },
+    { x: left + width, y: top },
+    { x: left + width, y: top + height },
+    { x: left, y: top + height },
+    { x: left, y: top },
+  ];
+}
+
+export function intentRecordToSketch(record = null) {
+  if (!record || typeof record !== 'object') return null;
+  const geometry = record.geometry && typeof record.geometry === 'object' ? record.geometry : {};
+  const path = normalizeSketchPath(geometry.stroke).length
+    ? normalizeSketchPath(geometry.stroke)
+    : normalizeSketchPath(geometry.path).length
+      ? normalizeSketchPath(geometry.path)
+      : normalizeSketchPath(geometry.region?.points).length
+        ? normalizeSketchPath(geometry.region?.points)
+        : boundsToSketchPath(geometry.region?.bounds || geometry.bounds || null);
+  if (!path.length) return null;
+  return {
+    id: String(record.id || record.intentId || '').trim() || null,
+    path,
+    metadata: {
+      intentId: String(record.id || record.intentId || '').trim() || null,
+      intentStatus: record.status || 'canonical',
+      meaning: record.semanticMeaning?.summary || record.semanticMeaning?.statement || record.semanticMeaning?.goal || record.summary || null,
+      sourceType: record.source?.type || record.sourceType || null,
+    },
+  };
+}
+
+export function intentRegistryToSketches(intentState = EMPTY_INTENT_STATE) {
+  const registry = intentState?.registry || null;
+  const records = Array.isArray(registry?.records) ? registry.records : [];
+  return records.map(intentRecordToSketch).filter(Boolean);
+}
+
+export function buildSketchCanonicalIntentRecord(stroke = {}, source = {}) {
+  const strokePath = normalizeSketchPath(stroke?.path || []);
+  const createdAt = String(stroke?.createdAt || source.timestamp || new Date().toISOString()).trim() || new Date().toISOString();
+  const sourceRef = String(stroke?.id || source.sourceRef || `sketch_${createdAt}`).trim() || `sketch_${createdAt}`;
+  const geometry = {
+    kind: 'stroke',
+    stroke: strokePath,
+    region: null,
+  };
+  const contract = buildCanonicalIntentContract({
+    report: {
+      summary: '',
+      statement: '',
+      goal: '',
+      requestType: 'sketchpad_input',
+      requestedOutcomes: [],
+      tasks: [],
+      targets: [],
+      constraints: [],
+      urgency: 'normal',
+      confidence: Number.isFinite(Number(stroke?.metadata?.confidence)) ? Number(stroke.metadata.confidence) : 0,
+      geometry,
+      source: 'sketchpad-stroke',
+      nodeId: sourceRef,
+      requestedBy: 'sketchpad',
+    },
+    packet: {
+      summary: '',
+      statement: '',
+      goal: '',
+      requestType: 'sketchpad_input',
+      requestedOutcomes: [],
+      tasks: [],
+      targets: [],
+      constraints: [],
+      confidence: Number.isFinite(Number(stroke?.metadata?.confidence)) ? Number(stroke.metadata.confidence) : 0,
+      geometry,
+      sourceType: 'sketchpad-stroke',
+      sourceRef,
+      requestedBy: 'sketchpad',
+      priority: 'normal',
+    },
+    sourceType: 'sketchpad-stroke',
+    sourceRef,
+    requestedBy: 'sketchpad',
+    priority: 'normal',
+    timestamp: createdAt,
+    provenance: {
+      sourceNodeId: sourceRef,
+      inputMode: 'sketchpad',
+      sketchMode: true,
+      createdAt,
+    },
+    intentId: source.sourceRef || sourceRef,
+  });
+  return contract.canonicalIntent;
+}
+
+export function removeIntentRegistryRecord(intentState = EMPTY_INTENT_STATE, intentId = null) {
+  const recordId = String(intentId || '').trim();
+  if (!recordId) return intentState;
+  const baseState = intentState && typeof intentState === 'object' ? intentState : EMPTY_INTENT_STATE;
+  const registry = baseState.registry && typeof baseState.registry === 'object' ? baseState.registry : EMPTY_INTENT_STATE.registry;
+  const nextRecords = (Array.isArray(registry.records) ? registry.records : []).filter((record) => String(record?.id || '').trim() !== recordId);
+  const nextById = { ...(registry.byId || {}) };
+  delete nextById[recordId];
+  const nextCurrentId = registry.currentIntentId === recordId
+    ? (nextRecords[0]?.id || null)
+    : registry.currentIntentId || nextRecords[0]?.id || null;
+  const currentIntent = nextCurrentId ? nextById[nextCurrentId] || nextRecords.find((record) => record.id === nextCurrentId) || null : null;
+  return {
+    registry: {
+      currentIntentId: nextCurrentId,
+      latestIntentId: registry.latestIntentId === recordId ? nextCurrentId : (registry.latestIntentId || nextCurrentId || null),
+      byId: nextById,
+      records: nextRecords,
+    },
+    currentIntentId: nextCurrentId,
+    summary: String(currentIntent?.semanticMeaning?.summary || currentIntent?.statement || currentIntent?.goal || '').trim(),
+    status: currentIntent?.status || (nextCurrentId ? 'canonical' : 'idle'),
+  };
+}
+
+function normalizeIntentRecord(report = {}) {
+  const source = report?.spatialIntent && typeof report.spatialIntent === 'object'
+    ? report.spatialIntent
+    : report?.intentContract?.canonicalIntent && typeof report.intentContract.canonicalIntent === 'object'
+      ? report.intentContract.canonicalIntent
+      : report?.canonicalIntent && typeof report.canonicalIntent === 'object'
+        ? report.canonicalIntent
+        : report || {};
+  const sourceObject = source.source && typeof source.source === 'object'
+    ? source.source
+    : {
+        type: String(source.sourceType || report?.sourceType || report?.source || 'sanctioned-intent-parser').trim() || 'sanctioned-intent-parser',
+        ref: String(source.sourceRef || report?.sourceRef || report?.nodeId || 'unknown').trim() || 'unknown',
+        requestedBy: String(source.requestedBy || report?.requestedBy || 'context-manager').trim() || 'context-manager',
+      };
+  const semanticMeaning = source.semanticMeaning && typeof source.semanticMeaning === 'object'
+    ? source.semanticMeaning
+    : {
+        summary: String(source.summary || report?.summary || '').trim(),
+        statement: String(source.statement || report?.statement || report?.summary || '').trim(),
+        goal: String(source.goal || report?.goal || report?.summary || '').trim(),
+        requestType: String(source.requestType || report?.requestType || 'context_request').trim() || 'context_request',
+        requestedOutcomes: Array.isArray(source.requestedOutcomes) ? source.requestedOutcomes : (Array.isArray(report?.requestedOutcomes) ? report.requestedOutcomes : []),
+        targets: Array.isArray(source.targets) ? source.targets : (Array.isArray(report?.targets) ? report.targets : []),
+        constraints: Array.isArray(source.constraints) ? source.constraints : (Array.isArray(report?.constraints) ? report.constraints : []),
+        urgency: String(source.urgency || report?.priority || 'normal').trim() || 'normal',
+        labels: Array.isArray(source.labels) ? source.labels : (Array.isArray(report?.classification?.labels) ? report.classification.labels : []),
+      };
+  const geometry = source.geometry && typeof source.geometry === 'object'
+    ? source.geometry
+    : {
+        kind: String(report?.geometry?.kind || report?.geometry?.type || 'unknown').trim().toLowerCase() || 'unknown',
+        region: report?.geometry?.region || report?.geometry?.bounds || null,
+        stroke: report?.geometry?.stroke || report?.geometry?.path || null,
+      };
+  const createdAt = String(source.createdAt || report?.createdAt || report?.timestamp || new Date().toISOString()).trim();
+  const id = String(source.id || report?.id || report?.intentId || `intent_${sourceObject.type}_${sourceObject.ref}_${createdAt}`).trim() || `intent_${sourceObject.type}_${sourceObject.ref}_${createdAt}`;
+  const confidence = Number.isFinite(Number(source.confidence))
+    ? Number(source.confidence)
+    : Number.isFinite(Number(report?.confidence))
+      ? Number(report.confidence)
+      : 0;
+  const record = {
+    id,
+    source: sourceObject,
+    geometry: {
+      kind: String(geometry.kind || geometry.type || 'unknown').trim().toLowerCase() || 'unknown',
+      region: geometry.region || null,
+      stroke: geometry.stroke || null,
+    },
+    semanticMeaning: {
+      summary: String(semanticMeaning.summary || semanticMeaning.statement || semanticMeaning.goal || '').trim(),
+      statement: String(semanticMeaning.statement || semanticMeaning.goal || semanticMeaning.summary || '').trim(),
+      goal: String(semanticMeaning.goal || semanticMeaning.statement || semanticMeaning.summary || '').trim(),
+      requestType: String(semanticMeaning.requestType || 'context_request').trim() || 'context_request',
+      requestedOutcomes: Array.isArray(semanticMeaning.requestedOutcomes) ? [...new Set(semanticMeaning.requestedOutcomes.filter(Boolean))] : [],
+      targets: Array.isArray(semanticMeaning.targets) ? [...new Set(semanticMeaning.targets.filter(Boolean))] : [],
+      constraints: Array.isArray(semanticMeaning.constraints) ? [...new Set(semanticMeaning.constraints.filter(Boolean))] : [],
+      urgency: String(semanticMeaning.urgency || 'normal').trim() || 'normal',
+      labels: Array.isArray(semanticMeaning.labels) ? [...new Set(semanticMeaning.labels.filter(Boolean))] : [],
+    },
+    confidence: Number(confidence.toFixed(2)),
+    createdAt,
+    provenance: {
+      ...(source.provenance || report?.provenance || {}),
+      sourceType: sourceObject.type,
+      sourceRef: sourceObject.ref,
+      requestedBy: sourceObject.requestedBy,
+    },
+  };
+  const missingFields = [];
+  if (!record.geometry || record.geometry.kind === 'unknown') missingFields.push('geometry');
+  if (!String(record.semanticMeaning.summary || record.semanticMeaning.statement || record.semanticMeaning.goal || '').trim()) {
+    missingFields.push('semanticMeaning');
+  }
+  if (!Number.isFinite(record.confidence)) missingFields.push('confidence');
+  record.missingFields = missingFields;
+  record.status = missingFields.length ? 'degraded' : 'canonical';
+  record.intentId = record.id;
+  record.sourceType = record.source.type;
+  record.sourceRef = record.source.ref;
+  record.nodeId = String(source.provenance?.sourceNodeId || report?.nodeId || record.source.ref || '').trim() || null;
+  record.requestedBy = record.source.requestedBy;
+  record.timestamp = record.createdAt;
+  record.priority = record.semanticMeaning.urgency;
+  record.summary = record.semanticMeaning.summary;
+  record.statement = record.semanticMeaning.statement;
+  record.goal = record.semanticMeaning.goal;
+  record.requestType = record.semanticMeaning.requestType;
+  record.requestedOutcomes = record.semanticMeaning.requestedOutcomes;
+  record.tasks = record.semanticMeaning.requestedOutcomes;
+  record.targets = record.semanticMeaning.targets;
+  record.constraints = record.semanticMeaning.constraints;
+  record.projectContext = {
+    currentFocus: record.nodeId || record.source.ref || null,
+    matchedTerms: record.semanticMeaning.labels,
+    blockers: record.semanticMeaning.constraints,
+    anchorRefs: Array.isArray(record.provenance?.anchorRefs) ? record.provenance.anchorRefs : [],
+  };
+  return record;
+}
+
+function getCurrentIntentRecord(intentState = EMPTY_INTENT_STATE) {
+  const registry = intentState?.registry || null;
+  if (!registry?.currentIntentId) return null;
+  return registry.byId?.[registry.currentIntentId] || null;
+}
+
+function upsertIntentRegistry(intentState = EMPTY_INTENT_STATE, report = null) {
+  const baseState = intentState && typeof intentState === 'object' ? intentState : EMPTY_INTENT_STATE;
+  const registry = baseState.registry && typeof baseState.registry === 'object' ? baseState.registry : EMPTY_INTENT_STATE.registry;
+  const nextRegistry = {
+    currentIntentId: registry.currentIntentId || baseState.currentIntentId || null,
+    latestIntentId: registry.latestIntentId || registry.currentIntentId || baseState.currentIntentId || null,
+    byId: { ...(registry.byId || {}) },
+    records: Array.isArray(registry.records) ? [...registry.records] : [],
+  };
+  if (report) {
+    const record = normalizeIntentRecord(report);
+    if (record?.id) {
+      nextRegistry.byId[record.id] = record;
+      nextRegistry.records = [record, ...nextRegistry.records.filter((entry) => entry.id !== record.id)];
+      nextRegistry.currentIntentId = record.id;
+      nextRegistry.latestIntentId = record.id;
+    }
+  }
+  const currentIntent = nextRegistry.currentIntentId ? nextRegistry.byId[nextRegistry.currentIntentId] || null : null;
+  return {
+    registry: nextRegistry,
+    currentIntentId: nextRegistry.currentIntentId,
+    summary: String(currentIntent?.semanticMeaning?.summary || currentIntent?.statement || currentIntent?.goal || baseState.summary || '').trim(),
+    status: currentIntent?.status || baseState.status || 'idle',
+  };
+}
 
 const GRAPH_LAYER_TITLES = {
   system: 'System Graph',
@@ -1896,14 +2183,6 @@ function normalizedNodeContent(value = '') {
   return String(value || '').trim();
 }
 
-export function isLinkedDraftNode(node) {
-  return node?.metadata?.rsg?.state === 'linked-draft';
-}
-
-export function isAdoptedDraftNode(node) {
-  return node?.metadata?.rsg?.state === 'adopted';
-}
-
 export function buildRsgActivityEntry({
   type = 'rsg-skip',
   sourceNode = null,
@@ -1966,7 +2245,6 @@ export function shouldRunFocusedRsgLoop({
   if (isPrimaryIntentNode(node)) return { ok: false, reason: 'primary-intent-node' };
   if (normalizedNodeContent(rawContent ?? node.content).length === 0) return { ok: false, reason: 'empty-content' };
   if (node?.metadata?.intentStatus === 'processing') return { ok: false, reason: 'processing' };
-  if (isLinkedDraftNode(node)) return { ok: false, reason: 'linked-draft' };
   return { ok: true, reason: '' };
 }
 
@@ -1975,40 +2253,12 @@ export function isPrimaryIntentNode(node = null) {
   return node?.metadata?.agentId === 'context-manager' || labels.includes('primary-input');
 }
 
-export function getExtractedIntent(report = null) {
-  return report?.extractedIntent && typeof report.extractedIntent === 'object'
-    ? report.extractedIntent
-    : null;
-}
-
-export function resolveGeneratedNodeInspection(node = null, graph = { nodes: [] }) {
-  const intentRef = node?.metadata?.rsg?.intentRef || null;
-  if (!intentRef?.sourceNodeId || !intentRef?.candidateNodeId) return null;
-  const sourceNode = (graph?.nodes || []).find((entry) => entry.id === intentRef.sourceNodeId) || null;
-  const sourceReport = sourceNode?.metadata?.intentAnalysis || null;
-  const extractedIntent = getExtractedIntent(sourceReport);
-  if (!extractedIntent) return null;
-  const candidate = (extractedIntent.candidateNodes || []).find((entry) => entry.id === intentRef.candidateNodeId)
-    || (extractedIntent.candidateNodes || []).find((entry) => String(entry.label || '').trim() === String(node.content || '').trim())
-    || null;
-  const relatedEdges = (extractedIntent.candidateEdges || []).filter((edge) => (
-    edge.sourceCandidateId === intentRef.candidateNodeId || edge.targetCandidateId === intentRef.candidateNodeId
-  ));
-  return {
-    extractedIntent,
-    sourceNode,
-    candidate,
-    relatedEdges,
-    basis: candidate?.basis || intentRef.basis || 'explicit',
-    confidence: Number.isFinite(Number(candidate?.confidence))
-      ? Number(candidate.confidence)
-      : (Number.isFinite(Number(node?.metadata?.rsg?.confidence)) ? Number(node.metadata.rsg.confidence) : null),
-  };
-}
-
 function formatRsgActivity(entry = null) {
   if (!entry) return 'RSG idle';
   const label = String(entry.type || 'rsg-skip').replace(/^rsg-/, 'RSG ').replace(/-/g, ' ');
+  if (entry.type === 'rsg-blocked') {
+    return `${label} | ${entry.reason || 'no candidate projection'}`;
+  }
   if (entry.type === 'rsg-skip') {
     return `${label} | ${entry.reason || 'no draft updates'}`;
   }
@@ -3067,6 +3317,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const [ace] = useState(() => new AceConnector());
   const [memory] = useState(() => new ArchitectureMemory());
   const [mutationEngine] = useState(() => new MutationEngine(graphEngine));
+  const [ghostProjectionState, setGhostProjectionState] = useState(() => createEmptyGhostProjectionRegistry());
 
   const [graphLayers, setGraphLayers] = useState(() => normalizeGraphBundle({ graph: buildStarterGraph() }));
   const [activeGraphLayer, setActiveGraphLayer] = useState('system');
@@ -3089,7 +3340,6 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const [annotations, setAnnotations] = useState([]);
   const [selectedSketchId, setSelectedSketchId] = useState(null);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
-  const [expandedGeneratedNodeIds, setExpandedGeneratedNodeIds] = useState({});
   const [dashboardState, setDashboardState] = useState({});
   const [recentRuns, setRecentRuns] = useState([]);
   const [recentHistory, setRecentHistory] = useState([]);
@@ -3228,7 +3478,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const selectedRelationshipInspector = useMemo(() => buildRelationshipInspectorPayload(selectedRelationship), [selectedRelationship]);
   const selectedSupportsSecondaryDrafting = Boolean(selected && activeGraphLayer === 'system' && !isPrimaryIntentNode(selected));
   const contextNode = systemGraph.nodes.find((node) => isPrimaryIntentNode(node)) || null;
-  const latestIntentReport = intentState.contextReport || intentState.latest || null;
+  const latestIntentReport = getCurrentIntentRecord(intentState);
   const notebookState = useMemo(() => normalizeNotebookState({ graph: systemGraph, graphs: graphBundle, intentState, pages, activePageId }), [systemGraph, graphBundle, intentState, pages, activePageId]);
   const activePage = notebookState.activePage;
   const activeLayerNodeTypes = useMemo(() => getNodeTypesForLayer(activeGraphLayer), [activeGraphLayer]);
@@ -3314,6 +3564,16 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const recentWorldChangeMeta = recentWorldChange
     ? buildRecentWorldCountsLabel(recentWorldChange.counts || {})
     : 'No recent applied world diff is active in this session.';
+  const normalizedGhostProjectionState = useMemo(
+    () => buildGhostProjectionRegistryPayload(ghostProjectionState || EMPTY_GHOST_PROJECTION_REGISTRY),
+    [ghostProjectionState],
+  );
+  const currentGhostProjection = useMemo(
+    () => getCurrentGhostProjection(normalizedGhostProjectionState),
+    [normalizedGhostProjectionState],
+  );
+  const currentCanonicalIntentRecord = getCurrentIntentRecord(intentState);
+  const currentFieldInfluence = currentCanonicalIntentRecord?.fieldInfluence || null;
 
   const workspacePayload = useMemo(() => ({
     graph: systemGraph,
@@ -3323,6 +3583,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     architectureMemory: memory.model,
     agentComments,
     intentState,
+    ghostProjections: normalizedGhostProjectionState,
     pages,
     activePageId: notebookState.activePageId,
     rsg: rsgState,
@@ -3339,7 +3600,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       canvasViewport,
       studioViewport,
     },
-  }), [systemGraph, graphBundle, sketches, annotations, agentComments, intentState, pages, notebookState.activePageId, rsgState, scene, selectedAgentId, activeGraphLayer, worldViewMode, handoffs, teamBoard, orchestratorState, selfUpgrade, studioLayout, canvasViewport, studioViewport, memory]);
+  }), [systemGraph, graphBundle, sketches, annotations, agentComments, intentState, normalizedGhostProjectionState, pages, notebookState.activePageId, rsgState, scene, selectedAgentId, activeGraphLayer, worldViewMode, handoffs, teamBoard, orchestratorState, selfUpgrade, studioLayout, canvasViewport, studioViewport, memory]);
 
   const lightweightWorkspacePayload = useMemo(() => ({
     activePageId,
@@ -3353,16 +3614,10 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     openTraceId,
     openReportId,
     openTaskId,
-  }), [activePageId, selectedAgentId, deskPanelTab, scene, activeGraphLayer, worldViewMode, studioViewport, canvasViewport, openTraceId, openReportId, openTaskId]);
+    ghostProjections: normalizedGhostProjectionState,
+  }), [activePageId, selectedAgentId, deskPanelTab, scene, activeGraphLayer, worldViewMode, studioViewport, canvasViewport, openTraceId, openReportId, openTaskId, normalizedGhostProjectionState]);
 
-  const slimIntentStatePayload = useMemo(() => {
-    const source = intentState.contextReport || intentState.latest || null;
-    return {
-      currentIntentId: source?.currentIntentId || source?.id || null,
-      summary: source?.summary || '',
-      status: source?.status || 'idle',
-    };
-  }, [intentState]);
+  const slimIntentStatePayload = useMemo(() => intentState, [intentState]);
 
   const slimStudioStatePayload = useMemo(() => buildStudioStatePayload({
     handoffs,
@@ -4141,7 +4396,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       setWorldViewMode(normalizeWorldViewMode(storedStudio.worldViewMode));
       graphEngine.setState(graphs[initialLayer] || buildStarterGraph());
       setGraph({ ...graphEngine.getState() });
-      setSketches(Array.isArray(workspace.sketches) ? workspace.sketches : []);
+      setSketches(intentRegistryToSketches(workspace.intentState || EMPTY_INTENT_STATE));
       setAnnotations(Array.isArray(workspace.annotations) ? workspace.annotations : []);
       setAgentComments(mergeComments(workspace.agentComments));
       if (workspace.architectureMemory) {
@@ -4188,19 +4443,23 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       setStudioLayout(normalizeStudioLayout(storedStudio.layout));
       const contextNode = (graphs.system?.nodes || []).find((node) => node.metadata?.agentId === 'context-manager');
       const storedIntentState = workspace.intentState || EMPTY_INTENT_STATE;
-      setIntentState({
-        latest: storedIntentState.latest || null,
-        contextReport: storedIntentState.contextReport || null,
-        byNode: storedIntentState.byNode || {},
-        reports: Array.isArray(storedIntentState.reports) ? storedIntentState.reports : [],
-      });
+      const storedGhostProjections = buildGhostProjectionRegistryPayload(
+        workspace.ghostProjections
+        || storedStudio.ghostProjections
+        || storedStudio.ghostProjectionState
+        || EMPTY_GHOST_PROJECTION_REGISTRY,
+      );
+      setIntentState(storedIntentState);
+      setGhostProjectionState(storedGhostProjections);
+      mutationEngine.setGhostProjectionRegistry(storedGhostProjections);
+      setSketches(intentRegistryToSketches(storedIntentState));
       setOpenTraceId(workspace.openTraceId || storedStudio.ui?.openTraceId || null);
       setOpenReportId(workspace.openReportId || storedStudio.ui?.openReportId || null);
       setOpenTaskId(workspace.openTaskId || storedStudio.ui?.openTaskId || null);
       setRsgMeta(workspace.rsg || createDefaultRsgState());
       setMutationGate(normalizeMutationGateState(workspace.mutationGate));
       setContextDraft(contextNode?.content || '');
-      setScanPreview(storedIntentState.contextReport || null);
+      setScanPreview(getCurrentIntentRecord(storedIntentState));
       activeCanvasIntentTraceId.current = null;
       setCanvasIntentRunState(EMPTY_CANVAS_INTENT_RUN_STATE);
       hasLoadedWorkspace.current = true;
@@ -4208,6 +4467,8 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       setNormalizedGraphBundlePresent(false);
       activeCanvasIntentTraceId.current = null;
       setCanvasIntentRunState(EMPTY_CANVAS_INTENT_RUN_STATE);
+      setGhostProjectionState(EMPTY_GHOST_PROJECTION_REGISTRY);
+      mutationEngine.setGhostProjectionRegistry(EMPTY_GHOST_PROJECTION_REGISTRY);
       hasLoadedWorkspace.current = true;
     });
     return () => {
@@ -4238,6 +4499,11 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       selectedAgent?.name || '',
     );
   }, [graph, graphBundle, canvasViewport, memory, activeGraphLayer, worldViewMode, recentWorldChange, showRecentWorldChanges, pointerWorld, simulating, simStep, paused, sketches, annotations, selectedSketchId, selectedAnnotationId, selectedRelationshipId, selectedAgentId, selectedAgent?.name]);
+
+  useEffect(() => {
+    if (!hasLoadedWorkspace.current) return;
+    setSketches(intentRegistryToSketches(intentState));
+  }, [intentState]);
 
   useEffect(() => {
     if (selectedRelationship?.selectionSource === 'graph' && selectedRelationshipId && !graph.edges.some((edge) => edge.id === selectedRelationshipId)) {
@@ -4449,8 +4715,8 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   useEffect(() => {
     if (!hasLoadedWorkspace.current) return;
     if (handoffs.contextToPlanner || !latestIntentReport) return;
-    updatePlannerHandoff(latestIntentReport).catch(() => {});
-  }, [handoffs.contextToPlanner, latestIntentReport, dashboardState]);
+    updatePlannerHandoff(latestIntentReport, currentGhostProjection).catch(() => {});
+  }, [handoffs.contextToPlanner, latestIntentReport, dashboardState, currentGhostProjection]);
 
   useEffect(() => {
     if (!hasLoadedWorkspace.current) return;
@@ -4895,17 +5161,19 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     const syncResult = mutationEngine.syncDraftNodesFromReport(currentSourceNode, report, {
       layer: activeGraphLayer,
     });
-    syncGraphState();
-    const activityType = syncResult.generatedNodes.length
-      ? (syncResult.replacedNodeIds.length ? 'rsg-replace' : 'rsg-generate')
-      : (syncResult.replacedNodeIds.length ? 'rsg-replace' : 'rsg-skip');
+    setGhostProjectionState(syncResult.registry || mutationEngine.getGhostProjectionRegistry());
+    const activityType = syncResult.status === 'blocked'
+      ? 'rsg-blocked'
+      : (syncResult.projectionRecords.length
+        ? (syncResult.replacedProjectionIds.length ? 'rsg-replace' : 'rsg-generate')
+        : (syncResult.replacedProjectionIds.length ? 'rsg-replace' : 'rsg-skip'));
     const entry = buildRsgActivityEntry({
       type: activityType,
       sourceNode: currentSourceNode,
       report,
       generationId: syncResult.generationId,
-      generatedCount: syncResult.generatedNodes.length,
-      replacedCount: syncResult.replacedNodeIds.length,
+      generatedCount: syncResult.projectionRecords.length,
+      replacedCount: syncResult.replacedProjectionIds.length,
       reason: syncResult.reason || '',
       trigger,
       at: syncResult.createdAt,
@@ -4924,13 +5192,6 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     const nextMetadata = { ...(node.metadata || {}) };
     let metadataChanged = false;
     if (contentChanged) {
-      if (isLinkedDraftNode(node)) {
-        nextMetadata.rsg = {
-          ...(nextMetadata.rsg || {}),
-          state: 'adopted',
-        };
-        metadataChanged = true;
-      }
       const currentOrigin = nextMetadata.origin || resolveNodeOrigin(node);
       if (['agent_generated', 'system_generated'].includes(currentOrigin) && currentOrigin !== 'agent_edited') {
         nextMetadata.origin = 'agent_edited';
@@ -4944,27 +5205,11 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     syncGraphState();
   };
 
-  const toggleGeneratedNodeExpansion = (nodeId) => {
-    setExpandedGeneratedNodeIds((current) => ({
-      ...current,
-      [nodeId]: !current[nodeId],
-    }));
-  };
-
-  const updatePlannerHandoff = async (report) => {
-    if (!report) return null;
-    const nextIntentState = {
-      ...intentState,
-      latest: report,
-      contextReport: report,
-    };
-    const nextSlimIntentStatePayload = {
-      currentIntentId: report?.currentIntentId || report?.id || null,
-      summary: report?.summary || '',
-      status: report?.status || 'idle',
-    };
+  const updatePlannerHandoff = async (canonicalIntent, ghostProjection = currentGhostProjection) => {
+    if (!canonicalIntent) return null;
+    const nextIntentState = upsertIntentRegistry(intentState, canonicalIntent);
     const previousHandoff = handoffs.contextToPlanner;
-    const nextHandoff = createPlannerHandoff(report, dashboardState, previousHandoff);
+    const nextHandoff = createPlannerHandoff(canonicalIntent, ghostProjection, dashboardState, previousHandoff);
     const nextHandoffs = {
       contextToPlanner: nextHandoff,
       history: [nextHandoff, ...(handoffs.history || []).filter((entry) => entry.id !== nextHandoff.id)].slice(0, 12),
@@ -4978,12 +5223,12 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     const nextPages = notebook.pages.map((page) => page.id === notebook.activePageId
       ? {
           ...page,
-          title: report.summary ? report.summary.slice(0, 48) : page.title,
-          summary: report.summary || page.summary,
-          sourceNodeId: report.nodeId || page.sourceNodeId,
+          title: canonicalIntent.summary ? canonicalIntent.summary.slice(0, 48) : page.title,
+          summary: canonicalIntent.summary || page.summary,
+          sourceNodeId: canonicalIntent.nodeId || canonicalIntent.sourceRef || page.sourceNodeId,
           updatedAt: new Date().toISOString(),
           handoffs: [nextHandoff, ...(page.handoffs || []).filter((entry) => entry.id !== nextHandoff.id)].slice(0, 8),
-        }
+      }
       : page);
     setIntentState(nextIntentState);
     setHandoffs(nextHandoffs);
@@ -4996,7 +5241,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     await Promise.all([
       savePages({ pages: nextPages, activePageId: notebook.activePageId }),
       saveStudioState(buildStudioStatePayload({ handoffs: nextHandoffs, teamBoard })),
-      saveIntentState({ intentState: nextSlimIntentStatePayload }),
+      saveIntentState({ intentState: nextIntentState }),
     ]);
     applyRuntimePayload(buildRuntimePayloadFromWorkspace(workspace, teamBoard));
     return nextHandoff;
@@ -5339,18 +5584,13 @@ function syncRecentWorldChange(change = null) {
         });
         syncGraphState();
       }
-      const nextIntentState = {
-        latest: report,
-        contextReport: report,
-        byNode: contextNode?.id ? { ...(intentState.byNode || {}), [contextNode.id]: report } : (intentState.byNode || {}),
-        reports: [report, ...((intentState.reports || []).filter((entry) => entry.nodeId !== contextNode?.id))].slice(0, 24),
-      };
+      const nextIntentState = upsertIntentRegistry(intentState, report);
       let handoff = tracedResponse.handoff || (tracedResponse.runtime ? tracedResponse.runtime.handoffs?.contextToPlanner : null) || null;
       if (tracedResponse.runtime) {
         applyRuntimePayload(tracedResponse.runtime, nextIntentState);
       } else {
         setIntentState(nextIntentState);
-        handoff = await updatePlannerHandoff(report);
+        handoff = await updatePlannerHandoff(getCurrentIntentRecord(nextIntentState), currentGhostProjection);
       }
       if (!isActiveCanvasIntentTrace(trace.trace_id)) return;
       addTraceStep(trace, 'engine_result', {
@@ -5541,20 +5781,18 @@ function syncRecentWorldChange(change = null) {
       return null;
     }
     if (!content) {
-      if (!isLinkedDraftNode(current)) {
-        const removedDraftIds = mutationEngine.removeLinkedDraftsForSource(nodeId);
-        if (removedDraftIds.length) {
-          syncGraphState();
-          const entry = recordRsgActivity(buildRsgActivityEntry({
-            type: 'rsg-replace',
-            sourceNode: current,
-            reason: 'source-cleared',
-            replacedCount: removedDraftIds.length,
-            trigger,
-          }));
-          setStatus(`node updated | ${formatRsgActivity(entry)}`);
-          return null;
-        }
+      const removedGhosts = mutationEngine.removeGhostProjectionsForSource(nodeId);
+      setGhostProjectionState(removedGhosts.registry);
+      if (removedGhosts.removedProjectionIds.length) {
+        const entry = recordRsgActivity(buildRsgActivityEntry({
+          type: 'rsg-replace',
+          sourceNode: current,
+          reason: 'source-cleared',
+          replacedCount: removedGhosts.removedProjectionIds.length,
+          trigger,
+        }));
+        setStatus(`node updated | ${formatRsgActivity(entry)}`);
+        return null;
       }
       setStatus('node updated');
       return;
@@ -5596,12 +5834,7 @@ function syncRecentWorldChange(change = null) {
         },
       });
       syncGraphState();
-      const nextIntentState = {
-        latest: report,
-        contextReport: current?.metadata?.agentId === 'context-manager' ? report : intentState.contextReport,
-        byNode: { ...(intentState.byNode || {}), [nodeId]: report },
-        reports: [report, ...((intentState.reports || []).filter((entry) => entry.nodeId !== nodeId))].slice(0, 24),
-      };
+      const nextIntentState = upsertIntentRegistry(intentState, report);
       if (response.runtime && current?.metadata?.agentId === 'context-manager') {
         applyRuntimePayload(response.runtime, nextIntentState);
       } else {
@@ -5611,7 +5844,7 @@ function syncRecentWorldChange(change = null) {
         setContextDraft(content);
         setScanPreview(report);
         if (!response.runtime) {
-          await updatePlannerHandoff(report);
+          await updatePlannerHandoff(getCurrentIntentRecord(nextIntentState), currentGhostProjection);
         }
       }
       const rsgResult = applyFocusedRsgLoop(graphEngine.getState().nodes.find((node) => node.id === nodeId), report, {
@@ -5619,7 +5852,7 @@ function syncRecentWorldChange(change = null) {
         recordSkip,
       });
       addTraceStep(trace, 'engine_result', {
-        generated_nodes: rsgResult?.generatedNodes?.map((node) => node.id) || [],
+        generated_nodes: rsgResult?.syncResult?.projectionRecords?.map((projection) => projection.id) || [],
         reason: rsgResult?.reason || null,
       });
       setSelectedAgentId('context-manager');
@@ -5640,27 +5873,21 @@ function syncRecentWorldChange(change = null) {
 
   const removeNode = (id) => {
     const currentNode = graphEngine.getState().nodes.find((node) => node.id === id) || null;
-    let removedDraftIds = [];
-    if (!isLinkedDraftNode(currentNode)) {
-      removedDraftIds = mutationEngine.removeLinkedDraftsForSource(id);
-    }
+    let removedGhostIds = [];
+    const removal = mutationEngine.removeGhostProjectionsForSource(id);
+    removedGhostIds = removal.removedProjectionIds;
+    setGhostProjectionState(removal.registry);
     graphEngine.removeNode(id);
     syncGraphState();
-    if (removedDraftIds.length && currentNode) {
+    if (removedGhostIds.length && currentNode) {
       recordRsgActivity(buildRsgActivityEntry({
         type: 'rsg-replace',
         sourceNode: currentNode,
-        replacedCount: removedDraftIds.length,
+        replacedCount: removedGhostIds.length,
         reason: 'source-deleted',
         trigger: 'delete',
       }));
     }
-    setExpandedGeneratedNodeIds((current) => {
-      if (!current[id]) return current;
-      const next = { ...current };
-      delete next[id];
-      return next;
-    });
     if (selectedId === id) setSelectedId(null);
   };
 
@@ -5711,19 +5938,13 @@ function syncRecentWorldChange(change = null) {
     setSelectedId(null);
     setSelectedSketchId(null);
     setSelectedAnnotationId(null);
-    setExpandedGeneratedNodeIds({});
     setCanvasViewport(createDefaultCanvasViewport());
     setScene(SCENES.CANVAS);
     setWorldViewMode(DEFAULT_WORLD_VIEW_MODE);
     setContextDraft('');
     setScanPreview(null);
     setPreview(null);
-    setIntentState({
-      latest: null,
-      contextReport: null,
-      byNode: {},
-      reports: [],
-    });
+    setIntentState(EMPTY_INTENT_STATE);
     setRsgMeta(createDefaultRsgState());
     setMutationGate(EMPTY_MUTATION_GATE);
     setRecentWorldChange(null);
@@ -5837,6 +6058,32 @@ function syncRecentWorldChange(change = null) {
         setGraph({ ...graphEngine.getState() });
         setStatus('node created from connector');
       }
+    }
+    if (activeSketch.current && Array.isArray(activeSketch.current.path) && activeSketch.current.path.length) {
+      const canonicalIntent = buildSketchCanonicalIntentRecord(activeSketch.current, {
+        sourceRef: activeSketch.current.id,
+        timestamp: activeSketch.current.createdAt || new Date().toISOString(),
+      });
+      const nextIntentState = upsertIntentRegistry(intentState, canonicalIntent);
+      setIntentState(nextIntentState);
+      setSketches(intentRegistryToSketches(nextIntentState));
+      setSelectedSketchId(canonicalIntent.id);
+      setScanPreview(canonicalIntent);
+      const ghostSourceNode = {
+        id: canonicalIntent.id,
+        content: canonicalIntent.summary || canonicalIntent.statement || canonicalIntent.goal || '',
+        metadata: {
+          graphLayer: activeGraphLayer,
+        },
+      };
+      const ghostResult = mutationEngine.syncDraftNodesFromReport(ghostSourceNode, canonicalIntent, {
+        layer: activeGraphLayer,
+      });
+      setGhostProjectionState(ghostResult.registry);
+      setStatus([
+        canonicalIntent.missingFields.length ? `sketch intent captured | missing: ${canonicalIntent.missingFields.join(', ')}` : 'sketch intent captured',
+        ghostResult.projectionRecords.length ? `ghost projection ${ghostResult.projectionRecords[0].status} | ${ghostResult.projectionRecords.length} candidate${ghostResult.projectionRecords.length === 1 ? '' : 's'}` : ghostResult.reason || 'ghost projection pending',
+      ].join(' | '));
     }
     draggingNode.current = null;
     isPanning.current = false;
@@ -6086,16 +6333,28 @@ function syncRecentWorldChange(change = null) {
   };
 
   const clearSketchLayer = () => {
+    setIntentState(EMPTY_INTENT_STATE);
+    setGhostProjectionState(EMPTY_GHOST_PROJECTION_REGISTRY);
+    mutationEngine.setGhostProjectionRegistry(EMPTY_GHOST_PROJECTION_REGISTRY);
     setSketches([]);
     setAnnotations([]);
     setSelectedSketchId(null);
     setSelectedAnnotationId(null);
+    setScanPreview(null);
+    setStatus('canonical sketch registry cleared');
   };
 
   const deleteSelection = () => {
     if (selectedSketchId) {
-      setSketches((previous) => previous.filter((stroke) => stroke.id !== selectedSketchId));
+      const nextIntentState = removeIntentRegistryRecord(intentState, selectedSketchId);
+      const removedGhosts = mutationEngine.removeGhostProjectionsForSource(selectedSketchId);
+      setIntentState(nextIntentState);
+      setGhostProjectionState(removedGhosts.registry);
+      setSketches(intentRegistryToSketches(nextIntentState));
       setSelectedSketchId(null);
+      setScanPreview(getCurrentIntentRecord(nextIntentState));
+      setStatus('canonical sketch deleted');
+      return;
     }
     if (selectedAnnotationId) {
       setAnnotations((previous) => previous.filter((note) => note.id !== selectedAnnotationId));
@@ -8304,6 +8563,101 @@ function syncRecentWorldChange(change = null) {
               onMouseDown: onCanvasMouseDown,
               onContextMenu: (event) => event.preventDefault(),
             }),
+            h('div', {
+              className: 'observability-rail',
+              style: {
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                width: '360px',
+                maxHeight: 'calc(100% - 32px)',
+                overflowY: 'auto',
+                pointerEvents: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                zIndex: 6,
+              },
+            },
+              h('div', {
+                className: 'observability-title',
+                style: {
+                  background: 'rgba(10, 16, 26, 0.92)',
+                  border: '1px solid rgba(112, 161, 255, 0.32)',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  color: '#d8e7fb',
+                  boxShadow: '0 10px 24px rgba(0, 0, 0, 0.28)',
+                },
+              },
+                h('div', { style: { fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8fb2ff' } }, 'Observability'),
+                h('div', { style: { marginTop: '4px', fontSize: '14px', fontWeight: 600 } }, 'Canonical intent, field, and ghost layers'),
+              ),
+              h('div', {
+                className: 'observability-card intent',
+                style: {
+                  background: 'rgba(10, 16, 26, 0.88)',
+                  border: '1px solid rgba(112, 161, 255, 0.22)',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  color: '#d8e7fb',
+                  boxShadow: '0 10px 24px rgba(0, 0, 0, 0.24)',
+                },
+              },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8fb2ff' } },
+                  h('span', null, 'Intent'),
+                  h('span', null, currentCanonicalIntentRecord?.status || 'missing'),
+                ),
+                h('div', { style: { marginTop: '6px', fontSize: '13px', fontWeight: 600 } }, String(currentCanonicalIntentRecord?.summary || currentCanonicalIntentRecord?.statement || currentCanonicalIntentRecord?.goal || 'No canonical intent record')),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `id: ${currentCanonicalIntentRecord?.id || 'missing'} | generatedAt: ${currentCanonicalIntentRecord?.provenance?.createdAt || currentCanonicalIntentRecord?.createdAt || 'missing'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `confidence: ${Number.isFinite(Number(currentCanonicalIntentRecord?.confidence)) ? `${Math.round(Number(currentCanonicalIntentRecord.confidence) * 100)}%` : 'missing'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `provenance: ${currentCanonicalIntentRecord?.provenance?.sourceType || 'missing'} / ${currentCanonicalIntentRecord?.provenance?.sourceRef || currentCanonicalIntentRecord?.sourceRef || 'missing'}`),
+                currentCanonicalIntentRecord?.missingFields?.length ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#ffcf7a' } }, `missing: ${currentCanonicalIntentRecord.missingFields.join(', ')}`) : null,
+              ),
+              h('div', {
+                className: 'observability-card field',
+                style: {
+                  background: 'rgba(10, 16, 26, 0.88)',
+                  border: '1px solid rgba(112, 161, 255, 0.22)',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  color: '#d8e7fb',
+                  boxShadow: '0 10px 24px rgba(0, 0, 0, 0.24)',
+                },
+              },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8fb2ff' } },
+                  h('span', null, 'Field'),
+                  h('span', null, currentFieldInfluence?.status || 'missing'),
+                ),
+                h('div', { style: { marginTop: '6px', fontSize: '13px', fontWeight: 600 } }, String(currentFieldInfluence?.summary || currentFieldInfluence?.field?.summary || 'No canonical field influence')),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `fieldKey: ${currentFieldInfluence?.fieldKey || 'missing'} | generatedAt: ${currentFieldInfluence?.provenance?.createdAt || currentCanonicalIntentRecord?.createdAt || 'missing'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `sourceIntentId: ${currentFieldInfluence?.sourceIntentId || currentCanonicalIntentRecord?.id || 'missing'} | confidence: ${Number.isFinite(Number(currentFieldInfluence?.sourceIntentConfidence)) ? `${Math.round(Number(currentFieldInfluence.sourceIntentConfidence) * 100)}%` : 'missing'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `provenance: ${currentFieldInfluence?.provenance?.interpreter || currentCanonicalIntentRecord?.provenance?.interpreter || 'missing'}`),
+                currentFieldInfluence?.missingFields?.length ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#ffcf7a' } }, `missing: ${currentFieldInfluence.missingFields.join(', ')}`) : null,
+              ),
+              h('div', {
+                className: 'observability-card ghost',
+                style: {
+                  background: 'rgba(10, 16, 26, 0.88)',
+                  border: '1px solid rgba(112, 161, 255, 0.22)',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  color: '#d8e7fb',
+                  boxShadow: '0 10px 24px rgba(0, 0, 0, 0.24)',
+                },
+              },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8fb2ff' } },
+                  h('span', null, 'Ghost'),
+                  h('span', null, currentGhostProjection?.status || 'missing'),
+                ),
+                h('div', { style: { marginTop: '6px', fontSize: '13px', fontWeight: 600 } }, currentGhostProjection ? summarizeGhostProjection(currentGhostProjection) : 'No ghost projection record'),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `id: ${currentGhostProjection?.id || 'missing'} | generatedAt: ${currentGhostProjection?.provenance?.createdAt || 'missing'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `sourceIntentIds: ${Array.isArray(currentGhostProjection?.sourceIntentIds) && currentGhostProjection.sourceIntentIds.length ? currentGhostProjection.sourceIntentIds.join(', ') : 'missing'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `confidence: ${Number.isFinite(Number(currentGhostProjection?.confidence)) ? `${Math.round(Number(currentGhostProjection.confidence) * 100)}%` : 'missing'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `provenance: ${currentGhostProjection?.provenance?.sourceType || 'missing'} / ${currentGhostProjection?.provenance?.sourceRef || 'missing'}`),
+                currentGhostProjection?.reasoning?.length ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, currentGhostProjection.reasoning.join(' | ')) : null,
+              ),
+            ),
             annotations.map((note) => {
               const x = note.position.x * canvasViewport.zoom + canvasViewport.x;
               const y = note.position.y * canvasViewport.zoom + canvasViewport.y;
@@ -8337,40 +8691,20 @@ function syncRecentWorldChange(change = null) {
               const originLabel = NODE_ORIGIN_LABELS[nodeOrigin] || nodeOrigin;
               const classified = classifyNode(node, graph, activeGraphLayer);
               const labels = classified.metadata.labels || [];
-              const rsgNodeState = node.metadata?.rsg?.state || null;
               const draftConfidence = node.metadata?.rsg?.confidence;
               const lowConfidenceDraft = isLowConfidence(draftConfidence);
-              const generatedInspection = resolveGeneratedNodeInspection(node, graph);
-              const extractedIntent = generatedInspection?.extractedIntent || getExtractedIntent(node.metadata?.intentAnalysis);
-              const expandedGenerated = Boolean(expandedGeneratedNodeIds[node.id]);
-              const relatedEdgeSummaries = (generatedInspection?.relatedEdges || []).map((edge) => {
-                const sourceLabel = (extractedIntent?.candidateNodes || []).find((entry) => entry.id === edge.sourceCandidateId)?.label || edge.sourceCandidateId;
-                const targetLabel = (extractedIntent?.candidateNodes || []).find((entry) => entry.id === edge.targetCandidateId)?.label || edge.targetCandidateId;
-                return `${sourceLabel} -> ${targetLabel} | ${edge.kind}${edge.rationale ? ` | ${edge.rationale}` : ''}`;
-              });
-              const rsg = node.metadata?.rsg || null;
-              const rsgSummary = String(rsg?.summary || '').trim();
-              const rsgSourceLabel = rsg?.sourceNodeId ? `node ${String(rsg.sourceNodeId).slice(-4)}` : 'manual input';
-              const rsgConfidenceLabel = Number.isFinite(Number(rsg?.confidence)) ? `${Math.round(Number(rsg.confidence) * 100)}% confidence` : null;
-              const rsgFallbackLabel = rsg?.usedFallback ? 'fallback' : null;
-              const rsgGenerationLabel = rsg?.state === 'linked-draft' ? 'Generated' : 'Adopted';
               const primaryIntentNode = isPrimaryIntentNode(node);
               const recentNodeChange = activeGraphLayer === 'world' && showRecentWorldChanges
                 ? resolveRecentWorldNodeChange(recentWorldChange, node.id)
-                : null;
-              const rsgAttribution = rsg
-                ? [rsgGenerationLabel, `from ${rsgSourceLabel}`, rsgConfidenceLabel, rsgFallbackLabel].filter(Boolean).join(' | ')
                 : null;
               const intentFooterText = primaryIntentNode
                 ? PRIMARY_INTENT_REDIRECT_HINT
                 : node.metadata?.intentAnalysis
                   ? summarizeIntentReport(node.metadata.intentAnalysis)
-                  : (rsg
-                      ? (rsgNodeState === 'linked-draft' ? 'Linked draft ready for edit' : 'Adopted draft stays in place on rerun')
-                      : SECONDARY_DRAFT_HINT);
+                  : SECONDARY_DRAFT_HINT;
               return h('div', {
                 key: node.id,
-                className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} origin-${nodeOrigin} ${selectedId === node.id ? 'selected' : ''} ${isLinkedDraftNode(node) ? 'rsg-linked-draft' : ''} ${isAdoptedDraftNode(node) ? 'rsg-adopted' : ''} ${lowConfidenceDraft ? 'rsg-low-confidence' : ''} ${expandedGenerated ? 'expanded' : ''} ${recentNodeChange ? `recent-world-change recent-world-${recentNodeChange.changeType}` : ''}`,
+                className: `node ${classified.type} ${classified.metadata.role} layer-${activeGraphLayer} origin-${nodeOrigin} ${selectedId === node.id ? 'selected' : ''} ${lowConfidenceDraft ? 'rsg-low-confidence' : ''} ${recentNodeChange ? `recent-world-change recent-world-${recentNodeChange.changeType}` : ''}`,
                 'data-representation-id': nodeRepresentation?.rep_id || null,
                 'data-representation-kind': nodeRepresentation?.kind || 'legacy',
                 style: {
@@ -8406,14 +8740,12 @@ function syncRecentWorldChange(change = null) {
                     setStatus('node deleted');
                   },
                 }, 'X'),
-                h('div', { className: 'node-header-row' },
+                  h('div', { className: 'node-header-row' },
                   h('div', { className: 'node-header' }, `${activeGraphLayer.toUpperCase()} | ${classified.metadata.proposalTarget || classified.metadata.role}`),
                   h('div', { className: 'node-header-tags' },
                     h('div', { className: `node-origin-badge origin-${nodeOrigin}` }, originLabel),
                     primaryIntentNode ? h('div', { className: 'node-rsg-chip primary-intent' }, 'Primary mirror') : null,
                     recentNodeChange ? h('div', { className: `node-rsg-chip recent-world-chip ${recentNodeChange.changeType}` }, recentNodeChange.changeType === 'added' ? 'Recent +' : 'Recent ~') : null,
-                    rsgNodeState ? h('div', { className: `node-rsg-chip ${rsgNodeState}` }, rsgNodeState === 'linked-draft' ? 'RSG draft' : 'Adopted') : null,
-                    generatedInspection?.basis ? h('div', { className: `node-rsg-chip basis-${generatedInspection.basis}` }, generatedInspection.basis) : null,
                     lowConfidenceDraft ? h('div', { className: 'node-rsg-chip low-confidence' }, 'Low confidence') : null,
                   ),
                 ),
@@ -8437,48 +8769,7 @@ function syncRecentWorldChange(change = null) {
                 h('div', { className: 'node-footer' },
                   h('div', { className: 'node-labels' }, labels.length ? labels.join(' - ') : (primaryIntentNode ? 'primary canvas mirror' : 'secondary draft note')),
                   h('div', { className: 'node-intent-summary muted' }, `${node.id.slice(-4)} | ${classified.metadata.role}`),
-                  rsgAttribution ? h('div', { className: 'node-intent-summary muted' }, rsgAttribution) : null,
-                  rsgSummary ? h('div', { className: 'node-intent-summary muted' }, rsgSummary) : null,
                   h('div', { className: 'node-intent-summary' }, intentFooterText),
-                  generatedInspection?.candidate ? h('div', { className: 'node-generated-controls' },
-                    h('button', {
-                      className: 'mini',
-                      type: 'button',
-                      onMouseDown: (event) => event.stopPropagation(),
-                      onClick: (event) => {
-                        event.stopPropagation();
-                        toggleGeneratedNodeExpansion(node.id);
-                      },
-                    }, expandedGenerated ? 'Hide details' : 'Inspect intent'),
-                  ) : null,
-                  generatedInspection?.candidate && expandedGenerated ? h('div', { className: 'generated-intent-panel' },
-                    h('div', { className: 'generated-intent-row' }, h('span', null, 'Basis'), h('span', { className: 'muted' }, generatedInspection.basis)),
-                    generatedInspection.candidate.rationale ? h('div', { className: 'generated-intent-block' },
-                      h('div', { className: 'generated-intent-label' }, 'Rationale'),
-                      h('div', null, generatedInspection.candidate.rationale),
-                    ) : null,
-                    extractedIntent?.summary ? h('div', { className: 'generated-intent-block' },
-                      h('div', { className: 'generated-intent-label' }, 'Source summary'),
-                      h('div', null, extractedIntent.summary),
-                    ) : null,
-                    h('div', { className: 'generated-intent-row' }, h('span', null, 'Confidence'), h('span', { className: 'muted' }, Number.isFinite(Number(generatedInspection.confidence)) ? `${Math.round(Number(generatedInspection.confidence) * 100)}%` : 'n/a')),
-                    h('div', { className: 'generated-intent-row' }, h('span', null, 'Fallback'), h('span', { className: 'muted' }, extractedIntent?.provenance?.usedFallback ? 'Yes' : 'No')),
-                    (generatedInspection.basis === 'explicit' ? extractedIntent?.explicitClaims : extractedIntent?.inferredClaims)?.length
-                      ? h('div', { className: 'generated-intent-block' },
-                        h('div', { className: 'generated-intent-label' }, generatedInspection.basis === 'explicit' ? 'Explicit claims' : 'Inferred claims'),
-                        h('ul', { className: 'signal-list compact' }, (generatedInspection.basis === 'explicit' ? extractedIntent.explicitClaims : extractedIntent.inferredClaims).map((entry, index) => h('li', { key: `${node.id}-claim-${index}` }, entry))),
-                      ) : null,
-                    (extractedIntent?.gaps || []).length
-                      ? h('div', { className: 'generated-intent-block' },
-                        h('div', { className: 'generated-intent-label' }, 'Gaps'),
-                        h('ul', { className: 'signal-list compact' }, extractedIntent.gaps.map((entry, index) => h('li', { key: `${node.id}-gap-${index}` }, entry))),
-                      ) : null,
-                    relatedEdgeSummaries.length
-                      ? h('div', { className: 'generated-intent-block' },
-                        h('div', { className: 'generated-intent-label' }, 'Hidden edge suggestions'),
-                        h('ul', { className: 'signal-list compact' }, relatedEdgeSummaries.map((entry, index) => h('li', { key: `${node.id}-edge-${index}` }, entry))),
-                      ) : null,
-                  ) : null,
                 ),
                 h('button', {
                   className: 'node-handle output',

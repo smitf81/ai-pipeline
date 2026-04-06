@@ -15,6 +15,8 @@ const state = {
   taLoading: false,
   taCandidates: [],
   taDepartment: null,
+  taHireRequestSignature: '',
+  taHireRequests: null,
   taGapDescription: '',
   projects: [],
   projectLaunching: false,
@@ -22,6 +24,18 @@ const state = {
   artifactStatusSignature: '',
   preflightSummarySignature: '',
   preflightSummary: null,
+  plannerIdentitySignature: '',
+  plannerIdentity: null,
+  plannerRuntimeSignature: '',
+  plannerRuntime: null,
+  plannerQaQueueSignature: '',
+  plannerQaQueue: null,
+  plannerOuttraySignature: '',
+  plannerOuttray: null,
+  ctoOverrideSignature: '',
+  ctoOverrides: null,
+  canonicalIntentSignature: '',
+  canonicalIntent: null,
 };
 
 const ACTION_PREFLIGHT_STAGE = {
@@ -61,6 +75,17 @@ function setText(id, text) {
 function setVisible(id, visible) {
   const el = document.getElementById(id);
   if (el) el.style.display = visible ? '' : 'none';
+}
+
+function setSurfaceMeta(prefix, meta = {}) {
+  const freshness = String(meta.freshness || 'unknown').trim() || 'unknown';
+  const source = String(meta.source || 'unknown').trim() || 'unknown';
+  const generatedAt = meta.generatedAt ? formatTimestamp(meta.generatedAt) : 'unknown';
+  const viewMode = String(meta.viewMode || meta.view || 'derived').trim() || 'derived';
+  setText(`${prefix}Freshness`, freshness);
+  setText(`${prefix}Source`, source);
+  setText(`${prefix}GeneratedAt`, generatedAt);
+  setText(`${prefix}ViewMode`, viewMode);
 }
 
 async function api(url, options = {}) {
@@ -192,6 +217,308 @@ function renderPreflightSummary(summary = null) {
   }
 }
 
+function renderPlannerIdentityDiagnostics(snapshot = null, meta = {}) {
+  const resolved = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const canonical = resolved.canonical && typeof resolved.canonical === 'object' ? resolved.canonical : {};
+  const signature = JSON.stringify({
+    deskId: resolved.deskId || canonical.deskId || '',
+    roleId: resolved.roleId || canonical.roleId || '',
+    agentId: resolved.agentId || canonical.agentId || '',
+    departmentId: resolved.departmentId || canonical.departmentId || '',
+    modelProfileId: resolved.modelProfileId || canonical.modelProfileId || '',
+    assignedAgentIds: Array.isArray(resolved.assignedAgentIds) ? resolved.assignedAgentIds : [],
+    live: Boolean(resolved.live),
+  });
+  if (signature === state.plannerIdentitySignature) return;
+  state.plannerIdentitySignature = signature;
+  state.plannerIdentity = resolved;
+  setSurfaceMeta('plannerIdentity', {
+    freshness: meta.freshness || 'derived',
+    source: meta.source || '/api/spatial/cto/diagnostics',
+    generatedAt: meta.generatedAt || null,
+    viewMode: meta.viewMode || 'derived',
+  });
+  setText('plannerDeskId', resolved.deskId || canonical.deskId || 'unknown');
+  setText('plannerRoleId', resolved.roleId || canonical.roleId || 'unknown');
+  setText('plannerAgentId', resolved.agentId || canonical.agentId || 'unknown');
+  setText('plannerDepartmentId', resolved.departmentId || canonical.departmentId || 'unknown');
+  setText('plannerModelProfileId', resolved.modelProfileId || canonical.modelProfileId || 'unknown');
+  const assignedAgentIds = Array.isArray(resolved.assignedAgentIds) ? resolved.assignedAgentIds.filter(Boolean) : [];
+  setText('plannerAssignedAgentIds', assignedAgentIds.length ? assignedAgentIds.join(', ') : 'none');
+  setText('plannerLiveStatus', resolved.live ? 'live' : 'stale');
+}
+
+function renderCtoOverrideDiagnostics(snapshot = null, meta = {}) {
+  const resolved = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const latest = resolved.latestEntry && typeof resolved.latestEntry === 'object' ? resolved.latestEntry : {};
+  const flags = resolved.flags && typeof resolved.flags === 'object' ? resolved.flags : {};
+  const signature = JSON.stringify({
+    entryCount: resolved.entryCount || 0,
+    activeCount: resolved.activeCount || 0,
+    planningMode: resolved.planningMode || '',
+    latestOverrideId: latest.overrideId || '',
+    latestKind: latest.kind || '',
+    latestReason: latest.reason || '',
+    forcePlanning: Boolean(flags.forcePlanning),
+    forcePlannerRouting: Boolean(flags.forcePlannerRouting),
+    reopenStalePlan: Boolean(flags.reopenStalePlan),
+    supersedeQueuePriority: Boolean(flags.supersedeQueuePriority),
+    requestEmergencyStaffingReview: Boolean(flags.requestEmergencyStaffingReview),
+    handoffMode: flags.handoffMode || '',
+  });
+  if (signature === state.ctoOverrideSignature) return;
+  state.ctoOverrideSignature = signature;
+  state.ctoOverrides = resolved;
+  setSurfaceMeta('ctoOverride', {
+    freshness: meta.freshness || 'derived',
+    source: meta.source || '/api/spatial/cto/diagnostics',
+    generatedAt: meta.generatedAt || null,
+    viewMode: meta.viewMode || 'derived',
+  });
+  setText('ctoOverrideCount', `${resolved.entryCount || 0} total`);
+  setText('ctoOverrideActiveCount', `${resolved.activeCount || 0} active`);
+  setText('ctoOverridePlanningMode', resolved.planningMode || 'normal');
+  setText('ctoOverrideLatestKind', latest.kind || 'none');
+  setText('ctoOverrideLatestRequestedBy', latest.requestedBy || 'unknown');
+  setText('ctoOverrideLatestReason', latest.reason || 'none');
+  setText('ctoOverrideLatestTarget', latest.target?.deskId || latest.target?.planId || latest.target?.handoffId || 'none');
+  setText('ctoOverrideLatestEffect', [
+    flags.forcePlannerRouting ? 'route-planner' : null,
+    flags.forcePlanningGeneration ? 'force-generation' : null,
+    flags.reopenStalePlan ? 'reopen-stale' : null,
+    flags.supersedeQueuePriority ? 'queue-priority' : null,
+    flags.requestEmergencyStaffingReview ? 'emergency-staffing' : null,
+    flags.handoffMode ? `handoff-${flags.handoffMode}` : null,
+  ].filter(Boolean).join(', ') || 'none');
+  setText('ctoOverrideLatestTruth', latest.canonicalTruth ? JSON.stringify(latest.canonicalTruth) : 'none');
+}
+
+async function refreshPlannerIdentityDiagnostics() {
+  try {
+    const response = await api('/api/spatial/cto/diagnostics');
+    renderPlannerIdentityDiagnostics(response?.plannerIdentity || null, response || {});
+    renderCtoOverrideDiagnostics(response?.ctoOverrides || null, response || {});
+    return response?.plannerIdentity || null;
+  } catch (error) {
+    renderPlannerIdentityDiagnostics(null);
+    renderCtoOverrideDiagnostics(null);
+    return null;
+  }
+}
+
+function renderPlannerRuntimeDiagnostics(snapshot = null, meta = {}) {
+  const resolved = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const identity = resolved.identity && typeof resolved.identity === 'object' ? resolved.identity : {};
+  const signature = JSON.stringify({
+    runtimeState: resolved.runtimeState || '',
+    staffingState: resolved.staffingState || '',
+    modelState: resolved.modelState || '',
+    policyState: resolved.policyState || '',
+    workerStatus: resolved.worker?.status || '',
+    currentRunId: resolved.worker?.currentRunId || '',
+    lastBlockedReason: resolved.worker?.lastBlockedReason || '',
+    answer: identity.answer || '',
+  });
+  if (signature === state.plannerRuntimeSignature) return;
+  state.plannerRuntimeSignature = signature;
+  state.plannerRuntime = resolved;
+  setSurfaceMeta('plannerRuntime', {
+    freshness: meta.freshness || 'live',
+    source: meta.source || '/api/spatial/runtime',
+    generatedAt: meta.generatedAt || resolved.worker?.completedAt || resolved.worker?.lastOutcomeAt || null,
+    viewMode: meta.viewMode || 'live',
+  });
+  setText('plannerRuntimeAnswer', identity.answer || identity.label || 'unknown');
+  setText('plannerRuntimeState', resolved.runtimeState || 'unknown');
+  setText('plannerStaffingState', resolved.staffingState || 'unknown');
+  setText('plannerModelState', resolved.modelState || 'unknown');
+  setText('plannerPolicyState', resolved.policyState || 'unknown');
+  setText('plannerWorkerStatus', resolved.worker?.status || 'unknown');
+  setText('plannerCurrentRunId', resolved.worker?.currentRunId || 'none');
+  setText('plannerBlockedReason', resolved.worker?.lastBlockedReason || resolved.worker?.statusReason || 'none');
+}
+
+function renderPlannerQaQueueDiagnostics(snapshot = null, meta = {}) {
+  const resolved = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const latest = resolved.latestEntry && typeof resolved.latestEntry === 'object' ? resolved.latestEntry : {};
+  const signature = JSON.stringify({
+    entryCount: resolved.entryCount || 0,
+    pendingCount: resolved.pendingCount || 0,
+    reviewedCount: resolved.reviewedCount || 0,
+    blockedCount: resolved.blockedCount || 0,
+    queueKey: latest.queueKey || '',
+    qaStatus: latest.qaStatus || '',
+    qaRequestId: latest.qaRequestId || '',
+    planBundleId: latest.planBundleId || '',
+  });
+  if (signature === state.plannerQaQueueSignature) return;
+  state.plannerQaQueueSignature = signature;
+  state.plannerQaQueue = resolved;
+  setSurfaceMeta('plannerQa', {
+    freshness: meta.freshness || 'derived',
+    source: meta.source || '/api/spatial/planner/qa-queue',
+    generatedAt: meta.generatedAt || resolved.updatedAt || null,
+    viewMode: meta.viewMode || 'derived',
+  });
+  setText('plannerQaQueueCount', `${resolved.entryCount || 0} total`);
+  setText('plannerQaQueuePending', `${resolved.pendingCount || 0} pending`);
+  setText('plannerQaQueueReviewed', `${resolved.reviewedCount || 0} reviewed`);
+  setText('plannerQaQueueBlocked', `${resolved.blockedCount || 0} blocked`);
+  setText('plannerQaQueueLatestKey', latest.queueKey || 'none');
+  setText('plannerQaQueueLatestPlanId', latest.planBundleId || (Array.isArray(latest.planIds) ? latest.planIds[0] : null) || 'none');
+  setText('plannerQaQueueLatestRequest', latest.qaRequestId || 'none');
+  setText('plannerQaQueueLatestStatus', latest.qaStatus || 'unknown');
+  setText('plannerQaQueueLatestSummary', latest.summary || 'none');
+}
+
+function renderPlannerOuttrayDiagnostics(snapshot = null, meta = {}) {
+  const resolved = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const latest = resolved.latestEntry && typeof resolved.latestEntry === 'object' ? resolved.latestEntry : {};
+  const laneSummary = Array.isArray(latest.items)
+    ? latest.items.map((item) => `${item.laneId}:${item.status}`).join(', ')
+    : '';
+  const signature = JSON.stringify({
+    entryCount: resolved.entryCount || 0,
+    readyCount: resolved.readyCount || 0,
+    depositedCount: resolved.depositedCount || 0,
+    collectedCount: resolved.collectedCount || 0,
+    underReviewCount: resolved.underReviewCount || 0,
+    queueKey: latest.queueKey || '',
+    status: latest.status || '',
+    handoffState: latest.handoffState || '',
+    laneCount: resolved.laneCount || 0,
+  });
+  if (signature === state.plannerOuttraySignature) return;
+  state.plannerOuttraySignature = signature;
+  state.plannerOuttray = resolved;
+  setSurfaceMeta('plannerOuttray', {
+    freshness: meta.freshness || 'derived',
+    source: meta.source || '/api/spatial/planner/outtray',
+    generatedAt: meta.generatedAt || resolved.updatedAt || null,
+    viewMode: meta.viewMode || 'derived',
+  });
+  setText('plannerOuttrayCount', `${resolved.entryCount || 0} total`);
+  setText('plannerOuttrayDeposited', `${resolved.depositedCount || 0} deposited`);
+  setText('plannerOuttrayCollected', `${resolved.collectedCount || 0} collected`);
+  setText('plannerOuttrayReviewing', `${resolved.underReviewCount || 0} under review`);
+  setText('plannerOuttrayLatestKey', latest.queueKey || 'none');
+  setText('plannerOuttrayLatestStatus', latest.status || 'unknown');
+  setText('plannerOuttrayLatestLaneStates', laneSummary || 'none');
+  setText('plannerOuttrayLatestSummary', latest.summary || 'none');
+}
+
+function renderTaHireRequestQueueDiagnostics(snapshot = null, meta = {}) {
+  const resolved = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const latest = resolved.latestEntry && typeof resolved.latestEntry === 'object' ? resolved.latestEntry : {};
+  const signature = JSON.stringify({
+    entryCount: resolved.entryCount || 0,
+    queuedCount: resolved.queuedCount || 0,
+    reviewingCount: resolved.reviewingCount || 0,
+    fulfilledCount: resolved.fulfilledCount || 0,
+    hireRequestId: latest.hireRequestId || '',
+    status: latest.status || '',
+    requestedRoleId: latest.requestedRoleId || '',
+    blockingLevel: latest.blockingLevel || '',
+  });
+  if (signature === state.taHireRequestSignature) return;
+  state.taHireRequestSignature = signature;
+  state.taHireRequests = resolved;
+  setSurfaceMeta('taHire', {
+    freshness: meta.freshness || 'derived',
+    source: meta.source || '/api/ta/hire-requests',
+    generatedAt: meta.generatedAt || resolved.updatedAt || null,
+    viewMode: meta.viewMode || 'derived',
+  });
+  setText('taHireQueueCount', `${resolved.entryCount || 0} total`);
+  setText('taHireQueueQueued', `${resolved.queuedCount || 0} queued`);
+  setText('taHireQueueReviewing', `${resolved.reviewingCount || 0} reviewing`);
+  setText('taHireQueueFulfilled', `${resolved.fulfilledCount || 0} fulfilled`);
+  setText('taHireQueueLatestId', latest.hireRequestId || 'none');
+  setText('taHireQueueLatestRole', latest.requestedRoleId || 'none');
+  setText('taHireQueueLatestBlockingLevel', latest.blockingLevel || 'advisory');
+  setText('taHireQueueLatestStatus', latest.status || 'unknown');
+  setText('taHireQueueLatestReason', latest.reason || 'none');
+}
+
+function renderCanonicalIntentDiagnostics(snapshot = null, meta = {}) {
+  const resolved = snapshot && typeof snapshot === 'object' ? snapshot : null;
+  const canonical = resolved?.canonicalIntent && typeof resolved.canonicalIntent === 'object'
+    ? resolved.canonicalIntent
+    : resolved || {};
+  const signature = JSON.stringify({
+    intentId: resolved?.intentId || '',
+    sourceType: resolved?.sourceType || '',
+    sourceRef: resolved?.sourceRef || '',
+    requestedBy: resolved?.requestedBy || '',
+    priority: resolved?.priority || '',
+    timestamp: resolved?.timestamp || '',
+    statement: canonical.statement || '',
+    goal: canonical.goal || '',
+  });
+  if (signature === state.canonicalIntentSignature) return;
+  state.canonicalIntentSignature = signature;
+  state.canonicalIntent = resolved;
+  setSurfaceMeta('canonicalIntent', {
+    freshness: meta.freshness || 'live',
+    source: meta.source || '/api/spatial/runtime',
+    generatedAt: meta.generatedAt || resolved.timestamp || null,
+    viewMode: meta.viewMode || 'live',
+  });
+  setText('canonicalIntentId', resolved?.intentId || 'unknown');
+  setText('canonicalIntentSourceType', resolved?.sourceType || 'unknown');
+  setText('canonicalIntentSourceRef', resolved?.sourceRef || 'unknown');
+  setText('canonicalIntentRequestedBy', resolved?.requestedBy || 'unknown');
+  setText('canonicalIntentPriority', resolved?.priority || 'normal');
+  setText('canonicalIntentTimestamp', resolved?.timestamp || 'unknown');
+  setText('canonicalIntentStatement', canonical.statement || canonical.goal || 'none');
+}
+
+async function refreshPlannerRuntimeDiagnostics() {
+  try {
+    const response = await api('/api/spatial/runtime');
+    renderPlannerRuntimeDiagnostics(response?.plannerRuntime || null, response || {});
+    renderCanonicalIntentDiagnostics(response?.canonicalIntent || null, response || {});
+    return response?.plannerRuntime || null;
+  } catch (error) {
+    renderPlannerRuntimeDiagnostics(null);
+    renderCanonicalIntentDiagnostics(null);
+    return null;
+  }
+}
+
+async function refreshPlannerQaQueueDiagnostics() {
+  try {
+    const response = await api('/api/spatial/planner/qa-queue');
+    renderPlannerQaQueueDiagnostics(response?.summary || null, response || {});
+    return response?.summary || null;
+  } catch (error) {
+    renderPlannerQaQueueDiagnostics(null);
+    return null;
+  }
+}
+
+async function refreshPlannerOuttrayDiagnostics() {
+  try {
+    const response = await api('/api/spatial/planner/outtray');
+    renderPlannerOuttrayDiagnostics(response?.summary || null, response || {});
+    return response?.summary || null;
+  } catch (error) {
+    renderPlannerOuttrayDiagnostics(null);
+    return null;
+  }
+}
+
+async function refreshTaHireRequestQueueDiagnostics() {
+  try {
+    const response = await api('/api/ta/hire-requests');
+    renderTaHireRequestQueueDiagnostics(response?.summary || null, response || {});
+    return response?.summary || null;
+  } catch (error) {
+    renderTaHireRequestQueueDiagnostics(null);
+    return null;
+  }
+}
+
 async function refreshPreflightSummary({
   stage = selectedPreflightStage(),
   taskId = selectedTaskId(),
@@ -304,6 +631,11 @@ async function refreshDashboard() {
       refreshedAt: data.refreshedAt,
       runs: runs?.runs || [],
     });
+    void refreshPlannerIdentityDiagnostics().catch(() => {});
+    void refreshPlannerRuntimeDiagnostics().catch(() => {});
+    void refreshPlannerQaQueueDiagnostics().catch(() => {});
+    void refreshPlannerOuttrayDiagnostics().catch(() => {});
+    void refreshTaHireRequestQueueDiagnostics().catch(() => {});
     renderLegacyTaskStatus();
     document.getElementById('error_wrap').style.display = 'none';
     setText('error_box', '');
@@ -1282,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setText('uiLastRefreshError', 'none');
   setText('uiConnectionState', 'connecting');
-  await Promise.all([refreshDashboard(), loadProjects(), loadTasks(), hydrateRunHistory(), loadTalentDepartment()]);
+  await Promise.all([refreshDashboard(), loadProjects(), loadTasks(), hydrateRunHistory(), loadTalentDepartment(), refreshPlannerRuntimeDiagnostics(), refreshPlannerOuttrayDiagnostics(), refreshTaHireRequestQueueDiagnostics()]);
   syncActionUi();
   startAutoRefresh();
 });
@@ -1305,4 +1637,14 @@ window.__ACE_APP_TEST__ = {
   syncProjectRunnerUi,
   updateRefreshStatus,
   setModeUi,
+  renderPlannerIdentityDiagnostics,
+  refreshPlannerIdentityDiagnostics,
+  renderCtoOverrideDiagnostics,
+  renderPlannerRuntimeDiagnostics,
+  refreshPlannerRuntimeDiagnostics,
+  renderPlannerOuttrayDiagnostics,
+  refreshPlannerOuttrayDiagnostics,
+  renderCanonicalIntentDiagnostics,
+  renderTaHireRequestQueueDiagnostics,
+  refreshTaHireRequestQueueDiagnostics,
 };

@@ -208,7 +208,25 @@ class MutationEngine {
   }
 }
 class ArchitectureMemory { constructor() { this.model = { subsystems: [], modules: [], world: { systems: [], mechanics: [], quests: [], items: [], constraints: [] }, adapters: [], proposals: [], rules: [], layers: [], versions: [] }; } syncFromGraph() { return undefined; } }
-const loadWorkspace = async () => ({ graph: { nodes: [], edges: [] }, graphs: { system: { nodes: [], edges: [] }, world: { nodes: [], edges: [] } }, sketches: [], annotations: [], agentComments: {}, intentState: { latest: null, contextReport: null, byNode: {}, reports: [] }, studio: {} });
+const loadWorkspace = async () => ({
+  graph: { nodes: [], edges: [] },
+  graphs: { system: { nodes: [], edges: [] }, world: { nodes: [], edges: [] } },
+  sketches: [],
+  annotations: [],
+  agentComments: {},
+  intentState: {
+    registry: {
+      currentIntentId: null,
+      latestIntentId: null,
+      byId: {},
+      records: [],
+    },
+    currentIntentId: null,
+    summary: '',
+    status: 'idle',
+  },
+  studio: {},
+});
 const saveWorkspace = async () => ({ ok: true });
 const savePages = async () => ({ ok: true });
 const saveIntentState = async () => ({ ok: true });

@@ -755,6 +755,7 @@ function createWorldScaffold(intent = {}) {
   const height = normalizeGridSize(intent.height || 1);
   const material = normalizeMaterial(intent.material || intent.tileType || 'grass') || 'grass';
   const surface = normalizeMaterial(intent.surface || 'ground') || 'ground';
+  const field = intent?.fieldInfluence?.field || buildSpatialFieldBundle(width, height, material);
   return {
     kind: WORLD_SCAFFOLD_KIND,
     version: 'v1',
@@ -769,7 +770,7 @@ function createWorldScaffold(intent = {}) {
     material,
     tileType: material,
     surface,
-    field: buildSpatialFieldBundle(width, height, material),
+    field,
   };
 }
 

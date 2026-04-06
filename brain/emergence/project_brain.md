@@ -275,6 +275,46 @@ Mixing these layers leads to:
 
 ---
 
+## Engineering Constitution (Authoritative)
+
+All implementation, refactoring, and system changes must follow the ACE Engineering Constitution.
+
+This document defines:
+- canonical truth rules
+- domain ownership boundaries
+- anti-heuristic constraints
+- validation requirements
+- task structure and reporting standards
+
+```
+Location:
+brain/emergence/engineering_constitution.md
+```
+
+This is the governing implementation law of the ACE system.
+
+### Enforcement
+
+Any task (Codex, agent, or human) that:
+- introduces duplicate truth paths
+- relies on stale or inferred state
+- omits validation
+- or bypasses canonical ownership
+
+is considered invalid and must be corrected before merging.
+
+### Task Requirements
+
+All tasks must:
+- identify canonical domain owners
+- trace divergent read paths
+- remove or reroute stale logic
+- include validation results
+
+Refer to the constitution for full requirements.
+
+---
+
 ## Current Focus
 
 * Enforce canonical data flow across all systems.

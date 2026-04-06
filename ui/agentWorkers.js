@@ -12,6 +12,7 @@ const {
   analyzeSpatialIntent,
   buildIntentProjectContext,
   buildIntentTruth,
+  buildCanonicalIntentContract,
 } = require('./intentAnalysis');
 const {
   buildKnownFixesPromptSection,
@@ -29,7 +30,24 @@ const {
   getContextManagerNode,
   normalizeGraphBundle,
 } = require('./graphQueries');
-const { createPlannerHandoff } = require('./throughputDebug');
+const { createPlannerHandoff, buildPlannerContextLanes } = require('./throughputDebug');
+const {
+  createDefaultCtoOverrideLedger,
+  deriveCtoOverrideLayer,
+  summarizeCtoOverrideLedger,
+} = require('./ctoOverrides');
+const {
+  upsertPlannerQaQueueEntry,
+} = require('./plannerQaQueue');
+const {
+  upsertPlannerOuttrayEntry,
+  summarizePlannerOuttray,
+} = require('./plannerOuttray');
+const {
+  normalizeTaHireRequestEntry,
+  summarizeTaHireRequestQueue,
+  upsertTaHireRequestQueueEntry,
+} = require('./taHireRequests');
 const {
   resolveStageAgentIdentity,
 } = require('./agentAttribution');
@@ -57,6 +75,24 @@ const ALLOWED_PROPOSAL_TARGETS = Object.freeze(new Set([
   'brain/emergence/plan.md',
   'brain/emergence/tasks.md',
 ]));
+const PLANNER_OUTPUT_STATUSES = new Set([
+  'empty',
+  'ready',
+  'planned',
+  'blocked',
+  'deferred',
+  'complete',
+  'complete-with-warnings',
+]);
+const PLANNER_HANOFF_STATES = new Set([
+  'ready',
+  'queued',
+  'blocked',
+  'needs-clarification',
+  'handed-off',
+  'delivered',
+  'planned',
+]);
 
 const FALLBACK_PLANNER_PROMPT = [
   'You are the ACE Planner worker.',
@@ -69,12 +105,25 @@ const FALLBACK_PLANNER_PROMPT = [
   '- Never propose direct code execution, apply, or deploy.',
   '- Keep work narrow and desk-safe.',
   '- Cards must stay anchored to the provided handoff refs only.',
+  '- Emit a canonical plan bundle, task bundle, dependency map, staffing request, QA request, archival summary, and context update packet.',
+  '- Emit a Planner outtray record that deposits finished work for downstream desks to collect asynchronously.',
+  '- If staffing coverage is missing or risky, also emit a hireRequest object for TA and keep planning non-blocking.',
+  '- Each plan item must include planId, intentId, status, priority, summary, acceptanceCriteria, dependencies, targetDesk, targetRole, handoffState, provenance, createdBy, and createdAt.',
   '- brainProposals may only target brain/emergence/plan.md or brain/emergence/tasks.md.',
   '- If the handoff is not concrete enough, set needsContextRetry=true and explain why.',
   '',
   'Return exactly this shape:',
   '{',
   '  "summary": "short summary",',
+  '  "planBundle": {"planId": "plan_1", "intentId": "intent_1", "status": "ready", "summary": "plan summary", "items": [{"planId": "plan_1", "intentId": "intent_1", "status": "ready", "priority": "normal", "summary": "plan item", "acceptanceCriteria": ["criterion"], "dependencies": [], "targetDesk": "planner", "targetRole": "Planner", "handoffState": "ready", "provenance": {"sourceHandoffId": "handoff_1"}, "createdBy": "planner", "createdAt": "2026-03-23T07:05:00.000Z"}]}',
+  '  "taskBundle": {"taskBundleId": "task_bundle_1", "intentId": "intent_1", "status": "ready", "tasks": [{"taskId": "task_1", "planId": "plan_1", "intentId": "intent_1", "status": "planned", "priority": "normal", "summary": "task summary", "acceptanceCriteria": ["criterion"], "dependencies": [], "targetDesk": "executor", "targetRole": "Executor", "handoffState": "ready", "provenance": {"sourceHandoffId": "handoff_1"}, "createdBy": "planner", "createdAt": "2026-03-23T07:05:00.000Z"}]}',
+  '  "dependencyMap": {"dependencyMapId": "dependency_map_1", "intentId": "intent_1", "status": "ready", "edges": [{"dependencyId": "dependency_1", "sourcePlanId": "plan_1", "targetPlanId": "plan_2", "type": "depends_on", "status": "active", "provenance": {"sourceHandoffId": "handoff_1"}}]}',
+  '  "staffingRequest": {"staffingRequestId": "staffing_1", "intentId": "intent_1", "status": "ready", "summary": "staffing summary", "targetDesk": "qa-lead", "targetRole": "QA Lead", "requiredCoverage": ["QA review"], "provenance": {"sourceHandoffId": "handoff_1"}, "createdBy": "planner", "createdAt": "2026-03-23T07:05:00.000Z"}',
+  '  "qaRequest": {"qaRequestId": "qa_1", "intentId": "intent_1", "status": "ready", "summary": "qa summary", "acceptanceCriteria": ["criterion"], "targetDesk": "qa-lead", "targetRole": "QA Lead", "provenance": {"sourceHandoffId": "handoff_1"}, "createdBy": "planner", "createdAt": "2026-03-23T07:05:00.000Z"}',
+  '  "outtray": {"queueKey": "outtray_1", "plannerRunId": "planner_run_1", "planBundleId": "plan_bundle_1", "taskBundleId": "task_bundle_1", "intentId": "intent_1", "status": "deposited", "summary": "planner outtray summary", "items": [{"laneId": "qa", "laneLabel": "pending QA review", "targetDesk": "qa-lead", "targetRole": "QA Lead", "status": "ready_for_handoff", "required": true, "summary": "QA review pending", "artifactRefs": ["data/spatial/agent-runs/planner/planner_run_1.json"], "provenance": {"sourceHandoffId": "handoff_1", "sourceIntentId": "intent_1"}, "createdAt": "2026-03-23T07:05:00.000Z"}]}',
+  '  "hireRequest": {"hireRequestId": "hire_1", "originDepartmentId": "dept-delivery", "originDeskId": "planner", "requestedRoleId": "qa-lead", "reason": "QA coverage is missing, so TA should review staffing while planning continues.", "urgency": "normal", "blockingLevel": "handoff_risk", "linkedPlanIds": ["plan_1"], "createdAt": "2026-03-23T07:05:00.000Z", "status": "queued"}',
+  '  "archivalSummary": {"archivalSummaryId": "archive_1", "intentId": "intent_1", "status": "ready", "summary": "archive summary", "provenance": {"sourceHandoffId": "handoff_1"}, "createdBy": "planner", "createdAt": "2026-03-23T07:05:00.000Z"}',
+  '  "contextUpdatePacket": {"contextUpdatePacketId": "context_1", "intentId": "intent_1", "status": "ready", "summary": "context summary", "requestedOutcomes": ["outcome"], "constraints": ["constraint"], "provenance": {"sourceHandoffId": "handoff_1"}, "createdBy": "planner", "createdAt": "2026-03-23T07:05:00.000Z"}',
   '  "cards": [{"title": "short actionable card", "summary": "why this card exists", "anchorRefs": ["brain/emergence/plan.md"]}],',
   '  "brainProposals": [{"targetPath": "brain/emergence/plan.md", "summary": "what this proposal changes", "content": "review-only markdown proposal"}],',
   '  "needsContextRetry": false,',
@@ -543,6 +592,29 @@ function summarizePlannerRun(run) {
     handoffId: run.handoffId,
     summary: run.summary,
     reason: run.reason || null,
+    planBundle: run.planBundle || null,
+    taskBundle: run.taskBundle || null,
+    contextLanes: run.contextLanes || run.planBundle?.contextLanes || run.taskBundle?.contextLanes || null,
+    overrideLayer: run.overrideLayer || run.planBundle?.overrideLayer || run.taskBundle?.overrideLayer || null,
+    planningMode: run.planningMode || run.planBundle?.planningMode || run.taskBundle?.planningMode || 'normal',
+    qaStatus: run.qaStatus || run.planBundle?.qaStatus || run.taskBundle?.qaStatus || 'pending',
+    qaCoverageRequired: run.qaCoverageRequired ?? run.planBundle?.qaCoverageRequired ?? run.taskBundle?.qaCoverageRequired ?? false,
+    qaBlocker: Boolean(run.qaBlocker ?? run.planBundle?.qaBlocker ?? run.taskBundle?.qaBlocker ?? false),
+    releaseBlocker: Boolean(run.releaseBlocker ?? run.planBundle?.releaseBlocker ?? run.taskBundle?.releaseBlocker ?? false),
+    dependencyMap: run.dependencyMap || null,
+    staffingRequest: run.staffingRequest || null,
+    qaRequest: run.qaRequest || null,
+    hireRequest: run.hireRequest || null,
+    hireRequestQueue: run.hireRequestQueue || null,
+    outtray: run.outtray || null,
+    qaQueue: run.qaQueue || null,
+    qaReview: run.qaReview || null,
+    qaFindings: Array.isArray(run.qaFindings) ? run.qaFindings : [],
+    archivalSummary: run.archivalSummary || null,
+    contextUpdatePacket: run.contextUpdatePacket || null,
+    planCount: Array.isArray(run.planBundle?.items) ? run.planBundle.items.length : 0,
+    taskCount: Array.isArray(run.taskBundle?.tasks) ? run.taskBundle.tasks.length : 0,
+    dependencyCount: Array.isArray(run.dependencyMap?.edges) ? run.dependencyMap.edges.length : 0,
     proposalArtifactRefs: Array.isArray(run.proposalArtifactRefs) ? run.proposalArtifactRefs : [],
     taskCacheSource: run.taskCache?.source || run.taskCacheSource || null,
     taskCacheStage: run.taskCache?.stage || run.taskCacheStage || null,
@@ -792,7 +864,7 @@ function buildExecutorPrompt({ promptTemplate, card, workspace, rootPath, taskCa
   ].join('\n').trim();
 }
 
-function buildPlannerPrompt({ promptTemplate, handoff, anchorBundle, board, rootPath, taskCache = null }) {
+function buildPlannerPrompt({ promptTemplate, handoff, anchorBundle, board, rootPath, taskCache = null, contextLanes = null, overrideLayer = null, talentAcquisition = null }) {
   const requestedOutcomes = Array.isArray(handoff?.requestedOutcomes)
     ? handoff.requestedOutcomes
     : (Array.isArray(handoff?.tasks) ? handoff.tasks : []);
@@ -811,29 +883,114 @@ function buildPlannerPrompt({ promptTemplate, handoff, anchorBundle, board, root
     stage: 'planner',
   });
   const fixTaskSection = buildFixTaskPromptSection(handoff?.sourceFixTask || null);
+  const intentContract = handoff?.intentContract || buildCanonicalIntentContract({
+    report: {
+      summary: handoff?.summary || '',
+      goal: handoff?.goal || handoff?.summary || '',
+      requestedOutcomes,
+      tasks: requestedOutcomes,
+      targets: Array.isArray(handoff?.targets) ? handoff.targets : [],
+      constraints: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
+      urgency: handoff?.urgency || 'normal',
+      requestType: handoff?.requestType || 'context_request',
+      nodeId: handoff?.sourceNodeId || null,
+      requestedBy: handoff?.requestedBy || 'context-manager',
+      priority: handoff?.priority || handoff?.urgency || 'normal',
+      anchorRefs: Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : [],
+    },
+    packet: {
+      summary: handoff?.summary || '',
+      goal: handoff?.goal || handoff?.summary || '',
+      requestedOutcomes,
+      tasks: requestedOutcomes,
+      targets: Array.isArray(handoff?.targets) ? handoff.targets : [],
+      constraints: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
+      urgency: handoff?.urgency || 'normal',
+      requestType: handoff?.requestType || 'context_request',
+      sourceType: handoff?.sourceType || 'context-manager',
+      sourceRef: handoff?.sourceRef || handoff?.sourceNodeId || null,
+      requestedBy: handoff?.requestedBy || 'context-manager',
+      priority: handoff?.priority || handoff?.urgency || 'normal',
+      anchorRefs: Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : [],
+    },
+    sourceType: handoff?.sourceType || 'context-manager',
+    sourceRef: handoff?.sourceRef || handoff?.sourceNodeId || null,
+    requestedBy: handoff?.requestedBy || 'context-manager',
+    priority: handoff?.priority || handoff?.urgency || 'normal',
+    timestamp: handoff?.timestamp || handoff?.createdAt || nowIso(),
+    provenance: handoff?.provenance || {},
+    intentId: handoff?.intentId || null,
+  });
+  const resolvedContextLanes = contextLanes || handoff?.contextLanes || null;
+  const resolvedOverrideLayer = overrideLayer || handoff?.overrideLayer || null;
   return [
     String(promptTemplate || FALLBACK_PLANNER_PROMPT).trim(),
     '',
     buildKnownFixesPromptSection(rootPath),
     buildTaskCachePromptSection(resolvedTaskCache, { stage: 'planner' }),
     fixTaskSection,
-    '## Structured Intent Packet',
-    `ID: ${handoff?.id || 'unknown'}`,
-    `Summary: ${handoff?.summary || ''}`,
+    '## Canonical Intent Contract',
+    'Treat this contract as the source of truth. Do not invent tasks from summary text or UI state when this contract is available.',
+    JSON.stringify(intentContract, null, 2),
     '',
-    JSON.stringify({
-      goal: handoff?.goal || handoff?.summary || '',
-      requestType: handoff?.requestType || 'context_request',
-      urgency: handoff?.urgency || 'normal',
-      requestedOutcomes,
-      targets: Array.isArray(handoff?.targets) ? handoff.targets : [],
-      constraints: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
-      signals: handoff?.signals || {},
-      problemStatement: handoff?.problemStatement || '',
+    '## Planner Context Lanes',
+    'Use the declared lanes intentionally: local/narrow for the current task and active intent, department/operational for recent handoffs and blockers, and broad/project for project brain, roadmap, and recent decisions.',
+    JSON.stringify(resolvedContextLanes || {
+      narrow: {
+        lane: 'local',
+        currentDesk: 'planner',
+        currentTask: requestedOutcomes[0] || handoff?.summary || 'Plan the next action.',
+      },
+      department: {
+        lane: 'department',
+        departmentId: 'dept-delivery',
+        currentFocus: handoff?.summary || '',
+        blockers: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
+      },
+      broad: {
+        lane: 'broad',
+        projectBrain: [],
+        roadmap: [],
+        recentDecisions: [],
+      },
     }, null, 2),
     '',
-    '## Handoff Problem Statement',
-    handoff?.problemStatement || '',
+    '## CTO Override Layer',
+    'Treat overrides as explicit control signals. Do not rewrite canonical truth to make overrides look normal. Keep provenance intact and describe forced planning separately from ordinary planning.',
+    JSON.stringify(resolvedOverrideLayer || {
+      version: '1',
+      activeCount: 0,
+      flags: {
+        forcePlannerRouting: false,
+        forcePlanningGeneration: false,
+        reopenStalePlan: false,
+        supersedeQueuePriority: false,
+        requestEmergencyStaffingReview: false,
+        handoffMode: null,
+        forcePlanning: false,
+      },
+      activeOverrides: [],
+      planningMode: 'normal',
+      canonicalTruthPreserved: true,
+    }, null, 2),
+    '',
+    '## Required Planner Output Contract',
+    'Return machine-readable planner artefacts. Use the canonical intent to populate every object.',
+    'The planner must emit planBundle, taskBundle, dependencyMap, staffingRequest, qaRequest, outtray, archivalSummary, and contextUpdatePacket.',
+    'If staffing coverage is missing or risky, also emit hireRequest so TA can queue the work without blocking planning.',
+    'Every plan item must include planId, intentId, status, priority, summary, acceptanceCriteria, dependencies, targetDesk, targetRole, handoffState, provenance, createdBy, and createdAt.',
+    talentAcquisition ? [
+      '## TA Coverage Context',
+      `Department summary: ${talentAcquisition.department?.summary || 'unknown'}`,
+      `Planner coverage: ${talentAcquisition.plannerCoverage?.covered === false ? 'missing' : 'covered'}`,
+      `QA lead coverage: ${talentAcquisition.qaLeadCoverage?.covered === false ? 'missing' : 'covered'}`,
+      'Use staffing gaps as queueable work, not as a reason to stop planning.',
+    ].join('\n') : '',
+    '',
+    '## Derived Planner Brief',
+    `Handoff ID: ${handoff?.id || 'unknown'}`,
+    `Summary: ${handoff?.summary || ''}`,
+    `Problem statement: ${handoff?.problemStatement || ''}`,
     '',
     'Constraints:',
     (handoff?.constraints || []).map((constraint) => `- ${constraint}`).join('\n') || '- None',
@@ -877,14 +1034,672 @@ function normalizeBrainProposal(proposal) {
   };
 }
 
-function normalizePlannerPayload(payload, handoff) {
+function normalizePlannerOutputStatus(value, fallback = 'ready') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return PLANNER_OUTPUT_STATUSES.has(normalized) ? normalized : fallback;
+}
+
+function normalizePlannerHireRequestBlockingLevel(value = 'advisory') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ['advisory', 'capacity_risk', 'handoff_risk', 'hard_block'].includes(normalized)
+    ? normalized
+    : 'advisory';
+}
+
+function normalizePlannerHireRequestStatus(value = 'queued') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ['queued', 'reviewing', 'fulfilled', 'rejected', 'cancelled', 'deferred'].includes(normalized)
+    ? normalized
+    : 'queued';
+}
+
+function buildPlannerHireRequest({
+  payload = {},
+  handoff = null,
+  intentId = null,
+  planItems = [],
+  staffingRequest = null,
+  talentAcquisition = null,
+  workspace = null,
+  baseCreatedBy = 'planner',
+  baseCreatedAt = nowIso(),
+  overrideLayer = null,
+  planningMode = 'normal',
+} = {}) {
   const safePayload = payload && typeof payload === 'object' ? payload : {};
+  const explicitRequest = safePayload.hireRequest && typeof safePayload.hireRequest === 'object'
+    ? safePayload.hireRequest
+    : null;
+  const qaLeadCoverage = talentAcquisition?.qaLeadCoverage && typeof talentAcquisition.qaLeadCoverage === 'object'
+    ? talentAcquisition.qaLeadCoverage
+    : null;
+  const plannerCoverage = talentAcquisition?.plannerCoverage && typeof talentAcquisition.plannerCoverage === 'object'
+    ? talentAcquisition.plannerCoverage
+    : null;
+  const sourceCoverage = qaLeadCoverage && qaLeadCoverage.covered === false
+    ? qaLeadCoverage
+    : (plannerCoverage && plannerCoverage.covered === false ? plannerCoverage : null);
+  if (!explicitRequest && !sourceCoverage) return null;
+
+  const originDepartmentId = String(
+    explicitRequest?.originDepartmentId
+    || workspace?.studio?.layout?.organization?.planner?.departmentId
+    || 'dept-delivery',
+  ).trim() || 'dept-delivery';
+  const originDeskId = String(
+    explicitRequest?.originDeskId
+    || workspace?.studio?.layout?.organization?.planner?.deskId
+    || 'planner',
+  ).trim() || 'planner';
+  const requestedRoleId = String(
+    explicitRequest?.requestedRoleId
+    || sourceCoverage?.canonical?.roleId
+    || sourceCoverage?.entityId
+    || staffingRequest?.targetDesk
+    || staffingRequest?.targetRole
+    || 'qa-lead',
+  ).trim() || 'qa-lead';
+  const linkedPlanIds = uniqueStrings([
+    ...(Array.isArray(explicitRequest?.linkedPlanIds) ? explicitRequest.linkedPlanIds : []),
+    ...planItems.map((item) => item.planId),
+  ]);
+  const blockingLevel = normalizePlannerHireRequestBlockingLevel(
+    explicitRequest?.blockingLevel
+    || (requestedRoleId === 'planner' ? 'hard_block' : (sourceCoverage?.blocker ? 'handoff_risk' : 'capacity_risk')),
+  );
+  const reason = String(
+    explicitRequest?.reason
+    || sourceCoverage?.reason
+    || (requestedRoleId === 'qa-lead'
+      ? 'QA coverage is missing, so TA should review staffing while planning continues.'
+      : `${requestedRoleId} coverage is missing, so TA should review staffing while planning continues.`),
+  ).trim();
+  const hireRequest = normalizeTaHireRequestEntry({
+    ...explicitRequest,
+    hireRequestId: explicitRequest?.hireRequestId || `hire_${intentId || handoff?.id || 'planner'}`,
+    originDepartmentId,
+    originDeskId,
+    requestedRoleId,
+    reason,
+    urgency: String(explicitRequest?.urgency || sourceCoverage?.urgency || talentAcquisition?.department?.urgency || staffingRequest?.urgency || 'normal').trim().toLowerCase() || 'normal',
+    blockingLevel,
+    linkedPlanIds,
+    createdAt: String(explicitRequest?.createdAt || baseCreatedAt).trim() || baseCreatedAt,
+    status: normalizePlannerHireRequestStatus(explicitRequest?.status || 'queued'),
+    intentId,
+    plannerRunId: String(explicitRequest?.plannerRunId || handoff?.plannerRunId || '').trim() || null,
+    planBundleId: String(explicitRequest?.planBundleId || safePayload.planBundle?.planId || '').trim() || null,
+    taskBundleId: String(explicitRequest?.taskBundleId || safePayload.taskBundle?.taskBundleId || '').trim() || null,
+    staffingRequestId: String(explicitRequest?.staffingRequestId || staffingRequest?.staffingRequestId || '').trim() || null,
+    qaRequestId: String(explicitRequest?.qaRequestId || safePayload.qaRequest?.qaRequestId || '').trim() || null,
+    requestedBy: String(explicitRequest?.requestedBy || explicitRequest?.createdBy || baseCreatedBy).trim() || baseCreatedBy,
+    summary: String(explicitRequest?.summary || reason).trim(),
+    targetDeskId: String(explicitRequest?.targetDeskId || staffingRequest?.targetDesk || requestedRoleId).trim() || requestedRoleId,
+    targetRoleId: String(explicitRequest?.targetRoleId || staffingRequest?.targetRole || requestedRoleId).trim() || requestedRoleId,
+    provenance: {
+      ...(explicitRequest?.provenance && typeof explicitRequest.provenance === 'object' ? explicitRequest.provenance : {}),
+      sourceHandoffId: handoff?.id || explicitRequest?.provenance?.sourceHandoffId || null,
+      sourceIntentId: intentId,
+      sourceType: handoff?.sourceType || explicitRequest?.provenance?.sourceType || null,
+      sourceRef: handoff?.sourceRef || explicitRequest?.provenance?.sourceRef || null,
+      overrideIds: uniqueStrings([
+        ...((explicitRequest?.provenance && Array.isArray(explicitRequest.provenance.overrideIds)) ? explicitRequest.provenance.overrideIds : []),
+        ...((overrideLayer?.activeOverrides || []).map((override) => override.overrideId).filter(Boolean)),
+      ]),
+      anchorRefs: uniqueStrings([
+        ...(Array.isArray(explicitRequest?.provenance?.anchorRefs) ? explicitRequest.provenance.anchorRefs : []),
+        ...(Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : []),
+      ]),
+    },
+    notes: Array.isArray(explicitRequest?.notes) ? explicitRequest.notes : [],
+    resolution: explicitRequest?.resolution || null,
+    reviewedAt: explicitRequest?.reviewedAt || null,
+    reviewedBy: explicitRequest?.reviewedBy || null,
+    fulfilledAt: explicitRequest?.fulfilledAt || null,
+    fulfilledBy: explicitRequest?.fulfilledBy || null,
+    fulfilledCandidate: explicitRequest?.fulfilledCandidate || null,
+    closedAt: explicitRequest?.closedAt || null,
+    closedBy: explicitRequest?.closedBy || null,
+  });
+  return hireRequest.status === 'queued' ? hireRequest : { ...hireRequest, status: 'queued' };
+}
+
+function normalizePlannerQaState(payload = {}, fallbackStatus = 'pending') {
+  const safePayload = payload && typeof payload === 'object' ? payload : {};
+  const qaStatus = normalizePlannerOutputStatus(
+    safePayload.qaStatus
+    || safePayload.planBundle?.qaStatus
+    || safePayload.taskBundle?.qaStatus
+    || fallbackStatus,
+    fallbackStatus,
+  );
+  const qaCoverageRequired = safePayload.qaCoverageRequired !== false
+    && safePayload.planBundle?.qaCoverageRequired !== false
+    && safePayload.taskBundle?.qaCoverageRequired !== false;
+  const qaBlocker = Boolean(
+    safePayload.qaBlocker
+    || safePayload.planBundle?.qaBlocker
+    || safePayload.taskBundle?.qaBlocker,
+  );
+  const releaseBlocker = Boolean(
+    safePayload.releaseBlocker
+    || safePayload.planBundle?.releaseBlocker
+    || safePayload.taskBundle?.releaseBlocker,
+  );
   return {
-    summary: String(safePayload.summary || handoff?.summary || 'Planner review complete.').trim(),
-    cards: (Array.isArray(safePayload.cards) ? safePayload.cards : [])
-      .map((card) => normalizePlannerCard(card, handoff))
-      .filter(Boolean)
-      .slice(0, MAX_PLANNER_CARDS),
+    qaStatus,
+    qaCoverageRequired,
+    qaBlocker,
+    releaseBlocker,
+  };
+}
+
+function normalizePlannerDependencies(dependencies = []) {
+  const source = Array.isArray(dependencies) ? dependencies : (dependencies ? [dependencies] : []);
+  return uniqueStrings(source.map((entry) => {
+    if (!entry) return '';
+    if (typeof entry === 'string') return entry;
+    if (typeof entry === 'object') {
+      return String(entry.planId || entry.taskId || entry.id || entry.dependencyId || entry.sourcePlanId || entry.targetPlanId || '').trim();
+    }
+    return String(entry).trim();
+  })).slice(0, 12);
+}
+
+function normalizePlannerPlanItem(item, handoff, index = 0, fallbackIntentId = null, overrideLayer = null) {
+  const intentId = String(item?.intentId || fallbackIntentId || handoff?.intentContract?.intentId || handoff?.intentId || '').trim() || null;
+  const summary = String(item?.summary || item?.title || handoff?.requestedOutcomes?.[index] || handoff?.summary || '').trim();
+  if (!summary) return null;
+  const planId = String(item?.planId || item?.id || `plan_${index + 1}`).trim();
+  const createdAt = String(item?.createdAt || handoff?.createdAt || nowIso()).trim() || nowIso();
+  const targetDesk = String(item?.targetDesk || item?.deskId || handoff?.targetDesk || 'planner').trim() || 'planner';
+  const targetRole = String(item?.targetRole || item?.roleId || handoff?.targetRole || '').trim() || null;
+  const dependencies = normalizePlannerDependencies(item?.dependencies);
+  const acceptanceCriteria = uniqueStrings([
+    ...(Array.isArray(item?.acceptanceCriteria) ? item.acceptanceCriteria : []),
+    ...(Array.isArray(item?.criteria) ? item.criteria : []),
+    ...(Array.isArray(item?.acceptance_criteria) ? item.acceptance_criteria : []),
+  ]);
+  const provenance = {
+    ...((item?.provenance && typeof item.provenance === 'object') ? item.provenance : {}),
+    sourceHandoffId: handoff?.id || item?.provenance?.sourceHandoffId || null,
+    sourceIntentId: intentId,
+    sourceType: handoff?.sourceType || item?.provenance?.sourceType || null,
+    sourceRef: handoff?.sourceRef || item?.provenance?.sourceRef || null,
+    anchorRefs: uniqueStrings([
+      ...(Array.isArray(item?.provenance?.anchorRefs) ? item.provenance.anchorRefs : []),
+      ...(Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : []),
+    ]),
+  };
+  const overrideIds = uniqueStrings((overrideLayer?.activeOverrides || []).map((entry) => entry.overrideId));
+  if (overrideIds.length) {
+    provenance.overrideIds = uniqueStrings([
+      ...(Array.isArray(item?.provenance?.overrideIds) ? item.provenance.overrideIds : []),
+      ...overrideIds,
+    ]);
+  }
+  return {
+    planId,
+    intentId,
+    status: normalizePlannerOutputStatus(item?.status || handoff?.status || 'ready', 'ready'),
+    priority: normalizeIntentPriority(item?.priority || handoff?.priority || 'normal'),
+    summary,
+    acceptanceCriteria,
+    dependencies,
+    targetDesk,
+    targetRole,
+    handoffState: PLANNER_HANOFF_STATES.has(String(item?.handoffState || handoff?.status || 'ready').trim().toLowerCase())
+      ? String(item?.handoffState || handoff?.status || 'ready').trim().toLowerCase()
+      : 'ready',
+    provenance,
+    createdBy: String(item?.createdBy || handoff?.requestedBy || 'planner').trim() || 'planner',
+    createdAt,
+  };
+}
+
+function normalizePlannerTaskItem(item, handoff, index = 0, fallbackIntentId = null, overrideLayer = null) {
+  const planItem = normalizePlannerPlanItem(item, handoff, index, fallbackIntentId, overrideLayer);
+  if (!planItem) return null;
+  return {
+    taskId: String(item?.taskId || item?.id || `${planItem.planId}_task`).trim(),
+    planId: planItem.planId,
+    intentId: planItem.intentId,
+    status: normalizePlannerOutputStatus(item?.status || 'planned', 'planned'),
+    priority: planItem.priority,
+    summary: planItem.summary,
+    acceptanceCriteria: planItem.acceptanceCriteria,
+    dependencies: planItem.dependencies,
+    targetDesk: String(item?.targetDesk || 'executor').trim() || 'executor',
+    targetRole: String(item?.targetRole || 'Executor').trim() || 'Executor',
+    handoffState: planItem.handoffState,
+    provenance: planItem.provenance,
+    createdBy: String(item?.createdBy || planItem.createdBy || 'planner').trim() || 'planner',
+    createdAt: String(item?.createdAt || planItem.createdAt || nowIso()).trim() || nowIso(),
+  };
+}
+
+function buildPlannerDependencyMap(planItems = [], handoff, intentId = null, createdBy = 'planner', createdAt = nowIso()) {
+  const edges = [];
+  (Array.isArray(planItems) ? planItems : []).forEach((item) => {
+    (Array.isArray(item?.dependencies) ? item.dependencies : []).forEach((dependencyId) => {
+      if (!dependencyId) return;
+      edges.push({
+        dependencyId: `${item.planId || 'plan'}__depends_on__${dependencyId}`,
+        sourcePlanId: dependencyId,
+        targetPlanId: item.planId,
+        type: 'depends_on',
+        status: 'active',
+        provenance: {
+          sourceHandoffId: handoff?.id || null,
+          sourceIntentId: intentId,
+          sourceType: handoff?.sourceType || null,
+          sourceRef: handoff?.sourceRef || null,
+        },
+        createdBy,
+        createdAt,
+      });
+    });
+  });
+  return {
+    dependencyMapId: `dependency_map_${intentId || handoff?.id || 'planner'}`,
+    intentId: intentId || handoff?.intentContract?.intentId || handoff?.intentId || null,
+    status: edges.length ? 'ready' : 'empty',
+    edges,
+  };
+}
+
+function buildPlannerOuttrayArtifact(payload = {}, handoff = null, planBundle = null, taskBundle = null, options = {}) {
+  const safePayload = payload && typeof payload === 'object' ? payload : {};
+  const safeOptions = options && typeof options === 'object' ? options : {};
+  const baseCreatedBy = String(safePayload.createdBy || handoff?.requestedBy || 'planner').trim() || 'planner';
+  const baseCreatedAt = String(safePayload.createdAt || handoff?.createdAt || nowIso()).trim() || nowIso();
+  const intentId = String(
+    safePayload.intentId
+    || planBundle?.intentId
+    || taskBundle?.intentId
+    || handoff?.intentContract?.intentId
+    || handoff?.intentId
+    || '',
+  ).trim() || null;
+  const runArtifactRef = safeOptions.runId
+    ? path.join('data', 'spatial', 'agent-runs', 'planner', `${safeOptions.runId}.json`).replace(/\\/g, '/')
+    : null;
+  const artifactRefs = uniqueStrings([
+    ...(Array.isArray(safePayload.artifactRefs) ? safePayload.artifactRefs : []),
+    ...(Array.isArray(safeOptions.proposalArtifactRefs) ? safeOptions.proposalArtifactRefs : []),
+    ...(runArtifactRef ? [runArtifactRef] : []),
+  ]);
+  const lanes = Array.isArray(safePayload.items)
+    ? safePayload.items
+    : [
+        {
+          laneId: 'qa',
+          laneLabel: 'pending QA review',
+          targetDesk: 'qa-lead',
+          targetRole: 'QA Lead',
+          summary: 'QA review pending',
+        },
+        {
+          laneId: 'archival',
+          laneLabel: 'pending archival',
+          targetDesk: 'archivist',
+          targetRole: 'Archivist',
+          summary: 'Archive planner output and provenance',
+        },
+        {
+          laneId: 'execution',
+          laneLabel: 'pending execution planning',
+          targetDesk: 'executor',
+          targetRole: 'Executor',
+          summary: 'Execution planning follow-up',
+        },
+        {
+          laneId: 'cto',
+          laneLabel: 'pending CTO review',
+          targetDesk: 'cto',
+          targetRole: 'CTO',
+          summary: 'CTO review or override inspection',
+        },
+        {
+          laneId: 'context',
+          laneLabel: 'pending context writeback',
+          targetDesk: 'context-manager',
+          targetRole: 'Context Manager',
+          summary: 'Writeback for follow-on desks',
+        },
+      ];
+  const items = lanes.map((item, index) => {
+    const laneItem = item && typeof item === 'object' ? item : {};
+    return {
+      laneId: String(laneItem.laneId || `lane_${index + 1}`).trim() || `lane_${index + 1}`,
+      laneLabel: String(laneItem.laneLabel || laneItem.label || laneItem.summary || 'Planner outtray lane').trim() || 'Planner outtray lane',
+      targetDesk: String(laneItem.targetDesk || 'planner').trim() || 'planner',
+      targetRole: String(laneItem.targetRole || 'Planner').trim() || 'Planner',
+      summary: String(laneItem.summary || laneItem.reason || laneItem.laneLabel || 'Planner handoff lane').trim() || 'Planner handoff lane',
+      status: laneItem.status && ['drafting', 'ready_for_handoff', 'deposited', 'collected', 'under_review', 'accepted', 'returned_with_findings', 'closed'].includes(String(laneItem.status).trim().toLowerCase())
+        ? String(laneItem.status).trim().toLowerCase()
+        : 'ready_for_handoff',
+      required: Boolean(laneItem.required !== false),
+      collectedAt: String(laneItem.collectedAt || '').trim() || null,
+      collectedBy: String(laneItem.collectedBy || '').trim() || null,
+      reviewedAt: String(laneItem.reviewedAt || '').trim() || null,
+      reviewedBy: String(laneItem.reviewedBy || '').trim() || null,
+      findings: Array.isArray(laneItem.findings) ? laneItem.findings.map((finding) => String(finding || '').trim()).filter(Boolean) : [],
+      notes: uniqueStrings(laneItem.notes || []),
+      artifactRefs: uniqueStrings([
+        ...(Array.isArray(laneItem.artifactRefs) ? laneItem.artifactRefs : []),
+        ...artifactRefs,
+      ]),
+      provenance: {
+        ...(laneItem.provenance && typeof laneItem.provenance === 'object' ? laneItem.provenance : {}),
+        sourceHandoffId: handoff?.id || laneItem.provenance?.sourceHandoffId || null,
+        sourceIntentId: intentId,
+        sourceType: handoff?.sourceType || laneItem.provenance?.sourceType || null,
+        sourceRef: handoff?.sourceRef || laneItem.provenance?.sourceRef || null,
+        anchorRefs: uniqueStrings([
+          ...(Array.isArray(laneItem.provenance?.anchorRefs) ? laneItem.provenance.anchorRefs : []),
+          ...(Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : []),
+        ]),
+        overrideIds: uniqueStrings(laneItem.provenance?.overrideIds || []),
+      },
+      queuedAt: baseCreatedAt,
+      updatedAt: String(laneItem.updatedAt || '').trim() || baseCreatedAt,
+    };
+  });
+  const queueKey = String(
+    safePayload.queueKey
+    || safeOptions.runId
+    || planBundle?.planId
+    || taskBundle?.taskBundleId
+    || handoff?.id
+    || `planner_outtray_${intentId || baseCreatedAt}`,
+  ).trim();
+  return {
+    queueKey,
+    plannerRunId: String(safePayload.plannerRunId || safeOptions.runId || '').trim() || null,
+    planBundleId: String(safePayload.planBundleId || planBundle?.planId || '').trim() || null,
+    taskBundleId: String(safePayload.taskBundleId || taskBundle?.taskBundleId || '').trim() || null,
+    intentId,
+    status: String(safePayload.status || 'deposited').trim().toLowerCase() || 'deposited',
+    handoffState: String(safePayload.handoffState || 'deposited').trim().toLowerCase() || 'deposited',
+    summary: String(safePayload.summary || planBundle?.summary || taskBundle?.summary || handoff?.summary || 'Planner handoff deposited for downstream collection.').trim(),
+    targetDesk: String(safePayload.targetDesk || 'planner-outtray').trim() || 'planner-outtray',
+    targetRole: String(safePayload.targetRole || 'Planner Outtray').trim() || 'Planner Outtray',
+    requestedBy: baseCreatedBy,
+    createdBy: baseCreatedBy,
+    createdAt: baseCreatedAt,
+    updatedAt: String(safePayload.updatedAt || '').trim() || baseCreatedAt,
+    artifactRefs,
+    provenance: {
+      ...(safePayload.provenance && typeof safePayload.provenance === 'object' ? safePayload.provenance : {}),
+      sourceHandoffId: handoff?.id || safePayload.provenance?.sourceHandoffId || null,
+      sourceIntentId: intentId,
+      sourceType: handoff?.sourceType || safePayload.provenance?.sourceType || null,
+      sourceRef: handoff?.sourceRef || safePayload.provenance?.sourceRef || null,
+      anchorRefs: uniqueStrings([
+        ...(Array.isArray(safePayload.provenance?.anchorRefs) ? safePayload.provenance.anchorRefs : []),
+        ...(Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : []),
+      ]),
+      overrideIds: uniqueStrings(safePayload.provenance?.overrideIds || []),
+    },
+    items,
+  };
+}
+
+function buildPlannerArtifactContract(payload = {}, handoff = null, overrideLayer = null, options = {}) {
+  const safePayload = payload && typeof payload === 'object' ? payload : {};
+  const safeOptions = options && typeof options === 'object' ? options : {};
+  const qaState = normalizePlannerQaState(safePayload, 'pending');
+  const contextLanes = safePayload.contextLanes || handoff?.contextLanes || null;
+  const resolvedOverrideLayer = safePayload.overrideLayer || handoff?.overrideLayer || overrideLayer || null;
+  const talentAcquisition = safeOptions.talentAcquisition || null;
+  const workspace = safeOptions.workspace || null;
+  const planningMode = String(
+    safePayload.planningMode
+    || safePayload.planBundle?.planningMode
+    || resolvedOverrideLayer?.planningMode
+    || (resolvedOverrideLayer?.flags?.forcePlanning || resolvedOverrideLayer?.flags?.forcePlannerRouting || resolvedOverrideLayer?.flags?.reopenStalePlan
+      ? 'forced'
+      : (resolvedOverrideLayer?.activeCount ? 'override' : 'normal')),
+  ).trim() || 'normal';
+  const intentId = String(
+    safePayload.intentId
+    || safePayload.planBundle?.intentId
+    || safePayload.taskBundle?.intentId
+    || handoff?.intentContract?.intentId
+    || handoff?.intentId
+    || '',
+  ).trim() || null;
+  const baseCreatedBy = String(safePayload.createdBy || handoff?.requestedBy || 'planner').trim() || 'planner';
+  const baseCreatedAt = String(safePayload.createdAt || handoff?.createdAt || nowIso()).trim() || nowIso();
+  const rawPlanItems = Array.isArray(safePayload.planBundle?.items)
+    ? safePayload.planBundle.items
+    : (Array.isArray(safePayload.planItems)
+      ? safePayload.planItems
+      : (Array.isArray(safePayload.cards) ? safePayload.cards : []));
+  const planItems = rawPlanItems
+    .map((item, index) => normalizePlannerPlanItem(item, handoff, index, intentId, resolvedOverrideLayer))
+    .filter(Boolean)
+    .slice(0, MAX_PLANNER_CARDS);
+  const rawTaskItems = Array.isArray(safePayload.taskBundle?.tasks)
+    ? safePayload.taskBundle.tasks
+    : (Array.isArray(safePayload.tasks) ? safePayload.tasks : planItems);
+  const tasks = rawTaskItems
+    .map((item, index) => normalizePlannerTaskItem(item, handoff, index, intentId, resolvedOverrideLayer))
+    .filter(Boolean)
+    .slice(0, MAX_PLANNER_CARDS);
+  const dependencyMap = safePayload.dependencyMap && typeof safePayload.dependencyMap === 'object'
+    ? {
+        dependencyMapId: String(safePayload.dependencyMap.dependencyMapId || `dependency_map_${intentId || handoff?.id || 'planner'}`).trim(),
+        intentId: String(safePayload.dependencyMap.intentId || intentId || '').trim() || null,
+        status: normalizePlannerOutputStatus(safePayload.dependencyMap.status || 'ready', 'ready'),
+        edges: Array.isArray(safePayload.dependencyMap.edges)
+          ? safePayload.dependencyMap.edges.map((edge) => ({
+              dependencyId: String(edge?.dependencyId || edge?.id || `${edge?.sourcePlanId || 'plan'}__depends_on__${edge?.targetPlanId || 'plan'}`).trim(),
+              sourcePlanId: String(edge?.sourcePlanId || '').trim() || null,
+              targetPlanId: String(edge?.targetPlanId || '').trim() || null,
+              type: String(edge?.type || 'depends_on').trim() || 'depends_on',
+              status: normalizePlannerOutputStatus(edge?.status || 'active', 'active'),
+              provenance: {
+                ...((edge?.provenance && typeof edge.provenance === 'object') ? edge.provenance : {}),
+                sourceHandoffId: handoff?.id || edge?.provenance?.sourceHandoffId || null,
+                sourceIntentId: intentId,
+                sourceType: handoff?.sourceType || edge?.provenance?.sourceType || null,
+                sourceRef: handoff?.sourceRef || edge?.provenance?.sourceRef || null,
+              },
+              createdBy: String(edge?.createdBy || baseCreatedBy).trim() || baseCreatedBy,
+              createdAt: String(edge?.createdAt || baseCreatedAt).trim() || baseCreatedAt,
+            }))
+          : [],
+      }
+    : buildPlannerDependencyMap(planItems, handoff, intentId, baseCreatedBy, baseCreatedAt);
+  const planBundle = {
+    planId: String(safePayload.planBundle?.planId || `plan_bundle_${intentId || handoff?.id || 'planner'}`).trim(),
+    intentId,
+    status: normalizePlannerOutputStatus(safePayload.planBundle?.status || (planItems.length ? 'ready' : 'empty'), 'ready'),
+    summary: String(safePayload.planBundle?.summary || safePayload.summary || handoff?.summary || '').trim(),
+    items: planItems,
+    qaStatus: qaState.qaStatus,
+    qaCoverageRequired: qaState.qaCoverageRequired,
+    qaBlocker: qaState.qaBlocker,
+    releaseBlocker: qaState.releaseBlocker,
+    contextLanes,
+    overrideLayer: resolvedOverrideLayer,
+    planningMode,
+    provenance: {
+      ...(safePayload.planBundle?.provenance && typeof safePayload.planBundle.provenance === 'object' ? safePayload.planBundle.provenance : {}),
+      sourceHandoffId: handoff?.id || safePayload.planBundle?.provenance?.sourceHandoffId || null,
+      sourceIntentId: intentId,
+      sourceType: handoff?.sourceType || safePayload.planBundle?.provenance?.sourceType || null,
+      sourceRef: handoff?.sourceRef || safePayload.planBundle?.provenance?.sourceRef || null,
+      anchorRefs: uniqueStrings([
+        ...(Array.isArray(safePayload.planBundle?.provenance?.anchorRefs) ? safePayload.planBundle.provenance.anchorRefs : []),
+        ...(Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : []),
+      ]),
+    },
+    createdBy: String(safePayload.planBundle?.createdBy || baseCreatedBy).trim() || baseCreatedBy,
+    createdAt: String(safePayload.planBundle?.createdAt || baseCreatedAt).trim() || baseCreatedAt,
+  };
+  const taskBundle = {
+    taskBundleId: String(safePayload.taskBundle?.taskBundleId || `task_bundle_${intentId || handoff?.id || 'planner'}`).trim(),
+    intentId,
+    status: normalizePlannerOutputStatus(safePayload.taskBundle?.status || (tasks.length ? 'ready' : 'empty'), 'ready'),
+    tasks,
+    qaStatus: qaState.qaStatus,
+    qaCoverageRequired: qaState.qaCoverageRequired,
+    qaBlocker: qaState.qaBlocker,
+    releaseBlocker: qaState.releaseBlocker,
+    contextLanes,
+    overrideLayer: resolvedOverrideLayer,
+    planningMode,
+    provenance: {
+      ...(safePayload.taskBundle?.provenance && typeof safePayload.taskBundle.provenance === 'object' ? safePayload.taskBundle.provenance : {}),
+      sourceHandoffId: handoff?.id || safePayload.taskBundle?.provenance?.sourceHandoffId || null,
+      sourceIntentId: intentId,
+      sourceType: handoff?.sourceType || safePayload.taskBundle?.provenance?.sourceType || null,
+      sourceRef: handoff?.sourceRef || safePayload.taskBundle?.provenance?.sourceRef || null,
+    },
+    createdBy: String(safePayload.taskBundle?.createdBy || baseCreatedBy).trim() || baseCreatedBy,
+    createdAt: String(safePayload.taskBundle?.createdAt || baseCreatedAt).trim() || baseCreatedAt,
+  };
+  const staffingRequest = {
+    staffingRequestId: String(safePayload.staffingRequest?.staffingRequestId || `staffing_${intentId || handoff?.id || 'planner'}`).trim(),
+    intentId,
+    status: normalizePlannerOutputStatus(safePayload.staffingRequest?.status || 'ready', 'ready'),
+    summary: String(safePayload.staffingRequest?.summary || 'Planner staffing request').trim(),
+    targetDesk: String(safePayload.staffingRequest?.targetDesk || 'qa-lead').trim() || 'qa-lead',
+    targetRole: String(safePayload.staffingRequest?.targetRole || 'QA Lead').trim() || 'QA Lead',
+    requiredCoverage: uniqueStrings(safePayload.staffingRequest?.requiredCoverage || safePayload.staffingRequest?.requiredSkills || []),
+    provenance: {
+      ...(safePayload.staffingRequest?.provenance && typeof safePayload.staffingRequest.provenance === 'object' ? safePayload.staffingRequest.provenance : {}),
+      sourceHandoffId: handoff?.id || safePayload.staffingRequest?.provenance?.sourceHandoffId || null,
+      sourceIntentId: intentId,
+      sourceType: handoff?.sourceType || safePayload.staffingRequest?.provenance?.sourceType || null,
+      sourceRef: handoff?.sourceRef || safePayload.staffingRequest?.provenance?.sourceRef || null,
+    },
+    createdBy: String(safePayload.staffingRequest?.createdBy || baseCreatedBy).trim() || baseCreatedBy,
+    createdAt: String(safePayload.staffingRequest?.createdAt || baseCreatedAt).trim() || baseCreatedAt,
+    overrideLayer: resolvedOverrideLayer,
+    planningMode,
+  };
+  const qaRequest = {
+    qaRequestId: String(safePayload.qaRequest?.qaRequestId || `qa_${intentId || handoff?.id || 'planner'}`).trim(),
+    intentId,
+    status: normalizePlannerOutputStatus(safePayload.qaRequest?.status || 'ready', 'ready'),
+    summary: String(safePayload.qaRequest?.summary || 'Planner QA request').trim(),
+    acceptanceCriteria: uniqueStrings(safePayload.qaRequest?.acceptanceCriteria || []),
+    targetDesk: String(safePayload.qaRequest?.targetDesk || 'qa-lead').trim() || 'qa-lead',
+    targetRole: String(safePayload.qaRequest?.targetRole || 'QA Lead').trim() || 'QA Lead',
+    provenance: {
+      ...(safePayload.qaRequest?.provenance && typeof safePayload.qaRequest.provenance === 'object' ? safePayload.qaRequest.provenance : {}),
+      sourceHandoffId: handoff?.id || safePayload.qaRequest?.provenance?.sourceHandoffId || null,
+      sourceIntentId: intentId,
+      sourceType: handoff?.sourceType || safePayload.qaRequest?.provenance?.sourceType || null,
+      sourceRef: handoff?.sourceRef || safePayload.qaRequest?.provenance?.sourceRef || null,
+    },
+    createdBy: String(safePayload.qaRequest?.createdBy || baseCreatedBy).trim() || baseCreatedBy,
+    createdAt: String(safePayload.qaRequest?.createdAt || baseCreatedAt).trim() || baseCreatedAt,
+    overrideLayer: resolvedOverrideLayer,
+    planningMode,
+  };
+  const hireRequest = buildPlannerHireRequest({
+    payload: safePayload,
+    handoff,
+    intentId,
+    planItems,
+    staffingRequest,
+    talentAcquisition,
+    workspace,
+    baseCreatedBy,
+    baseCreatedAt,
+    overrideLayer: resolvedOverrideLayer,
+    planningMode,
+  });
+  const outtray = buildPlannerOuttrayArtifact(
+    safePayload.outtray || {},
+    handoff,
+    planBundle,
+    taskBundle,
+    {
+      runId: safeOptions.runId || handoff?.id || null,
+      proposalArtifactRefs: safeOptions.proposalArtifactRefs || [],
+    },
+  );
+  const archivalSummary = {
+    archivalSummaryId: String(safePayload.archivalSummary?.archivalSummaryId || `archive_${intentId || handoff?.id || 'planner'}`).trim(),
+    intentId,
+    status: normalizePlannerOutputStatus(safePayload.archivalSummary?.status || 'ready', 'ready'),
+    summary: String(safePayload.archivalSummary?.summary || safePayload.summary || handoff?.summary || '').trim(),
+    contextLanes,
+    overrideLayer: resolvedOverrideLayer,
+    planningMode,
+    provenance: {
+      ...(safePayload.archivalSummary?.provenance && typeof safePayload.archivalSummary.provenance === 'object' ? safePayload.archivalSummary.provenance : {}),
+      sourceHandoffId: handoff?.id || safePayload.archivalSummary?.provenance?.sourceHandoffId || null,
+      sourceIntentId: intentId,
+      sourceType: handoff?.sourceType || safePayload.archivalSummary?.provenance?.sourceType || null,
+      sourceRef: handoff?.sourceRef || safePayload.archivalSummary?.provenance?.sourceRef || null,
+      planIds: planItems.map((item) => item.planId),
+      taskIds: tasks.map((item) => item.taskId),
+    },
+    createdBy: String(safePayload.archivalSummary?.createdBy || baseCreatedBy).trim() || baseCreatedBy,
+    createdAt: String(safePayload.archivalSummary?.createdAt || baseCreatedAt).trim() || baseCreatedAt,
+  };
+  const contextUpdatePacket = {
+    contextUpdatePacketId: String(safePayload.contextUpdatePacket?.contextUpdatePacketId || `context_${intentId || handoff?.id || 'planner'}`).trim(),
+    intentId,
+    status: normalizePlannerOutputStatus(safePayload.contextUpdatePacket?.status || 'ready', 'ready'),
+    summary: String(safePayload.contextUpdatePacket?.summary || safePayload.summary || handoff?.summary || '').trim(),
+    requestedOutcomes: uniqueStrings(safePayload.contextUpdatePacket?.requestedOutcomes || handoff?.requestedOutcomes || []),
+    constraints: uniqueStrings(safePayload.contextUpdatePacket?.constraints || handoff?.constraints || []),
+    contextLanes,
+    overrideLayer: resolvedOverrideLayer,
+    planningMode,
+    provenance: {
+      ...(safePayload.contextUpdatePacket?.provenance && typeof safePayload.contextUpdatePacket.provenance === 'object' ? safePayload.contextUpdatePacket.provenance : {}),
+      sourceHandoffId: handoff?.id || safePayload.contextUpdatePacket?.provenance?.sourceHandoffId || null,
+      sourceIntentId: intentId,
+      sourceType: handoff?.sourceType || safePayload.contextUpdatePacket?.provenance?.sourceType || null,
+      sourceRef: handoff?.sourceRef || safePayload.contextUpdatePacket?.provenance?.sourceRef || null,
+      anchorRefs: uniqueStrings([
+        ...(Array.isArray(safePayload.contextUpdatePacket?.provenance?.anchorRefs) ? safePayload.contextUpdatePacket.provenance.anchorRefs : []),
+        ...(Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : []),
+      ]),
+    },
+    createdBy: String(safePayload.contextUpdatePacket?.createdBy || baseCreatedBy).trim() || baseCreatedBy,
+    createdAt: String(safePayload.contextUpdatePacket?.createdAt || baseCreatedAt).trim() || baseCreatedAt,
+  };
+  const cards = (Array.isArray(safePayload.cards) ? safePayload.cards : [])
+    .map((card, index) => normalizePlannerCard(card, handoff, planItems[index] || null))
+    .filter(Boolean)
+    .slice(0, MAX_PLANNER_CARDS);
+  return {
+    summary: String(safePayload.summary || handoff?.summary || planBundle.summary || 'Planner review complete.').trim(),
+    contextLanes,
+    overrideLayer: resolvedOverrideLayer,
+    planningMode,
+    qaStatus: qaState.qaStatus,
+    qaCoverageRequired: qaState.qaCoverageRequired,
+    qaBlocker: qaState.qaBlocker,
+    releaseBlocker: qaState.releaseBlocker,
+    planBundle,
+    taskBundle,
+    dependencyMap,
+    staffingRequest,
+    qaRequest,
+    hireRequest,
+    outtray,
+    archivalSummary,
+    contextUpdatePacket,
+    cards: cards.length ? cards : planItems.map((item) => ({
+      title: item.summary,
+      summary: item.summary,
+      anchorRefs: uniqueStrings(item.provenance?.anchorRefs || handoff?.anchorRefs || []),
+      targetProjectKey: 'ace-self',
+    })),
+    planItems,
+    tasks,
+    dependencyEdges: dependencyMap.edges,
     brainProposals: (Array.isArray(safePayload.brainProposals) ? safePayload.brainProposals : [])
       .map((proposal) => normalizeBrainProposal(proposal))
       .filter(Boolean)
@@ -892,6 +1707,10 @@ function normalizePlannerPayload(payload, handoff) {
     needsContextRetry: Boolean(safePayload.needsContextRetry),
     retryReason: String(safePayload.retryReason || '').trim(),
   };
+}
+
+function normalizePlannerPayload(payload, handoff, overrideLayer = null, options = {}) {
+  return buildPlannerArtifactContract(payload, handoff, overrideLayer, options);
 }
 
 function runMatchesHandoff(run, handoff = null) {
@@ -902,12 +1721,14 @@ function runMatchesHandoff(run, handoff = null) {
 }
 
 function buildPlannerToContextHandoff({ handoff, action, reason, runId, attemptCount }) {
+  const intentContract = handoff?.intentContract || null;
   return {
     id: `handoff_${runId}`,
     sourceAgentId: 'planner',
     targetAgentId: 'context-manager',
     sourceHandoffId: handoff?.id || null,
     sourceNodeId: handoff?.sourceNodeId || null,
+    sourceIntentId: intentContract?.intentId || handoff?.intentId || null,
     createdAt: nowIso(),
     status: 'needs-context',
     action,
@@ -918,6 +1739,7 @@ function buildPlannerToContextHandoff({ handoff, action, reason, runId, attemptC
     retryReason: reason,
     attemptCount,
     anchorRefs: uniqueStrings(handoff?.anchorRefs || []).map(normalizeRelativePath),
+    intentContract,
   };
 }
 
@@ -941,6 +1763,20 @@ function createPlannerRunRecord({
   outcome,
   summary,
   reason = '',
+  planBundle = null,
+  taskBundle = null,
+  contextLanes = null,
+  dependencyMap = null,
+  staffingRequest = null,
+  qaRequest = null,
+  hireRequest = null,
+  hireRequestQueue = null,
+  outtray = null,
+  archivalSummary = null,
+  contextUpdatePacket = null,
+  overrideLayer = null,
+  planningMode = 'normal',
+  qaQueue = null,
   cards = [],
   brainProposals = [],
   proposalArtifactRefs = [],
@@ -967,6 +1803,27 @@ function createPlannerRunRecord({
     handoffId: handoff?.id || null,
     handoffCreatedAt: handoff?.createdAt || null,
     sourceNodeId: handoff?.sourceNodeId || null,
+    intentId: handoff?.intentContract?.intentId || handoff?.intentId || null,
+    intentContract: handoff?.intentContract || null,
+    canonicalIntent: handoff?.intentContract?.canonicalIntent || null,
+    planBundle,
+    taskBundle,
+    contextLanes,
+    overrideLayer,
+    planningMode,
+    qaStatus: planBundle?.qaStatus || taskBundle?.qaStatus || 'pending',
+    qaCoverageRequired: planBundle?.qaCoverageRequired !== false && taskBundle?.qaCoverageRequired !== false,
+    qaBlocker: Boolean(planBundle?.qaBlocker || taskBundle?.qaBlocker),
+    releaseBlocker: Boolean(planBundle?.releaseBlocker || taskBundle?.releaseBlocker),
+    dependencyMap,
+    staffingRequest,
+    qaRequest,
+    hireRequest,
+    hireRequestQueue,
+    outtray,
+    qaQueue,
+    archivalSummary,
+    contextUpdatePacket,
     outcome,
     status: outcome,
     summary: String(summary || '').trim() || String(handoff?.summary || 'Planner worker finished.').trim(),
@@ -1005,8 +1862,9 @@ function persistPlannerRun(rootPath, runRecord) {
   return runRecord;
 }
 
-function evaluatePlannerEligibility({ workspace = {}, handoff = null, mode = 'auto', runs = [] } = {}) {
+function evaluatePlannerEligibility({ workspace = {}, handoff = null, mode = 'auto', runs = [], overrideLayer = null } = {}) {
   const workerState = normalizeAgentWorkersState(workspace?.studio?.agentWorkers).planner;
+  const resolvedOverrideLayer = overrideLayer || deriveCtoOverrideLayer(workspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger());
   if (!handoff) {
     return { eligible: false, reason: 'No planner handoff is available.' };
   }
@@ -1016,13 +1874,18 @@ function evaluatePlannerEligibility({ workspace = {}, handoff = null, mode = 'au
   if (mode !== 'auto') {
     return { eligible: true, reason: '' };
   }
-  if (handoff.status !== 'ready') {
+  const overrideAllowsStale = Boolean(
+    resolvedOverrideLayer?.flags?.forcePlanningGeneration
+    || resolvedOverrideLayer?.flags?.forcePlannerRouting
+    || resolvedOverrideLayer?.flags?.reopenStalePlan,
+  );
+  if (handoff.status !== 'ready' && !overrideAllowsStale) {
     return { eligible: false, reason: 'Planner handoff is not ready for auto-run.' };
   }
-  if (!Array.isArray(handoff.anchorRefs) || !handoff.anchorRefs.length) {
+  if ((!Array.isArray(handoff.anchorRefs) || !handoff.anchorRefs.length) && !resolvedOverrideLayer?.flags?.forcePlannerRouting) {
     return { eligible: false, reason: 'Planner handoff has no anchor provenance.' };
   }
-  if ((runs || []).some((run) => runMatchesHandoff(run, handoff) && run.outcome === 'completed')) {
+  if ((runs || []).some((run) => runMatchesHandoff(run, handoff) && run.outcome === 'completed') && !resolvedOverrideLayer?.flags?.reopenStalePlan) {
     return { eligible: false, reason: 'Planner already processed this handoff successfully.' };
   }
   if ((runs || []).some((run) => runMatchesHandoff(run, handoff) && ['blocked', 'degraded'].includes(run.outcome) && run.plannerToContext?.action === 'bin-candidate')) {
@@ -1045,6 +1908,7 @@ async function runPlannerWorker(options = {}) {
     runId = makePlannerRunId(),
     generator = null,
     fetchImpl = globalThis.fetch,
+    talentAcquisition = null,
   } = options;
 
   if (!rootPath) throw new Error('rootPath is required for planner worker runs.');
@@ -1067,7 +1931,9 @@ async function runPlannerWorker(options = {}) {
     || '',
   ).trim() || null;
   const taskCache = readTaskCache(rootPath, { taskId, stage: 'planner' });
-  const eligibility = evaluatePlannerEligibility({ workspace, handoff, mode, runs });
+  const overrideLayer = deriveCtoOverrideLayer(workspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger());
+  const planningMode = String(overrideLayer?.planningMode || (overrideLayer?.flags?.forcePlanning ? 'forced' : (overrideLayer?.activeCount ? 'override' : 'normal'))).trim() || 'normal';
+  const eligibility = evaluatePlannerEligibility({ workspace, handoff, mode, runs, overrideLayer });
   if (!eligibility.eligible) {
     return {
       ok: false,
@@ -1079,6 +1945,8 @@ async function runPlannerWorker(options = {}) {
       cards: [],
       plannerToContext: null,
       taskCacheSource: taskCache.source,
+      overrideLayer,
+      planningMode,
     };
   }
 
@@ -1104,6 +1972,23 @@ async function runPlannerWorker(options = {}) {
       outcome,
       summary: handoff?.summary || 'Planner worker blocked.',
       reason,
+      planBundle: null,
+      taskBundle: null,
+      contextLanes: handoff?.contextLanes || null,
+      overrideLayer,
+      planningMode,
+      qaStatus: 'pending',
+      qaCoverageRequired: true,
+      qaBlocker: false,
+      releaseBlocker: false,
+      dependencyMap: null,
+      staffingRequest: null,
+      qaRequest: null,
+      hireRequest: null,
+      hireRequestQueue: null,
+      qaQueue: null,
+      archivalSummary: null,
+      contextUpdatePacket: null,
       cards: [],
       brainProposals: [],
       proposalArtifactRefs: [],
@@ -1121,8 +2006,25 @@ async function runPlannerWorker(options = {}) {
       run: runRecord,
       proposalArtifactRefs: [],
       cards: [],
+      planBundle: null,
+      taskBundle: null,
+      contextLanes: handoff?.contextLanes || null,
+      qaStatus: 'pending',
+      qaCoverageRequired: true,
+      qaBlocker: false,
+      releaseBlocker: false,
+      dependencyMap: null,
+      staffingRequest: null,
+      qaRequest: null,
+      hireRequest: null,
+      hireRequestQueue: null,
+      qaQueue: null,
+      archivalSummary: null,
+      contextUpdatePacket: null,
       plannerToContext,
       taskCacheSource: taskCache.source,
+      overrideLayer,
+      planningMode,
     };
   };
 
@@ -1148,16 +2050,22 @@ async function runPlannerWorker(options = {}) {
           definition,
           taskId,
           taskCache,
+          overrideLayer,
+          planningMode,
+          talentAcquisition,
         })
       : await callOllamaGenerate({
           prompt: buildPlannerPrompt({
             promptTemplate: config.prompt,
             handoff,
-            anchorBundle: anchorBundle || {},
-            board: workspace?.studio?.teamBoard || { cards: [] },
-            rootPath,
-            taskCache,
-          }),
+          anchorBundle: anchorBundle || {},
+          board: workspace?.studio?.teamBoard || { cards: [] },
+          rootPath,
+          taskCache,
+          contextLanes: handoff?.contextLanes || null,
+          overrideLayer,
+          talentAcquisition,
+        }),
           model: resolvedModel,
           host: resolvedHost,
           timeoutMs: resolvedTimeoutMs,
@@ -1165,15 +2073,96 @@ async function runPlannerWorker(options = {}) {
         });
     const rawPayload = generated?.json ?? generated;
     const rawResponse = generated?.text || (typeof generated === 'string' ? generated : JSON.stringify(rawPayload));
-    const payload = normalizePlannerPayload(rawPayload, handoff);
+    const payload = normalizePlannerPayload(rawPayload, handoff, overrideLayer, {
+      talentAcquisition,
+      workspace,
+    });
     if (payload.needsContextRetry) {
       return createBlockedResult(payload.retryReason || 'Planner requested a tighter context packet before decomposing work.', 'blocked', rawResponse);
     }
-    if (!payload.cards.length && !payload.brainProposals.length) {
-      return createBlockedResult('Planner produced no cards or review proposals for this handoff.', 'blocked', rawResponse);
+    if (!payload.planBundle.items.length && !payload.taskBundle.tasks.length && !payload.brainProposals.length) {
+      return createBlockedResult('Planner produced no structured plan, tasks, or review proposals for this handoff.', 'blocked', rawResponse);
     }
     const proposalArtifactRefs = writeProposalArtifacts(rootPath, runId, payload.brainProposals);
     const completedAt = nowIso();
+    const hireRequestQueue = payload.hireRequest
+      ? upsertTaHireRequestQueueEntry(rootPath, {
+          ...payload.hireRequest,
+          plannerRunId: runId,
+          intentId: payload.planBundle?.intentId || payload.taskBundle?.intentId || handoff?.intentContract?.intentId || handoff?.intentId || null,
+          planBundleId: payload.planBundle?.planId || null,
+          taskBundleId: payload.taskBundle?.taskBundleId || null,
+          staffingRequestId: payload.staffingRequest?.staffingRequestId || null,
+          qaRequestId: payload.qaRequest?.qaRequestId || null,
+          provenance: {
+            ...(payload.hireRequest.provenance && typeof payload.hireRequest.provenance === 'object' ? payload.hireRequest.provenance : {}),  
+            sourceHandoffId: handoff?.id || payload.hireRequest?.provenance?.sourceHandoffId || null,
+            sourceIntentId: payload.planBundle?.intentId || payload.taskBundle?.intentId || handoff?.intentContract?.intentId || handoff?.intentId || null,
+            sourceType: handoff?.sourceType || payload.hireRequest?.provenance?.sourceType || null,
+            sourceRef: handoff?.sourceRef || payload.hireRequest?.provenance?.sourceRef || null,
+            anchorRefs: uniqueStrings([
+              ...(Array.isArray(payload.hireRequest?.provenance?.anchorRefs) ? payload.hireRequest.provenance.anchorRefs : []),
+              ...(Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : []),
+            ]),
+          },
+        })
+      : null;
+    const qaQueue = upsertPlannerQaQueueEntry(rootPath, {
+      queueKey: payload.qaRequest?.qaRequestId || payload.planBundle?.planId || runId,
+      plannerRunId: runId,
+      planBundleId: payload.planBundle?.planId || null,
+      qaRequestId: payload.qaRequest?.qaRequestId || null,
+      intentId: payload.planBundle?.intentId || payload.taskBundle?.intentId || handoff?.intentContract?.intentId || handoff?.intentId || null,
+      planIds: Array.isArray(payload.planBundle?.items) ? payload.planBundle.items.map((item) => item.planId).filter(Boolean) : [],
+      taskIds: Array.isArray(payload.taskBundle?.tasks) ? payload.taskBundle.tasks.map((task) => task.taskId).filter(Boolean) : [],
+      targetDesk: payload.qaRequest?.targetDesk || payload.staffingRequest?.targetDesk || 'qa-lead',
+      targetRole: payload.qaRequest?.targetRole || payload.staffingRequest?.targetRole || 'QA Lead',
+      requestedBy: payload.qaRequest?.createdBy || payload.staffingRequest?.createdBy || 'planner',
+      summary: payload.qaRequest?.summary || 'Planner QA request',
+      qaStatus: payload.qaStatus || 'pending',
+      qaCoverageRequired: payload.qaCoverageRequired !== false,
+      qaBlocker: false,
+      releaseBlocker: false,
+      provenance: {
+        sourceHandoffId: handoff?.id || null,
+        sourceIntentId: handoff?.intentContract?.intentId || handoff?.intentId || null,
+        sourceType: handoff?.sourceType || null,
+        sourceRef: handoff?.sourceRef || null,
+        anchorRefs: uniqueStrings(handoff?.anchorRefs || []),
+      },
+      findings: [],
+      status: 'pending',
+    });
+    const outtrayQueue = upsertPlannerOuttrayEntry(rootPath, {
+      ...(payload.outtray && typeof payload.outtray === 'object' ? payload.outtray : {}),
+      queueKey: payload.outtray?.queueKey || payload.planBundle?.planId || runId,
+      plannerRunId: runId,
+      planBundleId: payload.planBundle?.planId || null,
+      taskBundleId: payload.taskBundle?.taskBundleId || null,
+      intentId: payload.planBundle?.intentId || payload.taskBundle?.intentId || handoff?.intentContract?.intentId || handoff?.intentId || null,
+      summary: payload.outtray?.summary || payload.archivalSummary?.summary || payload.summary || 'Planner handoff deposited for downstream collection.',
+      provenance: {
+        ...(payload.outtray?.provenance && typeof payload.outtray.provenance === 'object' ? payload.outtray.provenance : {}),
+        sourceHandoffId: handoff?.id || payload.outtray?.provenance?.sourceHandoffId || null,
+        sourceIntentId: payload.planBundle?.intentId || payload.taskBundle?.intentId || handoff?.intentContract?.intentId || handoff?.intentId || null,
+        sourceType: handoff?.sourceType || payload.outtray?.provenance?.sourceType || null,
+        sourceRef: handoff?.sourceRef || payload.outtray?.provenance?.sourceRef || null,
+        anchorRefs: uniqueStrings([
+          ...(Array.isArray(payload.outtray?.provenance?.anchorRefs) ? payload.outtray.provenance.anchorRefs : []),
+          ...(Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : []),
+        ]),
+      },
+      artifactRefs: [
+        ...proposalArtifactRefs,
+        path.join('data', 'spatial', 'agent-runs', 'planner', `${runId}.json`).replace(/\\/g, '/'),
+      ],
+      items: Array.isArray(payload.outtray?.items) ? payload.outtray.items : undefined,
+      status: payload.outtray?.status || 'deposited',
+      handoffState: payload.outtray?.handoffState || 'deposited',
+      createdBy: payload.outtray?.createdBy || 'planner',
+      createdAt: payload.outtray?.createdAt || completedAt,
+      updatedAt: completedAt,
+    });
     const runRecord = persistPlannerRun(rootPath, createPlannerRunRecord({
       runId,
       handoff,
@@ -1182,6 +2171,20 @@ async function runPlannerWorker(options = {}) {
       model: resolvedModel,
       outcome: 'completed',
       summary: payload.summary,
+      planBundle: payload.planBundle,
+      taskBundle: payload.taskBundle,
+      contextLanes: payload.contextLanes,
+      overrideLayer: payload.overrideLayer || overrideLayer,
+      planningMode: payload.planningMode || planningMode,
+      dependencyMap: payload.dependencyMap,
+      staffingRequest: payload.staffingRequest,
+      qaRequest: payload.qaRequest,
+      hireRequest: payload.hireRequest,
+      hireRequestQueue: hireRequestQueue ? summarizeTaHireRequestQueue(hireRequestQueue.queue) : null,
+      outtray: summarizePlannerOuttray(outtrayQueue.queue),
+      qaQueue,
+      archivalSummary: payload.archivalSummary,
+      contextUpdatePacket: payload.contextUpdatePacket,
       cards: payload.cards,
       brainProposals: payload.brainProposals,
       proposalArtifactRefs,
@@ -1199,6 +2202,24 @@ async function runPlannerWorker(options = {}) {
       run: runRecord,
       proposalArtifactRefs,
       cards: payload.cards,
+      planBundle: payload.planBundle,
+      taskBundle: payload.taskBundle,
+      contextLanes: payload.contextLanes,
+      overrideLayer: payload.overrideLayer || overrideLayer,
+      planningMode: payload.planningMode || planningMode,
+      qaStatus: payload.qaStatus,
+      qaCoverageRequired: payload.qaCoverageRequired,
+      qaBlocker: payload.qaBlocker,
+      releaseBlocker: payload.releaseBlocker,
+      dependencyMap: payload.dependencyMap,
+      staffingRequest: payload.staffingRequest,
+      qaRequest: payload.qaRequest,
+      hireRequest: payload.hireRequest,
+      hireRequestQueue: hireRequestQueue ? summarizeTaHireRequestQueue(hireRequestQueue.queue) : null,
+      outtray: summarizePlannerOuttray(outtrayQueue.queue),
+      qaQueue,
+      archivalSummary: payload.archivalSummary,
+      contextUpdatePacket: payload.contextUpdatePacket,
       plannerToContext: null,
     };
   } catch (error) {
@@ -1371,11 +2392,11 @@ async function runExecutorWorker(options = {}) {
             rootPath,
             taskCache,
           }),
-          model: resolvedModel,
-          host: resolvedHost,
-          timeoutMs: resolvedTimeoutMs,
-          fetchImpl,
-        });
+      model: resolvedModel,
+      host: resolvedHost,
+      timeoutMs: resolvedTimeoutMs,
+      fetchImpl,
+    });
     const rawPayload = generated?.json ?? generated;
     rawResponse = generated?.text || (typeof generated === 'string' ? generated : JSON.stringify(rawPayload));
     report = normalizeExecutorAssessment(rawPayload, fallbackReport);
@@ -1418,7 +2439,10 @@ async function runExecutorWorker(options = {}) {
 }
 
 function buildContextWorkspaceSection(workspace = {}) {
-  const latestIntent = workspace?.intentState?.contextReport || workspace?.intentState?.latest || null;
+  const registry = workspace?.intentState?.registry || null;
+  const latestIntent = registry?.currentIntentId
+    ? registry.byId?.[registry.currentIntentId] || null
+    : null;
   const boardSummary = workspace?.studio?.teamBoard?.summary || {};
   return [
     `Active page id: ${workspace?.activePageId || 'none'}`,
@@ -1738,6 +2762,10 @@ function mergeContextPacketIntoReport(report, {
   plannerFeedback = null,
   sourceNodeId = null,
   source = 'context-intake',
+  sourceType = 'context-intake',
+  sourceRef = null,
+  requestedBy = 'context-manager',
+  priority = null,
   runId = null,
   backend,
   model,
@@ -1777,6 +2805,54 @@ function mergeContextPacketIntoReport(report, {
       anchorRefs: Array.isArray(plannerFeedback.anchorRefs) ? plannerFeedback.anchorRefs.filter(Boolean) : [],
     } : null,
   };
+  const intentContract = buildCanonicalIntentContract({
+    report: {
+      ...report,
+      summary,
+      goal,
+      requestedOutcomes,
+      tasks: requestedOutcomes,
+      targets,
+      constraints,
+      urgency,
+      requestType,
+      nodeId: sourceNodeId || report.nodeId || null,
+      source: sourceType,
+      requestedBy,
+      priority: priority || urgency || 'normal',
+      anchorRefs: Array.isArray(report.anchorRefs) ? report.anchorRefs : [],
+    },
+    packet: {
+      ...packet,
+      summary,
+      goal,
+      requestedOutcomes,
+      tasks: requestedOutcomes,
+      targets,
+      constraints,
+      urgency,
+      requestType,
+      sourceType,
+      sourceRef: sourceRef || sourceNodeId || report.nodeId || null,
+      requestedBy,
+      priority: priority || urgency || 'normal',
+      anchorRefs: Array.isArray(report.anchorRefs) ? report.anchorRefs : [],
+    },
+    sourceType,
+    sourceRef: sourceRef || sourceNodeId || report.nodeId || null,
+    requestedBy,
+    priority: priority || urgency || 'normal',
+    timestamp: report.createdAt || nowIso(),
+    provenance: {
+      anchors: Array.isArray(report.provenance?.anchors) ? report.provenance.anchors : [],
+      managerSummary: report.projectContext?.managerSummary || null,
+      sourceNodeId: sourceNodeId || report.nodeId || null,
+      source: source || sourceType,
+      usedFallback,
+      runId,
+    },
+    intentId: report.intentId || packet.intentId || null,
+  });
   return {
     ...report,
     summary,
@@ -1799,6 +2875,8 @@ function mergeContextPacketIntoReport(report, {
       tasks: requestedOutcomes,
       plannerFeedbackAction: plannerFeedback?.action || null,
     },
+    intentContract,
+    canonicalIntent: intentContract.canonicalIntent,
     extractedIntent,
     worker: {
       id: 'context-manager',
@@ -1873,6 +2951,9 @@ function createContextManagerRunRecord({
     extractedIntent,
     report,
     handoffId: handoff?.id || null,
+    intentId: report?.intentContract?.intentId || handoff?.intentContract?.intentId || report?.intentId || handoff?.intentId || null,
+    intentContract: report?.intentContract || handoff?.intentContract || null,
+    canonicalIntent: report?.canonicalIntent || handoff?.intentContract?.canonicalIntent || null,
     handoff,
     usedFallback: Boolean(usedFallback),
     llmStatus: outcome === 'completed' ? 'live' : classifyLlmFailure(reason, usedFallback),
@@ -1938,11 +3019,19 @@ async function runContextManagerWorker(options = {}) {
   const graphBundle = normalizeGraphBundle(workspace);
   const analyze = typeof fallbackAnalyze === 'function'
     ? fallbackAnalyze
-    : ((sourceText, currentWorkspace) => analyzeSpatialIntent(sourceText, buildIntentProjectContext({
+    : ((sourceText, currentWorkspace, analysisMeta = {}) => analyzeSpatialIntent(sourceText, buildIntentProjectContext({
         workspace: currentWorkspace,
         rootPath,
-      })));
+      }), analysisMeta));
   const startedAt = nowIso();
+  const intentMeta = {
+    sourceType: String(options.sourceType || source || 'context-intake').trim() || 'context-intake',
+    sourceRef: String(options.sourceRef || sourceNodeId || '').trim() || null,
+    requestedBy: String(options.requestedBy || 'context-manager').trim() || 'context-manager',
+    priority: String(options.priority || '').trim() || null,
+    intentId: String(options.intentId || '').trim() || null,
+    timestamp: options.timestamp || null,
+  };
 
   let usedFallback = false;
   let fallbackReason = '';
@@ -2035,7 +3124,7 @@ async function runContextManagerWorker(options = {}) {
 
   try {
     const analysisSource = buildContextAnalysisSource(rawText, packet, activePlannerFeedback);
-    const baseReport = analyze(analysisSource, workspace);
+    const baseReport = analyze(analysisSource, workspace, intentMeta);
     let extractedIntent = null;
     let extractedIntentUsedFallback = false;
     let extractedIntentReason = '';
@@ -2140,6 +3229,10 @@ async function runContextManagerWorker(options = {}) {
       plannerFeedback: activePlannerFeedback,
       sourceNodeId,
       source,
+      sourceType: intentMeta.sourceType,
+      sourceRef: intentMeta.sourceRef,
+      requestedBy: intentMeta.requestedBy,
+      priority: intentMeta.priority,
       runId,
       backend: resolvedBackend,
       model: resolvedModel,
@@ -2253,6 +3346,8 @@ module.exports = {
   executorRunFilePath,
   executorRunsDir,
   buildExecutorPrompt,
+  buildCanonicalIntentContract,
+  buildPlannerArtifactContract,
   buildPlannerPrompt,
   getAgentWorkerConfig,
   listContextManagerRuns,

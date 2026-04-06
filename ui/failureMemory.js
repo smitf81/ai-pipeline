@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { writeJsonIfChanged, writeTextIfChanged } = require('./changeHygiene');
 const {
   buildKnownFixCandidateEntryFromFailureRecord,
   readKnownFixCandidates,
@@ -99,8 +100,7 @@ function readJson(filePath, fallback = null) {
 }
 
 function writeJson(filePath, payload) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  writeJsonIfChanged(filePath, payload);
 }
 
 function normalizeFailureKey(rawText = '', context = {}) {
@@ -243,7 +243,7 @@ function writeFailureHistory(rootPath, history = {}) {
     updated_at: nowIso(),
   });
   writeJson(failureHistoryJsonPath(rootPath), normalized);
-  fs.writeFileSync(failureHistoryMarkdownPath(rootPath), renderFailureHistoryMarkdown(normalized), 'utf8');
+  writeTextIfChanged(failureHistoryMarkdownPath(rootPath), renderFailureHistoryMarkdown(normalized));
   return normalized;
 }
 

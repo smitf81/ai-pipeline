@@ -63,6 +63,20 @@ const {
   writeStructuredQAReport,
 } = require('./qaRunner');
 const {
+  readPlannerQaQueue,
+  summarizePlannerQaQueue,
+} = require('./plannerQaQueue');
+const {
+  collectPlannerOuttrayItem,
+  readPlannerOuttray,
+  summarizePlannerOuttray,
+} = require('./plannerOuttray');
+const {
+  markTaHireRequestFulfilled,
+  readTaHireRequestQueue,
+  summarizeTaHireRequestQueue,
+} = require('./taHireRequests');
+const {
   buildQATestRegistry,
   summarizeQATestRegistry,
 } = require('../qa/testRegistry');
@@ -71,8 +85,12 @@ const {
   summarizeQAAuditTrail,
 } = require('../qa/qaAuditTrail');
 const {
+  buildExternalQaProbeCheckPayload,
+} = require('./externalQaProbe');
+const {
   CORE_DESK_AGENT_DEFAULTS,
   createDefaultStudioLayoutSchema,
+  buildPlannerIdentitySnapshot,
   normalizeStudioLayoutSchema,
   buildCanonicalPlannerCoverageTruth,
   buildCanonicalQALeadCoverageTruth,
@@ -121,6 +139,14 @@ const {
   renderAgentAttributionBlock,
 } = require('./agentAttribution');
 const {
+  appendCtoOverrideLedgerEntry,
+  createDefaultCtoOverrideLedger,
+  deriveCtoOverrideLayer,
+  normalizeCtoOverrideEntry,
+  normalizeCtoOverrideLedger,
+  summarizeCtoOverrideLedger,
+} = require('./ctoOverrides');
+const {
   buildAgentAuditRecord,
   writeAgentAuditArtifacts,
 } = require('./agentAudit');
@@ -128,6 +154,9 @@ const {
   buildConstrainedAutoFixBundle,
   runConstrainedAutoFixExecutor,
 } = require('./constrainedAutoFix');
+const {
+  writeJsonIfChanged,
+} = require('./changeHygiene');
 
 const ROLE_TAXONOMY_PATH = path.join(__dirname, 'public', 'spatial', 'roleTaxonomy.mjs');
 const RND_EXPERIMENTS_FILE = path.join(__dirname, '..', 'data', 'spatial', 'rnd-experiments.json');
@@ -387,6 +416,12 @@ const SPATIAL_STUDIO_STATE_FILE = path.join(ROOT, 'data', 'spatial', 'studio-sta
 const SPATIAL_ARCHITECTURE_MEMORY_FILE = path.join(ROOT, 'data', 'spatial', 'architecture-memory.json');
 const TA_DEPARTMENT_FILE = path.join(ROOT, 'data', 'spatial', 'ta-department.json');
 const CTO_DIAGNOSTICS_FILE = path.join(ROOT, 'data', 'spatial', 'cto-diagnostics.json');
+const SPATIAL_WORKSPACE_VOLATILE_KEYS = ['updatedAt', 'updated_at', 'lastEvaluatedAt', 'lastTickAt', 'freshAt', 'generatedAt', 'createdAt', 'timestamp', 'observedAt'];
+const SPATIAL_PAGE_VOLATILE_KEYS = ['updatedAt', 'freshAt', 'timestamp'];
+const SPATIAL_INTENT_VOLATILE_KEYS = ['updatedAt', 'createdAt', 'generatedAt', 'timestamp'];
+const SPATIAL_STUDIO_VOLATILE_KEYS = ['updatedAt', 'freshAt', 'lastEvaluatedAt', 'timestamp'];
+const SPATIAL_ARCHIVE_VOLATILE_KEYS = ['updatedAt', 'lastEvaluatedAt', 'timestamp'];
+const SPATIAL_DIAGNOSTIC_VOLATILE_KEYS = ['timestamp', 'updatedAt', 'createdAt'];
 const SERVER_STARTED_AT = nowIso();
 const DOMAIN_KEY = DEFAULT_DOMAIN_KEY;
 const dashboardFiles = listCanonicalAnchorPaths(DOMAIN_KEY);
@@ -515,7 +550,7 @@ function ensureSpatialStorage() {
     writeJson(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace());
   }
   if (!fs.existsSync(SPATIAL_PAGES_FILE)) writeJson(SPATIAL_PAGES_FILE, { pages: [], activePageId: null });
-  if (!fs.existsSync(SPATIAL_INTENT_STATE_FILE)) writeJson(SPATIAL_INTENT_STATE_FILE, { intentState: { currentIntentId: null, summary: '', status: 'idle' } });
+  if (!fs.existsSync(SPATIAL_INTENT_STATE_FILE)) writeJson(SPATIAL_INTENT_STATE_FILE, createEmptyIntentRegistry());
   if (!fs.existsSync(SPATIAL_STUDIO_STATE_FILE)) {
     writeJson(SPATIAL_STUDIO_STATE_FILE, normalizeStoredStudioState({
       handoffs: { contextToPlanner: null, history: [] },
@@ -533,8 +568,8 @@ function ensureSpatialStorage() {
   }
 }
 
-function writeJson(file, payload) {
-  fs.writeFileSync(file, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+function writeJson(file, payload, options = {}) {
+  return writeJsonIfChanged(file, payload, options);
 }
 
 function appendArchitectureHistory(entry) {
@@ -2192,6 +2227,9 @@ async function buildCtoGovernanceContext(workspace = null) {
   const taPayload = await buildTaDepartmentPayload(taState, {
     workspace: runtimeWorkspace,
   });
+  const ctoOverrideLedger = runtimeWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger();
+  const ctoOverrideSummary = summarizeCtoOverrideLedger(ctoOverrideLedger);
+  const ctoOverrideLayer = deriveCtoOverrideLayer(ctoOverrideLedger);
   const desks = CTO_DESK_IDS.map((deskId) => {
     const payload = buildDeskPropertiesPayload(runtimeWorkspace, deskId);
     const taCoverage = Array.isArray(taPayload.coverage)
@@ -2253,6 +2291,7 @@ async function buildCtoGovernanceContext(workspace = null) {
       urgency: taPayload.department?.urgency || 'low',
       plannerCoverage: taPayload.plannerCoverage || null,
       qaLeadCoverage: taPayload.qaLeadCoverage || null,
+      hireRequestsSummary: taPayload.hireRequestsSummary || null,
       rosterCount: Array.isArray(taPayload.roster) ? taPayload.roster.length : 0,
       roster: Array.isArray(taPayload.roster)
         ? taPayload.roster.map((entry) => ({
@@ -2299,6 +2338,10 @@ async function buildCtoGovernanceContext(workspace = null) {
             blocker: Boolean(entry.blocker),
           }))
         : [],
+    },
+    cto: {
+      overrides: ctoOverrideSummary,
+      overrideLayer: ctoOverrideLayer,
     },
     generatedAt: nowIso(),
   };
@@ -4211,28 +4254,212 @@ function readJsonSafe(filePath, fallback = null) {
 }
 
 function normalizeStoredIntentState(rawIntentState = {}) {
-  const intentState = rawIntentState?.intentState && typeof rawIntentState.intentState === 'object'
+  const source = rawIntentState?.intentState && typeof rawIntentState.intentState === 'object'
     ? rawIntentState.intentState
     : rawIntentState || {};
-  const currentIntentId = intentState.currentIntentId || intentState.latest?.id || intentState.contextReport?.id || null;
-  const summary = String(intentState.summary || intentState.latest?.summary || intentState.contextReport?.summary || '').trim();
-  const status = String(intentState.status || intentState.latest?.status || intentState.contextReport?.status || 'idle').trim() || 'idle';
-  const derived = currentIntentId || summary || status ? {
-    id: currentIntentId || 'intent-current',
-    currentIntentId,
-    summary,
-    status,
-    createdAt: intentState.createdAt || rawIntentState?.createdAt || null,
-  } : null;
+  const registrySource = source.registry && typeof source.registry === 'object' ? source.registry : source;
+  const legacyRecords = [];
+  if (source.latest) legacyRecords.push(source.latest);
+  if (source.contextReport && source.contextReport !== source.latest) legacyRecords.push(source.contextReport);
+  if (Array.isArray(source.reports)) legacyRecords.push(...source.reports);
+  const registryRecords = Array.isArray(registrySource.records) ? registrySource.records : [];
+  const registryById = registrySource.byId && typeof registrySource.byId === 'object' ? registrySource.byId : {};
+  const normalizedRecords = [];
+  const normalizedById = {};
+  const pushRecord = (entry) => {
+    const record = normalizeSpatialIntentRecord(entry);
+    if (!record || !record.id || normalizedById[record.id]) return;
+    normalizedById[record.id] = record;
+    normalizedRecords.push(record);
+  };
+  registryRecords.forEach(pushRecord);
+  Object.values(registryById).forEach(pushRecord);
+  legacyRecords.forEach(pushRecord);
+  const currentIntentId = String(
+    registrySource.currentIntentId
+    || source.currentIntentId
+    || registrySource.latestIntentId
+    || source.latestIntentId
+    || normalizedRecords[0]?.id
+    || '',
+  ).trim() || null;
+  const currentIntent = currentIntentId ? normalizedById[currentIntentId] || null : null;
+  const summary = String(
+    source.summary
+    || registrySource.summary
+    || currentIntent?.semanticMeaning?.summary
+    || currentIntent?.statement
+    || currentIntent?.goal
+    || '',
+  ).trim();
+  const status = String(
+    source.status
+    || registrySource.status
+    || (currentIntent?.missingFields?.length ? 'degraded' : (currentIntent ? 'ready' : 'idle')),
+  ).trim() || 'idle';
   return {
-    latest: intentState.latest || derived,
-    contextReport: intentState.contextReport || derived,
-    byNode: intentState.byNode || {},
-    reports: Array.isArray(intentState.reports) ? intentState.reports : [],
+    registry: {
+      currentIntentId,
+      latestIntentId: currentIntentId,
+      byId: normalizedById,
+      records: normalizedRecords,
+    },
     currentIntentId,
     summary,
     status,
   };
+}
+
+function normalizeSpatialIntentRecord(rawIntent = {}) {
+  const source = rawIntent?.spatialIntent && typeof rawIntent.spatialIntent === 'object'
+    ? rawIntent.spatialIntent
+    : rawIntent?.canonicalIntent && typeof rawIntent.canonicalIntent === 'object'
+      ? rawIntent.canonicalIntent
+      : rawIntent?.intentContract?.canonicalIntent && typeof rawIntent.intentContract.canonicalIntent === 'object'
+        ? rawIntent.intentContract.canonicalIntent
+        : rawIntent || {};
+  const sourceObject = source.source && typeof source.source === 'object'
+    ? source.source
+    : {
+        type: String(source.sourceType || rawIntent?.sourceType || rawIntent?.source?.type || 'sanctioned-intent-parser').trim() || 'sanctioned-intent-parser',
+        ref: String(source.sourceRef || rawIntent?.sourceRef || rawIntent?.source?.ref || rawIntent?.nodeId || 'unknown').trim() || 'unknown',
+        requestedBy: String(source.requestedBy || rawIntent?.requestedBy || rawIntent?.source?.requestedBy || 'context-manager').trim() || 'context-manager',
+      };
+  const semanticMeaning = source.semanticMeaning && typeof source.semanticMeaning === 'object'
+    ? source.semanticMeaning
+    : {
+        summary: String(source.summary || rawIntent?.summary || '').trim(),
+        statement: String(source.statement || rawIntent?.statement || rawIntent?.summary || '').trim(),
+        goal: String(source.goal || rawIntent?.goal || rawIntent?.statement || rawIntent?.summary || '').trim(),
+        requestType: String(source.requestType || rawIntent?.requestType || 'context_request').trim() || 'context_request',
+        requestedOutcomes: Array.isArray(source.requestedOutcomes) ? source.requestedOutcomes : (Array.isArray(rawIntent?.requestedOutcomes) ? rawIntent.requestedOutcomes : []),
+        targets: Array.isArray(source.targets) ? source.targets : (Array.isArray(rawIntent?.targets) ? rawIntent.targets : []),
+        constraints: Array.isArray(source.constraints) ? source.constraints : (Array.isArray(rawIntent?.constraints) ? rawIntent.constraints : []),
+        urgency: String(source.urgency || rawIntent?.priority || 'normal').trim() || 'normal',
+        labels: Array.isArray(source.labels) ? source.labels : (Array.isArray(rawIntent?.classification?.labels) ? rawIntent.classification.labels : []),
+      };
+  const geometry = source.geometry && typeof source.geometry === 'object'
+    ? source.geometry
+    : {
+        kind: String(rawIntent?.geometry?.kind || rawIntent?.geometry?.type || 'unknown').trim() || 'unknown',
+        region: rawIntent?.geometry?.region || rawIntent?.geometry?.bounds || rawIntent?.region || rawIntent?.bounds || null,
+        stroke: rawIntent?.geometry?.stroke || rawIntent?.geometry?.path || rawIntent?.stroke || rawIntent?.path || null,
+      };
+  const confidence = Number.isFinite(Number(source.confidence))
+    ? Number(source.confidence)
+    : Number.isFinite(Number(rawIntent?.confidence))
+      ? Number(rawIntent.confidence)
+      : Number.isFinite(Number(rawIntent?.truth?.readiness?.plannerUsefulness))
+        ? Number(rawIntent.truth.readiness.plannerUsefulness)
+        : 0;
+  const createdAt = String(source.createdAt || rawIntent?.createdAt || rawIntent?.timestamp || nowIso()).trim() || nowIso();
+  const id = String(source.id || rawIntent?.id || rawIntent?.intentId || `intent_${sourceObject.type}_${sourceObject.ref}_${createdAt}`).trim() || `intent_${sourceObject.type}_${sourceObject.ref}_${createdAt}`;
+  const record = {
+    id,
+    source: sourceObject,
+    geometry: {
+      kind: String(geometry.kind || geometry.type || 'unknown').trim().toLowerCase() || 'unknown',
+      region: geometry.region || geometry.bounds || null,
+      stroke: geometry.stroke || geometry.path || null,
+    },
+    semanticMeaning: {
+      summary: String(semanticMeaning.summary || semanticMeaning.statement || semanticMeaning.goal || '').trim(),
+      statement: String(semanticMeaning.statement || semanticMeaning.goal || semanticMeaning.summary || '').trim(),
+      goal: String(semanticMeaning.goal || semanticMeaning.statement || semanticMeaning.summary || '').trim(),
+      requestType: String(semanticMeaning.requestType || 'context_request').trim() || 'context_request',
+      requestedOutcomes: Array.isArray(semanticMeaning.requestedOutcomes) ? uniqueStrings(semanticMeaning.requestedOutcomes) : [],
+      targets: Array.isArray(semanticMeaning.targets) ? uniqueStrings(semanticMeaning.targets) : [],
+      constraints: Array.isArray(semanticMeaning.constraints) ? uniqueStrings(semanticMeaning.constraints) : [],
+      urgency: String(semanticMeaning.urgency || 'normal').trim() || 'normal',
+      labels: Array.isArray(semanticMeaning.labels) ? uniqueStrings(semanticMeaning.labels) : [],
+    },
+    confidence: Number(confidence.toFixed(2)),
+    createdAt,
+    provenance: {
+      ...(source.provenance || rawIntent?.provenance || {}),
+      sourceType: sourceObject.type,
+      sourceRef: sourceObject.ref,
+      requestedBy: sourceObject.requestedBy,
+    },
+  };
+  const missingFields = [];
+  if (!record.geometry || record.geometry.kind === 'unknown') missingFields.push('geometry');
+  if (!String(record.semanticMeaning.summary || record.semanticMeaning.statement || record.semanticMeaning.goal || '').trim()) {
+    missingFields.push('semanticMeaning');
+  }
+  if (!Number.isFinite(record.confidence)) missingFields.push('confidence');
+  record.missingFields = missingFields;
+  record.status = missingFields.length ? 'degraded' : 'canonical';
+  record.intentId = record.id;
+  record.sourceType = record.source.type;
+  record.sourceRef = record.source.ref;
+  record.nodeId = String(source.provenance?.sourceNodeId || rawIntent?.nodeId || record.source.ref || '').trim() || null;
+  record.requestedBy = record.source.requestedBy;
+  record.timestamp = record.createdAt;
+  record.priority = record.semanticMeaning.urgency;
+  record.summary = record.semanticMeaning.summary;
+  record.statement = record.semanticMeaning.statement;
+  record.goal = record.semanticMeaning.goal;
+  record.requestType = record.semanticMeaning.requestType;
+  record.requestedOutcomes = record.semanticMeaning.requestedOutcomes;
+  record.tasks = record.semanticMeaning.requestedOutcomes;
+  record.targets = record.semanticMeaning.targets;
+  record.constraints = record.semanticMeaning.constraints;
+  record.projectContext = {
+    currentFocus: record.nodeId || record.source.ref || null,
+    matchedTerms: record.semanticMeaning.labels,
+    blockers: record.semanticMeaning.constraints,
+    anchorRefs: Array.isArray(record.provenance?.anchorRefs) ? record.provenance.anchorRefs : [],
+  };
+  return record;
+}
+
+function createEmptyIntentRegistry() {
+  return {
+    registry: {
+      currentIntentId: null,
+      latestIntentId: null,
+      byId: {},
+      records: [],
+    },
+    currentIntentId: null,
+    summary: '',
+    status: 'idle',
+  };
+}
+
+function upsertSpatialIntentRegistry(intentState = {}, record = null) {
+  const baseState = normalizeStoredIntentState(intentState || createEmptyIntentRegistry());
+  const nextRegistry = {
+    currentIntentId: baseState.currentIntentId || null,
+    latestIntentId: baseState.registry?.latestIntentId || baseState.currentIntentId || null,
+    byId: {
+      ...(baseState.registry?.byId || {}),
+    },
+    records: Array.isArray(baseState.registry?.records) ? [...baseState.registry.records] : [],
+  };
+  if (record) {
+    const normalizedRecord = normalizeSpatialIntentRecord(record);
+    if (normalizedRecord?.id) {
+      nextRegistry.byId[normalizedRecord.id] = normalizedRecord;
+      nextRegistry.records = [normalizedRecord, ...nextRegistry.records.filter((entry) => entry.id !== normalizedRecord.id)];
+      nextRegistry.currentIntentId = normalizedRecord.id;
+      nextRegistry.latestIntentId = normalizedRecord.id;
+    }
+  }
+  const currentIntent = nextRegistry.currentIntentId ? nextRegistry.byId[nextRegistry.currentIntentId] || null : null;
+  return {
+    registry: nextRegistry,
+    currentIntentId: nextRegistry.currentIntentId,
+    summary: String(currentIntent?.semanticMeaning?.summary || currentIntent?.statement || currentIntent?.goal || baseState.summary || '').trim(),
+    status: currentIntent?.status || baseState.status || 'idle',
+  };
+}
+
+function getCurrentSpatialIntent(intentState = {}) {
+  const registry = intentState?.registry && typeof intentState.registry === 'object' ? intentState.registry : null;
+  if (!registry?.currentIntentId) return null;
+  return registry.byId?.[registry.currentIntentId] || null;
 }
 
 function normalizeStoredStudioHandoffs(rawHandoffs = null) {
@@ -4510,6 +4737,7 @@ function computeTaCoverage(hiredCandidates = []) {
 async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState(), options = {}) {
   const normalizedState = normalizeTaDepartmentState(state);
   const staffingRules = await loadStaffingRulesModule();
+  const rootPath = options?.rootPath || ROOT;
   const canonicalLayout = normalizeStudioLayoutSchema(
     options?.workspace?.studio?.layout
     || options?.layout
@@ -4554,6 +4782,8 @@ async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()
     covered: plannerCoverage.covered,
     seat: plannerSeatBlocker,
   } : null;
+  const hireRequestQueue = readTaHireRequestQueue(rootPath);
+  const hireRequestsSummary = summarizeTaHireRequestQueue(hireRequestQueue);
   return {
     department: {
       name: 'Talent Acquisition',
@@ -4570,6 +4800,8 @@ async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState()
       lastGeneratedGap: normalizedState.lastGeneratedGap,
       blocker: plannerCoverageBlocker,
     },
+    hireRequestsSummary,
+    hireRequests: hireRequestQueue.entries,
     coverage,
     gapModel,
     plannerCoverage,
@@ -6354,7 +6586,7 @@ function defaultSpatialWorkspace() {
     annotations: [],
     architectureMemory: {},
     agentComments: {},
-    intentState: { latest: null, contextReport: null, byNode: {}, reports: [] },
+    intentState: createEmptyIntentRegistry(),
     pages: [],
     activePageId: null,
     rsg: createDefaultRsgState(),
@@ -6364,6 +6596,7 @@ function defaultSpatialWorkspace() {
       agentWorkers: createDefaultAgentWorkersState(),
       layout: createDefaultStudioLayoutSchema(),
       deskProperties: normalizeDeskPropertiesState({}),
+      ctoOverrides: createDefaultCtoOverrideLedger(),
       selfUpgrade: createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }),
     },
   };
@@ -6392,6 +6625,7 @@ function normalizeSpatialWorkspaceShape(workspace = {}) {
       agentWorkers: normalizeAgentWorkersState(baseWorkspace?.studio?.agentWorkers),
       layout: normalizeStudioLayoutSchema(baseWorkspace?.studio?.layout || {}),
       deskProperties: normalizeDeskPropertiesState(baseWorkspace),
+      ctoOverrides: normalizeCtoOverrideLedger(baseWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
       selfUpgrade: getSelfUpgradeState(baseWorkspace),
     },
   };
@@ -6433,7 +6667,9 @@ function persistSpatialWorkspace(nextWorkspace) {
     runs: getRunsSnapshot(),
   });
   persistCanonicalSlicesForWorkspace(advancedWorkspace);
-  writeJson(SPATIAL_WORKSPACE_FILE, advancedWorkspace);
+  writeJson(SPATIAL_WORKSPACE_FILE, advancedWorkspace, {
+    ignoreKeys: SPATIAL_WORKSPACE_VOLATILE_KEYS,
+  });
   return advancedWorkspace;
 }
 
@@ -6819,6 +7055,7 @@ function buildSpatialRuntimePayload(workspace, options = {}) {
   const anchorBundle = options.anchorBundle || getAnchorBundle();
   const drift = buildRuntimeDrift(anchorBundle, workspace);
   const qaState = options.qaState || buildQAStatePayload();
+  const plannerOuttray = readPlannerOuttray(ROOT);
   const canonicalSlices = getCanonicalSliceStore();
   return {
     ...buildRuntimePayload(workspace),
@@ -6836,12 +7073,18 @@ function buildSpatialRuntimePayload(workspace, options = {}) {
     },
     qaState,
     qaDebug: buildQADebugPayload(qaState),
+    plannerOuttray: summarizePlannerOuttray(plannerOuttray),
   };
 }
 
 async function refreshSpatialRuntime({ persist = true } = {}) {
   const workspace = refreshSpatialOrchestrator({ persist, workspace: await pumpAutomatedTeamBoardAsync() });
-  return buildSpatialRuntimePayload(workspace);
+  return {
+    source: '/api/spatial/runtime',
+    freshness: 'live',
+    generatedAt: nowIso(),
+    ...buildSpatialRuntimePayload(workspace),
+  };
 }
 
 function getLocalBaseUrl(req = null) {
@@ -6946,7 +7189,7 @@ function plannerCardSourceKey(pageId, title) {
 }
 
 function writeTargetsConfig(targets = {}) {
-  fs.writeFileSync(path.join(ROOT, CANONICAL_TARGETS_FILE), `${JSON.stringify(targets, null, 2)}\n`, 'utf8');
+  writeJson(path.join(ROOT, CANONICAL_TARGETS_FILE), targets);
 }
 
 function getPlannerHandoff(workspace, handoffId = null) {
@@ -6987,19 +7230,7 @@ function applyExecutorRuntimeState(workspace, { worker = null } = {}) {
 }
 
 function applyContextManagerRuntimeState(workspace, { worker = null, handoff = null, plannerToContext, report = null } = {}) {
-  const intentState = workspace?.intentState || { latest: null, contextReport: null, byNode: {}, reports: [] };
-  const nextIntentState = report ? {
-    ...intentState,
-    latest: report,
-    contextReport: report,
-    byNode: report.nodeId
-      ? {
-          ...(intentState.byNode || {}),
-          [report.nodeId]: report,
-        }
-      : { ...(intentState.byNode || {}) },
-    reports: [report, ...((intentState.reports || []).filter((entry) => entry.createdAt !== report.createdAt || entry.nodeId !== report.nodeId))].slice(0, 24),
-  } : intentState;
+  const nextIntentState = report ? upsertSpatialIntentRegistry(workspace?.intentState || createEmptyIntentRegistry(), report) : normalizeStoredIntentState(workspace?.intentState || createEmptyIntentRegistry());
   const handoffsPatch = {};
   if (handoff !== undefined) handoffsPatch.contextToPlanner = handoff;
   if (plannerToContext !== undefined) handoffsPatch.plannerToContext = plannerToContext;
@@ -7425,6 +7656,11 @@ function applyExecutorRunResult(workspace, card, result, { mode }) {
 
 async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffId = null } = {}) {
   const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  const taState = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+  const taPayload = await buildTaDepartmentPayload(taState, {
+    workspace: currentWorkspace,
+    rootPath: ROOT,
+  });
   const preflight = buildPreLlmGuardInput({
      requiredFiles: [
        'brain/emergence/project_brain.md',
@@ -7545,6 +7781,7 @@ async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffI
       anchorBundle: getAnchorBundle(),
       mode,
       runId,
+      talentAcquisition: taPayload,
     });
     const nextWorkspace = persistSpatialWorkspace(applyPlannerRunResult(readSpatialWorkspace(), handoff, result, { runId, mode }));
     appendArchitectureHistory({
@@ -7575,6 +7812,10 @@ async function maybeRunContextManagerWorker(workspace = null, {
   text,
   sourceNodeId = null,
   source = 'context-intake',
+  sourceType = 'context-intake',
+  sourceRef = null,
+  requestedBy = 'context-manager',
+  priority = null,
   mode = 'manual',
   plannerFeedback = null,
   backend = null,
@@ -7669,6 +7910,10 @@ async function maybeRunContextManagerWorker(workspace = null, {
       previousHandoff,
       plannerFeedback: activePlannerFeedback,
       mode,
+      sourceType,
+      sourceRef,
+      requestedBy,
+      priority,
       backend,
       model,
       host,
@@ -10159,6 +10404,39 @@ app.get('/api/runs', (req, res) => {
   }
 });
 
+app.get('/api/qa/external-probe-check', async (req, res) => {
+  try {
+    const qaState = buildQAStatePayload(ROOT);
+    const payload = await buildExternalQaProbeCheckPayload({
+      qaState,
+      probeUrl: 'http://127.0.0.1:5051/run_test',
+      timeoutMs: 1500,
+    });
+    res.status(payload.ok ? 200 : 503).json(payload);
+  } catch (error) {
+    const reason = String(error?.message || error);
+    res.status(500).json({
+      ok: false,
+      external_probe: null,
+      internal_truth: {
+        status: 'missing',
+        source: 'data/spatial/qa/structured/latest.json',
+        timestamp: null,
+        details: 'Structured QA report unavailable.',
+      },
+      comparison: {
+        status_match: false,
+        freshness_known: false,
+        notes: [reason],
+      },
+      error: {
+        kind: 'route_error',
+        message: reason,
+      },
+    });
+  }
+});
+
 app.post('/api/llm/test', async (req, res) => {
   const body = req.body || {};
   const prompt = String(body.prompt || '').trim();
@@ -10455,7 +10733,23 @@ app.get('/api/ta/department', async (req, res) => {
     const state = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
     res.json(await buildTaDepartmentPayload(state, {
       workspace: readSpatialWorkspace(),
+      rootPath: ROOT,
     }));
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/ta/hire-requests', (req, res) => {
+  try {
+    const queue = readTaHireRequestQueue(ROOT);
+    res.json({
+      source: '/api/ta/hire-requests',
+      freshness: 'derived',
+      generatedAt: nowIso(),
+      queue,
+      summary: summarizeTaHireRequestQueue(queue),
+    });
   } catch (error) {
     res.status(500).json({ error: String(error.message || error) });
   }
@@ -10466,6 +10760,7 @@ app.post('/api/ta/hire', async (req, res) => {
   try {
     const candidate = normalizeTaCandidateCard(body.candidate || body.profile || body);
     const deskId = String(body.deskId || candidate.hiredDeskId || candidate.primaryDeskTarget || '').trim();
+    const hireRequestId = String(body.hireRequestId || body.requestId || '').trim() || null;
     if (!deskId) throw new Error('deskId is required.');
     if (!candidate.deskTargets.includes(deskId)) {
       throw new Error(`deskId "${deskId}" is not one of the candidate desk targets.`);
@@ -10487,11 +10782,25 @@ app.post('/api/ta/hire', async (req, res) => {
       lastGeneratedGap: body.gapDescription || currentState.lastGeneratedGap || null,
     };
     writeJson(TA_DEPARTMENT_FILE, nextState);
+    if (hireRequestId) {
+      markTaHireRequestFulfilled(ROOT, {
+        hireRequestId,
+        resolvedBy: body.resolvedBy || 'ta',
+        fulfilledCandidate: hiredCandidate,
+        notes: [body.notes || body.gapDescription || `Hired ${hiredCandidate.name} for ${deskId}.`].filter(Boolean),
+        resolution: {
+          status: 'fulfilled',
+          summary: `TA fulfilled ${hireRequestId} by hiring ${hiredCandidate.name} for ${deskId}.`,
+          hiredDeskId: deskId,
+        },
+      });
+    }
     res.status(201).json({
       ok: true,
       hiredCandidate,
       department: await buildTaDepartmentPayload(nextState, {
         workspace: readSpatialWorkspace(),
+        rootPath: ROOT,
       }),
     });
   } catch (error) {
@@ -11123,8 +11432,9 @@ app.put('/api/spatial/workspace', async (req, res) => {
 app.put('/api/spatial/pages', (req, res) => {
   const body = req.body || {};
   (async () => {
-    await fs.promises.mkdir(path.dirname(SPATIAL_PAGES_FILE), { recursive: true });
-    await fs.promises.writeFile(SPATIAL_PAGES_FILE, JSON.stringify(body, null, 2));
+    writeJson(SPATIAL_PAGES_FILE, body, {
+      ignoreKeys: SPATIAL_PAGE_VOLATILE_KEYS,
+    });
     const nextWorkspace = persistWorkspacePatch((workspace) => ({
       ...workspace,
       pages: Array.isArray(body.pages) ? body.pages : workspace.pages,
@@ -11137,18 +11447,15 @@ app.put('/api/spatial/pages', (req, res) => {
 app.put('/api/spatial/intent-state', (req, res) => {
   const body = req.body || {};
   (async () => {
-    await fs.promises.mkdir(path.dirname(SPATIAL_INTENT_STATE_FILE), { recursive: true });
     const nextIntentState = normalizeStoredIntentState(body);
-    await fs.promises.writeFile(SPATIAL_INTENT_STATE_FILE, JSON.stringify({ intentState: {
-      currentIntentId: nextIntentState.currentIntentId || null,
-      summary: nextIntentState.summary || '',
-      status: nextIntentState.status || 'idle',
-    } }, null, 2));
+    writeJson(SPATIAL_INTENT_STATE_FILE, nextIntentState, {
+      ignoreKeys: SPATIAL_INTENT_VOLATILE_KEYS,
+    });
     const nextWorkspace = persistWorkspacePatch((workspace) => ({
       ...workspace,
       intentState: nextIntentState,
     }));
-    res.json({ ok: true, intentState: nextWorkspace.intentState });
+    res.json({ ok: true, intentState: nextWorkspace.intentState, currentIntent: getCurrentSpatialIntent(nextWorkspace.intentState) });
   })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
 });
 
@@ -11156,8 +11463,9 @@ app.put('/api/spatial/studio-state', (req, res) => {
   const body = req.body || {};
   const nextStudioState = normalizeStoredStudioState(body);
   (async () => {
-    await fs.promises.mkdir(path.dirname(SPATIAL_STUDIO_STATE_FILE), { recursive: true });
-    await fs.promises.writeFile(SPATIAL_STUDIO_STATE_FILE, JSON.stringify(nextStudioState, null, 2));
+    writeJson(SPATIAL_STUDIO_STATE_FILE, nextStudioState, {
+      ignoreKeys: SPATIAL_STUDIO_VOLATILE_KEYS,
+    });
     persistWorkspacePatch((workspace) => ({
       ...workspace,
       studio: {
@@ -11173,8 +11481,9 @@ app.put('/api/spatial/studio-state', (req, res) => {
 app.put('/api/spatial/architecture-memory', (req, res) => {
   const body = req.body || {};
   (async () => {
-    await fs.promises.mkdir(path.dirname(SPATIAL_ARCHITECTURE_MEMORY_FILE), { recursive: true });
-    await fs.promises.writeFile(SPATIAL_ARCHITECTURE_MEMORY_FILE, JSON.stringify(body, null, 2));
+    writeJson(SPATIAL_ARCHITECTURE_MEMORY_FILE, body, {
+      ignoreKeys: SPATIAL_ARCHIVE_VOLATILE_KEYS,
+    });
     persistWorkspacePatch((workspace) => ({
       ...workspace,
       architectureMemory: {
@@ -11211,6 +11520,62 @@ app.get('/api/spatial/qa/runs', (req, res) => {
     latestRun: summarizeQARun(runs[0] || null),
     runs: runs.slice(0, 12).map((run) => summarizeQARun(run)),
   });
+});
+
+app.get('/api/spatial/planner/qa-queue', (req, res) => {
+  const queue = readPlannerQaQueue(ROOT);
+  res.json({
+    source: '/api/spatial/planner/qa-queue',
+    freshness: 'derived',
+    generatedAt: nowIso(),
+    queue,
+    summary: summarizePlannerQaQueue(queue),
+  });
+});
+
+app.get('/api/spatial/planner/outtray', (req, res) => {
+  const queue = readPlannerOuttray(ROOT);
+  res.json({
+    source: '/api/spatial/planner/outtray',
+    freshness: 'derived',
+    generatedAt: nowIso(),
+    queue,
+    summary: summarizePlannerOuttray(queue),
+  });
+});
+
+app.post('/api/spatial/planner/outtray/collect', (req, res) => {
+  const body = req.body || {};
+  const queueKey = String(body.queueKey || body.plannerRunId || body.planBundleId || '').trim();
+  const laneId = String(body.laneId || '').trim() || null;
+  if (!queueKey) {
+    return res.status(400).json({ error: 'queueKey, plannerRunId, or planBundleId is required.' });
+  }
+  try {
+    const result = collectPlannerOuttrayItem(ROOT, {
+      queueKey,
+      plannerRunId: String(body.plannerRunId || '').trim() || null,
+      planBundleId: String(body.planBundleId || '').trim() || null,
+      laneId,
+      collectedBy: String(body.collectedBy || body.reviewedBy || 'qa').trim() || 'qa',
+      reviewedBy: String(body.reviewedBy || '').trim() || null,
+      summary: String(body.summary || '').trim() || null,
+      findings: Array.isArray(body.findings) ? body.findings : [],
+      notes: Array.isArray(body.notes) ? body.notes : [],
+      artifactRefs: Array.isArray(body.artifactRefs) ? body.artifactRefs : [],
+      status: String(body.status || 'collected').trim() || 'collected',
+    });
+    if (!result) {
+      return res.status(404).json({ error: 'Planner outtray item not found.' });
+    }
+    res.json({
+      ok: true,
+      result,
+      summary: summarizePlannerOuttray(result.queue),
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
 });
 
 app.get('/api/spatial/qa/runs/:runId', (req, res) => {
@@ -11704,12 +12069,26 @@ app.get('/api/spatial/cto/status', async (req, res) => {
 app.get('/api/spatial/cto/diagnostics', (req, res) => {
   try {
     const diagnostics = readCtoDiagnostics();
+    const workspace = readSpatialWorkspace();
+    const canonicalLayout = normalizeStudioLayoutSchema(
+      workspace?.studio?.layout
+      || workspace?.layout
+      || createDefaultStudioLayoutSchema(),
+    );
     return res.json({
       ok: true,
       version: diagnostics.version,
       updated_at: diagnostics.updated_at,
+      source: '/api/spatial/cto/diagnostics',
+      freshness: 'derived',
+      generatedAt: nowIso(),
       summary: summarizeCtoDiagnostics(diagnostics.entries),
       entries: diagnostics.entries,
+      plannerIdentity: buildPlannerIdentitySnapshot(canonicalLayout.organization || {}),
+      plannerCoverage: buildCanonicalPlannerCoverageTruth(canonicalLayout),
+      qaLeadCoverage: buildCanonicalQALeadCoverageTruth(canonicalLayout),
+      ctoOverrides: summarizeCtoOverrideLedger(workspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
+      overrideLayer: deriveCtoOverrideLayer(workspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
     });
   } catch (error) {
     const reason = String(error.message || error);
@@ -11717,6 +12096,116 @@ app.get('/api/spatial/cto/diagnostics', (req, res) => {
       ok: false,
       error: reason,
       reason,
+    });
+  }
+});
+
+app.post('/api/spatial/cto/override', (req, res) => {
+  try {
+    const body = req.body || {};
+    const kind = String(body.kind || body.overrideKind || body.type || '').trim();
+    if (!kind) {
+      return res.status(400).json({
+        ok: false,
+        error: 'kind is required.',
+        reason: 'kind is required.',
+      });
+    }
+    const requestedBy = String(body.requestedBy || body.actor || body.createdBy || 'cto').trim() || 'cto';
+    const reason = String(body.reason || body.justification || body.note || body.summary || '').trim();
+    const target = {
+      deskId: String(body.targetDeskId || body.deskId || '').trim() || null,
+      deskLabel: String(body.targetDeskLabel || body.deskLabel || '').trim() || null,
+      roleId: String(body.targetRoleId || body.roleId || '').trim() || null,
+      agentId: String(body.targetAgentId || body.agentId || '').trim() || null,
+      planId: String(body.targetPlanId || body.planId || '').trim() || null,
+      handoffId: String(body.targetHandoffId || body.handoffId || '').trim() || null,
+      queueKey: String(body.targetQueueKey || body.queueKey || '').trim() || null,
+      intentId: String(body.targetIntentId || body.intentId || '').trim() || null,
+    };
+    const canonicalTruth = body.canonicalTruth && typeof body.canonicalTruth === 'object'
+      ? body.canonicalTruth
+      : {
+          planner: body.plannerTruth || null,
+          staffing: body.staffingTruth || null,
+          handoff: body.handoffTruth || null,
+          queue: body.queueTruth || null,
+        };
+    const effect = body.effect && typeof body.effect === 'object'
+      ? body.effect
+      : {
+          forcePlannerRouting: body.forcePlannerRouting === true,
+          forcePlanningGeneration: body.forcePlanningGeneration === true,
+          reopenStalePlan: body.reopenStalePlan === true,
+          supersedeQueuePriority: body.supersedeQueuePriority === true,
+          requestEmergencyStaffingReview: body.requestEmergencyStaffingReview === true,
+          handoffMode: String(body.handoffMode || '').trim() || null,
+          queuePriority: String(body.queuePriority || body.priority || '').trim() || null,
+        };
+    const provenance = {
+      sourceType: String(body.sourceType || body.source_type || 'cto-override').trim() || 'cto-override',
+      sourceRef: String(body.sourceRef || body.source_ref || 'cto-console').trim() || 'cto-console',
+      sourceIntentId: String(body.sourceIntentId || body.intentId || '').trim() || null,
+      sourceHandoffId: String(body.sourceHandoffId || body.handoffId || '').trim() || null,
+      sourceActionId: String(body.sourceActionId || body.actionId || '').trim() || null,
+      sourceRoute: String(body.sourceRoute || body.route || '/api/spatial/cto/override').trim() || '/api/spatial/cto/override',
+      sourceDeskId: String(body.sourceDeskId || body.deskId || target.deskId || '').trim() || null,
+    };
+    const normalized = normalizeCtoOverrideEntry({
+      kind,
+      requestedBy,
+      reason,
+      summary: String(body.summary || reason || kind).trim() || kind,
+      target,
+      canonicalTruth,
+      effect,
+      provenance,
+      explicit: body.explicit !== false,
+      status: String(body.status || 'active').trim() || 'active',
+      createdAt: body.createdAt || nowIso(),
+      appliedAt: body.appliedAt || nowIso(),
+    });
+    const ledgerWrite = appendCtoOverrideLedgerEntry(ROOT, normalized);
+    const nextOverrides = ledgerWrite.ledger || createDefaultCtoOverrideLedger();
+    const writeResult = updateSpatialWorkspace((workspace) => {
+      return {
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          ctoOverrides: nextOverrides,
+        },
+      };
+    });
+    const diagnostics = recordCtoDiagnostic({
+      route: '/api/spatial/cto/override',
+      source: 'cto-override',
+      status: 'live',
+      backend: 'n/a',
+      model: 'n/a',
+      host: null,
+      reason: normalized.reason,
+      actionId: normalized.overrideId,
+      availableActionIds: [],
+      category: 'override_applied',
+    });
+    const overrideLedger = writeResult?.studio?.ctoOverrides || nextOverrides || createDefaultCtoOverrideLedger();
+    const overrideLayer = deriveCtoOverrideLayer(overrideLedger);
+    return res.json({
+      ok: true,
+      override: normalized,
+      ctoOverrides: summarizeCtoOverrideLedger(overrideLedger),
+      overrideLayer,
+      plannerMode: overrideLayer.planningMode,
+      diagnostics,
+      workspace: {
+        generatedAt: nowIso(),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: String(error.message || error),
+      reason: String(error.message || error),
     });
   }
 });
@@ -11821,6 +12310,9 @@ app.post('/api/spatial/intent', async (req, res) => {
     return res.status(400).json({ error: 'text is required.' });
   }
   const sourceNodeId = String(body.nodeId || '').trim() || 'prompt-1';
+  const sourceType = String(body.sourceType || body.source || 'sanctioned-intent-parser').trim() || 'sanctioned-intent-parser';
+  const sourceRef = String(body.sourceRef || sourceNodeId || '').trim() || sourceNodeId;
+  const requestedBy = String(body.requestedBy || body.sourceAgentId || 'context-manager').trim() || 'context-manager';
   const executiveEnvelope = normalizeExecutiveEnvelope({
     envelope: {
       version: EXECUTIVE_ENVELOPE_VERSION,
@@ -11852,6 +12344,10 @@ app.post('/api/spatial/intent', async (req, res) => {
       text,
       sourceNodeId,
       source: String(body.source || 'context-intake').trim() || 'context-intake',
+      sourceType,
+      sourceRef,
+      requestedBy,
+      priority: String(body.priority || body.urgency || '').trim() || null,
       mode: 'manual',
       backend: String(body.backend || '').trim() || null,
       model: String(body.model || '').trim() || null,
@@ -11874,6 +12370,8 @@ app.post('/api/spatial/intent', async (req, res) => {
     return res.json({
       ...cycle.result.report,
       extractedIntent: cycle.result.extractedIntent || cycle.result.report?.extractedIntent || null,
+      canonicalIntent: cycle.result.report?.canonicalIntent || cycle.result.handoff?.intentContract?.canonicalIntent || null,
+      intentContract: cycle.result.report?.intentContract || null,
       worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
       report: cycle.result.report,
       handoff: cycle.result.handoff,
@@ -12101,6 +12599,7 @@ module.exports = {
   summarizeExecutionProvenance,
   normalizePreflightStage,
   createDefaultStudioLayoutSchema,
+  buildPlannerIdentitySnapshot,
   normalizeStudioLayoutSchema,
   addDepartmentToLayout,
   addDeskToLayout,

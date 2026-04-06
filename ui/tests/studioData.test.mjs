@@ -13,6 +13,7 @@ export default async function runStudioDataTests() {
     advanceOrchestratorState,
     buildAgentSnapshots,
     buildAgentContext,
+    buildPlannerInputContract,
     createDefaultTeamBoard,
     createPlannerHandoff,
     deriveTaskEconomy,
@@ -28,53 +29,73 @@ export default async function runStudioDataTests() {
     buildUiContractCheckQualityCard,
   } = require('../../qa/testAttributeCards.js');
   const { TEST_METRIC_DEFINITIONS } = require('../../qa/testMetricDefinitions.js');
-  const handoff = createPlannerHandoff({
+  const canonicalIntent = {
+    id: 'intent_1',
     nodeId: 'node_1',
     createdAt: '2026-03-13T10:00:00.000Z',
     summary: 'Expose more agent workload in studio.',
+    goal: 'Expose more agent workload in studio.',
     confidence: 0.42,
     anchorRefs: ['brain/emergence/roadmap.md'],
     requestedOutcomes: ['Expose task movement', 'Show task ownership'],
-    criteria: [
-      { id: 'actionability', label: 'Actionability', score: 0.2, reason: 'Input reads like a note.' },
-      { id: 'clarity', label: 'Clarity', score: 0.8, reason: 'Intent is understandable.' },
-    ],
-    classification: { role: 'context', labels: ['ux'] },
-    truth: {
-      rawInput: 'Expose more agent workload in studio.',
-      statement: 'Expose more agent workload in studio.',
-      intentType: 'General context signal',
-      requestedOutcomes: [],
-      unresolved: ['No concrete requested outcomes were extracted yet.'],
-      evidence: ['Clarity: Intent is understandable.'],
-      plannerBrief: 'Planner should clarify the request before expanding execution.',
-      readiness: {
-        intentConfidence: 0.42,
-        plannerUsefulness: 0.38,
-        executionReadiness: 0.21,
-        deployReadiness: 0.16,
-      },
-    },
+    constraints: ['Need clearer user execution path'],
     projectContext: {
-      matchedTerms: [],
+      matchedTerms: ['studio'],
       blockers: ['Need clearer user execution path'],
     },
-  }, { blockers: ['Studio output is hard to audit'] });
+    provenance: {
+      createdAt: '2026-03-13T10:00:00.000Z',
+      sourceType: 'sanctioned-intent-parser',
+      sourceRef: 'node_1',
+      requestedBy: 'context-manager',
+    },
+  };
+  const ghostProjection = {
+    id: 'ghost_1',
+    sourceIntentIds: ['intent_1'],
+    proposedChange: { summary: 'Expose task movement', description: 'Ghost projection for planner review.' },
+    confidence: 0.71,
+    status: 'candidate',
+    reasoning: ['sourceIntentId=intent_1', 'status=candidate'],
+    provenance: {
+      createdAt: '2026-03-13T10:00:01.000Z',
+      sourceType: 'sketchpad-stroke',
+      sourceRef: 'sketch_1',
+      sourceIntentId: 'intent_1',
+    },
+  };
+  const plannerInputContract = buildPlannerInputContract(canonicalIntent, ghostProjection, {
+    blockers: ['Studio output is hard to audit'],
+  });
+  const blockedPlannerInput = buildPlannerInputContract(canonicalIntent, null, {
+    blockers: ['Studio output is hard to audit'],
+  });
+  const handoff = createPlannerHandoff(canonicalIntent, ghostProjection, { blockers: ['Studio output is hard to audit'] });
 
+  assert.equal(plannerInputContract.intentId, 'intent_1');
+  assert.equal(plannerInputContract.ghostProjectionId, 'ghost_1');
+  assert.equal(plannerInputContract.status, 'ready');
+  assert.equal(blockedPlannerInput.status, 'blocked');
+  assert.ok(blockedPlannerInput.missingFields.includes('ghost.id'));
   assert.equal(handoff.sourceAgentId, 'context-manager');
   assert.equal(handoff.targetAgentId, 'planner');
   assert.equal(handoff.status, 'needs-clarification');
   assert.equal(handoff.sourceNodeId, 'node_1');
+  assert.equal(handoff.sourceIntentId, 'intent_1');
+  assert.equal(handoff.ghostProjectionId, 'ghost_1');
   assert.ok(handoff.anchorRefs.includes('brain/emergence/roadmap.md'));
   assert.deepEqual(handoff.requestedOutcomes, ['Expose task movement', 'Show task ownership']);
   assert.deepEqual(handoff.tasks, ['Expose task movement', 'Show task ownership']);
   assert.match(handoff.problemStatement, /Goal: Expose more agent workload in studio\./);
   assert.match(handoff.problemStatement, /Still unclear:/);
-  assert.equal(handoff.truth.plannerBrief, 'Planner should clarify the request before expanding execution.');
+  assert.equal(handoff.truth, null);
+  assert.equal(handoff.plannerInputContract.intentId, 'intent_1');
+  assert.equal(handoff.plannerInputContract.ghostProjectionId, 'ghost_1');
+  assert.equal(handoff.plannerInputContract.provenance.intentId, 'intent_1');
+  assert.equal(handoff.plannerInputContract.provenance.ghostProjectionId, 'ghost_1');
   assert.deepEqual(handoff.constraints, [
     'Need clearer user execution path',
     'Studio output is hard to audit',
-    'Actionability: Input reads like a note.',
   ]);
 
   assert.equal(layoutModel.STUDIO_LAYOUT_SCHEMA.version, 'studio-layout.v1');
@@ -166,39 +187,85 @@ export default async function runStudioDataTests() {
     annotations: [],
     architectureMemory: { versions: [], rules: [] },
     intentState: {
-      latest: null,
-      contextReport: {
-        nodeId: 'node_ctx',
-        createdAt: '2026-03-13T10:15:00.000Z',
-        summary: 'Clarify what the planner should solve.',
-        confidence: 0.77,
-        tasks: ['Generate problem report', 'Show waiting-on-user state'],
-        criteria: [],
-        classification: { role: 'context', labels: ['plan'] },
-        metrics: { actionSignals: 3, constraintSignals: 1 },
-        projectContext: {
-          currentFocus: 'Studio desk output',
-          matchedTerms: ['studio', 'planner'],
-          blockers: [],
-        },
-        truth: {
-          rawInput: 'Clarify what the planner should solve.',
-          statement: 'Clarify what the planner should solve.',
-          intentType: 'General context signal',
-          requestedOutcomes: ['Generate problem report', 'Show waiting-on-user state'],
-          unresolved: [],
-          evidence: ['Actionability: Context is already structured.'],
-          plannerBrief: 'Planner should treat this as: Generate problem report; Show waiting-on-user state',
-          readiness: {
-            intentConfidence: 0.77,
-            plannerUsefulness: 0.81,
-            executionReadiness: 0.52,
-            deployReadiness: 0.21,
+      registry: {
+        currentIntentId: 'intent_1',
+        latestIntentId: 'intent_1',
+        byId: {
+          intent_1: {
+            id: 'intent_1',
+            source: {
+              type: 'sanctioned-intent-parser',
+              ref: 'node_ctx',
+              requestedBy: 'context-manager',
+            },
+            geometry: { kind: 'unknown', region: null, stroke: null },
+            semanticMeaning: {
+              summary: 'Clarify what the planner should solve.',
+              statement: 'Clarify what the planner should solve.',
+              goal: 'Clarify what the planner should solve.',
+              requestType: 'context_request',
+              requestedOutcomes: ['Generate problem report', 'Show waiting-on-user state'],
+              targets: [],
+              constraints: [],
+              urgency: 'normal',
+              labels: ['plan'],
+            },
+            confidence: 0.77,
+            createdAt: '2026-03-13T10:15:00.000Z',
+            provenance: {
+              sourceNodeId: 'node_ctx',
+              sourceType: 'sanctioned-intent-parser',
+              sourceRef: 'node_ctx',
+              requestedBy: 'context-manager',
+            },
+            missingFields: ['geometry'],
+            status: 'degraded',
+            intentId: 'intent_1',
+            sourceType: 'sanctioned-intent-parser',
+            sourceRef: 'node_ctx',
+            nodeId: 'node_ctx',
+            requestedBy: 'context-manager',
+            timestamp: '2026-03-13T10:15:00.000Z',
+            priority: 'normal',
+            summary: 'Clarify what the planner should solve.',
+            statement: 'Clarify what the planner should solve.',
+            goal: 'Clarify what the planner should solve.',
+            requestType: 'context_request',
+            requestedOutcomes: ['Generate problem report', 'Show waiting-on-user state'],
+            tasks: ['Generate problem report', 'Show waiting-on-user state'],
+            targets: [],
+            constraints: [],
+            projectContext: {
+              currentFocus: 'node_ctx',
+              matchedTerms: ['plan'],
+              blockers: [],
+              anchorRefs: [],
+            },
+            truth: {
+              rawInput: 'Clarify what the planner should solve.',
+              statement: 'Clarify what the planner should solve.',
+              intentType: 'General context signal',
+              requestedOutcomes: ['Generate problem report', 'Show waiting-on-user state'],
+              unresolved: [],
+              evidence: ['Actionability: Context is already structured.'],
+              plannerBrief: 'Planner should treat this as: Generate problem report; Show waiting-on-user state',
+              readiness: {
+                intentConfidence: 0.77,
+                plannerUsefulness: 0.81,
+                executionReadiness: 0.52,
+                deployReadiness: 0.21,
+              },
+            },
+            criteria: [],
+            classification: { role: 'context', labels: ['plan'] },
+            metrics: { actionSignals: 3, constraintSignals: 1 },
           },
         },
+        records: [],
       },
-      byNode: {},
-      reports: [],
+      currentIntentId: 'intent_1',
+      summary: 'Clarify what the planner should solve.',
+      status: 'degraded',
     },
     studio: {
       agentWorkers: {

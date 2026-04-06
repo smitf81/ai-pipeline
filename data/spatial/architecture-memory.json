@@ -25,9 +25,7 @@
       "constraints": []
     },
     "adapters": [],
-    "proposals": [
-      "world-structure: Dragon perch intent"
-    ],
+    "proposals": [],
     "rules": [
       "modular architecture",
       "no circular dependencies",

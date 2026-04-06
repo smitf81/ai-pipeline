@@ -146,7 +146,9 @@ function makeId(prefix) {
 }
 
 function latestIntentReport(workspace) {
-  return workspace.intentState?.contextReport || workspace.intentState?.latest || workspace.intentState?.reports?.[0] || null;
+  const registry = workspace?.intentState?.registry || null;
+  if (!registry?.currentIntentId) return null;
+  return registry.byId?.[registry.currentIntentId] || null;
 }
 
 function systemGraphOf(workspace = {}) {
@@ -668,59 +670,92 @@ function collectConstraints(report, dashboardState) {
   return [...new Set([...blockers, ...dashboardBlockers, ...packetConstraints, ...lowCriteria])].slice(0, 8);
 }
 
-export function createPlannerHandoff(report, dashboardState = {}, previousHandoff = null) {
-  if (!report) return null;
-  const requestedOutcomes = uniqueStrings(
-    Array.isArray(report.requestedOutcomes) && report.requestedOutcomes.length
-      ? report.requestedOutcomes
-      : (Array.isArray(report.tasks) && report.tasks.length
-        ? report.tasks
-        : (Array.isArray(report.truth?.requestedOutcomes) && report.truth.requestedOutcomes.length
-          ? report.truth.requestedOutcomes
-          : (Array.isArray(report.truth?.tasks) ? report.truth.tasks : []))),
-  ).slice(0, 4);
-  const constraints = collectConstraints(report, dashboardState);
-  const clarifications = Array.isArray(report?.contextPacket?.clarifications)
-    ? report.contextPacket.clarifications.filter(Boolean)
-    : [];
-  if (Number(report.confidence || 0) < 0.55) clarifications.push('Intent confidence is low and should be checked before execution expands.');
-  if (!requestedOutcomes.length) clarifications.push('No concrete requested outcomes were extracted from the latest context input.');
-  if (!report.projectContext?.matchedTerms?.length) clarifications.push('Project alignment is weak, so planner scope may need refinement.');
-  const rationale = (report.criteria || [])
-    .slice(0, 3)
-    .map((criterion) => `${criterion.label} ${Math.round((criterion.score || 0) * 100)}%`)
-    .join(', ');
+export function buildPlannerInputContract(canonicalIntent = null, ghostProjection = null, dashboardState = {}) {
+  const intent = canonicalIntent && typeof canonicalIntent === 'object' ? canonicalIntent : null;
+  const ghost = ghostProjection && typeof ghostProjection === 'object' ? ghostProjection : null;
+  const requestedOutcomes = uniqueStrings(Array.isArray(intent?.requestedOutcomes) ? intent.requestedOutcomes : []).slice(0, 4);
+  const constraints = uniqueStrings([
+    ...(Array.isArray(intent?.constraints) ? intent.constraints : []),
+    ...(Array.isArray(dashboardState?.blockers) ? dashboardState.blockers : []),
+  ]).slice(0, 8);
+  const missingFields = [];
+  if (!intent?.id) missingFields.push('intent.id');
+  if (!ghost?.id) missingFields.push('ghost.id');
+  if (intent?.id && Array.isArray(ghost?.sourceIntentIds) && !ghost.sourceIntentIds.includes(intent.id)) {
+    missingFields.push('ghost.sourceIntentIds');
+  }
+  if (!requestedOutcomes.length) missingFields.push('intent.requestedOutcomes');
+  return {
+    id: intent?.id || ghost?.id || makeId('planner-input'),
+    intentId: intent?.id || null,
+    ghostProjectionId: ghost?.id || null,
+    status: missingFields.length ? 'blocked' : 'ready',
+    missingFields,
+    generatedAt: intent?.provenance?.createdAt || intent?.createdAt || ghost?.provenance?.createdAt || new Date().toISOString(),
+    confidence: Number.isFinite(Number(intent?.confidence)) ? Number(intent.confidence) : Number.isFinite(Number(ghost?.confidence)) ? Number(ghost.confidence) : 0,
+    provenance: {
+      intentId: intent?.id || null,
+      ghostProjectionId: ghost?.id || null,
+      createdAt: intent?.provenance?.createdAt || intent?.createdAt || ghost?.provenance?.createdAt || new Date().toISOString(),
+      intentProvenance: intent?.provenance || null,
+      ghostProvenance: ghost?.provenance || null,
+    },
+    intent,
+    ghost,
+    requestedOutcomes,
+    constraints,
+  };
+}
+
+export function createPlannerHandoff(canonicalIntent, ghostProjection = null, dashboardState = {}, previousHandoff = null) {
+  if (!canonicalIntent) return null;
+  const plannerInput = buildPlannerInputContract(canonicalIntent, ghostProjection, dashboardState);
+  const requestedOutcomes = plannerInput.requestedOutcomes;
+  const constraints = plannerInput.constraints;
+  const clarifications = [];
+  if (Number(canonicalIntent.confidence || 0) < 0.55) clarifications.push('Intent confidence is low and should be checked before execution expands.');
+  if (!requestedOutcomes.length) clarifications.push('No concrete requested outcomes were extracted from the canonical intent.');
+  if (!canonicalIntent.projectContext?.matchedTerms?.length) clarifications.push('Project alignment is weak, so planner scope may need refinement.');
+  if (!plannerInput.ghostProjectionId) clarifications.push('No ghost projection is attached to the planner input contract.');
+  if (plannerInput.status === 'blocked') clarifications.push(`Planner input contract is blocked because: ${plannerInput.missingFields.join(', ')}.`);
+  const rationale = [];
+  if (canonicalIntent.status) rationale.push(`intent ${canonicalIntent.status}`);
+  if (plannerInput.ghost?.status) rationale.push(`ghost ${plannerInput.ghost.status}`);
+  if (Number.isFinite(Number(canonicalIntent.confidence))) rationale.push(`${Math.round(Number(canonicalIntent.confidence) * 100)}% confidence`);
   const problemStatement = [
-    `Goal: ${report.summary || 'Clarify the next problem to solve.'}`,
+    `Goal: ${canonicalIntent.summary || 'Clarify the next problem to solve.'}`,
     requestedOutcomes.length ? `Requested outcomes: ${requestedOutcomes.join('; ')}.` : 'Requested outcomes: no concrete task list extracted yet.',
-    rationale ? `Why ACE believes this: ${rationale}.` : null,
+    rationale.length ? `Why ACE believes this: ${rationale.join(', ')}.` : null,
     constraints.length ? `Constraints and review signals: ${constraints.join(' | ')}.` : 'Constraints and review signals: none surfaced from the latest report.',
     clarifications.length ? `Still unclear: ${clarifications.join(' ')}` : 'Still unclear: no immediate clarification requested.',
   ].filter(Boolean).join('\n');
 
   return {
-    id: previousHandoff?.sourceNodeId === report.nodeId ? (previousHandoff.id || makeId('handoff')) : makeId('handoff'),
+    id: previousHandoff?.sourceIntentId === canonicalIntent.id ? (previousHandoff.id || makeId('handoff')) : makeId('handoff'),
     sourceAgentId: 'context-manager',
     targetAgentId: 'planner',
-    createdAt: report.createdAt || new Date().toISOString(),
-    sourceNodeId: report.nodeId || null,
-    summary: report.summary || 'Intent ready for planner review.',
+    createdAt: plannerInput.generatedAt,
+    sourceNodeId: canonicalIntent.nodeId || canonicalIntent.sourceRef || canonicalIntent.id || null,
+    sourceIntentId: canonicalIntent.id || null,
+    ghostProjectionId: plannerInput.ghostProjectionId,
+    summary: canonicalIntent.summary || 'Intent ready for planner review.',
     problemStatement,
-    anchorRefs: Array.isArray(report.anchorRefs) ? report.anchorRefs.filter(Boolean) : [],
-    goal: report.goal || report.truth?.goal || report.summary || '',
+    anchorRefs: Array.isArray(canonicalIntent.anchorRefs) ? canonicalIntent.anchorRefs.filter(Boolean) : [],
+    goal: canonicalIntent.goal || canonicalIntent.summary || '',
     requestedOutcomes,
     tasks: requestedOutcomes,
     constraints,
-    confidence: Number(report.confidence || 0),
-    criteria: Array.isArray(report.criteria) ? report.criteria : [],
-    truth: report.truth || null,
-    scores: report.scores || null,
-    classification: report.classification || { role: 'context', labels: [] },
-    requestType: report.requestType || report.truth?.requestType || 'context_request',
-    urgency: report.urgency || report.truth?.urgency || 'normal',
-    targets: Array.isArray(report.targets) ? report.targets.slice(0, 8) : [],
-    signals: report.signals || report.truth?.signals || null,
-    status: clarifications.length ? 'needs-clarification' : 'ready',
+    confidence: plannerInput.confidence,
+    criteria: [],
+    truth: null,
+    scores: null,
+    classification: { role: 'context', labels: [] },
+    requestType: canonicalIntent.requestType || 'context_request',
+    urgency: canonicalIntent.priority || canonicalIntent.urgency || 'normal',
+    targets: Array.isArray(canonicalIntent.targets) ? canonicalIntent.targets.slice(0, 8) : [],
+    signals: null,
+    plannerInputContract: plannerInput,
+    status: plannerInput.status === 'blocked' || clarifications.length ? 'needs-clarification' : 'ready',
   };
 }
 
@@ -1930,7 +1965,7 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
         : 'Focus QA desk to run structured QA or browser evidence passes.',
     },
   ] : [];
-  const intent = workspace.intentState?.contextReport || null;
+  const intent = latestIntentReport(workspace);
   const archivedContext = workspace.architectureMemory?.latestContext || intent || null;
   const guardrailSummary = [
     governedDesk?.blockedReason,
@@ -2776,7 +2811,7 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
       focusSummary: agent.id === 'context-manager' && intent
         ? `${intent.summary || 'Intent captured'} (${Math.round((intent.confidence || 0) * 100)}%)`
         : agent.id === 'memory-archivist'
-          ? (workspace.architectureMemory?.latestContext?.summary || workspace.intentState?.contextReport?.summary || 'Canonical context archive ready')
+          ? (workspace.architectureMemory?.latestContext?.summary || latestIntentReport(workspace)?.summary || 'Canonical context archive ready')
           : agent.id === 'qa-lead'
           ? (normalizedQA.structuredBusy
             ? 'Structured QA is running'

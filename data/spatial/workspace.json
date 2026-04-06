@@ -1,133 +1,11 @@
 {
   "graph": {
-    "nodes": [
-      {
-        "id": "dragon_perch_intent_01",
-        "type": "task",
-        "content": "Dragon perch intent",
-        "position": {
-          "x": 1040,
-          "y": 320
-        },
-        "connections": [],
-        "metadata": {
-          "role": "task",
-          "graphLayer": "system",
-          "labels": [
-            "proposal",
-            "sketch-ready"
-          ],
-          "proposalTarget": "world-structure"
-        },
-        "representations": [
-          {
-            "rep_id": "dragon_perch_intent_01_sketch_icon",
-            "kind": "icon",
-            "view_tags": [
-              "sketch"
-            ],
-            "lod_min": 0,
-            "lod_max": 0.8,
-            "payload": {
-              "label": "Perch"
-            },
-            "derived_from": "dragon_perch_intent_01"
-          },
-          {
-            "rep_id": "dragon_perch_intent_01_sketch_ghost",
-            "kind": "ghost",
-            "view_tags": [
-              "sketch"
-            ],
-            "lod_min": 0.25,
-            "lod_max": 0.6,
-            "payload": {
-              "summary": "Ghost perch scaffold"
-            },
-            "derived_from": "dragon_perch_intent_01"
-          },
-          {
-            "rep_id": "dragon_perch_intent_01_world_mesh_stub",
-            "kind": "mesh_stub",
-            "view_tags": [
-              "world"
-            ],
-            "lod_min": 0.8,
-            "lod_max": 1.5,
-            "payload": {
-              "mesh": "dragon-perch-stub"
-            },
-            "derived_from": "dragon_perch_intent_01"
-          }
-        ]
-      }
-    ],
+    "nodes": [],
     "edges": []
   },
   "graphs": {
     "system": {
-      "nodes": [
-        {
-          "id": "dragon_perch_intent_01",
-          "type": "task",
-          "content": "Dragon perch intent",
-          "position": {
-            "x": 1040,
-            "y": 320
-          },
-          "connections": [],
-          "metadata": {
-            "role": "task",
-            "graphLayer": "system",
-            "labels": [
-              "proposal",
-              "sketch-ready"
-            ],
-            "proposalTarget": "world-structure"
-          },
-          "representations": [
-            {
-              "rep_id": "dragon_perch_intent_01_sketch_icon",
-              "kind": "icon",
-              "view_tags": [
-                "sketch"
-              ],
-              "lod_min": 0,
-              "lod_max": 0.8,
-              "payload": {
-                "label": "Perch"
-              },
-              "derived_from": "dragon_perch_intent_01"
-            },
-            {
-              "rep_id": "dragon_perch_intent_01_sketch_ghost",
-              "kind": "ghost",
-              "view_tags": [
-                "sketch"
-              ],
-              "lod_min": 0.25,
-              "lod_max": 0.6,
-              "payload": {
-                "summary": "Ghost perch scaffold"
-              },
-              "derived_from": "dragon_perch_intent_01"
-            },
-            {
-              "rep_id": "dragon_perch_intent_01_world_mesh_stub",
-              "kind": "mesh_stub",
-              "view_tags": [
-                "world"
-              ],
-              "lod_min": 0.8,
-              "lod_max": 1.5,
-              "payload": {
-                "mesh": "dragon-perch-stub"
-              },
-              "derived_from": "dragon_perch_intent_01"
-            }
-          ]
-        }
-      ],
+      "nodes": [],
       "edges": []
     },
     "world": {
@@ -163,9 +41,7 @@
       "constraints": []
     },
     "adapters": [],
-    "proposals": [
-      "world-structure: Dragon perch intent"
-    ],
+    "proposals": [],
     "rules": [
       "modular architecture",
       "no circular dependencies",
@@ -175,22 +51,12 @@
   },
   "agentComments": {},
   "intentState": {
-    "latest": {
-      "id": "intent-current",
+    "registry": {
       "currentIntentId": "intent-current",
-      "summary": "Migrate to canonical anchor-based ACE system",
-      "status": "idle",
-      "createdAt": null
+      "latestIntentId": "intent-current",
+      "byId": {},
+      "records": []
     },
-    "contextReport": {
-      "id": "intent-current",
-      "currentIntentId": "intent-current",
-      "summary": "Migrate to canonical anchor-based ACE system",
-      "status": "idle",
-      "createdAt": null
-    },
-    "byNode": {},
-    "reports": [],
     "currentIntentId": "intent-current",
     "summary": "Migrate to canonical anchor-based ACE system",
     "status": "idle"
@@ -369,7 +235,7 @@
       "sourceNodeId": "node_1774615116734_91jfx",
       "summary": "Migrate to canonical anchor-based ACE system",
       "createdAt": "2026-03-27T12:43:25.445Z",
-      "updatedAt": "2026-04-01T21:57:08.267Z"
+      "updatedAt": "2026-04-04T23:04:23.850Z"
     }
   ],
   "activePageId": "page_1774615405445_ect6",
@@ -384,15 +250,6 @@
     },
     "proposals": [
       {
-        "id": "dragon_perch_intent_01",
-        "title": "Dragon perch intent",
-        "target": "world-structure",
-        "sourceLayer": "system",
-        "sourceNodeId": "dragon_perch_intent_01",
-        "approval": "auto-record",
-        "status": "proposed"
-      },
-      {
         "id": "mutation_0001",
         "title": "Update or check the status of RGS nodes",
         "target": "code-runtime-mutation",
@@ -400,25 +257,1404 @@
         "sourceNodeId": "node_1774615116734_91jfx",
         "approval": "required",
         "status": "awaiting-approval"
+      },
+      {
+        "id": "mutation_0002",
+        "title": "Planner task",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "cto-pipeline-1775126637045-pchod3",
+        "approval": "required",
+        "status": "queued"
       }
     ],
     "summary": {
       "systemStructure": 0,
-      "worldStructure": 1,
+      "worldStructure": 0,
       "adapterTranslation": 0,
-      "codeRuntimeMutation": 1
+      "codeRuntimeMutation": 2
     },
     "activity": [],
     "lastSourceNodeId": null,
     "lastGenerationAt": null,
     "lastStatus": "idle",
-    "lastEvaluatedAt": "2026-04-01T21:57:08.268Z"
+    "lastEvaluatedAt": "2026-04-04T23:04:23.850Z"
   },
   "mutationGate": {
     "activity": [],
     "approvalQueue": []
   },
   "studio": {
+    "layout": {
+      "version": "studio-layout.v1",
+      "size": {
+        "width": 1200,
+        "height": 800
+      },
+      "bounds": {
+        "x": 56,
+        "y": 72,
+        "width": 1088,
+        "height": 664,
+        "slotId": null
+      },
+      "whiteboards": {
+        "teamBoard": {
+          "x": 284,
+          "y": 88,
+          "width": 584,
+          "height": 208
+        }
+      },
+      "controlCentreDeskId": "cto-architect",
+      "departments": [
+        {
+          "id": "dept-intake",
+          "label": "Intake",
+          "templateId": "intake",
+          "kind": "intake",
+          "summary": "Frontline intake and interpretation room for incoming work.",
+          "editable": false,
+          "visible": true,
+          "slotId": "intake-bay",
+          "bounds": {
+            "x": 92,
+            "y": 108,
+            "width": 220,
+            "height": 238,
+            "slotId": "intake-bay"
+          },
+          "deskIds": [
+            "context-manager"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "context-manager",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "context-manager"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "context-manager",
+                "deskId": "context-manager",
+                "label": "context manager",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-delivery",
+          "label": "Delivery",
+          "templateId": "delivery",
+          "kind": "delivery",
+          "summary": "Planning and execution room for active build throughput.",
+          "editable": true,
+          "visible": true,
+          "slotId": "delivery-bay",
+          "bounds": {
+            "x": 334,
+            "y": 86,
+            "width": 514,
+            "height": 470,
+            "slotId": "delivery-bay"
+          },
+          "deskIds": [
+            "planner",
+            "executor"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "planner",
+            "minimumActiveSeats": 2,
+            "baselineRoleIds": [
+              "planner",
+              "executor"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "planner",
+                "deskId": "planner",
+                "label": "planner",
+                "seatKind": "lead",
+                "open": true
+              },
+              {
+                "roleId": "executor",
+                "deskId": "executor",
+                "label": "executor",
+                "seatKind": "core",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-quality",
+          "label": "Quality",
+          "templateId": "quality",
+          "kind": "quality",
+          "summary": "Assessment room for QA reports, scorecards, and readiness evidence.",
+          "editable": true,
+          "visible": true,
+          "slotId": "quality-bay",
+          "bounds": {
+            "x": 92,
+            "y": 394,
+            "width": 220,
+            "height": 232,
+            "slotId": "quality-bay"
+          },
+          "deskIds": [
+            "qa-lead"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "qa-lead",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "qa-lead"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "qa-lead",
+                "deskId": "qa-lead",
+                "label": "qa lead",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-archive",
+          "label": "Archive",
+          "templateId": "archive",
+          "kind": "archive",
+          "summary": "Context preservation room owned by the Memory Archivist.",
+          "editable": true,
+          "visible": true,
+          "slotId": "archive-bay",
+          "bounds": {
+            "x": 454,
+            "y": 580,
+            "width": 312,
+            "height": 120,
+            "slotId": "archive-bay"
+          },
+          "deskIds": [
+            "memory-archivist"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "memory-archivist",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "memory-archivist"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "memory-archivist",
+                "deskId": "memory-archivist",
+                "label": "memory archivist",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-research",
+          "label": "R&D / Research & Development",
+          "templateId": "research",
+          "kind": "research",
+          "summary": "Sandbox room for non-delivery research, prototypes, and experiments.",
+          "editable": true,
+          "visible": true,
+          "slotId": "expansion-b",
+          "bounds": {
+            "x": 808,
+            "y": 564,
+            "width": 292,
+            "height": 136,
+            "slotId": "expansion-b"
+          },
+          "deskIds": [
+            "rnd-lead"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "rnd-lead",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "rnd-lead"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "rnd-lead",
+                "deskId": "rnd-lead",
+                "label": "rnd lead",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-control",
+          "label": "Control Centre",
+          "templateId": "control",
+          "kind": "control",
+          "summary": "Canonical oversight room for department relationships and environment controls.",
+          "editable": true,
+          "visible": true,
+          "slotId": "control-bay",
+          "bounds": {
+            "x": 884,
+            "y": 286,
+            "width": 214,
+            "height": 254,
+            "slotId": "control-bay"
+          },
+          "deskIds": [
+            "cto-architect"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "cto-architect",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "cto-architect"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "cto-architect",
+                "deskId": "cto-architect",
+                "label": "cto architect",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-talent-acquisition",
+          "label": "Talent Acquisition",
+          "templateId": "talent",
+          "kind": "talent",
+          "summary": "Hiring-demand room for seat coverage, role fit, and open-role planning.",
+          "editable": false,
+          "visible": true,
+          "slotId": "talent-bay",
+          "bounds": {
+            "x": 850,
+            "y": 86,
+            "width": 250,
+            "height": 176,
+            "slotId": "talent-bay"
+          },
+          "deskIds": [
+            "integration_auditor"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "integration_auditor",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "integration_auditor"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "integration_auditor",
+                "deskId": "integration_auditor",
+                "label": "integration auditor",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        }
+      ],
+      "desks": {
+        "context-manager": {
+          "id": "context-manager",
+          "label": "Context Manager",
+          "templateId": "intake-node",
+          "type": "intake",
+          "capabilities": [
+            "context",
+            "triage",
+            "routing"
+          ],
+          "editable": false,
+          "departmentId": "dept-intake",
+          "position": {
+            "x": 182,
+            "y": 252
+          },
+          "assignedAgentIds": [
+            "context-manager"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "context-manager",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "planner": {
+          "id": "planner",
+          "label": "Planner",
+          "templateId": "delivery-node",
+          "type": "delivery",
+          "capabilities": [
+            "planning",
+            "queue",
+            "throughput"
+          ],
+          "editable": false,
+          "departmentId": "dept-delivery",
+          "position": {
+            "x": 536,
+            "y": 252
+          },
+          "assignedAgentIds": [
+            "planner"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "planner",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "executor": {
+          "id": "executor",
+          "label": "Executor",
+          "templateId": "builder-node",
+          "type": "builder",
+          "capabilities": [
+            "execution",
+            "integration",
+            "output"
+          ],
+          "editable": false,
+          "departmentId": "dept-delivery",
+          "position": {
+            "x": 682,
+            "y": 252
+          },
+          "assignedAgentIds": [
+            "executor"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "executor",
+            "seatKind": "core",
+            "placeholder": true
+          }
+        },
+        "qa-lead": {
+          "id": "qa-lead",
+          "label": "QA Lead",
+          "templateId": "qa-node",
+          "type": "quality",
+          "capabilities": [
+            "testing",
+            "scorecards",
+            "verification"
+          ],
+          "editable": false,
+          "departmentId": "dept-quality",
+          "position": {
+            "x": 182,
+            "y": 510
+          },
+          "assignedAgentIds": [
+            "qa-lead"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "qa-lead",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "memory-archivist": {
+          "id": "memory-archivist",
+          "label": "Memory Archivist",
+          "templateId": "archive-node",
+          "type": "archive",
+          "capabilities": [
+            "context",
+            "history",
+            "traceability"
+          ],
+          "editable": false,
+          "departmentId": "dept-archive",
+          "position": {
+            "x": 620,
+            "y": 642
+          },
+          "assignedAgentIds": [
+            "memory-archivist",
+            "dave"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "memory-archivist",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "rnd-lead": {
+          "id": "rnd-lead",
+          "label": "R&D Lead",
+          "templateId": "support-node",
+          "type": "support",
+          "capabilities": [
+            "ops",
+            "coordination",
+            "handoffs"
+          ],
+          "editable": false,
+          "departmentId": "dept-research",
+          "position": {
+            "x": 954,
+            "y": 640
+          },
+          "assignedAgentIds": [
+            "rnd-lead"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "rnd-lead",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "cto-architect": {
+          "id": "cto-architect",
+          "label": "CTO / Architect",
+          "templateId": "control-node",
+          "type": "control",
+          "capabilities": [
+            "oversight",
+            "guardrails",
+            "assignment"
+          ],
+          "editable": true,
+          "departmentId": "dept-control",
+          "position": {
+            "x": 990,
+            "y": 422
+          },
+          "assignedAgentIds": [
+            "cto-architect"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "cto-architect",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "integration_auditor": {
+          "id": "integration_auditor",
+          "label": "Integration Auditor",
+          "templateId": "talent-node",
+          "type": "talent",
+          "capabilities": [
+            "coverage",
+            "hiring-demand",
+            "role-readiness"
+          ],
+          "editable": false,
+          "departmentId": "dept-talent-acquisition",
+          "position": {
+            "x": 986,
+            "y": 174
+          },
+          "assignedAgentIds": [
+            "integration_auditor"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "integration_auditor",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        }
+      },
+      "organization": {
+        "schemaVersion": "studio-relationships.v1",
+        "relationshipTypes": {
+          "parent": "parent",
+          "peer": "peer",
+          "support": "support",
+          "dependency": "dependency"
+        },
+        "departments": {
+          "dept-intake": {
+            "id": "dept-intake",
+            "label": "Intake",
+            "kind": "intake",
+            "templateId": "intake",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "cto-architect"
+            ],
+            "deskIds": [
+              "context-manager"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "context-manager",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "context-manager"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "context-manager",
+                  "deskId": "context-manager",
+                  "label": "context manager",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-delivery": {
+            "id": "dept-delivery",
+            "label": "Delivery",
+            "kind": "delivery",
+            "templateId": "delivery",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-quality",
+              "dept-archive",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "planner",
+              "executor"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "planner",
+              "minimumActiveSeats": 2,
+              "baselineRoleIds": [
+                "planner",
+                "executor"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "planner",
+                  "deskId": "planner",
+                  "label": "planner",
+                  "seatKind": "lead",
+                  "open": true
+                },
+                {
+                  "roleId": "executor",
+                  "deskId": "executor",
+                  "label": "executor",
+                  "seatKind": "core",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-quality": {
+            "id": "dept-quality",
+            "label": "Quality",
+            "kind": "quality",
+            "templateId": "quality",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-archive",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-archive",
+              "dept-control"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "memory-archivist",
+              "cto-architect"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "planner",
+              "executor",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "qa-lead"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "qa-lead",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "qa-lead"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "qa-lead",
+                  "deskId": "qa-lead",
+                  "label": "qa lead",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-archive": {
+            "id": "dept-archive",
+            "label": "Archive",
+            "kind": "archive",
+            "templateId": "archive",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-quality",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "qa-lead",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "memory-archivist"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "memory-archivist",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "memory-archivist"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "memory-archivist",
+                  "deskId": "memory-archivist",
+                  "label": "memory archivist",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-research": {
+            "id": "dept-research",
+            "label": "R&D / Research & Development",
+            "kind": "research",
+            "templateId": "research",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-delivery"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "rnd-lead"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "rnd-lead",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "rnd-lead"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "rnd-lead",
+                  "deskId": "rnd-lead",
+                  "label": "rnd lead",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-control": {
+            "id": "dept-control",
+            "label": "Control Centre",
+            "kind": "control",
+            "templateId": "control",
+            "parentDepartmentId": null,
+            "peerDepartmentIds": [],
+            "supportDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [],
+            "supportDeskIds": [
+              "context-manager",
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [],
+            "deskIds": [
+              "cto-architect"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "cto-architect",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "cto-architect"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "cto-architect",
+                  "deskId": "cto-architect",
+                  "label": "cto architect",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-talent-acquisition": {
+            "id": "dept-talent-acquisition",
+            "label": "Talent Acquisition",
+            "kind": "talent",
+            "templateId": "talent",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "supportDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "integration_auditor"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "integration_auditor",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "integration_auditor"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "integration_auditor",
+                  "deskId": "integration_auditor",
+                  "label": "integration auditor",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          }
+        },
+        "desks": {
+          "context-manager": {
+            "id": "context-manager",
+            "label": "Context Manager",
+            "departmentId": "dept-intake",
+            "ownerDepartmentId": "dept-intake",
+            "parentDepartmentId": "dept-intake",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "context-manager"
+            ],
+            "staffing": {
+              "roleId": "context-manager",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "planner": {
+            "id": "planner",
+            "label": "Planner",
+            "departmentId": "dept-delivery",
+            "ownerDepartmentId": "dept-delivery",
+            "parentDepartmentId": "dept-delivery",
+            "peerDeskIds": [
+              "executor"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "planner"
+            ],
+            "staffing": {
+              "roleId": "planner",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "executor": {
+            "id": "executor",
+            "label": "Executor",
+            "departmentId": "dept-delivery",
+            "ownerDepartmentId": "dept-delivery",
+            "parentDepartmentId": "dept-delivery",
+            "peerDeskIds": [
+              "planner"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "executor"
+            ],
+            "staffing": {
+              "roleId": "executor",
+              "seatKind": "core",
+              "placeholder": true
+            }
+          },
+          "qa-lead": {
+            "id": "qa-lead",
+            "label": "QA Lead",
+            "departmentId": "dept-quality",
+            "ownerDepartmentId": "dept-quality",
+            "parentDepartmentId": "dept-quality",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-archive",
+              "dept-control"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "memory-archivist",
+              "cto-architect"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "planner",
+              "executor",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "qa-lead"
+            ],
+            "staffing": {
+              "roleId": "qa-lead",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "memory-archivist": {
+            "id": "memory-archivist",
+            "label": "Memory Archivist",
+            "departmentId": "dept-archive",
+            "ownerDepartmentId": "dept-archive",
+            "parentDepartmentId": "dept-archive",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-quality",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "qa-lead",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "memory-archivist",
+              "dave"
+            ],
+            "staffing": {
+              "roleId": "memory-archivist",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "rnd-lead": {
+            "id": "rnd-lead",
+            "label": "R&D Lead",
+            "departmentId": "dept-research",
+            "ownerDepartmentId": "dept-research",
+            "parentDepartmentId": "dept-research",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-delivery"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "rnd-lead"
+            ],
+            "staffing": {
+              "roleId": "rnd-lead",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "cto-architect": {
+            "id": "cto-architect",
+            "label": "CTO / Architect",
+            "departmentId": "dept-control",
+            "ownerDepartmentId": "dept-control",
+            "parentDepartmentId": "dept-control",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [],
+            "supportDeskIds": [
+              "context-manager",
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "cto-architect"
+            ],
+            "staffing": {
+              "roleId": "cto-architect",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "integration_auditor": {
+            "id": "integration_auditor",
+            "label": "Integration Auditor",
+            "departmentId": "dept-talent-acquisition",
+            "ownerDepartmentId": "dept-talent-acquisition",
+            "parentDepartmentId": "dept-talent-acquisition",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "integration_auditor"
+            ],
+            "staffing": {
+              "roleId": "integration_auditor",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          }
+        },
+        "agents": {
+          "context-manager": {
+            "id": "context-manager",
+            "agentId": "context-manager",
+            "roleId": "context-manager",
+            "deskId": "context-manager",
+            "departmentId": "dept-intake",
+            "modelProfileId": "model-profile.default.context-manager"
+          },
+          "planner": {
+            "id": "planner",
+            "agentId": "planner",
+            "roleId": "planner",
+            "deskId": "planner",
+            "departmentId": "dept-delivery",
+            "modelProfileId": "model-profile.planner-default"
+          },
+          "executor": {
+            "id": "executor",
+            "agentId": "executor",
+            "roleId": "executor",
+            "deskId": "executor",
+            "departmentId": "dept-delivery",
+            "modelProfileId": "model-profile.default.executor"
+          },
+          "qa-lead": {
+            "id": "qa-lead",
+            "agentId": "qa-lead",
+            "roleId": "qa-lead",
+            "deskId": "qa-lead",
+            "departmentId": "dept-quality",
+            "modelProfileId": "model-profile.default.qa-lead"
+          },
+          "memory-archivist": {
+            "id": "memory-archivist",
+            "agentId": "memory-archivist",
+            "roleId": "memory-archivist",
+            "deskId": "memory-archivist",
+            "departmentId": "dept-archive",
+            "modelProfileId": "model-profile.default.memory-archivist"
+          },
+          "dave": {
+            "id": "dave",
+            "agentId": "dave",
+            "roleId": "memory-archivist",
+            "deskId": "memory-archivist",
+            "departmentId": "dept-archive",
+            "modelProfileId": "model-profile.default.dave"
+          },
+          "rnd-lead": {
+            "id": "rnd-lead",
+            "agentId": "rnd-lead",
+            "roleId": "rnd-lead",
+            "deskId": "rnd-lead",
+            "departmentId": "dept-research",
+            "modelProfileId": "model-profile.default.rnd-lead"
+          },
+          "cto-architect": {
+            "id": "cto-architect",
+            "agentId": "cto-architect",
+            "roleId": "cto-architect",
+            "deskId": "cto-architect",
+            "departmentId": "dept-control",
+            "modelProfileId": "model-profile.default.cto-architect"
+          },
+          "integration_auditor": {
+            "id": "integration_auditor",
+            "agentId": "integration_auditor",
+            "roleId": "integration_auditor",
+            "deskId": "integration_auditor",
+            "departmentId": "dept-talent-acquisition",
+            "modelProfileId": "model-profile.default.integration_auditor"
+          }
+        },
+        "planner": {
+          "schemaVersion": "planner-identity.v1",
+          "deskId": "planner",
+          "roleId": "planner",
+          "agentId": "planner",
+          "modelProfileId": "model-profile.planner-default",
+          "departmentId": "dept-delivery",
+          "requiredLeadSeatId": "planner",
+          "assignedAgentIds": [
+            "planner"
+          ],
+          "live": true,
+          "canonical": {
+            "deskId": "planner",
+            "roleId": "planner",
+            "agentId": "planner",
+            "modelProfileId": "model-profile.planner-default",
+            "departmentId": "dept-delivery",
+            "requiredLeadSeatId": "planner"
+          },
+          "desk": {
+            "id": "planner",
+            "label": "Planner",
+            "departmentId": "dept-delivery",
+            "ownerDepartmentId": "dept-delivery",
+            "parentDepartmentId": "dept-delivery",
+            "peerDeskIds": [
+              "executor"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "planner"
+            ],
+            "staffing": {
+              "roleId": "planner",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "department": {
+            "id": "dept-delivery",
+            "label": "Delivery",
+            "kind": "delivery",
+            "templateId": "delivery",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-quality",
+              "dept-archive",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "planner",
+              "executor"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "planner",
+              "minimumActiveSeats": 2,
+              "baselineRoleIds": [
+                "planner",
+                "executor"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "planner",
+                  "deskId": "planner",
+                  "label": "planner",
+                  "seatKind": "lead",
+                  "open": true
+                },
+                {
+                  "roleId": "executor",
+                  "deskId": "executor",
+                  "label": "executor",
+                  "seatKind": "core",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "agent": {
+            "id": "planner",
+            "agentId": "planner",
+            "roleId": "planner",
+            "deskId": "planner",
+            "departmentId": "dept-delivery",
+            "modelProfileId": "model-profile.planner-default"
+          },
+          "matches": {
+            "desk": true,
+            "role": true,
+            "agent": true,
+            "department": true,
+            "modelProfile": true,
+            "assignment": true
+          }
+        },
+        "qaLead": {
+          "id": "qa-lead",
+          "agentId": "qa-lead",
+          "roleId": "qa-lead",
+          "deskId": "qa-lead",
+          "departmentId": "dept-quality",
+          "modelProfileId": "model-profile.default.qa-lead"
+        }
+      }
+    },
     "handoffs": {
       "contextToPlanner": {
         "id": "handoff_1774615405452_2yc7",
@@ -746,182 +1982,6 @@
           "status": "needs-clarification"
         }
       ]
-    },
-    "agentWorkers": {
-      "context-manager": {
-        "status": "idle",
-        "statusReason": null,
-        "mode": "manual",
-        "backend": "ollama",
-        "model": "mistral:latest",
-        "currentRunId": null,
-        "lastRunId": null,
-        "lastOutcome": null,
-        "lastOutcomeAt": null,
-        "lastSourceNodeId": null,
-        "lastHandoffId": null,
-        "lastReportNodeId": null,
-        "lastBlockedReason": null,
-        "lastUsedFallback": false,
-        "lastPlannerFeedbackAction": null,
-        "startedAt": null,
-        "completedAt": null
-      },
-      "executor": {
-        "status": "idle",
-        "statusReason": null,
-        "mode": "manual",
-        "backend": "ollama",
-        "model": "mistral:latest",
-        "currentRunId": null,
-        "lastRunId": null,
-        "lastOutcome": null,
-        "lastOutcomeAt": null,
-        "lastBlockedReason": null,
-        "lastCardId": null,
-        "lastTaskId": null,
-        "lastDecision": null,
-        "lastAssessmentSummary": null,
-        "lastAssessmentBlockers": [],
-        "lastVerifiedCardId": null,
-        "lastAppliedCardId": null,
-        "lastDeployCardId": null,
-        "startedAt": null,
-        "completedAt": null
-      },
-      "planner": {
-        "status": "idle",
-        "statusReason": null,
-        "mode": "auto",
-        "backend": "ollama",
-        "model": "mistral:latest",
-        "currentRunId": null,
-        "lastRunId": null,
-        "lastOutcome": null,
-        "lastOutcomeAt": null,
-        "lastSourceHandoffId": null,
-        "lastBlockedReason": null,
-        "lastProducedCardIds": [],
-        "proposalArtifactRefs": [],
-        "startedAt": null,
-        "completedAt": null
-      },
-      "dave": {
-        "name": "Dave",
-        "role": "Practical learning companion",
-        "status": "idle",
-        "statusReason": null,
-        "mode": "manual",
-        "backend": "ollama",
-        "model": "mistral:latest",
-        "currentRunId": null,
-        "lastRunId": null,
-        "tokensUsed": 0,
-        "durationMs": 0,
-        "responseStatus": "idle",
-        "contextAlignmentScore": 0,
-        "contextAlignmentReason": null,
-        "startedAt": null,
-        "completedAt": null
-      }
-    },
-    "deskProperties": {
-      "context-manager": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "planner": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "executor": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "qa-lead": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "memory-archivist": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "rnd-lead": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "cto-architect": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      },
-      "integration_auditor": {
-        "managedAgents": [],
-        "moduleIds": [],
-        "manualTests": [],
-        "departmentContext": "",
-        "guardrails": [],
-        "contextSlices": []
-      }
-    },
-    "selfUpgrade": {
-      "status": "idle",
-      "targetProjectKey": "ace-self",
-      "taskId": "",
-      "patchReview": null,
-      "preflight": {
-        "status": "idle",
-        "ok": null,
-        "checkedAt": null,
-        "checks": [],
-        "summary": "Run preflight before applying a self patch."
-      },
-      "apply": {
-        "status": "idle",
-        "ok": null,
-        "appliedAt": null,
-        "branch": null,
-        "commit": null,
-        "taskId": ""
-      },
-      "deploy": {
-        "status": "idle",
-        "requestedAt": null,
-        "restartedAt": null,
-        "health": {
-          "status": "ready",
-          "pid": 17828,
-          "startedAt": "2026-03-28T08:32:40.632Z"
-        }
-      },
-      "requiresPermission": "none"
     },
     "teamBoard": {
       "cards": [
@@ -34228,54 +35288,371 @@
             "notes": []
           },
           "createdAt": "2026-03-27T12:39:27.479Z",
-          "updatedAt": "2026-04-01T21:57:08.262Z",
+          "updatedAt": "2026-04-04T23:04:23.844Z",
           "desk": "CTO",
           "state": "Flagged",
-          "lastHealth": null,
-          "executionProvenance": {
-            "classification": "mixed",
-            "orchestration": "studio",
-            "execution": "hybrid",
-            "engine": "ace-studio-builder-pipeline",
-            "stageIds": [
-              "builder",
-              "scan",
-              "manage",
-              "build"
-            ],
-            "legacyActions": [
-              "scan",
-              "manage",
-              "build"
-            ],
-            "nativeActions": [
-              "studio-orchestration"
-            ],
-            "evidence": [
-              "route:studio",
-              "route:legacy-fallback",
-              "source:team-board-builder"
-            ],
-            "notes": []
-          }
+          "lastHealth": null
+        },
+        {
+          "pageId": "page_1774615405445_ect6",
+          "id": "0002",
+          "title": "Planner task",
+          "summary": "One task for Planner coverage.",
+          "status": "complete",
+          "sourceKey": "page_1774615405445_ect6:planner-task",
+          "sourceNodeId": "cto-pipeline-1775126637045-pchod3",
+          "sourceIntentId": "cto-pipeline-1775126637045-pchod3",
+          "sourceHandoffId": "cto-pipeline-1775126637045-pchod3",
+          "sourceAnchorRefs": [
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/slices.md"
+          ],
+          "taskFlow": {
+            "phase": "active",
+            "assignmentState": "assigned",
+            "ownerDeskId": "planner",
+            "assigneeDeskId": "executor",
+            "sourceIntentId": "cto-pipeline-1775126637045-pchod3",
+            "sourceHandoffId": "cto-pipeline-1775126637045-pchod3",
+            "lastTransitionAt": "2026-04-02T10:43:57.088Z",
+            "lastTransitionLabel": "Active on planner slab",
+            "history": [
+              {
+                "phase": "active",
+                "assignmentState": "assigned",
+                "ownerDeskId": "planner",
+                "assigneeDeskId": "executor",
+                "label": "Active on planner slab",
+                "note": "Planner task",
+                "at": "2026-04-02T10:43:57.088Z"
+              },
+              {
+                "phase": "active",
+                "assignmentState": "assigned",
+                "ownerDeskId": "planner",
+                "assigneeDeskId": "executor",
+                "label": "Placed into active",
+                "note": "Planner task",
+                "at": "2026-04-02T10:43:57.088Z"
+              },
+              {
+                "phase": "planned",
+                "assignmentState": "unassigned",
+                "ownerDeskId": "planner",
+                "assigneeDeskId": "executor",
+                "label": "Moved to planner board",
+                "note": "Planner task",
+                "at": "2026-04-02T10:43:57.059Z"
+              },
+              {
+                "phase": "captured",
+                "assignmentState": "unassigned",
+                "ownerDeskId": "context-manager",
+                "assigneeDeskId": "planner",
+                "label": "Captured from intent",
+                "note": "Planner task",
+                "at": "2026-04-02T10:43:57.059Z"
+              }
+            ]
+          },
+          "phaseTicks": 0,
+          "targetProjectKey": "ace-self",
+          "builderTaskId": "10000",
+          "runnerTaskId": "10000",
+          "runIds": [],
+          "artifactRefs": [],
+          "executionPackage": {
+            "status": "ready",
+            "taskId": "10000",
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": "One narrow fix applied.",
+            "verificationPlan": {
+              "required": false,
+              "commands": [],
+              "qaScenarios": [],
+              "signature": null,
+              "summary": "No verification required.",
+              "generatedAt": null
+            }
+          },
+          "executorBlocker": {
+            "code": "preflight-blocked",
+            "message": "Missing required files: brain/emergence/project_brain.md",
+            "updatedAt": "2026-04-02T10:43:58.088Z"
+          },
+          "verifyRequired": false,
+          "verifyStatus": "idle",
+          "verifyRunIds": [],
+          "verifyArtifacts": [],
+          "lastVerificationSummary": "",
+          "verifiedSignature": null,
+          "riskLevel": "high",
+          "riskReasons": [
+            "Missing required files: brain/emergence/project_brain.md",
+            "M brain/context/agent_audits/builder/builder_0001.json\n M brain/context/agent_audits/builder/builder_0001.md\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/cto-diagnostics.json\n M data/spatial/history.json\n M data/spatial/pages.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/failureMemory.js\n M ui/intentAnalysis.js\n M ui/knownFixes.js\n M ui/orchestratorState.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/qaRunner.js\n M ui/server.js\n M ui/studioLayoutSchema.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/ctoPipeline.test.mjs\n M ui/tests/intentAnalysis.test.mjs\n M ui/tests/orchestratorState.test.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M ui/tests/studioLayoutRelationships.test.mjs\n M ui/throughputDebug.js"
+          ],
+          "approvalState": "approved",
+          "applyStatus": "applied",
+          "deployStatus": "idle",
+          "branch": null,
+          "commit": null,
+          "auditSessionId": null,
+          "provenance": null,
+          "createdAt": "2026-04-02T10:43:57.059Z",
+          "updatedAt": "2026-04-04T23:04:23.844Z",
+          "desk": "Executor",
+          "state": "Applied, awaiting deploy",
+          "lastHealth": null
         }
       ],
       "selectedCardId": "0001",
-      "updatedAt": "2026-04-01T21:57:08.262Z",
+      "updatedAt": "2026-04-04T23:04:23.844Z",
       "summary": {
         "plan": 0,
         "active": 0,
-        "complete": 0,
+        "complete": 1,
         "review": 1,
-        "assigned": 1,
+        "assigned": 2,
         "handedOff": 0,
         "binned": 0,
         "idleWorkers": 0
       }
     },
+    "agentWorkers": {
+      "context-manager": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastSourceNodeId": null,
+        "lastHandoffId": null,
+        "lastReportNodeId": null,
+        "lastBlockedReason": null,
+        "lastUsedFallback": false,
+        "lastPlannerFeedbackAction": null,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "executor": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastBlockedReason": null,
+        "lastCardId": null,
+        "lastTaskId": null,
+        "lastDecision": null,
+        "lastAssessmentSummary": null,
+        "lastAssessmentBlockers": [],
+        "lastVerifiedCardId": null,
+        "lastAppliedCardId": null,
+        "lastDeployCardId": null,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "planner": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "auto",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastSourceHandoffId": null,
+        "lastBlockedReason": null,
+        "lastProducedCardIds": [],
+        "proposalArtifactRefs": [],
+        "startedAt": null,
+        "completedAt": null
+      },
+      "dave": {
+        "name": "Dave",
+        "role": "Practical learning companion",
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "tokensUsed": 0,
+        "durationMs": 0,
+        "responseStatus": "idle",
+        "contextAlignmentScore": 0,
+        "contextAlignmentReason": null,
+        "startedAt": null,
+        "completedAt": null
+      }
+    },
+    "ctoOverrides": {
+      "version": "1",
+      "updatedAt": null,
+      "entries": [
+        {
+          "overrideId": "override_force_plan_1",
+          "kind": "force-plan-generation",
+          "summary": "Force planner generation for the smoke pack.",
+          "reason": "Force planner generation for the smoke pack.",
+          "requestedBy": "cto",
+          "status": "active",
+          "createdAt": "2026-04-02T12:28:48.403Z",
+          "updatedAt": "2026-04-02T12:28:48.403Z",
+          "appliedAt": "2026-04-02T12:28:48.403Z",
+          "explicit": true,
+          "target": {
+            "deskId": "planner",
+            "deskLabel": null,
+            "roleId": null,
+            "agentId": null,
+            "planId": null,
+            "handoffId": "handoff_regression_1",
+            "queueKey": null,
+            "intentId": null
+          },
+          "effect": {
+            "forcePlannerRouting": false,
+            "forcePlanningGeneration": true,
+            "reopenStalePlan": false,
+            "supersedeQueuePriority": false,
+            "requestEmergencyStaffingReview": false,
+            "handoffMode": null,
+            "queuePriority": null
+          },
+          "canonicalTruth": {
+            "staffing": {
+              "state": "absent"
+            }
+          },
+          "provenance": {
+            "sourceType": "cto-chat",
+            "sourceRef": "chat-regression",
+            "sourceIntentId": null,
+            "sourceHandoffId": null,
+            "sourceActionId": null,
+            "sourceRoute": null,
+            "sourceDeskId": null
+          }
+        }
+      ]
+    },
+    "deskProperties": {
+      "context-manager": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "planner": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "executor": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "qa-lead": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "memory-archivist": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "rnd-lead": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "cto-architect": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "integration_auditor": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      }
+    },
+    "selfUpgrade": {
+      "status": "idle",
+      "targetProjectKey": "ace-self",
+      "taskId": "",
+      "patchReview": null,
+      "preflight": {
+        "status": "idle",
+        "ok": null,
+        "checkedAt": null,
+        "checks": [],
+        "summary": "Run preflight before applying a self patch."
+      },
+      "apply": {
+        "status": "idle",
+        "ok": null,
+        "appliedAt": null,
+        "branch": null,
+        "commit": null,
+        "taskId": ""
+      },
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": 33844,
+          "startedAt": "2026-04-02T12:28:48.357Z"
+        }
+      },
+      "requiresPermission": "none"
+    },
     "orchestrator": {
       "status": "needs-attention",
-      "lastTickAt": "2026-04-01T21:57:08.267Z",
+      "lastTickAt": "2026-04-04T23:04:23.850Z",
       "activeDeskIds": [
         "context-manager",
         "memory-archivist",
@@ -34365,7 +35742,7 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T21:57:08.264Z",
+          "freshAt": "2026-04-04T23:04:23.846Z",
           "thoughtBubble": "Context status: queued. Clarification is needed before planner can continue."
         },
         "planner": {
@@ -34416,15 +35793,15 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T21:57:08.264Z",
+          "freshAt": "2026-04-04T23:04:23.847Z",
           "thoughtBubble": "Planner status: blocked. Waiting for a clarified handoff."
         },
         "executor": {
           "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
           "localState": "blocked",
           "statusLabel": "Execution gated",
-          "statusDetail": "M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md",
-          "currentGoal": "Awaiting approval: Update or check the status of RGS nodes",
+          "statusDetail": "Missing required files: brain/emergence/project_brain.md",
+          "currentGoal": "Apply approved card: Planner task",
           "allowedActions": [
             "apply-package",
             "run-preflight",
@@ -34433,39 +35810,29 @@
           ],
           "workItems": [
             {
-              "id": "0001-approval",
+              "id": "0002-execution",
               "pageId": "page_1774615405445_ect6",
               "deskId": "executor",
-              "kind": "approval-gated",
-              "status": "waiting",
+              "kind": "apply",
+              "status": "ready",
               "dependsOn": [
-                "handoff_1774615405452_2yc7"
+                "cto-pipeline-1775126637045-pchod3"
               ],
               "conflictTags": [
                 "execute",
-                "0001"
+                "0002"
               ],
-              "artifactRefs": [
-                "work/tasks/10000-update-or-check-the-status-of-rgs-nodes/context.md",
-                "work/tasks/10000-update-or-check-the-status-of-rgs-nodes/idea.txt",
-                "work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json",
-                "work/tasks/10000-update-or-check-the-status-of-rgs-nodes/patch.diff",
-                "work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md"
-              ],
+              "artifactRefs": [],
               "anchorRefs": [
-                "brain/emergence/decisions.md",
                 "brain/emergence/project_brain.md",
                 "brain/emergence/roadmap.md",
-                "brain/emergence/slices.md",
-                "brain/emergence/changelog.md",
-                "brain/emergence/plan.md",
-                "brain/emergence/tasks.md"
+                "brain/emergence/slices.md"
               ],
-              "blockerMessage": "M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md",
-              "title": "Awaiting approval: Update or check the status of RGS nodes"
+              "blockerMessage": "Missing required files: brain/emergence/project_brain.md",
+              "title": "Apply approved card: Planner task"
             }
           ],
-          "lastOutput": "Awaiting approval: Update or check the status of RGS nodes",
+          "lastOutput": "Applied, awaiting deploy: Planner task",
           "blockedReason": "M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md",
           "contextSlice": {
             "activePageId": "page_1774615405445_ect6",
@@ -34473,7 +35840,7 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T21:57:08.265Z",
+          "freshAt": "2026-04-04T23:04:23.847Z",
           "thoughtBubble": "Executor status: blocked. Waiting for clearer context."
         },
         "memory-archivist": {
@@ -34521,7 +35888,7 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T21:57:08.266Z",
+          "freshAt": "2026-04-04T23:04:23.848Z",
           "thoughtBubble": "Archivist status: running. Logging summaries."
         },
         "cto-architect": {
@@ -34572,1272 +35939,11 @@
             "pageGoal": "Migrate to canonical anchor-based ACE system",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-01T21:57:08.267Z",
+          "freshAt": "2026-04-04T23:04:23.849Z",
           "thoughtBubble": "Governance status: blocked. Reviewing blocker: M README_CORE.md\n M brain/context/next_slice.md\n M brain/context/recent_change_digest.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/local-gates/test-unit-latest.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M ui/agentWorkers.js\n M ui/archivistWriteback.js\n M ui/graphMutations.js\n M ui/public/app.js\n M ui/public/index.html\n M ui/public/spatial/graphEngine.js\n M ui/public/spatial/spatialApp.js\n M ui/public/style.css\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/appViewerMode.test.mjs\n M ui/tests/archivistWriteback.test.mjs\n M ui/tests/graphEngine.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/run-ui-tests.mjs\n M ui/tests/server.test.mjs\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/meta.json\n M work/tasks/10000-update-or-check-the-status-of-rgs-nodes/plan.md"
         }
       },
       "activePageId": "page_1774615405445_ect6"
-    },
-    "layout": {
-      "version": "studio-layout.v1",
-      "size": {
-        "width": 1200,
-        "height": 800
-      },
-      "bounds": {
-        "x": 56,
-        "y": 72,
-        "width": 1088,
-        "height": 664,
-        "slotId": null
-      },
-      "whiteboards": {
-        "teamBoard": {
-          "x": 284,
-          "y": 88,
-          "width": 584,
-          "height": 208
-        }
-      },
-      "controlCentreDeskId": "cto-architect",
-      "departments": [
-        {
-          "id": "dept-intake",
-          "label": "Intake",
-          "templateId": "intake",
-          "kind": "intake",
-          "summary": "Frontline intake and interpretation room for incoming work.",
-          "editable": false,
-          "visible": true,
-          "slotId": "intake-bay",
-          "bounds": {
-            "x": 92,
-            "y": 108,
-            "width": 220,
-            "height": 238,
-            "slotId": "intake-bay"
-          },
-          "deskIds": [
-            "context-manager"
-          ],
-          "controlCentreDeskId": "cto-architect",
-          "staffing": {
-            "requiredLeadSeatId": "context-manager",
-            "minimumActiveSeats": 1,
-            "baselineRoleIds": [
-              "context-manager"
-            ],
-            "openSeatPlaceholders": [
-              {
-                "roleId": "context-manager",
-                "deskId": "context-manager",
-                "label": "context manager",
-                "seatKind": "lead",
-                "open": true
-              }
-            ]
-          }
-        },
-        {
-          "id": "dept-delivery",
-          "label": "Delivery",
-          "templateId": "delivery",
-          "kind": "delivery",
-          "summary": "Planning and execution room for active build throughput.",
-          "editable": true,
-          "visible": true,
-          "slotId": "delivery-bay",
-          "bounds": {
-            "x": 334,
-            "y": 86,
-            "width": 514,
-            "height": 470,
-            "slotId": "delivery-bay"
-          },
-          "deskIds": [
-            "planner",
-            "executor"
-          ],
-          "controlCentreDeskId": "cto-architect",
-          "staffing": {
-            "requiredLeadSeatId": "planner",
-            "minimumActiveSeats": 2,
-            "baselineRoleIds": [
-              "planner",
-              "executor"
-            ],
-            "openSeatPlaceholders": [
-              {
-                "roleId": "planner",
-                "deskId": "planner",
-                "label": "planner",
-                "seatKind": "lead",
-                "open": true
-              },
-              {
-                "roleId": "executor",
-                "deskId": "executor",
-                "label": "executor",
-                "seatKind": "core",
-                "open": true
-              }
-            ]
-          }
-        },
-        {
-          "id": "dept-quality",
-          "label": "Quality",
-          "templateId": "quality",
-          "kind": "quality",
-          "summary": "Assessment room for QA reports, scorecards, and readiness evidence.",
-          "editable": true,
-          "visible": true,
-          "slotId": "quality-bay",
-          "bounds": {
-            "x": 92,
-            "y": 394,
-            "width": 220,
-            "height": 232,
-            "slotId": "quality-bay"
-          },
-          "deskIds": [
-            "qa-lead"
-          ],
-          "controlCentreDeskId": "cto-architect",
-          "staffing": {
-            "requiredLeadSeatId": "qa-lead",
-            "minimumActiveSeats": 1,
-            "baselineRoleIds": [
-              "qa-lead"
-            ],
-            "openSeatPlaceholders": [
-              {
-                "roleId": "qa-lead",
-                "deskId": "qa-lead",
-                "label": "qa lead",
-                "seatKind": "lead",
-                "open": true
-              }
-            ]
-          }
-        },
-        {
-          "id": "dept-archive",
-          "label": "Archive",
-          "templateId": "archive",
-          "kind": "archive",
-          "summary": "Context preservation room owned by the Memory Archivist.",
-          "editable": true,
-          "visible": true,
-          "slotId": "archive-bay",
-          "bounds": {
-            "x": 454,
-            "y": 580,
-            "width": 312,
-            "height": 120,
-            "slotId": "archive-bay"
-          },
-          "deskIds": [
-            "memory-archivist"
-          ],
-          "controlCentreDeskId": "cto-architect",
-          "staffing": {
-            "requiredLeadSeatId": "memory-archivist",
-            "minimumActiveSeats": 1,
-            "baselineRoleIds": [
-              "memory-archivist"
-            ],
-            "openSeatPlaceholders": [
-              {
-                "roleId": "memory-archivist",
-                "deskId": "memory-archivist",
-                "label": "memory archivist",
-                "seatKind": "lead",
-                "open": true
-              }
-            ]
-          }
-        },
-        {
-          "id": "dept-research",
-          "label": "R&D / Research & Development",
-          "templateId": "research",
-          "kind": "research",
-          "summary": "Sandbox room for non-delivery research, prototypes, and experiments.",
-          "editable": true,
-          "visible": true,
-          "slotId": "expansion-b",
-          "bounds": {
-            "x": 808,
-            "y": 564,
-            "width": 292,
-            "height": 136,
-            "slotId": "expansion-b"
-          },
-          "deskIds": [
-            "rnd-lead"
-          ],
-          "controlCentreDeskId": "cto-architect",
-          "staffing": {
-            "requiredLeadSeatId": "rnd-lead",
-            "minimumActiveSeats": 1,
-            "baselineRoleIds": [
-              "rnd-lead"
-            ],
-            "openSeatPlaceholders": [
-              {
-                "roleId": "rnd-lead",
-                "deskId": "rnd-lead",
-                "label": "rnd lead",
-                "seatKind": "lead",
-                "open": true
-              }
-            ]
-          }
-        },
-        {
-          "id": "dept-control",
-          "label": "Control Centre",
-          "templateId": "control",
-          "kind": "control",
-          "summary": "Canonical oversight room for department relationships and environment controls.",
-          "editable": true,
-          "visible": true,
-          "slotId": "control-bay",
-          "bounds": {
-            "x": 884,
-            "y": 286,
-            "width": 214,
-            "height": 254,
-            "slotId": "control-bay"
-          },
-          "deskIds": [
-            "cto-architect"
-          ],
-          "controlCentreDeskId": "cto-architect",
-          "staffing": {
-            "requiredLeadSeatId": "cto-architect",
-            "minimumActiveSeats": 1,
-            "baselineRoleIds": [
-              "cto-architect"
-            ],
-            "openSeatPlaceholders": [
-              {
-                "roleId": "cto-architect",
-                "deskId": "cto-architect",
-                "label": "cto architect",
-                "seatKind": "lead",
-                "open": true
-              }
-            ]
-          }
-        },
-        {
-          "id": "dept-talent-acquisition",
-          "label": "Talent Acquisition",
-          "templateId": "talent",
-          "kind": "talent",
-          "summary": "Hiring-demand room for seat coverage, role fit, and open-role planning.",
-          "editable": false,
-          "visible": true,
-          "slotId": "talent-bay",
-          "bounds": {
-            "x": 850,
-            "y": 86,
-            "width": 250,
-            "height": 176,
-            "slotId": "talent-bay"
-          },
-          "deskIds": [
-            "integration_auditor"
-          ],
-          "controlCentreDeskId": "cto-architect",
-          "staffing": {
-            "requiredLeadSeatId": "integration_auditor",
-            "minimumActiveSeats": 1,
-            "baselineRoleIds": [
-              "integration_auditor"
-            ],
-            "openSeatPlaceholders": [
-              {
-                "roleId": "integration_auditor",
-                "deskId": "integration_auditor",
-                "label": "integration auditor",
-                "seatKind": "lead",
-                "open": true
-              }
-            ]
-          }
-        }
-      ],
-      "desks": {
-        "context-manager": {
-          "id": "context-manager",
-          "label": "Context Manager",
-          "templateId": "intake-node",
-          "type": "intake",
-          "capabilities": [
-            "context",
-            "triage",
-            "routing"
-          ],
-          "editable": false,
-          "departmentId": "dept-intake",
-          "position": {
-            "x": 182,
-            "y": 252
-          },
-          "assignedAgentIds": [
-            "context-manager"
-          ],
-          "reportsToDeskId": "cto-architect",
-          "staffing": {
-            "roleId": "context-manager",
-            "seatKind": "lead",
-            "placeholder": true
-          }
-        },
-        "planner": {
-          "id": "planner",
-          "label": "Planner",
-          "templateId": "delivery-node",
-          "type": "delivery",
-          "capabilities": [
-            "planning",
-            "queue",
-            "throughput"
-          ],
-          "editable": false,
-          "departmentId": "dept-delivery",
-          "position": {
-            "x": 536,
-            "y": 252
-          },
-          "assignedAgentIds": [
-            "planner"
-          ],
-          "reportsToDeskId": "cto-architect",
-          "staffing": {
-            "roleId": "planner",
-            "seatKind": "lead",
-            "placeholder": true
-          }
-        },
-        "executor": {
-          "id": "executor",
-          "label": "Executor",
-          "templateId": "builder-node",
-          "type": "builder",
-          "capabilities": [
-            "execution",
-            "integration",
-            "output"
-          ],
-          "editable": false,
-          "departmentId": "dept-delivery",
-          "position": {
-            "x": 682,
-            "y": 252
-          },
-          "assignedAgentIds": [
-            "executor"
-          ],
-          "reportsToDeskId": "cto-architect",
-          "staffing": {
-            "roleId": "executor",
-            "seatKind": "core",
-            "placeholder": true
-          }
-        },
-        "qa-lead": {
-          "id": "qa-lead",
-          "label": "QA Lead",
-          "templateId": "qa-node",
-          "type": "quality",
-          "capabilities": [
-            "testing",
-            "scorecards",
-            "verification"
-          ],
-          "editable": false,
-          "departmentId": "dept-quality",
-          "position": {
-            "x": 182,
-            "y": 510
-          },
-          "assignedAgentIds": [
-            "qa-lead"
-          ],
-          "reportsToDeskId": "cto-architect",
-          "staffing": {
-            "roleId": "qa-lead",
-            "seatKind": "lead",
-            "placeholder": true
-          }
-        },
-        "memory-archivist": {
-          "id": "memory-archivist",
-          "label": "Memory Archivist",
-          "templateId": "archive-node",
-          "type": "archive",
-          "capabilities": [
-            "context",
-            "history",
-            "traceability"
-          ],
-          "editable": false,
-          "departmentId": "dept-archive",
-          "position": {
-            "x": 620,
-            "y": 642
-          },
-          "assignedAgentIds": [
-            "memory-archivist",
-            "dave"
-          ],
-          "reportsToDeskId": "cto-architect",
-          "staffing": {
-            "roleId": "memory-archivist",
-            "seatKind": "lead",
-            "placeholder": true
-          }
-        },
-        "rnd-lead": {
-          "id": "rnd-lead",
-          "label": "R&D Lead",
-          "templateId": "support-node",
-          "type": "support",
-          "capabilities": [
-            "ops",
-            "coordination",
-            "handoffs"
-          ],
-          "editable": false,
-          "departmentId": "dept-research",
-          "position": {
-            "x": 954,
-            "y": 640
-          },
-          "assignedAgentIds": [
-            "rnd-lead"
-          ],
-          "reportsToDeskId": "cto-architect",
-          "staffing": {
-            "roleId": "rnd-lead",
-            "seatKind": "lead",
-            "placeholder": true
-          }
-        },
-        "cto-architect": {
-          "id": "cto-architect",
-          "label": "CTO / Architect",
-          "templateId": "control-node",
-          "type": "control",
-          "capabilities": [
-            "oversight",
-            "guardrails",
-            "assignment"
-          ],
-          "editable": true,
-          "departmentId": "dept-control",
-          "position": {
-            "x": 990,
-            "y": 422
-          },
-          "assignedAgentIds": [
-            "cto-architect"
-          ],
-          "reportsToDeskId": "cto-architect",
-          "staffing": {
-            "roleId": "cto-architect",
-            "seatKind": "lead",
-            "placeholder": true
-          }
-        },
-        "integration_auditor": {
-          "id": "integration_auditor",
-          "label": "Integration Auditor",
-          "templateId": "talent-node",
-          "type": "talent",
-          "capabilities": [
-            "coverage",
-            "hiring-demand",
-            "role-readiness"
-          ],
-          "editable": false,
-          "departmentId": "dept-talent-acquisition",
-          "position": {
-            "x": 986,
-            "y": 174
-          },
-          "assignedAgentIds": [
-            "integration_auditor"
-          ],
-          "reportsToDeskId": "cto-architect",
-          "staffing": {
-            "roleId": "integration_auditor",
-            "seatKind": "lead",
-            "placeholder": true
-          }
-        }
-      },
-      "organization": {
-        "schemaVersion": "studio-relationships.v1",
-        "relationshipTypes": {
-          "parent": "parent",
-          "peer": "peer",
-          "support": "support",
-          "dependency": "dependency"
-        },
-        "departments": {
-          "dept-intake": {
-            "id": "dept-intake",
-            "label": "Intake",
-            "kind": "intake",
-            "templateId": "intake",
-            "parentDepartmentId": "dept-control",
-            "peerDepartmentIds": [
-              "dept-delivery",
-              "dept-quality",
-              "dept-archive",
-              "dept-research",
-              "dept-talent-acquisition"
-            ],
-            "supportDepartmentIds": [
-              "dept-delivery",
-              "dept-quality",
-              "dept-archive",
-              "dept-research"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "planner",
-              "executor",
-              "qa-lead",
-              "memory-archivist",
-              "rnd-lead"
-            ],
-            "dependencyDeskIds": [
-              "cto-architect"
-            ],
-            "deskIds": [
-              "context-manager"
-            ],
-            "controlCentreDeskId": "cto-architect",
-            "staffing": {
-              "requiredLeadSeatId": "context-manager",
-              "minimumActiveSeats": 1,
-              "baselineRoleIds": [
-                "context-manager"
-              ],
-              "openSeatPlaceholders": [
-                {
-                  "roleId": "context-manager",
-                  "deskId": "context-manager",
-                  "label": "context manager",
-                  "seatKind": "lead",
-                  "open": true
-                }
-              ]
-            }
-          },
-          "dept-delivery": {
-            "id": "dept-delivery",
-            "label": "Delivery",
-            "kind": "delivery",
-            "templateId": "delivery",
-            "parentDepartmentId": "dept-control",
-            "peerDepartmentIds": [
-              "dept-intake",
-              "dept-quality",
-              "dept-archive",
-              "dept-research",
-              "dept-talent-acquisition"
-            ],
-            "supportDepartmentIds": [
-              "dept-quality"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-intake",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "qa-lead"
-            ],
-            "dependencyDeskIds": [
-              "context-manager",
-              "cto-architect"
-            ],
-            "deskIds": [
-              "planner",
-              "executor"
-            ],
-            "controlCentreDeskId": "cto-architect",
-            "staffing": {
-              "requiredLeadSeatId": "planner",
-              "minimumActiveSeats": 2,
-              "baselineRoleIds": [
-                "planner",
-                "executor"
-              ],
-              "openSeatPlaceholders": [
-                {
-                  "roleId": "planner",
-                  "deskId": "planner",
-                  "label": "planner",
-                  "seatKind": "lead",
-                  "open": true
-                },
-                {
-                  "roleId": "executor",
-                  "deskId": "executor",
-                  "label": "executor",
-                  "seatKind": "core",
-                  "open": true
-                }
-              ]
-            }
-          },
-          "dept-quality": {
-            "id": "dept-quality",
-            "label": "Quality",
-            "kind": "quality",
-            "templateId": "quality",
-            "parentDepartmentId": "dept-control",
-            "peerDepartmentIds": [
-              "dept-intake",
-              "dept-delivery",
-              "dept-archive",
-              "dept-research",
-              "dept-talent-acquisition"
-            ],
-            "supportDepartmentIds": [
-              "dept-archive",
-              "dept-control"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-intake",
-              "dept-delivery",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "memory-archivist",
-              "cto-architect"
-            ],
-            "dependencyDeskIds": [
-              "context-manager",
-              "planner",
-              "executor",
-              "cto-architect"
-            ],
-            "deskIds": [
-              "qa-lead"
-            ],
-            "controlCentreDeskId": "cto-architect",
-            "staffing": {
-              "requiredLeadSeatId": "qa-lead",
-              "minimumActiveSeats": 1,
-              "baselineRoleIds": [
-                "qa-lead"
-              ],
-              "openSeatPlaceholders": [
-                {
-                  "roleId": "qa-lead",
-                  "deskId": "qa-lead",
-                  "label": "qa lead",
-                  "seatKind": "lead",
-                  "open": true
-                }
-              ]
-            }
-          },
-          "dept-archive": {
-            "id": "dept-archive",
-            "label": "Archive",
-            "kind": "archive",
-            "templateId": "archive",
-            "parentDepartmentId": "dept-control",
-            "peerDepartmentIds": [
-              "dept-intake",
-              "dept-delivery",
-              "dept-quality",
-              "dept-research",
-              "dept-talent-acquisition"
-            ],
-            "supportDepartmentIds": [
-              "dept-research"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-intake",
-              "dept-quality",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "rnd-lead"
-            ],
-            "dependencyDeskIds": [
-              "context-manager",
-              "qa-lead",
-              "cto-architect"
-            ],
-            "deskIds": [
-              "memory-archivist"
-            ],
-            "controlCentreDeskId": "cto-architect",
-            "staffing": {
-              "requiredLeadSeatId": "memory-archivist",
-              "minimumActiveSeats": 1,
-              "baselineRoleIds": [
-                "memory-archivist"
-              ],
-              "openSeatPlaceholders": [
-                {
-                  "roleId": "memory-archivist",
-                  "deskId": "memory-archivist",
-                  "label": "memory archivist",
-                  "seatKind": "lead",
-                  "open": true
-                }
-              ]
-            }
-          },
-          "dept-research": {
-            "id": "dept-research",
-            "label": "R&D / Research & Development",
-            "kind": "research",
-            "templateId": "research",
-            "parentDepartmentId": "dept-control",
-            "peerDepartmentIds": [
-              "dept-intake",
-              "dept-delivery",
-              "dept-quality",
-              "dept-archive",
-              "dept-talent-acquisition"
-            ],
-            "supportDepartmentIds": [
-              "dept-delivery"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-intake",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "planner",
-              "executor"
-            ],
-            "dependencyDeskIds": [
-              "context-manager",
-              "cto-architect"
-            ],
-            "deskIds": [
-              "rnd-lead"
-            ],
-            "controlCentreDeskId": "cto-architect",
-            "staffing": {
-              "requiredLeadSeatId": "rnd-lead",
-              "minimumActiveSeats": 1,
-              "baselineRoleIds": [
-                "rnd-lead"
-              ],
-              "openSeatPlaceholders": [
-                {
-                  "roleId": "rnd-lead",
-                  "deskId": "rnd-lead",
-                  "label": "rnd lead",
-                  "seatKind": "lead",
-                  "open": true
-                }
-              ]
-            }
-          },
-          "dept-control": {
-            "id": "dept-control",
-            "label": "Control Centre",
-            "kind": "control",
-            "templateId": "control",
-            "parentDepartmentId": null,
-            "peerDepartmentIds": [],
-            "supportDepartmentIds": [
-              "dept-intake",
-              "dept-delivery",
-              "dept-quality",
-              "dept-archive",
-              "dept-research"
-            ],
-            "dependencyDepartmentIds": [],
-            "supportDeskIds": [
-              "context-manager",
-              "planner",
-              "executor",
-              "qa-lead",
-              "memory-archivist",
-              "rnd-lead"
-            ],
-            "dependencyDeskIds": [],
-            "deskIds": [
-              "cto-architect"
-            ],
-            "controlCentreDeskId": "cto-architect",
-            "staffing": {
-              "requiredLeadSeatId": "cto-architect",
-              "minimumActiveSeats": 1,
-              "baselineRoleIds": [
-                "cto-architect"
-              ],
-              "openSeatPlaceholders": [
-                {
-                  "roleId": "cto-architect",
-                  "deskId": "cto-architect",
-                  "label": "cto architect",
-                  "seatKind": "lead",
-                  "open": true
-                }
-              ]
-            }
-          },
-          "dept-talent-acquisition": {
-            "id": "dept-talent-acquisition",
-            "label": "Talent Acquisition",
-            "kind": "talent",
-            "templateId": "talent",
-            "parentDepartmentId": "dept-control",
-            "peerDepartmentIds": [
-              "dept-intake",
-              "dept-delivery",
-              "dept-quality",
-              "dept-archive",
-              "dept-research"
-            ],
-            "supportDepartmentIds": [
-              "dept-delivery",
-              "dept-quality",
-              "dept-archive",
-              "dept-research"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-delivery",
-              "dept-quality",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "planner",
-              "executor",
-              "qa-lead",
-              "memory-archivist",
-              "rnd-lead"
-            ],
-            "dependencyDeskIds": [
-              "planner",
-              "executor",
-              "qa-lead",
-              "cto-architect"
-            ],
-            "deskIds": [
-              "integration_auditor"
-            ],
-            "controlCentreDeskId": "cto-architect",
-            "staffing": {
-              "requiredLeadSeatId": "integration_auditor",
-              "minimumActiveSeats": 1,
-              "baselineRoleIds": [
-                "integration_auditor"
-              ],
-              "openSeatPlaceholders": [
-                {
-                  "roleId": "integration_auditor",
-                  "deskId": "integration_auditor",
-                  "label": "integration auditor",
-                  "seatKind": "lead",
-                  "open": true
-                }
-              ]
-            }
-          }
-        },
-        "desks": {
-          "context-manager": {
-            "id": "context-manager",
-            "label": "Context Manager",
-            "departmentId": "dept-intake",
-            "ownerDepartmentId": "dept-intake",
-            "parentDepartmentId": "dept-intake",
-            "peerDeskIds": [],
-            "supportDepartmentIds": [
-              "dept-delivery",
-              "dept-quality",
-              "dept-archive",
-              "dept-research"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "planner",
-              "executor",
-              "qa-lead",
-              "memory-archivist",
-              "rnd-lead"
-            ],
-            "dependencyDeskIds": [
-              "cto-architect"
-            ],
-            "reportsToDeskId": "cto-architect",
-            "assignedAgentIds": [
-              "context-manager"
-            ],
-            "staffing": {
-              "roleId": "context-manager",
-              "seatKind": "lead",
-              "placeholder": true
-            }
-          },
-          "planner": {
-            "id": "planner",
-            "label": "Planner",
-            "departmentId": "dept-delivery",
-            "ownerDepartmentId": "dept-delivery",
-            "parentDepartmentId": "dept-delivery",
-            "peerDeskIds": [
-              "executor"
-            ],
-            "supportDepartmentIds": [
-              "dept-quality"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-intake",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "qa-lead"
-            ],
-            "dependencyDeskIds": [
-              "context-manager",
-              "cto-architect"
-            ],
-            "reportsToDeskId": "cto-architect",
-            "assignedAgentIds": [
-              "planner"
-            ],
-            "staffing": {
-              "roleId": "planner",
-              "seatKind": "lead",
-              "placeholder": true
-            }
-          },
-          "executor": {
-            "id": "executor",
-            "label": "Executor",
-            "departmentId": "dept-delivery",
-            "ownerDepartmentId": "dept-delivery",
-            "parentDepartmentId": "dept-delivery",
-            "peerDeskIds": [
-              "planner"
-            ],
-            "supportDepartmentIds": [
-              "dept-quality"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-intake",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "qa-lead"
-            ],
-            "dependencyDeskIds": [
-              "context-manager",
-              "cto-architect"
-            ],
-            "reportsToDeskId": "cto-architect",
-            "assignedAgentIds": [
-              "executor"
-            ],
-            "staffing": {
-              "roleId": "executor",
-              "seatKind": "core",
-              "placeholder": true
-            }
-          },
-          "qa-lead": {
-            "id": "qa-lead",
-            "label": "QA Lead",
-            "departmentId": "dept-quality",
-            "ownerDepartmentId": "dept-quality",
-            "parentDepartmentId": "dept-quality",
-            "peerDeskIds": [],
-            "supportDepartmentIds": [
-              "dept-archive",
-              "dept-control"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-intake",
-              "dept-delivery",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "memory-archivist",
-              "cto-architect"
-            ],
-            "dependencyDeskIds": [
-              "context-manager",
-              "planner",
-              "executor",
-              "cto-architect"
-            ],
-            "reportsToDeskId": "cto-architect",
-            "assignedAgentIds": [
-              "qa-lead"
-            ],
-            "staffing": {
-              "roleId": "qa-lead",
-              "seatKind": "lead",
-              "placeholder": true
-            }
-          },
-          "memory-archivist": {
-            "id": "memory-archivist",
-            "label": "Memory Archivist",
-            "departmentId": "dept-archive",
-            "ownerDepartmentId": "dept-archive",
-            "parentDepartmentId": "dept-archive",
-            "peerDeskIds": [],
-            "supportDepartmentIds": [
-              "dept-research"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-intake",
-              "dept-quality",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "rnd-lead"
-            ],
-            "dependencyDeskIds": [
-              "context-manager",
-              "qa-lead",
-              "cto-architect"
-            ],
-            "reportsToDeskId": "cto-architect",
-            "assignedAgentIds": [
-              "memory-archivist",
-              "dave"
-            ],
-            "staffing": {
-              "roleId": "memory-archivist",
-              "seatKind": "lead",
-              "placeholder": true
-            }
-          },
-          "rnd-lead": {
-            "id": "rnd-lead",
-            "label": "R&D Lead",
-            "departmentId": "dept-research",
-            "ownerDepartmentId": "dept-research",
-            "parentDepartmentId": "dept-research",
-            "peerDeskIds": [],
-            "supportDepartmentIds": [
-              "dept-delivery"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-intake",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "planner",
-              "executor"
-            ],
-            "dependencyDeskIds": [
-              "context-manager",
-              "cto-architect"
-            ],
-            "reportsToDeskId": "cto-architect",
-            "assignedAgentIds": [
-              "rnd-lead"
-            ],
-            "staffing": {
-              "roleId": "rnd-lead",
-              "seatKind": "lead",
-              "placeholder": true
-            }
-          },
-          "cto-architect": {
-            "id": "cto-architect",
-            "label": "CTO / Architect",
-            "departmentId": "dept-control",
-            "ownerDepartmentId": "dept-control",
-            "parentDepartmentId": "dept-control",
-            "peerDeskIds": [],
-            "supportDepartmentIds": [
-              "dept-intake",
-              "dept-delivery",
-              "dept-quality",
-              "dept-archive",
-              "dept-research"
-            ],
-            "dependencyDepartmentIds": [],
-            "supportDeskIds": [
-              "context-manager",
-              "planner",
-              "executor",
-              "qa-lead",
-              "memory-archivist",
-              "rnd-lead"
-            ],
-            "dependencyDeskIds": [],
-            "reportsToDeskId": "cto-architect",
-            "assignedAgentIds": [
-              "cto-architect"
-            ],
-            "staffing": {
-              "roleId": "cto-architect",
-              "seatKind": "lead",
-              "placeholder": true
-            }
-          },
-          "integration_auditor": {
-            "id": "integration_auditor",
-            "label": "Integration Auditor",
-            "departmentId": "dept-talent-acquisition",
-            "ownerDepartmentId": "dept-talent-acquisition",
-            "parentDepartmentId": "dept-talent-acquisition",
-            "peerDeskIds": [],
-            "supportDepartmentIds": [
-              "dept-delivery",
-              "dept-quality",
-              "dept-archive",
-              "dept-research"
-            ],
-            "dependencyDepartmentIds": [
-              "dept-delivery",
-              "dept-quality",
-              "dept-control"
-            ],
-            "supportDeskIds": [
-              "planner",
-              "executor",
-              "qa-lead",
-              "memory-archivist",
-              "rnd-lead"
-            ],
-            "dependencyDeskIds": [
-              "planner",
-              "executor",
-              "qa-lead",
-              "cto-architect"
-            ],
-            "reportsToDeskId": "cto-architect",
-            "assignedAgentIds": [
-              "integration_auditor"
-            ],
-            "staffing": {
-              "roleId": "integration_auditor",
-              "seatKind": "lead",
-              "placeholder": true
-            }
-          }
-        },
-        "agents": {
-          "context-manager": {
-            "id": "context-manager",
-            "roleId": "context-manager",
-            "deskId": "context-manager",
-            "departmentId": "dept-intake",
-            "modelProfileId": "model-profile.default.context-manager"
-          },
-          "planner": {
-            "id": "planner",
-            "roleId": "planner",
-            "deskId": "planner",
-            "departmentId": "dept-delivery",
-            "modelProfileId": "model-profile.planner-default"
-          },
-          "executor": {
-            "id": "executor",
-            "roleId": "executor",
-            "deskId": "executor",
-            "departmentId": "dept-delivery",
-            "modelProfileId": "model-profile.default.executor"
-          },
-          "qa-lead": {
-            "id": "qa-lead",
-            "roleId": "qa-lead",
-            "deskId": "qa-lead",
-            "departmentId": "dept-quality",
-            "modelProfileId": "model-profile.default.qa-lead"
-          },
-          "memory-archivist": {
-            "id": "memory-archivist",
-            "roleId": "memory-archivist",
-            "deskId": "memory-archivist",
-            "departmentId": "dept-archive",
-            "modelProfileId": "model-profile.default.memory-archivist"
-          },
-          "dave": {
-            "id": "dave",
-            "roleId": "memory-archivist",
-            "deskId": "memory-archivist",
-            "departmentId": "dept-archive",
-            "modelProfileId": "model-profile.default.dave"
-          },
-          "rnd-lead": {
-            "id": "rnd-lead",
-            "roleId": "rnd-lead",
-            "deskId": "rnd-lead",
-            "departmentId": "dept-research",
-            "modelProfileId": "model-profile.default.rnd-lead"
-          },
-          "cto-architect": {
-            "id": "cto-architect",
-            "roleId": "cto-architect",
-            "deskId": "cto-architect",
-            "departmentId": "dept-control",
-            "modelProfileId": "model-profile.default.cto-architect"
-          },
-          "integration_auditor": {
-            "id": "integration_auditor",
-            "roleId": "integration_auditor",
-            "deskId": "integration_auditor",
-            "departmentId": "dept-talent-acquisition",
-            "modelProfileId": "model-profile.default.integration_auditor"
-          }
-        },
-        "planner": {
-          "deskId": "planner",
-          "roleId": "planner",
-          "agentId": "planner",
-          "modelProfileId": "model-profile.planner-default"
-        }
-      }
-    },
-    "scene": "studio",
-    "selectedAgentId": null,
-    "selectedTab": "qa",
-    "canvasViewport": {
-      "x": 361.50000000000006,
-      "y": -53.77999999999997,
-      "zoom": 1
-    },
-    "studioViewport": {
-      "x": 361.50000000000006,
-      "y": -53.77999999999997,
-      "zoom": 0.82
-    },
-    "activeGraphLayer": "system",
-    "worldViewMode": "2d"
-  },
-  "selectedDeskId": null,
-  "selectedTab": "qa",
-  "scene": "studio",
-  "activeGraphLayer": "system",
-  "worldViewMode": "2d",
-  "camera": {
-    "zoom": 0.82,
-    "x": 361.50000000000006,
-    "y": -53.77999999999997
-  },
-  "zoom": 1,
-  "openTraceId": null,
-  "openReportId": null,
-  "openTaskId": "10000"
+    }
+  }
 }

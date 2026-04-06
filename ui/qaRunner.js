@@ -1,5 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const {
+  attachPlannerQaFindingsToRun,
+} = require('./plannerQaQueue');
 
 const QA_RELATIVE_DIR = path.join('data', 'spatial', 'qa');
 const STRUCTURED_QA_RELATIVE_DIR = path.join(QA_RELATIVE_DIR, 'structured');
@@ -752,6 +755,28 @@ async function runQARun(options = {}) {
       findings: run.findings,
     }, 'json');
     finishStep(run, 'analyze', run.findings.some((finding) => finding.severity === 'error') ? 'weak' : 'pass');
+    if (linked && (linked.plannerRunId || linked.planId || linked.planBundleId)) {
+      try {
+        attachPlannerQaFindingsToRun(rootPath, {
+          plannerRunId: linked.plannerRunId || null,
+          planId: linked.planId || linked.planBundleId || null,
+          qaRunId: run.id,
+          qaRequestId: linked.qaRequestId || linked.qaQueueKey || null,
+          findings: run.findings,
+          reviewedAt: nowIso(),
+          reviewedBy: 'qa',
+          summary: run.findings.some((finding) => finding.severity === 'error')
+            ? 'QA review attached with blockers.'
+            : 'QA review attached without blockers.',
+          status: 'reviewed',
+        });
+      } catch (error) {
+        run.console.push({
+          type: 'warning',
+          text: `Planner QA attachment failed: ${String(error?.message || error)}`,
+        });
+      }
+    }
     run.status = 'completed';
     run.verdict = run.findings.some((finding) => finding.severity === 'error')
       ? 'failed'

@@ -184,61 +184,30 @@ export default async function runCtoPipelineTests() {
     context,
     workspace: latestWorkspace,
   });
-  assert.equal(actions[0].id, 'hire-role');
-  assert.equal(actions[0].params.roleId, 'planner');
+  assert.equal(actions[0].id, 'request-plan');
+  assert.equal(actions[0].targetDeskId, 'planner');
 
   let result = await runExecute(actions[0]);
   assert.equal(result.ok, true);
   assert.equal(result.status, 'executed');
-  assert.equal(result.pipeline.step, 'assign-agent-to-desk');
-  assert.equal(readJson(taDepartmentFile).hiredCandidates.length, 1);
+  assert.equal(result.pipeline.roleId, 'executor');
+  assert.equal(result.pipeline.step, 'hire-role');
+  assert.equal(readJson(taDepartmentFile).hiredCandidates.length, 0);
 
-  context = buildDeskContext('planner', readJson(taDepartmentFile).hiredCandidates.map((entry) => ({
-    id: entry.id,
-    name: entry.name,
-    roleId: entry.roleId,
-    hiredDeskId: entry.hiredDeskId,
-    primaryDeskTarget: entry.primaryDeskTarget,
-    assignedModel: entry.assignedModel,
-  })));
+  context = buildDeskContext('executor');
   actions = buildCtoAvailableActions({
-    text: 'We need planner coverage.',
+    text: 'We need executor coverage.',
     context,
     workspace: latestWorkspace,
   });
-  assert.equal(actions[0].id, 'assign-agent-to-desk');
-  assert.equal(actions[0].params.roleId, 'planner');
+  assert.equal(actions[0].id, 'request-execution');
 
   result = await runExecute(actions[0]);
   assert.equal(result.ok, true);
-  assert.equal(result.pipeline.step, 'request-plan');
-  assert.ok(latestWorkspace.studio.layout.desks.planner.assignedAgentIds.length >= 1);
-  assert.ok((latestWorkspace.studio.deskProperties.planner.managedAgents || []).length >= 1);
-
-  context = buildDeskContext('planner', readJson(taDepartmentFile).hiredCandidates.map((entry) => ({
-    id: entry.id,
-    name: entry.name,
-    roleId: entry.roleId,
-    hiredDeskId: entry.hiredDeskId,
-    primaryDeskTarget: entry.primaryDeskTarget,
-    assignedModel: entry.assignedModel,
-  })));
-  actions = buildCtoAvailableActions({
-    text: 'We need planner coverage.',
-    context,
-    workspace: latestWorkspace,
-  });
-  assert.equal(actions[0].id, 'request-plan');
-
-  result = await runExecute(actions[0]);
-  assert.equal(result.ok, true);
-  assert.equal(result.planTaskId, '0001');
-  assert.equal(result.planCardId, latestWorkspace.studio.teamBoard.selectedCardId);
-  assert.equal(latestWorkspace.studio.teamBoard.cards.length, 1);
   assert.equal(result.pipeline.roleId, 'executor');
   assert.equal(result.pipeline.step, 'hire-role');
 
-  context = buildDeskContext('executor', readJson(taDepartmentFile).hiredCandidates.map((entry) => ({
+  context = buildDeskContext('qa-lead', readJson(taDepartmentFile).hiredCandidates.map((entry) => ({
     id: entry.id,
     name: entry.name,
     roleId: entry.roleId,
@@ -247,36 +216,57 @@ export default async function runCtoPipelineTests() {
     assignedModel: entry.assignedModel,
   })));
   actions = buildCtoAvailableActions({
-    text: 'We need executor coverage.',
+    text: 'We need QA coverage.',
+    context,
+    workspace: latestWorkspace,
+  });
+  assert.equal(actions[0].id, 'request-execution');
+  assert.equal(actions[0].params.roleId, 'executor');
+
+  result = await runExecute(actions[0]);
+  assert.equal(result.ok, true);
+  assert.equal(result.pipeline.step, 'hire-role');
+  assert.ok(latestWorkspace.studio.layout.desks.executor.assignedAgentIds.length >= 1);
+
+  context = buildDeskContext('qa-lead', readJson(taDepartmentFile).hiredCandidates.map((entry) => ({
+    id: entry.id,
+    name: entry.name,
+    roleId: entry.roleId,
+    hiredDeskId: entry.hiredDeskId,
+    primaryDeskTarget: entry.primaryDeskTarget,
+    assignedModel: entry.assignedModel,
+  })));
+  actions = buildCtoAvailableActions({
+    text: 'We need QA coverage.',
+    context,
+    workspace: latestWorkspace,
+  });
+  assert.equal(actions[0].id, 'request-execution');
+
+  result = await runExecute(actions[0]);
+  assert.equal(result.ok, true);
+  assert.equal(result.pipeline.roleId, 'executor');
+  assert.equal(result.pipeline.step, 'hire-role');
+
+  context = buildDeskContext('qa-lead', readJson(taDepartmentFile).hiredCandidates.map((entry) => ({
+    id: entry.id,
+    name: entry.name,
+    roleId: entry.roleId,
+    hiredDeskId: entry.hiredDeskId,
+    primaryDeskTarget: entry.primaryDeskTarget,
+    assignedModel: entry.assignedModel,
+  })));
+  actions = buildCtoAvailableActions({
+    text: 'We need QA coverage.',
     context,
     workspace: latestWorkspace,
   });
   assert.equal(actions[0].id, 'hire-role');
-  assert.equal(actions[0].params.roleId, 'executor');
+  assert.equal(actions[0].params.roleId, 'qa-lead');
 
   result = await runExecute(actions[0]);
   assert.equal(result.ok, true);
   assert.equal(result.pipeline.step, 'assign-agent-to-desk');
-
-  context = buildDeskContext('executor', readJson(taDepartmentFile).hiredCandidates.map((entry) => ({
-    id: entry.id,
-    name: entry.name,
-    roleId: entry.roleId,
-    hiredDeskId: entry.hiredDeskId,
-    primaryDeskTarget: entry.primaryDeskTarget,
-    assignedModel: entry.assignedModel,
-  })));
-  actions = buildCtoAvailableActions({
-    text: 'We need executor coverage.',
-    context,
-    workspace: latestWorkspace,
-  });
-  assert.equal(actions[0].id, 'assign-agent-to-desk');
-  assert.equal(actions[0].params.roleId, 'executor');
-
-  result = await runExecute(actions[0]);
-  assert.equal(result.ok, true);
-  assert.equal(result.pipeline.step, 'request-execution');
 
   context = buildDeskContext('executor', readJson(taDepartmentFile).hiredCandidates.map((entry) => ({
     id: entry.id,

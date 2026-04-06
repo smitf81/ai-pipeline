@@ -43,12 +43,15 @@ export default async function runStudioLayoutRelationshipTests() {
   assert.equal(defaultLayout.organization.agents.planner.roleId, 'planner');
   assert.equal(defaultLayout.organization.agents.planner.deskId, 'planner');
   assert.equal(defaultLayout.organization.agents.planner.modelProfileId, 'model-profile.planner-default');
-  assert.deepEqual(defaultLayout.organization.planner, {
-    deskId: 'planner',
-    roleId: 'planner',
-    agentId: 'planner',
-    modelProfileId: 'model-profile.planner-default',
-  });
+  assert.equal(defaultLayout.organization.planner.schemaVersion, 'planner-identity.v1');
+  assert.equal(defaultLayout.organization.planner.deskId, 'planner');
+  assert.equal(defaultLayout.organization.planner.roleId, 'planner');
+  assert.equal(defaultLayout.organization.planner.agentId, 'planner');
+  assert.equal(defaultLayout.organization.planner.departmentId, 'dept-delivery');
+  assert.equal(defaultLayout.organization.planner.modelProfileId, 'model-profile.planner-default');
+  assert.ok(defaultLayout.organization.planner.live);
+  assert.deepEqual(defaultLayout.organization.planner.assignedAgentIds, ['planner']);
+  assert.equal(defaultLayout.organization.planner.canonical.requiredLeadSeatId, 'planner');
   assert.deepEqual(defaultLayout.organization.qaLead, {
     id: 'qa-lead',
     agentId: 'qa-lead',
