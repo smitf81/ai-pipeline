@@ -7,13 +7,8 @@ const {
 const QA_RELATIVE_DIR = path.join('data', 'spatial', 'qa');
 const STRUCTURED_QA_RELATIVE_DIR = path.join(QA_RELATIVE_DIR, 'structured');
 const LOCAL_GATE_RELATIVE_DIR = path.join(QA_RELATIVE_DIR, 'local-gates');
-const BROWSER_CANDIDATES = [
-  process.env.ACE_QA_BROWSER || null,
-  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-].filter(Boolean);
+const QA_BROWSER_PRIMARY_TARGET = 'chromium';
+const QA_BROWSER_FALLBACK_TARGET = 'firefox';
 
 const STUDIO_SIZE = { width: 1200, height: 800 };
 const STUDIO_ROOM = { x: 72, y: 86, width: 1056, height: 642 };
@@ -134,6 +129,10 @@ function summarizeQARun(run) {
     highestSeverity: Array.isArray(run.findings) && run.findings.some((finding) => finding.severity === 'error')
       ? 'error'
       : (Array.isArray(run.findings) && run.findings.some((finding) => finding.severity === 'warning') ? 'warning' : 'info'),
+    browserStatus: run.browser_status || null,
+    browserFailureStage: run.browser_failure_stage || null,
+    browserFailureCode: run.browser_failure_code || null,
+    browserRuntimeTarget: run.browser_runtime_target || null,
     primaryScreenshot: screenshot ? {
       name: screenshot.name,
       label: screenshot.label,
@@ -185,7 +184,16 @@ function createQARun({ scenario, mode, trigger, prompt, baseUrl, linked = {} }) 
     linked,
     browser: {
       executablePath: null,
-      engine: 'chromium',
+      engine: QA_BROWSER_PRIMARY_TARGET,
+    },
+    browser_status: 'pending',
+    browser_failure_stage: null,
+    browser_failure_code: null,
+    browser_failure_summary: null,
+    browser_runtime_target: {
+      attempted: [],
+      used: null,
+      fallbackUsed: false,
     },
     steps: [
       createStep('health', 'Wait for ACE runtime'),
@@ -227,8 +235,95 @@ function finishStep(run, id, verdict = 'pass', error = null) {
   step.finishedAt = nowIso();
 }
 
-function resolveBrowserExecutable() {
-  return BROWSER_CANDIDATES.find((candidate) => candidate && fs.existsSync(candidate)) || null;
+function normalizeBrowserFailureCode(error = null, stage = 'launch') {
+  const rawCode = String(error?.code || error?.cause?.code || '').trim();
+  const detail = String(error?.message || error || '').trim();
+  if (/spawn\s+EPERM/i.test(detail) || rawCode.toUpperCase() === 'EPERM') {
+    return 'windows_spawn_eperm';
+  }
+  if (/executable doesn't exist|browser.+not found|cannot find module/i.test(detail)) {
+    return 'runtime_missing';
+  }
+  if (/timeout/i.test(detail)) {
+    return `${stage}_timeout`;
+  }
+  if (rawCode) {
+    return rawCode.toLowerCase();
+  }
+  return `browser_${stage}_failed`;
+}
+
+function buildBrowserLaunchTargets(options = {}) {
+  const explicitTargets = Array.isArray(options.browserRuntimeTargets)
+    ? options.browserRuntimeTargets.map((entry) => String(entry || '').trim().toLowerCase()).filter(Boolean)
+    : [];
+  if (explicitTargets.length) {
+    return [...new Set(explicitTargets)];
+  }
+  if (options.browserRuntimeFallback === false) {
+    return [QA_BROWSER_PRIMARY_TARGET];
+  }
+  return [QA_BROWSER_PRIMARY_TARGET, QA_BROWSER_FALLBACK_TARGET];
+}
+
+function summarizeBrowserLaunchAttempts(attempts = []) {
+  const normalized = Array.isArray(attempts) ? attempts : [];
+  if (!normalized.length) {
+    return 'No Playwright-managed browser runtime could be launched.';
+  }
+  return `Playwright-managed launch blocked: ${normalized.map((attempt) => (
+    `${attempt.target} (${attempt.code || (attempt.ok ? 'ok' : 'launch_failed')})`
+  )).join(' -> ')}.`;
+}
+
+async function launchManagedBrowser(options = {}) {
+  const playwrightModule = options.playwrightModule || require('playwright');
+  const targets = buildBrowserLaunchTargets(options);
+  const launchOptions = {
+    headless: true,
+    args: ['--disable-gpu', '--no-first-run', '--disable-background-networking'],
+  };
+  const attempts = [];
+  let lastError = null;
+
+  for (const target of targets) {
+    const browserType = playwrightModule?.[target];
+    if (!browserType || typeof browserType.launch !== 'function') {
+      const error = new Error(`Playwright-managed ${target} runtime is unavailable.`);
+      attempts.push({
+        target,
+        ok: false,
+        code: 'runtime_missing',
+        summary: error.message,
+      });
+      lastError = error;
+      continue;
+    }
+    try {
+      const browser = await browserType.launch(launchOptions);
+      attempts.push({
+        target,
+        ok: true,
+      });
+      return {
+        browser,
+        usedTarget: target,
+        attempts,
+      };
+    } catch (error) {
+      attempts.push({
+        target,
+        ok: false,
+        code: normalizeBrowserFailureCode(error, 'launch'),
+        summary: String(error?.message || error),
+      });
+      lastError = error;
+    }
+  }
+
+  const launchError = lastError || new Error('No Playwright-managed browser runtime could be launched.');
+  launchError.launchAttempts = attempts;
+  throw launchError;
 }
 
 async function waitForServiceReady(url, timeoutMs = 15000) {
@@ -526,20 +621,28 @@ async function runQARun(options = {}) {
     linked = {},
     getRuntimeSnapshot,
     getHealthSnapshot,
+    playwrightModule,
+    browserRuntimeTargets,
+    browserRuntimeFallback = true,
+    browserDisabled = false,
   } = options;
 
   if (!rootPath) throw new Error('rootPath is required for QA runs.');
-  if (!baseUrl) throw new Error('baseUrl is required for QA runs.');
+  if (!baseUrl && !browserDisabled) throw new Error('baseUrl is required for QA runs.');
 
   const run = createQARun({ scenario, mode, trigger, prompt, baseUrl, linked });
   const persist = () => writeJson(qaRunFilePath(rootPath, run.id), run);
   persist();
+  run.browser_runtime_target.attempted = buildBrowserLaunchTargets({
+    browserRuntimeTargets,
+    browserRuntimeFallback,
+  });
 
-  const executablePath = resolveBrowserExecutable();
-  if (!executablePath) {
-    run.status = 'failed';
-    run.verdict = 'failed';
-    run.error = 'No local Edge or Chrome executable was found for the browser bridge.';
+  if (browserDisabled) {
+    run.status = 'completed';
+    run.verdict = 'skipped';
+    run.browser_status = 'skipped_by_policy';
+    run.browser_failure_summary = 'Browser QA run was skipped by policy.';
     run.finishedAt = nowIso();
     persist();
     return run;
@@ -555,18 +658,23 @@ async function runQARun(options = {}) {
     persist();
 
     beginStep(run, 'launch');
-    const { chromium } = require('playwright-core');
-    run.browser.executablePath = executablePath;
-    browser = await chromium.launch({
-      executablePath,
-      headless: true,
-      args: ['--disable-gpu', '--no-first-run', '--disable-background-networking'],
+    const launched = await launchManagedBrowser({
+      playwrightModule,
+      browserRuntimeTargets,
+      browserRuntimeFallback,
     });
+    browser = launched.browser;
+    run.browser.engine = launched.usedTarget || QA_BROWSER_PRIMARY_TARGET;
+    run.browser_runtime_target.attempted = launched.attempts.map((attempt) => attempt.target);
+    run.browser_runtime_target.used = launched.usedTarget || null;
+    run.browser_runtime_target.fallbackUsed = launched.usedTarget === QA_BROWSER_FALLBACK_TARGET;
+    run.browser.executablePath = null;
     context = await browser.newContext({
       viewport: { width: 1600, height: 1100 },
       ignoreHTTPSErrors: true,
     });
     page = await context.newPage();
+    run.browser_status = 'pass';
     finishStep(run, 'launch', 'pass');
     persist();
 
@@ -781,6 +889,7 @@ async function runQARun(options = {}) {
     run.verdict = run.findings.some((finding) => finding.severity === 'error')
       ? 'failed'
       : (run.findings.some((finding) => finding.severity === 'warning') ? 'weak' : 'pass');
+    run.browser_status = run.verdict === 'failed' ? 'fail' : 'pass';
     run.finishedAt = nowIso();
     persist();
     return run;
@@ -790,6 +899,22 @@ async function runQARun(options = {}) {
     run.error = String(error?.message || error);
     run.finishedAt = nowIso();
     const runningStep = run.steps.find((step) => step.status === 'running');
+    const failureStage = runningStep?.id === 'launch' ? 'launch' : 'run';
+    run.browser_failure_stage = failureStage;
+    run.browser_failure_code = normalizeBrowserFailureCode(error, failureStage);
+    run.browser_failure_summary = run.error;
+    if (failureStage === 'launch') {
+      run.browser_status = 'blocked_machine_launch';
+      const launchAttempts = Array.isArray(error?.launchAttempts) ? error.launchAttempts : [];
+      if (launchAttempts.length) {
+        run.browser_runtime_target.attempted = launchAttempts.map((attempt) => attempt.target);
+        run.browser_runtime_target.used = null;
+        run.browser_runtime_target.fallbackUsed = launchAttempts.some((attempt) => attempt.target === QA_BROWSER_FALLBACK_TARGET);
+        run.browser_failure_summary = summarizeBrowserLaunchAttempts(launchAttempts);
+      }
+    } else {
+      run.browser_status = 'fail';
+    }
     if (runningStep) finishStep(run, runningStep.id, 'failed', run.error);
     persist();
     return run;

@@ -3,18 +3,48 @@
   "source": "ui-test-runner",
   "command": "npm run test:unit",
   "status": "fail",
-  "summary": "11 of 96 UI checks failed.",
-  "startedAt": "2026-04-08T08:43:06.527Z",
-  "finishedAt": "2026-04-08T08:43:23.598Z",
-  "durationMs": 17071,
-  "totalChecks": 96,
-  "passedCount": 85,
-  "failedCount": 11,
+  "summary": "17 of 112 UI checks failed.",
+  "startedAt": "2026-04-09T08:43:34.078Z",
+  "finishedAt": "2026-04-09T08:44:03.375Z",
+  "durationMs": 29297,
+  "totalChecks": 112,
+  "passedCount": 95,
+  "failedCount": 17,
   "failures": [
     {
       "name": "agentWorkers",
       "path": "./agentWorkers.test.mjs",
-      "error": "The input did not match the regular expression /intent_cto_chat_1/. Input:\n\n'planner-template\\n' +\n  '\\n' +\n  '## Known Fixes Library\\n' +\n  'Use these trusted fix patterns first when the same failure shape returns.\\n' +\n  '- Quote Windows paths at the shell boundary: Path quoting\\n' +\n  '  - Do: Pass command arguments as arrays where possible. | Use `-LiteralPath` for PowerShell file operations. | Normalize repo-relative paths with forward slashes before prompt serialization.\\n' +\n  '  - Avoid: Building shell commands by string concatenation. | Letting unquoted paths cross a shell boundary.\\n' +\n  '- Create branches from a clean tracked worktree: Branch creation\\n' +\n  \"  - Do: Verify tracked worktree cleanliness before branch creation. | Prefer a `codex/` prefix or the repo's existing branch prefix rule. | Derive a unique branch name before checkout.\\n\" +\n  '  - Avoid: Creating branches on top of unreviewed tracked edits. | Reusing branch names that may already exist remotely or locally.\\n' +\n  '- Treat patch apply failures as rollback events: Patch apply failure\\n' +\n  '  - Do: Validate patch paths before applying. | Apply with `git apply --index` on a clean branch. | Rollback branch state immediately if apply fails.\\n' +\n  '  - Avoid: Retrying the same broken patch without a rollback. | Applying to a dirty tracked worktree.\\n' +\n  '- Resolve test commands from explicit repo-local context: Test command resolution\\n' +\n  '  - Do: Resolve the intended cwd explicitly before running a command. | Prefer repo-local scripts over ambient global tools. | Capture stdout and stderr together for diagnostics.\\n' +\n  '  - Avoid: Assuming the current shell directory is already the project root. | Hiding command selection inside a string-built shell pipeline.\\n' +\n  '- Use array args for Windows subprocesses: Windows subprocess weirdness\\n' +\n  '  - Do: Keep subprocess arguments structured instead of shell-joined. | Prefer direct executable paths and explicit `cwd` values. | Log the command shape before execution when debugging.\\n' +\n  '  - Avoid: Feeding Windows commands through `cmd /c` unless there is no alternative. | Assuming POSIX shell quoting rules apply on Windows.\\n' +\n  '\\n' +\n  '## Fix Task Intake\\n' +\n  'Agent: planner (ace/agent-attribution.v0)\\n' +\n  'Status: consumed\\n' +\n  'Location: task\\n' +\n  'Task: 0009\\n' +\n  'Parent task: 0007\\n' +\n  'Stage: planner\\n' +\n  'Action: fix-task-intake\\n' +\n  'Retry count: 1\\n' +\n  'Retry limit: 2\\n' +\n  'Project: ace-self\\n' +\n  'Title: Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Problem statement:\\n' +\n  'Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Reasons:\\n' +\n  '- Patch is empty or invalid.\\n' +\n  '\\n' +\n  'Changed files:\\n' +\n  '- brain/emergence/plan.md\\n' +\n  '## Canonical Intent Contract\\n' +\n  'Treat this contract as the source of truth. Do not invent tasks from summary text or UI state when this contract is available.\\n' +\n  '{\\n' +\n  '  \"intentId\": \"intent_context-manager_unknown_2026-04-08T08:43:06.595Z\",\\n' +\n  '  \"sourceType\": \"context-manager\",\\n' +\n  '  \"sourceRef\": \"unknown\",\\n' +\n  '  \"canonicalIntent\": {\\n' +\n  '    \"id\": \"intent_context-manager_unknown_2026-04-08T08:43:06.595Z\",\\n' +\n  '    \"source\": {\\n' +\n  '      \"type\": \"context-manager\",\\n' +\n  '      \"ref\": \"unknown\",\\n' +\n  '      \"requestedBy\": \"context-manager\"\\n' +\n  '    },\\n' +\n  '    \"geometry\": {\\n' +\n  '      \"kind\": \"unknown\",\\n' +\n  '      \"region\": null,\\n' +\n  '      \"stroke\": null\\n' +\n  '    },\\n' +\n  '    \"semanticMeaning\": {\\n' +\n  '      \"summary\": \"Retry the bounded fix task.\",\\n' +\n  '      \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '      \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '      \"requestType\": \"execution_request\",\\n' +\n  '      \"requestedOutcomes\": [\\n' +\n  '        \"Retry the bounded fix task.\"\\n' +\n  '      ],\\n' +\n  '      \"targets\": [\\n' +\n  '        \"ace-self\"\\n' +\n  '      ],\\n' +\n  '      \"constraints\": [\\n' +\n  '        \"Patch is empty or invalid.\",\\n' +\n  '        \"Keep scope bounded.\",\\n' +\n  '        \"Do not widen the retry beyond the current failure.\"\\n' +\n  '      ],\\n' +\n  '      \"urgency\": \"high\",\\n' +\n  '      \"labels\": []\\n' +\n  '    },\\n' +\n  '    \"confidence\": 0,\\n' +\n  '    \"createdAt\": \"2026-04-08T08:43:06.595Z\",\\n' +\n  '    \"provenance\": {\\n' +\n  '      \"anchorRefs\": [\\n' +\n  '        \"brain/emergence/plan.md\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '      ],\\n' +\n  '      \"sourceType\": \"context-manager\",\\n' +\n  '      \"sourceRef\": \"unknown\",\\n' +\n  '      \"requestedBy\": \"context-manager\",\\n' +\n  '      \"usedFallback\": false,\\n' +\n  '      \"backend\": null,\\n' +\n  '      \"model\": null,\\n' +\n  '      \"runId\": null,\\n' +\n  '      \"inferenceMode\": null,\\n' +\n  '      \"interpreter\": null,\\n' +\n  '      \"reasoning\": []\\n' +\n  '    },\\n' +\n  '    \"missingFields\": [\\n' +\n  '      \"geometry\"\\n' +\n  '    ],\\n' +\n  '    \"status\": \"canonical\",\\n' +\n  '    \"summary\": \"Retry the bounded fix task.\",\\n' +\n  '    \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '    \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '    \"requestType\": \"execution_request\",\\n' +\n  '    \"requestedOutcomes\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"tasks\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"targets\": [\\n' +\n  '      \"ace-self\"\\n' +\n  '    ],\\n' +\n  '    \"constraints\": [\\n' +\n  '      \"Patch is empty or invalid.\",\\n' +\n  '      \"Keep scope bounded.\",\\n' +\n  '      \"Do not widen the retry beyond the current failure.\"\\n' +\n  '    ],\\n' +\n  '    \"projectContext\": {\\n' +\n  '      \"currentFocus\": \"unknown\",\\n' +\n  '      \"matchedTerms\": [],\\n' +\n  '      \"blockers\": [\\n' +\n  '        \"Patch is empty or invalid.\",\\n' +\n  '        \"Keep scope bounded.\",\\n' +\n  '        \"Do not widen the retry beyond the current failure.\"\\n' +\n  '      ],\\n' +\n  '      \"anchorRefs\": [\\n' +\n  '        \"brain/emergence/plan.md\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '      ]\\n' +\n  '    },\\n' +\n  '    \"priority\": \"high\",\\n' +\n  '    \"requestedBy\": \"context-manager\",\\n' +\n  '    \"timestamp\": \"2026-04-08T08:43:06.595Z\",\\n' +\n  '    \"sourceType\": \"context-manager\",\\n' +\n  '    \"sourceRef\": \"unknown\",\\n' +\n  '    \"nodeId\": \"unknown\",\\n' +\n  '    \"anchorRefs\": [\\n' +\n  '      \"brain/emergence/plan.md\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '    ],\\n' +\n  '    \"intentId\": \"intent_context-manager_unknown_2026-04-08T08:43:06.595Z\",\\n' +\n  '    \"fieldInfluence\": {\\n' +\n  '      \"kind\": \"intent-field-bundle\",\\n' +\n  '      \"version\": \"v1\",\\n' +\n  '      \"fieldKey\": \"buildDesirability\",\\n' +\n  '      \"status\": \"degraded\",\\n' +\n  '      \"missingFields\": [\\n' +\n  '        \"geometry\"\\n' +\n  '      ],\\n' +\n  '      \"sourceIntentId\": \"intent_context-manager_unknown_2026-04-08T08:43:06.595Z\",\\n' +\n  '      \"sourceIntentStatus\": \"canonical\",\\n' +\n  '      \"sourceIntentConfidence\": 0,\\n' +\n  '      \"summary\": \"Build desirability build-desirability 7x7 @1x | build-desirability-coarse 4x4 @2x\",\\n' +\n  '      \"field\": {\\n' +\n  '        \"kind\": \"intent-field\",\\n' +\n  '        \"version\": \"v1\",\\n' +\n  '        \"fieldKey\": \"buildDesirability\",\\n' +\n  '        \"baseLayerKey\": \"0\",\\n' +\n  '        \"coarseLayerKey\": \"1\",\\n' +\n  '        \"layerOrder\": [\\n' +\n  '          \"0\",\\n' +\n  '          \"1\"\\n' +\n  '        ],\\n' +\n  '        \"aggregateStrategy\": \"majority\",\\n' +\n  '        \"layers\": {\\n' +\n  '          \"0\": {\\n' +\n  '            \"kind\": \"field-layer\",\\n' +\n  '            \"role\": \"build-desirability\",\\n' +\n  '            \"resolution\": 1,\\n' +\n  '            \"width\": 7,\\n' +\n  '            \"height\": 7,\\n' +\n  '            \"aggregateStrategy\": \"identity\",\\n' +\n  '            \"fallbackValue\": 0.08,\\n' +\n  '            \"values\": [\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ]\\n' +\n  '            ]\\n' +\n  '          },\\n' +\n  '          \"1\": {\\n' +\n  '            \"kind\": \"field-layer\",\\n' +\n  '            \"role\": \"build-desirability-coarse\",\\n' +\n  '            \"resolution\": 2,\\n' +\n  '            \"width\": 4,\\n' +\n  '            \"height\": 4,\\n' +\n  '            \"aggregateStrategy\": \"majority\",\\n' +\n  '            \"fallbackValue\": 0.08,\\n' +\n  '            \"values\": [\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ]\\n' +\n  '            ]\\n' +\n  '          }\\n' +\n  '        },\\n' +\n  '        \"baseLayer\": {\\n' +\n  '          \"kind\": \"field-layer\",\\n' +\n  '          \"role\": \"build-desirability\",\\n' +\n  '          \"resolution\": 1,\\n' +\n  '          \"width\": 7,\\n' +\n  '          \"height\": 7,\\n' +\n  '          \"aggregateStrategy\": \"identity\",\\n' +\n  '          \"fallbackValue\": 0.08,\\n' +\n  '          \"values\": [\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '    '... 20279 more characters\n"
+      "error": "The input did not match the regular expression /intent_cto_chat_1/. Input:\n\n'planner-template\\n' +\n  '\\n' +\n  '## Known Fixes Library\\n' +\n  'Use these trusted fix patterns first when the same failure shape returns.\\n' +\n  '- Quote Windows paths at the shell boundary: Path quoting\\n' +\n  '  - Do: Pass command arguments as arrays where possible. | Use `-LiteralPath` for PowerShell file operations. | Normalize repo-relative paths with forward slashes before prompt serialization.\\n' +\n  '  - Avoid: Building shell commands by string concatenation. | Letting unquoted paths cross a shell boundary.\\n' +\n  '- Create branches from a clean tracked worktree: Branch creation\\n' +\n  \"  - Do: Verify tracked worktree cleanliness before branch creation. | Prefer a `codex/` prefix or the repo's existing branch prefix rule. | Derive a unique branch name before checkout.\\n\" +\n  '  - Avoid: Creating branches on top of unreviewed tracked edits. | Reusing branch names that may already exist remotely or locally.\\n' +\n  '- Treat patch apply failures as rollback events: Patch apply failure\\n' +\n  '  - Do: Validate patch paths before applying. | Apply with `git apply --index` on a clean branch. | Rollback branch state immediately if apply fails.\\n' +\n  '  - Avoid: Retrying the same broken patch without a rollback. | Applying to a dirty tracked worktree.\\n' +\n  '- Resolve test commands from explicit repo-local context: Test command resolution\\n' +\n  '  - Do: Resolve the intended cwd explicitly before running a command. | Prefer repo-local scripts over ambient global tools. | Capture stdout and stderr together for diagnostics.\\n' +\n  '  - Avoid: Assuming the current shell directory is already the project root. | Hiding command selection inside a string-built shell pipeline.\\n' +\n  '- Use array args for Windows subprocesses: Windows subprocess weirdness\\n' +\n  '  - Do: Keep subprocess arguments structured instead of shell-joined. | Prefer direct executable paths and explicit `cwd` values. | Log the command shape before execution when debugging.\\n' +\n  '  - Avoid: Feeding Windows commands through `cmd /c` unless there is no alternative. | Assuming POSIX shell quoting rules apply on Windows.\\n' +\n  '\\n' +\n  '## Fix Task Intake\\n' +\n  'Agent: planner (ace/agent-attribution.v0)\\n' +\n  'Status: consumed\\n' +\n  'Location: task\\n' +\n  'Task: 0009\\n' +\n  'Parent task: 0007\\n' +\n  'Stage: planner\\n' +\n  'Action: fix-task-intake\\n' +\n  'Retry count: 1\\n' +\n  'Retry limit: 2\\n' +\n  'Project: ace-self\\n' +\n  'Title: Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Problem statement:\\n' +\n  'Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Reasons:\\n' +\n  '- Patch is empty or invalid.\\n' +\n  '\\n' +\n  'Changed files:\\n' +\n  '- brain/emergence/plan.md\\n' +\n  '## Canonical Intent Contract\\n' +\n  'Treat this contract as the source of truth. Do not invent tasks from summary text or UI state when this contract is available.\\n' +\n  '{\\n' +\n  '  \"intentId\": \"intent_context-manager_unknown_2026-04-09T08:43:34.144Z\",\\n' +\n  '  \"sourceType\": \"context-manager\",\\n' +\n  '  \"sourceRef\": \"unknown\",\\n' +\n  '  \"canonicalIntent\": {\\n' +\n  '    \"id\": \"intent_context-manager_unknown_2026-04-09T08:43:34.144Z\",\\n' +\n  '    \"source\": {\\n' +\n  '      \"type\": \"context-manager\",\\n' +\n  '      \"ref\": \"unknown\",\\n' +\n  '      \"requestedBy\": \"context-manager\"\\n' +\n  '    },\\n' +\n  '    \"geometry\": {\\n' +\n  '      \"kind\": \"unknown\",\\n' +\n  '      \"region\": null,\\n' +\n  '      \"stroke\": null\\n' +\n  '    },\\n' +\n  '    \"semanticMeaning\": {\\n' +\n  '      \"summary\": \"Retry the bounded fix task.\",\\n' +\n  '      \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '      \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '      \"requestType\": \"execution_request\",\\n' +\n  '      \"requestedOutcomes\": [\\n' +\n  '        \"Retry the bounded fix task.\"\\n' +\n  '      ],\\n' +\n  '      \"targets\": [\\n' +\n  '        \"ace-self\"\\n' +\n  '      ],\\n' +\n  '      \"constraints\": [\\n' +\n  '        \"Patch is empty or invalid.\",\\n' +\n  '        \"Keep scope bounded.\",\\n' +\n  '        \"Do not widen the retry beyond the current failure.\"\\n' +\n  '      ],\\n' +\n  '      \"urgency\": \"high\",\\n' +\n  '      \"labels\": []\\n' +\n  '    },\\n' +\n  '    \"confidence\": 0,\\n' +\n  '    \"createdAt\": \"2026-04-09T08:43:34.144Z\",\\n' +\n  '    \"provenance\": {\\n' +\n  '      \"anchorRefs\": [\\n' +\n  '        \"brain/emergence/plan.md\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '      ],\\n' +\n  '      \"sourceType\": \"context-manager\",\\n' +\n  '      \"sourceRef\": \"unknown\",\\n' +\n  '      \"requestedBy\": \"context-manager\",\\n' +\n  '      \"usedFallback\": false,\\n' +\n  '      \"backend\": null,\\n' +\n  '      \"model\": null,\\n' +\n  '      \"runId\": null,\\n' +\n  '      \"inferenceMode\": null,\\n' +\n  '      \"interpreter\": null,\\n' +\n  '      \"reasoning\": []\\n' +\n  '    },\\n' +\n  '    \"missingFields\": [\\n' +\n  '      \"geometry\"\\n' +\n  '    ],\\n' +\n  '    \"status\": \"canonical\",\\n' +\n  '    \"summary\": \"Retry the bounded fix task.\",\\n' +\n  '    \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '    \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '    \"requestType\": \"execution_request\",\\n' +\n  '    \"requestedOutcomes\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"tasks\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"targets\": [\\n' +\n  '      \"ace-self\"\\n' +\n  '    ],\\n' +\n  '    \"constraints\": [\\n' +\n  '      \"Patch is empty or invalid.\",\\n' +\n  '      \"Keep scope bounded.\",\\n' +\n  '      \"Do not widen the retry beyond the current failure.\"\\n' +\n  '    ],\\n' +\n  '    \"projectContext\": {\\n' +\n  '      \"currentFocus\": \"unknown\",\\n' +\n  '      \"matchedTerms\": [],\\n' +\n  '      \"blockers\": [\\n' +\n  '        \"Patch is empty or invalid.\",\\n' +\n  '        \"Keep scope bounded.\",\\n' +\n  '        \"Do not widen the retry beyond the current failure.\"\\n' +\n  '      ],\\n' +\n  '      \"anchorRefs\": [\\n' +\n  '        \"brain/emergence/plan.md\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '      ]\\n' +\n  '    },\\n' +\n  '    \"priority\": \"high\",\\n' +\n  '    \"requestedBy\": \"context-manager\",\\n' +\n  '    \"timestamp\": \"2026-04-09T08:43:34.144Z\",\\n' +\n  '    \"sourceType\": \"context-manager\",\\n' +\n  '    \"sourceRef\": \"unknown\",\\n' +\n  '    \"nodeId\": \"unknown\",\\n' +\n  '    \"anchorRefs\": [\\n' +\n  '      \"brain/emergence/plan.md\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '    ],\\n' +\n  '    \"intentId\": \"intent_context-manager_unknown_2026-04-09T08:43:34.144Z\",\\n' +\n  '    \"fieldInfluence\": {\\n' +\n  '      \"kind\": \"intent-field-bundle\",\\n' +\n  '      \"version\": \"v1\",\\n' +\n  '      \"fieldKey\": \"buildDesirability\",\\n' +\n  '      \"status\": \"degraded\",\\n' +\n  '      \"missingFields\": [\\n' +\n  '        \"geometry\"\\n' +\n  '      ],\\n' +\n  '      \"sourceIntentId\": \"intent_context-manager_unknown_2026-04-09T08:43:34.144Z\",\\n' +\n  '      \"sourceIntentStatus\": \"canonical\",\\n' +\n  '      \"sourceIntentConfidence\": 0,\\n' +\n  '      \"summary\": \"Build desirability build-desirability 7x7 @1x | build-desirability-coarse 4x4 @2x\",\\n' +\n  '      \"field\": {\\n' +\n  '        \"kind\": \"intent-field\",\\n' +\n  '        \"version\": \"v1\",\\n' +\n  '        \"fieldKey\": \"buildDesirability\",\\n' +\n  '        \"baseLayerKey\": \"0\",\\n' +\n  '        \"coarseLayerKey\": \"1\",\\n' +\n  '        \"layerOrder\": [\\n' +\n  '          \"0\",\\n' +\n  '          \"1\"\\n' +\n  '        ],\\n' +\n  '        \"aggregateStrategy\": \"majority\",\\n' +\n  '        \"layers\": {\\n' +\n  '          \"0\": {\\n' +\n  '            \"kind\": \"field-layer\",\\n' +\n  '            \"role\": \"build-desirability\",\\n' +\n  '            \"resolution\": 1,\\n' +\n  '            \"width\": 7,\\n' +\n  '            \"height\": 7,\\n' +\n  '            \"aggregateStrategy\": \"identity\",\\n' +\n  '            \"fallbackValue\": 0.08,\\n' +\n  '            \"values\": [\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ]\\n' +\n  '            ]\\n' +\n  '          },\\n' +\n  '          \"1\": {\\n' +\n  '            \"kind\": \"field-layer\",\\n' +\n  '            \"role\": \"build-desirability-coarse\",\\n' +\n  '            \"resolution\": 2,\\n' +\n  '            \"width\": 4,\\n' +\n  '            \"height\": 4,\\n' +\n  '            \"aggregateStrategy\": \"majority\",\\n' +\n  '            \"fallbackValue\": 0.08,\\n' +\n  '            \"values\": [\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ]\\n' +\n  '            ]\\n' +\n  '          }\\n' +\n  '        },\\n' +\n  '        \"baseLayer\": {\\n' +\n  '          \"kind\": \"field-layer\",\\n' +\n  '          \"role\": \"build-desirability\",\\n' +\n  '          \"resolution\": 1,\\n' +\n  '          \"width\": 7,\\n' +\n  '          \"height\": 7,\\n' +\n  '          \"aggregateStrategy\": \"identity\",\\n' +\n  '          \"fallbackValue\": 0.08,\\n' +\n  '          \"values\": [\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '    '... 20279 more characters\n"
+    },
+    {
+      "name": "truthKernelRoute",
+      "path": "./truthKernelRoute.test.mjs",
+      "error": "fetch failed"
+    },
+    {
+      "name": "qaEvidenceProvenance",
+      "path": "./qaEvidenceProvenance.test.mjs",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'live_canonical'\n- 'browser-run'\n"
+    },
+    {
+      "name": "qaStructuredProvenance",
+      "path": "./qaStructuredProvenance.test.mjs",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "deskPropertiesRoute",
+      "path": "./deskPropertiesRoute.test.mjs",
+      "error": "fetch failed"
+    },
+    {
+      "name": "intentRoute",
+      "path": "./intentRoute.test.mjs",
+      "error": "fetch failed"
+    },
+    {
+      "name": "qaEvidenceRoute",
+      "path": "./qaEvidenceRoute.test.mjs",
+      "error": "fetch failed"
     },
     {
       "name": "mutationEngine",
@@ -79,42 +109,63 @@
       "name": "anchorResolver",
       "path": "./anchorResolver.test.mjs",
       "status": "pass",
-      "durationMs": 20,
+      "durationMs": 21,
       "error": null
     },
     {
       "name": "agentRegistry",
       "path": "./agentRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 7,
+      "durationMs": 8,
       "error": null
     },
     {
       "name": "agentWorkers",
       "path": "./agentWorkers.test.mjs",
       "status": "fail",
-      "durationMs": 32,
-      "error": "The input did not match the regular expression /intent_cto_chat_1/. Input:\n\n'planner-template\\n' +\n  '\\n' +\n  '## Known Fixes Library\\n' +\n  'Use these trusted fix patterns first when the same failure shape returns.\\n' +\n  '- Quote Windows paths at the shell boundary: Path quoting\\n' +\n  '  - Do: Pass command arguments as arrays where possible. | Use `-LiteralPath` for PowerShell file operations. | Normalize repo-relative paths with forward slashes before prompt serialization.\\n' +\n  '  - Avoid: Building shell commands by string concatenation. | Letting unquoted paths cross a shell boundary.\\n' +\n  '- Create branches from a clean tracked worktree: Branch creation\\n' +\n  \"  - Do: Verify tracked worktree cleanliness before branch creation. | Prefer a `codex/` prefix or the repo's existing branch prefix rule. | Derive a unique branch name before checkout.\\n\" +\n  '  - Avoid: Creating branches on top of unreviewed tracked edits. | Reusing branch names that may already exist remotely or locally.\\n' +\n  '- Treat patch apply failures as rollback events: Patch apply failure\\n' +\n  '  - Do: Validate patch paths before applying. | Apply with `git apply --index` on a clean branch. | Rollback branch state immediately if apply fails.\\n' +\n  '  - Avoid: Retrying the same broken patch without a rollback. | Applying to a dirty tracked worktree.\\n' +\n  '- Resolve test commands from explicit repo-local context: Test command resolution\\n' +\n  '  - Do: Resolve the intended cwd explicitly before running a command. | Prefer repo-local scripts over ambient global tools. | Capture stdout and stderr together for diagnostics.\\n' +\n  '  - Avoid: Assuming the current shell directory is already the project root. | Hiding command selection inside a string-built shell pipeline.\\n' +\n  '- Use array args for Windows subprocesses: Windows subprocess weirdness\\n' +\n  '  - Do: Keep subprocess arguments structured instead of shell-joined. | Prefer direct executable paths and explicit `cwd` values. | Log the command shape before execution when debugging.\\n' +\n  '  - Avoid: Feeding Windows commands through `cmd /c` unless there is no alternative. | Assuming POSIX shell quoting rules apply on Windows.\\n' +\n  '\\n' +\n  '## Fix Task Intake\\n' +\n  'Agent: planner (ace/agent-attribution.v0)\\n' +\n  'Status: consumed\\n' +\n  'Location: task\\n' +\n  'Task: 0009\\n' +\n  'Parent task: 0007\\n' +\n  'Stage: planner\\n' +\n  'Action: fix-task-intake\\n' +\n  'Retry count: 1\\n' +\n  'Retry limit: 2\\n' +\n  'Project: ace-self\\n' +\n  'Title: Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Problem statement:\\n' +\n  'Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Reasons:\\n' +\n  '- Patch is empty or invalid.\\n' +\n  '\\n' +\n  'Changed files:\\n' +\n  '- brain/emergence/plan.md\\n' +\n  '## Canonical Intent Contract\\n' +\n  'Treat this contract as the source of truth. Do not invent tasks from summary text or UI state when this contract is available.\\n' +\n  '{\\n' +\n  '  \"intentId\": \"intent_context-manager_unknown_2026-04-08T08:43:06.595Z\",\\n' +\n  '  \"sourceType\": \"context-manager\",\\n' +\n  '  \"sourceRef\": \"unknown\",\\n' +\n  '  \"canonicalIntent\": {\\n' +\n  '    \"id\": \"intent_context-manager_unknown_2026-04-08T08:43:06.595Z\",\\n' +\n  '    \"source\": {\\n' +\n  '      \"type\": \"context-manager\",\\n' +\n  '      \"ref\": \"unknown\",\\n' +\n  '      \"requestedBy\": \"context-manager\"\\n' +\n  '    },\\n' +\n  '    \"geometry\": {\\n' +\n  '      \"kind\": \"unknown\",\\n' +\n  '      \"region\": null,\\n' +\n  '      \"stroke\": null\\n' +\n  '    },\\n' +\n  '    \"semanticMeaning\": {\\n' +\n  '      \"summary\": \"Retry the bounded fix task.\",\\n' +\n  '      \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '      \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '      \"requestType\": \"execution_request\",\\n' +\n  '      \"requestedOutcomes\": [\\n' +\n  '        \"Retry the bounded fix task.\"\\n' +\n  '      ],\\n' +\n  '      \"targets\": [\\n' +\n  '        \"ace-self\"\\n' +\n  '      ],\\n' +\n  '      \"constraints\": [\\n' +\n  '        \"Patch is empty or invalid.\",\\n' +\n  '        \"Keep scope bounded.\",\\n' +\n  '        \"Do not widen the retry beyond the current failure.\"\\n' +\n  '      ],\\n' +\n  '      \"urgency\": \"high\",\\n' +\n  '      \"labels\": []\\n' +\n  '    },\\n' +\n  '    \"confidence\": 0,\\n' +\n  '    \"createdAt\": \"2026-04-08T08:43:06.595Z\",\\n' +\n  '    \"provenance\": {\\n' +\n  '      \"anchorRefs\": [\\n' +\n  '        \"brain/emergence/plan.md\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '      ],\\n' +\n  '      \"sourceType\": \"context-manager\",\\n' +\n  '      \"sourceRef\": \"unknown\",\\n' +\n  '      \"requestedBy\": \"context-manager\",\\n' +\n  '      \"usedFallback\": false,\\n' +\n  '      \"backend\": null,\\n' +\n  '      \"model\": null,\\n' +\n  '      \"runId\": null,\\n' +\n  '      \"inferenceMode\": null,\\n' +\n  '      \"interpreter\": null,\\n' +\n  '      \"reasoning\": []\\n' +\n  '    },\\n' +\n  '    \"missingFields\": [\\n' +\n  '      \"geometry\"\\n' +\n  '    ],\\n' +\n  '    \"status\": \"canonical\",\\n' +\n  '    \"summary\": \"Retry the bounded fix task.\",\\n' +\n  '    \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '    \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '    \"requestType\": \"execution_request\",\\n' +\n  '    \"requestedOutcomes\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"tasks\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"targets\": [\\n' +\n  '      \"ace-self\"\\n' +\n  '    ],\\n' +\n  '    \"constraints\": [\\n' +\n  '      \"Patch is empty or invalid.\",\\n' +\n  '      \"Keep scope bounded.\",\\n' +\n  '      \"Do not widen the retry beyond the current failure.\"\\n' +\n  '    ],\\n' +\n  '    \"projectContext\": {\\n' +\n  '      \"currentFocus\": \"unknown\",\\n' +\n  '      \"matchedTerms\": [],\\n' +\n  '      \"blockers\": [\\n' +\n  '        \"Patch is empty or invalid.\",\\n' +\n  '        \"Keep scope bounded.\",\\n' +\n  '        \"Do not widen the retry beyond the current failure.\"\\n' +\n  '      ],\\n' +\n  '      \"anchorRefs\": [\\n' +\n  '        \"brain/emergence/plan.md\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '      ]\\n' +\n  '    },\\n' +\n  '    \"priority\": \"high\",\\n' +\n  '    \"requestedBy\": \"context-manager\",\\n' +\n  '    \"timestamp\": \"2026-04-08T08:43:06.595Z\",\\n' +\n  '    \"sourceType\": \"context-manager\",\\n' +\n  '    \"sourceRef\": \"unknown\",\\n' +\n  '    \"nodeId\": \"unknown\",\\n' +\n  '    \"anchorRefs\": [\\n' +\n  '      \"brain/emergence/plan.md\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '    ],\\n' +\n  '    \"intentId\": \"intent_context-manager_unknown_2026-04-08T08:43:06.595Z\",\\n' +\n  '    \"fieldInfluence\": {\\n' +\n  '      \"kind\": \"intent-field-bundle\",\\n' +\n  '      \"version\": \"v1\",\\n' +\n  '      \"fieldKey\": \"buildDesirability\",\\n' +\n  '      \"status\": \"degraded\",\\n' +\n  '      \"missingFields\": [\\n' +\n  '        \"geometry\"\\n' +\n  '      ],\\n' +\n  '      \"sourceIntentId\": \"intent_context-manager_unknown_2026-04-08T08:43:06.595Z\",\\n' +\n  '      \"sourceIntentStatus\": \"canonical\",\\n' +\n  '      \"sourceIntentConfidence\": 0,\\n' +\n  '      \"summary\": \"Build desirability build-desirability 7x7 @1x | build-desirability-coarse 4x4 @2x\",\\n' +\n  '      \"field\": {\\n' +\n  '        \"kind\": \"intent-field\",\\n' +\n  '        \"version\": \"v1\",\\n' +\n  '        \"fieldKey\": \"buildDesirability\",\\n' +\n  '        \"baseLayerKey\": \"0\",\\n' +\n  '        \"coarseLayerKey\": \"1\",\\n' +\n  '        \"layerOrder\": [\\n' +\n  '          \"0\",\\n' +\n  '          \"1\"\\n' +\n  '        ],\\n' +\n  '        \"aggregateStrategy\": \"majority\",\\n' +\n  '        \"layers\": {\\n' +\n  '          \"0\": {\\n' +\n  '            \"kind\": \"field-layer\",\\n' +\n  '            \"role\": \"build-desirability\",\\n' +\n  '            \"resolution\": 1,\\n' +\n  '            \"width\": 7,\\n' +\n  '            \"height\": 7,\\n' +\n  '            \"aggregateStrategy\": \"identity\",\\n' +\n  '            \"fallbackValue\": 0.08,\\n' +\n  '            \"values\": [\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ]\\n' +\n  '            ]\\n' +\n  '          },\\n' +\n  '          \"1\": {\\n' +\n  '            \"kind\": \"field-layer\",\\n' +\n  '            \"role\": \"build-desirability-coarse\",\\n' +\n  '            \"resolution\": 2,\\n' +\n  '            \"width\": 4,\\n' +\n  '            \"height\": 4,\\n' +\n  '            \"aggregateStrategy\": \"majority\",\\n' +\n  '            \"fallbackValue\": 0.08,\\n' +\n  '            \"values\": [\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ]\\n' +\n  '            ]\\n' +\n  '          }\\n' +\n  '        },\\n' +\n  '        \"baseLayer\": {\\n' +\n  '          \"kind\": \"field-layer\",\\n' +\n  '          \"role\": \"build-desirability\",\\n' +\n  '          \"resolution\": 1,\\n' +\n  '          \"width\": 7,\\n' +\n  '          \"height\": 7,\\n' +\n  '          \"aggregateStrategy\": \"identity\",\\n' +\n  '          \"fallbackValue\": 0.08,\\n' +\n  '          \"values\": [\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '    '... 20279 more characters\n"
+      "durationMs": 29,
+      "error": "The input did not match the regular expression /intent_cto_chat_1/. Input:\n\n'planner-template\\n' +\n  '\\n' +\n  '## Known Fixes Library\\n' +\n  'Use these trusted fix patterns first when the same failure shape returns.\\n' +\n  '- Quote Windows paths at the shell boundary: Path quoting\\n' +\n  '  - Do: Pass command arguments as arrays where possible. | Use `-LiteralPath` for PowerShell file operations. | Normalize repo-relative paths with forward slashes before prompt serialization.\\n' +\n  '  - Avoid: Building shell commands by string concatenation. | Letting unquoted paths cross a shell boundary.\\n' +\n  '- Create branches from a clean tracked worktree: Branch creation\\n' +\n  \"  - Do: Verify tracked worktree cleanliness before branch creation. | Prefer a `codex/` prefix or the repo's existing branch prefix rule. | Derive a unique branch name before checkout.\\n\" +\n  '  - Avoid: Creating branches on top of unreviewed tracked edits. | Reusing branch names that may already exist remotely or locally.\\n' +\n  '- Treat patch apply failures as rollback events: Patch apply failure\\n' +\n  '  - Do: Validate patch paths before applying. | Apply with `git apply --index` on a clean branch. | Rollback branch state immediately if apply fails.\\n' +\n  '  - Avoid: Retrying the same broken patch without a rollback. | Applying to a dirty tracked worktree.\\n' +\n  '- Resolve test commands from explicit repo-local context: Test command resolution\\n' +\n  '  - Do: Resolve the intended cwd explicitly before running a command. | Prefer repo-local scripts over ambient global tools. | Capture stdout and stderr together for diagnostics.\\n' +\n  '  - Avoid: Assuming the current shell directory is already the project root. | Hiding command selection inside a string-built shell pipeline.\\n' +\n  '- Use array args for Windows subprocesses: Windows subprocess weirdness\\n' +\n  '  - Do: Keep subprocess arguments structured instead of shell-joined. | Prefer direct executable paths and explicit `cwd` values. | Log the command shape before execution when debugging.\\n' +\n  '  - Avoid: Feeding Windows commands through `cmd /c` unless there is no alternative. | Assuming POSIX shell quoting rules apply on Windows.\\n' +\n  '\\n' +\n  '## Fix Task Intake\\n' +\n  'Agent: planner (ace/agent-attribution.v0)\\n' +\n  'Status: consumed\\n' +\n  'Location: task\\n' +\n  'Task: 0009\\n' +\n  'Parent task: 0007\\n' +\n  'Stage: planner\\n' +\n  'Action: fix-task-intake\\n' +\n  'Retry count: 1\\n' +\n  'Retry limit: 2\\n' +\n  'Project: ace-self\\n' +\n  'Title: Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Problem statement:\\n' +\n  'Retry the bounded fix task.\\n' +\n  '\\n' +\n  'Reasons:\\n' +\n  '- Patch is empty or invalid.\\n' +\n  '\\n' +\n  'Changed files:\\n' +\n  '- brain/emergence/plan.md\\n' +\n  '## Canonical Intent Contract\\n' +\n  'Treat this contract as the source of truth. Do not invent tasks from summary text or UI state when this contract is available.\\n' +\n  '{\\n' +\n  '  \"intentId\": \"intent_context-manager_unknown_2026-04-09T08:43:34.144Z\",\\n' +\n  '  \"sourceType\": \"context-manager\",\\n' +\n  '  \"sourceRef\": \"unknown\",\\n' +\n  '  \"canonicalIntent\": {\\n' +\n  '    \"id\": \"intent_context-manager_unknown_2026-04-09T08:43:34.144Z\",\\n' +\n  '    \"source\": {\\n' +\n  '      \"type\": \"context-manager\",\\n' +\n  '      \"ref\": \"unknown\",\\n' +\n  '      \"requestedBy\": \"context-manager\"\\n' +\n  '    },\\n' +\n  '    \"geometry\": {\\n' +\n  '      \"kind\": \"unknown\",\\n' +\n  '      \"region\": null,\\n' +\n  '      \"stroke\": null\\n' +\n  '    },\\n' +\n  '    \"semanticMeaning\": {\\n' +\n  '      \"summary\": \"Retry the bounded fix task.\",\\n' +\n  '      \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '      \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '      \"requestType\": \"execution_request\",\\n' +\n  '      \"requestedOutcomes\": [\\n' +\n  '        \"Retry the bounded fix task.\"\\n' +\n  '      ],\\n' +\n  '      \"targets\": [\\n' +\n  '        \"ace-self\"\\n' +\n  '      ],\\n' +\n  '      \"constraints\": [\\n' +\n  '        \"Patch is empty or invalid.\",\\n' +\n  '        \"Keep scope bounded.\",\\n' +\n  '        \"Do not widen the retry beyond the current failure.\"\\n' +\n  '      ],\\n' +\n  '      \"urgency\": \"high\",\\n' +\n  '      \"labels\": []\\n' +\n  '    },\\n' +\n  '    \"confidence\": 0,\\n' +\n  '    \"createdAt\": \"2026-04-09T08:43:34.144Z\",\\n' +\n  '    \"provenance\": {\\n' +\n  '      \"anchorRefs\": [\\n' +\n  '        \"brain/emergence/plan.md\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '      ],\\n' +\n  '      \"sourceType\": \"context-manager\",\\n' +\n  '      \"sourceRef\": \"unknown\",\\n' +\n  '      \"requestedBy\": \"context-manager\",\\n' +\n  '      \"usedFallback\": false,\\n' +\n  '      \"backend\": null,\\n' +\n  '      \"model\": null,\\n' +\n  '      \"runId\": null,\\n' +\n  '      \"inferenceMode\": null,\\n' +\n  '      \"interpreter\": null,\\n' +\n  '      \"reasoning\": []\\n' +\n  '    },\\n' +\n  '    \"missingFields\": [\\n' +\n  '      \"geometry\"\\n' +\n  '    ],\\n' +\n  '    \"status\": \"canonical\",\\n' +\n  '    \"summary\": \"Retry the bounded fix task.\",\\n' +\n  '    \"statement\": \"Retry the bounded fix task.\",\\n' +\n  '    \"goal\": \"Retry the bounded fix task.\",\\n' +\n  '    \"requestType\": \"execution_request\",\\n' +\n  '    \"requestedOutcomes\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"tasks\": [\\n' +\n  '      \"Retry the bounded fix task.\"\\n' +\n  '    ],\\n' +\n  '    \"targets\": [\\n' +\n  '      \"ace-self\"\\n' +\n  '    ],\\n' +\n  '    \"constraints\": [\\n' +\n  '      \"Patch is empty or invalid.\",\\n' +\n  '      \"Keep scope bounded.\",\\n' +\n  '      \"Do not widen the retry beyond the current failure.\"\\n' +\n  '    ],\\n' +\n  '    \"projectContext\": {\\n' +\n  '      \"currentFocus\": \"unknown\",\\n' +\n  '      \"matchedTerms\": [],\\n' +\n  '      \"blockers\": [\\n' +\n  '        \"Patch is empty or invalid.\",\\n' +\n  '        \"Keep scope bounded.\",\\n' +\n  '        \"Do not widen the retry beyond the current failure.\"\\n' +\n  '      ],\\n' +\n  '      \"anchorRefs\": [\\n' +\n  '        \"brain/emergence/plan.md\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '        \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '      ]\\n' +\n  '    },\\n' +\n  '    \"priority\": \"high\",\\n' +\n  '    \"requestedBy\": \"context-manager\",\\n' +\n  '    \"timestamp\": \"2026-04-09T08:43:34.144Z\",\\n' +\n  '    \"sourceType\": \"context-manager\",\\n' +\n  '    \"sourceRef\": \"unknown\",\\n' +\n  '    \"nodeId\": \"unknown\",\\n' +\n  '    \"anchorRefs\": [\\n' +\n  '      \"brain/emergence/plan.md\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.json\",\\n' +\n  '      \"work/tasks/0009-fix-task/fix_task.md\"\\n' +\n  '    ],\\n' +\n  '    \"intentId\": \"intent_context-manager_unknown_2026-04-09T08:43:34.144Z\",\\n' +\n  '    \"fieldInfluence\": {\\n' +\n  '      \"kind\": \"intent-field-bundle\",\\n' +\n  '      \"version\": \"v1\",\\n' +\n  '      \"fieldKey\": \"buildDesirability\",\\n' +\n  '      \"status\": \"degraded\",\\n' +\n  '      \"missingFields\": [\\n' +\n  '        \"geometry\"\\n' +\n  '      ],\\n' +\n  '      \"sourceIntentId\": \"intent_context-manager_unknown_2026-04-09T08:43:34.144Z\",\\n' +\n  '      \"sourceIntentStatus\": \"canonical\",\\n' +\n  '      \"sourceIntentConfidence\": 0,\\n' +\n  '      \"summary\": \"Build desirability build-desirability 7x7 @1x | build-desirability-coarse 4x4 @2x\",\\n' +\n  '      \"field\": {\\n' +\n  '        \"kind\": \"intent-field\",\\n' +\n  '        \"version\": \"v1\",\\n' +\n  '        \"fieldKey\": \"buildDesirability\",\\n' +\n  '        \"baseLayerKey\": \"0\",\\n' +\n  '        \"coarseLayerKey\": \"1\",\\n' +\n  '        \"layerOrder\": [\\n' +\n  '          \"0\",\\n' +\n  '          \"1\"\\n' +\n  '        ],\\n' +\n  '        \"aggregateStrategy\": \"majority\",\\n' +\n  '        \"layers\": {\\n' +\n  '          \"0\": {\\n' +\n  '            \"kind\": \"field-layer\",\\n' +\n  '            \"role\": \"build-desirability\",\\n' +\n  '            \"resolution\": 1,\\n' +\n  '            \"width\": 7,\\n' +\n  '            \"height\": 7,\\n' +\n  '            \"aggregateStrategy\": \"identity\",\\n' +\n  '            \"fallbackValue\": 0.08,\\n' +\n  '            \"values\": [\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ]\\n' +\n  '            ]\\n' +\n  '          },\\n' +\n  '          \"1\": {\\n' +\n  '            \"kind\": \"field-layer\",\\n' +\n  '            \"role\": \"build-desirability-coarse\",\\n' +\n  '            \"resolution\": 2,\\n' +\n  '            \"width\": 4,\\n' +\n  '            \"height\": 4,\\n' +\n  '            \"aggregateStrategy\": \"majority\",\\n' +\n  '            \"fallbackValue\": 0.08,\\n' +\n  '            \"values\": [\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ],\\n' +\n  '              [\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08,\\n' +\n  '                0.08\\n' +\n  '              ]\\n' +\n  '            ]\\n' +\n  '          }\\n' +\n  '        },\\n' +\n  '        \"baseLayer\": {\\n' +\n  '          \"kind\": \"field-layer\",\\n' +\n  '          \"role\": \"build-desirability\",\\n' +\n  '          \"resolution\": 1,\\n' +\n  '          \"width\": 7,\\n' +\n  '          \"height\": 7,\\n' +\n  '          \"aggregateStrategy\": \"identity\",\\n' +\n  '          \"fallbackValue\": 0.08,\\n' +\n  '          \"values\": [\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08\\n' +\n  '            ],\\n' +\n  '            [\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '              0.08,\\n' +\n  '    '... 20279 more characters\n"
     },
     {
       "name": "aceConnector",
       "path": "./aceConnector.test.mjs",
       "status": "pass",
-      "durationMs": 27,
+      "durationMs": 26,
+      "error": null
+    },
+    {
+      "name": "canonicalTruthGovernance",
+      "path": "./canonicalTruthGovernance.test.mjs",
+      "status": "pass",
+      "durationMs": 7,
+      "error": null
+    },
+    {
+      "name": "canonicalTruthRegistryDrift",
+      "path": "./canonicalTruthRegistryDrift.test.mjs",
+      "status": "pass",
+      "durationMs": 1,
+      "error": null
+    },
+    {
+      "name": "workspaceRoute",
+      "path": "./workspaceRoute.test.mjs",
+      "status": "pass",
+      "durationMs": 2762,
       "error": null
     },
     {
       "name": "truthKernelAdapter",
       "path": "./truthKernelAdapter.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 6,
       "error": null
     },
     {
       "name": "truthKernelLayout",
       "path": "./truthKernelLayout.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 6,
       "error": null
     },
     {
@@ -125,10 +176,94 @@
       "error": null
     },
     {
+      "name": "truthKernelProvenance",
+      "path": "./truthKernelProvenance.test.mjs",
+      "status": "pass",
+      "durationMs": 6,
+      "error": null
+    },
+    {
+      "name": "truthKernelIntegration",
+      "path": "./truthKernelIntegration.test.mjs",
+      "status": "pass",
+      "durationMs": 94,
+      "error": null
+    },
+    {
+      "name": "truthKernelRoute",
+      "path": "./truthKernelRoute.test.mjs",
+      "status": "fail",
+      "durationMs": 2506,
+      "error": "fetch failed"
+    },
+    {
+      "name": "deskProvenance",
+      "path": "./deskProvenance.test.mjs",
+      "status": "pass",
+      "durationMs": 4,
+      "error": null
+    },
+    {
+      "name": "qaReadableSections",
+      "path": "./qaReadableSections.test.mjs",
+      "status": "pass",
+      "durationMs": 3,
+      "error": null
+    },
+    {
+      "name": "qaOutputFeed",
+      "path": "./qaOutputFeed.test.mjs",
+      "status": "pass",
+      "durationMs": 111,
+      "error": null
+    },
+    {
+      "name": "qaSessionSummary",
+      "path": "./qaSessionSummary.test.mjs",
+      "status": "pass",
+      "durationMs": 3887,
+      "error": null
+    },
+    {
+      "name": "qaEvidenceProvenance",
+      "path": "./qaEvidenceProvenance.test.mjs",
+      "status": "fail",
+      "durationMs": 120,
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'live_canonical'\n- 'browser-run'\n"
+    },
+    {
+      "name": "qaStructuredProvenance",
+      "path": "./qaStructuredProvenance.test.mjs",
+      "status": "fail",
+      "durationMs": 3,
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "deskPropertiesRoute",
+      "path": "./deskPropertiesRoute.test.mjs",
+      "status": "fail",
+      "durationMs": 2518,
+      "error": "fetch failed"
+    },
+    {
+      "name": "intentRoute",
+      "path": "./intentRoute.test.mjs",
+      "status": "fail",
+      "durationMs": 2514,
+      "error": "fetch failed"
+    },
+    {
+      "name": "qaEvidenceRoute",
+      "path": "./qaEvidenceRoute.test.mjs",
+      "status": "fail",
+      "durationMs": 2509,
+      "error": "fetch failed"
+    },
+    {
       "name": "componentRegistry",
       "path": "./componentRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 7,
       "error": null
     },
     {
@@ -142,7 +277,7 @@
       "name": "relationshipHiringSignals",
       "path": "./relationshipHiringSignals.test.mjs",
       "status": "pass",
-      "durationMs": 17,
+      "durationMs": 19,
       "error": null
     },
     {
@@ -156,14 +291,14 @@
       "name": "uiActionRegistry",
       "path": "./uiActionRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "studioQuickAccess",
       "path": "./studioQuickAccess.test.mjs",
       "status": "pass",
-      "durationMs": 2,
+      "durationMs": 3,
       "error": null
     },
     {
@@ -177,7 +312,7 @@
       "name": "aceRuntimeMcp",
       "path": "./aceRuntimeMcp.test.mjs",
       "status": "pass",
-      "durationMs": 153,
+      "durationMs": 177,
       "error": null
     },
     {
@@ -198,42 +333,42 @@
       "name": "graphEngine",
       "path": "./graphEngine.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "graphQueries",
       "path": "./graphQueries.test.mjs",
       "status": "pass",
-      "durationMs": 1,
+      "durationMs": 2,
       "error": null
     },
     {
       "name": "graphMutations",
       "path": "./graphMutations.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 2,
       "error": null
     },
     {
       "name": "mutationEngine",
       "path": "./mutationEngine.test.mjs",
       "status": "fail",
-      "durationMs": 8,
+      "durationMs": 13,
       "error": "Cannot read properties of undefined (reading 'length')"
     },
     {
       "name": "worldScaffoldView",
       "path": "./worldScaffoldView.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 13,
       "error": null
     },
     {
       "name": "persistence",
       "path": "./persistence.test.mjs",
       "status": "pass",
-      "durationMs": 33,
+      "durationMs": 39,
       "error": null
     },
     {
@@ -247,350 +382,350 @@
       "name": "studioLayoutModel",
       "path": "./studioLayoutModel.test.mjs",
       "status": "pass",
-      "durationMs": 18,
+      "durationMs": 20,
       "error": null
     },
     {
       "name": "studioOrgHealthModel",
       "path": "./studioOrgHealthModel.test.mjs",
       "status": "pass",
-      "durationMs": 16,
+      "durationMs": 17,
       "error": null
     },
     {
       "name": "studioLayoutRelationships",
       "path": "./studioLayoutRelationships.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "spatialAppSmoke",
       "path": "./spatialApp.smoke.test.mjs",
       "status": "fail",
-      "durationMs": 88,
+      "durationMs": 272,
       "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
     },
     {
       "name": "bootIntegrity",
       "path": "./bootIntegrity.test.mjs",
       "status": "pass",
-      "durationMs": 144,
+      "durationMs": 28,
       "error": null
     },
     {
       "name": "bootRecoveryDaemon",
       "path": "./bootRecoveryDaemon.test.mjs",
       "status": "pass",
-      "durationMs": 14,
+      "durationMs": 17,
       "error": null
     },
     {
       "name": "recoveryShell",
       "path": "./recoveryShell.test.mjs",
       "status": "pass",
-      "durationMs": 1,
+      "durationMs": 2,
       "error": null
     },
     {
       "name": "uiBootIntegrityLane",
       "path": "./uiBootIntegrityLane.test.mjs",
       "status": "pass",
-      "durationMs": 117,
+      "durationMs": 183,
       "error": null
     },
     {
       "name": "spatialAppRsg",
       "path": "./spatialApp.rsg.test.mjs",
       "status": "fail",
-      "durationMs": 89,
+      "durationMs": 129,
       "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   ok: true,\n+   reason: ''\n-   ok: false,\n-   reason: 'linked-draft'\n  }\n"
     },
     {
       "name": "sliceRepository",
       "path": "./sliceRepository.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 6,
       "error": null
     },
     {
       "name": "archivistWriteback",
       "path": "./archivistWriteback.test.mjs",
       "status": "pass",
-      "durationMs": 27,
+      "durationMs": 22,
       "error": null
     },
     {
       "name": "changeHygiene",
       "path": "./changeHygiene.test.mjs",
       "status": "pass",
-      "durationMs": 2,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "knownFixes",
       "path": "./knownFixes.test.mjs",
       "status": "pass",
-      "durationMs": 9,
+      "durationMs": 6,
       "error": null
     },
     {
       "name": "failureMemory",
       "path": "./failureMemory.test.mjs",
       "status": "pass",
-      "durationMs": 15,
+      "durationMs": 19,
       "error": null
     },
     {
       "name": "agentAudit",
       "path": "./agentAudit.test.mjs",
       "status": "pass",
-      "durationMs": 12,
+      "durationMs": 15,
       "error": null
     },
     {
       "name": "agentCapabilities",
       "path": "./agentCapabilities.test.mjs",
       "status": "pass",
-      "durationMs": 21,
+      "durationMs": 38,
       "error": null
     },
     {
       "name": "constrainedAutoFix",
       "path": "./constrainedAutoFix.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 12,
       "error": null
     },
     {
       "name": "autonomyPolicy",
       "path": "./autonomyPolicy.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 14,
       "error": null
     },
     {
       "name": "fixTasks",
       "path": "./fixTasks.test.mjs",
       "status": "pass",
-      "durationMs": 13,
+      "durationMs": 21,
       "error": null
     },
     {
       "name": "taskArtifacts",
       "path": "./taskArtifacts.test.mjs",
       "status": "pass",
-      "durationMs": 13,
+      "durationMs": 21,
       "error": null
     },
     {
       "name": "taskCache",
       "path": "./taskCache.test.mjs",
       "status": "fail",
-      "durationMs": 18,
+      "durationMs": 25,
       "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
     },
     {
       "name": "plannerOuttray",
       "path": "./plannerOuttray.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 8,
       "error": null
     },
     {
       "name": "governedLoopContract",
       "path": "./governedLoopContract.test.mjs",
       "status": "pass",
-      "durationMs": 87,
+      "durationMs": 99,
       "error": null
     },
     {
       "name": "canonicalIntakePersistence",
       "path": "./canonicalIntakePersistence.test.mjs",
       "status": "pass",
-      "durationMs": 29,
+      "durationMs": 30,
       "error": null
     },
     {
       "name": "intentExtractionSurface",
       "path": "./intentExtractionSurface.test.mjs",
       "status": "pass",
-      "durationMs": 31,
+      "durationMs": 36,
       "error": null
     },
     {
       "name": "plannerHandoffVisibility",
       "path": "./plannerHandoffVisibility.test.mjs",
       "status": "pass",
-      "durationMs": 24,
+      "durationMs": 25,
       "error": null
     },
     {
       "name": "executionHandoffState",
       "path": "./executionHandoffState.test.mjs",
       "status": "pass",
-      "durationMs": 32,
+      "durationMs": 38,
       "error": null
     },
     {
       "name": "archivistGovernedWritebackState",
       "path": "./archivistGovernedWritebackState.test.mjs",
       "status": "pass",
-      "durationMs": 48,
+      "durationMs": 41,
       "error": null
     },
     {
       "name": "ctoCanonicalReadthrough",
       "path": "./ctoCanonicalReadthrough.test.mjs",
       "status": "pass",
-      "durationMs": 41,
+      "durationMs": 30,
       "error": null
     },
     {
       "name": "plannerRegressionPack",
       "path": "./plannerRegressionPack.test.mjs",
       "status": "fail",
-      "durationMs": 24,
+      "durationMs": 27,
       "error": "Cannot read properties of undefined (reading 'overrideLayer')"
     },
     {
       "name": "plannerCanonicalIntegrity",
       "path": "./plannerCanonicalIntegrity.test.mjs",
       "status": "pass",
-      "durationMs": 4446,
+      "durationMs": 385,
       "error": null
     },
     {
       "name": "preflightGuards",
       "path": "./preflightGuards.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "debugSuite",
       "path": "./debugSuite.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "studioData",
       "path": "./studioData.test.mjs",
       "status": "pass",
-      "durationMs": 160,
+      "durationMs": 143,
       "error": null
     },
     {
       "name": "roleTaxonomy",
       "path": "./roleTaxonomy.test.mjs",
       "status": "pass",
-      "durationMs": 5,
+      "durationMs": 4,
       "error": null
     },
     {
       "name": "rndExperimentContract",
       "path": "./rndExperimentContract.test.mjs",
       "status": "pass",
-      "durationMs": 6,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "rndExperimentSeed",
       "path": "./rndExperimentSeed.test.mjs",
       "status": "pass",
-      "durationMs": 4,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "rndExperimentPayload",
       "path": "./rndExperimentPayload.test.mjs",
       "status": "pass",
-      "durationMs": 151,
+      "durationMs": 50,
       "error": null
     },
     {
       "name": "rosterSurface",
       "path": "./rosterSurface.test.mjs",
       "status": "pass",
-      "durationMs": 13,
+      "durationMs": 10,
       "error": null
     },
     {
       "name": "studioMutations",
       "path": "./studioMutations.test.mjs",
       "status": "pass",
-      "durationMs": 7,
+      "durationMs": 6,
       "error": null
     },
     {
       "name": "studioDependencyValidation",
       "path": "./studioDependencyValidation.test.mjs",
       "status": "pass",
-      "durationMs": 7,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "orchestratorState",
       "path": "./orchestratorState.test.mjs",
       "status": "pass",
-      "durationMs": 8,
+      "durationMs": 7,
       "error": null
     },
     {
       "name": "selfUpgrade",
       "path": "./selfUpgrade.test.mjs",
       "status": "pass",
-      "durationMs": 2,
+      "durationMs": 3,
       "error": null
     },
     {
       "name": "taCandidates",
       "path": "./taCandidates.test.mjs",
       "status": "pass",
-      "durationMs": 58,
+      "durationMs": 83,
       "error": null
     },
     {
       "name": "talentUi",
       "path": "./talentUi.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 1,
       "error": null
     },
     {
       "name": "server",
       "path": "./server.test.mjs",
       "status": "fail",
-      "durationMs": 759,
+      "durationMs": 435,
       "error": "Expected values to be strictly equal:\n\n'forced' !== 'normal'\n"
     },
     {
       "name": "qaTestRegistry",
       "path": "./qaTestRegistry.test.mjs",
       "status": "pass",
-      "durationMs": 3,
+      "durationMs": 5,
       "error": null
     },
     {
       "name": "qaAuditTrail",
       "path": "./qaAuditTrail.test.mjs",
       "status": "fail",
-      "durationMs": 2,
+      "durationMs": 1,
       "error": "expected one audit mismatch, saw 0"
     },
     {
       "name": "externalQaProbe",
       "path": "./externalQaProbe.test.mjs",
       "status": "pass",
-      "durationMs": 19,
+      "durationMs": 22,
       "error": null
     },
     {
       "name": "externalValidation",
       "path": "./externalValidation.test.mjs",
       "status": "pass",
-      "durationMs": 428,
+      "durationMs": 312,
       "error": null
     },
     {
@@ -604,21 +739,28 @@
       "name": "qaMcpProofOfLife",
       "path": "./qaMcpProofOfLife.test.mjs",
       "status": "pass",
-      "durationMs": 109,
+      "durationMs": 149,
       "error": null
     },
     {
       "name": "qaLeadRunner",
       "path": "./qaLeadRunner.test.mjs",
       "status": "fail",
-      "durationMs": 8,
+      "durationMs": 9,
       "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'processing'\n- 'live'\n"
+    },
+    {
+      "name": "qaLeadCyclePublication",
+      "path": "./qaLeadCyclePublication.test.mjs",
+      "status": "pass",
+      "durationMs": 7,
+      "error": null
     },
     {
       "name": "qaLeadSurfaces",
       "path": "./qaLeadSurfaces.test.mjs",
       "status": "pass",
-      "durationMs": 27,
+      "durationMs": 22,
       "error": null
     },
     {
@@ -632,14 +774,14 @@
       "name": "qaCanaryInspector",
       "path": "./qaCanaryInspector.test.mjs",
       "status": "pass",
-      "durationMs": 114,
+      "durationMs": 94,
       "error": null
     },
     {
       "name": "qaUiBootCanary",
       "path": "./qaUiBootCanary.test.mjs",
       "status": "pass",
-      "durationMs": 1,
+      "durationMs": 2,
       "error": null
     },
     {
@@ -653,77 +795,77 @@
       "name": "qaRouteContractCanary",
       "path": "./qaRouteContractCanary.test.mjs",
       "status": "pass",
-      "durationMs": 133,
+      "durationMs": 95,
       "error": null
     },
     {
       "name": "qaLoopAudit",
       "path": "./qaLoopAudit.test.mjs",
       "status": "pass",
-      "durationMs": 5736,
+      "durationMs": 5096,
       "error": null
     },
     {
       "name": "qaRepairLoop",
       "path": "./qaRepairLoop.test.mjs",
       "status": "pass",
-      "durationMs": 2005,
+      "durationMs": 2021,
       "error": null
     },
     {
       "name": "qaRepairLaneContracts",
       "path": "./qaRepairLaneContracts.test.mjs",
       "status": "pass",
-      "durationMs": 177,
+      "durationMs": 81,
       "error": null
     },
     {
       "name": "qaRepairLaneInspector",
       "path": "./qaRepairLaneInspector.test.mjs",
       "status": "pass",
-      "durationMs": 108,
+      "durationMs": 382,
       "error": null
     },
     {
       "name": "repairLaneTrustPolicy",
       "path": "./repairLaneTrustPolicy.test.mjs",
       "status": "pass",
-      "durationMs": 296,
+      "durationMs": 271,
       "error": null
     },
     {
       "name": "qaResearchTrigger",
       "path": "./qaResearchTrigger.test.mjs",
       "status": "pass",
-      "durationMs": 769,
+      "durationMs": 736,
       "error": null
     },
     {
       "name": "ctoPipeline",
       "path": "./ctoPipeline.test.mjs",
       "status": "fail",
-      "durationMs": 26,
+      "durationMs": 33,
       "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'request-execution'\n- 'hire-role'\n"
     },
     {
       "name": "intentAnalysis",
       "path": "./intentAnalysis.test.mjs",
       "status": "pass",
-      "durationMs": 10,
+      "durationMs": 16,
       "error": null
     },
     {
       "name": "staffingRules",
       "path": "./staffingRules.test.mjs",
       "status": "pass",
-      "durationMs": 17,
+      "durationMs": 19,
       "error": null
     },
     {
       "name": "throughputDebug",
       "path": "./throughputDebug.test.mjs",
       "status": "pass",
-      "durationMs": 75,
+      "durationMs": 77,
       "error": null
     },
     {
@@ -737,7 +879,7 @@
       "name": "appViewerMode",
       "path": "./appViewerMode.test.mjs",
       "status": "fail",
-      "durationMs": 7,
+      "durationMs": 6,
       "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'retrying'\n- 'connected'\n"
     }
   ]

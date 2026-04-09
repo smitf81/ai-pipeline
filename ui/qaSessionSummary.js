@@ -1,5 +1,128 @@
 const normalizeText = (value = '') => String(value || '').trim();
 
+function normalizeFeedItems(outputFeed = null) {
+  return Array.isArray(outputFeed?.items) ? outputFeed.items.filter(Boolean) : [];
+}
+
+function hasCompletedCycle(run = null) {
+  return Boolean(normalizeText(
+    run?.finished_at
+    || run?.finishedAt
+    || run?.last_completed_cycle_at
+    || run?.lastCompletedCycleAt,
+  ));
+}
+
+function resolveOperatorState(qaLeadOutput = null) {
+  const leadState = qaLeadOutput?.state && typeof qaLeadOutput.state === 'object' ? qaLeadOutput.state : null;
+  const latestRun = qaLeadOutput?.latestRun && typeof qaLeadOutput.latestRun === 'object' ? qaLeadOutput.latestRun : null;
+  return leadState || latestRun || null;
+}
+
+function resolveLatestCompletedCycle(qaLeadOutput = null) {
+  const leadState = qaLeadOutput?.state && typeof qaLeadOutput.state === 'object' ? qaLeadOutput.state : null;
+  const latestRun = qaLeadOutput?.latestRun && typeof qaLeadOutput.latestRun === 'object' ? qaLeadOutput.latestRun : null;
+  if (hasCompletedCycle(latestRun)) return latestRun;
+  if (hasCompletedCycle(leadState)) return leadState;
+  return null;
+}
+
+function resolveLiveStatus(qaState = {}, qaLeadOutput = null) {
+  const operatorState = resolveOperatorState(qaLeadOutput);
+  return qaState?.qaMcpLiveStatus && typeof qaState.qaMcpLiveStatus === 'object'
+    ? qaState.qaMcpLiveStatus
+    : (operatorState?.live_status && typeof operatorState.live_status === 'object' ? operatorState.live_status : null);
+}
+
+function resolveExternalValidation(qaState = {}, qaLeadOutput = null) {
+  const completedCycle = resolveLatestCompletedCycle(qaLeadOutput);
+  const operatorState = resolveOperatorState(qaLeadOutput);
+  if (completedCycle?.external_validation && typeof completedCycle.external_validation === 'object') {
+    return completedCycle.external_validation;
+  }
+  if (operatorState?.external_validation && typeof operatorState.external_validation === 'object') {
+    return operatorState.external_validation;
+  }
+  return qaState?.externalValidation && typeof qaState.externalValidation === 'object'
+    ? qaState.externalValidation
+    : null;
+}
+
+function summarizeQaLiveCycle({
+  completedCycle = null,
+  operatorState = null,
+  liveStatus = null,
+  externalValidation = null,
+  latestFeedEntry = null,
+} = {}) {
+  const cycleId = normalizeText(completedCycle?.id || operatorState?.id) || null;
+  if (!cycleId) {
+    return 'QA has not completed a live cycle yet.';
+  }
+  const cycleStatus = normalizeText(completedCycle?.status || operatorState?.status) || 'unknown';
+  const gateSource = normalizeText(liveStatus?.last_qa_gate_source || liveStatus?.lastQaGateSource) || 'unknown';
+  const externalStatus = normalizeText(externalValidation?.status || externalValidation?.probeStatus) || 'unknown';
+  const mcpStatus = normalizeText(liveStatus?.status) || 'unknown';
+  const feedStatus = latestFeedEntry ? 'captured' : 'missing';
+  return `${cycleId} ${cycleStatus} | MCP ${mcpStatus} | gate ${gateSource} | external ${externalStatus} | feed ${feedStatus}`;
+}
+
+function buildQaLiveCycleState({
+  qaState = {},
+  qaLeadOutput = null,
+  outputFeed = null,
+} = {}) {
+  const operatorState = resolveOperatorState(qaLeadOutput);
+  const completedCycle = resolveLatestCompletedCycle(qaLeadOutput);
+  const liveStatus = resolveLiveStatus(qaState, qaLeadOutput);
+  const externalValidation = resolveExternalValidation(qaState, qaLeadOutput);
+  const outputFeedItems = normalizeFeedItems(outputFeed);
+  const latestCycleId = normalizeText(completedCycle?.id || operatorState?.id) || null;
+  const latestFeedEntry = latestCycleId
+    ? outputFeedItems.find((entry) => normalizeText(entry?.meta?.cycleId) === latestCycleId) || null
+    : null;
+  const latestCompletedAt = normalizeText(
+    completedCycle?.finished_at
+    || completedCycle?.finishedAt
+    || completedCycle?.last_completed_cycle_at
+    || completedCycle?.lastCompletedCycleAt
+    || liveStatus?.last_completed_cycle_at
+    || liveStatus?.lastCompletedCycleAt,
+  ) || null;
+  const currentStatus = normalizeText(operatorState?.status || completedCycle?.status) || 'idle';
+  const latestCompletedStatus = normalizeText(completedCycle?.status || operatorState?.status) || 'unknown';
+
+  return {
+    source: 'qa_live_cycle',
+    classification: 'derived_projection',
+    current_run_id: normalizeText(operatorState?.id) || null,
+    current_status: currentStatus,
+    latest_completed_cycle_id: latestCycleId,
+    latest_completed_cycle_at: latestCompletedAt,
+    latest_completed_status: latestCompletedStatus,
+    latest_completed_summary: normalizeText(completedCycle?.summary || operatorState?.summary) || null,
+    ran_once: Boolean(latestCycleId),
+    mcp_status: normalizeText(liveStatus?.status) || 'unknown',
+    mcp_reachable: typeof liveStatus?.mcp_reachable === 'boolean'
+      ? liveStatus.mcp_reachable
+      : null,
+    current_gate_source: normalizeText(liveStatus?.last_qa_gate_source || liveStatus?.lastQaGateSource) || 'unknown',
+    external_status: normalizeText(externalValidation?.status || externalValidation?.probeStatus) || 'unknown',
+    output_feed_loaded: Array.isArray(outputFeed?.items),
+    output_feed_count: outputFeedItems.length,
+    output_feed_captured: Boolean(latestFeedEntry),
+    latest_feed_entry_id: normalizeText(latestFeedEntry?.id) || null,
+    latest_feed_result: normalizeText(latestFeedEntry?.result || latestFeedEntry?.status) || null,
+    summary: summarizeQaLiveCycle({
+      completedCycle,
+      operatorState,
+      liveStatus,
+      externalValidation,
+      latestFeedEntry,
+    }),
+  };
+}
+
 function summarizeLeadPosture(qaLeadPosture = null, qaLeadOutput = null) {
   const leadState = qaLeadOutput?.state && typeof qaLeadOutput.state === 'object' ? qaLeadOutput.state : {};
   const latestRun = qaLeadOutput?.latestRun && typeof qaLeadOutput.latestRun === 'object' ? qaLeadOutput.latestRun : {};
@@ -51,10 +174,7 @@ function summarizeLatestBrowserRun(qaState = {}, qaLeadOutput = null) {
 }
 
 function summarizeMcpStatus(qaState = {}, qaLeadOutput = null) {
-  const leadState = qaLeadOutput?.state && typeof qaLeadOutput.state === 'object' ? qaLeadOutput.state : {};
-  const liveStatus = leadState.live_status && typeof leadState.live_status === 'object'
-    ? leadState.live_status
-    : (qaState?.qaMcpLiveStatus && typeof qaState.qaMcpLiveStatus === 'object' ? qaState.qaMcpLiveStatus : null);
+  const liveStatus = resolveLiveStatus(qaState, qaLeadOutput);
   const status = normalizeText(liveStatus?.status) || 'unknown';
   const reachable = typeof liveStatus?.mcp_reachable === 'boolean'
     ? liveStatus.mcp_reachable
@@ -170,10 +290,15 @@ function buildQaSessionSummary({
   const latestRun = qaLeadOutput?.latestRun && typeof qaLeadOutput.latestRun === 'object'
     ? qaLeadOutput.latestRun
     : {};
+  const qaLiveCycle = qaState?.qaLiveCycle && typeof qaState.qaLiveCycle === 'object'
+    ? qaState.qaLiveCycle
+    : buildQaLiveCycleState({
+      qaState,
+      qaLeadOutput,
+      outputFeed,
+    });
   const posture = summarizeLeadPosture(qaLeadPosture, qaLeadOutput);
-  const feedItems = Array.isArray(outputFeed?.items)
-    ? outputFeed.items
-    : (Array.isArray(leadState.output_feed) ? leadState.output_feed : []);
+  const feedItems = normalizeFeedItems(outputFeed);
   const openInvestigations = Array.isArray(qaState?.openInvestigations)
     ? qaState.openInvestigations
     : [];
@@ -194,32 +319,30 @@ function buildQaSessionSummary({
     derived_from_posture_id: posture.posture_id || null,
     posture,
     cycle: {
-      live_status: normalizeText(leadState.status || latestRun.status) || 'unknown',
-      output_feed_count: feedItems.length,
-      feed_active: feedItems.length > 0,
-      last_completed_cycle_at: normalizeText(
-        leadState.last_completed_cycle_at
-        || leadState.finished_at
-        || leadState.finishedAt
-        || latestRun.finished_at
-        || latestRun.finishedAt
-        || latestRun.last_completed_cycle_at
-        || latestRun.lastCompletedCycleAt,
-      ) || null,
+      live_status: qaLiveCycle.current_status || normalizeText(leadState.status || latestRun.status) || 'unknown',
+      latest_completed_cycle_id: qaLiveCycle.latest_completed_cycle_id || null,
+      output_feed_count: qaLiveCycle.output_feed_count ?? feedItems.length,
+      feed_active: Boolean(qaLiveCycle.output_feed_count ?? feedItems.length),
+      output_feed_captured: qaLiveCycle.output_feed_captured === true,
+      last_completed_cycle_at: qaLiveCycle.latest_completed_cycle_at || null,
+      current_gate_source: qaLiveCycle.current_gate_source || 'unknown',
+      external_status: qaLiveCycle.external_status || 'unknown',
     },
     evidence: {
       pre_adjudication_pending_count: preAdjudicationPendingCount,
       open_investigation_count: openInvestigations.length,
       latest_browser_run_status: summarizeLatestBrowserRun(qaState, qaLeadOutput),
-      mcp_status: mcp.status,
-      mcp_reachable: mcp.reachable,
+      mcp_status: qaLiveCycle.mcp_status || mcp.status,
+      mcp_reachable: qaLiveCycle.mcp_reachable ?? mcp.reachable,
     },
+    qaLiveCycle,
     blocker,
     next_seam: determineNextSeam(blocker),
   };
 }
 
 module.exports = {
+  buildQaLiveCycleState,
   buildQaSessionSummary,
   determineBlocker,
   determineNextSeam,

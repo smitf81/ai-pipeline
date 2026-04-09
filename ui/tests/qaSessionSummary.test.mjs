@@ -18,6 +18,17 @@ const {
   readQaOutputFeed,
 } = require('../qaOutputFeed.js');
 
+function createIdleQaCanaries(now) {
+  return {
+    overall_status: 'idle',
+    summary: 'QA lane canaries were not part of this targeted test harness.',
+    last_run_at: now,
+    passed_count: 0,
+    failed_count: 0,
+    results: [],
+  };
+}
+
 function resolveUiRoot() {
   if (fs.existsSync(path.join(process.cwd(), 'server.js'))) {
     return process.cwd();
@@ -31,7 +42,10 @@ function resolveUiRoot() {
 export default async function runQaSessionSummaryTests() {
   const uiRoot = resolveUiRoot();
   const repoRoot = path.resolve(uiRoot, '..');
-  const qaState = buildQAStatePayload(repoRoot, {});
+  const now = new Date().toISOString();
+  const qaState = buildQAStatePayload(repoRoot, {
+    qaCanaries: createIdleQaCanaries(now),
+  });
   const qaLeadOutput = readQaLeadOutput(repoRoot);
   const outputFeed = readQaOutputFeed(repoRoot);
   const qaLeadPosture = buildQaLeadPosture({
@@ -43,7 +57,7 @@ export default async function runQaSessionSummaryTests() {
     repairLoop: qaState.repairLoop || null,
     openInvestigations: qaState.openInvestigations || [],
     browserRuns: qaState.browserRuns || [],
-    generatedAt: qaLeadOutput.latestRun?.finished_at || new Date().toISOString(),
+    generatedAt: qaLeadOutput.latestRun?.finished_at || now,
   });
   const summary = buildQaSessionSummary({
     qaState,
@@ -73,10 +87,15 @@ export default async function runQaSessionSummaryTests() {
   assert.equal(summary.posture.verdict, qaLeadPosture.verdict);
   assert.equal(summary.cycle.output_feed_count, outputFeed.items.length);
   assert.equal(summary.cycle.feed_active, outputFeed.items.length > 0);
+  assert.equal(summary.cycle.latest_completed_cycle_id, qaState.qaLiveCycle?.latest_completed_cycle_id || qaLeadOutput.latestRun?.id || null);
+  assert.equal(summary.cycle.output_feed_captured, qaState.qaLiveCycle?.output_feed_captured ?? false);
+  assert.equal(summary.cycle.current_gate_source, qaState.qaLiveCycle?.current_gate_source || 'unknown');
+  assert.equal(summary.cycle.external_status, qaState.qaLiveCycle?.external_status || 'unknown');
   assert.equal(summary.evidence.open_investigation_count, qaState.openInvestigations.length);
   assert.equal(summary.evidence.mcp_status, leadStatus);
   assert.equal(summary.evidence.mcp_reachable, leadReachable);
   assert.equal(typeof summary.evidence.latest_browser_run_status, 'string');
+  assert.equal(summary.qaLiveCycle.latest_completed_cycle_id, qaState.qaLiveCycle?.latest_completed_cycle_id || qaLeadOutput.latestRun?.id || null);
   assert.equal(summary.blocker.key, expectedBlocker);
   if (expectedBlocker === 'external_mcp_unreachable') {
     assert.equal(summary.next_seam.id, 'external_probe_reachability');

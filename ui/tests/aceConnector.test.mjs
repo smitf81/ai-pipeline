@@ -924,6 +924,9 @@ export default async function runAceConnectorTests() {
 
     const truthKernelPayload = await ace.getTruthKernel();
     assert.equal(truthKernelPayload.nodeCount, 2);
+    assert.equal(truthKernelPayload.source, 'truth-kernel');
+    assert.equal(truthKernelPayload.meta.route, '/api/spatial/truth-kernel');
+    assert.equal(truthKernelPayload.meta.fallbackUsed, false);
     assert.equal(requests.at(-1).url, '/api/spatial/truth-kernel');
 
     const primaryFetch = globalThis.fetch;
@@ -957,6 +960,10 @@ export default async function runAceConnectorTests() {
     const runtimeTruthKernel = await ace.getTruthKernel();
     assert.equal(runtimeTruthKernel.nodeCount, 1);
     assert.equal(runtimeTruthKernel.nodes[0].id, 'runtime_node_1');
+    assert.equal(runtimeTruthKernel.source, 'runtime-fallback');
+    assert.equal(runtimeTruthKernel.meta.route, '/api/spatial/runtime');
+    assert.equal(runtimeTruthKernel.meta.fallbackUsed, true);
+    assert.equal(runtimeTruthKernel.meta.reason, 'route unavailable');
     assert.deepEqual(requests.slice(-2).map((entry) => entry.url), [
       '/api/spatial/truth-kernel',
       '/api/spatial/runtime',

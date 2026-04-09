@@ -7,6 +7,8 @@ function createMockCanvas() {
   const operations = [];
   const context = {
     fillStyle: null,
+    strokeStyle: null,
+    lineWidth: 0,
     globalAlpha: 1,
     setTransform: (...args) => operations.push(['setTransform', ...args]),
     clearRect: (...args) => operations.push(['clearRect', ...args]),
@@ -14,6 +16,7 @@ function createMockCanvas() {
     beginPath: () => operations.push(['beginPath']),
     arc: (...args) => operations.push(['arc', ...args]),
     fill: () => operations.push(['fill', context.fillStyle, context.globalAlpha]),
+    stroke: () => operations.push(['stroke', context.strokeStyle, context.lineWidth, context.globalAlpha]),
   };
   return {
     width: 1600,
@@ -37,16 +40,19 @@ export default async function runTruthKernelViewTests() {
       id: 'healthy_node',
       status: 'healthy',
       confidence: 0.8,
+      confidenceAvailable: true,
       weight: 0.5,
     }, {
       id: 'blocked_node',
       status: 'blocked',
       confidence: 0.6,
+      confidenceAvailable: true,
       weight: 0.4,
     }, {
       id: 'orphan_node',
       status: 'orphaned',
       confidence: 0.5,
+      confidenceAvailable: false,
       weight: 0.3,
     }],
   };
@@ -59,12 +65,14 @@ export default async function runTruthKernelViewTests() {
   };
   drawTruthKernelScene(canvas, truthKernel, layout, { selectedNodeId: 'blocked_node' });
   const fills = canvas.operations.filter((entry) => entry[0] === 'fill');
-  assert.equal(fills.length, 3);
+  assert.equal(fills.length, 6);
   assert.equal(fills.some((entry) => entry[1] === '#f6f7fb'), true);
   assert.equal(fills.some((entry) => entry[1] === '#ff6a5d'), true);
   assert.equal(fills.some((entry) => entry[1] === '#6a7284'), true);
   const arcs = canvas.operations.filter((entry) => entry[0] === 'arc');
-  assert.equal(arcs.length, 4);
+  assert.equal(arcs.length, 10);
+  assert.equal(canvas.operations.some((entry) => entry[0] === 'fillRect'), false);
+  assert.equal(canvas.operations.filter((entry) => entry[0] === 'stroke').length >= 4, true);
   assert.equal(hitTestTruthKernelNode({ x: 200, y: 140 }, truthKernel, layout)?.id, 'blocked_node');
   assert.equal(hitTestTruthKernelNode({ x: 20, y: 20 }, truthKernel, layout), null);
 }

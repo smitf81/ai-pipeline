@@ -194,13 +194,17 @@ export default async function runQaResearchTriggerTests() {
     const investigation = readQaInvestigations(failureRoot)[0];
     const result = await maybeGenerateQaResearchNoteForInvestigation(failureRoot, investigation, {
       fetchImpl: async () => {
-        throw new Error('research server offline');
+        const error = new Error('fetch failed');
+        error.cause = { code: 'ECONNREFUSED' };
+        throw error;
       },
     });
     assert.equal(result.ok, false);
     assert.equal(result.advisory_failure, true);
     assert.equal(result.created, true);
-    assert.equal(result.note.status, 'unavailable');
+    assert.equal(result.note.status, 'offline');
+    assert.equal(result.note.failure_kind, 'offline');
+    assert.match(result.note.error_message || '', /offline|not listening/i);
     assert.equal(readQaResearchNotes(failureRoot).length, 1);
     assert.equal(readQaResearchNotes(failureRoot)[0].research_available, false);
   } finally {
@@ -220,6 +224,7 @@ export default async function runQaResearchTriggerTests() {
   assert.equal(failurePayload.status, 'unavailable');
   assert.equal(failurePayload.research_available, false);
   assert.equal(failurePayload.investigation_id, 'qa_inv_005');
+  assert.equal(failurePayload.failure_kind, 'unavailable');
 
   const stateRoot = makeTempRoot();
   try {

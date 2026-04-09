@@ -16,6 +16,14 @@ const {
   createDefaultStudioLayoutSchema,
 } = require('../server.js');
 
+const QA_CANARY_STUB = {
+  overall_status: 'pass',
+  summary: 'QA canaries not needed for this validation test.',
+  results: [],
+  failing_canary_ids: [],
+  last_run_at: '2026-04-06T00:00:00.000Z',
+};
+
 function makeTempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'qa-investigation-'));
 }
@@ -261,7 +269,9 @@ export default async function runExternalValidationTests() {
       investigationCreatedAt: '2026-04-06T00:05:10.000Z',
     });
 
-    const qaState = buildQAStatePayload(inboxRoot);
+    const qaState = buildQAStatePayload(inboxRoot, {
+      qaCanaries: QA_CANARY_STUB,
+    });
     assert.equal(qaState.openInvestigations.length, 2);
     assert.equal(qaState.openInvestigations[0].trigger, 'probe_failure');
     assert.equal(qaState.openInvestigations[1].trigger, 'external_mismatch');

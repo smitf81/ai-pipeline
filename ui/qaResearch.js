@@ -26,6 +26,72 @@ function normalizeText(value = '') {
   return String(value || '').trim();
 }
 
+function parseTargetUrl(target = '') {
+  const normalized = normalizeText(target);
+  if (!normalized) return null;
+  try {
+    return new URL(normalized);
+  } catch {
+    return null;
+  }
+}
+
+function isLocalServiceUrl(url = null) {
+  const hostname = normalizeText(url?.hostname).toLowerCase();
+  return ['127.0.0.1', 'localhost', '::1'].includes(hostname);
+}
+
+function classifyResearchFetchFailure(error = null, serverUrl = QA_RESEARCH_SERVER_URL, timeoutMs = QA_RESEARCH_TIMEOUT_MS) {
+  const targetUrl = parseTargetUrl(serverUrl);
+  const detail = normalizeText(error?.message || error) || 'QA research server unavailable.';
+  const causeCode = normalizeText(error?.cause?.code || error?.code).toUpperCase();
+  const isTimeout = error?.name === 'AbortError' || /timed out|aborted/i.test(detail);
+  if (isTimeout) {
+    return {
+      kind: 'timeout',
+      message: `QA research request timed out after ${Math.max(250, Number(timeoutMs) || QA_RESEARCH_TIMEOUT_MS)}ms.`,
+      detail,
+    };
+  }
+  if (!targetUrl && normalizeText(serverUrl)) {
+    return {
+      kind: 'bad_config',
+      message: 'QA research server target is misconfigured.',
+      detail,
+    };
+  }
+  if (causeCode === 'ECONNREFUSED') {
+    return {
+      kind: 'offline',
+      message: isLocalServiceUrl(targetUrl)
+        ? `QA research server is offline or not listening on ${normalizeText(targetUrl?.host) || serverUrl}.`
+        : 'QA research server connection was refused.',
+      detail,
+    };
+  }
+  if (['ENOTFOUND', 'EAI_AGAIN', 'ERR_INVALID_URL'].includes(causeCode) || /invalid url/i.test(detail)) {
+    return {
+      kind: 'bad_config',
+      message: 'QA research server target is misconfigured.',
+      detail,
+    };
+  }
+  if (['EHOSTUNREACH', 'ENETUNREACH', 'ECONNRESET'].includes(causeCode)) {
+    return {
+      kind: 'unreachable',
+      message: 'QA research server is unreachable.',
+      detail,
+    };
+  }
+  return {
+    kind: 'unreachable',
+    message: isLocalServiceUrl(targetUrl)
+      ? `QA research server is unreachable at ${normalizeText(targetUrl?.host) || serverUrl}.`
+      : detail,
+    detail,
+  };
+}
+
 function readJsonArray(filePath) {
   if (!fs.existsSync(filePath)) return [];
   try {
@@ -75,6 +141,9 @@ function normalizeQaResearchNoteRecord(record = {}) {
     sources,
     error_message: normalizeText(source.error_message || source.errorMessage) || null,
     research_available: researchAvailable,
+    failure_kind: normalizeText(source.failure_kind || source.failureKind) || null,
+    failure_detail: normalizeText(source.failure_detail || source.failureDetail) || null,
+    server_url: normalizeText(source.server_url || source.serverUrl) || null,
   };
 }
 
@@ -214,6 +283,9 @@ function buildQaResearchRecord({
     sources: Array.isArray(payload.sources) ? payload.sources : [],
     error_message: available ? null : normalizeText(errorMessage || payload.error || 'Research unavailable.') || 'Research unavailable.',
     research_available: available,
+    failure_kind: available ? null : (normalizeText(payload.failure_kind || payload.failureKind || status) || null),
+    failure_detail: available ? null : (normalizeText(payload.failure_detail || payload.failureDetail || errorMessage || payload.error) || null),
+    server_url: normalizeText(payload.server_url || payload.serverUrl || '') || null,
   });
 }
 
@@ -247,7 +319,20 @@ async function fetchQaResearchNoteFromServer({
       payload: null,
     };
   }
-  const url = new URL(serverUrl);
+  const url = parseTargetUrl(serverUrl);
+  if (!url) {
+    return {
+      ok: false,
+      status: 'bad_config',
+      error: {
+        kind: 'bad_config',
+        message: 'QA research server target is misconfigured.',
+        serverUrl: normalizeText(serverUrl) || null,
+        detail: `Invalid research server URL: ${normalizeText(serverUrl) || '<empty>'}.`,
+      },
+      payload: null,
+    };
+  }
   url.searchParams.set('query', queryText);
   if (normalizeText(currentMethod)) {
     url.searchParams.set('current_method', normalizeText(currentMethod));
@@ -262,11 +347,12 @@ async function fetchQaResearchNoteFromServer({
     if (!response.ok) {
       return {
         ok: false,
-        status: 'unavailable',
+        status: 'http_error',
         error: {
           kind: 'http_error',
           message: `QA research server returned HTTP ${response.status}.`,
           statusCode: response.status,
+          serverUrl: String(url),
         },
         payload: null,
       };
@@ -275,10 +361,11 @@ async function fetchQaResearchNoteFromServer({
     if (!payload || typeof payload !== 'object') {
       return {
         ok: false,
-        status: 'unavailable',
+        status: 'bad_response',
         error: {
-          kind: 'malformed_response',
+          kind: 'bad_response',
           message: 'QA research server returned a malformed payload.',
+          serverUrl: String(url),
         },
         payload: null,
       };
@@ -286,17 +373,21 @@ async function fetchQaResearchNoteFromServer({
     return {
       ok: Boolean(payload.ok),
       status: payload.ok ? 'available' : 'unavailable',
-      payload,
+      payload: {
+        ...payload,
+        server_url: normalizeText(payload.server_url || payload.serverUrl || String(url)) || String(url),
+      },
     };
   } catch (error) {
-    const message = String(error?.message || error);
-    const isTimeout = error?.name === 'AbortError' || /timed out|aborted/i.test(message);
+    const classified = classifyResearchFetchFailure(error, String(url), timeoutMs);
     return {
       ok: false,
-      status: isTimeout ? 'timeout' : 'unavailable',
+      status: classified.kind,
       error: {
-        kind: isTimeout ? 'timeout' : 'unavailable',
-        message: isTimeout ? `QA research request timed out after ${Math.max(250, Number(timeoutMs) || QA_RESEARCH_TIMEOUT_MS)}ms.` : message,
+        kind: classified.kind,
+        message: classified.message,
+        serverUrl: String(url),
+        detail: classified.detail,
       },
       payload: null,
     };
@@ -313,28 +404,46 @@ function buildResearchFailurePayload({
   createdAt = null,
 } = {}) {
   const record = normalizeQaInvestigationRecord(investigation || {});
+  const failureKind = normalizeText(error?.kind || status || 'unavailable') || 'unavailable';
+  const failureMessage = normalizeText(error?.message || 'QA research server unavailable.') || 'QA research server unavailable.';
+  const failureDetail = normalizeText(error?.detail || error?.message || '') || null;
+  const serverUrl = normalizeText(error?.serverUrl || QA_RESEARCH_SERVER_URL) || QA_RESEARCH_SERVER_URL;
   const note = buildQaResearchRecord({
     investigation: record,
     query: queryPayload?.query || '',
     sourcePayload: {
       source: 'external_mcp',
-      summary: 'QA research server unavailable.',
+      summary: failureKind === 'timeout'
+        ? 'QA research request timed out.'
+        : (failureKind === 'offline'
+            ? 'QA research server is offline.'
+            : (failureKind === 'bad_config'
+                ? 'QA research server target is misconfigured.'
+                : 'QA research server unavailable.')),
       recommendation: 'Retry later with the same bounded query.',
-      likely_causes: ['QA research server is offline or unreachable.'],
-      suggested_extra_checks: ['Verify the local QA research server is running on port 5052.'],
+      likely_causes: [failureMessage],
+      suggested_extra_checks: [isLocalServiceUrl(parseTargetUrl(serverUrl))
+        ? `Verify the local QA research server is running on ${normalizeText(parseTargetUrl(serverUrl)?.host) || 'the configured port'}.`
+        : `Verify the QA research server target ${serverUrl} is reachable.`],
       suggested_scorecard_additions: ['research-server-availability'],
       sources: [],
       ok: false,
-      error: error?.message || 'QA research server unavailable.',
+      error: failureMessage,
+      failure_kind: failureKind,
+      failure_detail: failureDetail,
+      server_url: serverUrl,
     },
     status,
-    errorMessage: error?.message || 'QA research server unavailable.',
+    errorMessage: failureMessage,
     createdAt,
   });
-  note.status = 'unavailable';
+  note.status = normalizeText(status || failureKind) || 'unavailable';
   note.ok = false;
   note.research_available = false;
-  note.error_message = error?.message || note.error_message || 'QA research server unavailable.';
+  note.error_message = failureMessage;
+  note.failure_kind = failureKind;
+  note.failure_detail = failureDetail;
+  note.server_url = serverUrl;
   return note;
 }
 

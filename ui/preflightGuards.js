@@ -37,13 +37,15 @@ function checkRepoClean({ commandRunner, rootPath }) {
   const result = commandRunner('git', ['status', '--porcelain', '--untracked-files=no'], rootPath);
   const stdout = String(result?.stdout || '').trim();
   const stderr = String(result?.stderr || '').trim();
+  const dirtySummary = 'Repository has uncommitted tracked changes.';
+  const dirtyDetails = stdout || stderr;
   return {
     ok: Boolean(result && result.code === 0 && !stdout),
     available: true,
     code: result?.code ?? null,
     message: result?.code === 0 && !stdout
       ? 'Repository is clean.'
-      : (stdout || stderr || 'Repository has uncommitted tracked changes.'),
+      : (dirtyDetails ? `${dirtySummary}\n${dirtyDetails}` : dirtySummary),
     output: stdout || stderr,
   };
 }

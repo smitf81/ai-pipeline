@@ -18,6 +18,7 @@ export default async function runPreflightGuardsTests() {
   const {
     checkPatchAlreadyExists,
     checkProjectKeyResolves,
+    checkRepoClean,
     checkRequiredFiles,
     checkValidationCommandExists,
     evaluatePreLlmGuards,
@@ -70,6 +71,20 @@ export default async function runPreflightGuardsTests() {
 
   assert.equal(checkPatchAlreadyExists(path.join(rootPath, 'work', 'tasks', '0001-cache-me', 'patch.diff')).exists, false);
   assert.equal(checkPatchAlreadyExists(path.join(rootPath, 'work', 'tasks', '0002-cache-me', 'patch.diff')).exists, true);
+  assert.deepEqual(checkRepoClean({
+    commandRunner: () => ({
+      code: 0,
+      stdout: ' M ui/server.js\n M brain/context/failure_history.json',
+      stderr: '',
+    }),
+    rootPath,
+  }), {
+    ok: false,
+    available: true,
+    code: 0,
+    message: 'Repository has uncommitted tracked changes.\nM ui/server.js\n M brain/context/failure_history.json',
+    output: 'M ui/server.js\n M brain/context/failure_history.json',
+  });
 
   const okGuard = evaluatePreLlmGuards({
     rootPath,

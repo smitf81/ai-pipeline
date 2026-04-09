@@ -46,6 +46,10 @@ function normalizeQaOutputFeedItem(item = {}) {
       activeLanes: Number.isFinite(Number(meta.activeLanes)) ? Number(meta.activeLanes) : 0,
       externalStatus: normalizeText(meta.externalStatus) || 'unknown',
       cycleId: normalizeText(meta.cycleId || meta.runId) || null,
+      mcpEvidenceSource: normalizeText(meta.mcpEvidenceSource) || null,
+      externalProbeLive: typeof meta.externalProbeLive === 'boolean' ? meta.externalProbeLive : null,
+      usedFallback: typeof meta.usedFallback === 'boolean' ? meta.usedFallback : null,
+      probeTarget: normalizeText(meta.probeTarget) || null,
     },
   };
 }
@@ -65,6 +69,10 @@ function buildQaOutputFeedEntryFromCycle({
   failedChecks = 0,
   activeLanes = 0,
   externalStatus = 'unknown',
+  mcpEvidenceSource = null,
+  externalProbeLive = false,
+  usedFallback = false,
+  probeTarget = null,
 } = {}) {
   return normalizeQaOutputFeedItem({
     id: `qa_output_${String(createdAt).replace(/[^0-9TZ]/g, '') || Date.now()}`,
@@ -79,6 +87,86 @@ function buildQaOutputFeedEntryFromCycle({
       activeLanes,
       externalStatus,
       cycleId,
+      mcpEvidenceSource,
+      externalProbeLive,
+      usedFallback,
+      probeTarget,
+    },
+  });
+}
+
+function appendLiveMcpEvidenceSummary(summary = '', externalValidation = null) {
+  const baseSummary = normalizeText(summary) || 'QA cycle completed';
+  if (!externalValidation || externalValidation.externalProbeLive !== true || externalValidation.usedFallback === true) {
+    return baseSummary;
+  }
+  if (/live MCP helper evidence captured/i.test(baseSummary)) {
+    return baseSummary;
+  }
+  return `${baseSummary} Live MCP helper evidence captured.`;
+}
+
+function countQaLeadFailedChecks(run = {}) {
+  const source = run && typeof run === 'object' ? run : {};
+  return [
+    source.boot_health && (source.boot_health.safeMode || source.boot_health.status === 'blocked' || source.boot_health.failure_class),
+    source.browser_run && ['fail', 'failed', 'error'].includes(String(source.browser_run.verdict || source.browser_run.status || '').toLowerCase()),
+    source.canaries && source.canaries.overall_status === 'fail',
+    source.loop_audit && source.loop_audit.overall_status === 'fail',
+  ].filter(Boolean).length;
+}
+
+function deriveQaLeadActiveLaneCount(run = {}) {
+  const repairLoop = run?.repair_loop;
+  const summaryCount = Number(repairLoop?.summary?.activeLanes || repairLoop?.summary?.active_lanes || 0);
+  if (Number.isFinite(summaryCount) && summaryCount > 0) {
+    return summaryCount;
+  }
+  if (!Array.isArray(repairLoop?.lanes)) {
+    return 0;
+  }
+  return repairLoop.lanes.filter((lane) => !['idle', 'inactive'].includes(String(lane?.current_status || lane?.status || '').toLowerCase())).length;
+}
+
+function deriveQaLeadExternalStatus(run = {}) {
+  const externalValidation = run?.external_validation;
+  if (externalValidation?.ok) {
+    return 'ok';
+  }
+  const probeStatus = String(externalValidation?.probeStatus || externalValidation?.error?.kind || '').toLowerCase();
+  if (['unreachable', 'offline'].includes(probeStatus)) {
+    return 'unreachable';
+  }
+  return externalValidation ? 'degraded' : 'unknown';
+}
+
+function buildQaOutputFeedEntryFromQaLeadRun(run = {}) {
+  const source = run && typeof run === 'object' ? run : {};
+  const externalValidation = source.external_validation && typeof source.external_validation === 'object'
+    ? source.external_validation
+    : (source.externalValidation && typeof source.externalValidation === 'object' ? source.externalValidation : null);
+  const failedChecks = countQaLeadFailedChecks(source);
+  const externalStatus = deriveQaLeadExternalStatus(source);
+  const createdAt = normalizeText(source.finished_at || source.finishedAt || source.last_completed_cycle_at || source.lastCompletedCycleAt) || nowIso();
+  return normalizeQaOutputFeedItem({
+    id: `qa_output_${String(createdAt).replace(/[^0-9TZ]/g, '') || Date.now()}`,
+    createdAt,
+    type: 'qa_cycle',
+    summary: appendLiveMcpEvidenceSummary(source.summary, externalValidation),
+    result: classifyQaOutputFeedResult({ failedChecks, externalStatus }),
+    source: normalizeText(source.source) || 'qa_lead_runner',
+    meta: {
+      investigationCount: Number.isFinite(Number(source.open_investigation_count || source.openInvestigationCount))
+        ? Number(source.open_investigation_count || source.openInvestigationCount)
+        : 0,
+      failedChecks,
+      activeLanes: deriveQaLeadActiveLaneCount(source),
+      externalStatus,
+      cycleId: normalizeText(source.id || source.run_id || source.runId) || null,
+      mcpEvidenceSource: normalizeText(externalValidation?.mcpEvidenceSource) || null,
+      externalProbeLive: externalValidation?.externalProbeLive === true,
+      usedFallback: externalValidation?.usedFallback === true,
+      probeTarget: normalizeText(externalValidation?.probeTarget || externalValidation?.probe_target || '') || null,
     },
   });
 }
@@ -112,7 +200,11 @@ module.exports = {
   QA_OUTPUT_FEED_RELATIVE_FILE,
   appendQaOutputFeedEntry,
   buildQaOutputFeedEntryFromCycle,
+  buildQaOutputFeedEntryFromQaLeadRun,
   classifyQaOutputFeedResult,
+  countQaLeadFailedChecks,
+  deriveQaLeadActiveLaneCount,
+  deriveQaLeadExternalStatus,
   getQaOutputFeedFilePath,
   normalizeQaOutputFeedItem,
   readQaOutputFeed,

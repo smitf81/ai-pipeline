@@ -34,6 +34,14 @@ function getTimeMs(value = null) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function normalizeNumeric(value = null) {
+  if (value == null || value === '') {
+    return null;
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
 function latestTimestamp(...values) {
   let latestMs = null;
   for (const value of values) {
@@ -60,7 +68,9 @@ function normalizeProbeStatus(value = '') {
   const normalized = normalizeText(value).toLowerCase();
   if (!normalized) return 'unavailable';
   if (['ok', 'pass', 'reachable', 'available', 'success'].includes(normalized)) return 'ok';
+  if (['offline', 'bad_config', 'bad_response'].includes(normalized)) return normalized;
   if (['timeout', 'timed_out'].includes(normalized)) return 'timeout';
+  if (['http_error', 'invalid_contract', 'invalid_json', 'missing_fetch', 'unreachable'].includes(normalized)) return normalized;
   if (['error', 'fail', 'failed', 'unavailable', 'offline'].includes(normalized)) return normalized === 'failed' ? 'fail' : normalized;
   return normalized;
 }
@@ -69,8 +79,53 @@ function normalizeCallStatus(value = '') {
   const normalized = normalizeText(value).toLowerCase();
   if (!normalized) return 'unknown';
   if (['available', 'ok', 'pass', 'success'].includes(normalized)) return 'ok';
-  if (['unavailable', 'timeout', 'error', 'fail', 'failed'].includes(normalized)) return normalized === 'failed' ? 'fail' : normalized;
+  if (['offline', 'bad_config', 'bad_response', 'http_error', 'timeout', 'unreachable'].includes(normalized)) return normalized;
+  if (['unavailable', 'error', 'fail', 'failed'].includes(normalized)) return normalized === 'failed' ? 'fail' : normalized;
   return normalized;
+}
+
+function lastSuccessStatus(status = '') {
+  return normalizeCallStatus(status) === 'ok';
+}
+
+function lastFailureStatus(status = '') {
+  const normalized = normalizeCallStatus(status);
+  return normalized !== 'ok' && normalized !== 'unknown';
+}
+
+function normalizeResearchFailureKind(note = null) {
+  const source = note && typeof note === 'object' ? note : {};
+  return normalizeText(source.failure_kind || source.failureKind || source.status || '') || null;
+}
+
+function buildCurrentFailure({
+  probeFailureAt = null,
+  probeFailureKind = null,
+  probeFailureDetail = null,
+  probeTarget = null,
+  researchFailureAt = null,
+  researchFailureKind = null,
+  researchFailureDetail = null,
+  researchTarget = null,
+} = {}) {
+  const candidates = [
+    probeFailureAt ? {
+      at: probeFailureAt,
+      kind: normalizeText(probeFailureKind) || 'unreachable',
+      detail: normalizeText(probeFailureDetail) || null,
+      target: normalizeText(probeTarget) || null,
+      tool: 'external_probe_check',
+    } : null,
+    researchFailureAt ? {
+      at: researchFailureAt,
+      kind: normalizeText(researchFailureKind) || 'unavailable',
+      detail: normalizeText(researchFailureDetail) || null,
+      target: normalizeText(researchTarget) || null,
+      tool: 'qa_research_note',
+    } : null,
+  ].filter(Boolean);
+  candidates.sort((left, right) => getTimeMs(right.at) - getTimeMs(left.at));
+  return candidates[0] || null;
 }
 
 function latestResearchNote(researchState = null) {
@@ -78,6 +133,23 @@ function latestResearchNote(researchState = null) {
   let latest = null;
   let latestMs = null;
   for (const note of notes) {
+    const noteAt = normalizeIsoTimestamp(note?.created_at, note?.updated_at, note?.timestamp);
+    const noteMs = getTimeMs(noteAt);
+    if (noteMs == null) continue;
+    if (latestMs == null || noteMs > latestMs) {
+      latestMs = noteMs;
+      latest = note;
+    }
+  }
+  return latest;
+}
+
+function latestResearchNoteByPredicate(researchState = null, predicate = () => false) {
+  const notes = Array.isArray(researchState?.notes) ? researchState.notes : [];
+  let latest = null;
+  let latestMs = null;
+  for (const note of notes) {
+    if (!predicate(note)) continue;
     const noteAt = normalizeIsoTimestamp(note?.created_at, note?.updated_at, note?.timestamp);
     const noteMs = getTimeMs(noteAt);
     if (noteMs == null) continue;
@@ -156,8 +228,18 @@ function buildStatusNotes({
   usingMcpForQaDecisions = false,
   lastQaGateSource = 'unknown',
   lastPingStatus = 'unavailable',
+  lastPingFailureKind = null,
+  lastPingFailureDetail = null,
+  lastPingHttpStatus = null,
+  lastPingTarget = null,
   lastCallTool = null,
   lastCallStatus = 'unknown',
+  researchLastCallStatus = 'unknown',
+  researchFailureKind = null,
+  researchFailureDetail = null,
+  researchTarget = null,
+  recoveryDetected = false,
+  recoveredFromKind = null,
 } = {}) {
   const notes = [];
   if (usageState === 'configured_but_unused') {
@@ -179,8 +261,33 @@ function buildStatusNotes({
   if (lastPingStatus && lastPingStatus !== 'unavailable') {
     notes.push(`Last MCP ping status: ${lastPingStatus}.`);
   }
+  if (lastPingFailureKind) {
+    const httpClause = Number.isFinite(Number(lastPingHttpStatus)) ? ` HTTP ${Number(lastPingHttpStatus)}.` : '';
+    notes.push(`Latest MCP ping failure: ${lastPingFailureKind}.${httpClause}`.trim());
+  }
+  if (lastPingFailureDetail) {
+    notes.push(`Failure detail: ${lastPingFailureDetail}`);
+  }
+  if (lastPingTarget) {
+    notes.push(`Probe target: ${lastPingTarget}.`);
+  }
   if (lastCallTool) {
     notes.push(`Last MCP call: ${lastCallTool} (${lastCallStatus || 'unknown'}).`);
+  }
+  if (researchLastCallStatus && researchLastCallStatus !== 'unknown') {
+    notes.push(`Latest research call status: ${researchLastCallStatus}.`);
+  }
+  if (researchFailureKind) {
+    notes.push(`Latest research failure: ${researchFailureKind}.`);
+  }
+  if (researchFailureDetail) {
+    notes.push(`Research failure detail: ${researchFailureDetail}`);
+  }
+  if (researchTarget) {
+    notes.push(`Research target: ${researchTarget}.`);
+  }
+  if (recoveryDetected && recoveredFromKind) {
+    notes.push(`Recovery detected after ${recoveredFromKind}.`);
   }
   if (mcpReachable && !usingMcpForQaDecisions && status !== 'live') {
     notes.push('MCP is reachable, but QA is currently relying on a non-MCP gate source.');
@@ -207,9 +314,38 @@ function buildQaMcpLiveStatus(input = {}, options = {}) {
   const localGate = input.localGate && typeof input.localGate === 'object' ? input.localGate : null;
 
   const latestNote = latestResearchNote(researchState);
+  const latestResearchFailureNote = latestResearchNoteByPredicate(researchState, (note) => !note?.research_available);
   const lastPingAt = normalizeIsoTimestamp(externalValidation?.lastCheckedAt);
   const lastPingStatus = normalizeProbeStatus(externalValidation?.probeStatus);
   const lastPingSource = normalizeText(externalValidation?.source) || 'external_mcp';
+  const lastPingFailureKind = normalizeText(externalValidation?.probeFailureKind || externalValidation?.error?.kind || '') || null;
+  const lastPingFailureDetail = normalizeText(externalValidation?.probeFailureDetail || externalValidation?.errorMessage || '') || null;
+  const lastPingHttpStatus = normalizeNumeric(externalValidation?.probeStatusCode);
+  const lastPingTarget = normalizeText(externalValidation?.probeTarget || '') || null;
+  const probeLastSuccessAt = lastSuccessStatus(lastPingStatus) ? lastPingAt : null;
+  const probeLastFailureAt = lastFailureStatus(lastPingStatus) ? lastPingAt : null;
+
+  const researchLastCallAt = normalizeIsoTimestamp(latestNote?.created_at, latestNote?.updated_at, latestNote?.timestamp);
+  const researchLastCallStatus = latestNote
+    ? normalizeCallStatus(latestNote.research_available ? 'ok' : normalizeResearchFailureKind(latestNote))
+    : 'unknown';
+  const researchFailureKind = latestNote && !latestNote.research_available
+    ? normalizeResearchFailureKind(latestNote)
+    : null;
+  const researchFailureDetail = latestNote && !latestNote.research_available
+    ? normalizeText(latestNote.failure_detail || latestNote.error_message || '') || null
+    : null;
+  const researchTarget = normalizeText(latestNote?.server_url || '') || QA_RESEARCH_SERVER_URL;
+  const researchLastSuccessAt = latestNote?.research_available ? researchLastCallAt : null;
+  const researchLastFailureAt = latestNote && !latestNote.research_available ? researchLastCallAt : null;
+  const researchMostRecentFailureAt = normalizeIsoTimestamp(
+    latestResearchFailureNote?.created_at,
+    latestResearchFailureNote?.updated_at,
+    latestResearchFailureNote?.timestamp,
+  );
+  const researchMostRecentFailureKind = latestResearchFailureNote
+    ? normalizeResearchFailureKind(latestResearchFailureNote)
+    : null;
 
   const lastCallCandidates = [
     lastPingAt ? {
@@ -221,7 +357,7 @@ function buildQaMcpLiveStatus(input = {}, options = {}) {
     latestNote ? {
       at: normalizeIsoTimestamp(latestNote.created_at, latestNote.updated_at, latestNote.timestamp),
       tool: 'qa_research_note',
-      status: normalizeCallStatus(latestNote.status || (latestNote.ok ? 'ok' : 'unavailable')),
+      status: researchLastCallStatus,
       source: normalizeText(latestNote.source) || 'external_mcp',
     } : null,
   ].filter(Boolean);
@@ -246,8 +382,24 @@ function buildQaMcpLiveStatus(input = {}, options = {}) {
     || hasExternalDecisionPressure
   );
   const lastCallStatus = normalizeCallStatus(lastCall?.status);
-  const mcpReachable = lastPingStatus === 'ok' || lastCallStatus === 'ok';
+  const mcpReachable = lastPingStatus === 'ok' || lastCallStatus === 'ok' || researchLastCallStatus === 'ok';
   const recentProofAt = lastCall?.at || lastPingAt || null;
+  const lastSuccessAt = latestTimestamp(probeLastSuccessAt, researchLastSuccessAt);
+  const currentFailure = buildCurrentFailure({
+    probeFailureAt: probeLastFailureAt,
+    probeFailureKind: lastPingFailureKind,
+    probeFailureDetail: lastPingFailureDetail,
+    probeTarget: lastPingTarget,
+    researchFailureAt: researchLastFailureAt,
+    researchFailureKind,
+    researchFailureDetail,
+    researchTarget,
+  });
+  const lastFailureAt = currentFailure?.at || latestTimestamp(probeLastFailureAt, researchMostRecentFailureAt, researchLastFailureAt);
+  const recoveryDetected = Boolean(lastSuccessAt && lastFailureAt && getTimeMs(lastSuccessAt) > getTimeMs(lastFailureAt));
+  const recoveredFromKind = recoveryDetected
+    ? (currentFailure?.kind || researchMostRecentFailureKind || lastPingFailureKind || null)
+    : null;
   const freshness = !recentProofAt
     ? 'unknown'
     : (isStale(recentProofAt, nowMs) ? 'stale' : 'fresh');
@@ -277,12 +429,12 @@ function buildQaMcpLiveStatus(input = {}, options = {}) {
   } else if (!lastPingAt && !lastCall?.at) {
     status = 'offline';
     usageState = 'configured_but_unused';
-  } else if (!mcpReachable && (lastPingAt || lastCall?.at)) {
-    status = 'degraded';
-    usageState = 'degraded';
   } else if (recentProofAt && isStale(recentProofAt, nowMs)) {
     status = 'stale';
     usageState = 'stale';
+  } else if (currentFailure && (!lastSuccessAt || getTimeMs(currentFailure.at) >= getTimeMs(lastSuccessAt))) {
+    status = currentFailure.kind === 'offline' ? 'offline' : 'degraded';
+    usageState = currentFailure.kind === 'offline' ? 'offline' : 'degraded';
   } else if (mcpReachable && usingMcpForQaDecisions) {
     status = 'live';
     usageState = 'active_gating';
@@ -305,12 +457,28 @@ function buildQaMcpLiveStatus(input = {}, options = {}) {
     last_ping_at: lastPingAt,
     last_ping_status: lastPingStatus,
     last_ping_source: lastPingSource,
+    last_ping_failure_kind: lastPingFailureKind,
+    last_ping_failure_detail: lastPingFailureDetail,
+    last_ping_http_status: lastPingHttpStatus,
+    last_ping_target: lastPingTarget,
+    research_target: researchTarget,
+    research_last_call_at: researchLastCallAt,
+    research_last_call_status: researchLastCallStatus,
+    research_failure_kind: researchFailureKind,
+    research_failure_detail: researchFailureDetail,
     last_call_at: lastCall?.at || null,
     last_call_tool: lastCall?.tool || null,
     last_call_status: lastCallStatus || 'unknown',
     last_call_source: lastCall?.source || null,
     last_qa_gate_source: lastQaGate.source || 'unknown',
     using_mcp_for_qa_decisions: usingMcpForQaDecisions,
+    last_success_at: lastSuccessAt,
+    last_failure_at: lastFailureAt,
+    current_failure_kind: currentFailure?.kind || null,
+    current_failure_tool: currentFailure?.tool || null,
+    recovery_detected: recoveryDetected,
+    recovered_at: recoveryDetected ? lastSuccessAt : null,
+    recovered_from_kind: recoveredFromKind,
     notes: buildStatusNotes({
       status,
       usageState,
@@ -318,8 +486,18 @@ function buildQaMcpLiveStatus(input = {}, options = {}) {
       usingMcpForQaDecisions,
       lastQaGateSource: lastQaGate.source,
       lastPingStatus,
+      lastPingFailureKind,
+      lastPingFailureDetail,
+      lastPingHttpStatus,
+      lastPingTarget,
       lastCallTool: lastCall?.tool || null,
       lastCallStatus,
+      researchLastCallStatus,
+      researchFailureKind,
+      researchFailureDetail,
+      researchTarget,
+      recoveryDetected,
+      recoveredFromKind,
     }),
   };
 }

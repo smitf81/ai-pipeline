@@ -5,6 +5,7 @@ const require = createRequire(import.meta.url);
 
 export default async function runQAAuditTrailTests() {
   const { buildQAAuditTrail, summarizeQAAuditTrail } = require(path.resolve(process.cwd(), '..', 'qa', 'qaAuditTrail.js'));
+  const now = Date.parse('2026-04-01T12:00:00.000Z');
 
   const structuredReport = {
     status: 'pass',
@@ -67,6 +68,7 @@ export default async function runQAAuditTrailTests() {
         },
       },
     ],
+    now,
     latestBrowserRun: {
       id: 'qa_manual_1',
       scenario: 'layout-pass',
@@ -122,6 +124,7 @@ export default async function runQAAuditTrailTests() {
         status: 'pass',
       },
     ],
+    now,
   });
   const missingScorecard = missingAudit.entries.find((entry) => entry.kind === 'scorecard');
   if (!missingScorecard || missingScorecard.status !== 'missing') {

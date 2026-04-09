@@ -21,17 +21,7 @@ export default async function runQaLeadSurfacesTests() {
       finished_at: now,
       last_completed_cycle_at: now,
       active_tools: ['external_probe_check', 'browser_qa_run', 'lane_canary_suite'],
-      output_feed: [
-        {
-          id: 'proof-of-life',
-          label: 'MCP proof of life',
-          tool: 'external_probe_check',
-          status: 'validated',
-          verdict: 'pass',
-          summary: 'External QA probe returned a fresh result.',
-          observed_at: now,
-        },
-      ],
+      output_feed: [],
       live_status: {
         source: 'qa_mcp_live_status',
         status: 'live',
@@ -54,17 +44,7 @@ export default async function runQaLeadSurfacesTests() {
       current_task: 'QA lead is running live scans.',
       current_batch: 'qa_lead_test_cycle',
       active_tools: ['external_probe_check', 'browser_qa_run', 'lane_canary_suite'],
-      output_feed: [
-        {
-          id: 'proof-of-life',
-          label: 'MCP proof of life',
-          tool: 'external_probe_check',
-          status: 'validated',
-          verdict: 'pass',
-          summary: 'External QA probe returned a fresh result.',
-          observed_at: now,
-        },
-      ],
+      output_feed: [],
       live_status: {
         source: 'qa_mcp_live_status',
         status: 'live',
@@ -102,6 +82,43 @@ export default async function runQaLeadSurfacesTests() {
       freshness: 'fresh',
       notes: ['Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.'],
     },
+    qaLiveCycle: {
+      source: 'qa_live_cycle',
+      current_run_id: 'qa_lead_test_cycle',
+      current_status: 'live',
+      latest_completed_cycle_id: 'qa_lead_test_cycle',
+      latest_completed_cycle_at: now,
+      latest_completed_status: 'live',
+      ran_once: true,
+      mcp_status: 'live',
+      mcp_reachable: true,
+      current_gate_source: 'external_mcp',
+      external_status: 'pass',
+      output_feed_loaded: true,
+      output_feed_count: 1,
+      output_feed_captured: true,
+      latest_feed_entry_id: 'qa_output_20260406T120000000Z',
+      latest_feed_result: 'pass',
+      summary: 'qa_lead_test_cycle live | MCP live | gate external_mcp | external pass | feed captured',
+    },
+    outputFeedLoaded: true,
+    outputFeed: [
+      {
+        id: 'qa_output_20260406T120000000Z',
+        createdAt: now,
+        type: 'qa_cycle',
+        summary: 'QA cycle completed',
+        result: 'pass',
+        source: 'qa_lead_runner',
+        meta: {
+          cycleId: 'qa_lead_test_cycle',
+          investigationCount: 0,
+          failedChecks: 0,
+          activeLanes: 1,
+          externalStatus: 'pass',
+        },
+      },
+    ],
   };
 
   const executorContext = buildAgentContext({
@@ -117,6 +134,7 @@ export default async function runQaLeadSurfacesTests() {
 
   assert.equal(executorContext.qa.liveStatus.status, 'live');
   assert.equal(executorContext.qa.feed.length, 1);
-  assert.match(executorContext.qa.summary, /downstream review/i);
+  assert.equal(executorContext.qa.summary, qaState.qaLiveCycle.summary);
   assert.equal(executorContext.qa.lead.id, 'qa_lead_test_cycle');
+  assert.equal(executorContext.qa.liveCycle.output_feed_captured, true);
 }

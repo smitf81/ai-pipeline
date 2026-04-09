@@ -104,6 +104,7 @@ export async function smokeLoadSpatialApp(modulePath, { locationHref = 'http://l
   const truthKernelAdapterModule = await materializeModuleCopy(path.join(spatialDir, 'truthKernelAdapter.js'), { label: 'truthKernelAdapter' });
   const truthKernelLayoutModule = await materializeModuleCopy(path.join(spatialDir, 'truthKernelLayout.js'), { label: 'truthKernelLayout' });
   const truthKernelViewModule = await materializeModuleCopy(path.join(spatialDir, 'truthKernelView.js'), { label: 'truthKernelView' });
+  const qaReadableSectionsModule = await materializeModuleCopy(path.join(spatialDir, 'qaReadableSections.js'), { label: 'qaReadableSections' });
   const source = await fs.readFile(modulePath, 'utf8');
   const withoutImports = stripImportLines(source);
   const shimmedSource = `
@@ -188,14 +189,24 @@ import {
   buildCanonicalIntentContract,
 } from ${JSON.stringify(intentContractBrowserModule.url)};
 import {
+  buildTruthKernelNodeInspectorModel,
+  buildTruthKernelRenderModel,
+  buildTruthKernelProvenancePresentation,
   EMPTY_TRUTH_KERNEL,
   normalizeTruthKernelPayload,
+  summarizeTruthKernelPositionOrigin,
+  summarizeTruthKernelSpread,
+  summarizeTruthKernelRenderStatus,
 } from ${JSON.stringify(truthKernelAdapterModule.url)};
 import {
   buildTruthKernelLayout,
 } from ${JSON.stringify(truthKernelLayoutModule.url)};
 import {
+  decorateQaReadableSections,
+} from ${JSON.stringify(qaReadableSectionsModule.url)};
+import {
   drawTruthKernelScene,
+  hitTestTruthKernelNode,
 } from ${JSON.stringify(truthKernelViewModule.url)};
 import {
   buildGhostProjectionRegistryPayload,
@@ -333,7 +344,10 @@ ${withoutImports}
 
 const firstRender = SpatialNotebook();
 export default { loaded: typeof SpatialNotebook === 'function', firstRender, rootElement };
-export { renderDeskSection, renderSimLaunchOverlay };
+export {
+  renderDeskSection,
+  renderSimLaunchOverlay,
+};
 `;
   const tempFile = await writeTempModule(shimmedSource, 'spatialApp-smoke');
   if (process.env.ACE_DEBUG_SMOKE === '1') {

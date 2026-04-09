@@ -51,7 +51,13 @@ function writeJson(filePath, payload = {}) {
 
 function createAuditTempRoot(rootPath = process.cwd()) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-loop-audit-'));
-  fs.cpSync(path.join(rootPath, 'ui'), path.join(tempRoot, 'ui'), { recursive: true });
+  fs.cpSync(path.join(rootPath, 'ui'), path.join(tempRoot, 'ui'), {
+    recursive: true,
+    filter: (source) => {
+      const normalized = String(source || '').replace(/\\/g, '/');
+      return !normalized.includes('/node_modules/') && !normalized.endsWith('/node_modules');
+    },
+  });
   return tempRoot;
 }
 

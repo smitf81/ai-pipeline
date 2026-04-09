@@ -1,6 +1,82 @@
 {
   "items": [
     {
+      "id": "qa_output_20260409T182521752Z",
+      "createdAt": "2026-04-09T18:25:21.752Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: 1 injected loop fault diverged from the expected loop behavior. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 3,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775759027879_h87gs2",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260409T165815683Z",
+      "createdAt": "2026-04-09T16:58:15.683Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: browserType.launch: spawn EPERM\nCall log:\n\u001b[2m  - <launching> C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-gpu --no-first-run --disable-background-networking --user-data-dir=C:\\Users\\felix\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-vkNQSI --remote-debugging-pipe --no-startup-window\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 3,
+        "activeLanes": 0,
+        "externalStatus": "ok",
+        "cycleId": "qa_live_mcp_proof_slice_2",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260409T165640886Z",
+      "createdAt": "2026-04-09T16:56:40.886Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: browserType.launch: spawn EPERM\nCall log:\n\u001b[2m  - <launching> C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-gpu --no-first-run --disable-background-networking --user-data-dir=C:\\Users\\felix\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-an6YJz --remote-debugging-pipe --no-startup-window\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 3,
+        "activeLanes": 0,
+        "externalStatus": "ok",
+        "cycleId": "qa_live_mcp_proof_slice",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260409T164904000Z",
+      "createdAt": "2026-04-09T16:49:04.000Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: browserType.launch: spawn EPERM\nCall log:\n\u001b[2m  - <launching> C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-gpu --no-first-run --disable-background-networking --user-data-dir=C:\\Users\\felix\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-HPr8Ea --remote-debugging-pipe --no-startup-window\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 3,
+        "activeLanes": 0,
+        "externalStatus": "ok",
+        "cycleId": "qa_live_mcp_proof_manual",
+        "mcpEvidenceSource": null,
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": null
+      }
+    },
+    {
       "id": "qa_output_20260409T120100000Z",
       "createdAt": "2026-04-09T12:01:00.000Z",
       "type": "qa_cycle",
@@ -12,7 +88,30 @@
         "failedChecks": 1,
         "activeLanes": 1,
         "externalStatus": "unreachable",
-        "cycleId": "qa_manual_cycle_route_test"
+        "cycleId": "qa_manual_cycle_route_test",
+        "mcpEvidenceSource": null,
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": null
+      }
+    },
+    {
+      "id": "qa_output_20260409T184603487Z",
+      "createdAt": "2026-04-09T18:46:03.487Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 3,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775760226390_qhcxfx",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
       }
     }
   ]

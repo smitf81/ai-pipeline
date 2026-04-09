@@ -448,9 +448,165 @@ body.qa-mode .status-row:last-child {
 }
 
 .truth-kernel-canvas {
-  z-index: 0;
+  z-index: 3;
   pointer-events: none;
   transition: opacity 160ms ease;
+}
+
+.truth-inspection-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(16, 26, 40, 0.08) 0%, rgba(7, 12, 20, 0.22) 52%, rgba(5, 9, 15, 0.38) 100%),
+    linear-gradient(180deg, rgba(4, 7, 12, 0.16), rgba(4, 7, 12, 0.34));
+  backdrop-filter: blur(2px);
+}
+
+.truth-kernel-status-line {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 4;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: min(720px, calc(100% - 32px));
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(112, 161, 255, 0.28);
+  background: rgba(5, 10, 18, 0.9);
+  color: #d8e7fb;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26);
+  pointer-events: none;
+}
+
+.truth-kernel-status-line__label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8fb2ff;
+  flex: 0 0 auto;
+}
+
+.truth-kernel-status-line__value {
+  min-width: 0;
+  font-size: 12px;
+  color: #eef5ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truth-kernel-spread-line {
+  position: absolute;
+  left: 16px;
+  bottom: 56px;
+  z-index: 4;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: min(860px, calc(100% - 32px));
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(112, 161, 255, 0.24);
+  background: rgba(5, 10, 18, 0.82);
+  color: #d8e7fb;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.truth-kernel-spread-line__label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8fb2ff;
+  flex: 0 0 auto;
+}
+
+.truth-kernel-spread-line__value {
+  min-width: 0;
+  font-size: 12px;
+  color: #eef5ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truth-kernel-origin-line {
+  position: absolute;
+  left: 16px;
+  bottom: 96px;
+  z-index: 4;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: min(980px, calc(100% - 32px));
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(112, 161, 255, 0.2);
+  background: rgba(5, 10, 18, 0.76);
+  color: #d8e7fb;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
+.truth-kernel-origin-line__label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8fb2ff;
+  flex: 0 0 auto;
+}
+
+.truth-kernel-origin-line__value {
+  min-width: 0;
+  font-size: 12px;
+  color: #eef5ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truth-inspection-legend {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4;
+  width: min(280px, calc(100% - 32px));
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(112, 161, 255, 0.24);
+  background: rgba(5, 10, 18, 0.82);
+  color: #d8e7fb;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.truth-inspection-legend__title {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8fb2ff;
+}
+
+.truth-inspection-legend__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.truth-inspection-legend__axis {
+  width: 18px;
+  color: #f4f8ff;
+  font-size: 12px;
+}
+
+.truth-inspection-legend__meaning {
+  font-size: 12px;
+  color: #d8e7fb;
 }
 
 .truth-kernel-inspector {
@@ -480,6 +636,93 @@ body.qa-mode .status-row:last-child {
   margin-top: 4px;
   font-size: 12px;
   color: var(--muted);
+}
+
+.truth-kernel-inspector-summary {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #d8e7fb;
+  line-height: 1.45;
+}
+
+.truth-kernel-inspector-grid {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.truth-kernel-inspector-row {
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.truth-kernel-inspector-row__label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8fb2ff;
+}
+
+.truth-kernel-inspector-row__value {
+  font-size: 12px;
+  color: #eef5ff;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.truth-kernel-inspector-row__origin {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.truth-kernel-inspector-row__origin.origin-canonical {
+  background: rgba(92, 226, 159, 0.16);
+  color: #86efac;
+}
+
+.truth-kernel-inspector-row__origin.origin-derived {
+  background: rgba(255, 191, 92, 0.16);
+  color: #ffd18f;
+}
+
+.truth-kernel-inspector-row__origin.origin-unavailable {
+  background: rgba(106, 114, 132, 0.2);
+  color: #c3cede;
+}
+
+.observability-rail.compact {
+  gap: 6px;
+}
+
+.observability-rail.compact .truth-kernel-inspector,
+.observability-rail.compact .truth-kernel-provenance,
+.observability-rail.compact .observability-title {
+  backdrop-filter: blur(8px);
+}
+
+.observability-rail.compact .truth-kernel-inspector {
+  padding: 8px 10px;
+}
+
+.observability-rail.compact .truth-kernel-inspector-meta {
+  font-size: 11px;
+}
+
+.observability-toggle {
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.observability-compact-caption {
+  line-height: 1.4;
 }
 
 .mono {

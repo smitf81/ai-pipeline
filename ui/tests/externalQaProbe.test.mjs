@@ -128,6 +128,7 @@ export default async function runExternalQaProbeTests() {
   assert.equal(successPayload.comparison.status_match, true);
   assert.equal(successPayload.comparison.freshness_known, true);
   assert.deepEqual(successPayload.comparison.notes, []);
+  assert.equal(successPayload.probe_target, 'http://127.0.0.1:5051/run_test');
 
   const timeoutPayload = await buildExternalQaProbeCheckPayload({
     qaState: {
@@ -153,6 +154,70 @@ export default async function runExternalQaProbeTests() {
   assert.equal(timeoutPayload.error.kind, 'timeout');
   assert.equal(timeoutPayload.comparison.freshness_known, false);
   assert.ok(timeoutPayload.comparison.notes.some((note) => /External probe timestamp is missing/i.test(note)));
+
+  const offlinePayload = await buildExternalQaProbeCheckPayload({
+    qaState: {
+      structuredReport: {
+        status: 'pass',
+        summary: 'Structured QA report passed.',
+        finishedAt: '2026-04-06T00:00:00.000Z',
+      },
+    },
+    fetchImpl: async () => {
+      const error = new Error('fetch failed');
+      error.cause = { code: 'ECONNREFUSED' };
+      throw error;
+    },
+  });
+
+  assert.equal(offlinePayload.ok, false);
+  assert.equal(offlinePayload.probe_status, 'offline');
+  assert.equal(offlinePayload.error.kind, 'offline');
+  assert.equal(offlinePayload.probe_target, 'http://127.0.0.1:5051/run_test');
+  assert.match(offlinePayload.error.message || '', /offline|not listening/i);
+
+  const invalidContractPayload = await buildExternalQaProbeCheckPayload({
+    qaState: {
+      structuredReport: {
+        status: 'pass',
+        summary: 'Structured QA report passed.',
+        finishedAt: '2026-04-06T00:00:00.000Z',
+      },
+    },
+    fetchImpl: async () => makeFetchResponse({
+      test_id: 'ollama_ping',
+      details: 'Ollama reachable',
+      timestamp: '2026-04-06T00:00:03.000Z',
+      source: 'external_mcp',
+    }),
+  });
+
+  assert.equal(invalidContractPayload.ok, false);
+  assert.equal(invalidContractPayload.probe_status, 'invalid_contract');
+  assert.equal(invalidContractPayload.error.kind, 'invalid_contract');
+  assert.match(invalidContractPayload.error.detail || '', /status/i);
+
+  const invalidJsonPayload = await buildExternalQaProbeCheckPayload({
+    qaState: {
+      structuredReport: {
+        status: 'pass',
+        summary: 'Structured QA report passed.',
+        finishedAt: '2026-04-06T00:00:00.000Z',
+      },
+    },
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new Error('Unexpected token < in JSON');
+      },
+    }),
+  });
+
+  assert.equal(invalidJsonPayload.ok, false);
+  assert.equal(invalidJsonPayload.probe_status, 'invalid_json');
+  assert.equal(invalidJsonPayload.error.kind, 'invalid_json');
+  assert.match(invalidJsonPayload.error.detail || '', /unexpected token/i);
 
   const mismatchPayload = await buildExternalQaProbeCheckPayload({
     qaState: {

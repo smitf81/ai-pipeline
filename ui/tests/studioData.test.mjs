@@ -868,17 +868,23 @@ export default async function runStudioDataTests() {
   assert.equal(qaScorecardSection.kind, 'qa-scorecards');
   assert.equal(qaScorecardSection.cards.length, 4);
   assert.equal(qaScorecardSection.defaultOpen, false);
+  assert.equal(qaScorecardSection.suiteStatus, 'stale');
+  assert.match(qaScorecardSection.suiteSummary, /4 scorecards \| 0 pass \| 0 warn \| 4 stale/);
   assert.deepEqual(
     qaScorecardSection.cards.map((card) => card.desk),
-    ['planner', 'runner', 'ui', 'ta'],
+    ['planner', 'runner', 'ta', 'ui'],
   );
   assert.deepEqual(
     qaScorecardSection.cards.map((card) => card.id),
-    ['planner.contract_check', 'runner.contract_check', 'ui.contract_check', 'ta.contract_check'],
+    ['planner.contract_check', 'runner.contract_check', 'ta.contract_check', 'ui.contract_check'],
   );
   assert.deepEqual(
     qaScorecardSection.cards.map((card) => card.overallScore.value),
-    [3.5, 3.6, 3.6, 3.2],
+    [3.5, 3.6, 3.2, 3.6],
+  );
+  assert.deepEqual(
+    qaScorecardSection.cards.map((card) => card.rollupStatus),
+    ['stale', 'stale', 'stale', 'stale'],
   );
   for (const card of qaScorecardSection.cards) {
     assert.equal(card.testId, 'contract_check');
@@ -886,6 +892,9 @@ export default async function runStudioDataTests() {
     assert.deepEqual(card.validation.issues, []);
     assert.match(card.validation.summary, /complete/i);
   }
+  assert.equal(qaScorecardSection.cards[2].reportedStatus, 'pass');
+  assert.equal(qaScorecardSection.cards[2].thresholds.passMin, 3.5);
+  assert.match(qaScorecardSection.cards[2].rollupReasons[0], /stale/i);
   assert.equal(qaScorecardSection.definitions.metrics.integrity.label, 'Integrity');
   assert.equal(qaScorecardSection.meta.deskCount, 4);
   assert.equal(qaScorecardSection.meta.testCount, 4);

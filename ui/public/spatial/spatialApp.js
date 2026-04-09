@@ -113,8 +113,14 @@ import {
   normalizeQAEvidenceProvenance,
 } from './qaEvidenceProvenance.js';
 import {
+  buildTruthKernelNodeInspectorModel,
+  buildTruthKernelRenderModel,
   buildTruthKernelProvenancePresentation,
+  summarizeTruthKernelPositionOrigin,
+  summarizeTruthKernelSpread,
+  summarizeTruthKernelRenderStatus,
 } from './truthKernelAdapter.js';
+export { buildTruthKernelNodeInspectorModel, summarizeTruthKernelPositionOrigin, summarizeTruthKernelSpread };
 import {
   buildStudioQuickAccessStrip,
 } from './studioQuickAccess.js';
@@ -288,13 +294,14 @@ export function resolveTruthKernelToggleState({
     ? Math.max(0, Number(truthKernel.nodeCount))
     : 0;
   const available = nodeCount > 0;
+  const unavailableReason = String(truthKernel?.meta?.reason || truthKernel?.renderStatus?.reason || '').trim() || null;
   let title = 'Truth kernel loading...';
   if (available) {
     title = `${visible ? 'Hide' : 'Show'} truth kernel (${nodeCount} real entities)`;
   } else if (loadState === TRUTH_KERNEL_LOAD_STATES.ERROR) {
-    title = 'Truth kernel unavailable';
+    title = unavailableReason ? `Truth kernel unavailable: ${unavailableReason}` : 'Truth kernel unavailable';
   } else if (loadState === TRUTH_KERNEL_LOAD_STATES.READY) {
-    title = 'Truth kernel loaded with 0 entities';
+    title = unavailableReason ? `Truth kernel loaded with 0 entities: ${unavailableReason}` : 'Truth kernel loaded with 0 entities';
   }
   if (scene !== SCENES.CANVAS) {
     title = available
@@ -309,6 +316,28 @@ export function resolveTruthKernelToggleState({
     available,
     loadState,
   };
+}
+
+export function resolveTruthInspectionPanelState({
+  truthKernelVisible = false,
+  compactPreference = false,
+} = {}) {
+  const compact = !!truthKernelVisible && !!compactPreference;
+  return {
+    compact,
+    railWidth: compact ? 280 : 360,
+    showObservabilityCards: !compact,
+    toggleLabel: compact ? 'Expand' : 'Compact',
+    title: compact ? 'Expand observability details' : 'Compact observability details',
+  };
+}
+
+export function buildTruthInspectionLegend() {
+  return [
+    { axis: 'X', meaning: 'Temporal / process flow' },
+    { axis: 'Y', meaning: 'Semantic / organisational spread' },
+    { axis: 'Z', meaning: 'Depth / authority / certainty layer' },
+  ];
 }
 
 export function buildSketchCanonicalIntentRecord(stroke = {}, source = {}) {
@@ -907,6 +936,10 @@ function normalizeQAExternalValidationPayload(externalValidation = null) {
         notes,
         source: normalizeRenderText(source.source, 'external_mcp') || 'external_mcp',
         errorMessage: normalizeRenderText(source.errorMessage, '') || null,
+        probeTarget: normalizeRenderText(source.probeTarget || source.probe_target, '') || null,
+        externalProbeLive: typeof source.externalProbeLive === 'boolean' ? source.externalProbeLive : null,
+        usedFallback: typeof source.usedFallback === 'boolean' ? source.usedFallback : null,
+        mcpEvidenceSource: normalizeRenderText(source.mcpEvidenceSource, '') || null,
     }
     : null;
 }
@@ -1184,11 +1217,26 @@ function normalizeQAMcpLiveStatusPayload(status = {}) {
         last_ping_at: normalizeRenderText(source.last_ping_at || source.lastPingAt, '') || null,
         last_ping_status: normalizeRenderText(source.last_ping_status || source.lastPingStatus, 'unavailable') || 'unavailable',
         last_ping_source: normalizeRenderText(source.last_ping_source || source.lastPingSource, 'external_mcp') || 'external_mcp',
+        last_ping_failure_kind: normalizeRenderText(source.last_ping_failure_kind || source.lastPingFailureKind, '') || null,
+        last_ping_failure_detail: normalizeRenderText(source.last_ping_failure_detail || source.lastPingFailureDetail, '') || null,
+        last_ping_target: normalizeRenderText(source.last_ping_target || source.lastPingTarget, '') || null,
+        research_target: normalizeRenderText(source.research_target || source.researchTarget, '') || null,
+        research_last_call_at: normalizeRenderText(source.research_last_call_at || source.researchLastCallAt, '') || null,
+        research_last_call_status: normalizeRenderText(source.research_last_call_status || source.researchLastCallStatus, 'unknown') || 'unknown',
+        research_failure_kind: normalizeRenderText(source.research_failure_kind || source.researchFailureKind, '') || null,
+        research_failure_detail: normalizeRenderText(source.research_failure_detail || source.researchFailureDetail, '') || null,
         last_call_at: normalizeRenderText(source.last_call_at || source.lastCallAt, '') || null,
         last_call_tool: normalizeRenderText(source.last_call_tool || source.lastCallTool, '') || null,
         last_call_status: normalizeRenderText(source.last_call_status || source.lastCallStatus, 'unknown') || 'unknown',
         last_call_source: normalizeRenderText(source.last_call_source || source.lastCallSource, '') || null,
         last_qa_gate_source: normalizeRenderText(source.last_qa_gate_source || source.lastQaGateSource, 'unknown') || 'unknown',
+        last_success_at: normalizeRenderText(source.last_success_at || source.lastSuccessAt, '') || null,
+        last_failure_at: normalizeRenderText(source.last_failure_at || source.lastFailureAt, '') || null,
+        current_failure_kind: normalizeRenderText(source.current_failure_kind || source.currentFailureKind, '') || null,
+        current_failure_tool: normalizeRenderText(source.current_failure_tool || source.currentFailureTool, '') || null,
+        recovery_detected: Boolean(source.recovery_detected ?? source.recoveryDetected),
+        recovered_at: normalizeRenderText(source.recovered_at || source.recoveredAt, '') || null,
+        recovered_from_kind: normalizeRenderText(source.recovered_from_kind || source.recoveredFromKind, '') || null,
         using_mcp_for_qa_decisions: Boolean(source.using_mcp_for_qa_decisions ?? source.usingMcpForQaDecisions),
         notes: normalizeRenderList(source.notes).map((note) => normalizeRenderText(note, '')).filter(Boolean),
       }
@@ -1205,11 +1253,26 @@ function normalizeQAMcpLiveStatusPayload(status = {}) {
         last_ping_at: null,
         last_ping_status: 'unavailable',
         last_ping_source: 'external_mcp',
+        last_ping_failure_kind: null,
+        last_ping_failure_detail: null,
+        last_ping_target: null,
+        research_target: null,
+        research_last_call_at: null,
+        research_last_call_status: 'unknown',
+        research_failure_kind: null,
+        research_failure_detail: null,
         last_call_at: null,
         last_call_tool: null,
         last_call_status: 'unknown',
         last_call_source: null,
         last_qa_gate_source: 'unknown',
+        last_success_at: null,
+        last_failure_at: null,
+        current_failure_kind: null,
+        current_failure_tool: null,
+        recovery_detected: false,
+        recovered_at: null,
+        recovered_from_kind: null,
         using_mcp_for_qa_decisions: false,
         notes: [],
       };
@@ -1263,6 +1326,31 @@ function normalizeQALeadRunnerPayload(state = {}) {
     automation_interval_ms: Number(source.automation_interval_ms ?? source.automationIntervalMs) || null,
     automation_last_kick_at: normalizeRenderText(source.automation_last_kick_at || source.automationLastKickAt, '') || null,
     automation_last_result: normalizeRenderObject(source.automation_last_result || source.automationLastResult || null),
+  };
+}
+
+function normalizeQALiveCyclePayload(cycle = {}) {
+  const source = normalizeRenderObject(cycle);
+  return {
+    current_run_id: normalizeRenderText(source.current_run_id || source.currentRunId, '') || null,
+    current_status: normalizeRenderText(source.current_status || source.currentStatus, 'idle') || 'idle',
+    latest_completed_cycle_id: normalizeRenderText(source.latest_completed_cycle_id || source.latestCompletedCycleId, '') || null,
+    latest_completed_cycle_at: normalizeRenderText(source.latest_completed_cycle_at || source.latestCompletedCycleAt, '') || null,
+    latest_completed_status: normalizeRenderText(source.latest_completed_status || source.latestCompletedStatus, 'unknown') || 'unknown',
+    latest_completed_summary: normalizeRenderText(source.latest_completed_summary || source.latestCompletedSummary, '') || null,
+    ran_once: Boolean(source.ran_once ?? source.ranOnce),
+    mcp_status: normalizeRenderText(source.mcp_status || source.mcpStatus, 'unknown') || 'unknown',
+    mcp_reachable: typeof source.mcp_reachable === 'boolean'
+      ? source.mcp_reachable
+      : Boolean(source.mcpReachable),
+    current_gate_source: normalizeRenderText(source.current_gate_source || source.currentGateSource, 'unknown') || 'unknown',
+    external_status: normalizeRenderText(source.external_status || source.externalStatus, 'unknown') || 'unknown',
+    output_feed_loaded: Boolean(source.output_feed_loaded ?? source.outputFeedLoaded),
+    output_feed_count: Number(source.output_feed_count ?? source.outputFeedCount) || 0,
+    output_feed_captured: Boolean(source.output_feed_captured ?? source.outputFeedCaptured),
+    latest_feed_entry_id: normalizeRenderText(source.latest_feed_entry_id || source.latestFeedEntryId, '') || null,
+    latest_feed_result: normalizeRenderText(source.latest_feed_result || source.latestFeedResult, '') || null,
+    summary: normalizeRenderText(source.summary, 'QA has not completed a live cycle yet.') || 'QA has not completed a live cycle yet.',
   };
 }
 
@@ -1402,6 +1490,7 @@ export function buildQAReadableSectionsFromState(source = {}) {
   const qaMcpLiveStatus = normalizeQAMcpLiveStatusPayload(normalized.qaMcpLiveStatus || normalized.mcpLiveStatus || null);
   const qaLead = normalizeQALeadRunnerPayload(normalized.qaLead || null);
   const qaLeadLatestRun = normalizeQALeadRunnerPayload(normalized.qaLeadLatestRun || (Array.isArray(normalized.qaLeadRuns) ? normalized.qaLeadRuns[0] : null) || null);
+  const qaLiveCycle = normalizeQALiveCyclePayload(normalized.qaLiveCycle || normalized.qa_live_cycle || null);
   const qaOutputFeedLoaded = Boolean(normalized.outputFeedLoaded || normalized.output_feed_loaded);
   const qaOutputFeed = normalizeRenderList(normalized.outputFeed || normalized.output_feed || []).map((item) => normalizeQALeadFeedItem(item));
   const qaLeadFeed = qaOutputFeedLoaded
@@ -1433,7 +1522,7 @@ export function buildQAReadableSectionsFromState(source = {}) {
   const intentLastUpdated = latestIntent?.updatedAt || latestIntent?.createdAt || null;
   const researchLastUpdated = researchState?.summary?.latestNoteAt || latestResearchNote?.created_at || latestResearchNote?.updated_at || null;
 
-  return [
+  return decorateQaReadableSections([
     {
       id: 'qa-overview',
       label: 'QA Health Overview',
@@ -1469,6 +1558,7 @@ export function buildQAReadableSectionsFromState(source = {}) {
       label: 'QA MCP Proof of Life',
       kind: 'qa-mcp-live',
       liveStatus: qaMcpLiveStatus,
+      liveCycle: qaLiveCycle,
       summary: qaMcpLiveStatus.summary,
       collapsible: false,
       defaultOpen: true,
@@ -1478,7 +1568,10 @@ export function buildQAReadableSectionsFromState(source = {}) {
       label: 'QA Live Operator',
       kind: 'qa-operator',
       lead: qaLeadLatestRun.id ? qaLeadLatestRun : qaLead,
-      summary: qaLead.current_task || qaLead.summary || 'QA lead automation is not running yet.',
+      liveCycle: qaLiveCycle,
+      summary: qaLiveCycle.ran_once
+        ? qaLiveCycle.summary
+        : (qaLead.current_task || qaLead.summary || 'QA lead automation is not running yet.'),
       collapsible: false,
       defaultOpen: true,
     },
@@ -1487,9 +1580,14 @@ export function buildQAReadableSectionsFromState(source = {}) {
       label: 'QA Output Feed',
       kind: 'qa-output-feed',
       feed: qaLeadFeed,
-      summary: qaLeadFeed.length
-        ? `${qaLeadFeed.length} QA output item${qaLeadFeed.length === 1 ? '' : 's'} ready for executor review.`
-        : 'QA output feed is empty until the lead run completes.',
+      liveCycle: qaLiveCycle,
+      summary: qaLiveCycle.ran_once
+        ? (qaLiveCycle.output_feed_captured
+            ? `Latest cycle ${qaLiveCycle.latest_completed_cycle_id || 'unknown'} is captured in the QA output feed.`
+            : `Latest cycle ${qaLiveCycle.latest_completed_cycle_id || 'unknown'} completed but the QA output feed has not captured it yet.`)
+        : (qaLeadFeed.length
+            ? `${qaLeadFeed.length} QA output item${qaLeadFeed.length === 1 ? '' : 's'} ready for executor review.`
+            : 'QA output feed is empty until the lead run completes.'),
       emptyState: 'No QA output feed is available yet.',
       collapsible: true,
       defaultOpen: qaLeadFeed.length > 0,
@@ -1639,7 +1737,38 @@ export function buildQAReadableSectionsFromState(source = {}) {
       collapsible: true,
       defaultOpen: false,
     },
-  ];
+  ], {
+    provenanceLabel: 'Derived',
+    canonicalTruthSections,
+  });
+}
+
+export function getQaDeskCanonicalTruthSections(panelData = {}) {
+  const normalized = normalizeRenderObject(panelData);
+  const authoritativeSections = normalizeRenderObject(normalized.canonicalTruthSections?.qa?.sections);
+  if (Object.keys(authoritativeSections).length) {
+    return authoritativeSections;
+  }
+  return normalizeRenderObject(
+    normalized.qa?.canonicalTruthSections
+    || normalized.qa?.canonicalTruth?.sections
+    || {},
+  );
+}
+
+export function buildQaDeskReadableState(panelData = {}) {
+  const normalized = normalizeRenderObject(panelData);
+  const qaState = normalizeRenderObject(normalized.qa);
+  if (!Object.keys(qaState).length) {
+    return qaState;
+  }
+  const canonicalTruthSections = getQaDeskCanonicalTruthSections(normalized);
+  return Object.keys(canonicalTruthSections).length
+    ? {
+        ...qaState,
+        canonicalTruthSections,
+      }
+    : qaState;
 }
 
 function normalizeDeskStatus(value) {
@@ -3588,7 +3717,12 @@ function renderQAExternalValidationBlock(externalValidation = null) {
       h('span', { className: `qa-metric-pill tone-${probeTone}` }, `Probe ${validation.probeStatus}`),
       h('span', { className: 'qa-metric-pill tone-neutral' }, validation.lastCheckedAt ? `Checked ${formatTimestamp(validation.lastCheckedAt)}` : 'Checked —'),
     ),
-    h('div', { className: 'signal-meta muted' }, `Source: ${validation.source}`),
+    h('div', { className: 'signal-meta muted' }, [
+      `Source: ${validation.source}`,
+      validation.mcpEvidenceSource ? `evidence: ${validation.mcpEvidenceSource}` : null,
+      validation.usedFallback == null ? null : `fallback: ${validation.usedFallback ? 'yes' : 'no'}`,
+      validation.probeTarget ? `target: ${validation.probeTarget}` : null,
+    ].filter(Boolean).join(' | ')),
     validation.errorMessage ? h('div', { className: 'signal-meta error' }, validation.errorMessage) : null,
     validation.notes.length
       ? h('ul', { className: 'signal-list compact' }, validation.notes.slice(0, 4).map((note, index) => h('li', { key: `qa-external-validation-note-${index}` }, note)))
@@ -3981,6 +4115,7 @@ function renderDeskSection(rawSection, helpers = {}) {
   }
   if (section.kind === 'qa-mcp-live') {
     const liveStatus = normalizeQAMcpLiveStatusPayload(section.liveStatus || section.mcpLiveStatus || null);
+    const liveCycle = normalizeQALiveCyclePayload(section.liveCycle || section.qaLiveCycle || null);
     const metricRow = (label, value) => h('div', { className: 'criteria-row' }, h('span', null, label), h('span', { className: 'muted' }, value));
     const statusTone = liveStatus.status === 'live'
       ? 'good'
@@ -4015,12 +4150,19 @@ function renderDeskSection(rawSection, helpers = {}) {
       ),
       h('div', { className: 'criteria-list desk-metric-list' },
         metricRow('Heartbeat', liveStatus.heartbeat_at ? formatTimestamp(liveStatus.heartbeat_at) : 'unknown'),
-        metricRow('Last completed cycle', liveStatus.last_completed_cycle_at ? formatTimestamp(liveStatus.last_completed_cycle_at) : 'unknown'),
+        metricRow('Last completed cycle', liveCycle.latest_completed_cycle_id
+          ? `${liveCycle.latest_completed_cycle_id} @ ${formatTimestamp(liveCycle.latest_completed_cycle_at || liveStatus.last_completed_cycle_at)}`
+          : (liveStatus.last_completed_cycle_at ? formatTimestamp(liveStatus.last_completed_cycle_at) : 'unknown')),
         metricRow('Configured tools', liveStatus.configured_tools.length ? liveStatus.configured_tools.join(' | ') : 'none'),
         metricRow('Last ping', liveStatus.last_ping_at ? `${liveStatus.last_ping_status || 'unknown'} @ ${formatTimestamp(liveStatus.last_ping_at)}` : (liveStatus.mcp_configured ? 'not yet recorded' : 'not configured')),
+        metricRow('Ping target', liveStatus.last_ping_target || 'unknown'),
+        metricRow('Research call', liveStatus.research_last_call_at ? `${liveStatus.research_last_call_status || 'unknown'} @ ${formatTimestamp(liveStatus.research_last_call_at)}` : 'not yet recorded'),
         metricRow('Last MCP call', liveStatus.last_call_at ? `${liveStatus.last_call_tool || 'unknown'} | ${liveStatus.last_call_status || 'unknown'} @ ${formatTimestamp(liveStatus.last_call_at)}` : 'not yet recorded'),
         metricRow('Last QA gate source', liveStatus.last_qa_gate_source || 'unknown'),
+        metricRow('Feed captured', liveCycle.ran_once ? (liveCycle.output_feed_captured ? 'yes' : 'no') : 'not yet'),
         metricRow('Freshness', liveStatus.freshness || 'unknown'),
+        metricRow('Current failure', liveStatus.current_failure_kind ? `${liveStatus.current_failure_kind}${liveStatus.current_failure_tool ? ` via ${liveStatus.current_failure_tool}` : ''}` : 'none'),
+        metricRow('Recovery', liveStatus.recovery_detected ? `${liveStatus.recovered_from_kind || 'previous failure'} recovered @ ${formatTimestamp(liveStatus.recovered_at)}` : 'not detected'),
       ),
       liveStatus.notes.length
         ? h('ul', { className: 'signal-list compact' }, liveStatus.notes.slice(0, 4).map((note, index) => h('li', { key: `${section.id}-note-${index}` }, note)))
@@ -4030,6 +4172,7 @@ function renderDeskSection(rawSection, helpers = {}) {
   if (section.kind === 'qa-operator') {
     const lead = normalizeQALeadRunnerPayload(section.lead || section.qaLead || null);
     const liveStatus = normalizeQAMcpLiveStatusPayload(lead.live_status || null);
+    const liveCycle = normalizeQALiveCyclePayload(section.liveCycle || section.qaLiveCycle || null);
     const metricRow = (label, value) => h('div', { className: 'criteria-row' }, h('span', null, label), h('span', { className: 'muted' }, value));
     const statusTone = lead.status === 'live'
       ? 'good'
@@ -4053,21 +4196,31 @@ function renderDeskSection(rawSection, helpers = {}) {
       h('div', { className: 'criteria-list desk-metric-list' },
         metricRow('Current task', lead.current_task || 'QA lead automation idle.'),
         metricRow('Batch', lead.current_batch || lead.id || 'unknown'),
-        metricRow('Last completed cycle', lead.last_completed_cycle_at ? formatTimestamp(lead.last_completed_cycle_at) : 'unknown'),
+        metricRow('Last completed cycle', liveCycle.latest_completed_cycle_id
+          ? `${liveCycle.latest_completed_cycle_id} @ ${formatTimestamp(liveCycle.latest_completed_cycle_at || lead.last_completed_cycle_at)}`
+          : (lead.last_completed_cycle_at ? formatTimestamp(lead.last_completed_cycle_at) : 'unknown')),
+        metricRow('Cycle result', liveCycle.ran_once ? (liveCycle.latest_completed_status || 'unknown') : (lead.status || 'idle')),
+        metricRow('External status', liveCycle.external_status || 'unknown'),
+        metricRow('Feed captured', liveCycle.ran_once
+          ? (liveCycle.output_feed_captured
+              ? `yes${liveCycle.latest_feed_entry_id ? ` (${liveCycle.latest_feed_entry_id})` : ''}`
+              : 'no')
+          : 'not yet'),
         metricRow('Started at', lead.started_at ? formatTimestamp(lead.started_at) : 'unknown'),
         metricRow('Finished at', lead.finished_at ? formatTimestamp(lead.finished_at) : 'unknown'),
         metricRow('Result paths', Object.keys(lead.result_paths || {}).length ? Object.values(lead.result_paths).filter(Boolean).join(' | ') : 'No result paths recorded yet.'),
         metricRow('Active tools', lead.active_tools.length ? lead.active_tools.join(' | ') : 'none'),
-        metricRow('Live gate source', liveStatus.last_qa_gate_source || 'unknown'),
+        metricRow('Live gate source', liveCycle.current_gate_source || liveStatus.last_qa_gate_source || 'unknown'),
       ),
       lead.failure_reason ? h('div', { className: 'signal-meta error' }, lead.failure_reason) : null,
-      lead.output_feed.length
+      liveCycle.output_feed_captured || lead.output_feed.length
         ? h('div', { className: 'signal-meta muted' }, `Latest output feed is available in the QA Output Feed section and executor read-only surfaces.`)
-        : h('div', { className: 'signal-empty muted' }, 'No QA output feed has been captured yet.'),
+        : h('div', { className: 'signal-empty muted' }, liveCycle.ran_once ? 'The latest completed cycle has not been captured in the QA output feed yet.' : 'No QA output feed has been captured yet.'),
     );
   }
   if (section.kind === 'qa-output-feed') {
     const feed = normalizeRenderList(section.feed || section.items || []).map((item) => normalizeQALeadFeedItem(item));
+    const liveCycle = normalizeQALiveCyclePayload(section.liveCycle || section.qaLiveCycle || null);
     return h('details', {
       key: section.id,
       className: 'inspector-block panel-card qa-output-feed-panel',
@@ -4081,6 +4234,7 @@ function renderDeskSection(rawSection, helpers = {}) {
         ),
         h('div', { className: 'qa-metric-pill-row' },
           h('span', { className: 'qa-metric-pill tone-neutral' }, `Items ${feed.length}`),
+          h('span', { className: `qa-metric-pill tone-${liveCycle.ran_once ? (liveCycle.output_feed_captured ? 'good' : 'bad') : 'neutral'}` }, liveCycle.ran_once ? (liveCycle.output_feed_captured ? 'Latest cycle captured' : 'Latest cycle missing') : 'Awaiting cycle'),
           h('span', { className: `qa-metric-pill tone-${feed.some((item) => ['degraded', 'blocked', 'fail', 'failed', 'error'].includes(String(item.status || '').toLowerCase())) ? 'bad' : 'good'}` }, feed.some((item) => ['degraded', 'blocked', 'fail', 'failed', 'error'].includes(String(item.status || '').toLowerCase())) ? 'Has failures' : 'Healthy'),
         ),
       ),
@@ -4105,12 +4259,16 @@ function renderDeskSection(rawSection, helpers = {}) {
                 || item.meta.failedChecks !== undefined
                 || item.meta.activeLanes !== undefined
                 || item.meta.externalStatus
+                || item.meta.mcpEvidenceSource
+                || item.meta.usedFallback !== null
               )
                 ? h('div', { className: 'signal-meta muted' }, [
                     Number.isFinite(Number(item.meta.investigationCount)) ? `${Number(item.meta.investigationCount)} investigations` : null,
                     Number.isFinite(Number(item.meta.failedChecks)) ? `${Number(item.meta.failedChecks)} failed check${Number(item.meta.failedChecks) === 1 ? '' : 's'}` : null,
                     Number.isFinite(Number(item.meta.activeLanes)) ? `${Number(item.meta.activeLanes)} active lanes` : null,
                     item.meta.externalStatus ? `external: ${item.meta.externalStatus}` : null,
+                    item.meta.mcpEvidenceSource ? `evidence: ${item.meta.mcpEvidenceSource}` : null,
+                    item.meta.usedFallback !== null ? `fallback: ${item.meta.usedFallback ? 'yes' : 'no'}` : null,
                   ].filter(Boolean).join(' | '))
                 : null,
               item.artifact_refs?.length
@@ -4815,6 +4973,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const [truthKernel, setTruthKernel] = useState(EMPTY_TRUTH_KERNEL);
   const [truthKernelLoadState, setTruthKernelLoadState] = useState(TRUTH_KERNEL_LOAD_STATES.LOADING);
   const [truthKernelVisible, setTruthKernelVisible] = useState(false);
+  const [truthInspectionCompact, setTruthInspectionCompact] = useState(false);
   const [selectedTruthNodeId, setSelectedTruthNodeId] = useState(null);
 
   const truthKernelCanvasRef = useRef(null);
@@ -4847,16 +5006,37 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     ...graphLayers,
     [activeGraphLayer]: graph,
   }), [graphLayers, activeGraphLayer, graph]);
-  const truthKernelLayout = useMemo(() => buildTruthKernelLayout(truthKernel.nodes), [truthKernel]);
+  const truthInspectionLegend = useMemo(() => buildTruthInspectionLegend(), []);
+  const truthKernelLayout = useMemo(() => buildTruthKernelLayout(truthKernel.dots), [truthKernel]);
+  const truthKernelRenderModel = useMemo(() => {
+    const model = buildTruthKernelRenderModel(truthKernel, truthKernelLayout);
+    return {
+      ...model,
+      renderStatus: {
+        ...(model.renderStatus || {}),
+        spread: summarizeTruthKernelSpread(model, truthKernelLayout?.bounds),
+        positionOrigin: summarizeTruthKernelPositionOrigin(model, truthKernelLayout?.bounds),
+      },
+    };
+  }, [truthKernel, truthKernelLayout]);
+  const truthKernelRenderSummary = useMemo(() => summarizeTruthKernelRenderStatus(truthKernelRenderModel), [truthKernelRenderModel]);
   const truthKernelToggleState = useMemo(() => resolveTruthKernelToggleState({
     scene,
     truthKernel,
     loadState: truthKernelLoadState,
     visible: truthKernelVisible,
   }), [scene, truthKernel, truthKernelLoadState, truthKernelVisible]);
+  const truthInspectionPanelState = useMemo(() => resolveTruthInspectionPanelState({
+    truthKernelVisible,
+    compactPreference: truthInspectionCompact,
+  }), [truthKernelVisible, truthInspectionCompact]);
   const selectedTruthNode = useMemo(
-    () => truthKernel.nodes.find((node) => node.id === selectedTruthNodeId) || null,
-    [truthKernel, selectedTruthNodeId],
+    () => truthKernelRenderModel.dots.find((node) => node.id === selectedTruthNodeId) || null,
+    [truthKernelRenderModel, selectedTruthNodeId],
+  );
+  const selectedTruthNodeInspector = useMemo(
+    () => buildTruthKernelNodeInspectorModel(selectedTruthNode, truthKernel),
+    [selectedTruthNode, truthKernel],
   );
   useEffect(() => {
     truthKernelLoadStateRef.current = truthKernelLoadState;
@@ -5934,17 +6114,21 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   useEffect(() => {
     drawTruthKernelScene(
       truthKernelCanvasRef.current,
-      truthKernel,
+      truthKernelRenderModel,
       truthKernelLayout,
       { selectedNodeId: selectedTruthNodeId },
     );
-  }, [truthKernel, truthKernelLayout, selectedTruthNodeId]);
+  }, [truthKernelRenderModel, truthKernelLayout, selectedTruthNodeId]);
 
   useEffect(() => {
     if (!selectedTruthNodeId) return;
-    if (truthKernel.nodes.some((node) => node.id === selectedTruthNodeId)) return;
+    if (truthKernelRenderModel.dots.some((node) => node.id === selectedTruthNodeId)) return;
     setSelectedTruthNodeId(null);
-  }, [truthKernel, selectedTruthNodeId]);
+  }, [truthKernelRenderModel, selectedTruthNodeId]);
+
+  useEffect(() => {
+    setTruthInspectionCompact(!!truthKernelVisible);
+  }, [truthKernelVisible]);
 
   useEffect(() => {
     if (!hasLoadedWorkspace.current) return;
@@ -6743,7 +6927,10 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       setCanonicalIntake(normalizeCanonicalIntakeState(runtime.intake));
     }
     if (runtime && Object.prototype.hasOwnProperty.call(runtime, 'truthKernel')) {
-      setTruthKernel(normalizeTruthKernelPayload(runtime.truthKernel));
+      setTruthKernel(normalizeTruthKernelPayload(runtime, {
+        source: 'runtime-fallback',
+        fallbackUsed: true,
+      }));
       setTruthKernelLoadState(TRUTH_KERNEL_LOAD_STATES.READY);
     }
     setTeamBoard(normalizeTeamBoardState({
@@ -7594,7 +7781,7 @@ function syncRecentWorldChange(change = null) {
       const localPoint = rect
         ? { x: event.clientX - rect.left, y: event.clientY - rect.top }
         : null;
-      const truthHit = hitTestTruthKernelNode(localPoint, truthKernel, truthKernelLayout);
+      const truthHit = hitTestTruthKernelNode(localPoint, truthKernelRenderModel, truthKernelLayout);
       setSelectedTruthNodeId(truthHit?.id || null);
       if (truthHit) {
         event.preventDefault();
@@ -8525,13 +8712,18 @@ function syncRecentWorldChange(change = null) {
 
   const renderScorecardsList = (scorecards = [], emptyState = 'No scorecards are available yet.') => (
     (Array.isArray(scorecards) ? scorecards : []).length
-      ? h('div', { className: 'desk-panel-list utility-list' }, (Array.isArray(scorecards) ? scorecards : []).map((card) => h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item utility-card' },
-          h('div', { className: 'signal-summary' }, `${card.desk || 'Desk'} | ${card.testName || card.testId || 'Scorecard'}`),
-          h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
-          card.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace.freshnessClass)}`) : null,
+      ? h('div', { className: 'desk-panel-list utility-list' }, (Array.isArray(scorecards) ? scorecards : []).map((card) => {
+          const lifecycleStatus = card.rollupStatus || card.status || 'missing';
+          return h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item utility-card' },
+            h('div', { className: 'signal-summary' }, `${card.desk || 'Desk'} | ${card.testName || card.testId || 'Scorecard'}`),
+            h('div', { className: 'signal-meta muted' }, `Rollup ${lifecycleStatus} | Reported ${card.reportedStatus || card.status || 'missing'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+            card.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace.sourcePath || card.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace.freshnessClass)}`) : null,
+            !card.sourceTrace && card.sourceSeam ? h('div', { className: 'signal-meta muted' }, `Source seam: ${card.sourceSeam}`) : null,
           card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
+            card.rollupReasons?.[0] ? h('div', { className: 'signal-meta muted' }, card.rollupReasons[0]) : null,
           card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
-        )))
+          );
+        }))
       : h('div', { className: 'signal-empty muted' }, emptyState)
   );
 
@@ -9720,7 +9912,7 @@ function syncRecentWorldChange(change = null) {
                   h('div', { className: 'signal-summary' }, `${targetDeskLabel} truth bundle`),
                   renderTruthMetricRows(panelData.truth || {}, hierarchyModel.focusSummary),
                 ),
-                buildQAReadableSectionsFromState(panelData.qa).map((section) => renderDeskSection(section, {
+                buildQAReadableSectionsFromState(buildQaDeskReadableState(panelData)).map((section) => renderDeskSection(section, {
                   openQARun: (runId) => loadQARunDetails(runId),
                 })),
               )
@@ -10049,19 +10241,63 @@ function syncRecentWorldChange(change = null) {
               className: 'spatial-main-canvas',
               width: 1600,
               height: 920,
+              style: truthKernelVisible ? {
+                opacity: 0.62,
+                filter: 'saturate(0.68) brightness(0.72)',
+              } : null,
               tabIndex: 0,
               onDoubleClick: onCanvasDoubleClick,
               onWheel: onCanvasWheel,
               onMouseDown: onCanvasMouseDown,
               onContextMenu: (event) => event.preventDefault(),
             }),
+            truthKernelVisible ? h('div', {
+              className: 'truth-inspection-veil',
+              'aria-hidden': true,
+            }) : null,
             h('div', {
-              className: 'observability-rail',
+              className: 'truth-kernel-status-line',
+              'data-qa': 'truth-kernel-status',
+            },
+              h('span', { className: 'truth-kernel-status-line__label' }, 'Truth Render'),
+              h('span', { className: 'truth-kernel-status-line__value mono' }, truthKernelRenderSummary.line),
+            ),
+            truthKernelVisible && truthKernelRenderSummary.spread ? h('div', {
+              className: 'truth-kernel-spread-line',
+              'data-qa': 'truth-kernel-spread',
+            },
+              h('span', { className: 'truth-kernel-spread-line__label' }, 'Truth Spread'),
+              h('span', { className: 'truth-kernel-spread-line__value mono' }, truthKernelRenderSummary.spread.line),
+            ) : null,
+            truthKernelVisible && truthKernelRenderSummary.positionOrigin ? h('div', {
+              className: 'truth-kernel-origin-line',
+              'data-qa': 'truth-kernel-origin',
+            },
+              h('span', { className: 'truth-kernel-origin-line__label' }, 'Truth Origin'),
+              h('span', { className: 'truth-kernel-origin-line__value mono' }, truthKernelRenderSummary.positionOrigin.line),
+            ) : null,
+            truthKernelVisible ? h('div', {
+              className: 'truth-inspection-legend',
+              'data-qa': 'truth-inspection-legend',
+            },
+              h('div', { className: 'truth-inspection-legend__title' }, 'Inspection Space'),
+              truthInspectionLegend.map((entry) => h('div', {
+                key: entry.axis,
+                className: 'truth-inspection-legend__row',
+              },
+                h('span', { className: 'truth-inspection-legend__axis mono' }, entry.axis),
+                h('span', { className: 'truth-inspection-legend__meaning' }, entry.meaning),
+              )),
+            ) : null,
+            h('div', {
+              className: `observability-rail ${truthInspectionPanelState.compact ? 'compact' : 'expanded'}`,
+              'data-qa': 'observability-rail',
+              'data-compact': truthInspectionPanelState.compact ? 'true' : 'false',
               style: {
                 position: 'absolute',
                 top: '16px',
                 right: '16px',
-                width: '360px',
+                width: `${truthInspectionPanelState.railWidth}px`,
                 maxHeight: 'calc(100% - 32px)',
                 overflowY: 'auto',
                 pointerEvents: 'none',
@@ -10071,17 +10307,29 @@ function syncRecentWorldChange(change = null) {
                 zIndex: 6,
               },
             },
-              truthKernelVisible && selectedTruthNode ? h('div', {
+              truthKernelVisible && selectedTruthNodeInspector ? h('div', {
                 className: 'truth-kernel-inspector',
                 'data-qa': 'truth-kernel-inspector',
               },
                 h('div', { className: 'truth-kernel-inspector-label' }, 'Truth Node'),
-                h('div', { className: 'truth-kernel-inspector-value mono' }, selectedTruthNode.id),
-                h('div', { className: 'truth-kernel-inspector-meta' }, `kind ${selectedTruthNode.kind}`),
-                h('div', { className: 'truth-kernel-inspector-meta' }, `status ${selectedTruthNode.status}`),
+                h('div', { className: 'truth-kernel-inspector-value' }, selectedTruthNodeInspector.label),
+                h('div', { className: 'truth-kernel-inspector-meta mono' }, selectedTruthNodeInspector.id),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `type ${selectedTruthNodeInspector.type}`),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `source ${selectedTruthNodeInspector.meta.sourceType} / ${selectedTruthNodeInspector.meta.sourceRef}`),
                 h('div', { className: 'truth-kernel-inspector-meta' }, `timestamp ${formatTruthKernelTimestamp(selectedTruthNode.timestamp)}`),
-                h('div', { className: 'truth-kernel-inspector-meta' }, `parents ${selectedTruthNode.parents.length}`),
-                h('div', { className: 'truth-kernel-inspector-meta' }, `children ${selectedTruthNode.children.length}`),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `parents ${selectedTruthNodeInspector.meta.parents}`),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `children ${selectedTruthNodeInspector.meta.children}`),
+                selectedTruthNodeInspector.meta.summary ? h('div', { className: 'truth-kernel-inspector-summary' }, selectedTruthNodeInspector.meta.summary) : null,
+                h('div', { className: 'truth-kernel-inspector-grid' },
+                  selectedTruthNodeInspector.rows.map((row) => h('div', {
+                    key: row.label,
+                    className: 'truth-kernel-inspector-row',
+                  },
+                    h('div', { className: 'truth-kernel-inspector-row__label' }, row.label),
+                    h('div', { className: 'truth-kernel-inspector-row__value' }, row.value),
+                    h('div', { className: `truth-kernel-inspector-row__origin origin-${row.origin}` }, row.origin),
+                  )),
+                ),
               ) : null,
               renderTruthKernelProvenanceRail(truthKernel),
               h('div', {
@@ -10095,10 +10343,42 @@ function syncRecentWorldChange(change = null) {
                   boxShadow: '0 10px 24px rgba(0, 0, 0, 0.28)',
                 },
               },
-                h('div', { style: { fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8fb2ff' } }, 'Observability'),
-                h('div', { style: { marginTop: '4px', fontSize: '14px', fontWeight: 600 } }, 'Canonical intent, field, and ghost layers'),
+                h('div', {
+                  style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                  },
+                },
+                  h('div', null,
+                    h('div', { style: { fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8fb2ff' } }, 'Observability'),
+                    h('div', { style: { marginTop: '4px', fontSize: '14px', fontWeight: 600 } }, truthInspectionPanelState.compact ? 'Inspection focus mode' : 'Canonical intent, field, and ghost layers'),
+                  ),
+                  truthKernelVisible ? h('button', {
+                    type: 'button',
+                    className: 'observability-toggle mini',
+                    onClick: () => setTruthInspectionCompact((value) => !value),
+                    title: truthInspectionPanelState.title,
+                    style: {
+                      pointerEvents: 'auto',
+                      alignSelf: 'flex-start',
+                    },
+                    'data-qa': 'observability-compact-toggle',
+                  }, truthInspectionPanelState.toggleLabel) : null,
+                ),
+                truthInspectionPanelState.compact
+                  ? h('div', {
+                    className: 'observability-compact-caption',
+                    style: {
+                      marginTop: '6px',
+                      fontSize: '12px',
+                      color: '#b8c8e6',
+                    },
+                  }, 'Truth inspection keeps provenance visible while collapsing the larger observability cards.')
+                  : null,
               ),
-              h('div', {
+              truthInspectionPanelState.showObservabilityCards ? h('div', {
                 className: 'observability-card intent',
                 style: {
                   background: 'rgba(10, 16, 26, 0.88)',
@@ -10118,8 +10398,8 @@ function syncRecentWorldChange(change = null) {
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `confidence: ${Number.isFinite(Number(currentCanonicalIntentRecord?.confidence)) ? `${Math.round(Number(currentCanonicalIntentRecord.confidence) * 100)}%` : 'missing'}`),
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `provenance: ${currentCanonicalIntentRecord?.provenance?.sourceType || 'missing'} / ${currentCanonicalIntentRecord?.provenance?.sourceRef || currentCanonicalIntentRecord?.sourceRef || 'missing'}`),
                 currentCanonicalIntentRecord?.missingFields?.length ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#ffcf7a' } }, `missing: ${currentCanonicalIntentRecord.missingFields.join(', ')}`) : null,
-              ),
-              h('div', {
+              ) : null,
+              truthInspectionPanelState.showObservabilityCards ? h('div', {
                 className: 'observability-card intake',
                 style: {
                   background: 'rgba(10, 16, 26, 0.88)',
@@ -10149,8 +10429,8 @@ function syncRecentWorldChange(change = null) {
                   : null,
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `governed loop: ${latestCanvasIntakeRecord?.governedLoop?.route || 'missing'}`),
                 latestCanvasIntakeRecord?.resultSummary ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, latestCanvasIntakeRecord.resultSummary) : null,
-              ),
-              h('div', {
+              ) : null,
+              truthInspectionPanelState.showObservabilityCards ? h('div', {
                 className: 'observability-card field',
                 style: {
                   background: 'rgba(10, 16, 26, 0.88)',
@@ -10170,8 +10450,8 @@ function syncRecentWorldChange(change = null) {
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `sourceIntentId: ${currentFieldInfluence?.sourceIntentId || currentCanonicalIntentRecord?.id || 'missing'} | confidence: ${Number.isFinite(Number(currentFieldInfluence?.sourceIntentConfidence)) ? `${Math.round(Number(currentFieldInfluence.sourceIntentConfidence) * 100)}%` : 'missing'}`),
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `provenance: ${currentFieldInfluence?.provenance?.interpreter || currentCanonicalIntentRecord?.provenance?.interpreter || 'missing'}`),
                 currentFieldInfluence?.missingFields?.length ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#ffcf7a' } }, `missing: ${currentFieldInfluence.missingFields.join(', ')}`) : null,
-              ),
-              h('div', {
+              ) : null,
+              truthInspectionPanelState.showObservabilityCards ? h('div', {
                 className: 'observability-card ghost',
                 style: {
                   background: 'rgba(10, 16, 26, 0.88)',
@@ -10192,7 +10472,7 @@ function syncRecentWorldChange(change = null) {
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `confidence: ${Number.isFinite(Number(currentGhostProjection?.confidence)) ? `${Math.round(Number(currentGhostProjection.confidence) * 100)}%` : 'missing'}`),
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `provenance: ${currentGhostProjection?.provenance?.sourceType || 'missing'} / ${currentGhostProjection?.provenance?.sourceRef || 'missing'}`),
                 currentGhostProjection?.reasoning?.length ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, currentGhostProjection.reasoning.join(' | ')) : null,
-              ),
+              ) : null,
             ),
             annotations.map((note) => {
               const x = note.position.x * canvasViewport.zoom + canvasViewport.x;
@@ -10200,7 +10480,13 @@ function syncRecentWorldChange(change = null) {
               return h('div', {
                 key: note.id,
                 className: `annotation ${selectedAnnotationId === note.id ? 'selected' : ''}`,
-                style: { left: `${x}px`, top: `${y}px`, transform: `scale(${canvasViewport.zoom})`, transformOrigin: 'top left' },
+                style: {
+                  left: `${x}px`,
+                  top: `${y}px`,
+                  transform: `scale(${canvasViewport.zoom})`,
+                  transformOrigin: 'top left',
+                  opacity: truthKernelVisible ? 0.46 : 1,
+                },
                 onMouseDown: () => {
                   if (!sketchMode) return;
                   setSelectedAnnotationId(note.id);
@@ -10249,7 +10535,7 @@ function syncRecentWorldChange(change = null) {
                   transform: `scale(${canvasViewport.zoom})`,
                   transformOrigin: 'top left',
                   pointerEvents: sketchMode ? 'none' : 'auto',
-                  opacity: sketchMode ? 0.82 : 1,
+                  opacity: truthKernelVisible ? 0.52 : (sketchMode ? 0.82 : 1),
                 },
                 title: nodeRepresentation
                   ? `${node.content || 'Node'} | ${nodeRepresentation.kind} | ${nodeRepresentation.rep_id}`

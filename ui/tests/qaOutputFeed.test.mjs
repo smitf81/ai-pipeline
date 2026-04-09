@@ -10,6 +10,7 @@ const require = createRequire(import.meta.url);
 const {
   appendQaOutputFeedEntry,
   buildQaOutputFeedEntryFromCycle,
+  buildQaOutputFeedEntryFromQaLeadRun,
   classifyQaOutputFeedResult,
   readQaOutputFeed,
 } = require('../qaOutputFeed.js');
@@ -30,6 +31,10 @@ export default async function runQaOutputFeedTests() {
       failedChecks: 1,
       activeLanes: 2,
       externalStatus: 'degraded',
+      mcpEvidenceSource: 'external_probe',
+      externalProbeLive: false,
+      usedFallback: false,
+      probeTarget: 'http://127.0.0.1:5051/run_test',
     });
     const duplicateEntry = buildQaOutputFeedEntryFromCycle({
       cycleId: 'qa_cycle_1',
@@ -51,6 +56,70 @@ export default async function runQaOutputFeedTests() {
     assert.equal(feed.items[0].meta.failedChecks, 1);
     assert.equal(feed.items[0].meta.activeLanes, 2);
     assert.equal(feed.items[0].meta.externalStatus, 'degraded');
+    assert.equal(feed.items[0].meta.mcpEvidenceSource, 'external_probe');
+    assert.equal(feed.items[0].meta.usedFallback, false);
+    assert.equal(feed.items[0].meta.probeTarget, 'http://127.0.0.1:5051/run_test');
+
+    const runEntry = buildQaOutputFeedEntryFromQaLeadRun({
+      id: 'qa_lead_run_2',
+      source: 'qa_lead_runner',
+      status: 'degraded',
+      summary: 'QA lead cycle degraded: External probe unreachable.',
+      finished_at: '2026-04-08T11:00:00.000Z',
+      open_investigation_count: 2,
+      external_validation: {
+        ok: false,
+        probeStatus: 'unreachable',
+        mcpEvidenceSource: 'live_helper',
+        externalProbeLive: false,
+        usedFallback: false,
+        probeTarget: 'http://127.0.0.1:5051/run_test',
+      },
+      boot_health: {
+        safeMode: true,
+        status: 'blocked',
+      },
+      repair_loop: {
+        summary: {
+          activeLanes: 1,
+        },
+      },
+    });
+    assert.equal(runEntry.meta.cycleId, 'qa_lead_run_2');
+    assert.equal(runEntry.meta.investigationCount, 2);
+    assert.equal(runEntry.meta.failedChecks, 1);
+    assert.equal(runEntry.meta.activeLanes, 1);
+    assert.equal(runEntry.meta.externalStatus, 'unreachable');
+    assert.equal(runEntry.meta.mcpEvidenceSource, 'live_helper');
+    assert.equal(runEntry.meta.usedFallback, false);
+    assert.equal(runEntry.result, 'fail');
+    assert.match(runEntry.summary, /degraded/i);
+
+    const liveMcpRunEntry = buildQaOutputFeedEntryFromQaLeadRun({
+      id: 'qa_lead_run_live_mcp',
+      source: 'qa_lead_runner',
+      status: 'degraded',
+      summary: 'QA lead cycle degraded: browser pass unavailable.',
+      finished_at: '2026-04-08T11:05:00.000Z',
+      open_investigation_count: 0,
+      external_validation: {
+        ok: true,
+        probeStatus: 'ok',
+        mcpEvidenceSource: 'live_helper',
+        externalProbeLive: true,
+        usedFallback: false,
+        probeTarget: 'http://127.0.0.1:5051/run_test',
+      },
+      repair_loop: {
+        summary: {
+          activeLanes: 0,
+        },
+      },
+    });
+    assert.match(liveMcpRunEntry.summary, /Live MCP helper evidence captured/i);
+    assert.equal(liveMcpRunEntry.meta.mcpEvidenceSource, 'live_helper');
+    assert.equal(liveMcpRunEntry.meta.externalProbeLive, true);
+    assert.equal(liveMcpRunEntry.meta.usedFallback, false);
 
     const spatialAppPath = path.resolve(process.cwd(), 'public', 'spatial', 'spatialApp.js');
     const spatialApp = await smokeLoadSpatialApp(spatialAppPath, { locationHref: 'http://localhost/?mode=qa' });
@@ -64,6 +133,14 @@ export default async function runQaOutputFeedTests() {
     assert.equal(outputFeedSection.feed.length, 1);
     assert.equal(outputFeedSection.feed[0].result, 'fail');
     assert.equal(outputFeedSection.feed[0].meta.externalStatus, 'degraded');
+    const renderedSection = spatialApp.renderDeskSection(outputFeedSection, {
+      runStructuredQA: () => undefined,
+      runBrowserPass: () => undefined,
+      openQARun: () => undefined,
+    });
+    const renderedText = JSON.stringify(renderedSection);
+    assert.match(renderedText, /evidence: external_probe/i);
+    assert.match(renderedText, /fallback: no/i);
   } finally {
     fs.rmSync(rootPath, { recursive: true, force: true });
   }

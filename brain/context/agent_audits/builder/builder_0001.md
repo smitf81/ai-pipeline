@@ -9,20 +9,20 @@
 - pass_fail: fail
 
 ## Scores
-- scope_discipline_score: 60
-- architecture_respect_score: 54
+- scope_discipline_score: 70
+- architecture_respect_score: 72
 - output_clarity_score: 88
-- recovery_burden_score: 48
-- validation_rigour_score: 54
+- recovery_burden_score: 66
+- validation_rigour_score: 64
 
 ## Review Summary
-Review needed for builder: fix task pressure, known failure: git_apply_check_failed, failed output.
+Review needed for builder: fix task pressure, failed output.
 
 ## Recommended Follow-up
-Address the known avoidable failure (git_apply_check_failed) before retrying this path.
+Tighten scope and remove the blocked or escalated path before another run.
 
 ## Artifact Refs
-- ../../../../../../AppData/Local/Temp/ace-task-cache-UmZJ8n/work/tasks/0001-cache-apply-result/agent_attribution.json
-- ../../../../../../AppData/Local/Temp/ace-task-cache-UmZJ8n/work/tasks/0001-cache-apply-result/apply_result.json
-- ../../../../../../AppData/Local/Temp/ace-task-cache-UmZJ8n/work/tasks/0001-cache-apply-result/meta.json
-- ../../../../../../AppData/Local/Temp/ace-task-cache-UmZJ8n/work/tasks/0001-cache-apply-result/patch.diff
+- ../../../../../../AppData/Local/Temp/ace-task-cache-aRpkkm/work/tasks/0001-cache-apply-result/agent_attribution.json
+- ../../../../../../AppData/Local/Temp/ace-task-cache-aRpkkm/work/tasks/0001-cache-apply-result/apply_result.json
+- ../../../../../../AppData/Local/Temp/ace-task-cache-aRpkkm/work/tasks/0001-cache-apply-result/meta.json
+- ../../../../../../AppData/Local/Temp/ace-task-cache-aRpkkm/work/tasks/0001-cache-apply-result/patch.diff

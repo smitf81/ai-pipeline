@@ -1,13 +1,60 @@
 import { parseActionRequest } from './actionRequestParser.js';
 
+function isRenderObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function normalizeTruthKernelTransportPayload(payload = null, options = {}) {
+  const source = String(options.source || payload?.source || '').trim() || 'truth-kernel';
+  const route = String(options.route || '').trim() || (source === 'runtime-fallback' ? '/api/spatial/runtime' : '/api/spatial/truth-kernel');
+  const kernelPayload = isRenderObject(payload?.truthKernel) ? payload.truthKernel : (isRenderObject(payload) ? payload : {});
+  const canonicalTruth = isRenderObject(kernelPayload.canonicalTruth)
+    ? kernelPayload.canonicalTruth
+    : (isRenderObject(payload?.canonicalTruth) ? payload.canonicalTruth : null);
+  const canonicalTruthSections = isRenderObject(kernelPayload.canonicalTruthSections)
+    ? kernelPayload.canonicalTruthSections
+    : (isRenderObject(payload?.canonicalTruthSections) ? payload.canonicalTruthSections : null);
+  const fallbackUsed = typeof options.fallbackUsed === 'boolean'
+    ? options.fallbackUsed
+    : (source === 'runtime-fallback');
+  const reason = String(options.reason || '').trim() || null;
+  return {
+    ...kernelPayload,
+    source,
+    route,
+    fallbackUsed,
+    canonicalTruth,
+    canonicalTruthSections,
+    meta: {
+      source,
+      route,
+      fallbackUsed,
+      reason,
+    },
+  };
+}
+
 export class AceConnector {
   async getTruthKernel() {
     const res = await fetch('/api/spatial/truth-kernel');
     const payload = await res.json();
-    if (res.ok) return payload;
+    if (res.ok) {
+      return normalizeTruthKernelTransportPayload(payload, {
+        source: 'truth-kernel',
+        route: '/api/spatial/truth-kernel',
+        fallbackUsed: false,
+      });
+    }
     if (res.status === 404) {
       const runtimePayload = await this.getSpatialRuntime();
-      if (runtimePayload?.truthKernel) return runtimePayload.truthKernel;
+      if (runtimePayload?.truthKernel) {
+        return normalizeTruthKernelTransportPayload(runtimePayload, {
+          source: 'runtime-fallback',
+          route: '/api/spatial/runtime',
+          fallbackUsed: true,
+          reason: 'route unavailable',
+        });
+      }
     }
     throw new Error(payload.error || 'Truth kernel fetch failed');
   }

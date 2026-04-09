@@ -37,6 +37,7 @@ export default async function runFailureMemoryTests() {
   assert.equal(normalizeFailureKey('ollama connection refused while generating context', { stage: 'context-manager' }), 'ollama_unreachable');
   assert.equal(normalizeFailureKey('git apply check failed after patch drift', { stage: 'apply' }), 'git_apply_check_failed');
   assert.equal(normalizeFailureKey('repository is dirty and cannot apply', { stage: 'apply' }), 'dirty_repo_blocked');
+  assert.equal(normalizeFailureKey(' M ui/server.js\n M brain/context/failure_history.json', { stage: 'planner', tool: 'autonomy-policy' }), 'dirty_repo_blocked');
   assert.equal(normalizeFailureKey('patch diff malformed or invalid', { stage: 'apply' }), 'invalid_patch_diff');
   assert.equal(normalizeFailureKey('missing project key for self target', { stage: 'preflight' }), 'missing_project_key');
 

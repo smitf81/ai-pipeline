@@ -3,7 +3,7 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-04-09T06:21:08.180Z
+Updated: 2026-04-09T18:46:03.614Z
 
 ### 0001
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -61,24 +61,58 @@ Updated: 2026-04-09T06:21:08.180Z
  M brain/emergence/slices.md
  M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
- M data/spatial/intent-state.json
- M data/spatial/pages.json
  M data/spatial/qa/investigations.json
+ M data/spatial/qa/lead-state.json
  M data/spatial/qa/local-gates/test-unit-latest.json
+ M data/spatial/qa/output-feed.json
  M data/spatial/qa/repair-jobs.json
  M data/spatial/qa/research-notes.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
+ M qa/qaAuditTrail.js
+ M ui/externalQaProbe.js
+ M ui/failureMemory.js
+ M ui/package-lock.json
+ M ui/package.json
+ M ui/preflightGuards.js
  M ui/public/spatial/aceConnector.js
  M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioData.js
+ M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/public/style.css
  M ui/qaLeadRunner.js
+ M ui/qaMcpLiveStatus.js
+ M ui/qaOutputFeed.js
+ M ui/qaRepairLoop.js
+ M ui/qaResearch.js
+ M ui/qaRunner.js
+ M ui/qaSessionSummary.js
  M ui/server.js
  M ui/tests/aceConnector.test.mjs
+ M ui/tests/externalQaProbe.test.mjs
+ M ui/tests/externalValidation.test.mjs
+ M ui/tests/failureMemory.test.mjs
  M ui/tests/helpers/browser-module-loader.mjs
- M ui/tests/persistence.test.mjs
+ M ui/tests/preflightGuards.test.mjs
+ M ui/tests/qaAuditTrail.test.mjs
+ M ui/tests/qaLeadCyclePublication.test.mjs
+ M ui/tests/qaLeadRunner.test.mjs
+ M ui/tests/qaLeadSurfaces.test.mjs
+ M ui/tests/qaMcpLiveStatus.test.mjs
+ M ui/tests/qaOutputFeed.test.mjs
+ M ui/tests/qaRepairLoop.test.mjs
+ M ui/tests/qaResearchTrigger.test.mjs
+ M ui/tests/qaRunner.test.mjs
+ M ui/tests/qaSessionSummary.test.mjs
  M ui/tests/run-ui-tests.mjs
- M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelIntegration.test.mjs
+ M ui/tests/truthKernelProvenance.test.mjs
+ M ui/tests/truthKernelView.test.mjs
+ M ui/truthKernelAdapter.js
 
 ### 10000
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -145,21 +179,55 @@ Updated: 2026-04-09T06:21:08.180Z
  M brain/emergence/slices.md
  M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
- M data/spatial/intent-state.json
- M data/spatial/pages.json
  M data/spatial/qa/investigations.json
+ M data/spatial/qa/lead-state.json
  M data/spatial/qa/local-gates/test-unit-latest.json
+ M data/spatial/qa/output-feed.json
  M data/spatial/qa/repair-jobs.json
  M data/spatial/qa/research-notes.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
+ M qa/qaAuditTrail.js
+ M ui/externalQaProbe.js
+ M ui/failureMemory.js
+ M ui/package-lock.json
+ M ui/package.json
+ M ui/preflightGuards.js
  M ui/public/spatial/aceConnector.js
  M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioData.js
+ M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/public/style.css
  M ui/qaLeadRunner.js
+ M ui/qaMcpLiveStatus.js
+ M ui/qaOutputFeed.js
+ M ui/qaRepairLoop.js
+ M ui/qaResearch.js
+ M ui/qaRunner.js
+ M ui/qaSessionSummary.js
  M ui/server.js
  M ui/tests/aceConnector.test.mjs
+ M ui/tests/externalQaProbe.test.mjs
+ M ui/tests/externalValidation.test.mjs
+ M ui/tests/failureMemory.test.mjs
  M ui/tests/helpers/browser-module-loader.mjs
- M ui/tests/persistence.test.mjs
+ M ui/tests/preflightGuards.test.mjs
+ M ui/tests/qaAuditTrail.test.mjs
+ M ui/tests/qaLeadCyclePublication.test.mjs
+ M ui/tests/qaLeadRunner.test.mjs
+ M ui/tests/qaLeadSurfaces.test.mjs
+ M ui/tests/qaMcpLiveStatus.test.mjs
+ M ui/tests/qaOutputFeed.test.mjs
+ M ui/tests/qaRepairLoop.test.mjs
+ M ui/tests/qaResearchTrigger.test.mjs
+ M ui/tests/qaRunner.test.mjs
+ M ui/tests/qaSessionSummary.test.mjs
  M ui/tests/run-ui-tests.mjs
- M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelIntegration.test.mjs
+ M ui/tests/truthKernelProvenance.test.mjs
+ M ui/tests/truthKernelView.test.mjs
+ M ui/truthKernelAdapter.js

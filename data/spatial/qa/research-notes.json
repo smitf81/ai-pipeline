@@ -1,5 +1,33 @@
 [
   {
+    "id": "qa_research_5632098116",
+    "research_note_id": "qa_research_5632098116",
+    "type": "qa_research_note",
+    "investigation_id": "qa_inv_001",
+    "trigger": "probe_failure",
+    "status": "unavailable",
+    "ok": false,
+    "source": "external_mcp",
+    "created_at": "2026-04-08T07:08:18.115Z",
+    "updated_at": "2026-04-08T07:08:18.115Z",
+    "query": "QA validation issue probe_failure External probe disagrees with internal QA status internal fail external unknown probe unreachable test unknown-test",
+    "evidence_hint": "",
+    "summary": "QA research server unavailable.",
+    "recommendation": "Retry later with the same bounded query.",
+    "likely_causes": [
+      "QA research server is offline or unreachable."
+    ],
+    "suggested_extra_checks": [
+      "Verify the local QA research server is running on port 5052."
+    ],
+    "suggested_scorecard_additions": [
+      "research-server-availability"
+    ],
+    "sources": [],
+    "error_message": "fetch failed",
+    "research_available": false
+  },
+  {
     "id": "qa_research_5467140713",
     "research_note_id": "qa_research_5467140713",
     "type": "qa_research_note",
@@ -28,16 +56,16 @@
     "research_available": false
   },
   {
-    "id": "qa_research_5632098116",
-    "research_note_id": "qa_research_5632098116",
+    "id": "qa_research_5723646329",
+    "research_note_id": "qa_research_5723646329",
     "type": "qa_research_note",
     "investigation_id": "qa_inv_001",
     "trigger": "probe_failure",
     "status": "unavailable",
     "ok": false,
     "source": "external_mcp",
-    "created_at": "2026-04-08T07:08:18.115Z",
-    "updated_at": "2026-04-08T07:08:18.115Z",
+    "created_at": "2026-04-09T08:34:06.329Z",
+    "updated_at": "2026-04-09T08:34:06.329Z",
     "query": "QA validation issue probe_failure External probe disagrees with internal QA status internal fail external unknown probe unreachable test unknown-test",
     "evidence_hint": "",
     "summary": "QA research server unavailable.",

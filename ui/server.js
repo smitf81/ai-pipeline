@@ -92,6 +92,7 @@ const {
 } = require('../qa/qaAuditTrail');
 const {
   buildExternalQaProbeCheckPayload,
+  buildQaMcpPreflightCheck,
   buildExternalValidationSnapshot,
   readOpenQaInvestigations,
 } = require('./externalQaProbe');
@@ -111,6 +112,10 @@ const {
 const {
   buildQaMcpLiveStatus,
 } = require('./qaMcpLiveStatus');
+const {
+  ensureQaMcpHelperBootstrapped,
+  readQaMcpLauncherStatus,
+} = require('./qaMcpLauncher');
 const {
   buildTruthKernelPayload,
 } = require('./truthKernelAdapter');
@@ -132,6 +137,7 @@ const {
   readQaOutputFeed,
 } = require('./qaOutputFeed');
 const {
+  buildQaLiveCycleState,
   buildQaSessionSummary,
 } = require('./qaSessionSummary');
 const {
@@ -2310,19 +2316,26 @@ function buildCtoDeskRouteSummary(deskId = '') {
   };
 }
 
-async function buildCtoGovernanceContext(workspace = null) {
+async function buildCtoGovernanceContext(workspace = null, options = {}) {
+  const rootPath = options?.rootPath || ROOT;
   const runtimeWorkspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
-    workspace: workspace || readSpatialWorkspace(),
+    workspace: workspace || readSpatialWorkspace(rootPath),
   }));
-  const taState = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+  const taDepartmentFile = rootPath === ROOT
+    ? TA_DEPARTMENT_FILE
+    : path.join(rootPath, 'data', 'spatial', 'ta-department.json');
+  const taState = normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
   const taPayload = await buildTaDepartmentPayload(taState, {
     workspace: runtimeWorkspace,
+    rootPath,
   });
   const ctoOverrideLedger = runtimeWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger();
   const ctoOverrideSummary = summarizeCtoOverrideLedger(ctoOverrideLedger);
   const ctoOverrideLayer = deriveCtoOverrideLayer(ctoOverrideLedger);
+  const repairLoop = buildQaRepairLoopState(rootPath);
+  const governedRepair = buildCtoGovernedRepairReference(repairLoop);
   const desks = CTO_DESK_IDS.map((deskId) => {
-    const payload = buildDeskPropertiesPayload(runtimeWorkspace, deskId);
+    const payload = buildDeskPropertiesPayload(runtimeWorkspace, deskId, null, { rootPath });
     const taCoverage = Array.isArray(taPayload.coverage)
       ? taPayload.coverage.find((entry) => entry?.entityType === 'desk' && entry?.entityId === deskId) || null
       : null;
@@ -2433,6 +2446,7 @@ async function buildCtoGovernanceContext(workspace = null) {
     cto: {
       overrides: ctoOverrideSummary,
       overrideLayer: ctoOverrideLayer,
+      governedRepair,
     },
     generatedAt: nowIso(),
   };
@@ -3275,6 +3289,11 @@ function buildCtoPromptContext(context = null) {
       rosterCount: context?.ta?.rosterCount || 0,
       openRoles: (context?.ta?.openRoles || []).slice(0, 12),
     },
+    cto: {
+      overrides: context?.cto?.overrides || null,
+      overrideLayer: context?.cto?.overrideLayer || null,
+      governedRepair: context?.cto?.governedRepair || null,
+    },
   };
 }
 
@@ -3316,6 +3335,7 @@ function buildCtoChatPrompt({
     'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.',
     'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.',
     'If an action is unavailable, explain why in system terms.',
+    'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.',
     'Return JSON only with this exact shape:',
     '{',
     '  "reply_text": "string",',
@@ -5498,7 +5518,7 @@ function buildCanonicalCtoOversightState(tasks = [], qaScorecards = []) {
       id: scorecard.id,
       testId: scorecard.testId || null,
       testName: scorecard.testName || null,
-      status: scorecard.status || null,
+      status: scorecard.rollupStatus || scorecard.status || null,
       sourceCardId: scorecard.sourceCardId || scorecard.cardId || null,
       sourceIntentId: scorecard.sourceIntentId || scorecard.intentId || null,
       sourceHandoffId: scorecard.sourceHandoffId || scorecard.handoffId || null,
@@ -5687,58 +5707,260 @@ function listRunnableQASuites() {
     });
 }
 
-function collectStructuredQAScorecards(qaReport = null) {
+const QA_SCORECARD_PASS_MIN = 3.5;
+const QA_SCORECARD_WARN_MIN = 2.5;
+
+function normalizeQaScorecardDefinitions(definitions = null) {
+  const metrics = definitions?.metrics && typeof definitions.metrics === 'object'
+    ? definitions.metrics
+    : {};
+  return {
+    schema: definitions?.schema || 'qa.test-metric-definitions.v1',
+    version: Number.isFinite(Number(definitions?.version)) ? Number(definitions.version) : 1,
+    metrics,
+  };
+}
+
+function normalizeQaScorecardResultStatus(status = '') {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (!normalized) return 'missing';
+  if (['pass', 'ok', 'ready', 'validated'].includes(normalized)) return 'pass';
+  if (['fail', 'failed', 'error', 'blocked'].includes(normalized)) return 'fail';
+  if (['warn', 'warning', 'review', 'degraded', 'unavailable'].includes(normalized)) return 'warn';
+  if (normalized === 'stale') return 'stale';
+  if (['missing', 'unknown'].includes(normalized)) return 'missing';
+  return 'warn';
+}
+
+function normalizeQaScorecardFeedbackStatus(status = '') {
+  const normalized = String(status || '').trim().toLowerCase();
+  return CANONICAL_QA_FEEDBACK_STATUSES.has(normalized) ? normalized : null;
+}
+
+function normalizeQaScorecardFreshness(trace = null, updatedAt = null) {
+  const traceFreshness = String(trace?.freshnessClass || '').trim().toLowerCase();
+  if (['fresh', 'derived_current', 'live_canonical'].includes(traceFreshness)) return 'fresh';
+  if (traceFreshness === 'missing') return 'missing';
+  if (traceFreshness === 'stale') return 'stale';
+  if (traceFreshness === 'non_executable') return 'missing';
+  const parsed = Date.parse(String(updatedAt || '').trim());
+  if (Number.isFinite(parsed) && (Date.now() - parsed) > QA_EVIDENCE_STALE_AFTER_MS) {
+    return 'stale';
+  }
+  if (trace || updatedAt) return 'fresh';
+  return 'missing';
+}
+
+function deriveQaScorecardScoreBand(overallScore = null) {
+  const value = Number(overallScore?.value);
+  if (!Number.isFinite(value)) {
+    return {
+      value: null,
+      status: 'missing',
+    };
+  }
+  if (value >= QA_SCORECARD_PASS_MIN) {
+    return { value, status: 'pass' };
+  }
+  if (value >= QA_SCORECARD_WARN_MIN) {
+    return { value, status: 'warn' };
+  }
+  return { value, status: 'fail' };
+}
+
+function summarizeQaScorecardRollup({
+  desk = null,
+  testName = null,
+  rollupStatus = 'missing',
+  rollupReasons = [],
+} = {}) {
+  const label = [desk || 'desk', testName || 'scorecard'].filter(Boolean).join(' | ');
+  const reason = Array.isArray(rollupReasons) && rollupReasons.length
+    ? rollupReasons[0]
+    : 'Scorecard source details are unavailable.';
+  return `${label}: ${rollupStatus}. ${reason}`;
+}
+
+function buildStructuredQAScorecardBundle(qaReport = null) {
+  const definitions = normalizeQaScorecardDefinitions(qaReport?.metricDefinitions || null);
+  const reportTrace = qaReport?.sourceTrace || null;
+  const reportFreshness = normalizeQaScorecardFreshness(
+    reportTrace,
+    qaReport?.finishedAt || qaReport?.updatedAt || qaReport?.createdAt || null,
+  );
   const cards = [];
-  for (const desk of qaReport?.desks || []) {
-    for (const test of desk?.tests || []) {
-      if (!test?.qualityCard) continue;
+
+  (qaReport?.desks || []).forEach((desk, deskIndex) => {
+    (desk?.tests || []).forEach((test, testIndex) => {
+      if (!test?.qualityCard) return;
+      const qualityCard = test.qualityCard && typeof test.qualityCard === 'object' ? test.qualityCard : {};
+      const deskId = qualityCard.desk || desk.desk || null;
+      const testId = qualityCard.testId || test.name || null;
+      const testName = qualityCard.testName || test.name || 'Unnamed QA test';
+      const resultStatus = normalizeQaScorecardResultStatus(test.status || qualityCard.status || '');
+      const qaFeedbackStatus = normalizeQaScorecardFeedbackStatus(test.status || qualityCard.status || '');
+      const freshness = normalizeQaScorecardFreshness(
+        reportTrace,
+        qualityCard.updatedAt || qaReport?.finishedAt || qaReport?.updatedAt || qaReport?.createdAt || null,
+      );
+      const scoreBand = deriveQaScorecardScoreBand(qualityCard.overallScore || null);
+      const validation = qualityCard.validation && typeof qualityCard.validation === 'object'
+        ? qualityCard.validation
+        : null;
+      const validationState = validation
+        ? (validation.ok ? 'pass' : 'fail')
+        : 'missing';
+      const rollupReasons = [];
+      if (validationState === 'fail') {
+        rollupReasons.push(validation.summary || 'Scorecard schema validation failed.');
+      }
+      if (resultStatus === 'fail') {
+        rollupReasons.push(`Structured test result reported fail for ${testName}.`);
+      } else if (resultStatus === 'warn') {
+        rollupReasons.push(`Structured test result reported warn for ${testName}.`);
+      } else if (resultStatus === 'missing') {
+        rollupReasons.push(`Structured test result status is missing for ${testName}.`);
+      }
+      if (freshness === 'stale') {
+        rollupReasons.push('Structured QA report is stale, so this scorecard cannot be treated as fresh.');
+      } else if (freshness === 'missing') {
+        rollupReasons.push('Structured QA report source trace is missing for this scorecard.');
+      }
+      if (scoreBand.status === 'fail') {
+        rollupReasons.push(`Overall score ${scoreBand.value ?? 'n/a'} is below the fail threshold ${QA_SCORECARD_WARN_MIN}.`);
+      } else if (scoreBand.status === 'warn') {
+        rollupReasons.push(`Overall score ${scoreBand.value ?? 'n/a'} is below the pass threshold ${QA_SCORECARD_PASS_MIN}.`);
+      } else if (scoreBand.status === 'missing') {
+        rollupReasons.push('Overall score is missing.');
+      }
+
+      let rollupStatus = 'missing';
+      if (freshness === 'missing') {
+        rollupStatus = 'missing';
+      } else if (validationState === 'fail' || resultStatus === 'fail' || scoreBand.status === 'fail') {
+        rollupStatus = 'fail';
+      } else if (freshness === 'stale') {
+        rollupStatus = 'stale';
+      } else if (resultStatus === 'warn' || resultStatus === 'stale' || resultStatus === 'missing' || scoreBand.status === 'warn') {
+        rollupStatus = 'warn';
+      } else if (validationState === 'pass' && freshness === 'fresh' && scoreBand.status === 'pass') {
+        rollupStatus = 'pass';
+      }
+
       cards.push({
-        ...test.qualityCard,
-        desk: test.qualityCard.desk || desk.desk || null,
-        status: test.status || test.qualityCard.status || 'pass',
-        testId: test.qualityCard.testId || test.name || null,
-        testName: test.qualityCard.testName || test.name || 'Unnamed QA test',
-        sourceTrace: qaReport?.sourceTrace ? {
-          ...qaReport.sourceTrace,
+        ...qualityCard,
+        classification: 'derived_projection',
+        sourceSeam: 'structured_qa_report',
+        sourcePath: reportTrace?.sourcePath || 'data/spatial/qa/structured/latest.json',
+        sourceRecordPath: `desks[${deskIndex}].tests[${testIndex}]`,
+        desk: deskId,
+        status: resultStatus,
+        reportedStatus: resultStatus,
+        qaFeedbackStatus,
+        rollupStatus,
+        scoreBandStatus: scoreBand.status,
+        freshness,
+        validationStatus: validationState,
+        failureOwnerDeskId: deskId,
+        testId,
+        testName,
+        thresholds: {
+          passMin: QA_SCORECARD_PASS_MIN,
+          warnMin: QA_SCORECARD_WARN_MIN,
+        },
+        rollupReasons,
+        summary: summarizeQaScorecardRollup({
+          desk: deskId,
+          testName,
+          rollupStatus,
+          rollupReasons,
+        }),
+        sourceTrace: reportTrace ? {
+          ...reportTrace,
           kind: 'scorecard',
-          label: test.qualityCard.testName || test.name || 'Structured QA scorecard',
-          detail: `${desk.desk || 'desk'} | ${test.name || test.qualityCard.testId || 'test'}`,
-          freshnessClass: qaReport.sourceTrace.freshnessClass === 'stale'
-            ? 'stale'
-            : (qaReport.sourceTrace.freshnessClass === 'missing'
-              ? 'missing'
-              : 'derived_current'),
-          derivedFrom: qaReport.sourceTrace.sourcePath || null,
+          label: testName || 'Structured QA scorecard',
+          detail: `${deskId || 'desk'} | ${test.name || testId || 'test'}`,
+          freshnessClass: freshness === 'fresh'
+            ? 'derived_current'
+            : freshness,
+          derivedFrom: reportTrace.sourcePath || null,
           generatedBy: {
             system: 'ui',
-            module: 'ui/server.collectStructuredQAScorecards',
+            module: 'ui/server.buildStructuredQAScorecardBundle',
           },
           sourceArtifacts: [
             {
-              path: qaReport.sourceTrace.sourcePath || 'data/spatial/qa/structured/latest.json',
+              path: reportTrace.sourcePath || 'data/spatial/qa/structured/latest.json',
               label: 'Structured QA report',
               kind: 'report',
-              freshnessClass: qaReport.sourceTrace.freshnessClass === 'stale'
-                ? 'stale'
-                : (qaReport.sourceTrace.freshnessClass === 'missing'
-                  ? 'missing'
-                  : 'derived_current'),
-              observedAt: qaReport.sourceTrace.observedAt || null,
+              freshnessClass: freshness === 'fresh'
+                ? 'derived_current'
+                : freshness,
+              observedAt: reportTrace.observedAt || qualityCard.updatedAt || null,
             },
             {
-              path: `${desk.desk || 'desk'}:${test.name || test.qualityCard.testId || 'test'}`,
+              path: `${deskId || 'desk'}:${test.name || testId || 'test'}`,
               label: 'Structured test result',
               kind: 'test-result',
-              freshnessClass: 'derived_current',
-              observedAt: qaReport.sourceTrace.observedAt || null,
-              derivedFrom: qaReport.sourceTrace.sourcePath || null,
+              freshnessClass: freshness === 'fresh'
+                ? 'derived_current'
+                : freshness,
+              observedAt: reportTrace.observedAt || qualityCard.updatedAt || null,
+              derivedFrom: reportTrace.sourcePath || null,
             },
           ],
         } : null,
       });
-    }
-  }
-  return cards;
+    });
+  });
+
+  cards.sort((left, right) => {
+    const deskCompare = String(left.desk || '').localeCompare(String(right.desk || ''));
+    if (deskCompare !== 0) return deskCompare;
+    const testCompare = String(left.testName || left.testId || '').localeCompare(String(right.testName || right.testId || ''));
+    if (testCompare !== 0) return testCompare;
+    return String(left.id || '').localeCompare(String(right.id || ''));
+  });
+
+  const counts = {
+    pass: cards.filter((card) => card.rollupStatus === 'pass').length,
+    warn: cards.filter((card) => card.rollupStatus === 'warn').length,
+    stale: cards.filter((card) => card.rollupStatus === 'stale').length,
+    fail: cards.filter((card) => card.rollupStatus === 'fail').length,
+    missing: cards.filter((card) => card.rollupStatus === 'missing').length,
+  };
+  const status = !qaReport
+    ? 'missing'
+    : cards.length === 0
+      ? 'missing'
+      : counts.fail > 0
+        ? 'fail'
+        : counts.stale > 0
+          ? 'stale'
+          : counts.warn > 0 || counts.missing > 0
+            ? 'warn'
+            : 'pass';
+  const deskCount = new Set(cards.map((card) => String(card.desk || '').trim()).filter(Boolean)).size;
+  const summary = !qaReport
+    ? 'Structured QA report is missing, so no scorecards can be derived.'
+    : !cards.length
+      ? 'Structured QA report did not include any quality cards.'
+      : `${cards.length} scorecards | ${counts.pass} pass | ${counts.warn} warn | ${counts.stale} stale | ${counts.fail} fail | ${counts.missing} missing`;
+  return {
+    classification: 'derived_projection',
+    sourceSeam: 'structured_qa_report',
+    status,
+    summary,
+    deskCount,
+    testCount: cards.length,
+    definitions,
+    cards,
+    counts,
+  };
+}
+
+function collectStructuredQAScorecards(qaReport = null) {
+  return buildStructuredQAScorecardBundle(qaReport).cards;
 }
 
 function buildStructuredQASummary(qaReport = null) {
@@ -6148,6 +6370,33 @@ function buildLocalGatePayload(rootPath = ROOT) {
   };
 }
 
+function resolvePersistedExternalValidationSnapshot(qaLeadOutput = null) {
+  const candidates = [
+    qaLeadOutput?.latestRun?.external_validation,
+    qaLeadOutput?.latestRun?.externalValidation,
+    qaLeadOutput?.state?.external_validation,
+    qaLeadOutput?.state?.externalValidation,
+  ];
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'object') continue;
+    const checkedAt = String(
+      candidate.lastCheckedAt
+      || candidate.last_checked_at
+      || candidate.checked_at
+      || qaLeadOutput?.latestRun?.finished_at
+      || qaLeadOutput?.latestRun?.finishedAt
+      || qaLeadOutput?.state?.finished_at
+      || qaLeadOutput?.state?.finishedAt
+      || '',
+    ).trim() || null;
+    return buildExternalValidationSnapshot({
+      probeCheck: candidate,
+      checkedAt,
+    });
+  }
+  return null;
+}
+
 function buildQAStatePayload(rootPath = ROOT, options = {}) {
   const structuredReport = readStructuredQAReport(rootPath, 'latest');
   const interactiveRuns = listInteractiveBrowserRuns(rootPath);
@@ -6244,7 +6493,8 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
     } : null;
   }).filter(Boolean);
   const localGate = buildLocalGatePayload(rootPath);
-  const qaScorecards = collectStructuredQAScorecards(structuredReportWithTrace);
+  const qaScorecardBundle = buildStructuredQAScorecardBundle(structuredReportWithTrace);
+  const qaScorecards = qaScorecardBundle.cards;
   const evidenceAudit = buildQaEvidenceOverview({
     structuredReport: structuredReportWithTrace,
     structuredSummary,
@@ -6263,7 +6513,12 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
   });
   const openInvestigations = readOpenQaInvestigations(rootPath, 5);
   const researchState = buildQaResearchState(rootPath, openInvestigations);
-  const externalValidation = options.externalValidation || latestExternalValidationSnapshot || {
+  const resolvedExternalValidation = options.externalValidation
+    ? buildExternalValidationSnapshot({ probeCheck: options.externalValidation })
+    : (latestExternalValidationSnapshot
+      ? buildExternalValidationSnapshot({ probeCheck: latestExternalValidationSnapshot })
+      : resolvePersistedExternalValidationSnapshot(qaLeadOutput));
+  const externalValidation = resolvedExternalValidation || {
     status: 'unavailable',
     probeStatus: 'unavailable',
     lastCheckedAt: null,
@@ -6272,6 +6527,13 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
     notes: ['External QA probe has not been checked yet.'],
     source: 'external_mcp',
     errorMessage: 'External QA probe has not been checked yet.',
+    probeFailureKind: null,
+    probeFailureDetail: null,
+    probeStatusCode: null,
+    probeTarget: null,
+    externalProbeLive: false,
+    usedFallback: true,
+    mcpEvidenceSource: 'fallback_unavailable',
   };
   const repairLoop = buildQaRepairLoopState(rootPath);
   const qaCanaries = options.qaCanaries || runQaLaneCanarySuite(rootPath);
@@ -6284,6 +6546,15 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
     latestBrowserRun: latestBrowserRunWithTrace,
     localGate,
   });
+  const outputFeed = readQaOutputFeed(rootPath);
+  const qaLiveCycle = buildQaLiveCycleState({
+    qaState: {
+      externalValidation,
+      qaMcpLiveStatus,
+    },
+    qaLeadOutput,
+    outputFeed,
+  });
   return {
     structuredReport: structuredReportWithTrace,
     structuredBusy: false,
@@ -6291,6 +6562,12 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
       ...structuredSummary,
       sourceTrace: structuredReportWithTrace?.sourceTrace || null,
     },
+    scorecards: qaScorecards,
+    scorecardDefinitions: qaScorecardBundle.definitions,
+    scorecardStatus: qaScorecardBundle.status,
+    scorecardSummary: qaScorecardBundle.summary,
+    scorecardCount: qaScorecardBundle.testCount,
+    scorecardDeskCount: qaScorecardBundle.deskCount,
     testRegistry,
     testRegistrySummary: testRegistry.summary || summarizeQATestRegistry(testRegistry),
     latestBrowserRun: latestBrowserRunWithTrace,
@@ -6305,6 +6582,9 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
     qaLead: qaLeadOutput.state,
     qaLeadRuns: qaLeadOutput.recentRuns,
     qaLeadLatestRun: qaLeadOutput.latestRun,
+    qaLiveCycle,
+    outputFeedLoaded: true,
+    outputFeed: outputFeed.items,
     qaCanaries,
     qaMcpLiveStatus,
     evidenceSources: evidenceAudit.sources,
@@ -6961,7 +7241,23 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
   const qaCanaries = deskId === QA_LEAD_DESK_ID
     ? (resolvedQAState?.qaCanaries || runQaLaneCanarySuite(rootPath))
     : null;
-  const qaScorecards = collectStructuredQAScorecards(structuredReport);
+  const derivedQaScorecardBundle = buildStructuredQAScorecardBundle(structuredReport);
+  const qaScorecardBundle = deskId === QA_LEAD_DESK_ID && resolvedQAState
+    ? {
+        ...derivedQaScorecardBundle,
+        cards: Array.isArray(resolvedQAState?.scorecards) ? resolvedQAState.scorecards : derivedQaScorecardBundle.cards,
+        definitions: resolvedQAState?.scorecardDefinitions || derivedQaScorecardBundle.definitions,
+        status: resolvedQAState?.scorecardStatus || derivedQaScorecardBundle.status,
+        summary: resolvedQAState?.scorecardSummary || derivedQaScorecardBundle.summary,
+        testCount: Number.isFinite(Number(resolvedQAState?.scorecardCount))
+          ? Number(resolvedQAState.scorecardCount)
+          : derivedQaScorecardBundle.testCount,
+        deskCount: Number.isFinite(Number(resolvedQAState?.scorecardDeskCount))
+          ? Number(resolvedQAState.scorecardDeskCount)
+          : derivedQaScorecardBundle.deskCount,
+      }
+    : derivedQaScorecardBundle;
+  const qaScorecards = qaScorecardBundle.cards;
   const ctoOversight = deskId === 'cto-architect'
     ? buildCanonicalCtoOversightState(tasks, qaScorecards)
     : null;
@@ -7138,6 +7434,11 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
           fallbackUsed: !researchState?.investigations && Array.isArray(resolvedQAState?.openInvestigations),
           derivation: 'qa_evidence_projection',
         },
+        scorecards: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'qa_scorecard_projection',
+        },
       },
     };
   }
@@ -7185,6 +7486,11 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
             sourceTrace: structuredReport?.sourceTrace || null,
           },
           scorecards: qaScorecards,
+          scorecardDefinitions: qaScorecardBundle.definitions,
+          scorecardStatus: qaScorecardBundle.status,
+          scorecardSummary: qaScorecardBundle.summary,
+          scorecardCount: qaScorecardBundle.testCount,
+          scorecardDeskCount: qaScorecardBundle.deskCount,
           testRegistry,
           testRegistrySummary: resolvedQAState?.testRegistrySummary || testRegistry.summary,
           latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
@@ -9019,6 +9325,102 @@ function buildCtoQaLeadPostureReference(qaEvidencePayload = null) {
     adjudicated_at: qaLeadPosture?.adjudicated_at || null,
     summary: qaLeadPosture?.summary || null,
     derived_from_posture_id: qaLeadPosture?.posture_id || null,
+  };
+}
+
+function buildCtoGovernedRepairReference(repairLoop = null) {
+  const provingCase = repairLoop?.provingCase && typeof repairLoop.provingCase === 'object'
+    ? repairLoop.provingCase
+    : null;
+  if (!provingCase?.repair_job_id) {
+    return null;
+  }
+  const normalizeRepairText = (value) => String(value || '').trim();
+  const canonicalJob = (Array.isArray(repairLoop?.jobs) ? repairLoop.jobs : [])
+    .find((job) => normalizeRepairText(job?.id) === normalizeRepairText(provingCase.repair_job_id)) || null;
+  const blockedReason = normalizeRepairText(
+    canonicalJob?.policy_block_reason
+    || canonicalJob?.latest_validation_evidence?.policy_block_reason
+    || canonicalJob?.latest_validation_evidence?.summary
+    || (Array.isArray(provingCase.consistency_issues) ? provingCase.consistency_issues[0] : '')
+    || '',
+  ) || null;
+  const evidenceSources = [
+    provingCase.last_apply_receipt_id ? 'data/spatial/qa/repair-apply-receipts.json' : null,
+    provingCase.post_apply_verification_verdict ? 'data/spatial/qa/repair-attempts.json' : null,
+    Array.isArray(provingCase.event_stages) && provingCase.event_stages.length ? 'data/spatial/qa/repair-events.json' : null,
+  ].filter(Boolean);
+  return {
+    classification: 'canonical_source',
+    canonical_source: 'data/spatial/qa/repair-jobs.json',
+    repair_job_id: provingCase.repair_job_id,
+    lane: provingCase.lane,
+    target_type: provingCase.target_type,
+    truth_application_status: provingCase.truth_application_status,
+    latest_verification_verdict: provingCase.post_apply_verification_verdict || null,
+    blocked_reason: provingCase.truth_application_status === 'blocked_degraded' ? blockedReason : null,
+    consistency_status: canonicalJob?.consistency_status || provingCase.consistency_status || 'consistent',
+    consistency_issues: Array.isArray(provingCase.consistency_issues) ? provingCase.consistency_issues : [],
+    supporting_evidence: {
+      classification: 'evidence_artefact',
+      evidence_sources: evidenceSources,
+      last_apply_receipt_id: provingCase.last_apply_receipt_id || null,
+      event_stages: Array.isArray(provingCase.event_stages) ? provingCase.event_stages : [],
+    },
+    status_line: provingCase.status_line || null,
+  };
+}
+
+async function buildCtoDiagnosticsPayload({
+  rootPath = ROOT,
+  diagnostics = null,
+  workspace = null,
+  qaEvidence = null,
+} = {}) {
+  const resolvedDiagnostics = diagnostics || readCtoDiagnostics(rootPath);
+  const resolvedQaEvidence = qaEvidence || await canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
+    rootPath,
+    freshness: 'live',
+    qaView: 'lead_state',
+  });
+  const qaLeadPostureRef = buildCtoQaLeadPostureReference(resolvedQaEvidence);
+  const resolvedWorkspace = workspace || readSpatialWorkspace(rootPath);
+  const canonicalLayout = normalizeStudioLayoutSchema(
+    resolvedWorkspace?.studio?.layout
+    || resolvedWorkspace?.layout
+    || createDefaultStudioLayoutSchema(),
+  );
+  const openInvestigations = readOpenQaInvestigations(rootPath, 10);
+  const plannerIntegrity = maybeBridgePlannerCanonicalIntegrityInvestigations(rootPath, {
+    layout: canonicalLayout,
+    checkedAt: nowIso(),
+  });
+  maybeBridgeOpenInvestigationsToRepairJobs(rootPath, {
+    investigations: openInvestigations,
+  });
+  await maybeGenerateQaResearchNotesForInvestigations(rootPath, openInvestigations);
+  const repairLoop = buildQaRepairLoopState(rootPath);
+  const researchState = buildQaResearchState(rootPath, openInvestigations);
+  return {
+    ok: true,
+    version: resolvedDiagnostics.version,
+    updated_at: resolvedDiagnostics.updated_at,
+    source: '/api/spatial/cto/diagnostics',
+    freshness: 'derived',
+    generatedAt: nowIso(),
+    summary: summarizeCtoDiagnostics(resolvedDiagnostics.entries),
+    entries: resolvedDiagnostics.entries,
+    qaLeadPostureRef,
+    plannerIdentity: buildPlannerIdentitySnapshot(canonicalLayout.organization || {}),
+    plannerCoverage: buildCanonicalPlannerCoverageTruth(canonicalLayout),
+    plannerIntegrity: plannerIntegrity.state,
+    plannerIntegrityInvestigation: plannerIntegrity.investigation,
+    qaLeadCoverage: buildCanonicalQALeadCoverageTruth(canonicalLayout),
+    ctoOverrides: summarizeCtoOverrideLedger(resolvedWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
+    overrideLayer: deriveCtoOverrideLayer(resolvedWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
+    governedRepair: buildCtoGovernedRepairReference(repairLoop),
+    repairLoop,
+    researchState,
   };
 }
 
@@ -12936,6 +13338,61 @@ app.get('/api/runs', (req, res) => {
   }
 });
 
+async function buildQaMcpPreflightResponse({
+  rootPath = ROOT,
+  probeUrl = null,
+  timeoutMs = null,
+} = {}) {
+  const normalizedProbeUrl = String(probeUrl || '').trim() || 'http://127.0.0.1:5051/run_test';
+  const structuredReport = readStructuredQAReport(rootPath, 'latest');
+  const payload = await buildQaMcpPreflightCheck({
+    qaState: structuredReport ? { structuredReport } : null,
+    probeUrl: normalizedProbeUrl,
+    timeoutMs: Math.max(250, Number(timeoutMs) || 1500),
+  });
+  return {
+    ...payload,
+    launcher_status: readQaMcpLauncherStatus(),
+  };
+}
+
+function bootQaMcpHelperIfNeeded(rootPath = ROOT) {
+  Promise.resolve()
+    .then(() => ensureQaMcpHelperBootstrapped({
+      rootPath,
+      probeUrl: 'http://127.0.0.1:5051/run_test',
+      timeoutMs: 1500,
+    }))
+    .then((status) => {
+      if (status?.summary) {
+        console.log(`[${nowIso()}] ${status.summary}`);
+      }
+    })
+    .catch((error) => {
+      console.warn(`[${nowIso()}] qa mcp launcher failed: ${String(error?.message || error)}`);
+    });
+}
+
+app.get('/api/qa/mcp/preflight', async (req, res) => {
+  try {
+    const probeUrl = String(req.query?.probeUrl || req.query?.probe_url || '').trim() || 'http://127.0.0.1:5051/run_test';
+    const timeoutMs = req.query?.timeoutMs || req.query?.timeout_ms || 1500;
+    const payload = await buildQaMcpPreflightResponse({
+      rootPath: ROOT,
+      probeUrl,
+      timeoutMs,
+    });
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({
+      source: 'qa_mcp_preflight',
+      verdict: 'bad_response',
+      summary: String(error?.message || error),
+      error: String(error?.message || error),
+    });
+  }
+});
+
 app.get('/api/qa/external-probe-check', async (req, res) => {
   try {
     const qaState = buildQAStatePayload(ROOT, {
@@ -14982,49 +15439,7 @@ app.get('/api/spatial/cto/status', async (req, res) => {
 
 app.get('/api/spatial/cto/diagnostics', async (req, res) => {
   try {
-    const diagnostics = readCtoDiagnostics();
-    const qaEvidence = await canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
-      rootPath: ROOT,
-      freshness: 'live',
-      qaView: 'lead_state',
-    });
-    const qaLeadPostureRef = buildCtoQaLeadPostureReference(qaEvidence);
-    const workspace = readSpatialWorkspace();
-    const canonicalLayout = normalizeStudioLayoutSchema(
-      workspace?.studio?.layout
-      || workspace?.layout
-      || createDefaultStudioLayoutSchema(),
-    );
-    const plannerIntegrity = maybeBridgePlannerCanonicalIntegrityInvestigations(ROOT, {
-      layout: canonicalLayout,
-      checkedAt: nowIso(),
-    });
-    maybeBridgeOpenInvestigationsToRepairJobs(ROOT, {
-      investigations: readOpenQaInvestigations(ROOT, 10),
-    });
-    await maybeGenerateQaResearchNotesForInvestigations(ROOT, readOpenQaInvestigations(ROOT, 10));
-    const repairLoop = buildQaRepairLoopState(ROOT);
-    const researchState = buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10));
-    return res.json({
-      ok: true,
-      version: diagnostics.version,
-      updated_at: diagnostics.updated_at,
-      source: '/api/spatial/cto/diagnostics',
-      freshness: 'derived',
-      generatedAt: nowIso(),
-      summary: summarizeCtoDiagnostics(diagnostics.entries),
-      entries: diagnostics.entries,
-      qaLeadPostureRef,
-      plannerIdentity: buildPlannerIdentitySnapshot(canonicalLayout.organization || {}),
-      plannerCoverage: buildCanonicalPlannerCoverageTruth(canonicalLayout),
-      plannerIntegrity: plannerIntegrity.state,
-      plannerIntegrityInvestigation: plannerIntegrity.investigation,
-      qaLeadCoverage: buildCanonicalQALeadCoverageTruth(canonicalLayout),
-      ctoOverrides: summarizeCtoOverrideLedger(workspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
-      overrideLayer: deriveCtoOverrideLayer(workspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
-      repairLoop,
-      researchState,
-    });
+    return res.json(await buildCtoDiagnosticsPayload({ rootPath: ROOT }));
   } catch (error) {
     const reason = String(error.message || error);
     return res.status(500).json({
@@ -15467,6 +15882,7 @@ function startServer() {
   });
 
   setTimeout(() => {
+    bootQaMcpHelperIfNeeded(ROOT);
     runDeferredBootRecovery();
   }, 0);
 
@@ -15481,9 +15897,13 @@ module.exports = {
   buildDeskPropertiesPayload,
   buildTruthKernelPayload,
   buildQAStatePayload,
+  buildQaMcpPreflightResponse,
+  bootQaMcpHelperIfNeeded,
   buildQaLeadPosture,
   buildQAAuditTrail,
   summarizeQAAuditTrail,
+  buildStructuredQAScorecardBundle,
+  collectStructuredQAScorecards,
   buildQATestRegistry,
   summarizeQATestRegistry,
   buildQaResearchState,
@@ -15491,6 +15911,9 @@ module.exports = {
   buildQaSessionSummary,
   buildQaRepairLoopState,
   buildCtoQaLeadPostureReference,
+  buildCtoGovernedRepairReference,
+  buildCtoDiagnosticsPayload,
+  readQaMcpLauncherStatus,
   readQaLeadOutput,
   readQaOutputFeed,
   appendQaOutputFeedEntry,
@@ -15580,6 +16003,7 @@ module.exports = {
   readCtoDiagnostics,
   probeCtoBackendStatus,
   buildCtoGovernanceContext,
+  buildCtoPromptContext,
   summarizeCtoPipelineState,
   normalizeCtoPipelineState,
   advanceCtoPipelineState,

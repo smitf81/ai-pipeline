@@ -204,13 +204,15 @@ function buildScorecardAuditEntries({
       : reportFreshness === 'missing'
         ? 'missing'
         : classifyFreshness(sourceFreshness || (structuredReport ? 'derived_current' : 'missing'), source.sourceTrace?.observedAt || source.updatedAt || reportGeneratedAt, now);
+    const scorecardStatus = normalizeText(source.rollupStatus || source.status || 'pass').toLowerCase();
+    const structuredStatus = normalizeText(matchedTest?.status).toLowerCase();
     const issues = [];
     if (!structuredReport) {
       issues.push('Structured QA report is missing.');
     } else if (!matchedTest) {
       issues.push('No matching structured test evidence was found.');
-    } else if (normalizeText(source.status || 'pass').toLowerCase() !== normalizeText(matchedTest.status).toLowerCase()) {
-      issues.push(`Scorecard status ${normalizeText(source.status || 'pass')} does not match structured test status ${normalizeText(matchedTest.status)}.`);
+    } else if (scorecardStatus !== structuredStatus) {
+      issues.push(`Scorecard status ${normalizeText(source.rollupStatus || source.status || 'pass')} does not match structured test status ${normalizeText(matchedTest.status)}.`);
     }
     const status = !structuredReport
       ? 'missing'

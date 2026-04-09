@@ -1,10 +1,12 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const { Worker } = require('worker_threads');
 const { pathToFileURL } = require('url');
 const { writeJsonIfChanged } = require('./changeHygiene');
 const {
+  adjudicateAcceptedQaInvestigation,
   readOpenQaInvestigations,
   readQaInvestigations,
   normalizeQaInvestigationRecord,
@@ -14,6 +16,9 @@ const {
   buildConstrainedAutoFixBundle,
   runConstrainedAutoFixExecutor,
 } = require('./constrainedAutoFix');
+const {
+  upsertPlannerQaQueueEntry,
+} = require('./plannerQaQueue');
 const {
   UI_BOOT_INTEGRITY_LANE,
   UI_BOOT_MISSING_ASSET_TRIGGER,
@@ -26,6 +31,9 @@ const {
   getRepairLaneTrustPolicy,
   getRepairLaneTrustPolicyRegistry,
 } = require('./repairLaneTrustPolicy');
+const {
+  buildTruthKernelPayload,
+} = require('./truthKernelAdapter');
 
 function uniqueStrings(values = []) {
   return [...new Set((Array.isArray(values) ? values : []).map((value) => normalizeText(value)).filter(Boolean))];
@@ -431,6 +439,13 @@ const VALIDATION_SEAM_TARGETS = getQaRepairLaneConfig(VALIDATION_SEAM_LANE)?.sco
 ];
 const DEFAULT_QA_REPAIR_JOBS_PATH = path.join(__dirname, '..', 'data', 'spatial', 'qa', 'repair-jobs.json');
 const DEFAULT_QA_REPAIR_ATTEMPTS_PATH = path.join(__dirname, '..', 'data', 'spatial', 'qa', 'repair-attempts.json');
+const DEFAULT_QA_REPAIR_APPLY_RECEIPTS_PATH = path.join(__dirname, '..', 'data', 'spatial', 'qa', 'repair-apply-receipts.json');
+const DEFAULT_QA_REPAIR_EVENTS_PATH = path.join(__dirname, '..', 'data', 'spatial', 'qa', 'repair-events.json');
+const GOVERNED_SELF_APPLY_V0_LANES = Object.freeze([
+  VALIDATION_SEAM_LANE,
+  UI_BOOT_INTEGRITY_LANE,
+]);
+const GOVERNED_SELF_APPLY_V0_TARGET_TYPE = 'external_validation_contract';
 
 function nowIso() {
   return new Date().toISOString();
@@ -467,6 +482,18 @@ function getRepairAttemptsFilePath(rootPath = null) {
     : DEFAULT_QA_REPAIR_ATTEMPTS_PATH;
 }
 
+function getRepairApplyReceiptsFilePath(rootPath = null) {
+  return rootPath
+    ? path.join(rootPath, 'data', 'spatial', 'qa', 'repair-apply-receipts.json')
+    : DEFAULT_QA_REPAIR_APPLY_RECEIPTS_PATH;
+}
+
+function getRepairEventsFilePath(rootPath = null) {
+  return rootPath
+    ? path.join(rootPath, 'data', 'spatial', 'qa', 'repair-events.json')
+    : DEFAULT_QA_REPAIR_EVENTS_PATH;
+}
+
 function readJsonArray(filePath) {
   if (!fs.existsSync(filePath)) return [];
   try {
@@ -485,6 +512,129 @@ function appendJsonArrayRecord(filePath, record = {}) {
   const next = [...readJsonArray(filePath), record];
   writeJsonArray(filePath, next);
   return record;
+}
+
+function readQaRepairApplyReceipts(rootPath = null) {
+  return readJsonArray(getRepairApplyReceiptsFilePath(rootPath));
+}
+
+function readQaRepairEvents(rootPath = null) {
+  return readJsonArray(getRepairEventsFilePath(rootPath));
+}
+
+function sha256Content(value = '') {
+  return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
+}
+
+function buildFileSnapshot(rootPath = null, relativePath = '') {
+  const normalizedPath = normalizeText(relativePath);
+  const absolutePath = path.join(rootPath || process.cwd(), normalizedPath);
+  const exists = fs.existsSync(absolutePath);
+  const content = exists ? fs.readFileSync(absolutePath, 'utf8') : '';
+  return {
+    file: normalizedPath,
+    exists,
+    sha256: exists ? sha256Content(content) : null,
+  };
+}
+
+function buildFileSnapshots(rootPath = null, relativePaths = []) {
+  return uniqueStrings(relativePaths).map((entry) => buildFileSnapshot(rootPath, entry));
+}
+
+function normalizeRepairApplyReceipt(record = {}) {
+  const source = record && typeof record === 'object' ? record : {};
+  return {
+    receipt_id: normalizeText(source.receipt_id || source.receiptId) || null,
+    repair_job_id: normalizeText(source.repair_job_id || source.repairJobId) || null,
+    attempt_id: normalizeText(source.attempt_id || source.attemptId) || null,
+    investigation_id: normalizeText(source.investigation_id || source.investigationId) || null,
+    lane: normalizeText(source.lane || source.lane_id || source.laneId) || null,
+    target_type: normalizeText(source.target_type || source.targetType) || GOVERNED_SELF_APPLY_V0_TARGET_TYPE,
+    apply_mechanism: normalizeText(source.apply_mechanism || source.applyMechanism) || 'constrained_auto_fix_executor',
+    patch_artifact_id: normalizeText(source.patch_artifact_id || source.patchArtifactId) || null,
+    target_identifiers: Array.isArray(source.target_identifiers || source.targetIdentifiers)
+      ? (source.target_identifiers || source.targetIdentifiers).map((entry) => normalizeText(entry)).filter(Boolean)
+      : [],
+    files_touched: Array.isArray(source.files_touched || source.filesTouched)
+      ? (source.files_touched || source.filesTouched).map((entry) => normalizeText(entry)).filter(Boolean)
+      : [],
+    pre_snapshot: Array.isArray(source.pre_snapshot || source.preSnapshot) ? (source.pre_snapshot || source.preSnapshot) : [],
+    post_snapshot: Array.isArray(source.post_snapshot || source.postSnapshot) ? (source.post_snapshot || source.postSnapshot) : [],
+    apply_timestamp: normalizeText(source.apply_timestamp || source.applyTimestamp || source.created_at || source.createdAt) || nowIso(),
+    apply_verdict: normalizeText(source.apply_verdict || source.applyVerdict) || 'blocked',
+    apply_status: normalizeText(source.apply_status || source.applyStatus || source.status) || 'blocked',
+    summary: normalizeText(source.summary) || '',
+    created_at: normalizeText(source.created_at || source.createdAt || source.apply_timestamp || source.applyTimestamp) || nowIso(),
+  };
+}
+
+function recordQaRepairApplyReceipt(rootPath = null, receipt = null) {
+  if (!receipt || typeof receipt !== 'object') return null;
+  const filePath = getRepairApplyReceiptsFilePath(rootPath);
+  const record = normalizeRepairApplyReceipt(receipt);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  appendJsonArrayRecord(filePath, record);
+  return record;
+}
+
+function recordQaRepairEvent(rootPath = null, event = null) {
+  if (!event || typeof event !== 'object') return null;
+  const filePath = getRepairEventsFilePath(rootPath);
+  const record = {
+    event_id: normalizeText(event.event_id || event.eventId) || `qa_repair_event_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+    stage: normalizeText(event.stage) || 'unknown',
+    lane: normalizeText(event.lane || event.lane_id || event.laneId) || null,
+    repair_job_id: normalizeText(event.repair_job_id || event.repairJobId) || null,
+    attempt_id: normalizeText(event.attempt_id || event.attemptId) || null,
+    investigation_id: normalizeText(event.investigation_id || event.investigationId) || null,
+    truth_application_status: normalizeText(event.truth_application_status || event.truthApplicationStatus) || null,
+    status: normalizeText(event.status) || 'recorded',
+    summary: normalizeText(event.summary) || '',
+    target_files: Array.isArray(event.target_files || event.targetFiles)
+      ? (event.target_files || event.targetFiles).map((entry) => normalizeText(entry)).filter(Boolean)
+      : [],
+    receipt_ref: normalizeText(event.receipt_ref || event.receiptRef) || null,
+    recorded_at: normalizeText(event.recorded_at || event.recordedAt) || nowIso(),
+    created_at: normalizeText(event.created_at || event.createdAt || event.recorded_at || event.recordedAt) || nowIso(),
+  };
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  appendJsonArrayRecord(filePath, record);
+  return record;
+}
+
+function buildGovernedApplyPreflight(rootPath = null, job = null) {
+  const normalizedJob = normalizeRepairJobRecord(job || {});
+  const allowed = GOVERNED_SELF_APPLY_V0_LANES.includes(normalizedJob.lane);
+  const scopedTargets = uniqueStrings(normalizedJob.scoped_targets || []);
+  const preSnapshot = buildFileSnapshots(rootPath, scopedTargets);
+  const checks = [
+    {
+      id: 'lane_enabled',
+      ok: allowed,
+      summary: allowed
+        ? `${normalizedJob.lane} is enabled for governed self-apply v0.`
+        : `Governed self-apply v0 is only enabled for ${GOVERNED_SELF_APPLY_V0_LANES.join(' and ')}.`,
+    },
+    {
+      id: 'target_scope_nonempty',
+      ok: scopedTargets.length > 0,
+      summary: scopedTargets.length > 0
+        ? `Scoped targets are present: ${scopedTargets.join(', ')}.`
+        : 'Repair job has no scoped targets.',
+    },
+  ];
+  const ok = checks.every((check) => check.ok);
+  return {
+    ok,
+    target_type: GOVERNED_SELF_APPLY_V0_TARGET_TYPE,
+    checks,
+    scoped_targets: scopedTargets,
+    pre_snapshot: preSnapshot,
+    summary: ok
+      ? 'Governed apply preflight passed.'
+      : checks.filter((check) => !check.ok).map((check) => check.summary).join(' '),
+  };
 }
 
 function runNodeSyntaxCheck(targetPath = '') {
@@ -705,6 +855,24 @@ function normalizeRepairJobRecord(record = {}) {
       ? source.latest_policy_check
       : null,
     policy_block_reason: normalizeText(source.policy_block_reason || source.policyBlockReason) || null,
+    target_type: normalizeText(source.target_type || source.targetType) || GOVERNED_SELF_APPLY_V0_TARGET_TYPE,
+    truth_application_status: normalizeText(source.truth_application_status || source.truthApplicationStatus) || 'proposal_pending',
+    latest_apply_receipt_id: normalizeText(source.latest_apply_receipt_id || source.latestApplyReceiptId) || null,
+    latest_apply_receipt_at: normalizeText(source.latest_apply_receipt_at || source.latestApplyReceiptAt) || null,
+    latest_apply_receipt_status: normalizeText(source.latest_apply_receipt_status || source.latestApplyReceiptStatus) || null,
+    consistency_status: normalizeText(source.consistency_status || source.consistencyStatus) || 'consistent',
+    consistency_issues: Array.isArray(source.consistency_issues || source.consistencyIssues)
+      ? (source.consistency_issues || source.consistencyIssues).map((entry) => normalizeText(entry)).filter(Boolean)
+      : [],
+    consistency_hard_failures: Array.isArray(source.consistency_hard_failures || source.consistencyHardFailures)
+      ? (source.consistency_hard_failures || source.consistencyHardFailures).map((entry) => normalizeText(entry)).filter(Boolean)
+      : [],
+    consistency_warnings: Array.isArray(source.consistency_warnings || source.consistencyWarnings)
+      ? (source.consistency_warnings || source.consistencyWarnings).map((entry) => normalizeText(entry)).filter(Boolean)
+      : [],
+    latest_event_stages: Array.isArray(source.latest_event_stages || source.latestEventStages)
+      ? (source.latest_event_stages || source.latestEventStages).map((entry) => normalizeText(entry)).filter(Boolean)
+      : [],
     evidence_bundle: source.evidence_bundle && typeof source.evidence_bundle === 'object'
       ? source.evidence_bundle
       : {},
@@ -714,6 +882,8 @@ function normalizeRepairJobRecord(record = {}) {
     executor_brief: source.executor_brief && typeof source.executor_brief === 'object'
       ? source.executor_brief
       : null,
+    planner_intake_queue_key: normalizeText(source.planner_intake_queue_key || source.plannerIntakeQueueKey) || null,
+    planner_intake_status: normalizeText(source.planner_intake_status || source.plannerIntakeStatus) || null,
     retry_budget: Math.max(0, Number(source.retry_budget ?? (Math.max(1, Number(source.max_attempts ?? laneConfig?.retry_policy?.max_attempts ?? VALIDATION_SEAM_MAX_ATTEMPTS) || VALIDATION_SEAM_MAX_ATTEMPTS) - Math.max(0, Number(source.attempt_count ?? 0) || 0))) || 0),
   };
 }
@@ -734,8 +904,16 @@ function normalizeRepairAttemptRecord(record = {}) {
     validation_verdict: normalizeText(source.validation_verdict || source.validationVerdict) || 'inconclusive',
     validation_evidence_summary: normalizeText(source.validation_evidence_summary || source.validationEvidenceSummary) || '',
     policy_block_reason: normalizeText(source.policy_block_reason || source.policyBlockReason) || null,
+    preflight_status: normalizeText(source.preflight_status || source.preflightStatus) || null,
+    preflight_summary: normalizeText(source.preflight_summary || source.preflightSummary) || '',
     status: normalizeText(source.status) || normalizeText(source.validation_verdict || source.validationVerdict) || 'inconclusive',
     executor_summary: normalizeText(source.executor_summary || source.executorSummary) || '',
+    executor_output_kind: normalizeText(source.executor_output_kind || source.executorOutputKind) || 'proposal_evidence',
+    truth_application_status: normalizeText(source.truth_application_status || source.truthApplicationStatus) || 'proposal_only',
+    qa_revalidation_required: source.qa_revalidation_required !== undefined
+      ? source.qa_revalidation_required !== false
+      : true,
+    apply_receipt_id: normalizeText(source.apply_receipt_id || source.applyReceiptId) || null,
     created_at: normalizeText(source.created_at || source.createdAt) || null,
   };
 }
@@ -814,6 +992,159 @@ function buildQaRepairLaneTrustSummary(lane = null) {
   return `${buildRepairLaneTrustPolicySummary(laneConfig.trust_policy || laneConfig)} | ${laneConfig.truth_source || laneConfig.observability?.label || laneConfig.label}`;
 }
 
+function buildValidationSeamProofView(jobs = [], attempts = [], applyReceipts = [], events = []) {
+  const proofJob = (Array.isArray(jobs) ? jobs : [])
+    .map((entry) => normalizeRepairJobRecord(entry))
+    .filter((entry) => entry.lane === VALIDATION_SEAM_LANE && entry.target_type === GOVERNED_SELF_APPLY_V0_TARGET_TYPE)
+    .sort(sortByUpdatedAtDesc)[0] || null;
+  if (!proofJob) {
+    return null;
+  }
+  const proofAttempt = (Array.isArray(attempts) ? attempts : [])
+    .map((entry) => normalizeRepairAttemptRecord(entry))
+    .filter((entry) => entry.repair_job_id === proofJob.id)
+    .sort(sortAttemptsDesc)[0] || null;
+  const proofReceipt = (Array.isArray(applyReceipts) ? applyReceipts : [])
+    .map((entry) => normalizeRepairApplyReceipt(entry))
+    .filter((entry) => entry.repair_job_id === proofJob.id)
+    .sort(sortAttemptsDesc)[0] || null;
+  const proofEvents = (Array.isArray(events) ? events : [])
+    .filter((entry) => normalizeText(entry.repair_job_id) === proofJob.id)
+    .sort(sortAttemptsDesc);
+  return {
+    repair_job_id: proofJob.id,
+    lane: proofJob.lane,
+    target_type: proofJob.target_type,
+    truth_application_status: proofJob.truth_application_status,
+    consistency_status: proofJob.consistency_status,
+    consistency_issues: proofJob.consistency_issues,
+    last_apply_receipt_id: proofReceipt?.receipt_id || proofJob.latest_apply_receipt_id || null,
+    post_apply_verification_verdict: proofAttempt?.validation_verdict || proofJob.latest_verdict || null,
+    status_line: [
+      proofJob.id,
+      proofJob.lane,
+      proofJob.target_type,
+      proofJob.truth_application_status,
+      proofReceipt?.receipt_id || proofJob.latest_apply_receipt_id || 'no_receipt',
+      proofAttempt?.validation_verdict || proofJob.latest_verdict || 'no_verdict',
+    ].join(' | '),
+    receipt_count: proofReceipt ? 1 : 0,
+    event_stages: dedupeRepairEventStages(proofEvents),
+  };
+}
+
+function dedupeRepairEventStages(events = []) {
+  return uniqueStrings((Array.isArray(events) ? events : []).map((entry) => normalizeText(entry.stage)).filter(Boolean));
+}
+
+function collectDuplicateRepairEventStages(events = []) {
+  const counts = new Map();
+  for (const entry of Array.isArray(events) ? events : []) {
+    const stage = normalizeText(entry.stage);
+    if (!stage) continue;
+    counts.set(stage, (counts.get(stage) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([stage]) => stage);
+}
+
+function reconstructRepairJobState(job = null, attempts = [], applyReceipts = [], events = []) {
+  const normalizedJob = normalizeRepairJobRecord(job || {});
+  const relatedAttempts = (Array.isArray(attempts) ? attempts : [])
+    .map((entry) => normalizeRepairAttemptRecord(entry))
+    .filter((entry) => entry.repair_job_id === normalizedJob.id)
+    .sort(sortAttemptsDesc);
+  const relatedReceipts = (Array.isArray(applyReceipts) ? applyReceipts : [])
+    .map((entry) => normalizeRepairApplyReceipt(entry))
+    .filter((entry) => entry.repair_job_id === normalizedJob.id)
+    .sort(sortAttemptsDesc);
+  const relatedEvents = (Array.isArray(events) ? events : [])
+    .filter((entry) => normalizeText(entry.repair_job_id) === normalizedJob.id)
+    .sort(sortAttemptsDesc);
+  const latestAttempt = relatedAttempts[0] || null;
+  const latestReceipt = relatedReceipts[0] || null;
+  const dedupedEventStages = dedupeRepairEventStages(relatedEvents);
+  const duplicateEventStages = collectDuplicateRepairEventStages(relatedEvents);
+  const hardIssues = [];
+  const warnings = [];
+  const verificationPassed = latestAttempt?.validation_verdict === 'accepted';
+  const hasVerification = Boolean(latestAttempt);
+  const hasApplyReceipt = Boolean(latestReceipt);
+  const appliedLive = latestReceipt?.apply_status === 'applied';
+  let truthApplicationStatus = normalizedJob.truth_application_status || 'proposal_pending';
+
+  if (verificationPassed && appliedLive) {
+    truthApplicationStatus = 'verified_healthy';
+  } else if (normalizedJob.status === normalizedJob.policy_block_status || ['needs_human_review', 'stalled_after_retries'].includes(normalizedJob.status) || latestAttempt?.truth_application_status === 'blocked_degraded') {
+    truthApplicationStatus = 'blocked_degraded';
+  } else if (appliedLive) {
+    truthApplicationStatus = 'applied_pending_verification';
+  } else if (dedupedEventStages.includes('apply_accepted') || normalizedJob.truth_application_status === 'accepted_pending_apply') {
+    truthApplicationStatus = 'accepted_pending_apply';
+  } else {
+    truthApplicationStatus = 'proposal_pending';
+  }
+
+  if (normalizedJob.truth_application_status === 'verified_healthy' && !hasApplyReceipt) {
+    hardIssues.push('verified_healthy_missing_apply_receipt');
+    truthApplicationStatus = 'accepted_pending_apply';
+  }
+  if (normalizedJob.truth_application_status === 'verified_healthy' && !verificationPassed) {
+    hardIssues.push(hasVerification ? 'verified_healthy_without_passed_verification' : 'verified_healthy_missing_verification');
+    truthApplicationStatus = hasApplyReceipt && appliedLive ? 'applied_pending_verification' : 'accepted_pending_apply';
+  }
+  if ((normalizedJob.truth_application_status === 'applied_pending_verification' || normalizedJob.truth_application_status === 'verified_healthy') && !hasApplyReceipt) {
+    hardIssues.push('apply_state_missing_receipt');
+    truthApplicationStatus = 'accepted_pending_apply';
+  }
+  if (hasApplyReceipt && latestReceipt.apply_status !== 'applied') {
+    hardIssues.push(`apply_receipt_not_applied:${latestReceipt.apply_status || 'unknown'}`);
+    truthApplicationStatus = 'blocked_degraded';
+  }
+  if (duplicateEventStages.length) {
+    warnings.push(`duplicate_event_stages:${duplicateEventStages.join(',')}`);
+  }
+
+  let reconstructedStatus = normalizedJob.status;
+  if (truthApplicationStatus === 'verified_healthy') {
+    reconstructedStatus = 'accepted';
+  } else if (truthApplicationStatus === 'blocked_degraded' && normalizedJob.status === 'accepted') {
+    reconstructedStatus = 'needs_human_review';
+  } else if (['accepted_pending_apply', 'applied_pending_verification', 'proposal_pending'].includes(truthApplicationStatus) && normalizedJob.status === 'accepted') {
+    reconstructedStatus = 'open';
+  }
+
+  const consistencyStatus = hardIssues.length > 0 ? 'inconsistent' : (warnings.length > 0 ? 'warning' : 'consistent');
+  return normalizeRepairJobRecord({
+    ...normalizedJob,
+    status: reconstructedStatus,
+    truth_application_status: truthApplicationStatus,
+    latest_apply_receipt_id: latestReceipt?.receipt_id || normalizedJob.latest_apply_receipt_id || null,
+    latest_apply_receipt_at: latestReceipt?.apply_timestamp || normalizedJob.latest_apply_receipt_at || null,
+    latest_apply_receipt_status: latestReceipt?.apply_status || normalizedJob.latest_apply_receipt_status || null,
+    latest_attempt_id: latestAttempt?.attempt_id || normalizedJob.latest_attempt_id || null,
+    latest_attempt_at: latestAttempt?.timestamp || latestAttempt?.created_at || normalizedJob.latest_attempt_at || null,
+    latest_verdict: latestAttempt?.validation_verdict || normalizedJob.latest_verdict || null,
+    latest_validation_evidence: normalizedJob.latest_validation_evidence || null,
+    consistency_status: consistencyStatus,
+    consistency_issues: [...hardIssues, ...warnings],
+    consistency_hard_failures: hardIssues,
+    consistency_warnings: warnings,
+    latest_event_stages: dedupedEventStages,
+  });
+}
+
+function reconstructRepairJobs(rootPath = null, jobs = null, attempts = null, applyReceipts = null, events = null) {
+  const rawJobs = Array.isArray(jobs) ? jobs : readQaRepairJobs(rootPath);
+  const rawAttempts = Array.isArray(attempts) ? attempts : readQaRepairAttempts(rootPath);
+  const rawApplyReceipts = Array.isArray(applyReceipts) ? applyReceipts : readQaRepairApplyReceipts(rootPath);
+  const rawEvents = Array.isArray(events) ? events : readQaRepairEvents(rootPath);
+  return rawJobs
+    .map((entry) => reconstructRepairJobState(entry, rawAttempts, rawApplyReceipts, rawEvents))
+    .sort(sortByUpdatedAtDesc);
+}
+
 function buildQaRepairLaneState(rootPath = null, lane = null, investigations = [], jobs = [], attempts = []) {
   const laneConfig = normalizeQaRepairLaneConfig(lane || {});
   const laneInvestigations = (Array.isArray(investigations) ? investigations : [])
@@ -830,7 +1161,7 @@ function buildQaRepairLaneState(rootPath = null, lane = null, investigations = [
   const openJobCount = laneJobs.filter((job) => ['open', 'retry_queued'].includes(job.status)).length;
   const stalledJobCount = laneJobs.filter((job) => ['stalled_after_retries', 'needs_human_review'].includes(job.status)).length;
   const policyBlockedCount = laneJobs.filter((job) => job.status === (laneConfig.policy_block_status || 'policy_blocked')).length;
-  const acceptedJobCount = laneJobs.filter((job) => job.status === 'accepted').length;
+  const acceptedJobCount = laneJobs.filter((job) => job.truth_application_status === 'verified_healthy').length;
   const latestJob = laneJobs[0] || null;
   const latestAttempt = laneAttempts[0] || null;
   const latestAttemptVerdict = latestAttempt?.validation_verdict || latestJob?.latest_verdict || null;
@@ -857,6 +1188,7 @@ function buildQaRepairLaneState(rootPath = null, lane = null, investigations = [
     open_job_count: openJobCount,
     latest_attempt_verdict: latestAttemptVerdict,
     latest_job_status: latestJob?.status || null,
+    latest_truth_application_status: latestJob?.truth_application_status || null,
     policy_blocked_job_count: policyBlockedCount,
     latest_policy_block_reason: normalizeText(latestJob?.policy_block_reason || latestJob?.latest_validation_evidence?.policy_block_reason) || null,
     latest_attempt_at: latestAttempt?.timestamp || latestAttempt?.created_at || null,
@@ -1073,6 +1405,8 @@ function buildQaRepairJobFromInvestigation(rootPath = null, investigation = null
     validation_checks: [...laneConfig.validation_checks],
     required_validation_gate_ids: [...laneConfig.required_validation_gate_ids],
     failure_class: laneConfig.failure_class,
+    target_type: GOVERNED_SELF_APPLY_V0_TARGET_TYPE,
+    truth_application_status: 'proposal_pending',
     evidence_bundle: {
       investigation: source,
       lane: laneConfig,
@@ -1080,6 +1414,58 @@ function buildQaRepairJobFromInvestigation(rootPath = null, investigation = null
     },
     trust_policy: laneConfig.trust_policy,
   });
+}
+
+function upsertPlannerSelfFixIntake(rootPath = null, job = null, investigation = null) {
+  const normalizedJob = normalizeRepairJobRecord(job || {});
+  if (!normalizedJob.id) return null;
+  const normalizedInvestigation = normalizeQaInvestigationRecord(investigation || {});
+  const queueKey = normalizedJob.planner_intake_queue_key || `qa_self_fix_${normalizedJob.id}`;
+  const queueResult = upsertPlannerQaQueueEntry(rootPath, {
+    queueKey,
+    plannerRunId: null,
+    planBundleId: normalizedJob.id,
+    qaRequestId: normalizedJob.investigation_id || normalizedInvestigation.id || normalizedJob.id,
+    intentId: normalizedJob.investigation_id || normalizedInvestigation.id || null,
+    planIds: [normalizedJob.id],
+    taskIds: [normalizedJob.investigation_id || normalizedInvestigation.id || normalizedJob.id].filter(Boolean),
+    targetDesk: 'planner',
+    targetRole: 'Planner',
+    requestedBy: 'qa',
+    summary: `QA self-fix intake: ${normalizedJob.summary}`,
+    qaStatus: 'pending',
+    qaCoverageRequired: true,
+    qaBlocker: true,
+    releaseBlocker: false,
+    provenance: {
+      sourceHandoffId: null,
+      sourceIntentId: normalizedJob.investigation_id || normalizedInvestigation.id || null,
+      sourceType: 'qa_repair_job',
+      sourceRef: normalizedJob.id,
+      anchorRefs: [
+        `data/spatial/qa/repair-jobs.json#${normalizedJob.id}`,
+        normalizedJob.investigation_id ? `data/spatial/qa/investigations.json#${normalizedJob.investigation_id}` : null,
+      ].filter(Boolean),
+    },
+    findings: [
+      {
+        id: `${normalizedJob.id}_scope`,
+        severity: 'warning',
+        kind: 'qa-self-fix',
+        summary: normalizedJob.summary || normalizedInvestigation.summary || 'QA self-fix intake.',
+        details: [
+          `Lane: ${normalizedJob.lane_label || normalizedJob.lane || 'unknown'}`,
+          normalizedJob.scoped_targets.length ? `Scoped targets: ${normalizedJob.scoped_targets.join(', ')}` : null,
+          normalizedJob.acceptance_criteria.length ? `Acceptance: ${normalizedJob.acceptance_criteria.join(' | ')}` : null,
+        ].filter(Boolean).join(' | '),
+        relatedPlanIds: [normalizedJob.id],
+        relatedTaskIds: [normalizedJob.investigation_id || normalizedInvestigation.id || normalizedJob.id].filter(Boolean),
+        sourceQaRunId: null,
+      },
+    ],
+    status: 'pending',
+  });
+  return queueResult?.queue?.entries?.find((entry) => entry.queueKey === queueKey) || null;
 }
 
 function maybeBridgeOpenInvestigationsToRepairJobs(rootPath = null, options = {}) {
@@ -1090,7 +1476,23 @@ function maybeBridgeOpenInvestigationsToRepairJobs(rootPath = null, options = {}
   for (const investigation of investigations) {
     const job = buildQaRepairJobFromInvestigation(rootPath, investigation, options);
     if (!job) continue;
-    bridged.push(upsertQaRepairJob(rootPath, job));
+    const storedJob = upsertQaRepairJob(rootPath, job);
+    recordQaRepairEvent(rootPath, {
+      stage: 'proposal_stored',
+      lane: storedJob?.lane,
+      repair_job_id: storedJob?.id,
+      investigation_id: storedJob?.investigation_id,
+      truth_application_status: storedJob?.truth_application_status || 'proposal_pending',
+      status: storedJob?.status || 'open',
+      summary: storedJob?.summary || 'Repair proposal stored.',
+      target_files: storedJob?.scoped_targets || [],
+    });
+    const plannerIntake = upsertPlannerSelfFixIntake(rootPath, storedJob, investigation);
+    bridged.push(upsertQaRepairJob(rootPath, {
+      ...storedJob,
+      planner_intake_queue_key: plannerIntake?.queueKey || storedJob.planner_intake_queue_key || null,
+      planner_intake_status: plannerIntake?.status || storedJob.planner_intake_status || 'pending',
+    }));
   }
   return bridged.filter(Boolean);
 }
@@ -1353,7 +1755,7 @@ function updateInvestigationPressure(rootPath = null, investigationId = '', even
 }
 
 function resolveRepairJob(rootPath = null, identifiers = {}) {
-  const jobs = readQaRepairJobs(rootPath);
+  const jobs = reconstructRepairJobs(rootPath);
   const investigationId = normalizeText(identifiers.investigationId || identifiers.investigation_id || '');
   const repairJobId = normalizeText(identifiers.repairJobId || identifiers.repair_job_id || '');
   return jobs.find((job) => {
@@ -1364,8 +1766,12 @@ function resolveRepairJob(rootPath = null, identifiers = {}) {
 }
 
 function buildQaRepairLoopState(rootPath = null) {
-  const jobs = readQaRepairJobs(rootPath).sort(sortByUpdatedAtDesc);
+  const rawJobs = readQaRepairJobs(rootPath);
   const attempts = readQaRepairAttempts(rootPath).sort(sortAttemptsDesc);
+  const applyReceipts = readQaRepairApplyReceipts(rootPath).sort(sortAttemptsDesc);
+  const events = readQaRepairEvents(rootPath).sort(sortAttemptsDesc);
+  const jobs = reconstructRepairJobs(rootPath, rawJobs, attempts, applyReceipts, events);
+  const provingCase = buildValidationSeamProofView(jobs, attempts, applyReceipts, events);
   const investigations = readOpenQaInvestigations(rootPath, 50);
   const lanes = getQaRepairLaneRegistry().map((lane) => buildQaRepairLaneState(rootPath, lane, investigations, jobs, attempts));
   return {
@@ -1375,15 +1781,28 @@ function buildQaRepairLoopState(rootPath = null) {
     lanes,
     jobs,
     attempts,
+    applyReceipts,
+    events,
     latestJob: jobs[0] || null,
     latestAttempt: attempts[0] || null,
+    latestApplyReceipt: applyReceipts[0] || null,
+    latestEvent: events[0] || null,
+    provingCase,
     summary: {
       open: jobs.filter((job) => job.status === 'open' || job.status === 'retry_queued').length,
-      accepted: jobs.filter((job) => job.status === 'accepted').length,
+      accepted: jobs.filter((job) => job.truth_application_status === 'verified_healthy').length,
+      proposalPending: jobs.filter((job) => job.truth_application_status === 'proposal_pending').length,
+      acceptedPendingApply: jobs.filter((job) => job.truth_application_status === 'accepted_pending_apply').length,
+      appliedPendingVerification: jobs.filter((job) => job.truth_application_status === 'applied_pending_verification').length,
+      blockedDegraded: jobs.filter((job) => job.truth_application_status === 'blocked_degraded').length,
       stalled: jobs.filter((job) => ['stalled_after_retries', 'needs_human_review'].includes(job.status)).length,
       policyBlocked: jobs.filter((job) => job.status === 'policy_blocked').length,
       totalJobs: jobs.length,
       totalAttempts: attempts.length,
+      totalApplyReceipts: applyReceipts.length,
+      totalEvents: events.length,
+      inconsistentJobs: jobs.filter((job) => job.consistency_status === 'inconsistent').length,
+      warningJobs: jobs.filter((job) => job.consistency_status === 'warning').length,
       totalLanes: lanes.length,
       activeLanes: lanes.filter((lane) => lane.status === 'active').length,
       healthyLanes: lanes.filter((lane) => lane.status === 'healthy').length,
@@ -1446,6 +1865,7 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
 
   const investigation = options.investigation || readQaInvestigations(rootPath).find((entry) => normalizeQaInvestigationRecord(entry).id === normalizedJob.investigation_id) || null;
   const brief = buildQaRepairExecutorBrief(normalizedJob, investigation);
+  const attemptId = options.attemptId || `qa_repair_attempt_${Date.now()}`;
   const laneConfig = getQaRepairLaneConfig(normalizedJob.lane) || getQaRepairLaneConfig(VALIDATION_SEAM_LANE);
   const trustPolicyCheck = evaluateRepairLaneTrustPolicyCompliance({
     policy: laneConfig?.trust_policy || laneConfig,
@@ -1461,11 +1881,19 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
       'Auto-apply is not permitted for this lane trust policy.',
     ];
   }
+  if (!GOVERNED_SELF_APPLY_V0_LANES.includes(normalizedJob.lane)) {
+    trustPolicyCheck.ok = false;
+    trustPolicyCheck.blocked = true;
+    trustPolicyCheck.reasons = [
+      ...trustPolicyCheck.reasons,
+      `Governed self-apply v0 is only enabled for ${GOVERNED_SELF_APPLY_V0_LANES.join(' and ')}.`,
+    ];
+  }
   if (!trustPolicyCheck.ok) {
     const policyBlockReason = trustPolicyCheck.reasons.join(' ');
     const policyVerdict = normalizedJob.policy_block_status || laneConfig?.policy_block_status || 'policy_blocked';
     const attempt = recordRepairAttempt(rootPath, {
-      attempt_id: options.attemptId || `qa_repair_attempt_${Date.now()}`,
+      attempt_id: attemptId,
       repair_job_id: normalizedJob.id,
       investigation_id: normalizedJob.investigation_id,
       lane: normalizedJob.lane,
@@ -1476,8 +1904,13 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
       validation_verdict: policyVerdict,
       validation_evidence_summary: policyBlockReason,
       policy_block_reason: policyBlockReason,
+      preflight_status: 'blocked',
+      preflight_summary: policyBlockReason,
       status: policyVerdict,
       executor_summary: policyBlockReason,
+      executor_output_kind: 'proposal_evidence',
+      truth_application_status: 'blocked_degraded',
+      qa_revalidation_required: true,
     });
     const nextJob = upsertQaRepairJob(rootPath, {
       ...normalizedJob,
@@ -1495,8 +1928,19 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
       latest_policy_check: trustPolicyCheck,
       policy_block_reason: policyBlockReason,
       status: policyVerdict,
+      truth_application_status: 'blocked_degraded',
       updated_at: nowIso(),
       retry_budget: Math.max(0, normalizedJob.max_attempts - (normalizedJob.attempt_count + 1)),
+    });
+    recordQaRepairEvent(rootPath, {
+      stage: 'validation_stored',
+      lane: normalizedJob.lane,
+      repair_job_id: normalizedJob.id,
+      attempt_id: attempt.attempt_id,
+      investigation_id: normalizedJob.investigation_id,
+      truth_application_status: 'blocked_degraded',
+      status: policyVerdict,
+      summary: policyBlockReason,
     });
     return {
       ok: true,
@@ -1518,6 +1962,92 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
       safe_stop: true,
     };
   }
+  const preflight = buildGovernedApplyPreflight(rootPath, normalizedJob);
+  if (!preflight.ok) {
+    const preflightSummary = preflight.summary || 'Governed apply preflight failed.';
+    const attempt = recordRepairAttempt(rootPath, {
+      attempt_id: attemptId,
+      repair_job_id: normalizedJob.id,
+      investigation_id: normalizedJob.investigation_id,
+      lane: normalizedJob.lane,
+      lane_label: normalizedJob.lane_label,
+      timestamp: nowIso(),
+      changed_files: preflight.scoped_targets,
+      proposed_fix_summary: preflightSummary,
+      validation_verdict: 'blocked',
+      validation_evidence_summary: preflightSummary,
+      preflight_status: 'blocked',
+      preflight_summary: preflightSummary,
+      status: 'blocked',
+      executor_summary: preflightSummary,
+      executor_output_kind: 'proposal_evidence',
+      truth_application_status: 'blocked_degraded',
+      qa_revalidation_required: true,
+    });
+    const nextJob = upsertQaRepairJob(rootPath, {
+      ...normalizedJob,
+      attempt_count: normalizedJob.attempt_count + 1,
+      latest_attempt_id: attempt.attempt_id,
+      latest_attempt_at: attempt.timestamp,
+      latest_verdict: 'blocked',
+      latest_validation_evidence: {
+        ok: false,
+        verdict: 'blocked',
+        summary: preflightSummary,
+        checks: preflight.checks,
+      },
+      latest_policy_check: trustPolicyCheck,
+      status: 'needs_human_review',
+      truth_application_status: 'blocked_degraded',
+      updated_at: nowIso(),
+      retry_budget: Math.max(0, normalizedJob.max_attempts - (normalizedJob.attempt_count + 1)),
+    });
+    recordQaRepairEvent(rootPath, {
+      stage: 'apply_accepted',
+      lane: normalizedJob.lane,
+      repair_job_id: normalizedJob.id,
+      attempt_id: attempt.attempt_id,
+      investigation_id: normalizedJob.investigation_id,
+      truth_application_status: 'blocked_degraded',
+      status: 'blocked',
+      summary: preflightSummary,
+      target_files: preflight.scoped_targets,
+    });
+    return {
+      ok: true,
+      verdict: 'blocked',
+      reason: preflightSummary,
+      job: nextJob,
+      brief,
+      attempt,
+      validation: {
+        ok: false,
+        verdict: 'blocked',
+        summary: preflightSummary,
+        checks: preflight.checks,
+      },
+      executor: null,
+      preflight,
+      retry_allowed: false,
+      safe_stop: true,
+    };
+  }
+  const acceptedJob = upsertQaRepairJob(rootPath, {
+    ...normalizedJob,
+    truth_application_status: 'accepted_pending_apply',
+    status: normalizedJob.status || 'open',
+    updated_at: nowIso(),
+  });
+  recordQaRepairEvent(rootPath, {
+    stage: 'apply_accepted',
+    lane: normalizedJob.lane,
+    repair_job_id: normalizedJob.id,
+    investigation_id: normalizedJob.investigation_id,
+    truth_application_status: 'accepted_pending_apply',
+    status: acceptedJob?.status || 'open',
+    summary: preflight.summary,
+    target_files: preflight.scoped_targets,
+  });
   const bundle = buildConstrainedAutoFixBundle({
     criticalErrors: [{
       message: brief.failure_summary || brief.summary,
@@ -1554,7 +2084,7 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
       });
   const executor = executorRunner({
     rootPath,
-    job: normalizedJob,
+    job: acceptedJob,
     brief,
     bundle,
     investigation,
@@ -1564,6 +2094,47 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
     ...(executor.changedFiles || []),
     ...(normalizedJob.scoped_targets || []),
   ].map((entry) => normalizeText(entry)).filter(Boolean))];
+  const applyTimestamp = nowIso();
+  const applyReceipt = recordQaRepairApplyReceipt(rootPath, {
+    receipt_id: `qa_apply_receipt_${Date.now()}`,
+    repair_job_id: normalizedJob.id,
+    attempt_id: attemptId,
+    investigation_id: normalizedJob.investigation_id,
+    lane: normalizedJob.lane,
+    target_type: preflight.target_type,
+    apply_mechanism: normalizedJob.lane === UI_BOOT_INTEGRITY_LANE
+      ? 'ui_boot_integrity_repair'
+      : 'constrained_auto_fix_executor',
+    patch_artifact_id: normalizeText(bundle.taskId) || `${normalizedJob.id}:${Date.now()}`,
+    target_identifiers: [...preflight.scoped_targets],
+    files_touched: changedFiles,
+    pre_snapshot: preflight.pre_snapshot,
+    post_snapshot: buildFileSnapshots(rootPath, changedFiles),
+    apply_timestamp: applyTimestamp,
+    apply_verdict: executor.blocked || executor.needs_human_review ? 'blocked' : (executor.applied ? 'applied' : 'skipped'),
+    apply_status: executor.blocked || executor.needs_human_review ? 'blocked' : (executor.applied ? 'applied' : 'skipped'),
+    summary: executor.reason || executor.summary || 'Governed apply executed.',
+  });
+  recordQaRepairEvent(rootPath, {
+    stage: 'apply_executed',
+    lane: normalizedJob.lane,
+    repair_job_id: normalizedJob.id,
+    attempt_id: applyReceipt.attempt_id,
+    investigation_id: normalizedJob.investigation_id,
+    truth_application_status: executor.blocked || executor.needs_human_review ? 'blocked_degraded' : 'applied_pending_verification',
+    status: applyReceipt.apply_status,
+    summary: applyReceipt.summary,
+    target_files: changedFiles,
+    receipt_ref: applyReceipt.receipt_id,
+  });
+  upsertQaRepairJob(rootPath, {
+    ...acceptedJob,
+    latest_apply_receipt_id: applyReceipt.receipt_id,
+    latest_apply_receipt_at: applyReceipt.apply_timestamp,
+    latest_apply_receipt_status: applyReceipt.apply_status,
+    truth_application_status: executor.blocked || executor.needs_human_review ? 'blocked_degraded' : 'applied_pending_verification',
+    updated_at: nowIso(),
+  });
 
   let validation;
   if (executor.blocked || executor.needs_human_review || executor.stop_status === 'needs_human_review') {
@@ -1589,8 +2160,14 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
     }) || {};
   }
   const verdict = validation.ok ? 'accepted' : (validation.verdict || 'rejected');
+  const verifiedApply = applyReceipt.apply_status === 'applied' && validation.ok;
+  const attemptTruthApplicationStatus = verifiedApply
+    ? 'verified_healthy'
+    : (applyReceipt.apply_status === 'applied'
+        ? 'blocked_degraded'
+        : 'blocked_degraded');
   const attempt = recordRepairAttempt(rootPath, {
-    attempt_id: options.attemptId || `qa_repair_attempt_${Date.now()}`,
+    attempt_id: attemptId,
     repair_job_id: normalizedJob.id,
     investigation_id: normalizedJob.investigation_id,
     lane: normalizedJob.lane,
@@ -1600,8 +2177,26 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
     proposed_fix_summary: executor.reason || executor.summary || brief.summary,
     validation_verdict: verdict,
     validation_evidence_summary: validation.summary || '',
+    preflight_status: 'passed',
+    preflight_summary: preflight.summary,
     status: verdict,
     executor_summary: executor.reason || executor.summary || '',
+    executor_output_kind: 'live_apply',
+    truth_application_status: attemptTruthApplicationStatus,
+    qa_revalidation_required: !validation.ok,
+    apply_receipt_id: applyReceipt.receipt_id,
+  });
+  recordQaRepairEvent(rootPath, {
+    stage: 'validation_stored',
+    lane: normalizedJob.lane,
+      repair_job_id: normalizedJob.id,
+      attempt_id: attempt.attempt_id,
+      investigation_id: normalizedJob.investigation_id,
+      truth_application_status: attemptTruthApplicationStatus,
+      status: verdict,
+      summary: validation.summary || '',
+    target_files: changedFiles,
+    receipt_ref: applyReceipt.receipt_id,
   });
   const nextAttemptCount = normalizedJob.attempt_count + 1;
   const forceSafeStop = Boolean(executor.blocked || executor.needs_human_review || executor.stop_status === 'needs_human_review');
@@ -1622,9 +2217,38 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
     latest_attempt_summary: attempt.validation_evidence_summary || attempt.proposed_fix_summary,
     policy_block_reason: null,
     status: nextStatus,
+    truth_application_status: attemptTruthApplicationStatus,
+    latest_apply_receipt_id: applyReceipt.receipt_id,
+    latest_apply_receipt_at: applyReceipt.apply_timestamp,
+    latest_apply_receipt_status: applyReceipt.apply_status,
     updated_at: nowIso(),
     retry_budget: Math.max(0, normalizedJob.max_attempts - nextAttemptCount),
   });
+  const publishedInvestigation = verifiedApply && normalizedJob.investigation_id
+    ? adjudicateAcceptedQaInvestigation(rootPath, {
+        investigation_id: normalizedJob.investigation_id,
+        repair_job_id: normalizedJob.id,
+        repair_attempt_id: attempt.attempt_id,
+        validation_verdict: verdict,
+        validation_evidence_summary: attempt.validation_evidence_summary || validation.summary || '',
+        latest_validation_evidence: validation,
+        resolved_at: attempt.timestamp || nowIso(),
+        adjudicated_by: 'qa_repair_loop',
+      })
+    : null;
+  if (publishedInvestigation) {
+    recordQaRepairEvent(rootPath, {
+      stage: 'canonical_truth_updated',
+      lane: normalizedJob.lane,
+      repair_job_id: normalizedJob.id,
+      attempt_id: attempt.attempt_id,
+      investigation_id: normalizedJob.investigation_id,
+      truth_application_status: 'verified_healthy',
+      status: 'resolved',
+      summary: 'Canonical QA investigation state updated from post-apply verified evidence.',
+      receipt_ref: applyReceipt.receipt_id,
+    });
+  }
   if (verdict !== 'accepted' && normalizedJob.investigation_id) {
     updateInvestigationPressure(rootPath, normalizedJob.investigation_id, {
       seen_at: nowIso(),
@@ -1639,14 +2263,33 @@ function runQaRepairAttempt(rootPath = null, options = {}) {
       validation_verdict: verdict,
     });
   }
+  const truthKernelRefresh = buildTruthKernelPayload({ rootPath, workspace: {} });
+  recordQaRepairEvent(rootPath, {
+    stage: 'truth_kernel_projection_refreshed',
+    lane: normalizedJob.lane,
+      repair_job_id: normalizedJob.id,
+      attempt_id: attempt.attempt_id,
+      investigation_id: normalizedJob.investigation_id,
+      truth_application_status: attemptTruthApplicationStatus,
+      status: validation.ok ? 'healthy' : 'degraded',
+    summary: `Truth kernel refreshed with ${truthKernelRefresh.nodeCount} nodes.`,
+    receipt_ref: applyReceipt.receipt_id,
+  });
   return {
     ok: true,
     verdict,
     job: nextJob,
     brief,
+    preflight,
     attempt,
+    apply_receipt: applyReceipt,
     validation,
     executor,
+    published_investigation: publishedInvestigation,
+    truth_kernel_refresh: {
+      nodeCount: truthKernelRefresh.nodeCount,
+      generatedAt: truthKernelRefresh.generatedAt,
+    },
     retry_allowed: retryAllowed,
     safe_stop: !retryAllowed && verdict !== 'accepted',
   };
@@ -1659,6 +2302,8 @@ module.exports = {
   VALIDATION_SEAM_TARGETS,
   DEFAULT_QA_REPAIR_JOBS_PATH,
   DEFAULT_QA_REPAIR_ATTEMPTS_PATH,
+  DEFAULT_QA_REPAIR_APPLY_RECEIPTS_PATH,
+  DEFAULT_QA_REPAIR_EVENTS_PATH,
   appendJsonArrayRecord,
   buildQaRepairExecutorBrief,
   buildQaRepairJobFromInvestigation,
@@ -1666,20 +2311,30 @@ module.exports = {
   buildQaRepairLaneState,
   buildQaRepairLaneTrustSummary,
   buildQaRepairLoopState,
+  buildValidationSeamProofView,
   buildValidationSeamRepairJobFromInvestigation,
   doesInvestigationQualifyForLane,
+  getRepairApplyReceiptsFilePath,
   getRepairAttemptsFilePath,
+  getRepairEventsFilePath,
   getRepairJobsFilePath,
   getQaRepairLaneConfig,
   getQaRepairLaneRegistry,
   maybeBridgeOpenInvestigationsToRepairJobs,
+  normalizeRepairApplyReceipt,
   normalizeRepairAttemptRecord,
   normalizeRepairJobRecord,
   normalizeQaRepairLaneConfig,
   normalizeQaRepairValidationCheck,
+  readQaRepairApplyReceipts,
   readQaRepairAttempts,
+  readQaRepairEvents,
   readQaRepairJobs,
+  recordQaRepairApplyReceipt,
+  recordQaRepairEvent,
   recordRepairAttempt,
+  reconstructRepairJobState,
+  reconstructRepairJobs,
   resolveRepairJob,
   runQaRepairAttempt,
   runQaRepairLaneValidationChecks,

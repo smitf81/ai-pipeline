@@ -108,6 +108,8 @@ function normalizeFailureKey(rawText = '', context = {}) {
   const stage = normalizeFailureText(context.stage || context.related_stage || context.relatedStage || '');
   const tool = normalizeFailureText(context.tool || context.related_tool || context.relatedTool || '');
   const scope = `${text} ${stage} ${tool}`.trim();
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  const looksLikeGitPorcelain = lines.length > 0 && lines.every((line) => /^(?:[ madrcu?!]{2}\s+\S|[madrcu?!]{1}\s+\S)/i.test(line));
 
   if (/spawn eperm|eperm|access is denied|permission denied/.test(scope) && /windows|node|python|subprocess|spawn/.test(scope)) {
     return 'windows_spawn_eperm';
@@ -118,7 +120,10 @@ function normalizeFailureKey(rawText = '', context = {}) {
   if (/(git apply|apply patch|patch apply|apply failed|check failed|rejected hunk|patch does not apply)/.test(scope)) {
     return 'git_apply_check_failed';
   }
-  if (/(dirty repo|repository is dirty|working tree.*dirty|uncommitted changes|cannot apply.*dirty|repo clean.*failed)/.test(scope)) {
+  if (/(dirty repo|repository is dirty|working tree.*dirty|uncommitted(?: tracked)? changes|cannot apply.*dirty|repo clean.*failed)/.test(scope)) {
+    return 'dirty_repo_blocked';
+  }
+  if (looksLikeGitPorcelain && /(planner|context-manager|executor|rebuild|self-upgrade|preflight|autonomy-policy|git)/.test(scope)) {
     return 'dirty_repo_blocked';
   }
   if (/(invalid patch|malformed patch|unexpected end of file|patch diff|patch parse|corrupt diff|broken diff)/.test(scope)) {

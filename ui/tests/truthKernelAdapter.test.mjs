@@ -44,6 +44,77 @@ export default async function runTruthKernelAdapterTests() {
     created_at: '2026-04-01T09:21:00.000Z',
     last_seen_at: '2026-04-01T09:22:00.000Z',
     status: 'open',
+  }, {
+    id: 'qa_inv_resolved_1',
+    created_at: '2026-04-01T09:24:00.000Z',
+    last_seen_at: '2026-04-01T09:25:00.000Z',
+    status: 'resolved',
+    adjudication_state: 'adjudicated_accepted',
+  }]);
+  writeJson(rootPath, 'data/spatial/qa/repair-jobs.json', [{
+    id: 'qa_repair_1',
+    investigation_id: 'qa_inv_1',
+    lane: 'validation_seam',
+    lane_label: 'Validation Seam',
+    target_type: 'external_validation_contract',
+    summary: 'External validation seam repair',
+    truth_application_status: 'applied_pending_verification',
+    consistency_status: 'consistent',
+    updated_at: '2026-04-01T09:23:30.000Z',
+  }, {
+    id: 'qa_repair_2',
+    investigation_id: 'qa_inv_resolved_1',
+    lane: 'validation_seam',
+    lane_label: 'Validation Seam',
+    target_type: 'external_validation_contract',
+    summary: 'Verified external validation seam repair',
+    truth_application_status: 'verified_healthy',
+    latest_verdict: 'accepted',
+    consistency_status: 'consistent',
+    updated_at: '2026-04-01T09:25:30.000Z',
+  }, {
+    id: 'qa_repair_3',
+    investigation_id: 'qa_inv_resolved_1',
+    lane: 'validation_seam',
+    lane_label: 'Validation Seam',
+    target_type: 'external_validation_contract',
+    summary: 'Verified repair with drift warning',
+    truth_application_status: 'verified_healthy',
+    latest_verdict: 'accepted',
+    consistency_status: 'inconsistent',
+    consistency_issues: ['verified_healthy_missing_apply_receipt'],
+    updated_at: '2026-04-01T09:26:30.000Z',
+  }]);
+  writeJson(rootPath, 'data/spatial/qa/repair-attempts.json', [{
+    attempt_id: 'qa_attempt_1',
+    repair_job_id: 'qa_repair_1',
+    truth_application_status: 'applied_pending_verification',
+    validation_verdict: 'inconclusive',
+    timestamp: '2026-04-01T09:23:40.000Z',
+  }, {
+    attempt_id: 'qa_attempt_2',
+    repair_job_id: 'qa_repair_2',
+    truth_application_status: 'verified_healthy',
+    validation_verdict: 'accepted',
+    timestamp: '2026-04-01T09:25:45.000Z',
+  }]);
+  writeJson(rootPath, 'data/spatial/qa/repair-apply-receipts.json', [{
+    receipt_id: 'qa_receipt_1',
+    repair_job_id: 'qa_repair_2',
+    apply_status: 'applied',
+    apply_verdict: 'applied',
+    apply_timestamp: '2026-04-01T09:25:40.000Z',
+  }]);
+  writeJson(rootPath, 'data/spatial/qa/repair-events.json', [{
+    event_id: 'qa_repair_event_1',
+    repair_job_id: 'qa_repair_2',
+    stage: 'apply_executed',
+    created_at: '2026-04-01T09:25:41.000Z',
+  }, {
+    event_id: 'qa_repair_event_2',
+    repair_job_id: 'qa_repair_2',
+    stage: 'qa_revalidation_result',
+    created_at: '2026-04-01T09:25:46.000Z',
   }]);
   writeJson(rootPath, 'data/spatial/cto-diagnostics.json', {
     entries: [{
@@ -112,6 +183,12 @@ export default async function runTruthKernelAdapterTests() {
   const intakeNode = payload.nodes.find((node) => node.id === 'intake_1');
   const intentNode = payload.nodes.find((node) => node.id === 'intent_1');
   const orphanIntentNode = payload.nodes.find((node) => node.id === 'intent_orphan_1');
+  const openInvestigationNode = payload.nodes.find((node) => node.id === 'qa_inv_1');
+  const resolvedInvestigationNode = payload.nodes.find((node) => node.id === 'qa_inv_resolved_1');
+  const pendingRepairNode = payload.nodes.find((node) => node.id === 'qa_repair_1');
+  const verifiedRepairNode = payload.nodes.find((node) => node.id === 'qa_repair_2');
+  const inconsistentRepairNode = payload.nodes.find((node) => node.id === 'qa_repair_3');
+  const applyReceiptNode = payload.nodes.find((node) => node.id === 'qa_receipt_1');
   const handoffNode = payload.nodes.find((node) => node.id === 'handoff_1');
   assert.equal(intakeNode.kind, 'input');
   assert.equal(intentNode.kind, 'input');
@@ -120,5 +197,24 @@ export default async function runTruthKernelAdapterTests() {
   assert.equal(intentNode.parents.includes('intake_1'), true);
   assert.equal(intentNode.children.includes('handoff_1') || intentNode.children.includes('context_manager_1'), true);
   assert.equal(orphanIntentNode.status, 'orphaned');
+  assert.equal(openInvestigationNode.status, 'degraded');
+  assert.equal(resolvedInvestigationNode.status, 'healthy');
+  assert.equal(pendingRepairNode.status, 'degraded');
+  assert.equal(pendingRepairNode.verdict, 'applied_pending_verification');
+  assert.equal(pendingRepairNode.lane, 'validation_seam');
+  assert.equal(pendingRepairNode.targetType, 'external_validation_contract');
+  assert.equal(pendingRepairNode.truthApplicationStatus, 'applied_pending_verification');
+  assert.equal(pendingRepairNode.postApplyVerificationVerdict, 'inconclusive');
+  assert.equal(pendingRepairNode.consistencyStatus, 'consistent');
+  assert.equal(verifiedRepairNode.status, 'healthy');
+  assert.equal(verifiedRepairNode.verdict, 'verified_healthy');
+  assert.equal(verifiedRepairNode.postApplyVerificationVerdict, 'accepted');
+  assert.equal(verifiedRepairNode.supportingEvidence.lastApplyReceiptId, 'qa_receipt_1');
+  assert.deepEqual(verifiedRepairNode.supportingEvidence.eventStages, ['apply_executed', 'qa_revalidation_result']);
+  assert.equal(inconsistentRepairNode.status, 'blocked');
+  assert.equal(inconsistentRepairNode.truthApplicationStatus, 'verified_healthy');
+  assert.equal(inconsistentRepairNode.consistencyStatus, 'inconsistent');
+  assert.deepEqual(inconsistentRepairNode.consistencyIssues, ['verified_healthy_missing_apply_receipt']);
+  assert.equal(applyReceiptNode.status, 'healthy');
   assert.equal(payload.nodes.every((node) => ['input', 'execution', 'artifact'].includes(node.kind)), true);
 }

@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const {
+  buildQAStatePayload,
   buildQaLeadPosture,
 } = require('../server.js');
 const {
@@ -17,9 +18,20 @@ const {
   readQaOutputFeed,
 } = require('../qaOutputFeed.js');
 
+function createIdleQaCanaries(now) {
+  return {
+    overall_status: 'idle',
+    summary: 'QA lane canaries were not part of this targeted test harness.',
+    last_run_at: now,
+    passed_count: 0,
+    failed_count: 0,
+    results: [],
+  };
+}
+
 export default async function runQaLeadCyclePublicationTests() {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-qa-lead-publication-'));
-  const now = '2026-04-09T00:00:00.000Z';
+  const now = new Date().toISOString();
 
   try {
     const run = await runQaLeadCycle(rootPath, {
@@ -103,6 +115,14 @@ export default async function runQaLeadCyclePublicationTests() {
 
     const leadOutput = readQaLeadOutput(rootPath);
     const feed = readQaOutputFeed(rootPath);
+    const rebuiltQaState = buildQAStatePayload(rootPath, {
+      externalValidation: leadOutput.state.external_validation || null,
+      qaCanaries: createIdleQaCanaries(now),
+    });
+    const rebuiltQaStateAgain = buildQAStatePayload(rootPath, {
+      externalValidation: leadOutput.state.external_validation || null,
+      qaCanaries: createIdleQaCanaries(now),
+    });
     const qaState = {
       qaLeadPosture: buildQaLeadPosture({
         qaLead: leadOutput.state,
@@ -123,6 +143,17 @@ export default async function runQaLeadCyclePublicationTests() {
     assert.equal(feed.items.length, 1);
     assert.equal(feed.items[0].meta.cycleId, run.id);
     assert.equal(feed.items[0].result, 'fail');
+    assert.equal(feed.items[0].meta.investigationCount, 0);
+    assert.equal(rebuiltQaState.qaLeadLatestRun.id, run.id);
+    assert.equal(rebuiltQaStateAgain.qaLeadLatestRun.id, run.id);
+    assert.equal(rebuiltQaState.outputFeedLoaded, true);
+    assert.equal(Array.isArray(rebuiltQaState.outputFeed), true);
+    assert.equal(rebuiltQaState.outputFeed.length, 1);
+    assert.equal(rebuiltQaState.qaLiveCycle.latest_completed_cycle_id, run.id);
+    assert.equal(rebuiltQaState.qaLiveCycle.output_feed_captured, true);
+    assert.equal(typeof rebuiltQaState.qaLiveCycle.current_gate_source, 'string');
+    assert.equal(typeof rebuiltQaState.qaLiveCycle.external_status, 'string');
+    assert.equal(readQaOutputFeed(rootPath).items.length, 1);
     assert.equal(qaState.qaLeadPosture.posture_id.startsWith('qa_posture_'), true);
     assert.equal(qaState.qaLeadPosture.provenance.run_id, run.id);
     assert.equal(qaState.qaLeadPosture.provenance.cycle_id, run.id);

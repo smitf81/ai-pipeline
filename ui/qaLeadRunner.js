@@ -1,17 +1,21 @@
 const fs = require('fs');
 const path = require('path');
 const { writeJsonIfChanged } = require('./changeHygiene');
-const { buildExternalQaProbeCheckPayload, readOpenQaInvestigations } = require('./externalQaProbe');
+const {
+  buildExternalQaProbeCheckPayload,
+  buildExternalValidationSnapshot,
+  readOpenQaInvestigations,
+} = require('./externalQaProbe');
 const { buildQaMcpLiveStatus } = require('./qaMcpLiveStatus');
 const {
   appendQaOutputFeedEntry,
-  buildQaOutputFeedEntryFromCycle,
+  buildQaOutputFeedEntryFromQaLeadRun,
 } = require('./qaOutputFeed');
 const {
   buildQaResearchState,
   maybeGenerateQaResearchNotesForInvestigations,
 } = require('./qaResearch');
-const { runQARun, summarizeQARun } = require('./qaRunner');
+const { readStructuredQAReport, runQARun } = require('./qaRunner');
 
 const QA_LEAD_RELATIVE_DIR = path.join('data', 'spatial', 'qa', 'lead-runs');
 const QA_LEAD_STATE_RELATIVE_FILE = path.join('data', 'spatial', 'qa', 'lead-state.json');
@@ -175,22 +179,38 @@ function buildQaLeadOutputFeed({
       tool: 'external_probe_check',
       status: externalValidation?.ok ? 'validated' : 'degraded',
       verdict: externalValidation?.ok ? 'pass' : (externalValidation?.probeStatus || externalValidation?.error?.kind || 'fail'),
-      summary: externalValidation?.ok
-        ? 'External QA probe returned a fresh result.'
-        : (externalValidation?.error?.message || 'External QA probe did not return a fresh result.'),
-      detail: externalValidation?.internal_truth?.details || externalValidation?.comparison?.notes?.[0] || '',
+      summary: externalValidation?.externalProbeLive
+        ? 'External QA probe returned a fresh live QA MCP helper result.'
+        : (externalValidation?.ok
+          ? 'External QA probe returned a fresh result.'
+          : (externalValidation?.error?.message || externalValidation?.errorMessage || 'External QA probe did not return a fresh result.')),
+      detail: externalValidation?.probeFailureDetail || externalValidation?.internal_truth?.details || externalValidation?.comparison?.notes?.[0] || '',
       observed_at: externalValidation?.lastCheckedAt || null,
-      artifact_refs: ['http://127.0.0.1:5051/run_test'],
-      notes: externalValidation?.comparison?.notes || [],
+      artifact_refs: [externalValidation?.probeTarget || externalValidation?.probe_target || QA_LEAD_DEFAULT_PROBE_URL].filter(Boolean),
+      notes: [
+        externalValidation?.mcpEvidenceSource ? `Evidence source: ${externalValidation.mcpEvidenceSource}` : null,
+        typeof externalValidation?.usedFallback === 'boolean' ? `Fallback used: ${externalValidation.usedFallback ? 'yes' : 'no'}` : null,
+        externalValidation?.externalProbeLive ? 'Live helper evidence was consumed through external_probe_check.' : null,
+        ...(Array.isArray(externalValidation?.comparison?.notes) ? externalValidation.comparison.notes : []),
+        externalValidation?.probeFailureKind ? `Failure kind: ${externalValidation.probeFailureKind}` : null,
+      ].filter(Boolean),
     },
     {
       id: 'browser-pass',
       label: 'Browser QA run',
-      tool: 'browser_qa_run',
-      status: browserRun ? 'validated' : 'missing',
-      verdict: browserRun?.verdict || browserRun?.status || 'unknown',
-      summary: browserRun ? summarizeQARun(browserRun) : 'No browser QA run captured.',
-      detail: browserRun?.error || browserRun?.findings?.[0]?.summary || '',
+      tool: browserRun?.browser_runtime_target?.used || 'browser_qa_run',
+      status: !browserRun
+        ? 'missing'
+        : (browserRun?.browser_status === 'pass'
+          ? 'validated'
+          : (browserRun?.browser_status === 'skipped_by_policy' ? 'unknown' : 'degraded')),
+      verdict: browserRun?.browser_status || browserRun?.verdict || browserRun?.status || 'unknown',
+      summary: browserRun
+        ? (browserRun?.browser_failure_summary
+          || browserRun?.summary
+          || `Browser QA run ${browserRun?.browser_status || browserRun?.verdict || browserRun?.status || 'completed'}.`)
+        : 'No browser QA run captured.',
+      detail: browserRun?.browser_failure_summary || browserRun?.error || browserRun?.findings?.[0]?.summary || '',
       observed_at: browserRun?.finishedAt || browserRun?.createdAt || null,
       artifact_refs: browserRun?.id
         ? [
@@ -199,8 +219,33 @@ function buildQaLeadOutputFeed({
           ]
         : [],
       notes: Array.isArray(browserRun?.findings)
-        ? browserRun.findings.slice(0, 4).map((finding) => finding.summary || finding.reason).filter(Boolean)
-        : [],
+        ? [
+            browserRun?.browser_runtime_target?.attempted?.length
+              ? `Runtime attempted: ${browserRun.browser_runtime_target.attempted.join(' -> ')}`
+              : null,
+            browserRun?.browser_runtime_target?.used
+              ? `Runtime used: ${browserRun.browser_runtime_target.used}`
+              : null,
+            typeof browserRun?.browser_runtime_target?.fallbackUsed === 'boolean'
+              ? `Runtime fallback used: ${browserRun.browser_runtime_target.fallbackUsed ? 'yes' : 'no'}`
+              : null,
+            browserRun?.browser_failure_stage ? `Failure stage: ${browserRun.browser_failure_stage}` : null,
+            browserRun?.browser_failure_code ? `Failure code: ${browserRun.browser_failure_code}` : null,
+            ...browserRun.findings.slice(0, 4).map((finding) => finding.summary || finding.reason).filter(Boolean),
+          ].filter(Boolean)
+        : [
+            browserRun?.browser_runtime_target?.attempted?.length
+              ? `Runtime attempted: ${browserRun.browser_runtime_target.attempted.join(' -> ')}`
+              : null,
+            browserRun?.browser_runtime_target?.used
+              ? `Runtime used: ${browserRun.browser_runtime_target.used}`
+              : null,
+            typeof browserRun?.browser_runtime_target?.fallbackUsed === 'boolean'
+              ? `Runtime fallback used: ${browserRun.browser_runtime_target.fallbackUsed ? 'yes' : 'no'}`
+              : null,
+            browserRun?.browser_failure_stage ? `Failure stage: ${browserRun.browser_failure_stage}` : null,
+            browserRun?.browser_failure_code ? `Failure code: ${browserRun.browser_failure_code}` : null,
+          ].filter(Boolean),
     },
     {
       id: 'lane-canaries',
@@ -313,6 +358,7 @@ function buildQaLeadRunState({
   researchState = null,
   repairLoop = null,
   outputFeed = [],
+  openInvestigationCount = 0,
   resultPaths = {},
   failureReason = null,
   runType = 'scheduled_cycle',
@@ -342,12 +388,23 @@ function buildQaLeadRunState({
     research_state: researchState || null,
     repair_loop: repairLoop || null,
     output_feed: feed,
+    open_investigation_count: Number.isFinite(Number(openInvestigationCount)) ? Number(openInvestigationCount) : 0,
     result_paths: resultPaths,
     failure_reason: normalizeText(failureReason) || null,
     summary: failureReason
       ? `QA lead cycle degraded: ${failureReason}`
       : `QA lead cycle ${normalizeText(status) || 'completed'}.`,
   };
+}
+
+function appendQaLeadCycleOutputFeedEntry(rootPath = null, persistedRun = null) {
+  if (!persistedRun || typeof persistedRun !== 'object') {
+    return null;
+  }
+  if (!normalizeText(persistedRun.id) || !normalizeText(persistedRun.finished_at || persistedRun.finishedAt)) {
+    return null;
+  }
+  return appendQaOutputFeedEntry(rootPath, buildQaOutputFeedEntryFromQaLeadRun(persistedRun));
 }
 
 function readQaLeadOutput(rootPath = null) {
@@ -441,19 +498,31 @@ async function runQaLeadCycle(rootPath = null, options = {}) {
   let failureReason = null;
 
   try {
+    const structuredReport = readStructuredQAReport(normalizedRoot, 'latest');
     const externalProbeResult = typeof options.externalProbeRunner === 'function'
       ? await options.externalProbeRunner({
-          qaState: readQaLeadOutput(normalizedRoot).state,
+          qaState: {
+            structuredReport,
+          },
           probeUrl,
           timeoutMs: options.probeTimeoutMs,
           rootPath: normalizedRoot,
         })
       : await buildExternalQaProbeCheckPayload({
+          qaState: {
+            structuredReport,
+          },
           probeUrl,
           timeoutMs: options.probeTimeoutMs,
           investigationRootPath: normalizedRoot,
         });
-    externalValidation = externalProbeResult.externalValidation || externalProbeResult;
+    externalValidation = externalProbeResult.externalValidation || {
+      ...externalProbeResult,
+      ...buildExternalValidationSnapshot({
+        probeCheck: externalProbeResult,
+        checkedAt: nowIso(),
+      }),
+    };
     activeTools.push('external_probe_check');
 
     const currentInvestigations = readOpenQaInvestigations(normalizedRoot, 10);
@@ -575,6 +644,7 @@ async function runQaLeadCycle(rootPath = null, options = {}) {
       repairLoop,
       bootHealth,
       bootRepair,
+      openInvestigationCount: Array.isArray(latestInvestigations) ? latestInvestigations.length : 0,
       outputFeed,
       resultPaths,
       failureReason: overallPass ? null : (browserRun?.error || loopAudit?.summary || canaries?.summary || externalValidation?.errorMessage || 'QA lead cycle degraded.'),
@@ -582,27 +652,7 @@ async function runQaLeadCycle(rootPath = null, options = {}) {
     });
     const persisted = writeQaLeadRun(normalizedRoot, runRecord);
     try {
-      appendQaOutputFeedEntry(normalizedRoot, buildQaOutputFeedEntryFromCycle({
-        cycleId: runId,
-        createdAt: finishedAt,
-        investigationCount: Array.isArray(currentInvestigations) ? currentInvestigations.length : 0,
-        failedChecks: [
-          bootHealth && (bootHealth.safeMode || bootHealth.status === 'blocked' || bootHealth.failure_class),
-          browserRun && ['fail', 'failed', 'error'].includes(String(browserRun.verdict || browserRun.status || '').toLowerCase()),
-          canaries && canaries.overall_status === 'fail',
-          loopAudit && loopAudit.overall_status === 'fail',
-        ].filter(Boolean).length,
-        activeLanes: Number(repairLoop?.summary?.activeLanes || repairLoop?.summary?.active_lanes || 0) || (
-          Array.isArray(repairLoop?.lanes)
-            ? repairLoop.lanes.filter((lane) => !['idle', 'inactive'].includes(String(lane?.current_status || lane?.status || '').toLowerCase())).length
-            : 0
-        ),
-        externalStatus: externalValidation?.ok
-          ? 'ok'
-          : (['unreachable', 'offline'].includes(String(externalValidation?.probeStatus || externalValidation?.error?.kind || '').toLowerCase())
-            ? 'unreachable'
-            : (externalValidation ? 'degraded' : 'unknown')),
-      }));
+      appendQaLeadCycleOutputFeedEntry(normalizedRoot, persisted);
     } catch (error) {
       console.warn(`[${nowIso()}] qa output feed append failed: ${error.message}`);
     }
@@ -613,6 +663,7 @@ async function runQaLeadCycle(rootPath = null, options = {}) {
   } catch (error) {
     failureReason = String(error?.message || error);
     const finishedAt = nowIso();
+    const openInvestigations = readOpenQaInvestigations(normalizedRoot, 10);
     const failureRun = buildQaLeadRunState({
       runId,
       startedAt,
@@ -642,34 +693,14 @@ async function runQaLeadCycle(rootPath = null, options = {}) {
         repairLoop,
         liveStatus,
       }),
+      openInvestigationCount: Array.isArray(openInvestigations) ? openInvestigations.length : 0,
       resultPaths,
       failureReason,
       runType,
     });
     const persisted = writeQaLeadRun(normalizedRoot, failureRun);
-    const openInvestigations = readOpenQaInvestigations(normalizedRoot, 10);
     try {
-      appendQaOutputFeedEntry(normalizedRoot, buildQaOutputFeedEntryFromCycle({
-        cycleId: runId,
-        createdAt: finishedAt,
-        investigationCount: Array.isArray(openInvestigations) ? openInvestigations.length : 0,
-        failedChecks: [
-          bootHealth && (bootHealth.safeMode || bootHealth.status === 'blocked' || bootHealth.failure_class),
-          browserRun && ['fail', 'failed', 'error'].includes(String(browserRun.verdict || browserRun.status || '').toLowerCase()),
-          canaries && canaries.overall_status === 'fail',
-          loopAudit && loopAudit.overall_status === 'fail',
-        ].filter(Boolean).length,
-        activeLanes: Number(repairLoop?.summary?.activeLanes || repairLoop?.summary?.active_lanes || 0) || (
-          Array.isArray(repairLoop?.lanes)
-            ? repairLoop.lanes.filter((lane) => !['idle', 'inactive'].includes(String(lane?.current_status || lane?.status || '').toLowerCase())).length
-            : 0
-        ),
-        externalStatus: externalValidation?.ok
-          ? 'ok'
-          : (['unreachable', 'offline'].includes(String(externalValidation?.probeStatus || externalValidation?.error?.kind || '').toLowerCase())
-            ? 'unreachable'
-            : (externalValidation ? 'degraded' : 'unknown')),
-      }));
+      appendQaLeadCycleOutputFeedEntry(normalizedRoot, persisted);
     } catch (error) {
       console.warn(`[${nowIso()}] qa output feed append failed: ${error.message}`);
     }
