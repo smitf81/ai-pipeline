@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const {
   buildExternalQaProbeCheckPayload,
+  readOpenQaInvestigations,
 } = require('../externalQaProbe.js');
+const {
+  buildQaLeadPosture,
+} = require('../server.js');
 
 function makeFetchResponse(payload, status = 200) {
   return {
@@ -15,6 +22,82 @@ function makeFetchResponse(payload, status = 200) {
 }
 
 export default async function runExternalQaProbeTests() {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-qa-evidence-stamp-'));
+  try {
+    const degradedPayload = await buildExternalQaProbeCheckPayload({
+      rootPath,
+      investigationRootPath: rootPath,
+      qaState: {
+        structuredReport: {
+          status: 'pass',
+          summary: 'Structured QA report passed.',
+          finishedAt: '2026-04-06T00:00:00.000Z',
+        },
+      },
+      fetchImpl: async () => ({
+        ok: false,
+        status: 503,
+        json: async () => ({
+          status: 'fail',
+          details: 'External probe unreachable',
+          source: 'external_mcp',
+        }),
+      }),
+    });
+
+    assert.equal(degradedPayload.ok, false);
+    assert.equal(degradedPayload.pre_adjudication, true);
+    assert.equal(degradedPayload.adjudication_state, 'pending_lead_cycle');
+    assert.ok(degradedPayload.investigation_id);
+    assert.equal(degradedPayload.evidence_id, degradedPayload.investigation_id);
+
+    const investigations = readOpenQaInvestigations(rootPath, 10);
+    assert.equal(investigations.length, 1);
+    assert.equal(investigations[0].pre_adjudication, true);
+    assert.equal(investigations[0].adjudication_state, 'pending_lead_cycle');
+    assert.equal(investigations[0].evidence_id, degradedPayload.investigation_id);
+
+    const posture = buildQaLeadPosture({
+      qaLead: {
+        status: 'degraded',
+        summary: 'QA lead cycle degraded.',
+        run_id: 'qa_lead_test_cycle',
+        current_batch: 'qa_lead_test_cycle',
+        finished_at: '2026-04-06T01:00:00.000Z',
+        output_feed: [],
+      },
+      qaLeadLatestRun: {
+        id: 'qa_lead_test_cycle',
+        status: 'degraded',
+        summary: 'QA lead cycle degraded.',
+        finished_at: '2026-04-06T01:00:00.000Z',
+      },
+      externalValidation: {
+        status: 'unavailable',
+        probeStatus: 'unreachable',
+        lastCheckedAt: '2026-04-06T01:00:00.000Z',
+      },
+      repairLoop: {
+        summary: {
+          activeLanes: 1,
+        },
+      },
+      openInvestigations: investigations,
+      browserRuns: [],
+      generatedAt: '2026-04-06T01:00:00.000Z',
+    });
+
+    assert.equal(posture.provenance.promoted_from_pre_adjudication, true);
+    assert.equal(posture.provenance.pre_adjudication_evidence_ids[0], degradedPayload.investigation_id);
+    assert.equal(posture.inputs.some((input) => input.type === 'pre_adjudication_evidence'), true);
+    const evidenceInput = posture.inputs.find((input) => input.type === 'pre_adjudication_evidence');
+    assert.equal(evidenceInput.pre_adjudication, true);
+    assert.equal(evidenceInput.adjudication_state, 'pending_lead_cycle');
+    assert.equal(evidenceInput.evidence_id, degradedPayload.investigation_id);
+  } finally {
+    fs.rmSync(rootPath, { recursive: true, force: true });
+  }
+
   const successPayload = await buildExternalQaProbeCheckPayload({
     qaState: {
       structuredReport: {

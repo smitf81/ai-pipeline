@@ -1,0 +1,156 @@
+{
+  "source": "qa_lead_runner",
+  "agent_id": "qa-lead",
+  "run_id": "qa_manual_cycle_route_test",
+  "status": "degraded",
+  "current_task": "QA proof-of-life, browser pass, lane canaries, and loop audit",
+  "current_batch": "qa_manual_cycle_route_test",
+  "started_at": "2026-04-09T12:00:00.000Z",
+  "finished_at": "2026-04-09T12:01:00.000Z",
+  "last_completed_cycle_at": "2026-04-09T12:01:00.000Z",
+  "active_tools": [
+    "external_probe_check",
+    "browser_qa_run",
+    "lane_canary_suite",
+    "loop_audit"
+  ],
+  "live_status": {
+    "source": "qa_mcp_live_status",
+    "status": "degraded",
+    "usage_state": "degraded",
+    "freshness": "fresh",
+    "summary": "QA MCP is configured, but recent MCP health or calls are degraded.",
+    "heartbeat_at": "2026-04-09T12:01:00.000Z",
+    "last_completed_cycle_at": "2026-04-09T12:01:00.000Z",
+    "mcp_configured": true,
+    "configured_tools": [
+      "external_probe_check",
+      "qa_research_note"
+    ],
+    "mcp_reachable": false,
+    "last_ping_at": "2026-04-09T12:01:00.000Z",
+    "last_ping_status": "unreachable",
+    "last_ping_source": "external_mcp",
+    "last_call_at": "2026-04-09T12:01:00.000Z",
+    "last_call_tool": "external_probe_check",
+    "last_call_status": "unreachable",
+    "last_call_source": "external_mcp",
+    "last_qa_gate_source": "external_mcp",
+    "using_mcp_for_qa_decisions": false,
+    "notes": [
+      "Degraded: the latest MCP ping or call failed, timed out, or returned unavailable."
+    ]
+  },
+  "output_feed": [
+    {
+      "id": "boot-preflight",
+      "label": "Boot preflight",
+      "tool": "boot_preflight",
+      "status": "blocked",
+      "verdict": "blocked",
+      "summary": "Boot gate triggered: External MCP probe is unreachable..",
+      "detail": "External MCP probe is unreachable.",
+      "observed_at": "2026-04-09T12:00:00.000Z",
+      "artifact_refs": [
+        "/api/health"
+      ],
+      "notes": [
+        "Failure class: external_probe_unreachable",
+        "Failure stage: external_probe"
+      ]
+    },
+    {
+      "id": "proof-of-life",
+      "label": "MCP proof of life",
+      "tool": "external_probe_check",
+      "status": "degraded",
+      "verdict": "unreachable",
+      "summary": "External QA probe did not return a fresh result.",
+      "detail": "Structured QA report is available.",
+      "observed_at": "2026-04-09T12:01:00.000Z",
+      "artifact_refs": [
+        "http://127.0.0.1:5051/run_test"
+      ],
+      "notes": [
+        "External MCP probe is unreachable."
+      ]
+    },
+    {
+      "id": "browser-pass",
+      "label": "Browser QA run",
+      "tool": "browser_qa_run",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "[object Object]",
+      "detail": "",
+      "observed_at": "2026-04-09T12:01:00.000Z",
+      "artifact_refs": [
+        "data/spatial/qa/qa_browser_manual_cycle.json"
+      ],
+      "notes": []
+    },
+    {
+      "id": "lane-canaries",
+      "label": "Lane canary suite",
+      "tool": "lane_canary_suite",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "All lane canaries passed.",
+      "detail": "All visible canaries passed.",
+      "observed_at": "2026-04-09T12:01:00.000Z",
+      "artifact_refs": [],
+      "notes": []
+    },
+    {
+      "id": "loop-audit",
+      "label": "Closed-loop fault audit",
+      "tool": "loop_audit",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "All injected loop faults behaved as expected.",
+      "detail": "All injected loop faults behaved as expected.",
+      "observed_at": "2026-04-09T12:01:00.000Z",
+      "artifact_refs": [],
+      "notes": []
+    },
+    {
+      "id": "mcp-live-status",
+      "label": "QA MCP live status",
+      "tool": "qa_mcp_live_status",
+      "status": "degraded",
+      "verdict": "degraded",
+      "summary": "QA MCP is configured, but recent MCP health or calls are degraded.",
+      "detail": "Degraded: the latest MCP ping or call failed, timed out, or returned unavailable.",
+      "observed_at": "2026-04-09T12:01:00.000Z",
+      "artifact_refs": [],
+      "notes": [
+        "Degraded: the latest MCP ping or call failed, timed out, or returned unavailable."
+      ]
+    },
+    {
+      "id": "repair-loop",
+      "label": "Repair loop summary",
+      "tool": "qa_repair_loop",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "No repair jobs are tracked yet.",
+      "detail": "pass",
+      "observed_at": "2026-04-09T12:01:00.000Z",
+      "artifact_refs": [],
+      "notes": [
+        "QA Lead: active"
+      ]
+    }
+  ],
+  "latest_run": "QA lead cycle degraded: QA lead cycle degraded.",
+  "result_paths": {
+    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_browser_manual_cycle.json"
+  },
+  "summary": "QA lead cycle degraded: QA lead cycle degraded.",
+  "last_updated_at": "2026-04-09T12:01:00.000Z",
+  "automation_started": true,
+  "automation_interval_ms": 1200000,
+  "automation_enabled": false,
+  "automation_last_kick_at": null,
+  "automation_last_result": null
+}

@@ -3,11 +3,47 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-04-06T17:42:27.102Z
+Updated: 2026-04-09T06:21:08.180Z
+
+### 0001
+- Agent: autonomy-policy (ace/agent-attribution.v0)
+- Status: blocked
+- Decision: blocked
+- Stage: builder
+- Action: build
+- Retry count: 0
+- Retry limit: 2
+- Reasons: M brain/context/agent_audits/builder/builder_0001.json
+ M brain/context/agent_audits/builder/builder_0001.md
+ M brain/context/autonomy_fix_tasks.json
+ M brain/context/autonomy_fix_tasks.md
+ M brain/context/failure_history.json
+ M brain/context/failure_history.md
+ M brain/context/known_fixes_candidates.json
+ M brain/context/known_fixes_candidates.md
+ M brain/emergence/slices.json
+ M brain/emergence/slices.md
+ M data/spatial/cto-diagnostics.json
+ M data/spatial/history.json
+ M data/spatial/intent-state.json
+ M data/spatial/pages.json
+ M data/spatial/qa/investigations.json
+ M data/spatial/qa/local-gates/test-unit-latest.json
+ M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
+ M data/spatial/ta-department.json
+ M data/spatial/workspace.json
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/helpers/browser-module-loader.mjs
+ M ui/tests/run-ui-tests.mjs
 
 ### 0001-Blender-UE-import-hygiene
 - Agent: autonomy-policy (ace/agent-attribution.v0)
-- Status: pending
+- Status: blocked
 - Decision: blocked
 - Stage: planner
 - Action: planner
@@ -21,31 +57,28 @@ Updated: 2026-04-06T17:42:27.102Z
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/recent_change_digest.md
- M brain/emergence/project_brain.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
- M data/spatial/architecture-memory.json
  M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/intent-state.json
  M data/spatial/pages.json
+ M data/spatial/qa/investigations.json
  M data/spatial/qa/local-gates/test-unit-latest.json
+ M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/archivistWriteback.js
- M ui/externalQaProbe.js
- M ui/orchestratorState.js
- M ui/public/index.html
  M ui/public/spatial/aceConnector.js
  M ui/public/spatial/spatialApp.js
- M ui/public/spatial/studioData.js
  M ui/public/style.css
+ M ui/qaLeadRunner.js
  M ui/server.js
+ M ui/tests/aceConnector.test.mjs
  M ui/tests/helpers/browser-module-loader.mjs
+ M ui/tests/persistence.test.mjs
  M ui/tests/run-ui-tests.mjs
  M ui/tests/spatialApp.smoke.test.mjs
- M ui/tests/studioData.test.mjs
 
 ### 10000
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -94,7 +127,7 @@ Updated: 2026-04-06T17:42:27.102Z
 
 ### planner:planner:0
 - Agent: autonomy-policy (ace/agent-attribution.v0)
-- Status: pending
+- Status: blocked
 - Decision: blocked
 - Stage: planner
 - Action: planner
@@ -108,28 +141,25 @@ Updated: 2026-04-06T17:42:27.102Z
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/recent_change_digest.md
- M brain/emergence/project_brain.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
- M data/spatial/architecture-memory.json
  M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/intent-state.json
  M data/spatial/pages.json
+ M data/spatial/qa/investigations.json
  M data/spatial/qa/local-gates/test-unit-latest.json
+ M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/ta-department.json
  M data/spatial/workspace.json
- M ui/archivistWriteback.js
- M ui/externalQaProbe.js
- M ui/orchestratorState.js
- M ui/public/index.html
  M ui/public/spatial/aceConnector.js
  M ui/public/spatial/spatialApp.js
- M ui/public/spatial/studioData.js
  M ui/public/style.css
+ M ui/qaLeadRunner.js
  M ui/server.js
+ M ui/tests/aceConnector.test.mjs
  M ui/tests/helpers/browser-module-loader.mjs
+ M ui/tests/persistence.test.mjs
  M ui/tests/run-ui-tests.mjs
  M ui/tests/spatialApp.smoke.test.mjs
- M ui/tests/studioData.test.mjs

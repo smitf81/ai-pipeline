@@ -41,6 +41,7 @@ function normalizeQaInvestigationRecord(record = {}) {
   const latestEvidence = source.latest_evidence && typeof source.latest_evidence === 'object'
     ? source.latest_evidence
     : (Array.isArray(source.evidence_events) && source.evidence_events.length ? source.evidence_events[source.evidence_events.length - 1] : null);
+  const evidenceId = normalizeText(source.evidence_id || source.investigation_id || source.id || '') || null;
   return {
     id: normalizeText(source.id) || null,
     type: normalizeText(source.type) || 'qa_investigation',
@@ -59,6 +60,11 @@ function normalizeQaInvestigationRecord(record = {}) {
     },
     latest_evidence: latestEvidence || null,
     evidence_events: Array.isArray(source.evidence_events) ? source.evidence_events.slice(-10) : [],
+    pre_adjudication: Boolean(source.pre_adjudication || latestEvidence?.pre_adjudication),
+    adjudication_state: normalizeText(source.adjudication_state || latestEvidence?.adjudication_state) || (source.pre_adjudication || latestEvidence?.pre_adjudication ? 'pending_lead_cycle' : null),
+    evidence_id: evidenceId,
+    promoted_by_posture_id: normalizeText(source.promoted_by_posture_id || latestEvidence?.promoted_by_posture_id || '') || null,
+    promoted_at: normalizeText(source.promoted_at || latestEvidence?.promoted_at || '') || null,
   };
 }
 
@@ -106,6 +112,8 @@ function createQaInvestigationEvent({
   internal = null,
   comparison = null,
   externalProbeResult = null,
+  preAdjudication = true,
+  evidenceId = null,
 } = {}) {
   return {
     seen_at: normalizeText(seenAt) || new Date().toISOString(),
@@ -114,6 +122,11 @@ function createQaInvestigationEvent({
     external_status: normalizeText(external?.status) || normalizeText(externalProbeResult?.external_probe?.status) || 'unavailable',
     probe_status: normalizeText(externalProbeResult?.status) || normalizeText(externalProbeResult?.probe_status) || (externalProbeResult?.ok ? 'ok' : 'unreachable') || 'unreachable',
     test_id: normalizeText(external?.test_id) || normalizeText(externalProbeResult?.external_probe?.test_id) || 'unknown-test',
+    pre_adjudication: Boolean(preAdjudication),
+    adjudication_state: 'pending_lead_cycle',
+    evidence_id: normalizeText(evidenceId) || null,
+    promoted_by_posture_id: null,
+    promoted_at: null,
   };
 }
 
@@ -142,6 +155,7 @@ function buildQaInvestigationRecord({
   const created_at = normalizeText(createdAt) || new Date().toISOString();
   const resolvedFirstSeenAt = normalizeText(firstSeenAt) || created_at;
   const resolvedLastSeenAt = normalizeText(lastSeenAt) || resolvedFirstSeenAt;
+  const evidenceId = normalizeText(id) || null;
   const event = latestEvidence && typeof latestEvidence === 'object'
     ? latestEvidence
     : createQaInvestigationEvent({
@@ -150,9 +164,11 @@ function buildQaInvestigationRecord({
         external,
         internal,
         comparison,
+        preAdjudication: true,
+        evidenceId,
       });
   return {
-    id: normalizeText(id) || 'qa_inv_001',
+    id: evidenceId || 'qa_inv_001',
     type: 'qa_investigation',
     trigger: normalizeText(trigger) || 'external_mismatch',
     severity: normalizeText(severity) || 'medium',
@@ -177,6 +193,11 @@ function buildQaInvestigationRecord({
     evidence_events: Array.isArray(evidenceEvents) && evidenceEvents.length
       ? evidenceEvents.slice(-10)
       : [event],
+    pre_adjudication: true,
+    adjudication_state: 'pending_lead_cycle',
+    evidence_id: evidenceId || null,
+    promoted_by_posture_id: null,
+    promoted_at: null,
   };
 }
 
@@ -203,29 +224,44 @@ function appendQaInvestigation(rootPath = null, investigation = null) {
     external: investigation.evidence?.external || null,
     internal: investigation.evidence?.internal || null,
     comparison: investigation.evidence?.comparison || null,
+    preAdjudication: true,
+    evidenceId: normalizeText(investigation.id) || null,
   });
   let record;
   let next = existing;
   if (matchedIndex >= 0) {
     const current = normalizeQaInvestigationRecord(existing[matchedIndex]);
+    const resolvedEvidenceId = normalizeText(current.id || investigation.id) || null;
     record = {
       ...current,
       ...investigation,
-      id: current.id || normalizeText(investigation.id) || `qa_inv_${String(matchedIndex + 1).padStart(3, '0')}`,
+      id: resolvedEvidenceId || `qa_inv_${String(matchedIndex + 1).padStart(3, '0')}`,
       signature,
       repeat_count: (Number(current.repeat_count) || 1) + 1,
       first_seen_at: current.first_seen_at || current.created_at || now,
       last_seen_at: now,
       latest_evidence: event,
       evidence_events: [...(Array.isArray(current.evidence_events) ? current.evidence_events : []), event].slice(-10),
+      pre_adjudication: true,
+      adjudication_state: 'pending_lead_cycle',
+      evidence_id: resolvedEvidenceId,
+      promoted_by_posture_id: current.promoted_by_posture_id || null,
+      promoted_at: current.promoted_at || null,
+    };
+    record.latest_evidence = {
+      ...(record.latest_evidence || {}),
+      evidence_id: resolvedEvidenceId,
+      pre_adjudication: true,
+      adjudication_state: 'pending_lead_cycle',
     };
     next = existing.slice();
     next[matchedIndex] = record;
   } else {
     const nextId = `qa_inv_${String(existing.length + 1).padStart(3, '0')}`;
+    const resolvedEvidenceId = normalizeText(investigation.id) || nextId;
     record = {
       ...investigation,
-      id: normalizeText(investigation.id) || nextId,
+      id: resolvedEvidenceId,
       signature,
       repeat_count: Math.max(1, Number(investigation.repeat_count) || 1),
       first_seen_at: normalizeText(investigation.first_seen_at || investigation.created_at || investigation.createdAt || '') || now,
@@ -234,6 +270,17 @@ function appendQaInvestigation(rootPath = null, investigation = null) {
       evidence_events: Array.isArray(investigation.evidence_events) && investigation.evidence_events.length
         ? investigation.evidence_events.slice(-10)
         : [event],
+      pre_adjudication: true,
+      adjudication_state: 'pending_lead_cycle',
+      evidence_id: resolvedEvidenceId,
+      promoted_by_posture_id: null,
+      promoted_at: null,
+    };
+    record.latest_evidence = {
+      ...(record.latest_evidence || {}),
+      evidence_id: resolvedEvidenceId,
+      pre_adjudication: true,
+      adjudication_state: 'pending_lead_cycle',
     };
     next = [...existing, record];
   }
@@ -339,6 +386,11 @@ function buildExternalValidationSnapshot({
     notes: Array.isArray(comparison?.notes) ? comparison.notes.filter((note) => normalizeText(note)) : [],
     source: normalizeText(externalProbe?.source || source.source || 'external_mcp') || 'external_mcp',
     errorMessage: source.ok ? null : (normalizeText(error?.message || source.error_message || '') || null),
+    pre_adjudication: Boolean(source.pre_adjudication),
+    adjudication_state: normalizeText(source.adjudication_state) || (source.pre_adjudication ? 'pending_lead_cycle' : null),
+    evidence_id: normalizeText(source.evidence_id || source.investigation_id || '') || null,
+    investigation_id: normalizeText(source.investigation_id || source.evidence_id || '') || null,
+    source_ref: normalizeText(source.source_ref || '') || null,
   };
 }
 
@@ -458,6 +510,10 @@ async function buildExternalQaProbeCheckPayload({
       probe_status: externalProbeResult.status,
       investigation_created: investigationCreated,
       investigation_id: investigation?.id || null,
+      pre_adjudication: Boolean(investigation?.id),
+      adjudication_state: investigation?.id ? 'pending_lead_cycle' : null,
+      evidence_id: investigation?.id || null,
+      source_ref: 'ui/externalQaProbe.buildExternalQaProbeCheckPayload',
     };
   }
 
@@ -468,6 +524,10 @@ async function buildExternalQaProbeCheckPayload({
     comparison,
     investigation_created: investigationCreated,
     investigation_id: investigation?.id || null,
+    pre_adjudication: Boolean(investigation?.id),
+    adjudication_state: investigation?.id ? 'pending_lead_cycle' : null,
+    evidence_id: investigation?.id || null,
+    source_ref: 'ui/externalQaProbe.buildExternalQaProbeCheckPayload',
   };
 }
 

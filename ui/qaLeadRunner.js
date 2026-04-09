@@ -4,6 +4,10 @@ const { writeJsonIfChanged } = require('./changeHygiene');
 const { buildExternalQaProbeCheckPayload, readOpenQaInvestigations } = require('./externalQaProbe');
 const { buildQaMcpLiveStatus } = require('./qaMcpLiveStatus');
 const {
+  appendQaOutputFeedEntry,
+  buildQaOutputFeedEntryFromCycle,
+} = require('./qaOutputFeed');
+const {
   buildQaResearchState,
   maybeGenerateQaResearchNotesForInvestigations,
 } = require('./qaResearch');
@@ -577,6 +581,31 @@ async function runQaLeadCycle(rootPath = null, options = {}) {
       runType,
     });
     const persisted = writeQaLeadRun(normalizedRoot, runRecord);
+    try {
+      appendQaOutputFeedEntry(normalizedRoot, buildQaOutputFeedEntryFromCycle({
+        cycleId: runId,
+        createdAt: finishedAt,
+        investigationCount: Array.isArray(currentInvestigations) ? currentInvestigations.length : 0,
+        failedChecks: [
+          bootHealth && (bootHealth.safeMode || bootHealth.status === 'blocked' || bootHealth.failure_class),
+          browserRun && ['fail', 'failed', 'error'].includes(String(browserRun.verdict || browserRun.status || '').toLowerCase()),
+          canaries && canaries.overall_status === 'fail',
+          loopAudit && loopAudit.overall_status === 'fail',
+        ].filter(Boolean).length,
+        activeLanes: Number(repairLoop?.summary?.activeLanes || repairLoop?.summary?.active_lanes || 0) || (
+          Array.isArray(repairLoop?.lanes)
+            ? repairLoop.lanes.filter((lane) => !['idle', 'inactive'].includes(String(lane?.current_status || lane?.status || '').toLowerCase())).length
+            : 0
+        ),
+        externalStatus: externalValidation?.ok
+          ? 'ok'
+          : (['unreachable', 'offline'].includes(String(externalValidation?.probeStatus || externalValidation?.error?.kind || '').toLowerCase())
+            ? 'unreachable'
+            : (externalValidation ? 'degraded' : 'unknown')),
+      }));
+    } catch (error) {
+      console.warn(`[${nowIso()}] qa output feed append failed: ${error.message}`);
+    }
     return {
       ...persisted,
       research_results: researchResult,
@@ -617,7 +646,34 @@ async function runQaLeadCycle(rootPath = null, options = {}) {
       failureReason,
       runType,
     });
-    return writeQaLeadRun(normalizedRoot, failureRun);
+    const persisted = writeQaLeadRun(normalizedRoot, failureRun);
+    const openInvestigations = readOpenQaInvestigations(normalizedRoot, 10);
+    try {
+      appendQaOutputFeedEntry(normalizedRoot, buildQaOutputFeedEntryFromCycle({
+        cycleId: runId,
+        createdAt: finishedAt,
+        investigationCount: Array.isArray(openInvestigations) ? openInvestigations.length : 0,
+        failedChecks: [
+          bootHealth && (bootHealth.safeMode || bootHealth.status === 'blocked' || bootHealth.failure_class),
+          browserRun && ['fail', 'failed', 'error'].includes(String(browserRun.verdict || browserRun.status || '').toLowerCase()),
+          canaries && canaries.overall_status === 'fail',
+          loopAudit && loopAudit.overall_status === 'fail',
+        ].filter(Boolean).length,
+        activeLanes: Number(repairLoop?.summary?.activeLanes || repairLoop?.summary?.active_lanes || 0) || (
+          Array.isArray(repairLoop?.lanes)
+            ? repairLoop.lanes.filter((lane) => !['idle', 'inactive'].includes(String(lane?.current_status || lane?.status || '').toLowerCase())).length
+            : 0
+        ),
+        externalStatus: externalValidation?.ok
+          ? 'ok'
+          : (['unreachable', 'offline'].includes(String(externalValidation?.probeStatus || externalValidation?.error?.kind || '').toLowerCase())
+            ? 'unreachable'
+            : (externalValidation ? 'degraded' : 'unknown')),
+      }));
+    } catch (error) {
+      console.warn(`[${nowIso()}] qa output feed append failed: ${error.message}`);
+    }
+    return persisted;
   } finally {
     qaLeadAutomationInProgress.delete(normalizedRoot);
   }

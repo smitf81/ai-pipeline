@@ -1,6 +1,31 @@
 import { parseActionRequest } from './actionRequestParser.js';
 
 export class AceConnector {
+  async getTruthKernel() {
+    const res = await fetch('/api/spatial/truth-kernel');
+    const payload = await res.json();
+    if (res.ok) return payload;
+    if (res.status === 404) {
+      const runtimePayload = await this.getSpatialRuntime();
+      if (runtimePayload?.truthKernel) return runtimePayload.truthKernel;
+    }
+    throw new Error(payload.error || 'Truth kernel fetch failed');
+  }
+
+  async getQaOutputFeed() {
+    const res = await fetch('/api/spatial/qa/output-feed');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'QA output feed fetch failed');
+    return payload;
+  }
+
+  async getSpatialRuntime() {
+    const res = await fetch('/api/spatial/runtime');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Spatial runtime fetch failed');
+    return payload;
+  }
+
   async getProjects() {
     const res = await fetch('/api/projects');
     const payload = await res.json();

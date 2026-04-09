@@ -1,3 +1,4 @@
+console.log("SERVER FILE STARTED");
 const express = require('express');
 const fs = require('fs');
 const http = require('http');
@@ -111,12 +112,28 @@ const {
   buildQaMcpLiveStatus,
 } = require('./qaMcpLiveStatus');
 const {
+  buildTruthKernelPayload,
+} = require('./truthKernelAdapter');
+const {
+  createCanonicalTruthAccess,
+} = require('./canonicalTruthAccess');
+const {
+  decorateCanonicalTruthPayload,
+} = require('./canonicalTruthEnvelope');
+const {
   getQaLeadRunsDir,
   getQaLeadStateFilePath,
   readQaLeadOutput,
   startQaLeadAutomation,
   runQaLeadCycle,
 } = require('./qaLeadRunner');
+const {
+  appendQaOutputFeedEntry,
+  readQaOutputFeed,
+} = require('./qaOutputFeed');
+const {
+  buildQaSessionSummary,
+} = require('./qaSessionSummary');
 const {
   maybeBridgePlannerCanonicalIntegrityInvestigations,
 } = require('./plannerCanonicalIntegrity');
@@ -572,6 +589,40 @@ const TA_COVERAGE_REQUIREMENTS = [
 
 let staffingRulesModulePromise = null;
 let spatialBootHealthSnapshot = null;
+let bootRecoveryRuntimeStatus = null;
+
+function createInitialBootRecoveryRuntimeStatus() {
+  const now = nowIso();
+  return {
+    phase: 'booting',
+    safeMode: false,
+    currentStep: 'Server startup initialised.',
+    lastError: null,
+    startedAt: now,
+    updatedAt: now,
+    bootHealth: null,
+    repairInProgress: false,
+    recoveryFinished: false,
+    recoveryBlocked: false,
+  };
+}
+
+function ensureBootRecoveryRuntimeStatus() {
+  if (!bootRecoveryRuntimeStatus) {
+    bootRecoveryRuntimeStatus = createInitialBootRecoveryRuntimeStatus();
+  }
+  return bootRecoveryRuntimeStatus;
+}
+
+function updateBootRecoveryRuntimeStatus(patch = {}) {
+  const existing = ensureBootRecoveryRuntimeStatus();
+  bootRecoveryRuntimeStatus = {
+    ...existing,
+    ...patch,
+    updatedAt: nowIso(),
+  };
+  return bootRecoveryRuntimeStatus;
+}
 
 function loadStaffingRulesModule() {
   if (!staffingRulesModulePromise) {
@@ -6879,7 +6930,8 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
   const departmentLayout = layout.departments.find((entry) => entry.id === deskLayout.departmentId) || null;
   const panel = buildDeskPanelMetadata(deskId, deskLayout, departmentLayout);
   const desk = workspace?.studio?.orchestrator?.desks?.[deskId] || {};
-  const deskProperties = normalizeDeskPropertiesState(workspace)?.[deskId] || {
+  const storedDeskProperties = normalizeDeskPropertiesState(workspace)?.[deskId] || null;
+  const deskProperties = storedDeskProperties || {
     managedAgents: [],
     moduleIds: [],
     manualTests: [],
@@ -6949,6 +7001,9 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
         } : null,
       };
     });
+  const reports = collectDeskReports(workspace, deskId, { rootPath });
+  const deskContextFallbackUsed = !deskProperties.departmentContext && Boolean(desk.currentGoal || desk.mission || departmentLayout?.summary);
+  const agentFallbackUsed = agents.some((agent) => !workspace?.studio?.agentWorkers?.[agent.id] && Boolean(desk.localState));
   const truth = {
     department: {
       id: departmentLayout?.id || deskLayout.departmentId,
@@ -6960,14 +7015,14 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
     workload: {
       assignedTasks: tasks.length,
       queueSize: tasks.filter((task) => task.lifecycle !== 'complete').length,
-      outputs: collectDeskReports(workspace, deskId, { rootPath }).length,
+      outputs: reports.length,
     },
     throughput: deskId === 'cto-architect'
       ? `${ctoOversight?.approvalNeededCount || 0} approvals / ${ctoOversight?.completedArtifactCount || 0} completed artefacts / ${ctoOversight?.scorecardCount || 0} scorecards`
       : (deskId === 'memory-archivist'
-        ? `${deskProperties.contextSlices.length} context slices / ${collectDeskReports(workspace, deskId, { rootPath }).length} reports`
+        ? `${deskProperties.contextSlices.length} context slices / ${reports.length} reports`
         : `${tasks.filter((task) => task.lifecycle === 'complete').length} complete / ${tasks.filter((task) => task.lifecycle === 'in_progress').length} in progress`),
-    reports: collectDeskReports(workspace, deskId, { rootPath }).slice(0, 6),
+    reports: reports.slice(0, 6),
     scorecards: deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect' ? qaScorecards : [],
     testRegistry: deskId === QA_LEAD_DESK_ID ? testRegistry : null,
     testRegistrySummary: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.testRegistrySummary || testRegistry.summary) : null,
@@ -6982,6 +7037,110 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
     guardrails: deskProperties.guardrails,
   };
   const rndExperiments = deskId === 'rnd-lead' ? loadRndExperimentRecords() : null;
+  const canonicalTruthSections = {
+    desk: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'workspace_projection',
+      sourcePaths: ['workspace.studio.layout', 'workspace.studio.orchestrator.desks'],
+    },
+    layout: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'workspace_projection',
+      sourcePaths: ['workspace.studio.layout'],
+    },
+    truth: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'mixed_projection',
+      sections: {
+        department: {
+          classification: 'projection',
+          fallbackUsed: deskContextFallbackUsed,
+          derivation: deskContextFallbackUsed ? 'workspace_context_fallback_chain' : 'workspace_projection',
+        },
+        workload: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'count_projection',
+        },
+        throughput: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'heuristic_summary',
+        },
+        reports: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'report_projection',
+        },
+        scorecards: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'qa_projection',
+        },
+        context: {
+          classification: 'projection',
+          fallbackUsed: deskContextFallbackUsed,
+          derivation: deskContextFallbackUsed ? 'workspace_context_fallback_chain' : 'workspace_projection',
+        },
+      },
+    },
+    agents: {
+      classification: 'projection',
+      fallbackUsed: agentFallbackUsed,
+      derivation: agentFallbackUsed ? 'workspace_status_fallback' : 'workspace_projection',
+      sourcePaths: ['workspace.studio.agentWorkers', 'workspace.studio.deskProperties.managedAgents'],
+    },
+    tasks: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'aggregated_projection',
+      sourcePaths: ['workspace.studio.orchestrator.desks.*.workItems', 'workspace.studio.teamBoard.cards'],
+    },
+    modules: {
+      classification: storedDeskProperties ? 'projection' : 'fallback',
+      fallbackUsed: !storedDeskProperties,
+      derivation: storedDeskProperties ? 'workspace_projection' : 'default_assignment_fallback',
+      sourcePaths: ['modules/**/*.module.json', 'workspace.studio.deskProperties.moduleIds'],
+    },
+    reports: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'report_projection',
+      sourcePaths: ['workspace.studio.teamBoard', 'data/spatial/qa/runs', 'workspace.studio.deskProperties.manualTests'],
+    },
+  };
+  if (deskId === QA_LEAD_DESK_ID) {
+    canonicalTruthSections.qa = {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'qa_domain_projection',
+      sections: {
+        structuredSummary: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'summary_projection',
+        },
+        localGate: {
+          classification: resolvedQAState?.localGate ? 'projection' : 'fallback',
+          fallbackUsed: !resolvedQAState?.localGate,
+          derivation: resolvedQAState?.localGate ? 'qa_projection' : 'default_stub',
+        },
+        qaMcpLiveStatus: {
+          classification: 'projection',
+          fallbackUsed: !resolvedQAState?.qaMcpLiveStatus,
+          derivation: 'heuristic_summary',
+        },
+        investigations: {
+          classification: 'projection',
+          fallbackUsed: !researchState?.investigations && Array.isArray(resolvedQAState?.openInvestigations),
+          derivation: 'qa_evidence_projection',
+        },
+      },
+    };
+  }
   return {
     deskId,
     desk: {
@@ -7007,13 +7166,14 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
       },
     },
     truth,
+    canonicalTruthSections,
     agents,
     tasks,
     modules: modules.map((module) => ({
       ...module,
       assigned: deskProperties.moduleIds.includes(module.id),
     })),
-    reports: collectDeskReports(workspace, deskId, { rootPath }),
+    reports,
     experiments: rndExperiments?.experiments || [],
     experimentContract: rndExperiments?.contract || null,
     qa: deskId === QA_LEAD_DESK_ID
@@ -8229,6 +8389,10 @@ function buildSpatialRuntimePayload(workspace, options = {}) {
   const qaState = options.qaState || buildQAStatePayload();
   const plannerOuttray = readPlannerOuttray(ROOT);
   const canonicalSlices = getCanonicalSliceStore();
+  const truthKernel = buildTruthKernelPayload({
+    rootPath: ROOT,
+    workspace,
+  });
   return {
     ...buildRuntimePayload(workspace),
     manager: {
@@ -8247,6 +8411,7 @@ function buildSpatialRuntimePayload(workspace, options = {}) {
     qaDebug: buildQADebugPayload(qaState),
     plannerOuttray: summarizePlannerOuttray(plannerOuttray),
     intake: normalizeCanonicalIntakeState(workspace?.studio?.intake),
+    truthKernel,
   };
 }
 
@@ -8432,8 +8597,804 @@ function buildGovernedLoopContract(workspace = null, options = {}) {
   };
 }
 
+async function resolveCanonicalWorkspaceSource({ persist = true } = {}) {
+  return normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
+    persist,
+    workspace: await pumpAutomatedTeamBoardAsync(),
+  }));
+}
+
+function buildWorkspaceCanonicalTruthSections(workspace = {}, { hadRsg = true } = {}) {
+  return {
+    route: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'workspace_live_projection',
+    },
+    persistedWorkspace: {
+      classification: 'canonical',
+      fallbackUsed: false,
+      derivation: 'workspace_file_projection',
+      sourcePaths: ['data/spatial/workspace.json'],
+    },
+    pages: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'pages_sidecar_merge',
+      sourcePaths: ['data/spatial/pages.json'],
+    },
+    intentState: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'intent_state_sidecar_merge',
+      sourcePaths: ['data/spatial/intent-state.json'],
+    },
+    studioState: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'studio_state_merge',
+      sourcePaths: ['data/spatial/studio-state.json'],
+    },
+    teamBoard: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'canonical_slice_projection',
+      sourcePaths: ['brain/emergence/slices.json', 'brain/emergence/slices.md'],
+    },
+    architectureMemory: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'architecture_memory_sidecar_merge',
+      sourcePaths: ['data/spatial/architecture-memory.json'],
+    },
+    orchestration: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'refresh_spatial_orchestrator',
+    },
+    rsg: {
+      classification: hadRsg ? 'projection' : 'fallback',
+      fallbackUsed: !hadRsg,
+      derivation: hadRsg ? 'workspace_projection' : 'default_rsg_fallback',
+    },
+    graph: {
+      classification: 'canonical',
+      fallbackUsed: false,
+      derivation: 'workspace_graph_projection',
+    },
+  };
+}
+
+async function buildWorkspaceProjectionPayload({
+  sourceData: workspace = {},
+} = {}) {
+  const hadRsg = Boolean(workspace?.rsg);
+  return {
+    ...workspace,
+    graph: workspace?.graph || { nodes: [], edges: [] },
+    graphs: workspace?.graphs || normalizeGraphBundle(workspace),
+    sketches: Array.isArray(workspace?.sketches) ? workspace.sketches : [],
+    annotations: Array.isArray(workspace?.annotations) ? workspace.annotations : [],
+    architectureMemory: workspace?.architectureMemory || {},
+    agentComments: workspace?.agentComments || {},
+    studio: workspace?.studio || {},
+    rsg: workspace?.rsg || buildRsgState(workspace),
+    canonicalTruthSections: buildWorkspaceCanonicalTruthSections(workspace, { hadRsg }),
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: false,
+      generatedAt: nowIso(),
+    },
+  };
+}
+
+async function resolveCanonicalIntentSource({ rootPath = ROOT } = {}) {
+  const workspace = normalizeSpatialWorkspaceShape(readSpatialWorkspace(rootPath));
+  return {
+    workspace,
+    intentState: workspace.intentState || null,
+    currentIntent: getCurrentSpatialIntent(workspace.intentState),
+    intakeState: normalizeCanonicalIntakeState(workspace?.studio?.intake),
+  };
+}
+
+async function resolveCanonicalQaEvidenceSource({ rootPath = ROOT } = {}) {
+  const openInvestigations = readOpenQaInvestigations(rootPath, 5);
+  return {
+    rootPath,
+    qaLeadOutput: readQaLeadOutput(rootPath),
+    repairLoop: buildQaRepairLoopState(rootPath),
+    openInvestigations,
+    researchState: buildQaResearchState(rootPath, openInvestigations),
+    browserRuns: listInteractiveBrowserRuns(rootPath).slice(0, 12).map((run) => summarizeQARun(run)).filter(Boolean),
+    externalValidation: latestExternalValidationSnapshot || null,
+  };
+}
+
+function normalizeQaLeadPostureTimestamp(...values) {
+  let latestMs = null;
+  for (const value of values) {
+    const normalized = String(value || '').trim();
+    if (!normalized) continue;
+    const parsed = Date.parse(normalized);
+    if (!Number.isFinite(parsed)) continue;
+    if (latestMs == null || parsed > latestMs) latestMs = parsed;
+  }
+  return latestMs == null ? null : new Date(latestMs).toISOString();
+}
+
+function sanitizeQaLeadPostureIdToken(value = '') {
+  return String(value || '').trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 120);
+}
+
+function buildQaLeadPosture({
+  qaLead = null,
+  qaLeadLatestRun = null,
+  structuredReport = null,
+  structuredSummary = null,
+  externalValidation = null,
+  repairLoop = null,
+  openInvestigations = [],
+  browserRuns = [],
+  generatedAt = nowIso(),
+} = {}) {
+  const leadState = qaLead && typeof qaLead === 'object' ? qaLead : {};
+  const latestRun = qaLeadLatestRun && typeof qaLeadLatestRun === 'object' ? qaLeadLatestRun : {};
+  const runId = String(
+    latestRun.id
+    || leadState.run_id
+    || leadState.id
+    || '',
+  ).trim() || null;
+  const cycleId = String(
+    leadState.current_batch
+    || leadState.run_id
+    || runId
+    || '',
+  ).trim() || null;
+  const adjudicatedAt = normalizeQaLeadPostureTimestamp(
+    latestRun.finished_at,
+    latestRun.finishedAt,
+    latestRun.last_completed_cycle_at,
+    latestRun.lastCompletedCycleAt,
+    latestRun.started_at,
+    leadState.finished_at,
+    leadState.finishedAt,
+    leadState.last_completed_cycle_at,
+    leadState.lastCompletedCycleAt,
+    leadState.last_updated_at,
+    leadState.updated_at,
+    structuredSummary?.finishedAt,
+    structuredReport?.finishedAt,
+    generatedAt,
+  );
+  const status = String(
+    latestRun.status
+    || leadState.status
+    || structuredSummary?.status
+    || structuredReport?.status
+    || 'unknown',
+  ).trim() || 'unknown';
+  const structuredStatus = String(
+    structuredSummary?.status
+    || structuredReport?.status
+    || 'missing',
+  ).trim() || 'missing';
+  const degradedStatuses = new Set(['degraded', 'offline', 'stale', 'blocked', 'failed', 'error']);
+  const verdict = structuredStatus === 'fail'
+    ? 'fail'
+    : (degradedStatuses.has(status.toLowerCase())
+      ? 'degraded'
+      : (structuredStatus === 'pass' || status.toLowerCase() === 'live' ? 'pass' : status));
+  const summary = String(
+    latestRun.summary
+    || leadState.summary
+    || structuredSummary?.summary
+    || structuredReport?.summary
+    || 'QA posture is not adjudicated yet.',
+  ).trim() || 'QA posture is not adjudicated yet.';
+  const feed = Array.isArray(latestRun.output_feed)
+    ? latestRun.output_feed
+    : (Array.isArray(leadState.output_feed) ? leadState.output_feed : []);
+  const failedChecks = feed.filter((item) => {
+    const itemStatus = String(item?.status || '').trim().toLowerCase();
+    return ['degraded', 'blocked', 'missing', 'mismatch', 'fail', 'failed', 'error'].includes(itemStatus);
+  }).length;
+  const activeLanes = Number(
+    repairLoop?.summary?.activeLanes
+    ?? repairLoop?.summary?.active_lanes
+    ?? 0,
+  ) || 0;
+  const inputs = [
+    {
+      type: 'adjudication_cycle',
+      source: 'ui/qaLeadRunner.runQaLeadCycle',
+      ref: runId ? `data/spatial/qa/lead-runs/${runId}.json` : 'data/spatial/qa/lead-state.json',
+      status,
+    },
+    {
+      type: 'structured_suite_report',
+      source: 'qa/qaLead.runAll',
+      ref: 'data/spatial/qa/structured/latest.json',
+      status: structuredStatus,
+    },
+    {
+      type: 'external_validation',
+      source: 'ui/externalQaProbe.buildExternalQaProbeCheckPayload',
+      ref: '/api/qa/external-probe-check',
+      status: String(externalValidation?.status || externalValidation?.probeStatus || 'unavailable').trim() || 'unavailable',
+    },
+    {
+      type: 'repair_loop',
+      source: 'ui/qaRepairLoop.buildQaRepairLoopState',
+      ref: 'data/spatial/qa/repair-jobs.json',
+      status: repairLoop ? 'tracked' : 'missing',
+    },
+  ];
+  const preAdjudicationEvidence = Array.isArray(openInvestigations)
+    ? openInvestigations.filter((investigation) => investigation && investigation.pre_adjudication)
+    : [];
+  if (preAdjudicationEvidence.length) {
+    inputs.push({
+      type: 'pre_adjudication_evidence',
+      source: 'ui/externalQaProbe.buildExternalQaProbeCheckPayload',
+      ref: preAdjudicationEvidence[0].evidence_id
+        ? `data/spatial/qa/investigations.json#${preAdjudicationEvidence[0].evidence_id}`
+        : 'data/spatial/qa/investigations.json',
+      status: 'pending_lead_cycle',
+      pre_adjudication: true,
+      adjudication_state: 'pending_lead_cycle',
+      evidence_id: preAdjudicationEvidence[0].evidence_id || preAdjudicationEvidence[0].id || null,
+      investigation_id: preAdjudicationEvidence[0].id || null,
+      evidence_count: preAdjudicationEvidence.length,
+    });
+  }
+  const postureToken = sanitizeQaLeadPostureIdToken(runId || cycleId || adjudicatedAt || 'pending');
+  return {
+    posture_id: `qa_posture_${postureToken || 'pending'}`,
+    adjudicated_at: adjudicatedAt,
+    adjudicator: {
+      source: 'qa_lead_runner',
+      role: 'qa_orchestration_adjudicator',
+      module: 'ui/qaLeadRunner.runQaLeadCycle',
+    },
+    verdict,
+    status,
+    summary,
+    inputs,
+    evidence_counts: {
+      investigations: Array.isArray(openInvestigations) ? openInvestigations.length : 0,
+      browser_runs: Array.isArray(browserRuns) ? browserRuns.length : 0,
+      failed_checks: failedChecks,
+      active_lanes: activeLanes,
+    },
+    provenance: {
+      run_id: runId,
+      cycle_id: cycleId,
+      source_projection: 'qa_evidence',
+      pre_adjudication_evidence_ids: preAdjudicationEvidence.map((investigation) => investigation.evidence_id || investigation.id).filter(Boolean),
+      promoted_from_pre_adjudication: preAdjudicationEvidence.length > 0,
+    },
+  };
+}
+
+function buildQaEvidenceCanonicalSections({ qaView = 'lead_state', payload = {} } = {}) {
+  const latestRun = payload.latestRun || payload.qaLeadLatestRun || null;
+  const runs = Array.isArray(payload.runs)
+    ? payload.runs
+    : (Array.isArray(payload.qaLeadRuns)
+      ? payload.qaLeadRuns
+      : (Array.isArray(payload.browserRuns) ? payload.browserRuns : []));
+  const structuredReport = payload.structuredReport || null;
+  const localGate = payload.localGate || null;
+  const externalValidation = payload.externalValidation || null;
+  const repairLoop = payload.repairLoop || null;
+  const evidenceSources = Array.isArray(payload.evidenceSources) ? payload.evidenceSources : [];
+  const auditTrail = payload.auditTrail || null;
+  const qaMcpLiveStatus = payload.qaMcpLiveStatus || null;
+  const qaLeadPosture = payload.qaLeadPosture || null;
+  const routeDerivation = qaView === 'repair_loop_state'
+    ? 'repair_loop_state_projection'
+    : (qaView === 'qa_runs' ? 'qa_runs_projection' : 'qa_lead_state_projection');
+  const sections = {
+    route: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: routeDerivation,
+    },
+  };
+
+  if (qaView === 'repair_loop_state') {
+    sections.qaLeadPosture = {
+      classification: qaLeadPosture ? 'projection' : 'fallback',
+      fallbackUsed: !qaLeadPosture,
+      derivation: qaLeadPosture ? 'qa_lead_posture_projection' : 'qa_lead_posture_missing',
+    };
+    sections.repairLoop = {
+      classification: repairLoop ? 'projection' : 'fallback',
+      fallbackUsed: !repairLoop,
+      derivation: repairLoop ? 'repair_loop_projection' : 'repair_loop_missing',
+    };
+    sections.investigations = {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'investigation_projection',
+    };
+    return sections;
+  }
+
+  if (qaView === 'qa_runs') {
+    sections.qaLeadPosture = {
+      classification: qaLeadPosture ? 'projection' : 'fallback',
+      fallbackUsed: !qaLeadPosture,
+      derivation: qaLeadPosture ? 'qa_lead_posture_projection' : 'qa_lead_posture_missing',
+    };
+    sections.latestRun = {
+      classification: latestRun ? 'historical' : 'fallback',
+      fallbackUsed: !latestRun,
+      derivation: latestRun ? 'latest_run_summary' : 'no_runs_recorded',
+    };
+    sections.runs = {
+      classification: runs.length ? 'historical' : 'fallback',
+      fallbackUsed: runs.length === 0,
+      derivation: runs.length ? 'run_history_projection' : 'no_runs_recorded',
+    };
+    return sections;
+  }
+
+  sections.qaLead = {
+    classification: payload.qaLead ? 'projection' : 'fallback',
+    fallbackUsed: !payload.qaLead,
+    derivation: payload.qaLead ? 'qa_lead_state_projection' : 'qa_lead_missing',
+  };
+  sections.qaLeadPosture = {
+    classification: qaLeadPosture ? 'projection' : 'fallback',
+    fallbackUsed: !qaLeadPosture,
+    derivation: qaLeadPosture ? 'qa_lead_posture_projection' : 'qa_lead_posture_missing',
+  };
+  sections.latestRun = {
+    classification: latestRun ? 'historical' : 'fallback',
+    fallbackUsed: !latestRun,
+    derivation: latestRun ? 'latest_run_summary' : 'no_runs_recorded',
+  };
+  sections.runs = {
+    classification: runs.length ? 'historical' : 'fallback',
+    fallbackUsed: runs.length === 0,
+    derivation: runs.length ? 'qa_lead_run_history' : 'no_runs_recorded',
+  };
+  sections.structuredReport = {
+    classification: structuredReport ? 'projection' : 'fallback',
+    fallbackUsed: !structuredReport,
+    derivation: structuredReport ? 'structured_report_projection' : 'structured_report_missing',
+  };
+  sections.localGate = {
+    classification: localGate ? 'projection' : 'fallback',
+    fallbackUsed: !localGate,
+    derivation: localGate ? 'local_gate_projection' : 'local_gate_missing',
+  };
+  sections.externalValidation = {
+    classification: externalValidation && externalValidation.status !== 'unavailable' ? 'projection' : 'fallback',
+    fallbackUsed: !externalValidation || externalValidation.status === 'unavailable',
+    derivation: externalValidation && externalValidation.status !== 'unavailable'
+      ? 'external_validation_projection'
+      : 'default_unavailable_snapshot',
+  };
+  sections.repairLoop = {
+    classification: repairLoop ? 'projection' : 'fallback',
+    fallbackUsed: !repairLoop,
+    derivation: repairLoop ? 'repair_loop_projection' : 'repair_loop_missing',
+  };
+  sections.investigations = {
+    classification: 'projection',
+    fallbackUsed: false,
+    derivation: 'investigation_projection',
+  };
+  sections.evidenceSources = {
+    classification: evidenceSources.length ? 'projection' : 'fallback',
+    fallbackUsed: evidenceSources.length === 0,
+    derivation: evidenceSources.length ? 'evidence_trace_rollup' : 'evidence_trace_missing',
+  };
+  sections.auditTrail = {
+    classification: auditTrail ? 'projection' : 'fallback',
+    fallbackUsed: !auditTrail,
+    derivation: auditTrail ? 'audit_rollup_projection' : 'audit_rollup_missing',
+  };
+  sections.qaMcpLiveStatus = {
+    classification: qaMcpLiveStatus ? 'projection' : 'fallback',
+    fallbackUsed: !qaMcpLiveStatus,
+    derivation: qaMcpLiveStatus ? 'qa_live_status_projection' : 'qa_live_status_missing',
+  };
+  return sections;
+}
+
+function buildCtoQaLeadPostureReference(qaEvidencePayload = null) {
+  const qaLeadPosture = qaEvidencePayload?.qaLeadPosture || null;
+  return {
+    source_projection: 'qa_evidence',
+    projection_id: qaEvidencePayload?.canonicalTruth?.projectionId || 'qa_evidence',
+    posture_id: qaLeadPosture?.posture_id || null,
+    verdict: qaLeadPosture?.verdict || 'unknown',
+    status: qaLeadPosture?.status || 'unknown',
+    adjudicated_at: qaLeadPosture?.adjudicated_at || null,
+    summary: qaLeadPosture?.summary || null,
+    derived_from_posture_id: qaLeadPosture?.posture_id || null,
+  };
+}
+
+async function buildQaEvidenceProjectionPayload({
+  sourceData = {},
+  qaView = 'lead_state',
+} = {}) {
+  const rootPath = sourceData?.rootPath || ROOT;
+  const qaLeadOutput = sourceData?.qaLeadOutput || readQaLeadOutput(rootPath);
+  const repairLoop = sourceData?.repairLoop || buildQaRepairLoopState(rootPath);
+  const openInvestigations = Array.isArray(sourceData?.openInvestigations)
+    ? sourceData.openInvestigations
+    : readOpenQaInvestigations(rootPath, 5);
+  const researchState = sourceData?.researchState || buildQaResearchState(rootPath, openInvestigations);
+  const browserRuns = Array.isArray(sourceData?.browserRuns)
+    ? sourceData.browserRuns
+    : listInteractiveBrowserRuns(rootPath).slice(0, 12).map((run) => summarizeQARun(run)).filter(Boolean);
+  const generatedAt = nowIso();
+  const qaLeadPosture = buildQaLeadPosture({
+    qaLead: qaLeadOutput.state,
+    qaLeadLatestRun: qaLeadOutput.latestRun,
+    structuredReport: null,
+    structuredSummary: null,
+    externalValidation: sourceData?.externalValidation || latestExternalValidationSnapshot || null,
+    repairLoop,
+    openInvestigations,
+    browserRuns,
+    generatedAt,
+  });
+
+  if (qaView === 'repair_loop_state') {
+    const payload = {
+      ok: true,
+      generatedAt,
+      qaLeadPosture,
+      repairLoop,
+      openInvestigations,
+      researchState,
+    };
+    return {
+      ...payload,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: false,
+      },
+      canonicalTruthSections: buildQaEvidenceCanonicalSections({ qaView, payload }),
+    };
+  }
+
+  if (qaView === 'qa_runs') {
+    const latestRun = browserRuns[0] || null;
+    const payload = {
+      generatedAt,
+      qaLeadPosture,
+      latestRun,
+      runs: browserRuns,
+    };
+    return {
+      ...payload,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: !latestRun && browserRuns.length === 0,
+      },
+      canonicalTruthSections: buildQaEvidenceCanonicalSections({ qaView, payload }),
+    };
+  }
+
+  const qaState = buildQAStatePayload(rootPath, {
+    externalValidation: sourceData?.externalValidation || latestExternalValidationSnapshot || undefined,
+  });
+  const leadState = qaState?.qaLead || qaLeadOutput.state;
+  const leadLatestRun = qaState?.qaLeadLatestRun || qaLeadOutput.latestRun;
+  const resolvedQaLeadPosture = buildQaLeadPosture({
+    qaLead: leadState,
+    qaLeadLatestRun: leadLatestRun,
+    structuredReport: qaState?.structuredReport || null,
+    structuredSummary: qaState?.structuredSummary || null,
+    externalValidation: qaState?.externalValidation || sourceData?.externalValidation || latestExternalValidationSnapshot || null,
+    repairLoop: qaState?.repairLoop || repairLoop,
+    openInvestigations: qaState?.openInvestigations || openInvestigations,
+    browserRuns: qaState?.browserRuns || browserRuns,
+    generatedAt,
+  });
+  const payload = {
+    ok: true,
+    generatedAt,
+    ...qaState,
+    qaLeadPosture: resolvedQaLeadPosture,
+    latestRun: qaLeadOutput.latestRun || qaState.latestBrowserRun || null,
+    runs: qaLeadOutput.recentRuns || [],
+  };
+  return {
+    ...payload,
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: !payload.qaLead && !payload.latestBrowserRun && !payload.structuredReport,
+    },
+    canonicalTruthSections: buildQaEvidenceCanonicalSections({ qaView, payload }),
+  };
+}
+
+async function buildIntentProjectionPayload({
+  sourceData = {},
+  requestBody = {},
+} = {}) {
+  const workspace = sourceData?.workspace || normalizeSpatialWorkspaceShape(readSpatialWorkspace());
+  const body = requestBody || {};
+  const text = String(body.text || '').trim();
+  if (!text) {
+    return {
+      __statusCode: 400,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: false,
+      },
+      error: 'text is required.',
+      canonicalTruthSections: {
+        route: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'validation_blocked',
+        },
+        canonicalIntent: {
+          classification: 'fallback',
+          fallbackUsed: true,
+          derivation: 'missing_input',
+        },
+      },
+    };
+  }
+
+  const sourceNodeId = String(body.nodeId || '').trim() || 'prompt-1';
+  const sourceType = String(body.sourceType || body.source || 'sanctioned-intent-parser').trim() || 'sanctioned-intent-parser';
+  const sourceRef = String(body.sourceRef || sourceNodeId || '').trim() || sourceNodeId;
+  const requestedBy = String(body.requestedBy || body.sourceAgentId || 'context-manager').trim() || 'context-manager';
+  const executiveEnvelope = normalizeExecutiveEnvelope({
+    envelope: {
+      version: EXECUTIVE_ENVELOPE_VERSION,
+      entries: [
+        { type: 'prompt', node_id: sourceNodeId, content: text, data: {} },
+        { type: 'constraints', node_id: 'constraints-1', content: '', data: {} },
+        { type: 'target', node_id: 'target-1', content: '', data: {} },
+      ],
+    },
+  });
+  const looksLikeMaterial = detectMaterialGenerationIntent(text);
+  if (looksLikeMaterial) {
+    const moduleEnvelope = mapEnvelopeToMaterialModule(executiveEnvelope);
+    const moduleRun = executeModuleAction(moduleEnvelope, {
+      logger: (line) => console.log(line),
+    });
+    const statusCode = moduleRun.ok ? 200 : (moduleRun.error?.code === 'validation-failed' ? 422 : 400);
+    return {
+      __statusCode: statusCode,
+      __canonicalTruthMeta: {
+        classification: 'fallback',
+        freshness: 'live',
+        fallbackUsed: true,
+      },
+      routedToModule: true,
+      route: 'module',
+      envelope: executiveEnvelope,
+      moduleEnvelope,
+      moduleRun,
+      preview: moduleRun.ok ? buildModulePreview(moduleRun) : null,
+      canonicalTruthSections: {
+        route: {
+          classification: 'fallback',
+          fallbackUsed: true,
+          derivation: 'module_bypass',
+        },
+        canonicalIntent: {
+          classification: 'fallback',
+          fallbackUsed: true,
+          derivation: 'not_extracted',
+        },
+        moduleRoute: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'material_module_execution',
+        },
+      },
+    };
+  }
+
+  try {
+    const cycle = await maybeRunContextManagerWorker(workspace, {
+      text,
+      sourceNodeId,
+      source: String(body.source || 'context-intake').trim() || 'context-intake',
+      sourceType,
+      sourceRef,
+      requestedBy,
+      priority: String(body.priority || body.urgency || '').trim() || null,
+      mode: 'manual',
+      backend: String(body.backend || '').trim() || null,
+      model: String(body.model || '').trim() || null,
+      host: String(body.host || '').trim() || null,
+      timeoutMs: Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : null,
+    });
+    if (!cycle.result?.report) {
+      return {
+        __statusCode: 500,
+        __canonicalTruthMeta: {
+          classification: 'projection',
+          freshness: 'live',
+          fallbackUsed: false,
+        },
+        error: cycle.reason || 'Context Manager could not produce an intent report.',
+        canonicalTruthSections: {
+          route: {
+            classification: 'projection',
+            fallbackUsed: false,
+            derivation: 'worker_no_report',
+          },
+          canonicalIntent: {
+            classification: 'fallback',
+            fallbackUsed: true,
+            derivation: 'not_extracted',
+          },
+        },
+      };
+    }
+    if (!cycle.ok || cycle.result?.usedFallback) {
+      return {
+        __statusCode: 503,
+        __canonicalTruthMeta: {
+          classification: 'fallback',
+          freshness: 'live',
+          fallbackUsed: true,
+        },
+        ...buildAgentFailurePayload(cycle.result, {
+          report: cycle.result.report,
+          handoff: cycle.result.handoff,
+        }),
+        canonicalTruthSections: {
+          route: {
+            classification: 'fallback',
+            fallbackUsed: true,
+            derivation: 'context_manager_degraded',
+          },
+          report: {
+            classification: 'projection',
+            fallbackUsed: Boolean(cycle.result?.usedFallback),
+            derivation: 'worker_report',
+          },
+          canonicalIntent: {
+            classification: 'fallback',
+            fallbackUsed: true,
+            derivation: 'degraded_worker_result',
+          },
+        },
+      };
+    }
+
+    const runtimeWorkspace = refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    });
+    const runtime = buildSpatialRuntimePayload(runtimeWorkspace);
+    const canonicalIntent = getCurrentSpatialIntent(runtimeWorkspace?.intentState)
+      || cycle.result.report?.canonicalIntent
+      || cycle.result.handoff?.intentContract?.canonicalIntent
+      || null;
+    const extractedIntent = cycle.result.extractedIntent || cycle.result.report?.extractedIntent || null;
+    return {
+      __statusCode: 200,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: false,
+      },
+      ...cycle.result.report,
+      extractedIntent,
+      canonicalIntent,
+      intentContract: cycle.result.report?.intentContract || null,
+      worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
+      report: cycle.result.report,
+      handoff: cycle.result.handoff,
+      runtime,
+      canonicalTruthSections: {
+        route: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'context_manager_projection',
+        },
+        report: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'worker_report',
+        },
+        canonicalIntent: {
+          classification: canonicalIntent ? 'canonical' : 'fallback',
+          fallbackUsed: !canonicalIntent,
+          derivation: canonicalIntent ? 'workspace.intentState.registry' : 'missing_canonical_intent',
+        },
+        extractedIntent: {
+          classification: extractedIntent ? 'projection' : 'fallback',
+          fallbackUsed: !extractedIntent,
+          derivation: extractedIntent ? 'worker_extracted_intent' : 'not_extracted',
+        },
+        runtime: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'runtime_projection',
+        },
+      },
+    };
+  } catch (error) {
+    return {
+      __statusCode: 500,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: false,
+      },
+      error: String(error.message || error),
+      canonicalTruthSections: {
+        route: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'server_error',
+        },
+        canonicalIntent: {
+          classification: 'fallback',
+          fallbackUsed: true,
+          derivation: 'exception_before_projection',
+        },
+      },
+    };
+  }
+}
+
+const canonicalTruthAccess = createCanonicalTruthAccess({
+  repositories: {
+    workspace: async ({ persist = true } = {}) => resolveCanonicalWorkspaceSource({ persist }),
+    intent: async ({ rootPath = ROOT } = {}) => resolveCanonicalIntentSource({ rootPath }),
+    qa_evidence: async ({ rootPath = ROOT } = {}) => resolveCanonicalQaEvidenceSource({ rootPath }),
+  },
+  builders: {
+    buildWorkspaceProjectionPayload: async ({ sourceData: workspace } = {}) => buildWorkspaceProjectionPayload({
+      sourceData: workspace,
+    }),
+    buildSpatialRuntimePayload: async ({ sourceData: workspace } = {}) => ({
+      source: '/api/spatial/runtime',
+      freshness: 'live',
+      generatedAt: nowIso(),
+      ...buildSpatialRuntimePayload(workspace),
+    }),
+    buildTruthKernelPayload: async ({ sourceData: workspace, rootPath = ROOT } = {}) => buildTruthKernelPayload({
+      rootPath,
+      workspace,
+    }),
+    buildDeskPropertiesPayload: async ({ sourceData: workspace, deskId, rootPath = ROOT } = {}) => buildDeskPropertiesPayload(
+      workspace,
+      deskId,
+      null,
+      { rootPath },
+    ),
+    buildIntentProjectionPayload: async ({ sourceData, requestBody } = {}) => buildIntentProjectionPayload({
+      sourceData,
+      requestBody,
+    }),
+    buildQaEvidenceProjectionPayload: async ({ sourceData, qaView } = {}) => buildQaEvidenceProjectionPayload({
+      sourceData,
+      qaView,
+    }),
+  },
+});
+
 async function refreshSpatialRuntime({ persist = true } = {}) {
-  const workspace = refreshSpatialOrchestrator({ persist, workspace: await pumpAutomatedTeamBoardAsync() });
+  const workspace = await resolveCanonicalWorkspaceSource({ persist });
   return {
     source: '/api/spatial/runtime',
     freshness: 'live',
@@ -11371,24 +12332,24 @@ function executeActionSync(action, body) {
 function evaluateSpatialBootHealth() {
   try {
     const workspace = readSpatialWorkspace();
-    const runtime = buildSpatialRuntimePayload(workspace);
-    const systemGraph = runtime?.graphs?.system || null;
-    const worldGraph = runtime?.graphs?.world || null;
+    const systemGraph = workspace?.graphs?.system || null;
+    const worldGraph = workspace?.graphs?.world || null;
+    const orchestratorState = workspace?.studio?.orchestrator || workspace?.orchestrator || null;
+    const teamBoardState = workspace?.studio?.teamBoard || null;
+    const mutationGateState = workspace?.mutationGate || null;
+    const rsgState = workspace?.rsg || null;
     const clientBootContract = evaluateStudioClientBootContract(ROOT);
     const hasGraphShape = Boolean(
-      runtime
-      && runtime.graphs
-      && systemGraph
+      systemGraph
       && worldGraph
       && Array.isArray(systemGraph.nodes)
       && Array.isArray(systemGraph.edges)
       && Array.isArray(worldGraph.nodes)
       && Array.isArray(worldGraph.edges)
-      && runtime.qaState
-      && runtime.mutationGate
-      && runtime.orchestrator
-      && runtime.teamBoard
-      && runtime.rsg,
+      && mutationGateState
+      && orchestratorState
+      && teamBoardState
+      && rsgState,
     );
     const ok = hasGraphShape && clientBootContract.ok;
     const reason = clientBootContract.ok
@@ -11411,7 +12372,7 @@ function evaluateSpatialBootHealth() {
             systemEdges: systemGraph.edges.length,
             worldNodes: worldGraph.nodes.length,
             worldEdges: worldGraph.edges.length,
-            graphLayers: Object.keys(runtime.graphs || {}).length,
+            graphLayers: Object.keys(workspace?.graphs || {}).length,
           }
         : null,
     };
@@ -11436,7 +12397,26 @@ function evaluateSpatialBootHealth() {
 function getHealthSnapshot() {
   const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
   const selfUpgrade = getSelfUpgradeState(workspace);
-  const bootHealth = evaluateSpatialBootHealth();
+  const bootRuntime = ensureBootRecoveryRuntimeStatus();
+  const cachedBootHealth = spatialBootHealthSnapshot && typeof spatialBootHealthSnapshot === 'object'
+    ? spatialBootHealthSnapshot
+    : null;
+  const bootHealth = bootRuntime.bootHealth && typeof bootRuntime.bootHealth === 'object'
+    ? bootRuntime.bootHealth
+    : (cachedBootHealth || {
+        checked: false,
+        ok: null,
+        safeMode: Boolean(bootRuntime.safeMode),
+        reason: bootRuntime.currentStep || 'Boot health evaluation deferred until server is live.',
+        checkedAt: bootRuntime.updatedAt || bootRuntime.startedAt || nowIso(),
+        failureClass: bootRuntime.lastError ? 'boot_recovery_pending' : null,
+        failureStage: bootRuntime.phase || 'server_live',
+        asset: null,
+        httpStatus: null,
+        clientBootContract: null,
+        stateShape: null,
+      });
+
   return {
     ok: true,
     pid: process.pid,
@@ -11448,6 +12428,126 @@ function getHealthSnapshot() {
       deploy: selfUpgrade.deploy,
     },
   };
+}
+
+function runDeferredBootRecovery() {
+  updateBootRecoveryRuntimeStatus({
+    phase: 'recovery_running',
+    currentStep: 'Evaluating spatial boot health.',
+    recoveryFinished: false,
+    recoveryBlocked: false,
+    repairInProgress: false,
+    lastError: null,
+  });
+
+  Promise.resolve()
+    .then(async () => {
+      let bootHealth = evaluateSpatialBootHealth();
+
+      updateBootRecoveryRuntimeStatus({
+        safeMode: Boolean(bootHealth.safeMode),
+        bootHealth,
+        currentStep: 'Reconciling UI boot integrity repair.',
+      });
+
+      const uiBootRepair = reconcileUiBootIntegrityRepair({
+        bootHealth,
+        attemptRepair: true,
+      });
+
+      const repairInProgress = Boolean(uiBootRepair?.repairResult?.job);
+
+      updateBootRecoveryRuntimeStatus({
+        repairInProgress,
+        currentStep: repairInProgress
+          ? 'UI boot repair attempt applied; re-evaluating boot health.'
+          : 'UI boot repair reconciliation complete.',
+      });
+
+      if (uiBootRepair?.repairResult?.job?.lane === UI_BOOT_INTEGRITY_LANE) {
+        bootHealth = evaluateSpatialBootHealth();
+      }
+
+      if (bootHealth.safeMode) {
+        console.warn(`[${nowIso()}] spatial boot health failed; safe mode enabled: ${bootHealth.reason}`);
+      }
+
+      updateBootRecoveryRuntimeStatus({
+        safeMode: Boolean(bootHealth.safeMode),
+        bootHealth,
+        repairInProgress: false,
+        currentStep: 'Marking server healthy-on-boot metadata.',
+      });
+
+      markServerHealthyOnBoot();
+
+      updateBootRecoveryRuntimeStatus({
+        currentStep: 'Reconciling pending throughput sessions.',
+      });
+
+      await reconcilePendingThroughputSessions({
+        rootPath: ROOT,
+        loadWorkspace: () => readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
+        persistWorkspace: (workspace) => persistSpatialWorkspace(workspace),
+        getRunsSnapshot: () => getRunsSnapshot(),
+        getHealthSnapshot: () => getHealthSnapshot(),
+      });
+
+      const bootRecoveryOptions = {
+        bootHealth,
+        bootRepair: uiBootRepair,
+        baseUrl: `http://127.0.0.1:${port}`,
+        intervalMs: Number(process.env.ACE_QA_LEAD_INTERVAL_MS || 20 * 60 * 1000),
+        autoRun: process.env.ACE_QA_LEAD_AUTORUN !== '0',
+        currentTask: bootHealth.safeMode
+          ? `QA boot recovery: ${bootHealth.reason || bootHealth.failureClass || 'boot gate triggered'}`
+          : 'QA proof-of-life, browser pass, lane canaries, and loop audit',
+        runType: bootHealth.safeMode ? 'boot_recovery' : 'scheduled_cycle',
+      };
+
+      if (bootHealth.safeMode) {
+        updateBootRecoveryRuntimeStatus({
+          currentStep: 'Running immediate QA boot recovery cycle.',
+          repairInProgress: true,
+        });
+
+        await runQaLeadCycle(ROOT, {
+          ...bootRecoveryOptions,
+          runId: `qa_boot_recovery_${Date.now()}`,
+        });
+      }
+
+      updateBootRecoveryRuntimeStatus({
+        currentStep: 'Starting QA lead automation scheduler.',
+      });
+
+      startQaLeadAutomation(ROOT, bootRecoveryOptions);
+
+      updateBootRecoveryRuntimeStatus({
+        phase: bootHealth.safeMode ? 'degraded' : 'recovered',
+        safeMode: Boolean(bootHealth.safeMode),
+        bootHealth,
+        currentStep: bootHealth.safeMode
+          ? 'Deferred boot recovery completed with unresolved safe mode.'
+          : 'Deferred boot recovery completed successfully.',
+        repairInProgress: false,
+        recoveryFinished: true,
+        recoveryBlocked: Boolean(bootHealth.safeMode),
+      });
+    })
+    .catch((error) => {
+      updateBootRecoveryRuntimeStatus({
+        phase: 'blocked',
+        safeMode: true,
+        currentStep: 'Deferred boot recovery failed.',
+        lastError: String(error?.message || error || 'Deferred boot recovery failed.'),
+        repairInProgress: false,
+        recoveryFinished: true,
+        recoveryBlocked: true,
+      });
+
+      console.warn(`[${nowIso()}] deferred boot recovery failed: ${error.message}`);
+    });
 }
 
 function reconcileUiBootIntegrityRepair(options = {}) {
@@ -11748,13 +12848,28 @@ app.get('/api/runs', (req, res) => {
     res.json(getHealthSnapshot());
   });
 
-  app.get('/api/spatial/safe-mode/status', (req, res) => {
+  app.get('/api/health', (req, res) => {
+    res.json(getHealthSnapshot());
+  });
+  
+  app.get('/api/spatial/boot-status', (req, res) => {
     res.json({
       ok: true,
-      snapshot: buildSafeModeSnapshot(ROOT),
+      status: ensureBootRecoveryRuntimeStatus(),
     });
   });
-
+  
+  app.get('/api/spatial/safe-mode/status', (req, res) => {
+    const runtimeStatus = ensureBootRecoveryRuntimeStatus();
+    res.json({
+      ok: true,
+      snapshot: buildSafeModeSnapshot(ROOT, {
+        healthSnapshot: getHealthSnapshot(),
+      }),
+      bootStatus: runtimeStatus,
+    });
+  });
+  
   app.get('/api/spatial/recovery-daemon/state', (req, res) => {
     res.json({
       ok: true,
@@ -11879,36 +12994,122 @@ app.get('/api/qa/external-probe-check', async (req, res) => {
 });
 
 app.get('/api/qa/repair-loop/state', (req, res) => {
-  try {
-    reconcileUiBootIntegrityRepair({ attemptRepair: false });
-    const repairLoop = buildQaRepairLoopState(ROOT);
-    res.json({
-      ok: true,
-      repairLoop,
-    });
-  } catch (error) {
+  reconcileUiBootIntegrityRepair({ attemptRepair: false });
+  canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
+    rootPath: ROOT,
+    freshness: 'live',
+    qaView: 'repair_loop_state',
+  }).then((payload) => {
+    res.json(payload);
+  }).catch((error) => {
     res.status(500).json({
       ok: false,
       error: String(error?.message || error),
       reason: String(error?.message || error),
+    });
+  });
+});
+
+app.get('/api/qa/lead/state', (req, res) => {
+  canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
+    rootPath: ROOT,
+    freshness: 'live',
+    qaView: 'lead_state',
+  }).then((payload) => {
+    res.json(payload);
+  }).catch((error) => {
+    res.status(500).json({
+      ok: false,
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  });
+});
+
+app.post('/api/qa/lead/run', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const baseUrl = String(body.baseUrl || body.base_url || `http://127.0.0.1:${port}`).trim() || `http://127.0.0.1:${port}`;
+    const probeUrl = String(body.probeUrl || body.probe_url || '').trim() || undefined;
+    const runId = String(body.runId || body.run_id || '').trim() || `qa_lead_manual_${Date.now()}`;
+    const currentTask = String(body.currentTask || body.current_task || '').trim() || undefined;
+    const runType = String(body.runType || body.run_type || 'manual_cycle').trim() || 'manual_cycle';
+    const startedAt = String(body.startedAt || body.started_at || '').trim() || undefined;
+    const cycle = await runQaLeadCycle(ROOT, {
+      baseUrl,
+      probeUrl,
+      runId,
+      currentTask,
+      runType,
+      startedAt,
+    });
+    const qaState = buildQAStatePayload(ROOT, {
+      externalValidation: latestExternalValidationSnapshot || undefined,
+    });
+    const qaLeadOutput = readQaLeadOutput(ROOT);
+    const outputFeed = readQaOutputFeed(ROOT);
+    return res.json({
+      ok: true,
+      run: cycle,
+      qaLeadState: qaLeadOutput.state,
+      latestRun: qaLeadOutput.latestRun,
+      qaLeadPosture: qaState?.qaLeadPosture || null,
+      outputFeed,
+    });
+  } catch (error) {
+    const reason = String(error?.message || error);
+    return res.status(500).json({
+      ok: false,
+      error: reason,
+      reason,
     });
   }
 });
 
-app.get('/api/qa/lead/state', (req, res) => {
+app.get('/api/qa/session-summary', (req, res) => {
   try {
-    const qaLead = readQaLeadOutput(ROOT);
+    const qaState = buildQAStatePayload(ROOT, {
+      externalValidation: latestExternalValidationSnapshot || undefined,
+    });
+    const qaLeadOutput = readQaLeadOutput(ROOT);
+    const outputFeed = readQaOutputFeed(ROOT);
+    const qaLeadPosture = buildQaLeadPosture({
+      qaLead: qaLeadOutput.state,
+      qaLeadLatestRun: qaLeadOutput.latestRun,
+      structuredReport: qaState.structuredReport || null,
+      structuredSummary: qaState.structuredSummary || null,
+      externalValidation: qaState.externalValidation || latestExternalValidationSnapshot || null,
+      repairLoop: qaState.repairLoop || null,
+      openInvestigations: qaState.openInvestigations || [],
+      browserRuns: qaState.browserRuns || [],
+      generatedAt: nowIso(),
+    });
     res.json({
       ok: true,
-      qaLead: qaLead.state,
-      latestRun: qaLead.latestRun,
-      runs: qaLead.recentRuns,
+      ...buildQaSessionSummary({
+        qaState,
+        qaLeadOutput,
+        qaLeadPosture,
+        outputFeed,
+        generatedAt: nowIso(),
+      }),
     });
   } catch (error) {
     res.status(500).json({
       ok: false,
+      source: 'qa_session_summary',
       error: String(error?.message || error),
-      reason: String(error?.message || error),
+    });
+  }
+});
+
+app.get('/api/spatial/qa/output-feed', (req, res) => {
+  try {
+    res.json(readQaOutputFeed(ROOT));
+  } catch (error) {
+    res.status(500).json({
+      items: [],
+      error: String(error?.message || error),
     });
   }
 });
@@ -12314,18 +13515,17 @@ app.post('/api/ta/hire', async (req, res) => {
 });
 
 app.get('/api/spatial/workspace', async (req, res) => {
-  const workspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
-    workspace: await pumpAutomatedTeamBoardAsync(),
-  }));
-  workspace.graph = workspace.graph || { nodes: [], edges: [] };
-  workspace.graphs = workspace.graphs || normalizeGraphBundle(workspace);
-  workspace.sketches = Array.isArray(workspace.sketches) ? workspace.sketches : [];
-  workspace.annotations = Array.isArray(workspace.annotations) ? workspace.annotations : [];
-  workspace.architectureMemory = workspace.architectureMemory || {};
-  workspace.agentComments = workspace.agentComments || {};
-  workspace.studio = workspace.studio || {};
-  workspace.rsg = workspace.rsg || buildRsgState(workspace);
-  res.json(workspace);
+  canonicalTruthAccess.resolveProjectionResponse('workspace', {
+    persist: true,
+    freshness: 'live',
+  }).then((payload) => {
+    res.json(payload);
+  }).catch((error) => {
+    res.status(500).json({
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  });
 });
 
 app.get('/api/spatial/governed-loop/contract', (req, res) => {
@@ -12408,16 +13608,22 @@ app.post('/api/spatial/layout/actions', (req, res) => {
 
 app.get('/api/spatial/desks/:deskId/properties', async (req, res) => {
   const deskId = String(req.params.deskId || '').trim();
-  const workspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
-    workspace: await pumpAutomatedTeamBoardAsync(),
-  }));
-  if (!hasStudioDesk(workspace?.studio?.layout || {}, deskId)) {
-    res.status(404).json({ error: 'Unknown desk id' });
-    return;
+  try {
+    const payload = await canonicalTruthAccess.resolveProjectionResponse('desk_properties', {
+      rootPath: ROOT,
+      persist: true,
+      freshness: 'live',
+      deskId,
+    });
+    console.debug(`[desk-properties] loaded desk=${deskId} tasks=${payload.tasks.length} modules=${payload.modules.length} reports=${payload.reports.length}`);
+    res.json(payload);
+  } catch (error) {
+    if (/Unknown desk id/i.test(String(error.message || error))) {
+      res.status(404).json({ error: 'Unknown desk id' });
+      return;
+    }
+    res.status(500).json({ error: String(error.message || error) });
   }
-  const payload = buildDeskPropertiesPayload(workspace, deskId);
-  console.debug(`[desk-properties] loaded desk=${deskId} tasks=${payload.tasks.length} modules=${payload.modules.length} reports=${payload.reports.length}`);
-  res.json(payload);
 });
 
 app.post('/api/spatial/desks/:deskId/actions', (req, res) => {
@@ -12695,7 +13901,19 @@ app.post('/api/spatial/agents/dave/properties', (req, res) => {
 });
 
 app.get('/api/spatial/runtime', async (req, res) => {
-  res.json(await refreshSpatialRuntime({ persist: true }));
+  res.json(await canonicalTruthAccess.resolveProjectionResponse('runtime', {
+    rootPath: ROOT,
+    persist: true,
+    freshness: 'live',
+  }));
+});
+
+app.get('/api/spatial/truth-kernel', async (req, res) => {
+  res.json(await canonicalTruthAccess.resolveProjectionResponse('truth_kernel', {
+    rootPath: ROOT,
+    persist: true,
+    freshness: 'live',
+  }));
 });
 
 app.post('/api/spatial/agents/context-manager/run', async (req, res) => {
@@ -13033,10 +14251,17 @@ app.get('/api/spatial/debug/throughput/:sessionId', (req, res) => {
 });
 
 app.get('/api/spatial/qa/runs', (req, res) => {
-  const runs = listQARuns(ROOT);
-  res.json({
-    latestRun: summarizeQARun(runs[0] || null),
-    runs: runs.slice(0, 12).map((run) => summarizeQARun(run)),
+  canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
+    rootPath: ROOT,
+    freshness: 'live',
+    qaView: 'qa_runs',
+  }).then((payload) => {
+    res.json(payload);
+  }).catch((error) => {
+    res.status(500).json({
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
   });
 });
 
@@ -13758,6 +14983,12 @@ app.get('/api/spatial/cto/status', async (req, res) => {
 app.get('/api/spatial/cto/diagnostics', async (req, res) => {
   try {
     const diagnostics = readCtoDiagnostics();
+    const qaEvidence = await canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
+      rootPath: ROOT,
+      freshness: 'live',
+      qaView: 'lead_state',
+    });
+    const qaLeadPostureRef = buildCtoQaLeadPostureReference(qaEvidence);
     const workspace = readSpatialWorkspace();
     const canonicalLayout = normalizeStudioLayoutSchema(
       workspace?.studio?.layout
@@ -13783,6 +15014,7 @@ app.get('/api/spatial/cto/diagnostics', async (req, res) => {
       generatedAt: nowIso(),
       summary: summarizeCtoDiagnostics(diagnostics.entries),
       entries: diagnostics.entries,
+      qaLeadPostureRef,
       plannerIdentity: buildPlannerIdentitySnapshot(canonicalLayout.organization || {}),
       plannerCoverage: buildCanonicalPlannerCoverageTruth(canonicalLayout),
       plannerIntegrity: plannerIntegrity.state,
@@ -14079,79 +15311,16 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
 });
 
 app.post('/api/spatial/intent', async (req, res) => {
-  const body = req.body || {};
-  const text = String(body.text || '').trim();
-  if (!text) {
-    return res.status(400).json({ error: 'text is required.' });
-  }
-  const sourceNodeId = String(body.nodeId || '').trim() || 'prompt-1';
-  const sourceType = String(body.sourceType || body.source || 'sanctioned-intent-parser').trim() || 'sanctioned-intent-parser';
-  const sourceRef = String(body.sourceRef || sourceNodeId || '').trim() || sourceNodeId;
-  const requestedBy = String(body.requestedBy || body.sourceAgentId || 'context-manager').trim() || 'context-manager';
-  const executiveEnvelope = normalizeExecutiveEnvelope({
-    envelope: {
-      version: EXECUTIVE_ENVELOPE_VERSION,
-      entries: [
-        { type: 'prompt', node_id: sourceNodeId, content: text, data: {} },
-        { type: 'constraints', node_id: 'constraints-1', content: '', data: {} },
-        { type: 'target', node_id: 'target-1', content: '', data: {} },
-      ],
-    },
-  });
-  const looksLikeMaterial = detectMaterialGenerationIntent(text);
-  if (looksLikeMaterial) {
-    const moduleEnvelope = mapEnvelopeToMaterialModule(executiveEnvelope);
-    const moduleRun = executeModuleAction(moduleEnvelope, {
-      logger: (line) => console.log(line),
-    });
-    const status = moduleRun.ok ? 200 : (moduleRun.error?.code === 'validation-failed' ? 422 : 400);
-    return res.status(status).json({
-      routedToModule: true,
-      route: 'module',
-      envelope: executiveEnvelope,
-      moduleEnvelope,
-      moduleRun,
-      preview: moduleRun.ok ? buildModulePreview(moduleRun) : null,
-    });
-  }
   try {
-    const cycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
-      text,
-      sourceNodeId,
-      source: String(body.source || 'context-intake').trim() || 'context-intake',
-      sourceType,
-      sourceRef,
-      requestedBy,
-      priority: String(body.priority || body.urgency || '').trim() || null,
-      mode: 'manual',
-      backend: String(body.backend || '').trim() || null,
-      model: String(body.model || '').trim() || null,
-      host: String(body.host || '').trim() || null,
-      timeoutMs: Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : null,
+    const envelope = await canonicalTruthAccess.resolveProjection('intent', {
+      rootPath: ROOT,
+      freshness: 'live',
+      requestBody: req.body || {},
     });
-    if (!cycle.result?.report) {
-      return res.status(500).json({ error: cycle.reason || 'Context Manager could not produce an intent report.' });
-    }
-    if (!cycle.ok || cycle.result?.usedFallback) {
-      return res.status(503).json(buildAgentFailurePayload(cycle.result, {
-        report: cycle.result.report,
-        handoff: cycle.result.handoff,
-      }));
-    }
-    const runtime = buildSpatialRuntimePayload(refreshSpatialOrchestrator({
-      persist: true,
-      workspace: cycle.workspace,
-    }));
-    return res.json({
-      ...cycle.result.report,
-      extractedIntent: cycle.result.extractedIntent || cycle.result.report?.extractedIntent || null,
-      canonicalIntent: cycle.result.report?.canonicalIntent || cycle.result.handoff?.intentContract?.canonicalIntent || null,
-      intentContract: cycle.result.report?.intentContract || null,
-      worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
-      report: cycle.result.report,
-      handoff: cycle.result.handoff,
-      runtime,
-    });
+    const statusCode = Number(envelope?.data?.__statusCode) > 0
+      ? Number(envelope.data.__statusCode)
+      : 200;
+    return res.status(statusCode).json(decorateCanonicalTruthPayload(envelope));
   } catch (error) {
     return res.status(500).json({ error: String(error.message || error) });
   }
@@ -14269,6 +15438,9 @@ app.use((error, req, res, next) => {
 });
 
 function startServer() {
+  console.log("ENTER startServer");
+  bootRecoveryRuntimeStatus = createInitialBootRecoveryRuntimeStatus();
+
   setInterval(() => {
     Promise.resolve()
       .then(async () => {
@@ -14279,57 +15451,26 @@ function startServer() {
         console.warn(`[${nowIso()}] spatial orchestrator refresh failed: ${error.message}`);
       });
   }, 4000);
-
-  let bootHealth = evaluateSpatialBootHealth();
-  const uiBootRepair = reconcileUiBootIntegrityRepair({
-    bootHealth,
-    attemptRepair: true,
-  });
-  if (uiBootRepair?.repairResult?.job?.lane === UI_BOOT_INTEGRITY_LANE) {
-    bootHealth = evaluateSpatialBootHealth();
-  }
-  if (bootHealth.safeMode) {
-    console.warn(`[${nowIso()}] spatial boot health failed; safe mode enabled: ${bootHealth.reason}`);
-  }
-  const bootRecoveryOptions = {
-    bootHealth,
-    bootRepair: uiBootRepair,
-    baseUrl: `http://127.0.0.1:${port}`,
-    intervalMs: Number(process.env.ACE_QA_LEAD_INTERVAL_MS || 20 * 60 * 1000),
-    autoRun: process.env.ACE_QA_LEAD_AUTORUN !== '0',
-    currentTask: bootHealth.safeMode
-      ? `QA boot recovery: ${bootHealth.reason || bootHealth.failureClass || 'boot gate triggered'}`
-      : 'QA proof-of-life, browser pass, lane canaries, and loop audit',
-    runType: bootHealth.safeMode ? 'boot_recovery' : 'scheduled_cycle',
-  };
-  markServerHealthyOnBoot();
-  reconcilePendingThroughputSessions({
-    rootPath: ROOT,
-    loadWorkspace: () => readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
-    persistWorkspace: (workspace) => persistSpatialWorkspace(workspace),
-    getRunsSnapshot: () => getRunsSnapshot(),
-    getHealthSnapshot: () => getHealthSnapshot(),
-  }).catch((error) => {
-    console.warn(`[${nowIso()}] throughput session reconcile failed: ${error.message}`);
-  });
+  
 
   const httpServer = app.listen(port, () => {
     console.log(`AI Core Engine UI running at http://localhost:${port}`);
   });
-  if (bootHealth.safeMode) {
-    runQaLeadCycle(ROOT, {
-      ...bootRecoveryOptions,
-      runId: `qa_boot_recovery_${Date.now()}`,
-    }).catch((error) => {
-      console.warn(`[${nowIso()}] QA boot recovery cycle failed: ${error.message}`);
-    });
-  }
-  startQaLeadAutomation(ROOT, bootRecoveryOptions);
-  return httpServer;
-}
 
-if (require.main === module) {
-  startServer();
+  updateBootRecoveryRuntimeStatus({
+    phase: 'server_live',
+    currentStep: 'HTTP server is live; deferred boot recovery scheduled.',
+    safeMode: false,
+    recoveryFinished: false,
+    recoveryBlocked: false,
+    repairInProgress: false,
+  });
+
+  setTimeout(() => {
+    runDeferredBootRecovery();
+  }, 0);
+
+  return httpServer;
 }
 
 module.exports = {
@@ -14338,15 +15479,21 @@ module.exports = {
   dashboardFiles,
   collectDeskTasks,
   buildDeskPropertiesPayload,
+  buildTruthKernelPayload,
   buildQAStatePayload,
+  buildQaLeadPosture,
   buildQAAuditTrail,
   summarizeQAAuditTrail,
   buildQATestRegistry,
   summarizeQATestRegistry,
   buildQaResearchState,
   maybeGenerateQaResearchNotesForInvestigations,
+  buildQaSessionSummary,
   buildQaRepairLoopState,
+  buildCtoQaLeadPostureReference,
   readQaLeadOutput,
+  readQaOutputFeed,
+  appendQaOutputFeedEntry,
   runQaLeadCycle,
   maybeBridgeOpenInvestigationsToRepairJobs,
   runQaRepairAttempt,
@@ -14448,3 +15595,10 @@ module.exports = {
   getCtoRoleHintFromText,
   readSpatialWorkspace,
 };
+
+console.log("BOTTOM REACHED");
+console.log("require.main === module:", require.main === module);
+
+if (require.main === module) {
+  startServer();
+}

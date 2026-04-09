@@ -3,9 +3,14 @@
     "id": "qa_repair_qa_inv_001",
     "type": "qa_repair_job",
     "lane": "validation_seam",
+    "trust_policy_id": "validation_seam",
     "lane_label": "Validation Seam",
     "owner_department": "QA",
     "trust_level": "high",
+    "trust_reason": "External validation seam is trusted for bounded backend contract repair only.",
+    "auto_apply_allowed": true,
+    "human_review_required_on_ambiguity": true,
+    "policy_block_status": "policy_blocked",
     "observability_label": "External validation seam",
     "observability_status": "watching",
     "repair_focus": "Keep the external probe contract stable and truthful.",
@@ -41,11 +46,16 @@
       "patch",
       "validate"
     ],
+    "allowed_action_types": [
+      "inspect",
+      "patch",
+      "validate"
+    ],
     "max_attempts": 2,
     "attempt_count": 0,
     "status": "open",
     "created_at": "2026-04-06T09:18:40.921Z",
-    "updated_at": "2026-04-06T15:23:59.596Z",
+    "updated_at": "2026-04-09T06:36:56.666Z",
     "allowed_trigger_classes": [
       "external_mismatch",
       "probe_failure",
@@ -71,30 +81,36 @@
         "description": ""
       }
     ],
+    "required_validation_gate_ids": [
+      "validation-seam-syntax",
+      "validation-seam-contract"
+    ],
     "failure_class": "qa_validation_seam",
     "latest_attempt_id": null,
     "latest_attempt_at": null,
     "latest_verdict": null,
     "latest_validation_evidence": null,
+    "latest_policy_check": null,
+    "policy_block_reason": null,
     "evidence_bundle": {
       "investigation": {
         "id": "qa_inv_001",
         "type": "qa_investigation",
         "trigger": "probe_failure",
         "severity": "medium",
-        "created_at": "2026-04-06T09:18:40.859Z",
-        "first_seen_at": "2026-04-06T09:18:40.859Z",
-        "last_seen_at": "2026-04-06T09:20:16.347Z",
-        "repeat_count": 6,
+        "created_at": "2026-04-06T01:43:23.728Z",
+        "first_seen_at": "2026-04-06T01:43:23.728Z",
+        "last_seen_at": "2026-04-08T08:43:13.536Z",
+        "repeat_count": 2,
         "status": "open",
         "summary": "External probe disagrees with internal QA status",
         "evidence": {
           "external": null,
           "internal": {
-            "status": "fail",
-            "source": "qa/desks/*.js",
-            "timestamp": "2026-03-28T13:58:44.234Z",
-            "details": "1 of 4 desks failed; 1 of 19 checks failed"
+            "status": "pass",
+            "source": "data/spatial/qa/structured/latest.json",
+            "timestamp": "2026-04-06T00:00:00.000Z",
+            "details": "Structured QA report passed."
           },
           "comparison": {
             "status_match": false,
@@ -106,58 +122,26 @@
           }
         },
         "latest_evidence": {
-          "seen_at": "2026-04-06T09:20:16.347Z",
+          "seen_at": "2026-04-08T08:43:13.536Z",
           "trigger": "probe_failure",
-          "internal_status": "fail",
+          "internal_status": "pass",
           "external_status": "unavailable",
           "probe_status": "unreachable",
           "test_id": "unknown-test"
         },
         "evidence_events": [
           {
-            "seen_at": "2026-04-06T09:18:40.858Z",
+            "seen_at": "2026-04-06T01:43:23.728Z",
             "trigger": "probe_failure",
-            "internal_status": "fail",
+            "internal_status": "pass",
             "external_status": "unavailable",
-            "probe_status": "unreachable",
+            "probe_status": "timeout",
             "test_id": "unknown-test"
           },
           {
-            "seen_at": "2026-04-06T09:18:40.919Z",
+            "seen_at": "2026-04-08T08:43:13.536Z",
             "trigger": "probe_failure",
-            "internal_status": "fail",
-            "external_status": "unavailable",
-            "probe_status": "unreachable",
-            "test_id": "unknown-test"
-          },
-          {
-            "seen_at": "2026-04-06T09:19:00.705Z",
-            "trigger": "probe_failure",
-            "internal_status": "fail",
-            "external_status": "unavailable",
-            "probe_status": "unreachable",
-            "test_id": "unknown-test"
-          },
-          {
-            "seen_at": "2026-04-06T09:20:07.534Z",
-            "trigger": "probe_failure",
-            "internal_status": "fail",
-            "external_status": "unavailable",
-            "probe_status": "unreachable",
-            "test_id": "unknown-test"
-          },
-          {
-            "seen_at": "2026-04-06T09:20:07.597Z",
-            "trigger": "probe_failure",
-            "internal_status": "fail",
-            "external_status": "unavailable",
-            "probe_status": "unreachable",
-            "test_id": "unknown-test"
-          },
-          {
-            "seen_at": "2026-04-06T09:20:16.347Z",
-            "trigger": "probe_failure",
-            "internal_status": "fail",
+            "internal_status": "pass",
             "external_status": "unavailable",
             "probe_status": "unreachable",
             "test_id": "unknown-test"
@@ -166,6 +150,7 @@
       },
       "lane": {
         "lane_id": "validation_seam",
+        "trust_policy_id": "validation_seam",
         "label": "Validation Seam",
         "owner_department": "QA",
         "allowed_trigger_classes": [
@@ -212,6 +197,19 @@
           ]
         },
         "trust_level": "high",
+        "trust_reason": "External validation seam is trusted for bounded backend contract repair only.",
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "required_validation_gate_ids": [
+          "validation-seam-syntax",
+          "validation-seam-contract"
+        ],
+        "policy_block_status": "policy_blocked",
         "observability": {
           "label": "External validation seam",
           "status_label": "watching"
@@ -239,9 +237,65 @@
           "externalValidation"
         ],
         "failure_class": "qa_validation_seam",
-        "lane_family": "validation"
+        "lane_family": "validation",
+        "trust_policy": {
+          "lane_id": "validation_seam",
+          "allowed_failure_classes": [
+            "external_mismatch",
+            "probe_failure",
+            "freshness_unknown"
+          ],
+          "allowed_file_scope": [
+            "ui/externalQaProbe.js",
+            "ui/server.js",
+            "ui/tests/externalValidation.test.mjs"
+          ],
+          "allowed_action_types": [
+            "inspect",
+            "patch",
+            "validate"
+          ],
+          "auto_apply_allowed": true,
+          "human_review_required_on_ambiguity": true,
+          "retry_budget": 2,
+          "required_validation_gate_ids": [
+            "validation-seam-syntax",
+            "validation-seam-contract"
+          ],
+          "trust_level": "high",
+          "trust_reason": "External validation seam is trusted for bounded backend contract repair only.",
+          "policy_block_status": "policy_blocked"
+        }
       },
       "rootPath": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline"
+    },
+    "trust_policy": {
+      "lane_id": "validation_seam",
+      "allowed_failure_classes": [
+        "external_mismatch",
+        "probe_failure",
+        "freshness_unknown"
+      ],
+      "allowed_file_scope": [
+        "ui/externalQaProbe.js",
+        "ui/server.js",
+        "ui/tests/externalValidation.test.mjs"
+      ],
+      "allowed_action_types": [
+        "inspect",
+        "patch",
+        "validate"
+      ],
+      "auto_apply_allowed": true,
+      "human_review_required_on_ambiguity": true,
+      "retry_budget": 2,
+      "required_validation_gate_ids": [
+        "validation-seam-syntax",
+        "validation-seam-contract"
+      ],
+      "trust_level": "high",
+      "trust_reason": "External validation seam is trusted for bounded backend contract repair only.",
+      "policy_block_status": "policy_blocked"
     },
     "executor_brief": null,
     "retry_budget": 2

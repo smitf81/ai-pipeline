@@ -132,7 +132,12 @@ export default async function runPersistenceTests() {
     fetchCalls.push(url);
     return {
       ok: true,
-      json: async () => ({ studio: { layout: {} }, pages: ['page_1'] }),
+      json: async () => ({
+        studio: { layout: {} },
+        pages: ['page_1'],
+        canonicalTruth: { domain: 'workspace', projectionId: 'workspace' },
+        canonicalTruthSections: { route: { derivation: 'workspace_live_projection' } },
+      }),
     };
   };
 

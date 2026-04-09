@@ -103,12 +103,36 @@ import {
   buildMutationFeedback,
 } from './studioMutationFeedback.js';
 import {
+  normalizeDeskProvenance,
+} from './deskProvenance.js';
+import {
+  decorateQaReadableSections,
+} from './qaReadableSections.js';
+import {
+  buildQAEvidenceProvenancePresentation,
+  normalizeQAEvidenceProvenance,
+} from './qaEvidenceProvenance.js';
+import {
+  buildTruthKernelProvenancePresentation,
+} from './truthKernelAdapter.js';
+import {
   buildStudioQuickAccessStrip,
 } from './studioQuickAccess.js';
 import {
   buildResourceSignalModel,
   listDepartmentsByPriority,
 } from './resourceSignalModel.js';
+import {
+  EMPTY_TRUTH_KERNEL,
+  normalizeTruthKernelPayload,
+} from './truthKernelAdapter.js';
+import {
+  buildTruthKernelLayout,
+} from './truthKernelLayout.js';
+import {
+  drawTruthKernelScene,
+  hitTestTruthKernelNode,
+} from './truthKernelView.js';
 
 const { useEffect, useMemo, useRef, useState, useCallback } = React;
 const h = React.createElement;
@@ -155,6 +179,13 @@ const EMPTY_INTENT_STATE = {
   status: 'idle',
 };
 const EMPTY_GHOST_PROJECTION_REGISTRY = createEmptyGhostProjectionRegistry();
+const CANVAS_BACKGROUND_SOLID = '#08111d';
+const CANVAS_BACKGROUND_TRUTH_VISIBLE = 'rgba(8, 17, 29, 0.72)';
+const TRUTH_KERNEL_LOAD_STATES = Object.freeze({
+  LOADING: 'loading',
+  READY: 'ready',
+  ERROR: 'error',
+});
 
 export function normalizeSketchPath(path = []) {
   return (Array.isArray(path) ? path : [])
@@ -165,6 +196,26 @@ export function normalizeSketchPath(path = []) {
     .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
 }
 
+export function latestKnownTimestamp(...values) {
+  const candidates = values.flat ? values.flat() : values;
+  let latestNumeric = null;
+  let latestValue = null;
+  for (const candidate of candidates) {
+    const normalized = normalizeRenderText(candidate, '');
+    if (!normalized) continue;
+    const parsed = Date.parse(normalized);
+    if (Number.isFinite(parsed)) {
+      if (latestNumeric === null || parsed > latestNumeric) {
+        latestNumeric = parsed;
+        latestValue = new Date(parsed).toISOString();
+      }
+      continue;
+    }
+    if (!latestValue) latestValue = normalized;
+  }
+  return latestValue;
+}
+
 export function boundsToSketchPath(bounds = null) {
   if (!bounds || typeof bounds !== 'object') return [];
   const left = Number(bounds.left ?? bounds.x ?? bounds.minX);
@@ -172,13 +223,16 @@ export function boundsToSketchPath(bounds = null) {
   const width = Number(bounds.width);
   const height = Number(bounds.height);
   if (![left, top, width, height].every(Number.isFinite)) return [];
-  return [
+  return decorateQaReadableSections([
     { x: left, y: top },
     { x: left + width, y: top },
     { x: left + width, y: top + height },
     { x: left, y: top + height },
     { x: left, y: top },
-  ];
+  ], {
+    provenanceLabel: 'Derived',
+    canonicalTruthSections,
+  });
 }
 
 export function intentRecordToSketch(record = null) {
@@ -208,6 +262,53 @@ export function intentRegistryToSketches(intentState = EMPTY_INTENT_STATE) {
   const registry = intentState?.registry || null;
   const records = Array.isArray(registry?.records) ? registry.records : [];
   return records.map(intentRecordToSketch).filter(Boolean);
+}
+
+export function resolveCanvasBackgroundFill(truthKernelVisible = false) {
+  return truthKernelVisible ? CANVAS_BACKGROUND_TRUTH_VISIBLE : CANVAS_BACKGROUND_SOLID;
+}
+
+export function formatTruthKernelTimestamp(timestamp = 0) {
+  const numeric = Number(timestamp);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 'Unknown';
+  try {
+    return new Date(numeric).toISOString();
+  } catch (_error) {
+    return 'Unknown';
+  }
+}
+
+export function resolveTruthKernelToggleState({
+  scene = SCENES.CANVAS,
+  truthKernel = EMPTY_TRUTH_KERNEL,
+  loadState = TRUTH_KERNEL_LOAD_STATES.LOADING,
+  visible = false,
+} = {}) {
+  const nodeCount = Number.isFinite(Number(truthKernel?.nodeCount))
+    ? Math.max(0, Number(truthKernel.nodeCount))
+    : 0;
+  const available = nodeCount > 0;
+  let title = 'Truth kernel loading...';
+  if (available) {
+    title = `${visible ? 'Hide' : 'Show'} truth kernel (${nodeCount} real entities)`;
+  } else if (loadState === TRUTH_KERNEL_LOAD_STATES.ERROR) {
+    title = 'Truth kernel unavailable';
+  } else if (loadState === TRUTH_KERNEL_LOAD_STATES.READY) {
+    title = 'Truth kernel loaded with 0 entities';
+  }
+  if (scene !== SCENES.CANVAS) {
+    title = available
+      ? `${title}. Switch to Canvas to view it.`
+      : 'Truth kernel is available on Canvas only.';
+  }
+  return {
+    disabled: scene !== SCENES.CANVAS || !available,
+    title,
+    label: visible ? `Truth On (${nodeCount})` : `Truth (${nodeCount})`,
+    nodeCount,
+    available,
+    loadState,
+  };
 }
 
 export function buildSketchCanonicalIntentRecord(stroke = {}, source = {}) {
@@ -671,6 +772,14 @@ function normalizeQALocalGatePayload(localGate = {}) {
       : null;
 }
 
+function localGateOutputCount(localGate = null) {
+  if (!localGate || typeof localGate !== 'object') return 0;
+  let count = 0;
+  if (localGate.unit) count += 1;
+  if (localGate.studioBoot) count += 1;
+  return count;
+}
+
 function normalizeQATestRegistryEntry(entry = {}) {
   const source = normalizeRenderObject(entry);
   const owner = normalizeRenderObject(source.owner);
@@ -1110,13 +1219,18 @@ function normalizeQALeadFeedItem(item = {}) {
   const source = normalizeRenderObject(item);
   return {
     id: normalizeRenderText(source.id, '') || null,
-    label: normalizeRenderText(source.label, '') || 'QA tool result',
-    tool: normalizeRenderText(source.tool, '') || 'qa_tool',
-    status: normalizeRenderText(source.status, 'unknown') || 'unknown',
-    verdict: normalizeRenderText(source.verdict || source.status, 'unknown') || 'unknown',
+    label: normalizeRenderText(source.label, normalizeRenderText(source.summary, 'QA tool result')) || 'QA tool result',
+    tool: normalizeRenderText(source.tool, normalizeRenderText(source.source, 'qa_tool')) || 'qa_tool',
+    status: normalizeRenderText(source.status || source.result || source.verdict, 'unknown') || 'unknown',
+    verdict: normalizeRenderText(source.verdict || source.result || source.status, 'unknown') || 'unknown',
+    result: normalizeRenderText(source.result || source.verdict || source.status, 'unknown') || 'unknown',
     summary: normalizeRenderText(source.summary, '') || 'No summary recorded.',
     detail: normalizeRenderText(source.detail, '') || '',
+    createdAt: normalizeRenderText(source.createdAt || source.created_at || source.observed_at || source.observedAt, '') || null,
     observed_at: normalizeRenderText(source.observed_at || source.observedAt, '') || null,
+    type: normalizeRenderText(source.type, '') || null,
+    source: normalizeRenderText(source.source, '') || null,
+    meta: normalizeRenderObject(source.meta),
     artifact_refs: normalizeRenderList(source.artifact_refs || source.artifactRefs),
     notes: normalizeRenderList(source.notes),
   };
@@ -1259,10 +1373,17 @@ function normalizeQARepairLanePayloadList(lanes = null) {
   });
 }
 
-function buildQAReadableSectionsFromState(source = {}) {
+export function buildQAReadableSectionsFromState(source = {}) {
   const normalized = normalizeRenderObject(source);
+  const canonicalTruthSections = normalizeRenderObject(normalized.canonicalTruthSections || normalized.canonicalTruth?.sections || {});
   if (Array.isArray(normalized.sections) && normalized.sections.length) {
-    return normalized.sections.map((section) => normalizeDeskSectionPayload(section));
+    return decorateQaReadableSections(
+      normalized.sections.map((section) => normalizeDeskSectionPayload(section)),
+      {
+        provenanceLabel: 'Governed',
+        canonicalTruthSections,
+      },
+    );
   }
   const structuredReport = normalized.structuredReport ? normalizeQAReportPayload(normalized.structuredReport) : null;
   const structuredSummary = normalizeRenderObject(normalized.structuredSummary);
@@ -1281,7 +1402,11 @@ function buildQAReadableSectionsFromState(source = {}) {
   const qaMcpLiveStatus = normalizeQAMcpLiveStatusPayload(normalized.qaMcpLiveStatus || normalized.mcpLiveStatus || null);
   const qaLead = normalizeQALeadRunnerPayload(normalized.qaLead || null);
   const qaLeadLatestRun = normalizeQALeadRunnerPayload(normalized.qaLeadLatestRun || (Array.isArray(normalized.qaLeadRuns) ? normalized.qaLeadRuns[0] : null) || null);
-  const qaLeadFeed = (qaLeadLatestRun.output_feed.length ? qaLeadLatestRun.output_feed : qaLead.output_feed).map((item) => normalizeQALeadFeedItem(item));
+  const qaOutputFeedLoaded = Boolean(normalized.outputFeedLoaded || normalized.output_feed_loaded);
+  const qaOutputFeed = normalizeRenderList(normalized.outputFeed || normalized.output_feed || []).map((item) => normalizeQALeadFeedItem(item));
+  const qaLeadFeed = qaOutputFeedLoaded
+    ? qaOutputFeed
+    : (qaLeadLatestRun.output_feed.length ? qaLeadLatestRun.output_feed : qaLead.output_feed).map((item) => normalizeQALeadFeedItem(item));
   const researchState = normalizeRenderObject(normalized.researchState);
   const researchNotes = normalizeRenderList(normalized.researchNotes || researchState.notes || []);
   const latestResearchNote = researchNotes[0] || null;
@@ -1477,6 +1602,7 @@ function buildQAReadableSectionsFromState(source = {}) {
       label: 'Scorecards',
       kind: 'qa-scorecards',
       cards: scorecards,
+      sourceTrace: structuredReport?.sourceTrace || null,
       definitions: normalizeRenderObject(normalized.scorecardDefinitions || normalized.definitions || {}),
       suiteStatus: normalizeRenderText(normalized.suiteStatus || normalized.structuredStatus || structuredReport?.status || ''),
       suiteSummary: normalizeRenderText(normalized.suiteSummary || structuredSummary?.summary || structuredReport?.summary || ''),
@@ -3204,6 +3330,26 @@ function summarizeGateFailures(entry = null) {
   return Number(entry.failedCount || entry.findingCount || entry.consoleErrorCount || entry.failures?.length || 0);
 }
 
+function summarizeQABrowserRun(run = null) {
+  if (!run || typeof run !== 'object') return '';
+  const scenario = normalizeRenderText(run.scenario, '') || 'layout-pass';
+  const verdict = normalizeRenderText(run.verdict || run.status, '') || 'pending';
+  const findingCount = Number(run.findingCount ?? run.findings?.length ?? 0) || 0;
+  return `Browser run ${scenario} | ${verdict} | findings ${findingCount}`;
+}
+
+function summarizeLocalGate(localGate = null) {
+  if (!localGate || typeof localGate !== 'object') return '';
+  const parts = [];
+  if (localGate.unit) {
+    parts.push(`Unit gate ${summarizeGateStatus(localGate.unit)} | failures ${summarizeGateFailures(localGate.unit)}`);
+  }
+  if (localGate.studioBoot) {
+    parts.push(`Studio boot ${summarizeGateStatus(localGate.studioBoot)} | findings ${Number(localGate.studioBoot.findingCount ?? 0) || 0}`);
+  }
+  return parts.join(' | ');
+}
+
 function formatQAEvidenceFreshness(freshnessClass = '') {
   const normalized = String(freshnessClass || '').trim();
   if (normalized === 'live_canonical') return 'Live canonical';
@@ -3219,6 +3365,64 @@ function toneForQAEvidenceFreshness(freshnessClass = '') {
   if (normalized === 'live_canonical' || normalized === 'derived_current') return 'good';
   if (normalized === 'stale') return 'warn';
   return 'bad';
+}
+
+function renderQAEvidenceProvenanceChips(trace = null, emptyState = null) {
+  const provenance = buildQAEvidenceProvenancePresentation(trace);
+  if (!provenance.hasRenderableProvenance) {
+    return emptyState ? h('div', { className: 'signal-meta muted' }, emptyState) : null;
+  }
+  return h('div', { className: 'qa-metric-pill-row qa-evidence-provenance-row' },
+    provenance.chips.map((chip) => h('span', {
+      key: `${chip.label}-${chip.value}`,
+      className: `qa-metric-pill tone-${chip.tone || 'neutral'}`,
+      title: `${chip.label}: ${chip.value}`,
+    }, `${chip.label} ${chip.value}`)),
+  );
+}
+
+function renderQASummaryProvenanceChips(trace = null, fallbackLabel = 'Derived summary') {
+  const provenance = buildQAEvidenceProvenancePresentation(trace, { fallbackLabel });
+  if (provenance.hasRenderableProvenance) {
+    return h('div', { className: 'qa-metric-pill-row qa-summary-provenance-row' },
+      provenance.chips.map((chip) => h('span', {
+        key: `${chip.label}-${chip.value}`,
+        className: `qa-metric-pill tone-${chip.tone || 'neutral'}`,
+        title: `${chip.label}: ${chip.value}`,
+      }, `${chip.label} ${chip.value}`)),
+    );
+  }
+  if (!provenance.fallbackLabel) return null;
+  return h('div', { className: 'qa-metric-pill-row qa-summary-provenance-row' },
+    h('span', {
+      className: 'qa-metric-pill tone-neutral',
+      title: 'Summary is locally shaped rather than directly governed',
+    }, provenance.fallbackLabel),
+  );
+}
+
+function renderTruthKernelProvenanceRail(truthKernel = EMPTY_TRUTH_KERNEL) {
+  const provenance = buildTruthKernelProvenancePresentation(truthKernel);
+  if (!provenance.hasGovernedProvenance && provenance.chips.length === 0) {
+    return h('div', { className: 'qa-metric-pill-row truth-kernel-provenance-row' },
+      h('span', {
+        className: 'qa-metric-pill tone-neutral',
+        title: 'Truth kernel provenance is not available yet',
+      }, provenance.fallbackLabel || 'No governed provenance'),
+    );
+  }
+  return h('div', { className: 'qa-metric-pill-row truth-kernel-provenance-row' },
+    !provenance.hasGovernedProvenance ? h('span', {
+      key: 'fallback',
+      className: 'qa-metric-pill tone-neutral',
+      title: 'Truth kernel provenance is not available yet',
+    }, provenance.fallbackLabel || 'No governed provenance') : null,
+    provenance.chips.slice(0, 8).map((chip) => h('span', {
+      key: `${chip.label}-${chip.value}`,
+      className: `qa-metric-pill tone-${chip.tone || 'neutral'}`,
+      title: `${chip.label}: ${chip.value}`,
+    }, `${chip.label} ${chip.value}`)),
+  );
 }
 
 function formatQATestValidity(validityClass = '') {
@@ -3247,6 +3451,11 @@ function renderQAEvidenceSource(source = null, options = {}) {
     ? [trace.generatedBy.system, trace.generatedBy.module].filter(Boolean).join(' | ')
     : '';
   const sourceArtifacts = Array.isArray(trace.sourceArtifacts) ? trace.sourceArtifacts : [];
+  const provenanceRow = renderQAEvidenceProvenanceChips({
+    ...trace,
+    classification: trace.sourceClass || trace.freshnessClass || null,
+    sourcePath: trace.sourcePath || null,
+  });
   return h('div', {
     key: options.key || `${trace.kind || 'qa-source'}-${trace.sourcePath || trace.label || 'source'}`,
     className: 'desk-panel-item qa-evidence-source',
@@ -3254,11 +3463,12 @@ function renderQAEvidenceSource(source = null, options = {}) {
   },
     h('div', { className: 'inline review-header' },
       h('div', null,
-        h('div', { className: 'signal-summary' }, trace.label || trace.kind || 'QA evidence'),
-        trace.detail ? h('div', { className: 'signal-meta muted' }, trace.detail) : null,
+    h('div', { className: 'signal-summary' }, trace.label || trace.kind || 'QA evidence'),
+    trace.detail ? h('div', { className: 'signal-meta muted' }, trace.detail) : null,
       ),
       h('span', { className: `qa-metric-pill tone-${toneForQAEvidenceFreshness(trace.freshnessClass)}` }, formatQAEvidenceFreshness(trace.freshnessClass)),
     ),
+    provenanceRow,
     h('div', { className: 'signal-meta muted' }, `Source: ${trace.sourcePath || 'unknown'}`),
     generatedBy ? h('div', { className: 'signal-meta muted' }, `Generated by: ${generatedBy}`) : null,
     trace.observedAt ? h('div', { className: 'signal-meta muted' }, `Observed: ${formatTimestamp(trace.observedAt)}`) : null,
@@ -3883,20 +4093,33 @@ function renderDeskSection(rawSection, helpers = {}) {
               h('summary', { className: 'inline review-header' },
                 h('div', null,
                   h('div', { className: 'signal-summary' }, item.label || item.tool || 'QA tool result'),
-                  h('div', { className: 'signal-meta muted' }, `${item.tool || 'qa_tool'} | ${item.verdict || item.status || 'unknown'}`),
+                  h('div', { className: 'signal-meta muted' }, `${item.tool || 'qa_tool'} | ${item.result || item.verdict || item.status || 'unknown'}`),
                 ),
-                h('span', { className: `qa-metric-pill tone-${['validated', 'available', 'pass'].includes(String(item.verdict || item.status || '').toLowerCase()) ? 'good' : (['degraded', 'blocked', 'fail', 'failed', 'error', 'unavailable'].includes(String(item.verdict || item.status || '').toLowerCase()) ? 'bad' : 'neutral')}` }, item.verdict || item.status || 'unknown'),
+                h('span', { className: `qa-metric-pill tone-${['validated', 'available', 'pass'].includes(String(item.result || item.verdict || item.status || '').toLowerCase()) ? 'good' : (['degraded', 'blocked', 'fail', 'failed', 'error', 'unavailable'].includes(String(item.result || item.verdict || item.status || '').toLowerCase()) ? 'bad' : 'neutral')}` }, item.result || item.verdict || item.status || 'unknown'),
               ),
               h('div', { className: 'signal-meta muted' }, item.summary || 'No summary recorded.'),
               item.detail ? h('div', { className: 'signal-meta muted' }, item.detail) : null,
-              item.observed_at ? h('div', { className: 'signal-meta muted' }, `Observed: ${formatTimestamp(item.observed_at)}`) : null,
+              item.createdAt || item.observed_at ? h('div', { className: 'signal-meta muted' }, `Created: ${formatTimestamp(item.createdAt || item.observed_at)}`) : null,
+              item.meta && (
+                item.meta.investigationCount !== undefined
+                || item.meta.failedChecks !== undefined
+                || item.meta.activeLanes !== undefined
+                || item.meta.externalStatus
+              )
+                ? h('div', { className: 'signal-meta muted' }, [
+                    Number.isFinite(Number(item.meta.investigationCount)) ? `${Number(item.meta.investigationCount)} investigations` : null,
+                    Number.isFinite(Number(item.meta.failedChecks)) ? `${Number(item.meta.failedChecks)} failed check${Number(item.meta.failedChecks) === 1 ? '' : 's'}` : null,
+                    Number.isFinite(Number(item.meta.activeLanes)) ? `${Number(item.meta.activeLanes)} active lanes` : null,
+                    item.meta.externalStatus ? `external: ${item.meta.externalStatus}` : null,
+                  ].filter(Boolean).join(' | '))
+                : null,
               item.artifact_refs?.length
                 ? h('div', { className: 'signal-meta muted' }, `Artifacts: ${item.artifact_refs.slice(0, 4).join(' | ')}`)
                 : null,
               item.notes?.length
                 ? h('ul', { className: 'signal-list compact' }, item.notes.slice(0, 4).map((note, noteIndex) => h('li', { key: `${item.id || 'qa-feed'}-note-${noteIndex}` }, note)))
                 : null,
-            ))),
+            )))
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No QA output feed is available yet.'),
     );
   }
@@ -3960,6 +4183,7 @@ function renderDeskSection(rawSection, helpers = {}) {
         h('div', null,
           h('div', { className: 'inspector-label' }, section.label),
           h('div', { className: 'signal-summary' }, section.busy ? 'Structured QA suite is running...' : (report?.summary || section.emptyState || 'No structured QA report loaded yet.')),
+          report ? renderQASummaryProvenanceChips(report.sourceTrace, 'Derived summary') : null,
         ),
       ),
       report
@@ -3975,6 +4199,7 @@ function renderDeskSection(rawSection, helpers = {}) {
   }
   if (section.kind === 'qa-scorecards') {
     const cards = normalizeRenderList(section.cards);
+    const summaryProvenance = renderQASummaryProvenanceChips(section.sourceTrace, 'Derived summary');
     return h('details', {
       key: section.id,
       className: 'inspector-block panel-card qa-scorecards-panel',
@@ -3985,6 +4210,7 @@ function renderDeskSection(rawSection, helpers = {}) {
         h('div', null,
           h('div', { className: 'inspector-label' }, section.label),
           h('div', { className: 'signal-summary' }, section.suiteSummary || section.emptyState || 'No structured QA scorecards recorded yet.'),
+          summaryProvenance,
         ),
         h('div', { className: 'qa-metric-pill-row' },
           h('span', { className: 'qa-metric-pill tone-neutral' }, `Tests ${Number(section.meta?.testCount || cards.length || 0)}`),
@@ -4000,6 +4226,7 @@ function renderDeskSection(rawSection, helpers = {}) {
               h('div', null,
                 h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
                 h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+                renderQASummaryProvenanceChips(card.sourceTrace, 'Derived summary'),
               ),
               h('span', { className: `qa-metric-pill tone-${card.status === 'pass' ? 'good' : (card.status === 'fail' ? 'bad' : 'neutral')}` }, card.status || 'pass'),
             ),
@@ -4138,12 +4365,23 @@ function renderDeskSection(rawSection, helpers = {}) {
   }
   if (section.kind === 'qa-browser') {
     const run = section.latestRun || null;
+    const provenance = run?.sourceTrace ? normalizeQAEvidenceProvenance({
+      ...run.sourceTrace,
+      classification: run.sourceTrace.sourceClass || run.sourceTrace.freshnessClass || null,
+    }) : null;
     return h('div', { key: section.id, className: 'inspector-block panel-card review-panel browser-pass-panel' },
       h('div', { className: 'inline review-header' },
         h('div', null,
           h('div', { className: 'inspector-label' }, section.label),
           h('div', { className: 'signal-summary' }, section.busy ? 'Browser QA is running...' : (run ? `${run.scenario || 'layout-pass'} | ${run.verdict || run.status || 'pending'}` : (section.emptyState || 'No browser pass has been recorded yet.'))),
         ),
+        provenance?.hasProvenance ? h('div', { className: 'qa-metric-pill-row qa-evidence-provenance-row' },
+          provenance.chips.slice(0, 4).map((chip) => h('span', {
+            key: `${section.id}-${chip.label}-${chip.value}`,
+            className: `qa-metric-pill tone-${chip.tone || 'neutral'}`,
+            title: `${chip.label}: ${chip.value}`,
+          }, `${chip.label} ${chip.value}`)),
+        ) : null,
       ),
       run
         ? h(React.Fragment, null,
@@ -4164,11 +4402,24 @@ function renderDeskSection(rawSection, helpers = {}) {
   if (section.kind === 'qa-local-gates') {
     const unitGate = section.gate?.unit || null;
     const studioBootGate = section.gate?.studioBoot || null;
+    const unitProvenance = unitGate?.sourceTrace ? normalizeQAEvidenceProvenance({
+      ...unitGate.sourceTrace,
+      classification: unitGate.sourceTrace.sourceClass || unitGate.sourceTrace.freshnessClass || null,
+    }) : null;
+    const bootProvenance = studioBootGate?.sourceTrace ? normalizeQAEvidenceProvenance({
+      ...studioBootGate.sourceTrace,
+      classification: studioBootGate.sourceTrace.sourceClass || studioBootGate.sourceTrace.freshnessClass || null,
+    }) : null;
     return h('div', { key: section.id, className: 'inspector-block panel-card', 'data-qa': 'qa-local-gates-section' },
       h('div', { className: 'inspector-label' }, section.label),
       h('div', { className: 'signal-summary' }, section.summary || section.emptyState || 'No local UI gate results recorded yet.'),
       unitGate ? h('div', { className: 'desk-panel-item' },
         h('div', { className: 'signal-summary' }, 'Fast Unit Gate'),
+        unitProvenance?.hasProvenance ? h('div', { className: 'qa-metric-pill-row qa-evidence-provenance-row' }, unitProvenance.chips.slice(0, 4).map((chip) => h('span', {
+          key: `unit-${chip.label}-${chip.value}`,
+          className: `qa-metric-pill tone-${chip.tone || 'neutral'}`,
+          title: `${chip.label}: ${chip.value}`,
+        }, `${chip.label} ${chip.value}`))) : null,
         h('div', { className: 'signal-meta muted' }, `${unitGate.status || 'pending'} | ${unitGate.passedCount || 0}/${unitGate.totalChecks || 0} checks passed`),
         unitGate.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${unitGate.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(unitGate.sourceTrace.freshnessClass)}`) : null,
         (unitGate.failures || []).length
@@ -4177,6 +4428,11 @@ function renderDeskSection(rawSection, helpers = {}) {
       ) : null,
       studioBootGate ? h('div', { className: 'desk-panel-item' },
         h('div', { className: 'signal-summary' }, 'Studio Boot Guardrail'),
+        bootProvenance?.hasProvenance ? h('div', { className: 'qa-metric-pill-row qa-evidence-provenance-row' }, bootProvenance.chips.slice(0, 4).map((chip) => h('span', {
+          key: `boot-${chip.label}-${chip.value}`,
+          className: `qa-metric-pill tone-${chip.tone || 'neutral'}`,
+          title: `${chip.label}: ${chip.value}`,
+        }, `${chip.label} ${chip.value}`))) : null,
         h('div', { className: 'signal-meta muted' }, `${studioBootGate.verdict || studioBootGate.status || 'pending'} | console ${studioBootGate.consoleErrorCount || 0} | network ${studioBootGate.networkFailureCount || 0}`),
         studioBootGate.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${studioBootGate.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(studioBootGate.sourceTrace.freshnessClass)}`) : null,
         (studioBootGate.failedSteps || []).length
@@ -4484,6 +4740,8 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   }));
   const [throughputDebug, setThroughputDebug] = useState(EMPTY_THROUGHPUT_DEBUG);
   const [qaState, setQaState] = useState(EMPTY_QA_STATE);
+  const [qaOutputFeed, setQaOutputFeed] = useState([]);
+  const [qaOutputFeedLoaded, setQaOutputFeedLoaded] = useState(false);
   const [mutationGate, setMutationGate] = useState(EMPTY_MUTATION_GATE);
   const [worldViewMode, setWorldViewMode] = useState(DEFAULT_WORLD_VIEW_MODE);
   const [recentWorldChange, setRecentWorldChange] = useState(null);
@@ -4554,7 +4812,13 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const [ctoChatHistory, setCtoChatHistory] = useState([]);
   const [ctoChatStatus, setCtoChatStatus] = useState(() => buildDefaultCtoChatStatus());
   const [canonicalIntake, setCanonicalIntake] = useState(EMPTY_CANONICAL_INTAKE_STATE);
+  const [truthKernel, setTruthKernel] = useState(EMPTY_TRUTH_KERNEL);
+  const [truthKernelLoadState, setTruthKernelLoadState] = useState(TRUTH_KERNEL_LOAD_STATES.LOADING);
+  const [truthKernelVisible, setTruthKernelVisible] = useState(false);
+  const [selectedTruthNodeId, setSelectedTruthNodeId] = useState(null);
 
+  const truthKernelCanvasRef = useRef(null);
+  const truthKernelLoadStateRef = useRef(TRUTH_KERNEL_LOAD_STATES.LOADING);
   const canvasRef = useRef(null);
   const studioRef = useRef(null);
   const draggingNode = useRef(null);
@@ -4583,6 +4847,20 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     ...graphLayers,
     [activeGraphLayer]: graph,
   }), [graphLayers, activeGraphLayer, graph]);
+  const truthKernelLayout = useMemo(() => buildTruthKernelLayout(truthKernel.nodes), [truthKernel]);
+  const truthKernelToggleState = useMemo(() => resolveTruthKernelToggleState({
+    scene,
+    truthKernel,
+    loadState: truthKernelLoadState,
+    visible: truthKernelVisible,
+  }), [scene, truthKernel, truthKernelLoadState, truthKernelVisible]);
+  const selectedTruthNode = useMemo(
+    () => truthKernel.nodes.find((node) => node.id === selectedTruthNodeId) || null,
+    [truthKernel, selectedTruthNodeId],
+  );
+  useEffect(() => {
+    truthKernelLoadStateRef.current = truthKernelLoadState;
+  }, [truthKernelLoadState]);
   const systemGraph = graphBundle.system || buildStarterGraph();
   const selected = graph.nodes.find((node) => node.id === selectedId) || null;
   const selectedRelationshipId = selectedRelationship?.id || null;
@@ -4738,13 +5016,25 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   }), [handoffs, teamBoard]);
 
   const qaStateForSnapshots = useMemo(() => {
-    if (!qaRunDetail) return qaState;
-    return {
+    const nextState = qaRunDetail ? {
       ...qaState,
       latestBrowserRun: qaRunDetail,
       browserRuns: [qaRunDetail, ...(qaState.browserRuns || []).filter((entry) => entry?.id !== qaRunDetail.id)],
+    } : qaState;
+    const nextQaLead = normalizeRenderObject(nextState.qaLead || {});
+    const nextQaLeadFeed = qaOutputFeedLoaded ? qaOutputFeed : normalizeRenderList(nextQaLead.output_feed || nextQaLead.outputFeed || []);
+    return {
+      ...nextState,
+      qaLead: {
+        ...nextQaLead,
+        outputFeed: nextQaLeadFeed,
+        output_feed: nextQaLeadFeed,
+      },
+      outputFeed: qaOutputFeed,
+      output_feed: qaOutputFeed,
+      outputFeedLoaded: qaOutputFeedLoaded,
     };
-  }, [qaState, qaRunDetail]);
+  }, [qaState, qaRunDetail, qaOutputFeed, qaOutputFeedLoaded]);
 
   const agentSnapshots = useMemo(() => buildAgentSnapshots({
     workspace: workspacePayload,
@@ -5580,6 +5870,19 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       setMutationGate(normalizeMutationGateState(workspace.mutationGate));
       setContextDraft(contextNode?.content || '');
       setScanPreview(getCurrentIntentRecord(storedIntentState));
+      setTruthKernelLoadState(TRUTH_KERNEL_LOAD_STATES.LOADING);
+      ace.getTruthKernel()
+        .then((payload) => {
+          if (cancelled) return;
+          setTruthKernel(normalizeTruthKernelPayload(payload));
+          setTruthKernelLoadState(TRUTH_KERNEL_LOAD_STATES.READY);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          if (truthKernelLoadStateRef.current !== TRUTH_KERNEL_LOAD_STATES.READY) {
+            setTruthKernelLoadState(TRUTH_KERNEL_LOAD_STATES.ERROR);
+          }
+        });
       activeCanvasIntentTraceId.current = null;
       setCanvasIntentRunState(EMPTY_CANVAS_INTENT_RUN_STATE);
       hasLoadedWorkspace.current = true;
@@ -5588,6 +5891,8 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       activeCanvasIntentTraceId.current = null;
       setCanvasIntentRunState(EMPTY_CANVAS_INTENT_RUN_STATE);
       setCanonicalIntake(EMPTY_CANONICAL_INTAKE_STATE);
+      setTruthKernel(EMPTY_TRUTH_KERNEL);
+      setTruthKernelLoadState(TRUTH_KERNEL_LOAD_STATES.ERROR);
       setGhostProjectionState(EMPTY_GHOST_PROJECTION_REGISTRY);
       mutationEngine.setGhostProjectionRegistry(EMPTY_GHOST_PROJECTION_REGISTRY);
       hasLoadedWorkspace.current = true;
@@ -5596,6 +5901,10 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       cancelled = true;
     };
   }, [graphEngine, memory]);
+
+  useEffect(() => {
+    loadQaOutputFeed();
+  }, []);
 
   useEffect(() => {
     memory.syncFromGraph(graphBundle);
@@ -5617,9 +5926,25 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       selectedAnnotationId,
       selectedRelationshipId,
       selectedAgentId,
+      truthKernelVisible,
       selectedAgent?.name || '',
     );
-  }, [graph, graphBundle, canvasViewport, memory, activeGraphLayer, worldViewMode, recentWorldChange, showRecentWorldChanges, pointerWorld, simulating, simStep, paused, sketches, annotations, selectedSketchId, selectedAnnotationId, selectedRelationshipId, selectedAgentId, selectedAgent?.name]);
+  }, [graph, graphBundle, canvasViewport, memory, activeGraphLayer, worldViewMode, recentWorldChange, showRecentWorldChanges, pointerWorld, simulating, simStep, paused, sketches, annotations, selectedSketchId, selectedAnnotationId, selectedRelationshipId, selectedAgentId, truthKernelVisible, selectedAgent?.name]);
+
+  useEffect(() => {
+    drawTruthKernelScene(
+      truthKernelCanvasRef.current,
+      truthKernel,
+      truthKernelLayout,
+      { selectedNodeId: selectedTruthNodeId },
+    );
+  }, [truthKernel, truthKernelLayout, selectedTruthNodeId]);
+
+  useEffect(() => {
+    if (!selectedTruthNodeId) return;
+    if (truthKernel.nodes.some((node) => node.id === selectedTruthNodeId)) return;
+    setSelectedTruthNodeId(null);
+  }, [truthKernel, selectedTruthNodeId]);
 
   useEffect(() => {
     if (!hasLoadedWorkspace.current) return;
@@ -6057,6 +6382,16 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     }
   }
 
+  async function loadQaOutputFeed() {
+    try {
+      const payload = await ace.getQaOutputFeed();
+      setQaOutputFeed(normalizeRenderList(payload.items || payload.feed || []));
+      setQaOutputFeedLoaded(true);
+    } catch {
+      // Keep the existing fallback path if the dedicated feed route is unavailable.
+    }
+  }
+
   async function runStructuredQA() {
     setQaState((current) => ({
       ...current,
@@ -6066,6 +6401,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
       const payload = await ace.runStructuredQA();
       if (payload.runtime) {
         applyRuntimePayload(payload.runtime);
+        loadQaOutputFeed();
       } else {
         setQaState((current) => ({
           ...current,
@@ -6103,6 +6439,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
         applyRuntimePayload(payload.runtime);
       }
       setQaRunDetail(payload.run || null);
+      loadQaOutputFeed();
       setSelectedAgentId('qa-lead');
       setScene(SCENES.STUDIO);
       setStatus(payload.run?.verdict === 'pass'
@@ -6404,6 +6741,10 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     });
     if (runtime.intake) {
       setCanonicalIntake(normalizeCanonicalIntakeState(runtime.intake));
+    }
+    if (runtime && Object.prototype.hasOwnProperty.call(runtime, 'truthKernel')) {
+      setTruthKernel(normalizeTruthKernelPayload(runtime.truthKernel));
+      setTruthKernelLoadState(TRUTH_KERNEL_LOAD_STATES.READY);
     }
     setTeamBoard(normalizeTeamBoardState({
       studio: {
@@ -7248,6 +7589,18 @@ function syncRecentWorldChange(change = null) {
 
   const onCanvasMouseDown = (event) => {
     if (scene !== SCENES.CANVAS || event.target !== canvasRef.current) return;
+    if (truthKernelVisible && !sketchMode && event.button === 0) {
+      const rect = canvasRef.current?.getBoundingClientRect?.();
+      const localPoint = rect
+        ? { x: event.clientX - rect.left, y: event.clientY - rect.top }
+        : null;
+      const truthHit = hitTestTruthKernelNode(localPoint, truthKernel, truthKernelLayout);
+      setSelectedTruthNodeId(truthHit?.id || null);
+      if (truthHit) {
+        event.preventDefault();
+        return;
+      }
+    }
     const world = toWorld(event.clientX, event.clientY);
     if (sketchMode && event.button === 0) {
       const annotationId = hitTestAnnotation(world);
@@ -7955,6 +8308,31 @@ function syncRecentWorldChange(change = null) {
       ctoOversight?.completedArtifacts?.length
         ? h('div', { className: 'criteria-row' }, h('span', null, 'Archived outcomes'), h('span', { className: 'muted' }, ctoOversight.completedArtifacts.map((item) => `${item.title} @ ${item.archivedAt || item.diffPath || 'n/a'}`).join(' | ')))
         : null,
+    );
+  };
+
+  const renderDeskProvenanceStrip = (panelData = null, targetDeskId = null) => {
+    if (!panelData) return null;
+    const provenance = normalizeDeskProvenance(panelData, targetDeskId);
+    const summaryText = provenance.sectionSummary.count
+      ? `Sections ${provenance.sectionSummary.count}${provenance.sectionSummary.keys.length ? ` | ${provenance.sectionSummary.keys.join(' / ')}` : ''}`
+      : 'No canonicalTruthSections surfaced.';
+    return h('div', { className: 'desk-panel-item desk-provenance-strip desk-inspector-truth', 'data-qa': 'desk-provenance-strip' },
+      h('div', { className: 'inspector-label' }, 'Governed provenance'),
+      provenance.hasGovernedProvenance
+        ? h(React.Fragment, null,
+            h('div', { className: 'signal-summary' }, provenance.domain || targetDeskId || 'desk_properties'),
+            h('div', { className: 'criteria-list desk-metric-list' },
+              h('div', { className: 'criteria-row' }, h('span', null, 'Domain'), h('span', { className: 'muted' }, provenance.domain || 'n/a')),
+              h('div', { className: 'criteria-row' }, h('span', null, 'Projection id'), h('span', { className: 'muted' }, provenance.projectionId || 'n/a')),
+              provenance.classification ? h('div', { className: 'criteria-row' }, h('span', null, 'Classification'), h('span', { className: 'muted' }, provenance.classification)) : null,
+              provenance.freshness ? h('div', { className: 'criteria-row' }, h('span', null, 'Freshness'), h('span', { className: 'muted' }, provenance.freshness)) : null,
+              provenance.generatedAt ? h('div', { className: 'criteria-row' }, h('span', null, 'Generated at'), h('span', { className: 'muted' }, formatTimestamp(provenance.generatedAt))) : null,
+              provenance.fallbackUsed !== null ? h('div', { className: 'criteria-row' }, h('span', null, 'Fallback used'), h('span', { className: 'muted' }, provenance.fallbackUsed ? 'yes' : 'no')) : null,
+            ),
+            h('div', { className: 'signal-meta muted' }, summaryText),
+          )
+        : h('div', { className: 'signal-empty muted' }, 'No governed provenance.'),
     );
   };
 
@@ -8979,6 +9357,7 @@ function syncRecentWorldChange(change = null) {
           h('button', { className: 'mini', type: 'button', onClick: cancelDeskDrafts }, 'Leave Desk'),
         ),
         renderDeskUtilityActions(targetDeskId),
+        renderDeskProvenanceStrip(panelData, targetDeskId),
         renderDeskPanelMetadata(panelData?.desk?.panel),
         contextDeskSnapshot?.qa ? h('div', { className: 'desk-panel-item desk-truth-summary desk-inspector-truth qa-evidence-feed', 'data-qa': 'qa-evidence-feed' },
           h('div', { className: 'inspector-label' }, 'QA Evidence Feed'),
@@ -9621,6 +10000,14 @@ function syncRecentWorldChange(change = null) {
               type: 'button',
               'data-qa': 'canvas-cto-chat-button',
             }, 'CTO Chat'),
+            h('button', {
+              className: `mini ${truthKernelVisible ? 'active' : ''}`,
+              onClick: () => setTruthKernelVisible((value) => !value),
+              type: 'button',
+              disabled: truthKernelToggleState.disabled,
+              title: truthKernelToggleState.title,
+              'data-qa': 'truth-kernel-toggle',
+            }, truthKernelToggleState.label),
             h('button', { className: `mini ${sketchMode ? 'active' : ''}`, onClick: () => setSketchMode((value) => !value), type: 'button', disabled: scene !== SCENES.CANVAS }, sketchMode ? 'Sketch On' : 'Sketch'),
             h('button', { className: 'mini', onClick: clearSketchLayer, type: 'button', disabled: scene !== SCENES.CANVAS }, 'Clear Marks'),
             h('button', { className: 'mini', onClick: () => setSimulating((value) => !value), type: 'button' }, simulating ? 'Stop Sim' : 'Simulate'),
@@ -9648,7 +10035,18 @@ function syncRecentWorldChange(change = null) {
             onMouseLeave: onCanvasMouseUp,
           },
             h('canvas', {
+              ref: truthKernelCanvasRef,
+              className: 'truth-kernel-canvas',
+              width: 1600,
+              height: 920,
+              'aria-hidden': true,
+              style: {
+                opacity: truthKernelVisible ? 1 : 0,
+              },
+            }),
+            h('canvas', {
               ref: canvasRef,
+              className: 'spatial-main-canvas',
               width: 1600,
               height: 920,
               tabIndex: 0,
@@ -9673,6 +10071,19 @@ function syncRecentWorldChange(change = null) {
                 zIndex: 6,
               },
             },
+              truthKernelVisible && selectedTruthNode ? h('div', {
+                className: 'truth-kernel-inspector',
+                'data-qa': 'truth-kernel-inspector',
+              },
+                h('div', { className: 'truth-kernel-inspector-label' }, 'Truth Node'),
+                h('div', { className: 'truth-kernel-inspector-value mono' }, selectedTruthNode.id),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `kind ${selectedTruthNode.kind}`),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `status ${selectedTruthNode.status}`),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `timestamp ${formatTruthKernelTimestamp(selectedTruthNode.timestamp)}`),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `parents ${selectedTruthNode.parents.length}`),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `children ${selectedTruthNode.children.length}`),
+              ) : null,
+              renderTruthKernelProvenanceRail(truthKernel),
               h('div', {
                 className: 'observability-title',
                 style: {
@@ -10333,7 +10744,7 @@ function drawRelationshipEdge(ctx, source, target, viewport, visual, color, dash
   drawArrowHead(ctx, finalCenter.x1, finalCenter.y1, finalCenter.x2, finalCenter.y2, color);
 }
 
-function drawCanvasScene(canvas, graph, viewport, activeGraphLayer, worldViewMode, recentWorldChange, showRecentWorldChanges, connecting, pointerWorld, simIndex, sketches, annotations, selectedSketchId, selectedAnnotationId, selectedRelationshipId, selectedDeskId = '', selectedDeskLabel = '') {
+function drawCanvasScene(canvas, graph, viewport, activeGraphLayer, worldViewMode, recentWorldChange, showRecentWorldChanges, connecting, pointerWorld, simIndex, sketches, annotations, selectedSketchId, selectedAnnotationId, selectedRelationshipId, selectedDeskId = '', truthKernelVisible = false, selectedDeskLabel = '') {
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
@@ -10348,7 +10759,7 @@ function drawCanvasScene(canvas, graph, viewport, activeGraphLayer, worldViewMod
   const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = '#08111d';
+  ctx.fillStyle = resolveCanvasBackgroundFill(truthKernelVisible);
   ctx.fillRect(0, 0, width, height);
 
   if (activeGraphLayer === 'world') {

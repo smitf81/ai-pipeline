@@ -1,7 +1,102 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-04-06T14:57:55.110Z",
+  "updated_at": "2026-04-08T13:55:01.598Z",
   "entries": [
+    {
+      "id": "cto_diag_1775656501598",
+      "timestamp": "2026-04-08T13:55:01.598Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "canvas-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775656466693-enli8c",
+      "httpStatus": null,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ]
+    },
+    {
+      "id": "cto_diag_1775643835030",
+      "timestamp": "2026-04-08T10:23:55.030Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "canvas-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775643805020-zywc09",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ]
+    },
+    {
+      "id": "cto_diag_1775641991924",
+      "timestamp": "2026-04-08T09:53:11.924Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "canvas-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775641961906-i4i261",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ]
+    },
+    {
+      "id": "cto_diag_1775640316205",
+      "timestamp": "2026-04-08T09:25:16.205Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775640286185-t6h9oz",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ]
+    },
+    {
+      "id": "cto_diag_1775634136245",
+      "timestamp": "2026-04-08T07:42:16.245Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "studio-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775634106237-t5ns20",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ]
+    },
     {
       "id": "cto_diag_1775487475110",
       "timestamp": "2026-04-06T14:57:55.110Z",
@@ -15,7 +110,7 @@
       "reason": "Ollama status check timed out after 100ms.",
       "failureKind": null,
       "runId": null,
-      "httpStatus": null,
+      "httpStatus": 0,
       "actionId": null,
       "availableActionIds": []
     },

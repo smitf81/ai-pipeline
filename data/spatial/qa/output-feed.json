@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "id": "qa_output_20260409T120100000Z",
+      "createdAt": "2026-04-09T12:01:00.000Z",
+      "type": "qa_cycle",
+      "summary": "QA cycle completed",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 1,
+        "failedChecks": 1,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_manual_cycle_route_test"
+      }
+    }
+  ]
+}

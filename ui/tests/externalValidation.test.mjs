@@ -45,16 +45,14 @@ export default async function runExternalValidationTests() {
     },
     checkedAt: '2026-04-06T00:00:10.000Z',
   });
-  assert.deepEqual(successSnapshot, {
-    status: 'pass',
-    probeStatus: 'ok',
-    lastCheckedAt: '2026-04-06T00:00:10.000Z',
-    statusMatch: true,
-    freshnessKnown: true,
-    notes: [],
-    source: 'external_mcp',
-    errorMessage: null,
-  });
+  assert.equal(successSnapshot.status, 'pass');
+  assert.equal(successSnapshot.probeStatus, 'ok');
+  assert.equal(successSnapshot.lastCheckedAt, '2026-04-06T00:00:10.000Z');
+  assert.equal(successSnapshot.statusMatch, true);
+  assert.equal(successSnapshot.freshnessKnown, true);
+  assert.deepEqual(successSnapshot.notes, []);
+  assert.equal(successSnapshot.source, 'external_mcp');
+  assert.equal(successSnapshot.errorMessage, null);
 
   const timeoutSnapshot = buildExternalValidationSnapshot({
     probeCheck: {

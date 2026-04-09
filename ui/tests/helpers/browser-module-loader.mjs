@@ -101,6 +101,9 @@ export async function smokeLoadSpatialApp(modulePath, { locationHref = 'http://l
   const uiActionRegistryModule = await materializeModuleCopy(path.join(spatialDir, 'uiActionRegistry.js'), { label: 'uiActionRegistry' });
   const ghostProjectionModule = await materializeModuleCopy(path.join(spatialDir, 'ghostProjection.js'), { label: 'ghostProjection' });
   const intentContractBrowserModule = await materializeModuleCopy(path.join(spatialDir, 'intentContract.browser.js'), { label: 'intentContractBrowser' });
+  const truthKernelAdapterModule = await materializeModuleCopy(path.join(spatialDir, 'truthKernelAdapter.js'), { label: 'truthKernelAdapter' });
+  const truthKernelLayoutModule = await materializeModuleCopy(path.join(spatialDir, 'truthKernelLayout.js'), { label: 'truthKernelLayout' });
+  const truthKernelViewModule = await materializeModuleCopy(path.join(spatialDir, 'truthKernelView.js'), { label: 'truthKernelView' });
   const source = await fs.readFile(modulePath, 'utf8');
   const withoutImports = stripImportLines(source);
   const shimmedSource = `
@@ -185,6 +188,16 @@ import {
   buildCanonicalIntentContract,
 } from ${JSON.stringify(intentContractBrowserModule.url)};
 import {
+  EMPTY_TRUTH_KERNEL,
+  normalizeTruthKernelPayload,
+} from ${JSON.stringify(truthKernelAdapterModule.url)};
+import {
+  buildTruthKernelLayout,
+} from ${JSON.stringify(truthKernelLayoutModule.url)};
+import {
+  drawTruthKernelScene,
+} from ${JSON.stringify(truthKernelViewModule.url)};
+import {
   buildGhostProjectionRegistryPayload,
   createEmptyGhostProjectionRegistry,
   getCurrentGhostProjection,
@@ -201,7 +214,7 @@ const describeWorldScaffoldNode = (node = {}) => node?.metadata?.scaffold?.summa
 const drawWorldScaffolds = () => undefined;
 const findWorldScaffoldNodes = (graph = {}) => (graph?.nodes || []).filter((node) => node?.metadata?.scaffold);
 const normalizeWorldViewMode = (value = DEFAULT_WORLD_VIEW_MODE) => value === '2.5d' ? '2.5d' : value === '3d' ? '3d' : DEFAULT_WORLD_VIEW_MODE;
-class AceConnector { async parseIntent() { return { confidence: 0.75, tasks: ['stub task'], classification: { role: 'context', labels: [] }, criteria: [], summary: 'stub summary', extractedIntent: { id: 'intent_stub', sourceNodeId: 'node_stub', sourceText: 'stub source', summary: 'stub summary', explicitClaims: ['stub claim'], inferredClaims: [], candidateNodes: [{ id: 'candidate_stub', label: 'stub task', kind: 'task', basis: 'explicit', rationale: 'stub rationale', confidence: 0.75 }], candidateEdges: [], gaps: [], provenance: { backend: 'ollama', model: 'mistral:latest', runId: 'context_stub', usedFallback: false, inferenceMode: 'small-inference' }, audit: { confidence: 0.75, criteria: [], classification: { role: 'context', labels: [] }, matchedTerms: [] } } }; } async previewMutation() { return { summary: [] }; } async applyMutation() { return { ok: true }; } async runAgentWorker() { return { ok: true, report: { summary: 'stub executor run', decision: 'ready-apply' }, runtime: {} }; } async getProjects() { return { projects: [{ key: 'topdown-slice', name: 'topdown-slice', launchable: true, supportedOrigin: 'http://127.0.0.1:4173/' }] }; } async runProject() { return { ok: true, url: 'http://127.0.0.1:4173/', supportedOrigin: 'http://127.0.0.1:4173/', reused: true }; } async getStudioLayoutCatalog() { return { departmentTemplates: [{ id: 'research', label: 'Research Cell', summary: 'Research room' }], deskTemplates: [{ id: 'report-node', label: 'Report Desk', summary: 'Report desk' }] }; } async mutateStudioLayout() { return { ok: true, layout: createDefaultStudioLayout(), catalog: await this.getStudioLayoutCatalog() }; } }
+class AceConnector { async getTruthKernel() { return EMPTY_TRUTH_KERNEL; } async getSpatialRuntime() { return { truthKernel: EMPTY_TRUTH_KERNEL }; } async parseIntent() { return { confidence: 0.75, tasks: ['stub task'], classification: { role: 'context', labels: [] }, criteria: [], summary: 'stub summary', extractedIntent: { id: 'intent_stub', sourceNodeId: 'node_stub', sourceText: 'stub source', summary: 'stub summary', explicitClaims: ['stub claim'], inferredClaims: [], candidateNodes: [{ id: 'candidate_stub', label: 'stub task', kind: 'task', basis: 'explicit', rationale: 'stub rationale', confidence: 0.75 }], candidateEdges: [], gaps: [], provenance: { backend: 'ollama', model: 'mistral:latest', runId: 'context_stub', usedFallback: false, inferenceMode: 'small-inference' }, audit: { confidence: 0.75, criteria: [], classification: { role: 'context', labels: [] }, matchedTerms: [] } } }; } async previewMutation() { return { summary: [] }; } async applyMutation() { return { ok: true }; } async runAgentWorker() { return { ok: true, report: { summary: 'stub executor run', decision: 'ready-apply' }, runtime: {} }; } async getProjects() { return { projects: [{ key: 'topdown-slice', name: 'topdown-slice', launchable: true, supportedOrigin: 'http://127.0.0.1:4173/' }] }; } async runProject() { return { ok: true, url: 'http://127.0.0.1:4173/', supportedOrigin: 'http://127.0.0.1:4173/', reused: true }; } async getStudioLayoutCatalog() { return { departmentTemplates: [{ id: 'research', label: 'Research Cell', summary: 'Research room' }], deskTemplates: [{ id: 'report-node', label: 'Report Desk', summary: 'Report desk' }] }; } async mutateStudioLayout() { return { ok: true, layout: createDefaultStudioLayout(), catalog: await this.getStudioLayoutCatalog() }; } }
 class MutationEngine {
   constructor() {}
   buildMutationRequestFromIntent() { return []; }

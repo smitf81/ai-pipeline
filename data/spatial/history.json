@@ -1,252 +1,6 @@
 [
   {
-    "at": "2026-04-02T10:43:57.122Z",
-    "type": "cto-request-plan",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "roleId": "planner"
-    }
-  },
-  {
-    "at": "2026-04-02T10:43:58.140Z",
-    "type": "team-board-builder-preflight-blocked",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000"
-    }
-  },
-  {
-    "at": "2026-04-02T10:45:56.230Z",
-    "type": "cto-request-execution",
-    "summary": {
-      "cardId": "0002",
-      "taskId": "10000",
-      "roleId": "executor"
-    }
-  },
-  {
-    "at": "2026-04-02T10:47:32.318Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:49:17.020Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:49:21.130Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:49:27.349Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:49:47.553Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:49:49.958Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:49:59.542Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:50:35.388Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:50:42.676Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:50:58.081Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:51:01.069Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:51:13.190Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:51:15.591Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:51:20.820Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:51:27.032Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:51:28.229Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:51:29.386Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:51:37.784Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:51:39.645Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-02T10:53:08.600Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 1,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-06T09:16:13.627Z",
+    "at": "2026-04-08T14:54:10.259Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -257,7 +11,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:16:52.491Z",
+    "at": "2026-04-08T14:54:17.222Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -268,7 +22,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:17:01.640Z",
+    "at": "2026-04-08T14:54:20.183Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -279,7 +33,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:17:18.747Z",
+    "at": "2026-04-08T14:54:21.143Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -290,7 +44,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:17:26.083Z",
+    "at": "2026-04-08T14:54:22.321Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -301,7 +55,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:17:29.367Z",
+    "at": "2026-04-08T15:23:41.040Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -312,7 +66,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:17:32.779Z",
+    "at": "2026-04-08T15:23:44.016Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -323,7 +77,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:17:34.309Z",
+    "at": "2026-04-08T15:23:46.585Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -334,7 +88,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:17:36.172Z",
+    "at": "2026-04-08T15:23:48.570Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -345,7 +99,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:17:56.686Z",
+    "at": "2026-04-08T15:23:51.252Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -356,7 +110,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:18:11.592Z",
+    "at": "2026-04-08T15:24:06.338Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -367,7 +121,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:18:14.172Z",
+    "at": "2026-04-08T15:24:09.182Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -378,7 +132,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:18:35.342Z",
+    "at": "2026-04-08T15:24:19.375Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -389,7 +143,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:18:39.981Z",
+    "at": "2026-04-08T15:24:21.764Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -400,7 +154,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:18:42.194Z",
+    "at": "2026-04-08T15:24:23.139Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -411,7 +165,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:18:52.157Z",
+    "at": "2026-04-08T15:24:24.552Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -422,7 +176,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:18:53.020Z",
+    "at": "2026-04-08T15:25:37.706Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -433,7 +187,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:18:58.700Z",
+    "at": "2026-04-08T15:25:45.823Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -444,7 +198,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:19:01.917Z",
+    "at": "2026-04-08T15:25:46.083Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -455,7 +209,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:05.389Z",
+    "at": "2026-04-08T15:25:47.092Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -466,7 +220,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:08.561Z",
+    "at": "2026-04-08T15:25:48.670Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -477,7 +231,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:26.921Z",
+    "at": "2026-04-08T15:26:04.854Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -488,7 +242,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:28.659Z",
+    "at": "2026-04-08T15:26:09.082Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -499,7 +253,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:30.651Z",
+    "at": "2026-04-08T15:26:10.113Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -510,7 +264,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:31.348Z",
+    "at": "2026-04-08T15:26:18.608Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -521,7 +275,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:33.116Z",
+    "at": "2026-04-08T15:28:18.616Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -532,7 +286,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:34.639Z",
+    "at": "2026-04-08T15:28:21.031Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -543,7 +297,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:35.876Z",
+    "at": "2026-04-08T15:28:22.807Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -554,7 +308,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:41.880Z",
+    "at": "2026-04-08T15:28:24.485Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -565,7 +319,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:58.104Z",
+    "at": "2026-04-08T15:28:25.751Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -576,7 +330,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:20:59.609Z",
+    "at": "2026-04-08T15:29:53.690Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -587,7 +341,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:02.327Z",
+    "at": "2026-04-08T15:30:02.047Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -598,7 +352,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:04.344Z",
+    "at": "2026-04-08T15:30:02.238Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -609,7 +363,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:08.217Z",
+    "at": "2026-04-08T15:30:20.740Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -620,7 +374,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:18.906Z",
+    "at": "2026-04-08T15:30:21.831Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -631,7 +385,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:20.350Z",
+    "at": "2026-04-08T15:30:24.313Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -642,7 +396,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:23.273Z",
+    "at": "2026-04-08T15:30:26.692Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -653,7 +407,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:28.100Z",
+    "at": "2026-04-08T15:30:27.476Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -664,7 +418,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:29.851Z",
+    "at": "2026-04-08T15:30:29.513Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -675,7 +429,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:31.323Z",
+    "at": "2026-04-08T15:30:30.474Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -686,7 +440,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:32.957Z",
+    "at": "2026-04-08T15:30:33.100Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -697,7 +451,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:35.457Z",
+    "at": "2026-04-08T15:30:44.052Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -708,7 +462,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:37.139Z",
+    "at": "2026-04-08T15:30:56.673Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -719,7 +473,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:39.261Z",
+    "at": "2026-04-08T15:31:04.586Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -730,7 +484,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:40.259Z",
+    "at": "2026-04-08T15:31:14.702Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -741,7 +495,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:42.873Z",
+    "at": "2026-04-08T15:44:55.752Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -752,7 +506,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:43.939Z",
+    "at": "2026-04-08T15:45:01.476Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -763,7 +517,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:44.955Z",
+    "at": "2026-04-08T15:45:05.483Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -774,7 +528,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:52.871Z",
+    "at": "2026-04-08T15:45:07.376Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -785,7 +539,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:21:58.899Z",
+    "at": "2026-04-08T15:45:09.003Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -796,7 +550,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:22:21.170Z",
+    "at": "2026-04-08T15:45:10.493Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -807,7 +561,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:22:24.557Z",
+    "at": "2026-04-08T16:12:32.750Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -818,7 +572,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:22:28.972Z",
+    "at": "2026-04-08T16:12:33.621Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -829,7 +583,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:22:31.788Z",
+    "at": "2026-04-08T16:14:41.096Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -840,7 +594,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:22:34.664Z",
+    "at": "2026-04-08T16:14:43.620Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -851,7 +605,7 @@
     }
   },
   {
-    "at": "2026-04-06T09:22:36.139Z",
+    "at": "2026-04-08T16:16:35.968Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -862,7 +616,260 @@
     }
   },
   {
-    "at": "2026-04-06T09:22:39.327Z",
+    "at": "2026-04-08T16:16:43.441Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:16:56.444Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:17:09.050Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:17:11.205Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:17:12.635Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:17:25.203Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:17:26.378Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:18:57.190Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:18:58.728Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:19:03.373Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:51:25.663Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:53:17.957Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-08T16:53:24.026Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T04:46:11.439Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T04:46:12.202Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T04:46:17.387Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T04:46:23.662Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T04:47:12.991Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T04:47:21.487Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T04:47:31.189Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T06:21:09.765Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T06:21:11.173Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T06:21:13.005Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-09T06:21:14.023Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,

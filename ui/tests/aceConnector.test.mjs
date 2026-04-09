@@ -39,6 +39,57 @@ export default async function runAceConnectorTests() {
       url,
       options,
     });
+    if (url === '/api/spatial/truth-kernel') {
+      return {
+        ok: true,
+        json: async () => ({
+          generatedAt: '2026-04-08T10:00:00.000Z',
+          nodeCount: 2,
+          nodes: [
+            { id: 'intent_1', kind: 'input', timestamp: 1, parents: [], children: ['run_1'], status: 'informational', confidence: 0.7, weight: 0.4 },
+            { id: 'run_1', kind: 'execution', timestamp: 2, parents: ['intent_1'], children: [], status: 'healthy', confidence: 0.8, weight: 0.6 },
+          ],
+        }),
+      };
+    }
+    if (url === '/api/spatial/runtime') {
+      return {
+        ok: true,
+        json: async () => ({
+          truthKernel: {
+            generatedAt: '2026-04-08T10:01:00.000Z',
+            nodeCount: 1,
+            nodes: [
+              { id: 'runtime_node_1', kind: 'execution', timestamp: 3, parents: [], children: [], status: 'healthy', confidence: 0.9, weight: 0.5 },
+            ],
+          },
+        }),
+      };
+    }
+    if (url === '/api/spatial/intent') {
+      return {
+        ok: true,
+        json: async () => ({
+          summary: 'planner backlog summary',
+          tasks: ['planner brief'],
+          canonicalIntent: {
+            id: 'intent_live_1',
+            statement: 'planner backlog summary',
+          },
+          canonicalTruth: {
+            domain: 'intent',
+            projectionId: 'intent',
+            classification: 'projection',
+            sourceOfTruth: 'workspace.intentState.registry + workspace.studio.intake.records',
+            owner: 'ui/server.js::maybeRunContextManagerWorker + ui/server.js::getCurrentSpatialIntent',
+            contractVersion: 'canonical-truth-envelope.v0',
+            generatedAt: '2026-04-08T10:05:00.000Z',
+            freshness: 'live',
+            fallbackUsed: false,
+          },
+        }),
+      };
+    }
     if (url === '/api/projects') {
       return {
         ok: true,
@@ -871,6 +922,47 @@ export default async function runAceConnectorTests() {
       },
     );
 
+    const truthKernelPayload = await ace.getTruthKernel();
+    assert.equal(truthKernelPayload.nodeCount, 2);
+    assert.equal(requests.at(-1).url, '/api/spatial/truth-kernel');
+
+    const primaryFetch = globalThis.fetch;
+    globalThis.fetch = async (url, options = {}) => {
+      requests.push({ url, options });
+      if (url === '/api/spatial/truth-kernel') {
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({
+            error: 'Not found',
+          }),
+        };
+      }
+      if (url === '/api/spatial/runtime') {
+        return {
+          ok: true,
+          json: async () => ({
+            truthKernel: {
+              generatedAt: '2026-04-08T10:01:00.000Z',
+              nodeCount: 1,
+              nodes: [
+                { id: 'runtime_node_1', kind: 'execution', timestamp: 3, parents: [], children: [], status: 'healthy', confidence: 0.9, weight: 0.5 },
+              ],
+            },
+          }),
+        };
+      }
+      throw new Error(`Unexpected fetch in truth-kernel fallback test: ${url}`);
+    };
+    const runtimeTruthKernel = await ace.getTruthKernel();
+    assert.equal(runtimeTruthKernel.nodeCount, 1);
+    assert.equal(runtimeTruthKernel.nodes[0].id, 'runtime_node_1');
+    assert.deepEqual(requests.slice(-2).map((entry) => entry.url), [
+      '/api/spatial/truth-kernel',
+      '/api/spatial/runtime',
+    ]);
+    globalThis.fetch = primaryFetch;
+
     const projectsPayload = await ace.getProjects();
     assert.equal(projectsPayload.projects[0].key, 'topdown-slice');
     assert.equal(requests.at(-1).url, '/api/projects');
@@ -947,6 +1039,12 @@ export default async function runAceConnectorTests() {
     assert.equal(queuedPayload.mutationResult.queued, 1);
     assert.equal(queuedPayload.runtime.mutationGate.approvalQueue.length, 1);
     assert.equal(requests.at(-1).url, '/api/spatial/mutations/apply');
+
+    const intentPayload = await connector.parseIntent('summarize the planner backlog');
+    assert.equal(requests.at(-1).url, '/api/spatial/intent');
+    assert.equal(requests.at(-1).options.method, 'POST');
+    assert.equal(intentPayload.canonicalIntent.id, 'intent_live_1');
+    assert.equal(intentPayload.canonicalTruth.projectionId, 'intent');
 
     const failingAce = new AceConnector();
     globalThis.fetch = async (url, options = {}) => {
