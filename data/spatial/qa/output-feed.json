@@ -1,6 +1,291 @@
 {
   "items": [
     {
+      "id": "qa_output_20260410T082602091Z",
+      "createdAt": "2026-04-10T08:26:02.091Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775809539643_5jwphl",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T081736234Z",
+      "createdAt": "2026-04-10T08:17:36.234Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775809043805_enraby",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T080559205Z",
+      "createdAt": "2026-04-10T08:05:59.205Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775808339635_m7wdv9",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T074623683Z",
+      "createdAt": "2026-04-10T07:46:23.683Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775807139625_4n1n8s",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T072710168Z",
+      "createdAt": "2026-04-10T07:27:10.168Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: page.screenshot: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775805937716_y1y0q0",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T070648582Z",
+      "createdAt": "2026-04-10T07:06:48.582Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775804737417_vmnua0",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T064641681Z",
+      "createdAt": "2026-04-10T06:46:41.681Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775803537403_ft2dxd",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T062617596Z",
+      "createdAt": "2026-04-10T06:26:17.596Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775802337131_b9g74e",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T060620247Z",
+      "createdAt": "2026-04-10T06:06:20.247Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775801137119_ljojbd",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T054652152Z",
+      "createdAt": "2026-04-10T05:46:52.152Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775799938612_y1g8na",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260409T195959218Z",
+      "createdAt": "2026-04-09T19:59:59.218Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775764763874_27y0fr",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260409T193959741Z",
+      "createdAt": "2026-04-09T19:39:59.741Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775763563872_dobpe1",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260409T192000138Z",
+      "createdAt": "2026-04-09T19:20:00.138Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775762363857_qvxt09",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260409T185945617Z",
+      "createdAt": "2026-04-09T18:59:45.617Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775761169723_zf1suu",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260409T184603487Z",
+      "createdAt": "2026-04-09T18:46:03.487Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 3,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775760226390_qhcxfx",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
       "id": "qa_output_20260409T182521752Z",
       "createdAt": "2026-04-09T18:25:21.752Z",
       "type": "qa_cycle",
@@ -96,18 +381,18 @@
       }
     },
     {
-      "id": "qa_output_20260409T184603487Z",
-      "createdAt": "2026-04-09T18:46:03.487Z",
+      "id": "qa_output_20260410T082859438Z",
+      "createdAt": "2026-04-10T08:28:59.438Z",
       "type": "qa_cycle",
-      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
       "result": "fail",
       "source": "qa_lead_runner",
       "meta": {
         "investigationCount": 4,
-        "failedChecks": 3,
+        "failedChecks": 2,
         "activeLanes": 1,
         "externalStatus": "ok",
-        "cycleId": "qa_lead_1775760226390_qhcxfx",
+        "cycleId": "qa_lead_1775809723869_klu7ys",
         "mcpEvidenceSource": "live_helper",
         "externalProbeLive": true,
         "usedFallback": false,

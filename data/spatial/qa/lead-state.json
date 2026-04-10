@@ -1,13 +1,13 @@
 {
   "source": "qa_lead_runner",
   "agent_id": "qa-lead",
-  "run_id": "qa_lead_1775760226390_qhcxfx",
+  "run_id": "qa_lead_1775809723869_klu7ys",
   "status": "live",
   "current_task": "QA proof-of-life, browser pass, lane canaries, and loop audit",
-  "current_batch": "qa_lead_1775760226390_qhcxfx",
-  "started_at": "2026-04-09T18:43:46.390Z",
-  "finished_at": "2026-04-09T18:46:03.487Z",
-  "last_completed_cycle_at": "2026-04-09T18:46:03.487Z",
+  "current_batch": "qa_lead_1775809723869_klu7ys",
+  "started_at": "2026-04-10T08:28:43.869Z",
+  "finished_at": "2026-04-10T08:28:59.438Z",
+  "last_completed_cycle_at": "2026-04-10T08:28:59.438Z",
   "active_tools": [
     "boot_preflight",
     "ui_boot_repair",
@@ -23,15 +23,15 @@
     "usage_state": "active_gating",
     "freshness": "fresh",
     "summary": "QA is live and actively gating with MCP-backed evidence.",
-    "heartbeat_at": "2026-04-09T18:44:15.809Z",
-    "last_completed_cycle_at": "2026-04-09T18:44:15.809Z",
+    "heartbeat_at": "2026-04-10T08:28:55.458Z",
+    "last_completed_cycle_at": "2026-04-10T08:28:55.458Z",
     "mcp_configured": true,
     "configured_tools": [
       "external_probe_check",
       "qa_research_note"
     ],
     "mcp_reachable": true,
-    "last_ping_at": "2026-04-09T18:43:46.429Z",
+    "last_ping_at": "2026-04-10T08:28:43.876Z",
     "last_ping_status": "ok",
     "last_ping_source": "external_mcp",
     "last_ping_failure_kind": null,
@@ -43,18 +43,18 @@
     "research_last_call_status": "unavailable",
     "research_failure_kind": "unavailable",
     "research_failure_detail": "fetch failed",
-    "last_call_at": "2026-04-09T18:43:46.429Z",
+    "last_call_at": "2026-04-10T08:28:43.876Z",
     "last_call_tool": "external_probe_check",
     "last_call_status": "ok",
     "last_call_source": "external_mcp",
     "last_qa_gate_source": "structured_qa",
     "using_mcp_for_qa_decisions": true,
-    "last_success_at": "2026-04-09T18:43:46.429Z",
+    "last_success_at": "2026-04-10T08:28:43.876Z",
     "last_failure_at": "2026-04-09T08:34:06.329Z",
     "current_failure_kind": "unavailable",
     "current_failure_tool": "qa_research_note",
     "recovery_detected": true,
-    "recovered_at": "2026-04-09T18:43:46.429Z",
+    "recovered_at": "2026-04-10T08:28:43.876Z",
     "recovered_from_kind": "unavailable",
     "notes": [
       "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
@@ -78,7 +78,7 @@
       "verdict": "pass",
       "summary": "Boot preflight passed.",
       "detail": "",
-      "observed_at": "2026-04-09T18:23:46.355Z",
+      "observed_at": "2026-04-10T08:28:42.341Z",
       "artifact_refs": [
         "/api/health"
       ],
@@ -92,7 +92,7 @@
       "verdict": "pass",
       "summary": "External QA probe returned a fresh live QA MCP helper result.",
       "detail": "1 of 4 desks failed; 1 of 19 checks failed",
-      "observed_at": "2026-04-09T18:43:46.429Z",
+      "observed_at": "2026-04-10T08:28:43.876Z",
       "artifact_refs": [
         "http://127.0.0.1:5051/run_test"
       ],
@@ -109,18 +109,22 @@
       "tool": "chromium",
       "status": "degraded",
       "verdict": "fail",
-      "summary": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
-      "detail": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
-      "observed_at": "2026-04-09T18:44:15.809Z",
+      "summary": "Browser QA run fail.",
+      "detail": "Planner overlaps Executor.",
+      "observed_at": "2026-04-10T08:28:55.458Z",
       "artifact_refs": [
-        "data/spatial/qa/qa_1775760226431_ssa6pr.json"
+        "data/spatial/qa/qa_1775809723878_oj8o4z.json",
+        "/api/spatial/qa/runs/qa_1775809723878_oj8o4z/artifacts/01-initial.png",
+        "/api/spatial/qa/runs/qa_1775809723878_oj8o4z/artifacts/02-studio-smoke.png"
       ],
       "notes": [
         "Runtime attempted: chromium",
         "Runtime used: chromium",
         "Runtime fallback used: no",
-        "Failure stage: run",
-        "Failure code: run_timeout"
+        "Planner overlaps Executor.",
+        "Team Board overlaps Planner.",
+        "Team Board overlaps Executor.",
+        "Recent Saves is clipped or hidden."
       ]
     },
     {
@@ -129,13 +133,13 @@
       "tool": "lane_canary_suite",
       "status": "degraded",
       "verdict": "fail",
-      "summary": "3 QA lane canaryies failing.",
-      "detail": "Failing canaries: ui_boot_integrity_missing_asset | route_contract_health_payload | planner_canonical_identity_guard",
-      "observed_at": "2026-04-09T18:44:25.426Z",
+      "summary": "2 QA lane canaryies failing.",
+      "detail": "Failing canaries: ui_boot_integrity_missing_asset | planner_canonical_identity_guard",
+      "observed_at": "2026-04-10T08:28:58.917Z",
       "artifact_refs": [],
       "notes": [
         "UI boot missing asset route: fail",
-        "Route contract payload drift: fail",
+        "Route contract payload drift: pass",
         "Planner canonical identity guard: fail"
       ]
     },
@@ -143,14 +147,14 @@
       "id": "loop-audit",
       "label": "Closed-loop fault audit",
       "tool": "loop_audit",
-      "status": "degraded",
-      "verdict": "fail",
-      "summary": "1 injected loop fault diverged from the expected loop behavior.",
-      "detail": "Failing fault ids: missing_required_asset",
-      "observed_at": "2026-04-09T18:46:03.482Z",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "All 3 injected loop faults behaved as expected.",
+      "detail": "All injected loop faults behaved as expected.",
+      "observed_at": "2026-04-10T08:28:59.431Z",
       "artifact_refs": [],
       "notes": [
-        "missing_required_asset: fail",
+        "missing_required_asset: pass",
         "planner_canonical_mismatch: pass",
         "qa_mcp_stale: pass"
       ]
@@ -178,7 +182,7 @@
       "verdict": "live",
       "summary": "QA is live and actively gating with MCP-backed evidence.",
       "detail": "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
-      "observed_at": "2026-04-09T18:44:15.809Z",
+      "observed_at": "2026-04-10T08:28:55.458Z",
       "artifact_refs": [],
       "notes": [
         "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
@@ -201,7 +205,7 @@
       "verdict": "pass",
       "summary": "1 repair job tracked.",
       "detail": "open",
-      "observed_at": "2026-04-09T18:42:41.639Z",
+      "observed_at": "2026-04-10T08:16:47.020Z",
       "artifact_refs": [],
       "notes": [
         "UI Boot Integrity: idle",
@@ -210,12 +214,12 @@
       ]
     }
   ],
-  "latest_run": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m\n",
+  "latest_run": "QA lead cycle degraded: All 3 injected loop faults behaved as expected.",
   "result_paths": {
     "researchNotes": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\research-notes.json",
-    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1775760226431_ssa6pr.json",
+    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1775809723878_oj8o4z.json",
     "loopAudit": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\qaLoopAudit.js"
   },
-  "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m\n",
-  "last_updated_at": "2026-04-09T18:46:03.487Z"
+  "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected.",
+  "last_updated_at": "2026-04-10T08:28:59.438Z"
 }
