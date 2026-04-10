@@ -69,6 +69,11 @@ export function bindUI({ state, actions }) {
   const hudInspectListEl = document.getElementById('hud-inspect-list');
   const resetWorkerEnergyBtn = document.getElementById('reset-worker-energy-btn');
   const resetScenarioBtn = document.getElementById('reset-scenario-btn');
+  const worldEventType = document.getElementById('world-event-type');
+  const worldEventX = document.getElementById('world-event-x');
+  const worldEventY = document.getElementById('world-event-y');
+  const triggerWorldEventBtn = document.getElementById('trigger-world-event-btn');
+  const worldEventListEl = document.getElementById('world-event-list');
 
   const runChecksBtn = document.getElementById('run-checks-btn');
   const qaScorecardEl = document.getElementById('qa-scorecard');
@@ -243,6 +248,14 @@ export function bindUI({ state, actions }) {
 
   resetScenarioBtn.addEventListener('click', () => {
     actions.resetScenario();
+  });
+
+  triggerWorldEventBtn?.addEventListener('click', () => {
+    const fallbackTile = state.debug?.resolverPinnedTile ?? state.debug?.resolverHoverTile ?? state.store?.agent ?? { x: 0, y: 0 };
+    const x = worldEventX?.value === '' ? fallbackTile.x : Number(worldEventX.value);
+    const y = worldEventY?.value === '' ? fallbackTile.y : Number(worldEventY.value);
+    actions.triggerWorldEvent(worldEventType?.value ?? 'breach', x, y);
+    refreshWorldEvents();
   });
 
   runChecksBtn.addEventListener('click', () => {
@@ -831,7 +844,28 @@ export function bindUI({ state, actions }) {
     simulationStatusEl.textContent = paused
       ? `Paused | ${state.simulation?.speedMultiplier ?? 1}x ready | frame ${state.simulation?.totalFrames ?? 0}`
       : `Running | ${state.simulation?.speedMultiplier ?? 1}x | frame ${state.simulation?.totalFrames ?? 0}`;
+    if (worldEventX && worldEventX.value === '') {
+      worldEventX.value = `${state.store?.agent?.x ?? 0}`;
+    }
+    if (worldEventY && worldEventY.value === '') {
+      worldEventY.value = `${state.store?.agent?.y ?? 0}`;
+    }
+    refreshWorldEvents();
     refreshOperatorHud();
+  }
+
+  function refreshWorldEvents() {
+    if (!worldEventListEl) {
+      return;
+    }
+
+    const activeEvents = state.emergence?.worldEvents?.active ?? [];
+    renderSimpleList(
+      worldEventListEl,
+      activeEvents.length > 0
+        ? activeEvents.map((event) => `${event.type.toUpperCase()} #${event.id} @ (${event.x},${event.y}) r${event.radius} | ${event.remainingFrames}f left`)
+        : ['No active world events.']
+    );
   }
 
   function refreshOperatorHud() {
@@ -887,7 +921,8 @@ export function bindUI({ state, actions }) {
     refreshResolverLog,
     refreshIntentControls,
     refreshIntentTranslation,
-    refreshOperatorHud
+    refreshOperatorHud,
+    refreshWorldEvents
   };
 }
 

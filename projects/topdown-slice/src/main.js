@@ -71,6 +71,14 @@ import {
   summarizeProtoWeather,
   tickProtoWeather
 } from './world/fields.js';
+import {
+  applyWorldEventsToFields,
+  buildWorldEventPressureFields,
+  createWorldEventsState,
+  summarizeWorldEvents,
+  tickWorldEvents,
+  triggerWorldEvent
+} from './world/worldEvents.js';
 
 const canvas = document.getElementById('game-canvas');
 const commandLogEl = document.getElementById('command-log');
@@ -183,6 +191,7 @@ const state = {
     qaTracker: null,
     adaptiveResolver: createAdaptiveResolverState(),
     adaptiveMonitor: createAdaptiveTuningMonitor(),
+    worldEvents: createWorldEventsState(),
     tileCooldowns: {},
     tileCooldownCycles: 2,
     frame: 0,
@@ -515,6 +524,7 @@ const actions = {
     const nextSpeed = applySimulationSpeed(state.simulation, multiplier);
     appendLog(eventLogEl, `Simulation speed | ${nextSpeed}x realtime`, 'ok');
     ui.refreshScenarioControls();
+    ui.refreshWorldEvents?.();
   },
   toggleSimulationPaused() {
     if (state.simulation.mode === 'paused') {
@@ -525,6 +535,7 @@ const actions = {
       appendLog(eventLogEl, `Simulation paused | ${getSimulationStatusSummary(state.simulation).label}`, 'warn');
     }
     ui.refreshScenarioControls();
+    ui.refreshWorldEvents?.();
   },
   stepSimulation(frames = 1) {
     pauseSimulation(state.simulation);
@@ -532,6 +543,7 @@ const actions = {
     const advancedFrames = runSimulationFrames(requestedFrames, { source: 'step' });
     appendLog(eventLogEl, `Simulation step | advanced ${advancedFrames} frame(s)`, 'ok');
     ui.refreshScenarioControls();
+    ui.refreshWorldEvents?.();
   },
   resetWorkerEnergy() {
     const restored = state.store.units
@@ -588,6 +600,27 @@ const actions = {
     appendLog(eventLogEl, result.ok ? `${actorLabel(actor)} retried failed task ${taskId}` : result.error, result.ok ? 'ok' : 'warn');
     ui.refreshTaskPanel();
     ui.refreshWorkerPanel();
+  },
+  triggerWorldEvent(type, x, y) {
+    const boundedX = Math.max(0, Math.min(state.map.width - 1, Math.floor(Number(x) || 0)));
+    const boundedY = Math.max(0, Math.min(state.map.height - 1, Math.floor(Number(y) || 0)));
+    const event = triggerWorldEvent(state.emergence.worldEvents, {
+      type,
+      x: boundedX,
+      y: boundedY
+    });
+
+    if (!event) {
+      appendLog(eventLogEl, `World event rejected: ${type ?? 'unknown'} at (${boundedX}, ${boundedY})`, 'warn');
+      return null;
+    }
+
+    appendLog(eventLogEl, `World event | ${event.type} @ (${event.x}, ${event.y}) radius ${event.radius} for ${event.durationFrames}f`, 'warn');
+    refreshEmergenceCandidates();
+    ui.refreshWorldEvents?.();
+    ui.refreshOperatorHud();
+    renderer.draw(state);
+    return event;
   }
 };
 
@@ -1006,6 +1039,7 @@ function resetEmergenceRuntime() {
   state.emergence.qaTracker = createEmergenceQaTracker(state);
   state.emergence.adaptiveResolver = createAdaptiveResolverState();
   state.emergence.adaptiveMonitor = createAdaptiveTuningMonitor();
+  state.emergence.worldEvents = createWorldEventsState();
   state.emergence.resolverDecision = createResolverDecisionSnapshot();
   state.emergence.frame = 0;
   state.emergence.resolveCycle = 0;
@@ -1034,6 +1068,7 @@ function advanceResolveCycles(cycles) {
 
 function tickEmergence() {
   decayFieldValues(state.emergence.reinforcement, REINFORCEMENT_DECAY_PER_FRAME);
+  tickWorldEvents(state.emergence.worldEvents);
   const { candidates } = refreshEmergenceCandidates();
   state.emergence.frame += 1;
 
@@ -1108,9 +1143,18 @@ function updateEmergenceQa() {
 
 function refreshEmergenceCandidates() {
   const fields = recomputeFieldsFromWorld(state);
-  const pressures = Object.fromEntries(
+  applyWorldEventsToFields(fields, state.emergence.worldEvents);
+
+  const intentPressures = Object.fromEntries(
     state.emergence.intents.map((intent) => [intent.type, evaluateIntentPressure(intent, fields)])
   );
+  const eventPressures = buildWorldEventPressureFields(fields, state.emergence.worldEvents);
+  const pressures = {
+    defensibility: mergePressureField(intentPressures.defensibility, eventPressures.defensibility),
+    flow: mergePressureField(intentPressures.flow, eventPressures.flow),
+    threat: mergePressureField(intentPressures.threat, eventPressures.threat)
+  };
+
   const inspection = inspectIntentResolution({
     world: state,
     fields,
@@ -1129,6 +1173,29 @@ function refreshEmergenceCandidates() {
   state.emergence.resolverInspector = inspection;
 
   return { fields, pressures, candidates };
+}
+
+
+function mergePressureField(baseField, deltaField) {
+  if (!baseField && !deltaField) {
+    return null;
+  }
+  if (!baseField) {
+    return deltaField;
+  }
+  if (!deltaField) {
+    return baseField;
+  }
+
+  for (let y = 0; y < baseField.height; y += 1) {
+    for (let x = 0; x < baseField.width; x += 1) {
+      const baseValue = Number(baseField.values[y][x] ?? 0);
+      const delta = Number(deltaField.values[y][x] ?? 0);
+      baseField.values[y][x] = Math.max(0, Math.min(1, baseValue + delta));
+    }
+  }
+
+  return baseField;
 }
 
 function updateAdaptiveResolverFeedback() {
@@ -1341,6 +1408,7 @@ function refreshAllPanels() {
   ui.refreshQaScorecard();
   ui.refreshAdaptiveFeedback();
   ui.refreshScenarioControls();
+  ui.refreshWorldEvents?.();
   ui.refreshScoreSummary();
   ui.refreshResolverInspector();
   ui.refreshResolverLog();
@@ -1418,6 +1486,7 @@ function refreshSimulationPanels() {
   ui.refreshQaScorecard();
   ui.refreshAdaptiveFeedback();
   ui.refreshScenarioControls();
+  ui.refreshWorldEvents?.();
   ui.refreshScoreSummary();
   ui.refreshResolverInspector();
   ui.refreshResolverLog();
@@ -1584,14 +1653,17 @@ window.advanceTime = (ms = 1000 / 60) => {
 window.pauseSimulation = () => {
   pauseSimulation(state.simulation);
   ui.refreshScenarioControls();
+  ui.refreshWorldEvents?.();
 };
 window.resumeRealtime = () => {
   resumeSimulation(state.simulation);
   ui.refreshScenarioControls();
+  ui.refreshWorldEvents?.();
 };
 window.setSimulationSpeed = (multiplier = 1) => {
   const nextSpeed = applySimulationSpeed(state.simulation, multiplier);
   ui.refreshScenarioControls();
+  ui.refreshWorldEvents?.();
   return nextSpeed;
 };
 window.stepSimulation = (frames = 1) => {
