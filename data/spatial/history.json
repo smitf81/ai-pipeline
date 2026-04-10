@@ -1,159 +1,5 @@
 [
   {
-    "at": "2026-04-10T08:25:51.783Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:25:53.218Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:25:54.410Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:28:52.422Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:28:55.010Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:33:10.904Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:33:12.314Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:35:23.739Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:35:25.024Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:35:28.139Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:35:52.761Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:35:57.967Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:35:59.811Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T08:36:03.958Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
     "at": "2026-04-10T08:36:07.677Z",
     "type": "workspace-save",
     "summary": {
@@ -867,6 +713,158 @@
   },
   {
     "at": "2026-04-10T12:25:59.303Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T12:38:28.615Z",
+    "type": "planner-worker-start",
+    "summary": {
+      "handoffId": "handoff_1774615405452_2yc7",
+      "runId": "planner_1775824708576_ao7cc8",
+      "mode": "auto"
+    }
+  },
+  {
+    "at": "2026-04-10T12:38:28.705Z",
+    "type": "planner-worker-skipped",
+    "summary": {
+      "handoffId": "handoff_1774615405452_2yc7",
+      "runId": "planner_1775824708576_ao7cc8",
+      "reason": "Planner worker is already running.",
+      "producedCardIds": [],
+      "proposalArtifactRefs": []
+    }
+  },
+  {
+    "at": "2026-04-10T12:45:55.903Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T12:46:02.158Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T12:46:07.852Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T13:06:00.183Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T13:06:03.031Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T13:06:04.266Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T13:26:02.807Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T13:26:03.565Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T13:26:04.687Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T13:46:00.616Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T13:46:03.863Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-10T13:46:09.376Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,

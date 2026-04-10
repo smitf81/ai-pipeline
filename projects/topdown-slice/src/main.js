@@ -675,6 +675,11 @@ const actions = {
     ui.refreshOperatorHud();
     renderer.draw(state);
     return phase;
+    refreshEmergenceCandidates();
+    ui.refreshWorldEvents?.();
+    ui.refreshOperatorHud();
+    renderer.draw(state);
+    return event;
   }
 };
 
@@ -1280,6 +1285,10 @@ function refreshEmergenceCandidates() {
     defensibility: mergePressureField(mergePressureField(intentPressures.defensibility, eventPressures.defensibility), directorPressures.defensibility),
     flow: mergePressureField(mergePressureField(intentPressures.flow, eventPressures.flow), directorPressures.flow),
     threat: mergePressureField(mergePressureField(intentPressures.threat, eventPressures.threat), directorPressures.threat)
+  const pressures = {
+    defensibility: mergePressureField(intentPressures.defensibility, eventPressures.defensibility),
+    flow: mergePressureField(intentPressures.flow, eventPressures.flow),
+    threat: mergePressureField(intentPressures.threat, eventPressures.threat)
   };
 
   const inspection = inspectIntentResolution({

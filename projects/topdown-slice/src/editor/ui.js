@@ -949,6 +949,7 @@ export function bindUI({ state, actions }) {
     refreshOperatorHud,
     refreshWorldEvents,
     refreshDirectorPhase
+    refreshWorldEvents
   };
 }
 
