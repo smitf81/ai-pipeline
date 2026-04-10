@@ -79,6 +79,21 @@ import {
   tickWorldEvents,
   triggerWorldEvent
 } from './world/worldEvents.js';
+import {
+  applyDirectorPhaseToFields,
+  buildDirectorPressureFields,
+  createDirectorState,
+  summarizeDirectorPhase,
+  tickDirectorPhase,
+  triggerDirectorPhase
+} from './world/directorPhases.js';
+import {
+  createMythicTheatreState,
+  deriveDominantRegion,
+  registerBattlefieldWhisper,
+  registerImpactMoment,
+  tickMythicTheatre
+} from './world/mythicTheatre.js';
 
 const canvas = document.getElementById('game-canvas');
 const commandLogEl = document.getElementById('command-log');
@@ -192,6 +207,8 @@ const state = {
     adaptiveResolver: createAdaptiveResolverState(),
     adaptiveMonitor: createAdaptiveTuningMonitor(),
     worldEvents: createWorldEventsState(),
+    director: createDirectorState(map.width, map.height),
+    theatre: createMythicTheatreState(),
     tileCooldowns: {},
     tileCooldownCycles: 2,
     frame: 0,
@@ -525,6 +542,7 @@ const actions = {
     appendLog(eventLogEl, `Simulation speed | ${nextSpeed}x realtime`, 'ok');
     ui.refreshScenarioControls();
     ui.refreshWorldEvents?.();
+  ui.refreshDirectorPhase?.();
   },
   toggleSimulationPaused() {
     if (state.simulation.mode === 'paused') {
@@ -536,6 +554,7 @@ const actions = {
     }
     ui.refreshScenarioControls();
     ui.refreshWorldEvents?.();
+  ui.refreshDirectorPhase?.();
   },
   stepSimulation(frames = 1) {
     pauseSimulation(state.simulation);
@@ -544,6 +563,7 @@ const actions = {
     appendLog(eventLogEl, `Simulation step | advanced ${advancedFrames} frame(s)`, 'ok');
     ui.refreshScenarioControls();
     ui.refreshWorldEvents?.();
+  ui.refreshDirectorPhase?.();
   },
   resetWorkerEnergy() {
     const restored = state.store.units
@@ -616,6 +636,45 @@ const actions = {
     }
 
     appendLog(eventLogEl, `World event | ${event.type} @ (${event.x}, ${event.y}) radius ${event.radius} for ${event.durationFrames}f`, 'warn');
+    registerBattlefieldWhisper(state.emergence.theatre, {
+      text: getWorldEventWhisper(event.type),
+      tone: 'omen',
+      frame: state.emergence.frame
+    });
+    registerImpactMoment(state.emergence.theatre, {
+      type: event.type,
+      x: event.x,
+      y: event.y,
+      strength: 1,
+      frame: state.emergence.frame
+    });
+    tryPlayMythicCue(event.type);
+    refreshEmergenceCandidates();
+    ui.refreshWorldEvents?.();
+    ui.refreshDirectorPhase?.();
+    ui.refreshOperatorHud();
+    renderer.draw(state);
+    return event;
+  },
+  triggerDirectorPhase(type) {
+    const phase = triggerDirectorPhase(state.emergence.director, state.map, type, 'manual');
+    if (!phase) {
+      appendLog(eventLogEl, `Director phase rejected: ${type}`, 'warn');
+      return null;
+    }
+
+    appendLog(eventLogEl, `Director phase | ${phase.type} for ${phase.durationFrames}f`, 'warn');
+    registerBattlefieldWhisper(state.emergence.theatre, {
+      text: getDirectorPhaseWhisper(phase.type),
+      tone: 'phase',
+      frame: state.emergence.frame
+    });
+    tryPlayMythicCue(phase.type);
+    refreshEmergenceCandidates();
+    ui.refreshDirectorPhase?.();
+    ui.refreshOperatorHud();
+    renderer.draw(state);
+    return phase;
     refreshEmergenceCandidates();
     ui.refreshWorldEvents?.();
     ui.refreshOperatorHud();
@@ -1040,9 +1099,58 @@ function resetEmergenceRuntime() {
   state.emergence.adaptiveResolver = createAdaptiveResolverState();
   state.emergence.adaptiveMonitor = createAdaptiveTuningMonitor();
   state.emergence.worldEvents = createWorldEventsState();
+  state.emergence.director = createDirectorState(state.map.width, state.map.height);
+  state.emergence.theatre = createMythicTheatreState();
   state.emergence.resolverDecision = createResolverDecisionSnapshot();
   state.emergence.frame = 0;
   state.emergence.resolveCycle = 0;
+}
+
+function getWorldEventWhisper(type) {
+  return {
+    breach: 'A breach opens…',
+    fortify: 'They dig in.',
+    panic: 'Panic shreds the line…'
+  }[type] ?? 'The front shifts.';
+}
+
+function getDirectorPhaseWhisper(type) {
+  return {
+    blackout: 'The field goes blind…',
+    stampede: 'A wild front sweeps the theatre.',
+    siege_doctrine: 'They harden every anchor.',
+    collapse: 'Ground collapses beneath them…'
+  }[type] ?? 'The war mood turns.';
+}
+
+function tryPlayMythicCue(type) {
+  const Context = window?.AudioContext ?? window?.webkitAudioContext;
+  if (!Context) {
+    return;
+  }
+
+  state.audioContext ??= new Context();
+  const frequency = ({
+    blackout: 170,
+    stampede: 320,
+    siege_doctrine: 210,
+    collapse: 92,
+    breach: 280,
+    fortify: 230,
+    panic: 350
+  })[type] ?? 240;
+
+  const now = state.audioContext.currentTime;
+  const osc = state.audioContext.createOscillator();
+  const gain = state.audioContext.createGain();
+  osc.frequency.value = frequency;
+  osc.type = type === 'collapse' ? 'sawtooth' : 'sine';
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.045, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.17);
+  osc.connect(gain).connect(state.audioContext.destination);
+  osc.start(now);
+  osc.stop(now + 0.19);
 }
 
 function runPostResetResolveCycles(source) {
@@ -1069,7 +1177,29 @@ function advanceResolveCycles(cycles) {
 function tickEmergence() {
   decayFieldValues(state.emergence.reinforcement, REINFORCEMENT_DECAY_PER_FRAME);
   tickWorldEvents(state.emergence.worldEvents);
+  tickMythicTheatre(state.emergence.theatre);
+  const activatedPhase = tickDirectorPhase(state.emergence.director, state.map, state.emergence.frame);
+  if (activatedPhase) {
+    appendLog(eventLogEl, `Director auto-phase | ${activatedPhase.type} for ${activatedPhase.durationFrames}f`, 'warn');
+    registerBattlefieldWhisper(state.emergence.theatre, {
+      text: getDirectorPhaseWhisper(activatedPhase.type),
+      tone: 'phase',
+      frame: state.emergence.frame
+    });
+    tryPlayMythicCue(activatedPhase.type);
+  }
   const { candidates } = refreshEmergenceCandidates();
+  const dominant = deriveDominantRegion(state);
+  if (dominant && dominant.signature !== state.emergence.theatre.lastFocusSignature) {
+    state.emergence.theatre.focus = dominant;
+    state.emergence.theatre.lastFocusSignature = dominant.signature;
+    registerBattlefieldWhisper(state.emergence.theatre, {
+      text: dominant.mood === 'violent' ? 'The line writhes in violence…' : 'The front settles into iron discipline.',
+      tone: dominant.mood === 'violent' ? 'volatile' : 'stoic',
+      ttlFrames: 120,
+      frame: state.emergence.frame
+    });
+  }
   state.emergence.frame += 1;
 
   if (state.emergence.frame % state.emergence.resolveEveryFrames !== 0) {
@@ -1144,11 +1274,17 @@ function updateEmergenceQa() {
 function refreshEmergenceCandidates() {
   const fields = recomputeFieldsFromWorld(state);
   applyWorldEventsToFields(fields, state.emergence.worldEvents);
+  applyDirectorPhaseToFields(fields, state, state.emergence.frame);
 
   const intentPressures = Object.fromEntries(
     state.emergence.intents.map((intent) => [intent.type, evaluateIntentPressure(intent, fields)])
   );
   const eventPressures = buildWorldEventPressureFields(fields, state.emergence.worldEvents);
+  const directorPressures = buildDirectorPressureFields(fields, state, state.emergence.frame);
+  const pressures = {
+    defensibility: mergePressureField(mergePressureField(intentPressures.defensibility, eventPressures.defensibility), directorPressures.defensibility),
+    flow: mergePressureField(mergePressureField(intentPressures.flow, eventPressures.flow), directorPressures.flow),
+    threat: mergePressureField(mergePressureField(intentPressures.threat, eventPressures.threat), directorPressures.threat)
   const pressures = {
     defensibility: mergePressureField(intentPressures.defensibility, eventPressures.defensibility),
     flow: mergePressureField(intentPressures.flow, eventPressures.flow),
@@ -1409,6 +1545,7 @@ function refreshAllPanels() {
   ui.refreshAdaptiveFeedback();
   ui.refreshScenarioControls();
   ui.refreshWorldEvents?.();
+  ui.refreshDirectorPhase?.();
   ui.refreshScoreSummary();
   ui.refreshResolverInspector();
   ui.refreshResolverLog();
@@ -1487,6 +1624,7 @@ function refreshSimulationPanels() {
   ui.refreshAdaptiveFeedback();
   ui.refreshScenarioControls();
   ui.refreshWorldEvents?.();
+  ui.refreshDirectorPhase?.();
   ui.refreshScoreSummary();
   ui.refreshResolverInspector();
   ui.refreshResolverLog();
@@ -1606,6 +1744,15 @@ function renderGameToText() {
       trends: state.emergence.adaptiveMonitor?.trends ?? null,
       history: (state.emergence.adaptiveMonitor?.history ?? []).slice(0, 5)
     },
+    director: summarizeDirectorPhase(state.emergence.director),
+    theatre: {
+      whispers: (state.emergence.theatre?.whispers ?? []).map((whisper) => ({
+        text: whisper.text,
+        tone: whisper.tone,
+        remainingFrames: whisper.remainingFrames
+      })),
+      focus: state.emergence.theatre?.focus ?? null
+    },
     intentTranslation: {
       status: state.debug.intentTranslation?.status ?? 'idle',
       source: state.debug.intentTranslation?.source ?? 'none',
@@ -1654,16 +1801,19 @@ window.pauseSimulation = () => {
   pauseSimulation(state.simulation);
   ui.refreshScenarioControls();
   ui.refreshWorldEvents?.();
+  ui.refreshDirectorPhase?.();
 };
 window.resumeRealtime = () => {
   resumeSimulation(state.simulation);
   ui.refreshScenarioControls();
   ui.refreshWorldEvents?.();
+  ui.refreshDirectorPhase?.();
 };
 window.setSimulationSpeed = (multiplier = 1) => {
   const nextSpeed = applySimulationSpeed(state.simulation, multiplier);
   ui.refreshScenarioControls();
   ui.refreshWorldEvents?.();
+  ui.refreshDirectorPhase?.();
   return nextSpeed;
 };
 window.stepSimulation = (frames = 1) => {

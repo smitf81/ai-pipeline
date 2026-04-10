@@ -74,6 +74,11 @@ export function bindUI({ state, actions }) {
   const worldEventY = document.getElementById('world-event-y');
   const triggerWorldEventBtn = document.getElementById('trigger-world-event-btn');
   const worldEventListEl = document.getElementById('world-event-list');
+  const directorPhaseStatusEl = document.getElementById('director-phase-status');
+  const directorBlackoutBtn = document.getElementById('director-blackout-btn');
+  const directorStampedeBtn = document.getElementById('director-stampede-btn');
+  const directorSiegeBtn = document.getElementById('director-siege-btn');
+  const directorCollapseBtn = document.getElementById('director-collapse-btn');
 
   const runChecksBtn = document.getElementById('run-checks-btn');
   const qaScorecardEl = document.getElementById('qa-scorecard');
@@ -257,6 +262,11 @@ export function bindUI({ state, actions }) {
     actions.triggerWorldEvent(worldEventType?.value ?? 'breach', x, y);
     refreshWorldEvents();
   });
+
+  directorBlackoutBtn?.addEventListener('click', () => actions.triggerDirectorPhase('blackout'));
+  directorStampedeBtn?.addEventListener('click', () => actions.triggerDirectorPhase('stampede'));
+  directorSiegeBtn?.addEventListener('click', () => actions.triggerDirectorPhase('siege_doctrine'));
+  directorCollapseBtn?.addEventListener('click', () => actions.triggerDirectorPhase('collapse'));
 
   runChecksBtn.addEventListener('click', () => {
     actions.runChecks();
@@ -851,6 +861,7 @@ export function bindUI({ state, actions }) {
       worldEventY.value = `${state.store?.agent?.y ?? 0}`;
     }
     refreshWorldEvents();
+    refreshDirectorPhase();
     refreshOperatorHud();
   }
 
@@ -866,6 +877,20 @@ export function bindUI({ state, actions }) {
         ? activeEvents.map((event) => `${event.type.toUpperCase()} #${event.id} @ (${event.x},${event.y}) r${event.radius} | ${event.remainingFrames}f left`)
         : ['No active world events.']
     );
+  }
+
+  function refreshDirectorPhase() {
+    if (!directorPhaseStatusEl) {
+      return;
+    }
+
+    const phase = state.emergence?.director?.activePhase;
+    if (!phase) {
+      directorPhaseStatusEl.textContent = 'Director idle (auto phases may trigger).';
+      return;
+    }
+
+    directorPhaseStatusEl.textContent = `Active: ${phase.type} | ${phase.remainingFrames}f left | ${phase.origin}`;
   }
 
   function refreshOperatorHud() {
@@ -922,6 +947,8 @@ export function bindUI({ state, actions }) {
     refreshIntentControls,
     refreshIntentTranslation,
     refreshOperatorHud,
+    refreshWorldEvents,
+    refreshDirectorPhase
     refreshWorldEvents
   };
 }
