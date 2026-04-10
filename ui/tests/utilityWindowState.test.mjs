@@ -10,9 +10,13 @@ export default async function runUtilityWindowStateTests() {
   const defaults = windowState.createDefaultUtilityWindows();
 
   assert.ok(defaults['studio-map']);
+  assert.ok(defaults['executive-advisory']);
+  assert.equal(defaults['executive-advisory'].docked, false);
+  assert.equal(defaults['executive-advisory'].targetDeskId, 'cto-chief-of-staff');
   assert.equal(defaults['studio-map'].open, false);
   assert.equal(defaults['studio-map'].docked, true);
   assert.deepEqual(Object.keys(defaults), [
+    'executive-advisory',
     'cto-chat',
     'environment',
     'qa',

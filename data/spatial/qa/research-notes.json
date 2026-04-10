@@ -1,5 +1,36 @@
 [
   {
+    "id": "qa_research_5723646329",
+    "research_note_id": "qa_research_5723646329",
+    "type": "qa_research_note",
+    "investigation_id": "qa_inv_001",
+    "trigger": "probe_failure",
+    "status": "unavailable",
+    "ok": false,
+    "source": "external_mcp",
+    "created_at": "2026-04-09T08:34:06.329Z",
+    "updated_at": "2026-04-09T08:34:06.329Z",
+    "query": "QA validation issue probe_failure External probe disagrees with internal QA status internal fail external unknown probe unreachable test unknown-test",
+    "evidence_hint": "",
+    "summary": "QA research server unavailable.",
+    "recommendation": "Retry later with the same bounded query.",
+    "likely_causes": [
+      "QA research server is offline or unreachable."
+    ],
+    "suggested_extra_checks": [
+      "Verify the local QA research server is running on port 5052."
+    ],
+    "suggested_scorecard_additions": [
+      "research-server-availability"
+    ],
+    "sources": [],
+    "error_message": "fetch failed",
+    "research_available": false,
+    "failure_kind": null,
+    "failure_detail": null,
+    "server_url": null
+  },
+  {
     "id": "qa_research_5632098116",
     "research_note_id": "qa_research_5632098116",
     "type": "qa_research_note",
@@ -25,7 +56,10 @@
     ],
     "sources": [],
     "error_message": "fetch failed",
-    "research_available": false
+    "research_available": false,
+    "failure_kind": null,
+    "failure_detail": null,
+    "server_url": null
   },
   {
     "id": "qa_research_5467140713",
@@ -53,34 +87,40 @@
     ],
     "sources": [],
     "error_message": "fetch failed",
-    "research_available": false
+    "research_available": false,
+    "failure_kind": null,
+    "failure_detail": null,
+    "server_url": null
   },
   {
-    "id": "qa_research_5723646329",
-    "research_note_id": "qa_research_5723646329",
+    "id": "qa_research_5810131564",
+    "research_note_id": "qa_research_5810131564",
     "type": "qa_research_note",
     "investigation_id": "qa_inv_001",
-    "trigger": "probe_failure",
-    "status": "unavailable",
+    "trigger": "external_mismatch",
+    "status": "offline",
     "ok": false,
     "source": "external_mcp",
-    "created_at": "2026-04-09T08:34:06.329Z",
-    "updated_at": "2026-04-09T08:34:06.329Z",
-    "query": "QA validation issue probe_failure External probe disagrees with internal QA status internal fail external unknown probe unreachable test unknown-test",
+    "created_at": "2026-04-10T08:35:31.564Z",
+    "updated_at": "2026-04-10T08:35:31.564Z",
+    "query": "QA validation issue external_mismatch External probe disagrees with internal QA status internal fail external pass probe unreachable test qa_mcp_helper_ping",
     "evidence_hint": "",
-    "summary": "QA research server unavailable.",
+    "summary": "QA research server is offline.",
     "recommendation": "Retry later with the same bounded query.",
     "likely_causes": [
-      "QA research server is offline or unreachable."
+      "QA research server is offline or not listening on 127.0.0.1:5052."
     ],
     "suggested_extra_checks": [
-      "Verify the local QA research server is running on port 5052."
+      "Verify the local QA research server is running on 127.0.0.1:5052."
     ],
     "suggested_scorecard_additions": [
       "research-server-availability"
     ],
     "sources": [],
-    "error_message": "fetch failed",
-    "research_available": false
+    "error_message": "QA research server is offline or not listening on 127.0.0.1:5052.",
+    "research_available": false,
+    "failure_kind": "offline",
+    "failure_detail": "fetch failed",
+    "server_url": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping"
   }
 ]

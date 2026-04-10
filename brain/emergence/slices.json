@@ -1,16 +1,16 @@
 {
   "version": "ace/slices.v1",
-  "updatedAt": "2026-04-10T08:28:55.333Z",
+  "updatedAt": "2026-04-10T12:38:24.780Z",
   "slices": [
     {
       "id": "0001",
       "title": "Update or check the status of RGS nodes",
-      "summary": "Repository has uncommitted tracked changes.\nM brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/workspace.json",
+      "summary": "Update or check the status of RGS nodes",
       "status": "review",
-      "sourceKey": "page_1774615405445_ect6:update-or-check-the-status-of-rgs-nodes",
-      "pageId": "page_1774615405445_ect6",
-      "sourceNodeId": "sketch_1775663104107_mxjf",
-      "sourceIntentId": "sketch_1775663104107_mxjf",
+      "sourceKey": "page_1775814540829_tpz2:update-or-check-the-status-of-rgs-nodes",
+      "pageId": "page_1775814540829_tpz2",
+      "sourceNodeId": "node_1774615116734_91jfx",
+      "sourceIntentId": "node_1774615116734_91jfx",
       "sourceHandoffId": "handoff_1774615405452_2yc7",
       "sourceAnchorRefs": [
         "brain/emergence/decisions.md",
@@ -26,9 +26,9 @@
         "assignmentState": "assigned",
         "ownerDeskId": "planner",
         "assigneeDeskId": "executor",
-        "sourceIntentId": "sketch_1775663104107_mxjf",
+        "sourceIntentId": "node_1774615116734_91jfx",
         "sourceHandoffId": "handoff_1774615405452_2yc7",
-        "lastTransitionAt": "2026-04-10T06:46:03.178Z",
+        "lastTransitionAt": "2026-04-10T09:49:01.103Z",
         "lastTransitionLabel": "Active on planner slab",
         "history": [
           {
@@ -38,7 +38,7 @@
             "assigneeDeskId": "executor",
             "label": "Active on planner slab",
             "note": "Update or check the status of RGS nodes",
-            "at": "2026-04-10T06:46:03.178Z"
+            "at": "2026-04-10T09:49:01.073Z"
           },
           {
             "phase": "active",
@@ -47,7 +47,7 @@
             "assigneeDeskId": "executor",
             "label": "Placed into active",
             "note": "Update or check the status of RGS nodes",
-            "at": "2026-04-10T06:46:03.178Z"
+            "at": "2026-04-10T09:49:01.073Z"
           },
           {
             "phase": "planned",
@@ -83,7 +83,7 @@
         "changedFiles": [],
         "targetProjectKey": "ace-self",
         "expectedAction": "apply",
-        "summary": "Repository has uncommitted tracked changes.\nM brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/workspace.json",
+        "summary": "Repository has uncommitted tracked changes.\nM brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/server.js\n M ui/tests/run-ui-tests.mjs",
         "verificationPlan": {
           "required": false,
           "commands": [],
@@ -95,7 +95,7 @@
       },
       "executorBlocker": {
         "code": "preflight-blocked",
-        "message": "Repository has uncommitted tracked changes.\nM brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/workspace.json",
+        "message": "Repository has uncommitted tracked changes.\nM brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/server.js\n M ui/tests/run-ui-tests.mjs",
         "updatedAt": null
       },
       "verifyRequired": false,
@@ -106,7 +106,7 @@
       "verifiedSignature": null,
       "riskLevel": "high",
       "riskReasons": [
-        "Repository has uncommitted tracked changes.\nM brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/workspace.json"
+        "Repository has uncommitted tracked changes.\nM brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/server.js\n M ui/tests/run-ui-tests.mjs"
       ],
       "approvalState": "none",
       "applyStatus": "idle",
@@ -115,8 +115,8 @@
       "commit": null,
       "auditSessionId": null,
       "provenance": null,
-      "createdAt": "2026-04-10T08:17:32.206Z",
-      "updatedAt": "2026-04-10T08:28:55.332Z"
+      "createdAt": "2026-04-10T12:25:58.178Z",
+      "updatedAt": "2026-04-10T12:38:24.780Z"
     }
   ]
 }

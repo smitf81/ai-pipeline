@@ -2861,6 +2861,12 @@ body.qa-mode .status-row:last-child {
   max-height: min(calc(100vh - 160px), 760px);
 }
 
+.utility-window.executive-advisory-shell {
+  width: min(680px, calc(100vw - 64px));
+  height: min(calc(100vh - 144px), 840px);
+  max-height: min(calc(100vh - 144px), 840px);
+}
+
 .utility-window.minimized .utility-window-body {
   display: none;
 }
@@ -2903,6 +2909,12 @@ body.qa-mode .status-row:last-child {
   overflow: hidden;
 }
 
+.utility-window-body.executive-advisory-utility-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+
 .utility-window-stack {
   display: grid;
   gap: 12px;
@@ -2926,6 +2938,84 @@ body.qa-mode .status-row:last-child {
 
 .utility-window-grid {
   align-items: start;
+}
+
+.executive-advisory-window {
+  gap: 14px;
+}
+
+.executive-advisory-header {
+  border-color: rgba(140, 184, 217, 0.24);
+  background:
+    radial-gradient(circle at top left, rgba(140, 184, 217, 0.16), transparent 36%),
+    linear-gradient(180deg, rgba(11, 20, 34, 0.88), rgba(8, 14, 24, 0.84));
+}
+
+.executive-advisory-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.executive-advisory-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.executive-advisory-card {
+  gap: 12px;
+}
+
+.executive-advisory-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.executive-advisory-thread {
+  display: grid;
+  gap: 10px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.executive-advisory-reply .comment-entry {
+  margin-bottom: 0;
+}
+
+.executive-advisory-evidence[open] {
+  gap: 12px;
+}
+
+.executive-advisory-evidence-summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.executive-advisory-evidence-summary::-webkit-details-marker {
+  display: none;
+}
+
+.executive-advisory-bridge {
+  border-color: rgba(140, 184, 217, 0.18);
+}
+
+.executive-advisory-prompts {
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.executive-advisory-compose {
+  gap: 12px;
+}
+
+.executive-advisory-box {
+  min-height: 112px;
 }
 
 .utility-list {

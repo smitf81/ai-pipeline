@@ -1,13 +1,13 @@
 {
   "source": "qa_lead_runner",
   "agent_id": "qa-lead",
-  "run_id": "qa_lead_1775809723869_klu7ys",
+  "run_id": "qa_lead_1775823945835_bwu3tu",
   "status": "live",
   "current_task": "QA proof-of-life, browser pass, lane canaries, and loop audit",
-  "current_batch": "qa_lead_1775809723869_klu7ys",
-  "started_at": "2026-04-10T08:28:43.869Z",
-  "finished_at": "2026-04-10T08:28:59.438Z",
-  "last_completed_cycle_at": "2026-04-10T08:28:59.438Z",
+  "current_batch": "qa_lead_1775823945835_bwu3tu",
+  "started_at": "2026-04-10T12:25:45.835Z",
+  "finished_at": "2026-04-10T12:26:25.718Z",
+  "last_completed_cycle_at": "2026-04-10T12:26:25.718Z",
   "active_tools": [
     "boot_preflight",
     "ui_boot_repair",
@@ -23,50 +23,50 @@
     "usage_state": "active_gating",
     "freshness": "fresh",
     "summary": "QA is live and actively gating with MCP-backed evidence.",
-    "heartbeat_at": "2026-04-10T08:28:55.458Z",
-    "last_completed_cycle_at": "2026-04-10T08:28:55.458Z",
+    "heartbeat_at": "2026-04-10T12:26:13.644Z",
+    "last_completed_cycle_at": "2026-04-10T12:26:13.644Z",
     "mcp_configured": true,
     "configured_tools": [
       "external_probe_check",
       "qa_research_note"
     ],
     "mcp_reachable": true,
-    "last_ping_at": "2026-04-10T08:28:43.876Z",
+    "last_ping_at": "2026-04-10T12:25:45.849Z",
     "last_ping_status": "ok",
     "last_ping_source": "external_mcp",
     "last_ping_failure_kind": null,
     "last_ping_failure_detail": null,
     "last_ping_http_status": null,
     "last_ping_target": "http://127.0.0.1:5051/run_test",
-    "research_target": "http://127.0.0.1:5052/research_note",
-    "research_last_call_at": "2026-04-09T08:34:06.329Z",
-    "research_last_call_status": "unavailable",
-    "research_failure_kind": "unavailable",
+    "research_target": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping",
+    "research_last_call_at": "2026-04-10T08:35:31.564Z",
+    "research_last_call_status": "offline",
+    "research_failure_kind": "offline",
     "research_failure_detail": "fetch failed",
-    "last_call_at": "2026-04-10T08:28:43.876Z",
+    "last_call_at": "2026-04-10T12:25:45.849Z",
     "last_call_tool": "external_probe_check",
     "last_call_status": "ok",
     "last_call_source": "external_mcp",
     "last_qa_gate_source": "structured_qa",
     "using_mcp_for_qa_decisions": true,
-    "last_success_at": "2026-04-10T08:28:43.876Z",
-    "last_failure_at": "2026-04-09T08:34:06.329Z",
-    "current_failure_kind": "unavailable",
+    "last_success_at": "2026-04-10T12:25:45.849Z",
+    "last_failure_at": "2026-04-10T08:35:31.564Z",
+    "current_failure_kind": "offline",
     "current_failure_tool": "qa_research_note",
     "recovery_detected": true,
-    "recovered_at": "2026-04-10T08:28:43.876Z",
-    "recovered_from_kind": "unavailable",
+    "recovered_at": "2026-04-10T12:25:45.849Z",
+    "recovered_from_kind": "offline",
     "notes": [
       "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
       "Latest QA gate source: structured_qa.",
       "Last MCP ping status: ok.",
       "Probe target: http://127.0.0.1:5051/run_test.",
       "Last MCP call: external_probe_check (ok).",
-      "Latest research call status: unavailable.",
-      "Latest research failure: unavailable.",
+      "Latest research call status: offline.",
+      "Latest research failure: offline.",
       "Research failure detail: fetch failed",
-      "Research target: http://127.0.0.1:5052/research_note.",
-      "Recovery detected after unavailable."
+      "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping.",
+      "Recovery detected after offline."
     ]
   },
   "output_feed": [
@@ -78,7 +78,7 @@
       "verdict": "pass",
       "summary": "Boot preflight passed.",
       "detail": "",
-      "observed_at": "2026-04-10T08:28:42.341Z",
+      "observed_at": "2026-04-10T05:45:37.031Z",
       "artifact_refs": [
         "/api/health"
       ],
@@ -92,7 +92,7 @@
       "verdict": "pass",
       "summary": "External QA probe returned a fresh live QA MCP helper result.",
       "detail": "1 of 4 desks failed; 1 of 19 checks failed",
-      "observed_at": "2026-04-10T08:28:43.876Z",
+      "observed_at": "2026-04-10T12:25:45.849Z",
       "artifact_refs": [
         "http://127.0.0.1:5051/run_test"
       ],
@@ -111,20 +111,20 @@
       "verdict": "fail",
       "summary": "Browser QA run fail.",
       "detail": "Planner overlaps Executor.",
-      "observed_at": "2026-04-10T08:28:55.458Z",
+      "observed_at": "2026-04-10T12:26:13.644Z",
       "artifact_refs": [
-        "data/spatial/qa/qa_1775809723878_oj8o4z.json",
-        "/api/spatial/qa/runs/qa_1775809723878_oj8o4z/artifacts/01-initial.png",
-        "/api/spatial/qa/runs/qa_1775809723878_oj8o4z/artifacts/02-studio-smoke.png"
+        "data/spatial/qa/qa_1775823945851_o1shb1.json",
+        "/api/spatial/qa/runs/qa_1775823945851_o1shb1/artifacts/01-initial.png",
+        "/api/spatial/qa/runs/qa_1775823945851_o1shb1/artifacts/02-studio-smoke.png"
       ],
       "notes": [
         "Runtime attempted: chromium",
         "Runtime used: chromium",
         "Runtime fallback used: no",
         "Planner overlaps Executor.",
+        "Chief of Staff overlaps CTO / Architect.",
         "Team Board overlaps Planner.",
-        "Team Board overlaps Executor.",
-        "Recent Saves is clipped or hidden."
+        "Team Board overlaps Executor."
       ]
     },
     {
@@ -135,7 +135,7 @@
       "verdict": "fail",
       "summary": "2 QA lane canaryies failing.",
       "detail": "Failing canaries: ui_boot_integrity_missing_asset | planner_canonical_identity_guard",
-      "observed_at": "2026-04-10T08:28:58.917Z",
+      "observed_at": "2026-04-10T12:26:24.831Z",
       "artifact_refs": [],
       "notes": [
         "UI boot missing asset route: fail",
@@ -151,7 +151,7 @@
       "verdict": "pass",
       "summary": "All 3 injected loop faults behaved as expected.",
       "detail": "All injected loop faults behaved as expected.",
-      "observed_at": "2026-04-10T08:28:59.431Z",
+      "observed_at": "2026-04-10T12:26:25.707Z",
       "artifact_refs": [],
       "notes": [
         "missing_required_asset: pass",
@@ -165,13 +165,13 @@
       "tool": "qa_research_note",
       "status": "degraded",
       "verdict": "unavailable",
-      "summary": "QA research server unavailable.",
+      "summary": "QA research server is offline.",
       "detail": "Retry later with the same bounded query.",
-      "observed_at": "2026-04-09T08:34:06.329Z",
+      "observed_at": "2026-04-10T08:35:31.564Z",
       "artifact_refs": [],
       "notes": [
-        "QA research server is offline or unreachable.",
-        "Verify the local QA research server is running on port 5052."
+        "QA research server is offline or not listening on 127.0.0.1:5052.",
+        "Verify the local QA research server is running on 127.0.0.1:5052."
       ]
     },
     {
@@ -182,7 +182,7 @@
       "verdict": "live",
       "summary": "QA is live and actively gating with MCP-backed evidence.",
       "detail": "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
-      "observed_at": "2026-04-10T08:28:55.458Z",
+      "observed_at": "2026-04-10T12:26:13.644Z",
       "artifact_refs": [],
       "notes": [
         "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
@@ -190,11 +190,11 @@
         "Last MCP ping status: ok.",
         "Probe target: http://127.0.0.1:5051/run_test.",
         "Last MCP call: external_probe_check (ok).",
-        "Latest research call status: unavailable.",
-        "Latest research failure: unavailable.",
+        "Latest research call status: offline.",
+        "Latest research failure: offline.",
         "Research failure detail: fetch failed",
-        "Research target: http://127.0.0.1:5052/research_note.",
-        "Recovery detected after unavailable."
+        "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping.",
+        "Recovery detected after offline."
       ]
     },
     {
@@ -205,7 +205,7 @@
       "verdict": "pass",
       "summary": "1 repair job tracked.",
       "detail": "open",
-      "observed_at": "2026-04-10T08:16:47.020Z",
+      "observed_at": "2026-04-10T12:26:10.477Z",
       "artifact_refs": [],
       "notes": [
         "UI Boot Integrity: idle",
@@ -217,9 +217,9 @@
   "latest_run": "QA lead cycle degraded: All 3 injected loop faults behaved as expected.",
   "result_paths": {
     "researchNotes": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\research-notes.json",
-    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1775809723878_oj8o4z.json",
+    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1775823945851_o1shb1.json",
     "loopAudit": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\qaLoopAudit.js"
   },
   "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected.",
-  "last_updated_at": "2026-04-10T08:28:59.438Z"
+  "last_updated_at": "2026-04-10T12:26:25.718Z"
 }

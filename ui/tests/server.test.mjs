@@ -742,6 +742,7 @@ export default async function runServerTests() {
   assert.ok(defaultLayout.desks['qa-lead']);
   assert.deepEqual(listStudioDeskIds(defaultLayout).sort(), [
     'context-manager',
+    'cto-chief-of-staff',
     'cto-architect',
     'executor',
     'integration_auditor',

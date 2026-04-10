@@ -3,7 +3,7 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-04-10T08:28:51.127Z
+Updated: 2026-04-10T12:25:52.322Z
 
 ### 0001
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -30,7 +30,10 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
+ M ui/server.js
+ M ui/tests/run-ui-tests.mjs
 - Candidate fix: Keep apply and build stages off dirty repositories
 
 ### 0001-Blender-UE-import-hygiene
@@ -58,10 +61,23 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/qaLoopAudit.js
- M ui/qaRepairLoop.js
- M ui/truthKernelAdapter.js
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/studioLayoutSchema.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/studioLayoutModel.test.mjs
+ M ui/tests/studioLayoutRelationships.test.mjs
+ M ui/tests/utilityWindowState.test.mjs
 
 ### 10000
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -133,7 +149,20 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/qaLoopAudit.js
- M ui/qaRepairLoop.js
- M ui/truthKernelAdapter.js
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/studioLayoutSchema.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/studioLayoutModel.test.mjs
+ M ui/tests/studioLayoutRelationships.test.mjs
+ M ui/tests/utilityWindowState.test.mjs

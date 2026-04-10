@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "updatedAt": "2026-04-10T08:16:47.035Z",
+  "updatedAt": "2026-04-10T12:38:21.385Z",
   "entries": [
     {
       "queueKey": "qa_self_fix_qa_repair_qa_inv_001",
@@ -47,11 +47,11 @@
             "qa_inv_001"
           ],
           "sourceQaRunId": null,
-          "attachedAt": "2026-04-10T08:16:47.035Z"
+          "attachedAt": "2026-04-10T12:38:21.385Z"
         }
       ],
       "createdAt": "2026-04-09T18:28:26.460Z",
-      "updatedAt": "2026-04-10T08:16:47.035Z",
+      "updatedAt": "2026-04-10T12:38:21.385Z",
       "reviewedAt": null,
       "reviewedBy": null,
       "qaRunId": null,

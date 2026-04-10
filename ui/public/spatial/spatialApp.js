@@ -588,8 +588,9 @@ const DESK_PROPERTY_BASE_TABS = [
   { id: 'tools', label: 'Tools (Modules)' },
   { id: 'reports', label: 'Reports (Tests)' },
 ];
-const UTILITY_WINDOW_ORDER = ['cto-chat', 'environment', 'qa', 'context', 'reports', 'relationship', 'roster', 'studio-map', 'scorecards'];
+const UTILITY_WINDOW_ORDER = ['executive-advisory', 'cto-chat', 'environment', 'qa', 'context', 'reports', 'relationship', 'roster', 'studio-map', 'scorecards'];
 const UTILITY_WINDOW_META = {
+  'executive-advisory': { title: 'Chief of Staff', deskId: 'cto-chief-of-staff', chromeLabel: 'Executive Advisory' },
   'cto-chat': { title: 'CTO Chat', deskId: 'cto-architect' },
   environment: { title: 'Environment', deskId: 'cto-architect' },
   qa: { title: 'QA Workbench', deskId: 'qa-lead' },
@@ -629,6 +630,180 @@ function buildDefaultCtoChatStatus() {
     model: null,
     detail: 'Waiting for the live CTO backend.',
     checkedAt: null,
+  };
+}
+
+const CHIEF_OF_STAFF_QUICK_PROMPTS = Object.freeze([
+  'What should we do next?',
+  'Why is planning blocked?',
+  'What is the highest-leverage slice?',
+  'Is CTO ready to act on this?',
+  'What is the biggest blocker right now?',
+]);
+
+export function buildChiefOfStaffQuickPrompts() {
+  return [...CHIEF_OF_STAFF_QUICK_PROMPTS];
+}
+
+function normalizeChiefOfStaffText(value = '', fallback = '') {
+  return typeof value === 'string' ? value.trim() || fallback : fallback;
+}
+
+function normalizeChiefOfStaffNumber(value, fallback = null) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeChiefOfStaffRecommendation(recommendation = null) {
+  const source = recommendation && typeof recommendation === 'object' && !Array.isArray(recommendation) ? recommendation : {};
+  const confidence = normalizeChiefOfStaffNumber(source.confidence, 0);
+  return {
+    id: normalizeChiefOfStaffText(source.id, null),
+    title: normalizeChiefOfStaffText(source.title, 'No recommendation available'),
+    category: normalizeChiefOfStaffText(source.category, 'info'),
+    priority: normalizeChiefOfStaffText(source.priority, 'normal'),
+    blocker: normalizeChiefOfStaffText(source.blocker, null),
+    stage: normalizeChiefOfStaffText(source.stage, null),
+    why_now: normalizeChiefOfStaffText(source.why_now, ''),
+    recommendation_text: normalizeChiefOfStaffText(source.recommendation_text, ''),
+    execution_ready: Boolean(source.execution_ready),
+    confidence,
+    confidence_percent: Math.max(0, Math.min(100, Math.round(confidence * 100))),
+  };
+}
+
+function normalizeChiefOfStaffPosture(posture = null) {
+  const source = posture && typeof posture === 'object' && !Array.isArray(posture) ? posture : {};
+  const blocker = source.blocker && typeof source.blocker === 'object' && !Array.isArray(source.blocker)
+    ? {
+        failure_key: normalizeChiefOfStaffText(source.blocker.failure_key, null),
+        stage: normalizeChiefOfStaffText(source.blocker.stage, null),
+        count: normalizeChiefOfStaffNumber(source.blocker.count, 0) || 0,
+      }
+    : null;
+  return {
+    blocked: Boolean(source.blocked),
+    blocker,
+    canonical_available: Boolean(source.canonical_available),
+    canonical_summary: source.canonical_summary && typeof source.canonical_summary === 'object' && !Array.isArray(source.canonical_summary)
+      ? source.canonical_summary
+      : null,
+    system_confidence: normalizeChiefOfStaffNumber(source.system_confidence, null),
+  };
+}
+
+export function normalizeChiefOfStaffAdvisoryPayload(payload = null) {
+  const source = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : {};
+  const recommendation = normalizeChiefOfStaffRecommendation(source.recommendation);
+  const posture = normalizeChiefOfStaffPosture(source.posture);
+  const replySource = normalizeChiefOfStaffText(source.reply_source, source.reply_text ? 'deterministic_fallback' : null);
+  const modelStatus = normalizeChiefOfStaffText(source.model_status, replySource === 'model_live' ? 'ok' : 'fallback');
+  const blocker = recommendation.blocker || posture.blocker?.failure_key || null;
+  const degraded = ['timeout', 'unavailable', 'fallback'].includes(modelStatus) || replySource === 'deterministic_fallback';
+  const contradictionDetected = Boolean(source.contradiction_detected);
+  const tone = contradictionDetected || degraded
+    ? 'blocked'
+    : recommendation.execution_ready && !blocker
+      ? 'processing'
+      : blocker || source.execution_ready === false || recommendation.execution_ready === false
+        ? 'review'
+        : 'idle';
+  const readinessLabel = recommendation.execution_ready
+    ? 'Ready for CTO'
+    : blocker
+      ? 'Not ready for CTO'
+      : 'Advisory only';
+  const bridgeDetail = recommendation.execution_ready
+    ? 'CTO may review matching canonical actions, but the Chief of Staff still does not execute.'
+    : blocker
+      ? `Blocked by ${blocker}${recommendation.stage ? ` at ${recommendation.stage}` : ''}.`
+      : 'Execution preconditions are not satisfied yet.';
+  return {
+    advisory_available: Boolean(source.reply_text || source.recommendation || source.posture || source.advisory_available),
+    reply_text: normalizeChiefOfStaffText(source.reply_text, 'Executive advisory is waiting for a fresh query.'),
+    reply_source: replySource,
+    model_status: modelStatus,
+    model_backend: normalizeChiefOfStaffText(source.model_backend, replySource ? 'ollama_http' : null),
+    model_name: normalizeChiefOfStaffText(source.model_name, replySource ? 'qwen2.5-coder:1.5b' : null),
+    advisory_generated_at: normalizeChiefOfStaffText(source.advisory_generated_at, null),
+    execution_ready: Object.prototype.hasOwnProperty.call(source, 'execution_ready')
+      ? Boolean(source.execution_ready)
+      : recommendation.execution_ready,
+    recommendation,
+    posture,
+    blocker,
+    fallback_used: replySource === 'deterministic_fallback',
+    tone,
+    readiness_label: readinessLabel,
+    bridge_detail: bridgeDetail,
+    why_now: recommendation.why_now || recommendation.recommendation_text || (blocker ? 'System execution is currently blocked.' : 'No immediate blocker was elevated.'),
+  };
+}
+
+export function buildChiefOfStaffDeskPresentation(payload = null) {
+  const advisory = normalizeChiefOfStaffAdvisoryPayload(payload);
+  const focusSummary = advisory.recommendation.title || 'Executive advisory ready';
+  const throughputLabel = [
+    advisory.recommendation.category || 'info',
+    `${advisory.recommendation.confidence_percent}% confidence`,
+    advisory.execution_ready ? 'ready' : 'hold',
+  ].filter(Boolean).join(' | ');
+  const latestSignal = [
+    advisory.reply_source || 'pending',
+    advisory.blocker ? `blocker ${advisory.blocker}` : 'no blocker elevated',
+  ].join(' | ');
+  return {
+    focusSummary,
+    throughputLabel,
+    latestSignal,
+    statusTone: advisory.tone,
+    statusBadge: advisory.execution_ready
+      ? 'Ready'
+      : advisory.tone === 'blocked'
+        ? 'Degraded'
+        : advisory.blocker
+          ? 'Blocked'
+          : 'Advisory',
+  };
+}
+
+export function buildChiefOfStaffAdvisoryViewModel({ payload = null, history = [] } = {}) {
+  const advisory = normalizeChiefOfStaffAdvisoryPayload(payload);
+  const entries = Array.isArray(history) && history.length
+    ? history
+    : advisory.advisory_available
+      ? [{
+          id: 'chief-latest-reply',
+          role: 'assistant',
+          text: advisory.reply_text,
+          reply_source: advisory.reply_source,
+          model_status: advisory.model_status,
+          advisory_generated_at: advisory.advisory_generated_at,
+          blocker: advisory.blocker,
+        }]
+      : [];
+  return {
+    panelTitle: 'Executive Advisory',
+    panelKind: 'executive-advisory',
+    renderMode: 'dedicated-panel',
+    deskLabel: 'Chief of Staff',
+    roleLabel: 'Advisory',
+    relationshipLabel: 'Advises CTO Architect',
+    replySource: advisory.reply_source,
+    modelStatus: advisory.model_status,
+    modelBackend: advisory.model_backend,
+    modelName: advisory.model_name,
+    generatedAt: advisory.advisory_generated_at,
+    replyText: advisory.reply_text,
+    recommendation: advisory.recommendation,
+    posture: advisory.posture,
+    blocker: advisory.blocker,
+    executionReady: advisory.execution_ready,
+    readinessLabel: advisory.readiness_label,
+    bridgeDetail: advisory.bridge_detail,
+    whyNow: advisory.why_now,
+    entries,
+    quickPrompts: buildChiefOfStaffQuickPrompts(),
   };
 }
 
@@ -1787,6 +1962,9 @@ function buildDeskUtilityWindows(deskId = '') {
   const windows = [
     { id: 'reports', label: 'Desk Reports' },
   ];
+  if (deskId === 'cto-chief-of-staff') {
+    windows.unshift({ id: 'executive-advisory', label: 'Executive Advisory' });
+  }
   if (deskId === 'cto-architect') {
     windows.unshift({ id: 'environment', label: 'Environment' });
   }
@@ -3066,6 +3244,21 @@ function suggestRole(node, graph, layer = 'system') {
 
 function normalizedNodeContent(value = '') {
   return String(value || '').trim();
+}
+
+export function resolveGeneratedNodeInspection(node = null) {
+  if (!node || typeof node !== 'object' || Array.isArray(node)) return null;
+  return {
+    id: typeof node.id === 'string' ? node.id : null,
+    kind: typeof node.kind === 'string' ? node.kind : (typeof node.type === 'string' ? node.type : null),
+    label: typeof node.label === 'string'
+      ? node.label
+      : (typeof node.name === 'string' ? node.name : (typeof node.content === 'string' ? node.content : null)),
+    summary: typeof node.summary === 'string'
+      ? node.summary
+      : (typeof node.content === 'string' ? node.content : (typeof node.label === 'string' ? node.label : null)),
+    node,
+  };
 }
 
 export function buildRsgActivityEntry({
@@ -4965,6 +5158,10 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   });
   const [daveFixDrafts, setDaveFixDrafts] = useState({});
   const [ctoEditTargetDeskId, setCtoEditTargetDeskId] = useState('planner');
+  const [chiefOfStaffDraft, setChiefOfStaffDraft] = useState('');
+  const [chiefOfStaffBusy, setChiefOfStaffBusy] = useState(false);
+  const [chiefOfStaffHistory, setChiefOfStaffHistory] = useState([]);
+  const [chiefOfStaffLatest, setChiefOfStaffLatest] = useState(() => normalizeChiefOfStaffAdvisoryPayload(null));
   const [ctoChatDraft, setCtoChatDraft] = useState('');
   const [ctoChatBusy, setCtoChatBusy] = useState(false);
   const [ctoChatHistory, setCtoChatHistory] = useState([]);
@@ -4997,6 +5194,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const architectureSaveTimer = useRef(null);
   const utilityWindowSaveTimer = useRef(null);
   const utilityWindowDrag = useRef(null);
+  const chiefOfStaffSubmitLock = useRef(false);
   const ctoChatSubmitLock = useRef(false);
   const lastCanvasViewport = useRef(createDefaultCanvasViewport());
   const lastStudioViewport = useRef(createDefaultStudioViewport());
@@ -5071,6 +5269,10 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   }), [systemGraph, graphBundle, teamBoard, rsgMeta]);
   const latestRsgActivity = rsgState.activity?.[0] || null;
   const latestMutationActivity = mutationGate.activity?.[0] || null;
+  const chiefOfStaffDeskPresentation = useMemo(
+    () => buildChiefOfStaffDeskPresentation(chiefOfStaffLatest),
+    [chiefOfStaffLatest],
+  );
   const worldGraph = graphBundle.world || buildStarterGraph();
   const worldScaffoldNodes = useMemo(() => findWorldScaffoldNodes(graphBundle.world || buildStarterGraph()), [graphBundle]);
   const latestWorldScaffold = worldScaffoldNodes[0] || null;
@@ -5437,6 +5639,9 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     if (!windowId) return;
     const targetDeskId = options.targetDeskId || UTILITY_WINDOW_META[windowId]?.deskId || null;
     const defaultState = createDefaultUtilityWindowState(windowId);
+    const nextPosition = options.position
+      ? clampUtilityWindowPosition(options.position)
+      : (current) => current[windowId]?.position || defaultState.position;
     setUtilityDockOpen(true);
     setUtilityWindows((current) => ({
       ...current,
@@ -5445,8 +5650,8 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
         open: true,
         minimized: false,
         targetDeskId,
-        docked: options.docked ?? current[windowId]?.docked ?? true,
-        position: current[windowId]?.position || defaultState.position,
+        docked: options.docked ?? current[windowId]?.docked ?? defaultState.docked,
+        position: typeof nextPosition === 'function' ? nextPosition(current) : nextPosition,
       },
     }));
   }, []);
@@ -5550,6 +5755,95 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     }
   }, [ace]);
 
+  const getExecutiveAdvisoryWindowPosition = useCallback(() => {
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth || 1600 : 1600;
+    return clampUtilityWindowPosition({
+      left: Math.max(32, Math.round((viewportWidth - 680) / 2)),
+      top: 84,
+    });
+  }, []);
+
+  const refreshChiefOfStaffAdvisory = useCallback(async () => {
+    try {
+      const response = await ace.getChiefOfStaffLatest();
+      setChiefOfStaffLatest(normalizeChiefOfStaffAdvisoryPayload(response));
+    } catch (error) {
+      const payload = error?.payload || {};
+      setChiefOfStaffLatest(normalizeChiefOfStaffAdvisoryPayload({
+        reply_text: payload?.reply_text || payload?.error || error.message || 'Executive advisory is unavailable right now.',
+        reply_source: 'deterministic_fallback',
+        model_backend: payload?.model_backend || 'ollama_http',
+        model_name: payload?.model_name || 'qwen2.5-coder:1.5b',
+        model_status: payload?.model_status || 'unavailable',
+        advisory_generated_at: new Date().toISOString(),
+        recommendation: payload?.recommendation || null,
+        posture: payload?.posture || null,
+      }));
+    }
+  }, [ace]);
+
+  const sendChiefOfStaffMessage = useCallback(async (text = '') => {
+    const prompt = String(text || '').trim();
+    if (!prompt) return;
+    if (chiefOfStaffSubmitLock.current) return;
+    chiefOfStaffSubmitLock.current = true;
+    const userEntry = {
+      id: `chief-user-${Date.now()}`,
+      role: 'user',
+      text: prompt,
+    };
+    setChiefOfStaffBusy(true);
+    setChiefOfStaffDraft('');
+    setChiefOfStaffHistory((current) => [...current, userEntry].slice(-10));
+    try {
+      const response = await ace.askChiefOfStaff(prompt);
+      const advisory = normalizeChiefOfStaffAdvisoryPayload(response);
+      setChiefOfStaffLatest(advisory);
+      setChiefOfStaffHistory((current) => [...current, {
+        id: `chief-assistant-${Date.now()}`,
+        role: 'assistant',
+        text: advisory.reply_text,
+        reply_source: advisory.reply_source,
+        model_status: advisory.model_status,
+        model_backend: advisory.model_backend,
+        model_name: advisory.model_name,
+        advisory_generated_at: advisory.advisory_generated_at,
+        recommendation: advisory.recommendation,
+        blocker: advisory.blocker,
+        execution_ready: advisory.execution_ready,
+      }].slice(-10));
+    } catch (error) {
+      const payload = error?.payload || {};
+      const advisory = normalizeChiefOfStaffAdvisoryPayload({
+        reply_text: payload?.reply_text || payload?.error || error.message || 'Executive advisory could not complete the request.',
+        reply_source: 'deterministic_fallback',
+        model_backend: payload?.model_backend || 'ollama_http',
+        model_name: payload?.model_name || 'qwen2.5-coder:1.5b',
+        model_status: payload?.model_status || 'unavailable',
+        advisory_generated_at: new Date().toISOString(),
+        recommendation: payload?.recommendation || null,
+        posture: payload?.posture || null,
+      });
+      setChiefOfStaffLatest(advisory);
+      setChiefOfStaffHistory((current) => [...current, {
+        id: `chief-assistant-${Date.now()}`,
+        role: 'assistant',
+        text: advisory.reply_text,
+        reply_source: advisory.reply_source,
+        model_status: advisory.model_status,
+        model_backend: advisory.model_backend,
+        model_name: advisory.model_name,
+        advisory_generated_at: advisory.advisory_generated_at,
+        recommendation: advisory.recommendation,
+        blocker: advisory.blocker,
+        execution_ready: advisory.execution_ready,
+      }].slice(-10));
+    } finally {
+      chiefOfStaffSubmitLock.current = false;
+      setChiefOfStaffBusy(false);
+    }
+  }, [ace]);
+
   const sendCtoChatMessage = useCallback(async ({ text, confirmActionId = null, override = null } = {}) => {
     const prompt = String(text || '').trim();
     if (!prompt) return;
@@ -5647,6 +5941,15 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     refreshCtoChatStatus();
     loadTaDepartmentPanel({ silent: true });
   }, [loadTaDepartmentPanel, refreshCtoChatStatus, utilityWindows]);
+
+  useEffect(() => {
+    refreshChiefOfStaffAdvisory();
+  }, [refreshChiefOfStaffAdvisory]);
+
+  useEffect(() => {
+    if (!utilityWindows['executive-advisory']?.open) return;
+    refreshChiefOfStaffAdvisory();
+  }, [refreshChiefOfStaffAdvisory, utilityWindows]);
 
   useEffect(() => {
     if (!rosterUtilityOpen) return;
@@ -7628,6 +7931,15 @@ function syncRecentWorldChange(change = null) {
     centerStudioOnDesk(agentId);
     setReviewPanelOpen(false);
     setScene(SCENES.STUDIO);
+    if (agentId === 'cto-chief-of-staff') {
+      closeDeskInspector();
+      openUtilityWindow('executive-advisory', {
+        targetDeskId: 'cto-chief-of-staff',
+        docked: false,
+        position: getExecutiveAdvisoryWindowPosition(),
+      });
+      return;
+    }
     openDeskPropertiesPanel(agentId, 'properties');
   };
 
@@ -8674,6 +8986,17 @@ function syncRecentWorldChange(change = null) {
     if (!deskId) return null;
     const ctoActive = selectedAgentId === 'cto-architect' || deskPanelState.deskId === 'cto-architect';
     const actions = [];
+    if (deskId === 'cto-chief-of-staff') {
+      actions.push({
+        id: 'executive-advisory',
+        label: 'Executive Advisory',
+        onClick: () => openUtilityWindow('executive-advisory', {
+          targetDeskId: 'cto-chief-of-staff',
+          docked: false,
+          position: getExecutiveAdvisoryWindowPosition(),
+        }),
+      });
+    }
     if (deskId === 'cto-architect') {
       actions.push({ id: 'cto-chat', label: 'CTO Chat', onClick: () => openUtilityWindow('cto-chat') });
       actions.push({ id: 'environment', label: 'Environment', onClick: () => openUtilityWindow('environment') });
@@ -8887,6 +9210,148 @@ function syncRecentWorldChange(change = null) {
             disabled: ctoChatBusy || !ctoChatDraft.trim(),
             onClick: () => sendCtoChatMessage({ text: ctoChatDraft }),
           }, ctoChatBusy ? 'Asking...' : 'Send'),
+        ),
+      ),
+    );
+  };
+
+  const renderChiefOfStaffUtility = () => {
+    const advisory = chiefOfStaffLatest;
+    const quickPrompts = buildChiefOfStaffQuickPrompts();
+    const threadEntries = chiefOfStaffHistory.length
+      ? chiefOfStaffHistory
+      : advisory.advisory_available
+        ? [{
+            id: 'chief-latest-reply',
+            role: 'assistant',
+            text: advisory.reply_text,
+            reply_source: advisory.reply_source,
+            model_status: advisory.model_status,
+            advisory_generated_at: advisory.advisory_generated_at,
+            recommendation: advisory.recommendation,
+            blocker: advisory.blocker,
+            execution_ready: advisory.execution_ready,
+          }]
+        : [];
+    return h('div', { className: 'utility-window-stack executive-advisory-window', 'data-qa': 'executive-advisory-window' },
+      h('div', { className: 'utility-window-section utility-window-hero executive-advisory-header', 'data-qa': 'executive-advisory-header' },
+        h('div', { className: 'executive-advisory-heading-row' },
+          h('div', null,
+            h('div', { className: 'inspector-label' }, 'Chief of Staff'),
+            h('div', { className: 'signal-summary' }, 'Advisory'),
+            h('div', { className: 'signal-meta muted' }, 'Advises CTO Architect | Executive advisory for CTO'),
+          ),
+          h('div', { className: 'executive-advisory-header-meta' },
+            h('span', { className: `agent-panel-status ${advisory.tone}` }, advisory.reply_source || 'pending'),
+            h('span', { className: 'signal-meta muted' }, advisory.model_status || 'pending'),
+            advisory.advisory_generated_at ? h('span', { className: 'signal-meta muted' }, formatTimestamp(advisory.advisory_generated_at)) : null,
+          ),
+        ),
+      ),
+      h('div', { className: 'utility-window-section executive-advisory-card', 'data-qa': 'executive-advisory-recommendation' },
+        h('div', { className: 'inspector-label' }, 'Recommendation Summary'),
+        h('div', { className: 'signal-summary' }, advisory.recommendation.title),
+        h('div', { className: 'executive-advisory-badges' },
+          h('span', { className: 'qa-metric-pill tone-neutral' }, advisory.recommendation.category || 'info'),
+          h('span', { className: `qa-metric-pill tone-${advisory.execution_ready ? 'good' : (advisory.blocker ? 'warn' : 'neutral')}` }, advisory.readiness_label),
+          h('span', { className: 'qa-metric-pill tone-neutral' }, `${advisory.recommendation.confidence_percent}% confidence`),
+          advisory.blocker ? h('span', { className: 'qa-metric-pill tone-warn' }, advisory.blocker) : null,
+        ),
+        h('div', { className: 'criteria-list desk-metric-list' },
+          h('div', { className: 'criteria-row' }, h('span', null, 'Category'), h('span', { className: 'muted' }, advisory.recommendation.category || 'info')),
+          h('div', { className: 'criteria-row' }, h('span', null, 'Confidence'), h('span', { className: 'muted' }, `${advisory.recommendation.confidence_percent}%`)),
+          h('div', { className: 'criteria-row' }, h('span', null, 'Readiness'), h('span', { className: 'muted' }, advisory.execution_ready ? 'Ready for CTO review' : 'Not execution-ready')),
+          h('div', { className: 'criteria-row' }, h('span', null, 'Provenance'), h('span', { className: 'muted' }, [
+            advisory.reply_source || 'pending',
+            advisory.model_status || null,
+          ].filter(Boolean).join(' | '))),
+        ),
+      ),
+      h('div', { className: 'utility-window-section executive-advisory-reply', 'data-qa': 'executive-advisory-reply' },
+        h('div', { className: 'signal-summary' }, 'Conversational Reply'),
+        threadEntries.length
+          ? h('div', { className: 'comment-thread executive-advisory-thread' },
+              threadEntries.map((entry) => h('div', {
+                key: entry.id,
+                className: `comment-entry cto-chat-entry ${entry.role === 'user' ? 'is-user' : 'is-assistant'}`,
+              },
+              h('div', { className: 'comment-meta muted' }, entry.role === 'user' ? 'You' : 'Chief of Staff'),
+              entry.reply_source || entry.model_status
+                ? h('div', { className: 'signal-meta muted' }, [
+                    entry.reply_source || null,
+                    entry.model_status || null,
+                    entry.advisory_generated_at ? formatTimestamp(entry.advisory_generated_at) : null,
+                  ].filter(Boolean).join(' | '))
+                : null,
+              h('div', { className: 'cto-chat-text' }, entry.text),
+              entry.role !== 'user' && entry.blocker
+                ? h('div', { className: 'signal-meta muted' }, `Blocker: ${entry.blocker}`)
+                : null,
+              )))
+          : h('div', { className: 'signal-empty muted' }, 'Ask the Chief of Staff for a bounded executive recommendation.'),
+      ),
+      h('div', { className: 'utility-window-section', 'data-qa': 'executive-advisory-why-now' },
+        h('div', { className: 'signal-summary' }, 'Why This Now'),
+        h('div', { className: 'signal-meta' }, advisory.why_now || 'No immediate priority has been surfaced yet.'),
+      ),
+      h('details', { className: 'utility-window-section executive-advisory-evidence', 'data-qa': 'executive-advisory-evidence' },
+        h('summary', { className: 'signal-summary executive-advisory-evidence-summary' }, 'Evidence'),
+        h('div', { className: 'criteria-list desk-metric-list' },
+          h('div', { className: 'criteria-row' }, h('span', null, 'Blocked'), h('span', { className: 'muted' }, advisory.posture.blocked ? 'yes' : 'no')),
+          h('div', { className: 'criteria-row' }, h('span', null, 'Blocker'), h('span', { className: 'muted' }, advisory.blocker || 'none')),
+          h('div', { className: 'criteria-row' }, h('span', null, 'Canonical available'), h('span', { className: 'muted' }, advisory.posture.canonical_available ? 'yes' : 'no')),
+          h('div', { className: 'criteria-row' }, h('span', null, 'System confidence'), h('span', { className: 'muted' }, advisory.posture.system_confidence == null ? 'n/a' : `${Math.round(advisory.posture.system_confidence * 100)}%`)),
+          advisory.posture.blocker?.stage ? h('div', { className: 'criteria-row' }, h('span', null, 'Stage'), h('span', { className: 'muted' }, advisory.posture.blocker.stage)) : null,
+        ),
+      ),
+      h('div', { className: 'utility-window-section executive-advisory-bridge', 'data-qa': 'executive-advisory-bridge' },
+        h('div', { className: 'signal-summary' }, 'Execution Bridge'),
+        h('div', { className: `agent-panel-status ${advisory.execution_ready ? 'processing' : advisory.tone}` }, advisory.readiness_label),
+        h('div', { className: 'signal-meta muted' }, advisory.bridge_detail),
+        h('button', {
+          className: 'mini',
+          type: 'button',
+          disabled: true,
+          title: 'Chief of Staff recommendations are advisory context only. CTO remains the execution authority.',
+        }, 'Visible to CTO Context'),
+      ),
+      h('div', { className: 'utility-window-section executive-advisory-compose', 'data-qa': 'executive-advisory-compose' },
+        h('div', { className: 'signal-summary' }, 'Ask Chief of Staff'),
+        h('div', { className: 'button-row executive-advisory-prompts' },
+          quickPrompts.map((prompt) => h('button', {
+            key: prompt,
+            className: 'mini',
+            type: 'button',
+            disabled: chiefOfStaffBusy,
+            onClick: () => sendChiefOfStaffMessage(prompt),
+          }, prompt)),
+        ),
+        h('textarea', {
+          className: 'comment-box cto-chat-box executive-advisory-box',
+          value: chiefOfStaffDraft,
+          placeholder: 'Ask for posture, blockers, slice guidance, or CTO readiness...',
+          onChange: (event) => setChiefOfStaffDraft(event.target.value),
+          onKeyDown: (event) => {
+            if (event.key !== 'Enter' || event.shiftKey) return;
+            event.preventDefault();
+            if (chiefOfStaffBusy || !chiefOfStaffDraft.trim()) return;
+            sendChiefOfStaffMessage(chiefOfStaffDraft);
+          },
+          disabled: chiefOfStaffBusy,
+        }),
+        h('div', { className: 'button-row cto-chat-compose-row' },
+          h('button', {
+            className: 'mini',
+            type: 'button',
+            onClick: () => refreshChiefOfStaffAdvisory(),
+            disabled: chiefOfStaffBusy,
+          }, 'Refresh Advisory'),
+          h('button', {
+            className: 'mini',
+            type: 'button',
+            disabled: chiefOfStaffBusy || !chiefOfStaffDraft.trim(),
+            onClick: () => sendChiefOfStaffMessage(chiefOfStaffDraft),
+          }, chiefOfStaffBusy ? 'Advising...' : 'Ask'),
         ),
       ),
     );
@@ -9360,7 +9825,9 @@ function syncRecentWorldChange(change = null) {
           ? `${UTILITY_WINDOW_META[windowId].title} | ${getStudioDeskLabel(targetDeskId)}`
           : UTILITY_WINDOW_META[windowId].title;
         let content = h('div', { className: 'signal-empty muted' }, 'No utility content is available yet.');
-        if (windowId === 'cto-chat') {
+        if (windowId === 'executive-advisory') {
+          content = renderChiefOfStaffUtility();
+        } else if (windowId === 'cto-chat') {
           content = renderCtoChatUtility();
         } else if (windowId === 'environment') {
           content = renderEnvironmentUtility();
@@ -9408,9 +9875,10 @@ function syncRecentWorldChange(change = null) {
             renderScorecardsList(panelData?.qa?.scorecards || []),
           );
         }
+        const windowMeta = UTILITY_WINDOW_META[windowId] || {};
         return h('section', {
           key: windowId,
-          className: `utility-window ${config.docked ? 'docked' : 'floating'} ${config.minimized ? 'minimized' : ''} ${windowId === 'cto-chat' ? 'cto-chat-shell' : ''}`.trim(),
+          className: `utility-window ${config.docked ? 'docked' : 'floating'} ${config.minimized ? 'minimized' : ''} ${windowId === 'cto-chat' ? 'cto-chat-shell' : ''} ${windowId === 'executive-advisory' ? 'executive-advisory-shell' : ''}`.trim(),
           style: config.docked ? null : (() => {
             const position = config.position || getDefaultUtilityWindowPosition(windowId);
             return { top: `${position.top}px`, left: `${position.left}px` };
@@ -9422,7 +9890,7 @@ function syncRecentWorldChange(change = null) {
             onMouseDown: (event) => startUtilityWindowDrag(event, windowId),
           },
             h('div', null,
-              h('div', { className: 'inspector-label' }, 'Utility Window'),
+              h('div', { className: 'inspector-label' }, windowMeta.chromeLabel || 'Utility Window'),
               h('div', { className: 'signal-summary' }, title),
             ),
             h('div', { className: 'button-row utility-window-controls' },
@@ -9444,7 +9912,7 @@ function syncRecentWorldChange(change = null) {
             ),
           ),
           !config.minimized ? h('div', {
-            className: `utility-window-body ${windowId === 'cto-chat' ? 'cto-chat-utility-body' : ''}`.trim(),
+            className: `utility-window-body ${windowId === 'cto-chat' ? 'cto-chat-utility-body' : ''} ${windowId === 'executive-advisory' ? 'executive-advisory-utility-body' : ''}`.trim(),
           }, content) : null,
         );
       }),
@@ -10780,6 +11248,16 @@ function syncRecentWorldChange(change = null) {
               studioDeskEntries.map((desk) => {
                 const deskPosition = desk.position || deskStagePoint(desk.id, studioLayout);
                 const meta = STATUS_META[desk.status] || STATUS_META.idle;
+                const chiefDesk = desk.id === 'cto-chief-of-staff';
+                const cardMeta = chiefDesk
+                  ? {
+                      tone: chiefOfStaffDeskPresentation.statusTone,
+                      badge: chiefOfStaffDeskPresentation.statusBadge,
+                    }
+                  : meta;
+                const cardFocusSummary = chiefDesk ? chiefOfStaffDeskPresentation.focusSummary : desk.focusSummary;
+                const cardThroughputLabel = chiefDesk ? chiefOfStaffDeskPresentation.throughputLabel : desk.throughputLabel;
+                const cardLatestSignal = chiefDesk ? chiefOfStaffDeskPresentation.latestSignal : desk.latestSignal;
                 const thoughtBubble = orchestratorState.desks?.[desk.id]?.thoughtBubble || desk.thoughtBubble || null;
                 const pageBadge = orchestratorState.activeDeskIds?.includes(desk.id)
                   ? buildDeskBadge(desk.id, orchestratorState, activePage)
@@ -10813,9 +11291,9 @@ function syncRecentWorldChange(change = null) {
                 },
                   h(DeskThoughtBubble, { text: thoughtBubble, tone: meta.tone }),
                   h('div', { className: 'desk-card-truth' },
-                    h('div', { className: 'desk-card-truth-line' }, desk.focusSummary || desk.role),
-                    h('div', { className: 'desk-card-truth-line muted' }, desk.throughputLabel),
-                    desk.latestSignal ? h('div', { className: 'desk-card-truth-line muted' }, desk.latestSignal) : null,
+                    h('div', { className: 'desk-card-truth-line' }, cardFocusSummary || desk.role),
+                    h('div', { className: 'desk-card-truth-line muted' }, cardThroughputLabel),
+                    cardLatestSignal ? h('div', { className: 'desk-card-truth-line muted' }, cardLatestSignal) : null,
                     desk.dependencyWarningSummary ? h('div', { className: 'desk-card-truth-line warning' }, desk.dependencyWarningSummary) : null,
                   ),
                   pageBadge ? h('div', { className: 'desk-page-badge' }, pageBadge) : null,
@@ -10825,7 +11303,7 @@ function syncRecentWorldChange(change = null) {
                     h('div', { className: 'station-screen' }),
                   ),
                   h(PixelAvatar, { accent: desk.theme.accent, status: desk.status }),
-                  h('div', { className: `status-chip ${meta.tone}` }, meta.badge),
+                  h('div', { className: `status-chip ${cardMeta.tone}` }, cardMeta.badge),
                   h('div', { className: `org-status-chip ${getOrgStatusMeta(desk.statusLabel || desk.orgStatus).tone}` }, getOrgStatusMeta(desk.statusLabel || desk.orgStatus).badge),
                   h('div', { className: 'agent-label' }, desk.shortLabel),
                 );

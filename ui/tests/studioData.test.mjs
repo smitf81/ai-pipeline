@@ -129,7 +129,7 @@ export default async function runStudioDataTests() {
       ['qa-lead'],
       ['memory-archivist'],
       ['rnd-lead'],
-      ['cto-architect'],
+      ['cto-chief-of-staff', 'cto-architect'],
       ['integration_auditor'],
     ],
   );
@@ -148,11 +148,13 @@ export default async function runStudioDataTests() {
   assert.deepEqual(defaultLayout.desks.planner.position, { x: 536, y: 252 });
   assert.deepEqual(defaultLayout.desks.executor.position, { x: 682, y: 252 });
   assert.deepEqual(defaultLayout.desks['memory-archivist'].position, { x: 620, y: 640 });
+  assert.deepEqual(defaultLayout.desks['cto-chief-of-staff'].position, { x: 876, y: 422 });
   assert.deepEqual(defaultLayout.desks['cto-architect'].position, { x: 990, y: 422 });
   assert.deepEqual(defaultLayout.whiteboards.teamBoard, { x: 284, y: 88, width: 584, height: 208 });
   const renderModel = layoutModel.buildStudioRenderModel(defaultLayout, []);
   assert.equal(renderModel.departments.length, 7);
   assert.equal(renderModel.roomConnections.length, 6);
+  assert.equal(renderModel.deskMap['cto-chief-of-staff'].department.label, 'Control Centre');
   assert.equal(renderModel.deskMap['qa-lead'].department.label, 'Quality');
   assert.equal(renderModel.desks.some((desk) => desk.id === 'context-manager'), false);
   assert.equal(getStudioAgents().find((agent) => agent.id === 'planner').departmentId, 'delivery');

@@ -182,6 +182,65 @@ export default async function runAceConnectorTests() {
         }),
       };
     }
+    if (url === '/api/cto-chief-of-staff/latest') {
+      return {
+        ok: true,
+        json: async () => ({
+          advisory_available: true,
+          reply_text: 'Current system state: blocked by dirty_repo_blocked.',
+          reply_source: 'deterministic_fallback',
+          model_backend: 'ollama_http',
+          model_name: 'qwen2.5-coder:1.5b',
+          model_status: 'timeout',
+          advisory_generated_at: '2026-04-10T09:00:00.000Z',
+          execution_ready: false,
+          recommendation: {
+            id: 'resolve_blocker',
+            title: 'Resolve system blocker',
+            category: 'unblock',
+            blocker: 'dirty_repo_blocked',
+            why_now: 'System execution is currently blocked',
+            execution_ready: false,
+            confidence: 0.9,
+          },
+          posture: {
+            blocked: true,
+            blocker: { failure_key: 'dirty_repo_blocked', stage: 'planning', count: 3 },
+            canonical_available: false,
+            system_confidence: 0.9,
+          },
+        }),
+      };
+    }
+    if (url.startsWith('/api/cto-chief-of-staff/query?q=')) {
+      return {
+        ok: true,
+        json: async () => ({
+          reply_text: 'Planning is blocked by dirty_repo_blocked.',
+          reply_source: 'model_live',
+          model_backend: 'ollama_http',
+          model_name: 'qwen2.5-coder:1.5b',
+          model_status: 'ok',
+          advisory_generated_at: '2026-04-10T09:01:00.000Z',
+          execution_ready: false,
+          recommendation: {
+            id: 'resolve_blocker',
+            title: 'Resolve system blocker',
+            category: 'unblock',
+            blocker: 'dirty_repo_blocked',
+            why_now: 'System execution is currently blocked',
+            execution_ready: false,
+            confidence: 0.9,
+          },
+          posture: {
+            blocked: true,
+            blocker: { failure_key: 'dirty_repo_blocked', stage: 'planning', count: 3 },
+            canonical_available: true,
+            system_confidence: 0.9,
+          },
+        }),
+      };
+    }
     if (url === '/api/spatial/layout/actions') {
       const body = JSON.parse(options.body || '{}');
       if (body.action === 'add_department') {
@@ -998,6 +1057,16 @@ export default async function runAceConnectorTests() {
     assert.equal(ctoStatusPayload.status, 'live');
     assert.equal(ctoStatusPayload.backend, 'ollama');
     assert.equal(requests.at(-1).url, '/api/spatial/cto/status');
+
+    const chiefLatestPayload = await ace.getChiefOfStaffLatest();
+    assert.equal(chiefLatestPayload.reply_text, 'Current system state: blocked by dirty_repo_blocked.');
+    assert.equal(chiefLatestPayload.model_backend, 'ollama_http');
+    assert.equal(requests.at(-1).url, '/api/cto-chief-of-staff/latest');
+
+    const chiefQueryPayload = await ace.askChiefOfStaff('Why is planning blocked?');
+    assert.equal(chiefQueryPayload.reply_source, 'model_live');
+    assert.equal(chiefQueryPayload.recommendation.blocker, 'dirty_repo_blocked');
+    assert.equal(requests.at(-1).url, '/api/cto-chief-of-staff/query?q=Why%20is%20planning%20blocked%3F');
 
     const departmentPayload = await ace.addDepartment({ templateId: 'research' });
     assert.equal(requests.at(-1).url, '/api/spatial/layout/actions');

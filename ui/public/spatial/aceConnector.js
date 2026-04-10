@@ -167,6 +167,30 @@ export class AceConnector {
     return response;
   }
 
+  async getChiefOfStaffLatest() {
+    const res = await fetch('/api/cto-chief-of-staff/latest');
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'Chief of Staff latest advisory failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
+  }
+
+  async askChiefOfStaff(query = '') {
+    const prompt = String(query || '').trim();
+    const url = `/api/cto-chief-of-staff/query?q=${encodeURIComponent(prompt)}`;
+    const res = await fetch(url);
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'Chief of Staff advisory query failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
+  }
+
   async getTaDepartment() {
     const res = await fetch('/api/ta/department');
     const payload = await res.json();

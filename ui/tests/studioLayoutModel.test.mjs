@@ -55,9 +55,12 @@ export default async function runStudioLayoutModelTests() {
   const defaultLayout = layoutModel.createDefaultStudioLayout();
   assert.equal(defaultLayout.departments.length, 7);
   assert.equal(defaultLayout.departments.some((department) => department.id === 'dept-talent-acquisition'), true);
+  assert.deepEqual(defaultLayout.departments.find((department) => department.id === 'dept-control').deskIds, ['cto-chief-of-staff', 'cto-architect']);
   assert.equal(defaultLayout.departments.find((department) => department.id === 'dept-talent-acquisition').staffing.requiredLeadSeatId, 'integration_auditor');
   assert.equal(defaultLayout.departments.find((department) => department.id === 'dept-talent-acquisition').staffing.minimumActiveSeats, 1);
   assert.equal(defaultLayout.desks['context-manager'].visible, false);
+  assert.deepEqual(defaultLayout.desks['cto-chief-of-staff'].position, { x: 876, y: 422 });
+  assert.equal(defaultLayout.desks['cto-chief-of-staff'].reportsToDeskId, 'cto-architect');
   assert.equal(defaultLayout.desks['integration_auditor'].staffing.seatKind, 'lead');
   assert.equal(defaultLayout.desks['integration_auditor'].staffing.placeholder, true);
   const snappedPlannerPosition = layoutModel.snapDeskPositionToDepartment({ x: 40, y: 40 }, 'planner', defaultLayout);

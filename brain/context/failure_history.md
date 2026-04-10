@@ -3,16 +3,16 @@
 Deterministic failure tracking for repeated recognisable failures. Candidate fixes are review-only.
 
 Version: ace/failure-memory.v1
-Updated: 2026-04-10T08:32:07.846Z
+Updated: 2026-04-10T12:38:24.586Z
 
 ### dirty_repo_blocked
-- Count: 3970
+- Count: 9587
 - Stage: planner
 - Agent: planner (ace/agent-attribution.v0)
 - First seen: 2026-04-09T18:59:24.976Z
-- Last seen: 2026-04-10T08:32:07.846Z
+- Last seen: 2026-04-10T12:38:24.586Z
 - Failure class: panel_degraded
-- Last error timestamp: 2026-04-10T08:32:07.846Z
+- Last error timestamp: 2026-04-10T12:38:24.586Z
 - Last error: Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
@@ -30,10 +30,23 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/qaLoopAudit.js
- M ui/qaRepairLoop.js
- M ui/truthKernelAdapter.js
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/studioLayoutSchema.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/studioLayoutModel.test.mjs
+ M ui/tests/studioLayoutRelationships.test.mjs
+ M ui/tests/utilityWindowState.test.mjs
 - Related tools: node, autonomy-policy, git
 - Related stages: planner, builder-preflight
 - Related projects: ace-self
@@ -56,308 +69,23 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/qaLoopAudit.js
- M ui/qaRepairLoop.js
- M ui/truthKernelAdapter.js
-  - Repository has uncommitted tracked changes.
-M  brain/context/autonomy_fix_tasks.json
-M  brain/context/autonomy_fix_tasks.md
-MM brain/context/failure_history.json
-MM brain/context/failure_history.md
-MM brain/context/known_fixes_candidates.json
-MM brain/context/known_fixes_candidates.md
-M  brain/emergence/slices.json
-M  brain/emergence/slices.md
-M  data/spatial/history.json
-M  data/spatial/qa/investigations.json
-A  data/spatial/qa/lead-runs/qa_lead_1775761169723_zf1suu.json
-A  data/spatial/qa/lead-runs/qa_lead_1775762363857_qvxt09.json
-A  data/spatial/qa/lead-runs/qa_lead_1775763563872_dobpe1.json
-A  data/spatial/qa/lead-runs/qa_lead_1775764763874_27y0fr.json
-A  data/spatial/qa/lead-runs/qa_lead_1775799938612_y1g8na.json
-A  data/spatial/qa/lead-runs/qa_lead_1775801137119_ljojbd.json
-A  data/spatial/qa/lead-runs/qa_lead_1775802337131_b9g74e.json
-A  data/spatial/qa/lead-runs/qa_lead_1775803537403_ft2dxd.json
-A  data/spatial/qa/lead-runs/qa_lead_1775804737417_vmnua0.json
-A  data/spatial/qa/lead-runs/qa_lead_1775805937716_y1y0q0.json
-A  data/spatial/qa/lead-runs/qa_lead_1775807139625_4n1n8s.json
-A  data/spatial/qa/lead-runs/qa_lead_1775808339635_m7wdv9.json
-A  data/spatial/qa/lead-runs/qa_lead_1775809043805_enraby.json
-A  data/spatial/qa/lead-runs/qa_lead_1775809539643_5jwphl.json
-A  data/spatial/qa/lead-runs/qa_lead_1775809723869_klu7ys.json
-M  data/spatial/qa/lead-state.json
-M  data/spatial/qa/output-feed.json
-M  data/spatial/qa/planner-qa-queue.json
-M  data/spatial/qa/planner-qa-queue.md
-A  data/spatial/qa/qa_1775761170055_uwzneo.json
-A  data/spatial/qa/qa_1775761170055_uwzneo/01-initial.png
-A  data/spatial/qa/qa_1775761170055_uwzneo/02-studio-smoke.png
-A  data/spatial/qa/qa_1775761170055_uwzneo/console.json
-A  data/spatial/qa/qa_1775761170055_uwzneo/dom.html
-A  data/spatial/qa/qa_1775761170055_uwzneo/layout-findings.json
-A  data/spatial/qa/qa_1775761170055_uwzneo/network.json
-A  data/spatial/qa/qa_1775761170055_uwzneo/runtime.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq/01-initial.png
-A  data/spatial/qa/qa_1775762363886_r8j1eq/02-studio-smoke.png
-A  data/spatial/qa/qa_1775762363886_r8j1eq/console.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq/dom.html
-A  data/spatial/qa/qa_1775762363886_r8j1eq/layout-findings.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq/network.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq/runtime.json
-A  data/spatial/qa/qa_1775763563890_lus55l.json
-A  data/spatial/qa/qa_1775763563890_lus55l/01-initial.png
-A  data/spatial/qa/qa_1775763563890_lus55l/02-studio-smoke.png
-A  data/spatial/qa/qa_1775763563890_lus55l/console.json
-A  data/spatial/qa/qa_1775763563890_lus55l/dom.html
-A  data/spatial/qa/qa_1775763563890_lus55l/layout-findings.json
-A  data/spatial/qa/qa_1775763563890_lus55l/network.json
-A  data/spatial/qa/qa_1775763563890_lus55l/runtime.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5/01-initial.png
-A  data/spatial/qa/qa_1775764763907_4i1lt5/02-studio-smoke.png
-A  data/spatial/qa/qa_1775764763907_4i1lt5/console.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5/dom.html
-A  data/spatial/qa/qa_1775764763907_4i1lt5/layout-findings.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5/network.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5/runtime.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm/01-initial.png
-A  data/spatial/qa/qa_1775799938630_tfbhsm/02-studio-smoke.png
-A  data/spatial/qa/qa_1775799938630_tfbhsm/console.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm/dom.html
-A  data/spatial/qa/qa_1775799938630_tfbhsm/layout-findings.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm/network.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm/runtime.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r/01-initial.png
-A  data/spatial/qa/qa_1775801137168_3z5o5r/02-studio-smoke.png
-A  data/spatial/qa/qa_1775801137168_3z5o5r/console.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r/dom.html
-A  data/spatial/qa/qa_1775801137168_3z5o5r/layout-findings.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r/network.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r/runtime.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi/01-initial.png
-A  data/spatial/qa/qa_1775802337177_rtaeyi/02-studio-smoke.png
-A  data/spatial/qa/qa_1775802337177_rtaeyi/console.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi/dom.html
-A  data/spatial/qa/qa_1775802337177_rtaeyi/layout-findings.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi/network.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi/runtime.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk/01-initial.png
-A  data/spatial/qa/qa_1775803537441_sa6ygk/02-studio-smoke.png
-A  data/spatial/qa/qa_1775803537441_sa6ygk/console.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk/dom.html
-A  data/spatial/qa/qa_1775803537441_sa6ygk/layout-findings.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk/network.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk/runtime.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r/01-initial.png
-A  data/spatial/qa/qa_1775804737456_8ecu9r/02-studio-smoke.png
-A  data/spatial/qa/qa_1775804737456_8ecu9r/console.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r/dom.html
-A  data/spatial/qa/qa_1775804737456_8ecu9r/layout-findings.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r/network.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r/runtime.json
-A  data/spatial/qa/qa_1775805938168_473a3t.json
-A  data/spatial/qa/qa_1775807139753_mgswv3.json
-A  data/spatial/qa/qa_1775807139753_mgswv3/01-initial.png
-A  data/spatial/qa/qa_1775807139753_mgswv3/02-studio-smoke.png
-A  data/spatial/qa/qa_1775807139753_mgswv3/console.json
-A  data/spatial/qa/qa_1775807139753_mgswv3/dom.html
-A  data/spatial/qa/qa_1775807139753_mgswv3/layout-findings.json
-A  data/spatial/qa/qa_1775807139753_mgswv3/network.json
-A  data/spatial/qa/qa_1775807139753_mgswv3/runtime.json
-A  data/spatial/qa/qa_1775808339647_mntof1.json
-A  data/spatial/qa/qa_1775808339647_mntof1/01-initial.png
-A  data/spatial/qa/qa_1775808339647_mntof1/02-studio-smoke.png
-A  data/spatial/qa/qa_1775808339647_mntof1/console.json
-A  data/spatial/qa/qa_1775808339647_mntof1/dom.html
-A  data/spatial/qa/qa_1775808339647_mntof1/layout-findings.json
-A  data/spatial/qa/qa_1775808339647_mntof1/network.json
-A  data/spatial/qa/qa_1775808339647_mntof1/runtime.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu/01-initial.png
-A  data/spatial/qa/qa_1775809043814_lrg0vu/02-studio-smoke.png
-A  data/spatial/qa/qa_1775809043814_lrg0vu/console.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu/dom.html
-A  data/spatial/qa/qa_1775809043814_lrg0vu/layout-findings.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu/network.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu/runtime.json
-A  data/spatial/qa/qa_1775809539662_8xnndq.json
-A  data/spatial/qa/qa_1775809539662_8xnndq/01-initial.png
-A  data/spatial/qa/qa_1775809539662_8xnndq/02-studio-smoke.png
-A  data/spatial/qa/qa_1775809539662_8xnndq/console.json
-A  data/spatial/qa/qa_1775809539662_8xnndq/dom.html
-A  data/spatial/qa/qa_1775809539662_8xnndq/layout-findings.json
-A  data/spatial/qa/qa_1775809539662_8xnndq/network.json
-A  data/spatial/qa/qa_1775809539662_8xnndq/runtime.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z/01-initial.png
-A  data/spatial/qa/qa_1775809723878_oj8o4z/02-studio-smoke.png
-A  data/spatial/qa/qa_1775809723878_oj8o4z/console.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z/dom.html
-A  data/spatial/qa/qa_1775809723878_oj8o4z/layout-findings.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z/network.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z/runtime.json
-M  data/spatial/qa/repair-events.json
-M  data/spatial/qa/repair-jobs.json
-MM data/spatial/workspace.json
-M  ui/qaLoopAudit.js
-M  ui/qaRepairLoop.js
-M  ui/truthKernelAdapter.js
-  - Repository has uncommitted tracked changes.
-M  brain/context/autonomy_fix_tasks.json
-M  brain/context/autonomy_fix_tasks.md
-M  brain/context/failure_history.json
-M  brain/context/failure_history.md
-M  brain/context/known_fixes_candidates.json
-M  brain/context/known_fixes_candidates.md
-M  brain/emergence/slices.json
-M  brain/emergence/slices.md
-M  data/spatial/history.json
-M  data/spatial/qa/investigations.json
-A  data/spatial/qa/lead-runs/qa_lead_1775761169723_zf1suu.json
-A  data/spatial/qa/lead-runs/qa_lead_1775762363857_qvxt09.json
-A  data/spatial/qa/lead-runs/qa_lead_1775763563872_dobpe1.json
-A  data/spatial/qa/lead-runs/qa_lead_1775764763874_27y0fr.json
-A  data/spatial/qa/lead-runs/qa_lead_1775799938612_y1g8na.json
-A  data/spatial/qa/lead-runs/qa_lead_1775801137119_ljojbd.json
-A  data/spatial/qa/lead-runs/qa_lead_1775802337131_b9g74e.json
-A  data/spatial/qa/lead-runs/qa_lead_1775803537403_ft2dxd.json
-A  data/spatial/qa/lead-runs/qa_lead_1775804737417_vmnua0.json
-A  data/spatial/qa/lead-runs/qa_lead_1775805937716_y1y0q0.json
-A  data/spatial/qa/lead-runs/qa_lead_1775807139625_4n1n8s.json
-A  data/spatial/qa/lead-runs/qa_lead_1775808339635_m7wdv9.json
-A  data/spatial/qa/lead-runs/qa_lead_1775809043805_enraby.json
-A  data/spatial/qa/lead-runs/qa_lead_1775809539643_5jwphl.json
-A  data/spatial/qa/lead-runs/qa_lead_1775809723869_klu7ys.json
-M  data/spatial/qa/lead-state.json
-M  data/spatial/qa/output-feed.json
-M  data/spatial/qa/planner-qa-queue.json
-M  data/spatial/qa/planner-qa-queue.md
-A  data/spatial/qa/qa_1775761170055_uwzneo.json
-A  data/spatial/qa/qa_1775761170055_uwzneo/01-initial.png
-A  data/spatial/qa/qa_1775761170055_uwzneo/02-studio-smoke.png
-A  data/spatial/qa/qa_1775761170055_uwzneo/console.json
-A  data/spatial/qa/qa_1775761170055_uwzneo/dom.html
-A  data/spatial/qa/qa_1775761170055_uwzneo/layout-findings.json
-A  data/spatial/qa/qa_1775761170055_uwzneo/network.json
-A  data/spatial/qa/qa_1775761170055_uwzneo/runtime.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq/01-initial.png
-A  data/spatial/qa/qa_1775762363886_r8j1eq/02-studio-smoke.png
-A  data/spatial/qa/qa_1775762363886_r8j1eq/console.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq/dom.html
-A  data/spatial/qa/qa_1775762363886_r8j1eq/layout-findings.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq/network.json
-A  data/spatial/qa/qa_1775762363886_r8j1eq/runtime.json
-A  data/spatial/qa/qa_1775763563890_lus55l.json
-A  data/spatial/qa/qa_1775763563890_lus55l/01-initial.png
-A  data/spatial/qa/qa_1775763563890_lus55l/02-studio-smoke.png
-A  data/spatial/qa/qa_1775763563890_lus55l/console.json
-A  data/spatial/qa/qa_1775763563890_lus55l/dom.html
-A  data/spatial/qa/qa_1775763563890_lus55l/layout-findings.json
-A  data/spatial/qa/qa_1775763563890_lus55l/network.json
-A  data/spatial/qa/qa_1775763563890_lus55l/runtime.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5/01-initial.png
-A  data/spatial/qa/qa_1775764763907_4i1lt5/02-studio-smoke.png
-A  data/spatial/qa/qa_1775764763907_4i1lt5/console.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5/dom.html
-A  data/spatial/qa/qa_1775764763907_4i1lt5/layout-findings.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5/network.json
-A  data/spatial/qa/qa_1775764763907_4i1lt5/runtime.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm/01-initial.png
-A  data/spatial/qa/qa_1775799938630_tfbhsm/02-studio-smoke.png
-A  data/spatial/qa/qa_1775799938630_tfbhsm/console.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm/dom.html
-A  data/spatial/qa/qa_1775799938630_tfbhsm/layout-findings.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm/network.json
-A  data/spatial/qa/qa_1775799938630_tfbhsm/runtime.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r/01-initial.png
-A  data/spatial/qa/qa_1775801137168_3z5o5r/02-studio-smoke.png
-A  data/spatial/qa/qa_1775801137168_3z5o5r/console.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r/dom.html
-A  data/spatial/qa/qa_1775801137168_3z5o5r/layout-findings.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r/network.json
-A  data/spatial/qa/qa_1775801137168_3z5o5r/runtime.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi/01-initial.png
-A  data/spatial/qa/qa_1775802337177_rtaeyi/02-studio-smoke.png
-A  data/spatial/qa/qa_1775802337177_rtaeyi/console.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi/dom.html
-A  data/spatial/qa/qa_1775802337177_rtaeyi/layout-findings.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi/network.json
-A  data/spatial/qa/qa_1775802337177_rtaeyi/runtime.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk/01-initial.png
-A  data/spatial/qa/qa_1775803537441_sa6ygk/02-studio-smoke.png
-A  data/spatial/qa/qa_1775803537441_sa6ygk/console.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk/dom.html
-A  data/spatial/qa/qa_1775803537441_sa6ygk/layout-findings.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk/network.json
-A  data/spatial/qa/qa_1775803537441_sa6ygk/runtime.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r/01-initial.png
-A  data/spatial/qa/qa_1775804737456_8ecu9r/02-studio-smoke.png
-A  data/spatial/qa/qa_1775804737456_8ecu9r/console.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r/dom.html
-A  data/spatial/qa/qa_1775804737456_8ecu9r/layout-findings.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r/network.json
-A  data/spatial/qa/qa_1775804737456_8ecu9r/runtime.json
-A  data/spatial/qa/qa_1775805938168_473a3t.json
-A  data/spatial/qa/qa_1775807139753_mgswv3.json
-A  data/spatial/qa/qa_1775807139753_mgswv3/01-initial.png
-A  data/spatial/qa/qa_1775807139753_mgswv3/02-studio-smoke.png
-A  data/spatial/qa/qa_1775807139753_mgswv3/console.json
-A  data/spatial/qa/qa_1775807139753_mgswv3/dom.html
-A  data/spatial/qa/qa_1775807139753_mgswv3/layout-findings.json
-A  data/spatial/qa/qa_1775807139753_mgswv3/network.json
-A  data/spatial/qa/qa_1775807139753_mgswv3/runtime.json
-A  data/spatial/qa/qa_1775808339647_mntof1.json
-A  data/spatial/qa/qa_1775808339647_mntof1/01-initial.png
-A  data/spatial/qa/qa_1775808339647_mntof1/02-studio-smoke.png
-A  data/spatial/qa/qa_1775808339647_mntof1/console.json
-A  data/spatial/qa/qa_1775808339647_mntof1/dom.html
-A  data/spatial/qa/qa_1775808339647_mntof1/layout-findings.json
-A  data/spatial/qa/qa_1775808339647_mntof1/network.json
-A  data/spatial/qa/qa_1775808339647_mntof1/runtime.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu/01-initial.png
-A  data/spatial/qa/qa_1775809043814_lrg0vu/02-studio-smoke.png
-A  data/spatial/qa/qa_1775809043814_lrg0vu/console.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu/dom.html
-A  data/spatial/qa/qa_1775809043814_lrg0vu/layout-findings.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu/network.json
-A  data/spatial/qa/qa_1775809043814_lrg0vu/runtime.json
-A  data/spatial/qa/qa_1775809539662_8xnndq.json
-A  data/spatial/qa/qa_1775809539662_8xnndq/01-initial.png
-A  data/spatial/qa/qa_1775809539662_8xnndq/02-studio-smoke.png
-A  data/spatial/qa/qa_1775809539662_8xnndq/console.json
-A  data/spatial/qa/qa_1775809539662_8xnndq/dom.html
-A  data/spatial/qa/qa_1775809539662_8xnndq/layout-findings.json
-A  data/spatial/qa/qa_1775809539662_8xnndq/network.json
-A  data/spatial/qa/qa_1775809539662_8xnndq/runtime.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z/01-initial.png
-A  data/spatial/qa/qa_1775809723878_oj8o4z/02-studio-smoke.png
-A  data/spatial/qa/qa_1775809723878_oj8o4z/console.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z/dom.html
-A  data/spatial/qa/qa_1775809723878_oj8o4z/layout-findings.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z/network.json
-A  data/spatial/qa/qa_1775809723878_oj8o4z/runtime.json
-M  data/spatial/qa/repair-events.json
-M  data/spatial/qa/repair-jobs.json
-M  data/spatial/workspace.json
-M  ui/qaLoopAudit.js
-M  ui/qaRepairLoop.js
-M  ui/truthKernelAdapter.js
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/studioLayoutSchema.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/studioLayoutModel.test.mjs
+ M ui/tests/studioLayoutRelationships.test.mjs
+ M ui/tests/utilityWindowState.test.mjs
   - blocked | Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
@@ -375,10 +103,23 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/qaLoopAudit.js
- M ui/qaRepairLoop.js
- M ui/truthKernelAdapter.js
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/studioLayoutSchema.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/studioLayoutModel.test.mjs
+ M ui/tests/studioLayoutRelationships.test.mjs
+ M ui/tests/utilityWindowState.test.mjs
   - Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
@@ -396,9 +137,89 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/qaLoopAudit.js
- M ui/qaRepairLoop.js
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/studioLayoutSchema.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/helpers/browser-module-loader.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/studioLayoutModel.test.mjs
+ M ui/tests/studioLayoutRelationships.test.mjs
+ M ui/tests/utilityWindowState.test.mjs
+  - Repository has uncommitted tracked changes.
+M brain/context/autonomy_fix_tasks.json
+ M brain/context/autonomy_fix_tasks.md
+ M brain/context/failure_history.json
+ M brain/context/failure_history.md
+ M brain/context/known_fixes_candidates.json
+ M brain/context/known_fixes_candidates.md
+ M brain/emergence/slices.json
+ M brain/emergence/slices.md
+ M data/spatial/history.json
+ M data/spatial/qa/investigations.json
+ M data/spatial/qa/lead-state.json
+ M data/spatial/qa/output-feed.json
+ M data/spatial/qa/planner-qa-queue.json
+ M data/spatial/qa/planner-qa-queue.md
+ M data/spatial/qa/repair-events.json
+ M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
+ M data/spatial/workspace.json
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/studioLayoutModel.test.mjs
+ M ui/tests/studioLayoutRelationships.test.mjs
+ M ui/tests/utilityWindowState.test.mjs
+  - Repository has uncommitted tracked changes.
+M brain/context/autonomy_fix_tasks.json
+ M brain/context/autonomy_fix_tasks.md
+ M brain/context/failure_history.json
+ M brain/context/failure_history.md
+ M brain/context/known_fixes_candidates.json
+ M brain/context/known_fixes_candidates.md
+ M brain/emergence/slices.json
+ M brain/emergence/slices.md
+ M data/spatial/history.json
+ M data/spatial/qa/investigations.json
+ M data/spatial/qa/lead-state.json
+ M data/spatial/qa/output-feed.json
+ M data/spatial/qa/planner-qa-queue.json
+ M data/spatial/qa/planner-qa-queue.md
+ M data/spatial/qa/repair-events.json
+ M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
+ M data/spatial/workspace.json
+ M ui/public/spatial/aceConnector.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioLayoutModel.js
+ M ui/public/spatial/windowState.js
+ M ui/public/style.css
+ M ui/server.js
+ M ui/tests/aceConnector.test.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/studioLayoutModel.test.mjs
+ M ui/tests/studioLayoutRelationships.test.mjs
+ M ui/tests/utilityWindowState.test.mjs
 
 ### git_apply_check_failed
 - Count: 1

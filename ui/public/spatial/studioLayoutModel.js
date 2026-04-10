@@ -31,7 +31,7 @@ const CORE_DEPARTMENTS = Object.freeze([
   { id: 'dept-quality', label: 'Quality', kind: 'quality', bounds: { x: 92, y: 394, width: 220, height: 232 }, deskIds: ['qa-lead'], editable: true },
   { id: 'dept-archive', label: 'Archive', kind: 'archive', bounds: { x: 454, y: 580, width: 312, height: 120 }, deskIds: ['memory-archivist'], editable: true },
   { id: 'dept-research', label: 'R&D / Research & Development', kind: 'research', bounds: { x: 808, y: 564, width: 292, height: 136 }, deskIds: ['rnd-lead'], editable: true, summary: 'Sandbox department for non-delivery research, experiments, and prototypes.' },
-  { id: 'dept-control', label: 'Control Centre', kind: 'control', bounds: { x: 884, y: 286, width: 214, height: 254 }, deskIds: ['cto-architect'], editable: true },
+  { id: 'dept-control', label: 'Control Centre', kind: 'control', bounds: { x: 770, y: 286, width: 328, height: 254 }, deskIds: ['cto-chief-of-staff', 'cto-architect'], editable: true },
   { id: 'dept-talent-acquisition', label: 'Talent Acquisition', kind: 'talent', bounds: { x: 850, y: 86, width: 250, height: 176 }, deskIds: ['integration_auditor'], editable: false },
 ]);
 
@@ -42,6 +42,7 @@ const CORE_DESKS = Object.freeze({
   'qa-lead': { id: 'qa-lead', label: 'QA Lead', departmentId: 'dept-quality', position: { x: 182, y: 510 }, type: 'quality', capabilities: ['testing', 'verification'], editable: false, assignedAgentIds: ['qa-lead'], staffing: { seatKind: 'lead' } },
   'memory-archivist': { id: 'memory-archivist', label: 'Memory Archivist', departmentId: 'dept-archive', position: { x: 620, y: 640 }, type: 'archive', capabilities: ['context', 'history'], editable: false, assignedAgentIds: ['memory-archivist', 'dave'], staffing: { seatKind: 'lead' } },
   'rnd-lead': { id: 'rnd-lead', label: 'R&D Lead', departmentId: 'dept-research', position: { x: 954, y: 640 }, type: 'research', capabilities: ['research', 'experimentation', 'prototyping'], editable: false, assignedAgentIds: ['rnd-lead'], summary: 'Sandbox desk for non-delivery research and prototype work.', staffing: { seatKind: 'lead' } },
+  'cto-chief-of-staff': { id: 'cto-chief-of-staff', label: 'Chief of Staff', departmentId: 'dept-control', position: { x: 876, y: 422 }, type: 'advisory', capabilities: ['advisory', 'posture', 'slicing'], editable: false, assignedAgentIds: ['cto-chief-of-staff'], reportsToDeskId: 'cto-architect', summary: 'Executive advisory desk for posture checks, blocker framing, and bounded next-slice guidance.', staffing: { seatKind: 'core' } },
   'cto-architect': { id: 'cto-architect', label: 'CTO / Architect', departmentId: 'dept-control', position: { x: 990, y: 422 }, type: 'control', capabilities: ['oversight', 'guardrails'], editable: true, assignedAgentIds: ['cto-architect'], staffing: { seatKind: 'lead' } },
   integration_auditor: { id: 'integration_auditor', label: 'Integration Auditor', departmentId: 'dept-talent-acquisition', position: { x: 986, y: 174 }, type: 'talent', capabilities: ['coverage', 'hiring-demand', 'role-readiness'], editable: false, assignedAgentIds: ['integration_auditor'], staffing: { seatKind: 'lead' } },
 });
@@ -67,6 +68,7 @@ const DESK_TYPE_ACCENTS = Object.freeze({
   research: { accent: '#7de6d1', shadow: 'rgba(93, 173, 160, 0.24)' },
   control: { accent: '#ffb36c', shadow: 'rgba(255, 179, 108, 0.26)' },
   talent: { accent: '#8ee7c1', shadow: 'rgba(142, 231, 193, 0.24)' },
+  advisory: { accent: '#8cb8d9', shadow: 'rgba(140, 184, 217, 0.24)' },
   analysis: { accent: '#7de6d1', shadow: 'rgba(125, 230, 209, 0.24)' },
   reporting: { accent: '#b9c6ff', shadow: 'rgba(185, 198, 255, 0.24)' },
   review: { accent: '#ff9eb4', shadow: 'rgba(255, 158, 180, 0.24)' },
@@ -707,7 +709,7 @@ export function createDefaultStudioLayout() {
       visible: desk.visible !== undefined ? Boolean(desk.visible) : true,
       hidden: Boolean(desk.hidden),
       aliasOf: String(desk.aliasOf || ''),
-      reportsToDeskId: CONTROL_CENTRE_DESK_ID,
+      reportsToDeskId: desk.reportsToDeskId || CONTROL_CENTRE_DESK_ID,
     }])),
   };
 }

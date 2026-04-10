@@ -1,6 +1,7 @@
 const UTILITY_WINDOW_STORAGE_KEY = 'ace.spatial.utilityWindows.v1';
-const UTILITY_WINDOW_ORDER = ['cto-chat', 'environment', 'qa', 'context', 'reports', 'roster', 'studio-map', 'scorecards'];
+const UTILITY_WINDOW_ORDER = ['executive-advisory', 'cto-chat', 'environment', 'qa', 'context', 'reports', 'roster', 'studio-map', 'scorecards'];
 const UTILITY_WINDOW_META = {
+  'executive-advisory': { deskId: 'cto-chief-of-staff', title: 'Executive Advisory' },
   'cto-chat': { deskId: 'cto-architect', title: 'CTO Chat' },
   environment: { deskId: 'cto-architect' },
   qa: { deskId: 'qa-lead' },
@@ -52,10 +53,11 @@ export function clampUtilityWindowPosition(position = {}) {
 }
 
 export function createDefaultUtilityWindowState(windowId) {
+  const executiveAdvisory = windowId === 'executive-advisory';
   return {
     open: false,
     minimized: false,
-    docked: true,
+    docked: executiveAdvisory ? false : true,
     targetDeskId: UTILITY_WINDOW_META[windowId]?.deskId ?? null,
     position: getDefaultUtilityWindowPosition(windowId),
   };

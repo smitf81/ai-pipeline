@@ -24,6 +24,7 @@ const CORE_DESK_AGENT_DEFAULTS = {
   executor: ['executor'],
   'memory-archivist': ['memory-archivist', 'dave'],
   'rnd-lead': ['rnd-lead'],
+  'cto-chief-of-staff': ['cto-chief-of-staff'],
   'cto-architect': ['cto-architect'],
   'qa-lead': ['qa-lead'],
 };
@@ -33,7 +34,7 @@ const DEPARTMENT_ROOM_SLOTS = [
   { id: 'delivery-bay', x: 334, y: 86, width: 514, height: 470 },
   { id: 'quality-bay', x: 92, y: 394, width: 220, height: 232 },
   { id: 'archive-bay', x: 454, y: 580, width: 312, height: 120 },
-  { id: 'control-bay', x: 884, y: 286, width: 214, height: 254 },
+  { id: 'control-bay', x: 770, y: 286, width: 328, height: 254 },
   { id: 'talent-bay', x: 850, y: 86, width: 250, height: 176 },
   { id: 'expansion-a', x: 850, y: 86, width: 250, height: 176 },
   { id: 'expansion-b', x: 808, y: 564, width: 292, height: 136 },
@@ -285,11 +286,11 @@ const CORE_DEPARTMENTS = [
     templateId: 'control',
     label: 'Control Centre',
     slotId: 'control-bay',
-    deskIds: ['cto-architect'],
+    deskIds: ['cto-chief-of-staff', 'cto-architect'],
     staffing: {
       requiredLeadSeatId: 'cto-architect',
       minimumActiveSeats: 1,
-      baselineRoleIds: ['cto-architect'],
+      baselineRoleIds: ['cto-chief-of-staff', 'cto-architect'],
     },
   },
   {
@@ -378,6 +379,19 @@ const CORE_DESKS = {
     summary: 'Sandbox desk for non-delivery research and prototype work.',
     staffing: {
       seatKind: 'lead',
+    },
+  },
+  'cto-chief-of-staff': {
+    id: 'cto-chief-of-staff',
+    label: 'Chief of Staff',
+    templateId: 'support-node',
+    departmentId: 'dept-control',
+    position: { x: 876, y: 422 },
+    assignedAgentIds: ['cto-chief-of-staff'],
+    editable: false,
+    reportsToDeskId: 'cto-architect',
+    staffing: {
+      seatKind: 'core',
     },
   },
   'cto-architect': {

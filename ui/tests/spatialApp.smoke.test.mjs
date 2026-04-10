@@ -25,6 +25,9 @@ export default async function runSpatialAppSmokeTest() {
   assert.equal(typeof spatialApp.normalizeRosterSurfacePayload, 'function');
   assert.equal(typeof spatialApp.normalizeTruthPayload, 'function');
   assert.equal(typeof spatialApp.normalizeQAReportPayload, 'function');
+  assert.equal(typeof spatialApp.buildChiefOfStaffQuickPrompts, 'function');
+  assert.equal(typeof spatialApp.normalizeChiefOfStaffAdvisoryPayload, 'function');
+  assert.equal(typeof spatialApp.buildChiefOfStaffDeskPresentation, 'function');
   assert.equal(typeof spatialApp.normalizeDeskManagementDraft, 'function');
   assert.equal(typeof spatialApp.updateDeskManagementDraft, 'function');
   assert.equal(typeof spatialApp.clearDeskManagementDraft, 'function');
@@ -106,6 +109,7 @@ export default async function runSpatialAppSmokeTest() {
   assert.equal(defaultLayout.departments.some((department) => department.id === 'dept-talent-acquisition'), true);
   assert.ok(defaultLayout.desks['integration_auditor']);
   assert.ok(defaultLayout.desks['qa-lead']);
+  assert.ok(defaultLayout.desks['cto-chief-of-staff']);
   const layoutRenderModel = layoutModel.buildStudioRenderModel(defaultLayout, []);
   assert.equal(layoutRenderModel.roomConnections.length, 6);
   assert.ok(layoutRenderModel.deskMap['planner']);
@@ -116,6 +120,38 @@ export default async function runSpatialAppSmokeTest() {
   assert.equal(layoutRenderModel.deskMap['integration_auditor'].statusLabel, 'blocked');
   assert.ok(layoutRenderModel.deskMap['integration_auditor'].dependencyWarnings.length >= 1);
   assert.equal(layoutRenderModel.deskMap['integration_auditor'].throughputLabel, '1 assigned agent');
+  assert.deepEqual(spatialApp.buildChiefOfStaffQuickPrompts(), [
+    'What should we do next?',
+    'Why is planning blocked?',
+    'What is the highest-leverage slice?',
+    'Is CTO ready to act on this?',
+    'What is the biggest blocker right now?',
+  ]);
+  const advisoryPayload = spatialApp.normalizeChiefOfStaffAdvisoryPayload({
+    reply_text: 'Planning is blocked by dirty_repo_blocked.',
+    reply_source: 'deterministic_fallback',
+    model_status: 'timeout',
+    recommendation: {
+      title: 'Resolve system blocker',
+      category: 'unblock',
+      blocker: 'dirty_repo_blocked',
+      execution_ready: false,
+      confidence: 0.9,
+      why_now: 'System execution is currently blocked',
+    },
+    posture: {
+      blocked: true,
+      blocker: { failure_key: 'dirty_repo_blocked', stage: 'planning', count: 3 },
+      canonical_available: false,
+      system_confidence: 0.9,
+    },
+  });
+  assert.equal(advisoryPayload.blocker, 'dirty_repo_blocked');
+  assert.equal(advisoryPayload.execution_ready, false);
+  assert.equal(advisoryPayload.readiness_label, 'Not ready for CTO');
+  const deskPresentation = spatialApp.buildChiefOfStaffDeskPresentation(advisoryPayload);
+  assert.equal(deskPresentation.focusSummary, 'Resolve system blocker');
+  assert.match(deskPresentation.latestSignal, /dirty_repo_blocked/);
 
   const recentWorldChange = spatialApp.normalizeRecentWorldChange({
     items: [{

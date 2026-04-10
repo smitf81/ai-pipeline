@@ -215,6 +215,11 @@ const {
   runConstrainedAutoFixExecutor,
 } = require('./constrainedAutoFix');
 const {
+  DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
+  queryChiefOfStaff,
+  readLatestChiefOfStaffAdvisory,
+} = require('./ctoChiefOfStaff');
+const {
   writeJsonIfChanged,
 } = require('./changeHygiene');
 
@@ -1860,6 +1865,9 @@ function normalizeCtoActionRecord(action = null) {
           })
           .filter(Boolean)
       : [],
+    advisory: action.advisory && typeof action.advisory === 'object' && !Array.isArray(action.advisory)
+      ? { ...action.advisory }
+      : null,
   };
 }
 
@@ -1914,6 +1922,7 @@ function buildCtoActionRecord({
   targetDeskLabel = null,
   overrideAvailable = false,
   blockedGates = [],
+  advisory = null,
 }) {
   return {
     id,
@@ -1931,6 +1940,9 @@ function buildCtoActionRecord({
     targetDeskLabel: String(targetDeskLabel || params?.deskLabel || '').trim() || null,
     overrideAvailable: overrideAvailable === true,
     blockedGates: Array.isArray(blockedGates) ? blockedGates.filter((gate) => gate && gate.code) : [],
+    advisory: advisory && typeof advisory === 'object' && !Array.isArray(advisory)
+      ? { ...advisory }
+      : null,
   };
 }
 
@@ -2334,6 +2346,7 @@ async function buildCtoGovernanceContext(workspace = null, options = {}) {
   const ctoOverrideLayer = deriveCtoOverrideLayer(ctoOverrideLedger);
   const repairLoop = buildQaRepairLoopState(rootPath);
   const governedRepair = buildCtoGovernedRepairReference(repairLoop);
+  const chiefOfStaff = normalizeChiefOfStaffContext(readLatestChiefOfStaffAdvisory());
   const desks = CTO_DESK_IDS.map((deskId) => {
     const payload = buildDeskPropertiesPayload(runtimeWorkspace, deskId, null, { rootPath });
     const taCoverage = Array.isArray(taPayload.coverage)
@@ -2447,6 +2460,7 @@ async function buildCtoGovernanceContext(workspace = null, options = {}) {
       overrides: ctoOverrideSummary,
       overrideLayer: ctoOverrideLayer,
       governedRepair,
+      chiefOfStaff,
     },
     generatedAt: nowIso(),
   };
@@ -2516,6 +2530,113 @@ function reconcileCtoHistoryAgainstCanonicalState(history = [], { context = null
   });
 }
 
+function normalizeChiefOfStaffContext(chief = null) {
+  if (!chief || typeof chief !== 'object' || Array.isArray(chief)) {
+    return {
+      advisory_available: false,
+      advisory_only: true,
+      recommendation: null,
+      reply_source: null,
+      model_status: null,
+      model_backend: DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
+      model_name: null,
+      generated_at: null,
+      execution_ready: false,
+      blocker: null,
+      confidence: null,
+      why_now: null,
+      recommended_action_id: null,
+    };
+  }
+  const recommendation = chief.recommendation && typeof chief.recommendation === 'object'
+    ? chief.recommendation
+    : null;
+  const blocker = chief.posture?.blocker && typeof chief.posture.blocker === 'object'
+    ? chief.posture.blocker
+    : (chief.blocker && typeof chief.blocker === 'object' ? chief.blocker : null);
+  const recommendedActionId = String(
+    chief.recommended_action_id
+    || recommendation?.canonical_action_id
+    || recommendation?.action_id
+    || '',
+  ).trim() || null;
+  return {
+    advisory_available: chief.advisory_available === true,
+    advisory_only: true,
+    recommendation: recommendation ? {
+      id: recommendation.id || null,
+      title: recommendation.title || null,
+      category: recommendation.category || null,
+      blocker: recommendation.blocker || null,
+      stage: recommendation.stage || null,
+      why_now: recommendation.why_now || null,
+      recommendation_text: recommendation.recommendation_text || null,
+      execution_ready: Boolean(recommendation.execution_ready),
+      confidence: Number.isFinite(Number(recommendation.confidence)) ? Number(recommendation.confidence) : null,
+      canonical_action_id: recommendedActionId,
+    } : null,
+    reply_source: chief.reply_source || null,
+    model_status: chief.model_status || null,
+    model_backend: chief.model_backend || DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
+    model_name: chief.model_name || null,
+    generated_at: chief.advisory_generated_at || chief.generated_at || null,
+    execution_ready: Boolean(chief.execution_ready),
+    blocker: blocker ? {
+      failure_key: blocker.failure_key || null,
+      stage: blocker.stage || null,
+      count: Number.isFinite(Number(blocker.count)) ? Number(blocker.count) : null,
+    } : null,
+    confidence: Number.isFinite(Number(recommendation?.confidence ?? chief.posture?.system_confidence))
+      ? Number(recommendation?.confidence ?? chief.posture?.system_confidence)
+      : null,
+    why_now: recommendation?.why_now || null,
+    recommended_action_id: recommendedActionId,
+  };
+}
+
+function applyChiefOfStaffAdvisoryToAction(action = null, context = null) {
+  const normalizedAction = normalizeCtoActionRecord(action);
+  if (!normalizedAction) return null;
+  const chief = normalizeChiefOfStaffContext(context?.cto?.chiefOfStaff || null);
+  if (!chief.advisory_available) {
+    return normalizedAction;
+  }
+
+  const matchesRecommendedAction = Boolean(chief.recommended_action_id)
+    && chief.recommended_action_id === normalizedAction.id;
+  const advisory = {
+    source: 'chief_of_staff',
+    advisory_only: true,
+    reply_source: chief.reply_source,
+    model_status: chief.model_status,
+    generated_at: chief.generated_at,
+    execution_ready: chief.execution_ready,
+    recommended_action_id: chief.recommended_action_id,
+    matched: matchesRecommendedAction && chief.execution_ready,
+    compatibility: matchesRecommendedAction
+      ? (chief.execution_ready ? 'aligned' : 'not_directly_executable')
+      : 'context_only',
+    why_now: chief.why_now,
+    blocker: chief.blocker,
+    confidence: chief.confidence,
+  };
+
+  let reason = normalizedAction.reason;
+  if (matchesRecommendedAction && chief.execution_ready) {
+    reason = `Chief of Staff advisory aligns with this canonical action. ${reason || ''}`.trim();
+  } else if (matchesRecommendedAction && !chief.execution_ready) {
+    reason = `Chief of Staff identified this path as advisory-only until execution preconditions are met. ${reason || ''}`.trim();
+  } else if (chief.blocker?.failure_key) {
+    reason = `${reason || 'Canonical action available.'} Chief of Staff advisory notes blocker ${chief.blocker.failure_key}.`.trim();
+  }
+
+  return {
+    ...normalizedAction,
+    reason,
+    advisory,
+  };
+}
+
 function buildCtoAvailableActions({ text = '', history = [], context = null, workspace = null } = {}) {
   const normalizedText = String(text || '').trim().toLowerCase();
   const pipelineContext = {
@@ -2529,7 +2650,7 @@ function buildCtoAvailableActions({ text = '', history = [], context = null, wor
     text: normalizedText,
   });
   if (pendingAction) {
-    return [pendingAction];
+    return [applyChiefOfStaffAdvisoryToAction(pendingAction, pipelineContext)];
   }
 
   const pipeline = normalizeCtoPipelineState(
@@ -2552,11 +2673,11 @@ function buildCtoAvailableActions({ text = '', history = [], context = null, wor
     'request-qa': `QA coverage is ready to run one smoke check.`,
   };
 
-  return [{
+  return [applyChiefOfStaffAdvisoryToAction({
     ...action,
     status: action.available ? 'pending' : 'unavailable',
     reason: action.reason || stageReasons[action.id] || `${currentRole.roleLabel} pipeline step is available.`,
-  }];
+  }, pipelineContext)];
 }
 
 function selectTaCandidateForDesk(action = null, { taDepartmentFile = TA_DEPARTMENT_FILE } = {}) {
@@ -3161,6 +3282,9 @@ function normalizeCtoResponseAction(rawAction = null, availableActions = [], exe
       execution,
     };
   }
+  if (matched?.advisory?.compatibility === 'not_directly_executable') {
+    return null;
+  }
   return matched;
 }
 
@@ -3293,6 +3417,7 @@ function buildCtoPromptContext(context = null) {
       overrides: context?.cto?.overrides || null,
       overrideLayer: context?.cto?.overrideLayer || null,
       governedRepair: context?.cto?.governedRepair || null,
+      chiefOfStaff: context?.cto?.chiefOfStaff || normalizeChiefOfStaffContext(null),
     },
   };
 }
@@ -3330,11 +3455,16 @@ function buildCtoChatPrompt({
     'Do not invent departments, desks, routes, or completed actions.',
     'Prefer governance and delegation language over pretending to do all work directly.',
     'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.',
+    'Chief of Staff context is advisory-only support. It can highlight blockers, urgency, confidence, and readiness, but it does not grant execution authority.',
+    'Do not blindly comply with Chief of Staff advice and do not fabricate action ids from it.',
+    'If context.cto.chiefOfStaff.execution_ready is false, do not present the Chief of Staff recommendation itself as directly executable.',
+    'If canonical actions remain available while Chief of Staff execution_ready is false, explain that canonical availability still governs and the advisory remains non-authoritative.',
     'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.',
     'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.',
     'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.',
     'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.',
     'If an action is unavailable, explain why in system terms.',
+    'If Chief of Staff recommendation conflicts with canonical action availability, canonical availability wins and you must explain the mismatch.',
     'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.',
     'Return JSON only with this exact shape:',
     '{',
@@ -15448,6 +15578,36 @@ app.get('/api/spatial/cto/diagnostics', async (req, res) => {
       reason,
     });
   }
+});
+
+app.get('/api/cto-chief-of-staff/query', async (req, res) => {
+  try {
+    const rootPath = req.app?.locals?.chiefOfStaffRootPath || ROOT;
+    const reply = await queryChiefOfStaff(rootPath, String(req.query?.q || '').trim(), {
+      runner: req.app?.locals?.chiefOfStaffModelRunner,
+      callModel: req.app?.locals?.chiefOfStaffCallModel,
+      fetchImpl: req.app?.locals?.chiefOfStaffFetchImpl,
+    });
+    return res.json(reply);
+  } catch (error) {
+    const reason = String(error.message || error);
+    return res.status(500).json({
+      reply_text: `Current system state unavailable. Next step: inspect the advisor route failure. ${reason}`,
+      reply_source: 'deterministic_fallback',
+      model_backend: DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
+      model_name: null,
+      model_status: 'fallback',
+      advisory_generated_at: nowIso(),
+      execution_ready: false,
+      recommendation: null,
+      posture: null,
+      error: reason,
+    });
+  }
+});
+
+app.get('/api/cto-chief-of-staff/latest', (req, res) => {
+  return res.json(readLatestChiefOfStaffAdvisory());
 });
 
 app.post('/api/spatial/cto/override', (req, res) => {

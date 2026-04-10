@@ -26,7 +26,7 @@ export default async function runStudioLayoutRelationshipTests() {
   assert.ok(defaultLayout.organization);
   assert.equal(defaultLayout.organization.schemaVersion, 'studio-relationships.v1');
   assert.equal(defaultLayout.departments.length, 7);
-  assert.equal(listStudioDeskIds(defaultLayout).length, 8);
+  assert.equal(listStudioDeskIds(defaultLayout).length, 9);
   assert.ok(defaultLayout.organization.departments['dept-talent-acquisition']);
   assert.equal(defaultLayout.organization.departments['dept-talent-acquisition'].staffing.requiredLeadSeatId, 'integration_auditor');
   assert.equal(defaultLayout.organization.departments['dept-talent-acquisition'].staffing.minimumActiveSeats, 1);
@@ -62,6 +62,8 @@ export default async function runStudioLayoutRelationshipTests() {
   });
   assert.ok(defaultLayout.organization.desks.planner.dependencyDepartmentIds.includes('dept-intake'));
   assert.ok(defaultLayout.organization.desks.planner.supportDeskIds.includes('qa-lead'));
+  assert.equal(defaultLayout.organization.desks['cto-chief-of-staff'].reportsToDeskId, 'cto-architect');
+  assert.equal(defaultLayout.organization.desks['cto-chief-of-staff'].ownerDepartmentId, 'dept-control');
 
   const seededLayout = addDepartmentToLayout(defaultLayout, { templateId: 'research' });
   const seededDepartmentId = seededLayout.departments.find((entry) => entry.id.startsWith('dept-research-'))?.id || null;
