@@ -47726,5 +47726,3577 @@
     "receipt_ref": null,
     "recorded_at": "2026-04-10T12:38:21.356Z",
     "created_at": "2026-04-10T12:38:21.356Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824709510_0a5a57",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:29.510Z",
+    "created_at": "2026-04-10T12:38:29.510Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824709546_2501cb",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:29.546Z",
+    "created_at": "2026-04-10T12:38:29.546Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824709579_b2e349",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:29.579Z",
+    "created_at": "2026-04-10T12:38:29.579Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824709615_24b5f9",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:29.615Z",
+    "created_at": "2026-04-10T12:38:29.615Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824719127_f35257",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:39.127Z",
+    "created_at": "2026-04-10T12:38:39.127Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824719163_0ab023",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:39.163Z",
+    "created_at": "2026-04-10T12:38:39.163Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824719195_87bf68",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:39.195Z",
+    "created_at": "2026-04-10T12:38:39.195Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824719231_bf7c82",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:39.231Z",
+    "created_at": "2026-04-10T12:38:39.231Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824725258_a1670d",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:45.258Z",
+    "created_at": "2026-04-10T12:38:45.258Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824725292_dca7ce",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:45.292Z",
+    "created_at": "2026-04-10T12:38:45.292Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824725325_b516ab",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:45.325Z",
+    "created_at": "2026-04-10T12:38:45.325Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824725360_421d2e",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:38:45.360Z",
+    "created_at": "2026-04-10T12:38:45.360Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824741828_aed2e9",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:01.828Z",
+    "created_at": "2026-04-10T12:39:01.828Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824741858_822d8b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:01.858Z",
+    "created_at": "2026-04-10T12:39:01.858Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824741888_e2fd75",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:01.888Z",
+    "created_at": "2026-04-10T12:39:01.888Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824741919_223940",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:01.919Z",
+    "created_at": "2026-04-10T12:39:01.919Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824742630_9930ae",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:02.630Z",
+    "created_at": "2026-04-10T12:39:02.630Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824742662_929476",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:02.662Z",
+    "created_at": "2026-04-10T12:39:02.662Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824742693_2521a8",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:02.693Z",
+    "created_at": "2026-04-10T12:39:02.693Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824742724_2d87b7",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:02.724Z",
+    "created_at": "2026-04-10T12:39:02.724Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824746831_42e64c",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:06.831Z",
+    "created_at": "2026-04-10T12:39:06.831Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824746865_55ce46",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:06.865Z",
+    "created_at": "2026-04-10T12:39:06.865Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824746898_e15497",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:06.898Z",
+    "created_at": "2026-04-10T12:39:06.898Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824746934_ac2492",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:06.934Z",
+    "created_at": "2026-04-10T12:39:06.934Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824753217_09b7a9",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:13.217Z",
+    "created_at": "2026-04-10T12:39:13.217Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824753249_9090d9",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:13.249Z",
+    "created_at": "2026-04-10T12:39:13.249Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824753279_5bb20f",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:13.279Z",
+    "created_at": "2026-04-10T12:39:13.279Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824753312_6e0c43",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:13.312Z",
+    "created_at": "2026-04-10T12:39:13.312Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824761216_3a0235",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:21.216Z",
+    "created_at": "2026-04-10T12:39:21.216Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824761248_3eff0d",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:21.248Z",
+    "created_at": "2026-04-10T12:39:21.248Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824761279_bbb3e9",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:21.279Z",
+    "created_at": "2026-04-10T12:39:21.279Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824761310_07e4c9",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:21.310Z",
+    "created_at": "2026-04-10T12:39:21.310Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824769285_2183ba",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:29.285Z",
+    "created_at": "2026-04-10T12:39:29.285Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824769319_0f2fd1",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:29.319Z",
+    "created_at": "2026-04-10T12:39:29.319Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824769348_afdcf1",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:29.348Z",
+    "created_at": "2026-04-10T12:39:29.348Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824769383_5ba043",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:29.383Z",
+    "created_at": "2026-04-10T12:39:29.383Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824778886_3e7ff2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:38.886Z",
+    "created_at": "2026-04-10T12:39:38.886Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824778920_e75978",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:38.920Z",
+    "created_at": "2026-04-10T12:39:38.920Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824778948_23ea9b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:38.948Z",
+    "created_at": "2026-04-10T12:39:38.948Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824778983_47a3e7",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:38.983Z",
+    "created_at": "2026-04-10T12:39:38.983Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824785218_c90ba8",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:45.218Z",
+    "created_at": "2026-04-10T12:39:45.218Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824785252_bf7be1",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:45.252Z",
+    "created_at": "2026-04-10T12:39:45.252Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824785284_98e0c5",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:45.284Z",
+    "created_at": "2026-04-10T12:39:45.284Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824785318_0532f0",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:45.318Z",
+    "created_at": "2026-04-10T12:39:45.318Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824799852_d4aa44",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:59.852Z",
+    "created_at": "2026-04-10T12:39:59.852Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824799883_81e320",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:59.883Z",
+    "created_at": "2026-04-10T12:39:59.883Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824799917_c84f3f",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:59.917Z",
+    "created_at": "2026-04-10T12:39:59.917Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824799954_2277a4",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:39:59.954Z",
+    "created_at": "2026-04-10T12:39:59.954Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824807234_d7f3c9",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:07.234Z",
+    "created_at": "2026-04-10T12:40:07.234Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824807266_78b6e5",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:07.266Z",
+    "created_at": "2026-04-10T12:40:07.266Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824807299_114519",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:07.299Z",
+    "created_at": "2026-04-10T12:40:07.299Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824807331_03a1f2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:07.331Z",
+    "created_at": "2026-04-10T12:40:07.331Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824808048_27b472",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:08.049Z",
+    "created_at": "2026-04-10T12:40:08.049Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824808080_873699",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:08.080Z",
+    "created_at": "2026-04-10T12:40:08.080Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824808111_b9c660",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:08.111Z",
+    "created_at": "2026-04-10T12:40:08.111Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824808143_37d732",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:08.143Z",
+    "created_at": "2026-04-10T12:40:08.143Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824815374_877c41",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:15.374Z",
+    "created_at": "2026-04-10T12:40:15.374Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824815405_a693a7",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:15.405Z",
+    "created_at": "2026-04-10T12:40:15.405Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824815438_81d49b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:15.438Z",
+    "created_at": "2026-04-10T12:40:15.438Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824815472_9d0493",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:15.472Z",
+    "created_at": "2026-04-10T12:40:15.472Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824821229_e01931",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:21.229Z",
+    "created_at": "2026-04-10T12:40:21.229Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824821261_36fdb1",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:21.261Z",
+    "created_at": "2026-04-10T12:40:21.261Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824821291_f3a450",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:21.291Z",
+    "created_at": "2026-04-10T12:40:21.291Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824821325_eef106",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:21.325Z",
+    "created_at": "2026-04-10T12:40:21.325Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824829286_938a1f",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:29.286Z",
+    "created_at": "2026-04-10T12:40:29.286Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824829315_a225bb",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:29.315Z",
+    "created_at": "2026-04-10T12:40:29.315Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824829347_194d38",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:29.347Z",
+    "created_at": "2026-04-10T12:40:29.347Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824829377_f2d542",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:29.377Z",
+    "created_at": "2026-04-10T12:40:29.377Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824837439_c90e61",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:37.439Z",
+    "created_at": "2026-04-10T12:40:37.439Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824837476_e78986",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:37.476Z",
+    "created_at": "2026-04-10T12:40:37.476Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824837508_7941d0",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:37.508Z",
+    "created_at": "2026-04-10T12:40:37.508Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824837542_1f8249",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:37.542Z",
+    "created_at": "2026-04-10T12:40:37.542Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824847184_a94fdf",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:47.184Z",
+    "created_at": "2026-04-10T12:40:47.184Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824847216_6d7ab6",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:47.216Z",
+    "created_at": "2026-04-10T12:40:47.216Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824847249_51825b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:47.249Z",
+    "created_at": "2026-04-10T12:40:47.249Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824847285_de378d",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:47.285Z",
+    "created_at": "2026-04-10T12:40:47.285Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824859521_b3d79d",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:59.521Z",
+    "created_at": "2026-04-10T12:40:59.521Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824859550_f70d71",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:59.550Z",
+    "created_at": "2026-04-10T12:40:59.550Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824859579_2cef58",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:59.579Z",
+    "created_at": "2026-04-10T12:40:59.579Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824859609_c8a08a",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:40:59.609Z",
+    "created_at": "2026-04-10T12:40:59.609Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824869134_d6ad79",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:09.134Z",
+    "created_at": "2026-04-10T12:41:09.134Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824869166_34553f",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:09.166Z",
+    "created_at": "2026-04-10T12:41:09.166Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824869203_a0cacc",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:09.203Z",
+    "created_at": "2026-04-10T12:41:09.203Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824869251_6e83a3",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:09.251Z",
+    "created_at": "2026-04-10T12:41:09.251Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824870138_6cd5d2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:10.138Z",
+    "created_at": "2026-04-10T12:41:10.138Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824870174_62420e",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:10.174Z",
+    "created_at": "2026-04-10T12:41:10.174Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824870204_01e0c4",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:10.204Z",
+    "created_at": "2026-04-10T12:41:10.204Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824870237_066dc2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:10.237Z",
+    "created_at": "2026-04-10T12:41:10.237Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824874553_0eec85",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:14.553Z",
+    "created_at": "2026-04-10T12:41:14.553Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824874588_ecd435",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:14.588Z",
+    "created_at": "2026-04-10T12:41:14.588Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824874621_687a1d",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:14.621Z",
+    "created_at": "2026-04-10T12:41:14.621Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824874657_b79ac2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:14.657Z",
+    "created_at": "2026-04-10T12:41:14.658Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824887846_189ac2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:27.846Z",
+    "created_at": "2026-04-10T12:41:27.846Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824887873_8c6b2f",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:27.874Z",
+    "created_at": "2026-04-10T12:41:27.874Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824887910_482f45",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:27.910Z",
+    "created_at": "2026-04-10T12:41:27.910Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824887957_dc0e4e",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:27.957Z",
+    "created_at": "2026-04-10T12:41:27.957Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824889766_e0650e",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:29.766Z",
+    "created_at": "2026-04-10T12:41:29.766Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824889798_8a2550",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:29.798Z",
+    "created_at": "2026-04-10T12:41:29.798Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824889832_ffe203",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:29.832Z",
+    "created_at": "2026-04-10T12:41:29.832Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824889865_c99205",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:29.865Z",
+    "created_at": "2026-04-10T12:41:29.865Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824897760_5b0e71",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:37.760Z",
+    "created_at": "2026-04-10T12:41:37.760Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824897805_d591e9",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:37.805Z",
+    "created_at": "2026-04-10T12:41:37.805Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824897838_ce0510",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:37.838Z",
+    "created_at": "2026-04-10T12:41:37.838Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824897870_a89361",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:41:37.870Z",
+    "created_at": "2026-04-10T12:41:37.870Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824954791_250646",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:42:34.791Z",
+    "created_at": "2026-04-10T12:42:34.791Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824954823_ce1caf",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:42:34.823Z",
+    "created_at": "2026-04-10T12:42:34.823Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824954856_d4d4f2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:42:34.857Z",
+    "created_at": "2026-04-10T12:42:34.857Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775824954888_e346b5",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:42:34.888Z",
+    "created_at": "2026-04-10T12:42:34.888Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825075303_f3ced0",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:44:35.303Z",
+    "created_at": "2026-04-10T12:44:35.303Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825075333_2965bd",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:44:35.333Z",
+    "created_at": "2026-04-10T12:44:35.333Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825075364_6c6ceb",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:44:35.364Z",
+    "created_at": "2026-04-10T12:44:35.364Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825075393_89e9c5",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:44:35.393Z",
+    "created_at": "2026-04-10T12:44:35.393Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825163107_056458",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:03.107Z",
+    "created_at": "2026-04-10T12:46:03.107Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825163139_3a9d75",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:03.139Z",
+    "created_at": "2026-04-10T12:46:03.139Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825163176_43950c",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:03.176Z",
+    "created_at": "2026-04-10T12:46:03.176Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825163208_078dc2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:03.208Z",
+    "created_at": "2026-04-10T12:46:03.208Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825178873_bbf49c",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:18.873Z",
+    "created_at": "2026-04-10T12:46:18.873Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825178905_56005e",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:18.905Z",
+    "created_at": "2026-04-10T12:46:18.905Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825178939_453e7b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:18.939Z",
+    "created_at": "2026-04-10T12:46:18.939Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825178968_36d9e0",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:18.968Z",
+    "created_at": "2026-04-10T12:46:18.968Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825193149_e34f0b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:33.149Z",
+    "created_at": "2026-04-10T12:46:33.149Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825193182_2d879b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:33.182Z",
+    "created_at": "2026-04-10T12:46:33.182Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825193214_345513",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:33.214Z",
+    "created_at": "2026-04-10T12:46:33.214Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825193249_2c80e8",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:33.249Z",
+    "created_at": "2026-04-10T12:46:33.249Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825197534_3f34dc",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:37.534Z",
+    "created_at": "2026-04-10T12:46:37.534Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825197567_e257c1",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:37.567Z",
+    "created_at": "2026-04-10T12:46:37.567Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825197594_f58ba2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:37.594Z",
+    "created_at": "2026-04-10T12:46:37.594Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825197623_d88f31",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:46:37.623Z",
+    "created_at": "2026-04-10T12:46:37.623Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825314683_d8b28d",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:48:34.683Z",
+    "created_at": "2026-04-10T12:48:34.683Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825314710_54efee",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:48:34.711Z",
+    "created_at": "2026-04-10T12:48:34.711Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825314744_a00804",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:48:34.744Z",
+    "created_at": "2026-04-10T12:48:34.744Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825314769_454763",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:48:34.769Z",
+    "created_at": "2026-04-10T12:48:34.769Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825354865_8f605f",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:14.865Z",
+    "created_at": "2026-04-10T12:49:14.865Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825354897_4de376",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:14.897Z",
+    "created_at": "2026-04-10T12:49:14.897Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825354928_ceb6f8",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:14.928Z",
+    "created_at": "2026-04-10T12:49:14.928Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825354961_cb96b4",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:14.961Z",
+    "created_at": "2026-04-10T12:49:14.961Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825361673_a2033e",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:21.673Z",
+    "created_at": "2026-04-10T12:49:21.673Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825361696_64c943",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:21.696Z",
+    "created_at": "2026-04-10T12:49:21.696Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825361724_b13dc0",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:21.724Z",
+    "created_at": "2026-04-10T12:49:21.724Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825361754_6ce85b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:21.754Z",
+    "created_at": "2026-04-10T12:49:21.754Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825369682_82db32",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:29.682Z",
+    "created_at": "2026-04-10T12:49:29.682Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825369714_779b19",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:29.714Z",
+    "created_at": "2026-04-10T12:49:29.714Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825369739_7f694f",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:29.739Z",
+    "created_at": "2026-04-10T12:49:29.739Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825369769_87c87b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:29.769Z",
+    "created_at": "2026-04-10T12:49:29.769Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825377660_cea8d2",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:37.660Z",
+    "created_at": "2026-04-10T12:49:37.660Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825377687_a916ab",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:37.687Z",
+    "created_at": "2026-04-10T12:49:37.687Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825377717_84f2e7",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:37.717Z",
+    "created_at": "2026-04-10T12:49:37.717Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825377744_70020e",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:37.744Z",
+    "created_at": "2026-04-10T12:49:37.744Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825385687_e6a6c6",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:45.687Z",
+    "created_at": "2026-04-10T12:49:45.687Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825385712_123247",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:45.712Z",
+    "created_at": "2026-04-10T12:49:45.712Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825385739_52e54d",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:45.739Z",
+    "created_at": "2026-04-10T12:49:45.739Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825385767_ed6ba3",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:45.767Z",
+    "created_at": "2026-04-10T12:49:45.767Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825399735_befe1b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:59.735Z",
+    "created_at": "2026-04-10T12:49:59.735Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825399762_35d3ae",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:59.762Z",
+    "created_at": "2026-04-10T12:49:59.762Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825399786_851eec",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:59.786Z",
+    "created_at": "2026-04-10T12:49:59.786Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825399809_a58dc8",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:49:59.809Z",
+    "created_at": "2026-04-10T12:49:59.809Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825403283_5dcfbf",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:03.283Z",
+    "created_at": "2026-04-10T12:50:03.283Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825403315_53e172",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:03.315Z",
+    "created_at": "2026-04-10T12:50:03.315Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825403346_4e176a",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:03.346Z",
+    "created_at": "2026-04-10T12:50:03.346Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825403377_5f6136",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:03.377Z",
+    "created_at": "2026-04-10T12:50:03.377Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825406977_ed0941",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:06.977Z",
+    "created_at": "2026-04-10T12:50:06.977Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825407003_8e1964",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:07.003Z",
+    "created_at": "2026-04-10T12:50:07.003Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825407036_6ecffa",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:07.036Z",
+    "created_at": "2026-04-10T12:50:07.036Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825407062_d433b4",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:07.062Z",
+    "created_at": "2026-04-10T12:50:07.062Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825439921_28c9bb",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:39.921Z",
+    "created_at": "2026-04-10T12:50:39.921Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825439949_4e4041",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:39.949Z",
+    "created_at": "2026-04-10T12:50:39.949Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825439972_abe3e5",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:39.972Z",
+    "created_at": "2026-04-10T12:50:39.972Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825439993_933878",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:50:39.994Z",
+    "created_at": "2026-04-10T12:50:39.994Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825554653_4d5ff3",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:52:34.653Z",
+    "created_at": "2026-04-10T12:52:34.653Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825554682_46af55",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:52:34.682Z",
+    "created_at": "2026-04-10T12:52:34.682Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825554708_d5f5b3",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:52:34.708Z",
+    "created_at": "2026-04-10T12:52:34.708Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775825554732_3089bb",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T12:52:34.732Z",
+    "created_at": "2026-04-10T12:52:34.732Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775826368430_a3f347",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:06:08.431Z",
+    "created_at": "2026-04-10T13:06:08.431Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775826368466_101184",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:06:08.466Z",
+    "created_at": "2026-04-10T13:06:08.466Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775826368498_ceff2c",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:06:08.498Z",
+    "created_at": "2026-04-10T13:06:08.498Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775826368530_a0767a",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:06:08.530Z",
+    "created_at": "2026-04-10T13:06:08.530Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775827568875_993be1",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:26:08.875Z",
+    "created_at": "2026-04-10T13:26:08.875Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775827568905_b3d64d",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:26:08.905Z",
+    "created_at": "2026-04-10T13:26:08.905Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775827568936_108b28",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:26:08.936Z",
+    "created_at": "2026-04-10T13:26:08.936Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775827568978_6c6b29",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:26:08.978Z",
+    "created_at": "2026-04-10T13:26:08.978Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775828765585_7b6da0",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:46:05.585Z",
+    "created_at": "2026-04-10T13:46:05.585Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775828765616_b85bd8",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:46:05.616Z",
+    "created_at": "2026-04-10T13:46:05.616Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775828765646_77b499",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:46:05.646Z",
+    "created_at": "2026-04-10T13:46:05.646Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775828765679_add7fa",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:46:05.679Z",
+    "created_at": "2026-04-10T13:46:05.679Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775828773885_0593f6",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:46:13.885Z",
+    "created_at": "2026-04-10T13:46:13.885Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775828773915_e4098b",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:46:13.915Z",
+    "created_at": "2026-04-10T13:46:13.915Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775828773944_f835c8",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:46:13.944Z",
+    "created_at": "2026-04-10T13:46:13.944Z"
+  },
+  {
+    "event_id": "qa_repair_event_1775828773975_64846e",
+    "stage": "proposal_stored",
+    "lane": "validation_seam",
+    "repair_job_id": "qa_repair_qa_inv_001",
+    "attempt_id": null,
+    "investigation_id": "qa_inv_001",
+    "truth_application_status": "proposal_pending",
+    "status": "open",
+    "summary": "External probe disagrees with internal QA status",
+    "target_files": [
+      "ui/externalQaProbe.js",
+      "ui/server.js",
+      "ui/tests/externalValidation.test.mjs"
+    ],
+    "receipt_ref": null,
+    "recorded_at": "2026-04-10T13:46:13.975Z",
+    "created_at": "2026-04-10T13:46:13.975Z"
   }
 ]

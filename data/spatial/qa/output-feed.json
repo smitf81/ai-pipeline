@@ -1,6 +1,82 @@
 {
   "items": [
     {
+      "id": "qa_output_20260410T132619000Z",
+      "createdAt": "2026-04-10T13:26:19.000Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775827545856_u5za1d",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T130617844Z",
+      "createdAt": "2026-04-10T13:06:17.844Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775826345848_tgsfvu",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T124648091Z",
+      "createdAt": "2026-04-10T12:46:48.091Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775825145846_pqrlya",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260410T122625718Z",
+      "createdAt": "2026-04-10T12:26:25.718Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775823945835_bwu3tu",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
       "id": "qa_output_20260410T120613895Z",
       "createdAt": "2026-04-10T12:06:13.895Z",
       "type": "qa_cycle",
@@ -761,8 +837,8 @@
       }
     },
     {
-      "id": "qa_output_20260410T122625718Z",
-      "createdAt": "2026-04-10T12:26:25.718Z",
+      "id": "qa_output_20260410T134623253Z",
+      "createdAt": "2026-04-10T13:46:23.253Z",
       "type": "qa_cycle",
       "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
       "result": "fail",
@@ -772,7 +848,7 @@
         "failedChecks": 2,
         "activeLanes": 1,
         "externalStatus": "ok",
-        "cycleId": "qa_lead_1775823945835_bwu3tu",
+        "cycleId": "qa_lead_1775828745869_a8jhqn",
         "mcpEvidenceSource": "live_helper",
         "externalProbeLive": true,
         "usedFallback": false,

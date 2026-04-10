@@ -3,15 +3,15 @@
 Review-only proposals promoted from repeated failures. These are not prompt-fed by default.
 
 Version: ace/known-fix-candidates.v1
-Updated: 2026-04-10T12:38:24.588Z
+Updated: 2026-04-10T14:00:53.001Z
 
 ### Keep apply and build stages off dirty repositories
 - Status: candidate
 - Failure key: dirty_repo_blocked
 - Pattern: Dirty repo blocked
-- Evidence count: 9587
+- Evidence count: 10889
 - First seen: 2026-04-09T18:59:24.976Z
-- Last seen: 2026-04-10T12:38:24.586Z
+- Last seen: 2026-04-10T14:00:52.997Z
 - Related tools: node, autonomy-policy, git
 - Related stages: planner, builder-preflight
 - Example messages:
@@ -32,23 +32,7 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/public/spatial/aceConnector.js
- M ui/public/spatial/spatialApp.js
- M ui/public/spatial/studioLayoutModel.js
- M ui/public/spatial/windowState.js
- M ui/public/style.css
- M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/aceConnector.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
- M ui/tests/spatialApp.smoke.test.mjs
- M ui/tests/studioData.test.mjs
- M ui/tests/studioLayoutModel.test.mjs
- M ui/tests/studioLayoutRelationships.test.mjs
- M ui/tests/utilityWindowState.test.mjs
   - blocked | Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
@@ -66,23 +50,43 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/public/spatial/aceConnector.js
- M ui/public/spatial/spatialApp.js
- M ui/public/spatial/studioLayoutModel.js
- M ui/public/spatial/windowState.js
- M ui/public/style.css
- M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/aceConnector.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
- M ui/tests/spatialApp.smoke.test.mjs
- M ui/tests/studioData.test.mjs
- M ui/tests/studioLayoutModel.test.mjs
- M ui/tests/studioLayoutRelationships.test.mjs
- M ui/tests/utilityWindowState.test.mjs
+  - Repository has uncommitted tracked changes.
+M  brain/context/autonomy_fix_tasks.json
+M  brain/context/autonomy_fix_tasks.md
+M  brain/context/failure_history.json
+M  brain/context/failure_history.md
+M  brain/context/known_fixes_candidates.json
+M  brain/context/known_fixes_candidates.md
+M  brain/emergence/slices.json
+M  brain/emergence/slices.md
+M  data/spatial/history.json
+M  data/spatial/qa/investigations.json
+A  data/spatial/qa/lead-runs/qa_lead_1775825145846_pqrlya.json
+A  data/spatial/qa/lead-runs/qa_lead_1775826345848_tgsfvu.json
+M  data/spatial/qa/lead-state.json
+M  data/spatial/qa/output-feed.json
+M  data/spatial/qa/planner-qa-queue.json
+M  data/spatial/qa/planner-qa-queue.md
+A  data/spatial/qa/qa_1775825145862_q3lwyw.json
+A  data/spatial/qa/qa_1775825145862_q3lwyw/01-initial.png
+A  data/spatial/qa/qa_1775825145862_q3lwyw/02-studio-smoke.png
+A  data/spatial/qa/qa_1775825145862_q3lwyw/console.json
+A  data/spatial/qa/qa_1775825145862_q3lwyw/dom.html
+A  data/spatial/qa/qa_1775825145862_q3lwyw/layout-findings.json
+A  data/spatial/qa/qa_1775825145862_q3lwyw/network.json
+A  data/spatial/qa/qa_1775825145862_q3lwyw/runtime.json
+A  data/spatial/qa/qa_1775826345861_1z5lsi.json
+A  data/spatial/qa/qa_1775826345861_1z5lsi/01-initial.png
+A  data/spatial/qa/qa_1775826345861_1z5lsi/02-studio-smoke.png
+A  data/spatial/qa/qa_1775826345861_1z5lsi/console.json
+A  data/spatial/qa/qa_1775826345861_1z5lsi/dom.html
+A  data/spatial/qa/qa_1775826345861_1z5lsi/layout-findings.json
+A  data/spatial/qa/qa_1775826345861_1z5lsi/network.json
+A  data/spatial/qa/qa_1775826345861_1z5lsi/runtime.json
+M  data/spatial/qa/repair-events.json
+M  data/spatial/qa/repair-jobs.json
+M  data/spatial/workspace.json
   - Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
@@ -95,30 +99,12 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/history.json
  M data/spatial/qa/investigations.json
  M data/spatial/qa/lead-state.json
- M data/spatial/qa/output-feed.json
  M data/spatial/qa/planner-qa-queue.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/public/spatial/aceConnector.js
- M ui/public/spatial/spatialApp.js
- M ui/public/spatial/studioLayoutModel.js
- M ui/public/spatial/windowState.js
- M ui/public/style.css
- M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/aceConnector.test.mjs
- M ui/tests/helpers/browser-module-loader.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
- M ui/tests/spatialApp.smoke.test.mjs
- M ui/tests/studioData.test.mjs
- M ui/tests/studioLayoutModel.test.mjs
- M ui/tests/studioLayoutRelationships.test.mjs
- M ui/tests/utilityWindowState.test.mjs
-  - Repository has uncommitted tracked changes.
+  - blocked | Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
@@ -130,59 +116,11 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/history.json
  M data/spatial/qa/investigations.json
  M data/spatial/qa/lead-state.json
- M data/spatial/qa/output-feed.json
  M data/spatial/qa/planner-qa-queue.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/public/spatial/aceConnector.js
- M ui/public/spatial/spatialApp.js
- M ui/public/spatial/studioLayoutModel.js
- M ui/public/spatial/windowState.js
- M ui/public/style.css
- M ui/server.js
- M ui/tests/aceConnector.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
- M ui/tests/spatialApp.smoke.test.mjs
- M ui/tests/studioData.test.mjs
- M ui/tests/studioLayoutModel.test.mjs
- M ui/tests/studioLayoutRelationships.test.mjs
- M ui/tests/utilityWindowState.test.mjs
-  - Repository has uncommitted tracked changes.
-M brain/context/autonomy_fix_tasks.json
- M brain/context/autonomy_fix_tasks.md
- M brain/context/failure_history.json
- M brain/context/failure_history.md
- M brain/context/known_fixes_candidates.json
- M brain/context/known_fixes_candidates.md
- M brain/emergence/slices.json
- M brain/emergence/slices.md
- M data/spatial/history.json
- M data/spatial/qa/investigations.json
- M data/spatial/qa/lead-state.json
- M data/spatial/qa/output-feed.json
- M data/spatial/qa/planner-qa-queue.json
- M data/spatial/qa/planner-qa-queue.md
- M data/spatial/qa/repair-events.json
- M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
- M data/spatial/workspace.json
- M ui/public/spatial/aceConnector.js
- M ui/public/spatial/spatialApp.js
- M ui/public/spatial/studioLayoutModel.js
- M ui/public/spatial/windowState.js
- M ui/public/style.css
- M ui/server.js
- M ui/tests/aceConnector.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
- M ui/tests/studioData.test.mjs
- M ui/tests/studioLayoutModel.test.mjs
- M ui/tests/studioLayoutRelationships.test.mjs
- M ui/tests/utilityWindowState.test.mjs
 - When:
   - Tracked edits already exist before apply starts.
   - The repo cleanliness check blocks the operation.
