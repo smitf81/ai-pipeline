@@ -27,10 +27,14 @@ export function createRenderer(canvas) {
     }
 
     drawDebugOverlay(ctx, state);
+    drawMythicFieldAtmosphere(ctx, state);
     drawGhostPaintPreviews(ctx, state);
     drawResolverInspector(ctx, state);
     drawWorldEvents(ctx, state);
     drawDirectorPhaseOverlay(ctx, state);
+    drawImpactMoments(ctx, state);
+    drawAttentionFocus(ctx, state);
+    drawBattlefieldWhispers(ctx, state);
 
     state.store.buildings.forEach((b) => {
       const color = BUILDING_TYPES[b.type]?.color ?? '#ffffff';
@@ -560,5 +564,101 @@ function drawDirectorPhaseOverlay(ctx, state) {
     ctx.fillRect(Math.max(0, bandX - TILE_SIZE * 1.8), 0, TILE_SIZE * 3.6, state.map.height * TILE_SIZE);
   }
 
+  ctx.restore();
+}
+
+function drawMythicFieldAtmosphere(ctx, state) {
+  const phase = state.emergence?.director?.activePhase;
+  const threatField = state.emergence?.pressures?.threat;
+  const flowField = state.emergence?.pressures?.flow;
+  if (!threatField || !flowField) {
+    return;
+  }
+
+  if (phase?.type === 'blackout') {
+    ctx.save();
+    ctx.fillStyle = 'rgba(8, 10, 16, 0.28)';
+    ctx.fillRect(0, 0, state.map.width * TILE_SIZE, state.map.height * TILE_SIZE);
+    ctx.restore();
+  }
+
+  ctx.save();
+  for (let y = 0; y < state.map.height; y += 2) {
+    for (let x = 0; x < state.map.width; x += 2) {
+      const threat = threatField.values[y]?.[x] ?? 0;
+      const flow = flowField.values[y]?.[x] ?? 0;
+      if (threat > 0.16) {
+        ctx.fillStyle = `rgba(255, 92, 92, ${Math.min(0.24, threat * 0.25)})`;
+        ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE * 2, TILE_SIZE * 2);
+      }
+
+      if (flow > 0.14) {
+        const px = x * TILE_SIZE + TILE_SIZE;
+        const py = y * TILE_SIZE + TILE_SIZE;
+        ctx.strokeStyle = `rgba(140, 200, 255, ${Math.min(0.32, flow * 0.35)})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px - 4, py + 2);
+        ctx.lineTo(px + 5, py - 2);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawImpactMoments(ctx, state) {
+  const impacts = state.emergence?.theatre?.impacts ?? [];
+  impacts.forEach((impact) => {
+    const progress = 1 - impact.remainingFrames / Math.max(1, impact.ttlFrames);
+    const alpha = Math.max(0, 0.6 - progress * 0.6);
+    const radius = TILE_SIZE * (0.8 + progress * 2.6) * impact.strength;
+    const centerX = impact.x * TILE_SIZE + TILE_SIZE / 2;
+    const centerY = impact.y * TILE_SIZE + TILE_SIZE / 2;
+    const color = impact.type === 'collapse' ? '255, 110, 110' : '255, 230, 140';
+    ctx.save();
+    ctx.strokeStyle = `rgba(${color}, ${alpha})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function drawAttentionFocus(ctx, state) {
+  const focus = state.emergence?.theatre?.focus;
+  if (!focus) {
+    return;
+  }
+
+  const centerX = focus.x * TILE_SIZE + TILE_SIZE / 2;
+  const centerY = focus.y * TILE_SIZE + TILE_SIZE / 2;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.setLineDash([5, 4]);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, TILE_SIZE * 1.3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawBattlefieldWhispers(ctx, state) {
+  const whisper = state.emergence?.theatre?.whispers?.[0];
+  if (!whisper) {
+    return;
+  }
+
+  const alpha = Math.min(1, whisper.remainingFrames / Math.max(1, whisper.ttlFrames));
+  const baselineY = state.map.height * TILE_SIZE - 28;
+  ctx.save();
+  ctx.fillStyle = `rgba(9, 12, 18, ${0.45 * alpha})`;
+  ctx.fillRect(14, baselineY - 20, 320, 30);
+  ctx.fillStyle = `rgba(242, 247, 255, ${0.75 + alpha * 0.2})`;
+  ctx.font = '14px serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(whisper.text, 22, baselineY);
   ctx.restore();
 }
