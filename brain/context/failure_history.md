@@ -3,16 +3,16 @@
 Deterministic failure tracking for repeated recognisable failures. Candidate fixes are review-only.
 
 Version: ace/failure-memory.v1
-Updated: 2026-04-10T14:00:52.997Z
+Updated: 2026-04-10T14:51:17.673Z
 
 ### dirty_repo_blocked
-- Count: 10889
+- Count: 11708
 - Stage: planner
 - Agent: planner (ace/agent-attribution.v0)
 - First seen: 2026-04-09T18:59:24.976Z
-- Last seen: 2026-04-10T14:00:52.997Z
+- Last seen: 2026-04-10T14:51:17.672Z
 - Failure class: panel_degraded
-- Last error timestamp: 2026-04-10T14:00:52.997Z
+- Last error timestamp: 2026-04-10T14:51:17.672Z
 - Last error: Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
@@ -31,6 +31,7 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
  M data/spatial/workspace.json
+ D projects/topdown-slice.zip
 - Related tools: node, autonomy-policy, git
 - Related stages: planner, builder-preflight
 - Related projects: ace-self
@@ -54,6 +55,53 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
  M data/spatial/workspace.json
+ D projects/topdown-slice.zip
+  - Repository has uncommitted tracked changes.
+M  brain/context/autonomy_fix_tasks.json
+M  brain/context/autonomy_fix_tasks.md
+M  brain/context/failure_history.json
+M  brain/context/failure_history.md
+M  brain/context/known_fixes_candidates.json
+M  brain/context/known_fixes_candidates.md
+M  brain/emergence/slices.json
+M  brain/emergence/slices.md
+M  data/spatial/history.json
+M  data/spatial/qa/investigations.json
+A  data/spatial/qa/lead-runs/qa_lead_1775829945881_i41waf.json
+A  data/spatial/qa/lead-runs/qa_lead_1775831143426_t4ipl6.json
+A  data/spatial/qa/lead-runs/qa_lead_1775832343436_acyxe2.json
+M  data/spatial/qa/lead-state.json
+M  data/spatial/qa/output-feed.json
+M  data/spatial/qa/planner-qa-queue.json
+M  data/spatial/qa/planner-qa-queue.md
+A  data/spatial/qa/qa_1775829945894_frtla5.json
+A  data/spatial/qa/qa_1775829945894_frtla5/01-initial.png
+A  data/spatial/qa/qa_1775829945894_frtla5/02-studio-smoke.png
+A  data/spatial/qa/qa_1775829945894_frtla5/console.json
+A  data/spatial/qa/qa_1775829945894_frtla5/dom.html
+A  data/spatial/qa/qa_1775829945894_frtla5/layout-findings.json
+A  data/spatial/qa/qa_1775829945894_frtla5/network.json
+A  data/spatial/qa/qa_1775829945894_frtla5/runtime.json
+A  data/spatial/qa/qa_1775831143442_m2zd8b.json
+A  data/spatial/qa/qa_1775831143442_m2zd8b/01-initial.png
+A  data/spatial/qa/qa_1775831143442_m2zd8b/02-studio-smoke.png
+A  data/spatial/qa/qa_1775831143442_m2zd8b/console.json
+A  data/spatial/qa/qa_1775831143442_m2zd8b/dom.html
+A  data/spatial/qa/qa_1775831143442_m2zd8b/layout-findings.json
+A  data/spatial/qa/qa_1775831143442_m2zd8b/network.json
+A  data/spatial/qa/qa_1775831143442_m2zd8b/runtime.json
+A  data/spatial/qa/qa_1775832343449_friung.json
+A  data/spatial/qa/qa_1775832343449_friung/01-initial.png
+A  data/spatial/qa/qa_1775832343449_friung/02-studio-smoke.png
+A  data/spatial/qa/qa_1775832343449_friung/console.json
+A  data/spatial/qa/qa_1775832343449_friung/dom.html
+A  data/spatial/qa/qa_1775832343449_friung/layout-findings.json
+A  data/spatial/qa/qa_1775832343449_friung/network.json
+A  data/spatial/qa/qa_1775832343449_friung/runtime.json
+M  data/spatial/qa/repair-events.json
+M  data/spatial/qa/repair-jobs.json
+M  data/spatial/workspace.json
+D  projects/topdown-slice.zip
   - blocked | Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
@@ -72,42 +120,7 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
  M data/spatial/workspace.json
-  - Repository has uncommitted tracked changes.
-M  brain/context/autonomy_fix_tasks.json
-M  brain/context/autonomy_fix_tasks.md
-M  brain/context/failure_history.json
-M  brain/context/failure_history.md
-M  brain/context/known_fixes_candidates.json
-M  brain/context/known_fixes_candidates.md
-M  brain/emergence/slices.json
-M  brain/emergence/slices.md
-M  data/spatial/history.json
-M  data/spatial/qa/investigations.json
-A  data/spatial/qa/lead-runs/qa_lead_1775825145846_pqrlya.json
-A  data/spatial/qa/lead-runs/qa_lead_1775826345848_tgsfvu.json
-M  data/spatial/qa/lead-state.json
-M  data/spatial/qa/output-feed.json
-M  data/spatial/qa/planner-qa-queue.json
-M  data/spatial/qa/planner-qa-queue.md
-A  data/spatial/qa/qa_1775825145862_q3lwyw.json
-A  data/spatial/qa/qa_1775825145862_q3lwyw/01-initial.png
-A  data/spatial/qa/qa_1775825145862_q3lwyw/02-studio-smoke.png
-A  data/spatial/qa/qa_1775825145862_q3lwyw/console.json
-A  data/spatial/qa/qa_1775825145862_q3lwyw/dom.html
-A  data/spatial/qa/qa_1775825145862_q3lwyw/layout-findings.json
-A  data/spatial/qa/qa_1775825145862_q3lwyw/network.json
-A  data/spatial/qa/qa_1775825145862_q3lwyw/runtime.json
-A  data/spatial/qa/qa_1775826345861_1z5lsi.json
-A  data/spatial/qa/qa_1775826345861_1z5lsi/01-initial.png
-A  data/spatial/qa/qa_1775826345861_1z5lsi/02-studio-smoke.png
-A  data/spatial/qa/qa_1775826345861_1z5lsi/console.json
-A  data/spatial/qa/qa_1775826345861_1z5lsi/dom.html
-A  data/spatial/qa/qa_1775826345861_1z5lsi/layout-findings.json
-A  data/spatial/qa/qa_1775826345861_1z5lsi/network.json
-A  data/spatial/qa/qa_1775826345861_1z5lsi/runtime.json
-M  data/spatial/qa/repair-events.json
-M  data/spatial/qa/repair-jobs.json
-M  data/spatial/workspace.json
+ D projects/topdown-slice.zip
   - Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
@@ -120,12 +133,13 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/history.json
  M data/spatial/qa/investigations.json
  M data/spatial/qa/lead-state.json
+ M data/spatial/qa/output-feed.json
  M data/spatial/qa/planner-qa-queue.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
  M data/spatial/workspace.json
-  - blocked | Repository has uncommitted tracked changes.
+  - Repository has uncommitted tracked changes.
 M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
