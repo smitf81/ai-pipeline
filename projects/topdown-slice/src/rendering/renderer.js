@@ -29,6 +29,8 @@ export function createRenderer(canvas) {
     drawDebugOverlay(ctx, state);
     drawGhostPaintPreviews(ctx, state);
     drawResolverInspector(ctx, state);
+    drawWorldEvents(ctx, state);
+    drawDirectorPhaseOverlay(ctx, state);
 
     state.store.buildings.forEach((b) => {
       const color = BUILDING_TYPES[b.type]?.color ?? '#ffffff';
@@ -476,4 +478,87 @@ function getResolverFillColor(entry, index) {
   return index === 1
     ? 'rgba(116, 199, 255, 0.13)'
     : 'rgba(255, 211, 107, 0.12)';
+}
+
+
+function drawWorldEvents(ctx, state) {
+  const events = state.emergence?.worldEvents?.active ?? [];
+  const frame = Number(state.emergence?.frame ?? 0);
+
+  events.forEach((event) => {
+    const centerX = event.x * TILE_SIZE + TILE_SIZE / 2;
+    const centerY = event.y * TILE_SIZE + TILE_SIZE / 2;
+    const radiusPx = (event.radius + 0.5) * TILE_SIZE;
+    const lifeRatio = Math.max(0, Math.min(1, Number(event.remainingFrames ?? 0) / Math.max(1, Number(event.durationFrames ?? 1))));
+    const pulse = 0.75 + Math.sin((frame % 24) / 24 * Math.PI * 2) * 0.2;
+    const typeColor = event.type === 'breach'
+      ? '255, 99, 71'
+      : event.type === 'fortify'
+        ? '115, 215, 115'
+        : '255, 224, 107';
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(${typeColor}, ${0.2 + lifeRatio * 0.45})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radiusPx * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(${typeColor}, ${0.15 + lifeRatio * 0.35})`;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radiusPx * 0.72, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = `rgba(10, 14, 20, ${0.55 + lifeRatio * 0.25})`;
+    ctx.fillRect(centerX - 26, centerY - 10, 52, 14);
+    ctx.fillStyle = `rgba(242, 247, 255, ${0.8 + lifeRatio * 0.2})`;
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${event.type} ${event.remainingFrames}f`, centerX, centerY);
+    ctx.restore();
+  });
+}
+
+
+function drawDirectorPhaseOverlay(ctx, state) {
+  const phase = state.emergence?.director?.activePhase;
+  if (!phase) {
+    return;
+  }
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(8, 12, 17, 0.72)';
+  ctx.fillRect(10, 10, 270, 22);
+  ctx.fillStyle = '#f2f7ff';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`DIRECTOR ${phase.type.toUpperCase()} | ${phase.remainingFrames}f`, 16, 25);
+
+  if (phase.type === 'collapse') {
+    const region = state.emergence?.director?.collapseRegion;
+    if (region) {
+      const centerX = region.x * TILE_SIZE + TILE_SIZE / 2;
+      const centerY = region.y * TILE_SIZE + TILE_SIZE / 2;
+      ctx.strokeStyle = 'rgba(255, 120, 120, 0.7)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, region.radius * TILE_SIZE, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  if (phase.type === 'stampede') {
+    const frame = Number(state.emergence?.frame ?? 0);
+    const started = Number(phase.startedAtFrame ?? frame);
+    const progress = ((frame - started) % Math.max(1, state.map.width + state.map.height)) / Math.max(1, state.map.width + state.map.height);
+    const bandX = progress * (state.map.width - 1) * TILE_SIZE;
+    ctx.fillStyle = 'rgba(255, 210, 80, 0.18)';
+    ctx.fillRect(Math.max(0, bandX - TILE_SIZE * 1.8), 0, TILE_SIZE * 3.6, state.map.height * TILE_SIZE);
+  }
+
+  ctx.restore();
 }
