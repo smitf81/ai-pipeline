@@ -3,7 +3,7 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-04-10T14:45:50.200Z
+Updated: 2026-04-11T08:16:19.832Z
 
 ### 0001
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -62,7 +62,9 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
  M data/spatial/workspace.json
- D projects/topdown-slice.zip
+ M ui/ctoChiefOfStaff.js
+ M ui/failureMemory.js
+ M ui/public/index.html
 
 ### 10000
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -135,4 +137,6 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
  M data/spatial/workspace.json
- D projects/topdown-slice.zip
+ M ui/ctoChiefOfStaff.js
+ M ui/failureMemory.js
+ M ui/public/index.html

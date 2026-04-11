@@ -21,7 +21,7 @@ const CHIEF_OF_STAFF_REGISTRATION = Object.freeze({
 });
 
 const DEFAULT_CHIEF_OF_STAFF_MODEL = 'qwen2.5-coder:1.5b';
-const DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS = 4500;
+const DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS = 12000;
 const DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND = 'ollama_http';
 const DEFAULT_CHIEF_OF_STAFF_MAX_REPLY_CHARS = 1200;
 
@@ -228,7 +228,60 @@ function buildRecommendation(posture = {}) {
   };
 }
 
+function classifyChiefOfStaffQuery(userQuery = '') {
+  const text = String(userQuery || '').trim().toLowerCase();
+
+  if (!text) return 'chat';
+
+  if (
+    text.includes('next slice')
+    || text.includes('next step')
+    || text.includes('what should we do next')
+    || text.includes('write a slice')
+    || text.includes('report')
+    || text.includes('summary')
+    || text.includes('handover')
+  ) {
+    return 'structured_report';
+  }
+
+  if (
+    text.includes('execute')
+    || text.includes('run this')
+    || text.includes('do it')
+    || text.includes('trigger')
+    || text.includes('confirm action')
+  ) {
+    return 'action_request';
+  }
+
+  if (
+    text.includes('blocker')
+    || text.includes('status')
+    || text.includes('diagnose')
+    || text.includes('what is wrong')
+    || text.includes('why')
+  ) {
+    return 'advice';
+  }
+
+  return 'chat';
+}
+
 function buildChiefOfStaffPrompt(posture, recommendation, userQuery) {
+  const mode = classifyChiefOfStaffQuery(userQuery);
+
+  if (mode === 'chat') {
+    return [
+      'You are CTO Chief of Staff for an AI system.',
+      'Be brief, direct, and conversational.',
+      'Do not invent capabilities.',
+      '',
+      'USER QUESTION:',
+      String(userQuery || '').trim(),
+    ].join('\n');
+  }
+
   return [
     'You are CTO Chief of Staff for an AI system.',
     '',

@@ -1,3 +1,4 @@
+console.log("LOADED: failureMemory");
 const fs = require('fs');
 const path = require('path');
 const { writeJsonIfChanged, writeTextIfChanged } = require('./changeHygiene');
