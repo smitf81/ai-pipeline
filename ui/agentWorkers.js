@@ -65,6 +65,13 @@ const DEFAULT_CONTEXT_MANAGER_TIMEOUT_MS = 30000;
 const DEFAULT_EXECUTOR_BACKEND = 'ollama';
 const DEFAULT_EXECUTOR_MODEL = 'mistral:latest';
 const DEFAULT_EXECUTOR_TIMEOUT_MS = 30000;
+const PLANNER_SCOPED_TASK_CACHE_LIMIT_CHARS = 900;
+const PLANNER_BROAD_TASK_CACHE_LIMIT_CHARS = 2200;
+const PLANNER_SCOPED_ANCHOR_LIMIT = 2;
+const PLANNER_BROAD_ANCHOR_LIMIT = 4;
+const PLANNER_SCOPED_ANCHOR_CONTENT_CHARS = 500;
+const PLANNER_BROAD_ANCHOR_CONTENT_CHARS = 1000;
+const PLANNER_OVERSCOPED_PROMPT_CHARS = 7000;
 const MAX_PLANNER_CARDS = 3;
 const MAX_CONTEXT_TASKS = 4;
 const MAX_EXTRACTED_INTENT_CANDIDATES = 6;
@@ -263,6 +270,20 @@ function slugify(value) {
 
 function uniqueStrings(values = []) {
   return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function truncateText(value = '', limit = 220) {
+  const text = String(value || '').trim();
+  if (text.length <= limit) return text;
+  return `${text.slice(0, Math.max(0, limit - 1)).trimEnd()}...`;
+}
+
+function normalizeIntentPriority(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (['low', 'normal', 'medium', 'high'].includes(normalized)) {
+    return normalized === 'medium' ? 'normal' : normalized;
+  }
+  return 'normal';
 }
 
 function buildGraphBundleSection(graphBundle = {}) {
@@ -467,6 +488,28 @@ function defaultExecutorWorkerState() {
   };
 }
 
+function defaultEvaluatorWorkerState() {
+  return {
+    status: 'idle',
+    statusReason: null,
+    mode: 'manual',
+    backend: DEFAULT_CONTEXT_MANAGER_BACKEND,
+    model: DEFAULT_CONTEXT_MANAGER_MODEL,
+    currentRunId: null,
+    lastRunId: null,
+    lastOutcome: null,
+    lastOutcomeAt: null,
+    lastVerdict: null,
+    lastDeltaScore: 0,
+    lastCognitionMode: null,
+    lastLiveModelCallAt: null,
+    lastFallbackAt: null,
+    fallbackCount: 0,
+    startedAt: null,
+    completedAt: null,
+  };
+}
+
 function defaultDaveWorkerState() {
   return {
     name: 'Dave',
@@ -491,6 +534,7 @@ function defaultDaveWorkerState() {
 function createDefaultAgentWorkersState() {
   return {
     'context-manager': defaultContextManagerWorkerState(),
+    evaluator: defaultEvaluatorWorkerState(),
     executor: defaultExecutorWorkerState(),
     planner: defaultPlannerWorkerState(),
     dave: defaultDaveWorkerState(),
@@ -506,6 +550,12 @@ function normalizeAgentWorkersState(agentWorkers = {}) {
       ...defaults['context-manager'],
       ...(agentWorkers?.['context-manager'] || {}),
       lastUsedFallback: Boolean(agentWorkers?.['context-manager']?.lastUsedFallback),
+    },
+    evaluator: {
+      ...defaults.evaluator,
+      ...(agentWorkers?.evaluator || {}),
+      lastDeltaScore: Number(agentWorkers?.evaluator?.lastDeltaScore ?? defaults.evaluator.lastDeltaScore),
+      fallbackCount: Math.max(0, Number(agentWorkers?.evaluator?.fallbackCount ?? defaults.evaluator.fallbackCount) || 0),
     },
     executor: {
       ...defaults.executor,
@@ -616,6 +666,8 @@ function summarizePlannerRun(run) {
     taskCount: Array.isArray(run.taskBundle?.tasks) ? run.taskBundle.tasks.length : 0,
     dependencyCount: Array.isArray(run.dependencyMap?.edges) ? run.dependencyMap.edges.length : 0,
     proposalArtifactRefs: Array.isArray(run.proposalArtifactRefs) ? run.proposalArtifactRefs : [],
+    llmStatus: run.llmStatus || (run.outcome === 'completed' ? 'live' : 'model_error'),
+    cognitionDiagnostics: run.cognitionDiagnostics || null,
     taskCacheSource: run.taskCache?.source || run.taskCacheSource || null,
     taskCacheStage: run.taskCache?.stage || run.taskCacheStage || null,
     createdAt: run.createdAt,
@@ -680,24 +732,328 @@ function summarizeExecutorRun(run) {
   };
 }
 
-function buildAnchorPromptSections(anchorBundle = {}) {
-  return Object.values(anchorBundle.anchors || {})
+function buildAnchorPromptSections(anchorBundle = {}, { anchorRefs = null, limit = null, contentChars = 1600 } = {}) {
+  const requestedRefs = Array.isArray(anchorRefs)
+    ? new Set(anchorRefs.map(normalizeRelativePath).filter(Boolean))
+    : null;
+  const anchors = Object.values(anchorBundle.anchors || {})
     .filter((anchor) => anchor?.exists && anchor.authority === 'canonical-anchor')
+    .filter((anchor) => !requestedRefs || requestedRefs.has(normalizeRelativePath(anchor.relativePath || '')));
+  return anchors
+    .slice(0, Number.isFinite(Number(limit)) ? Number(limit) : anchors.length)
     .map((anchor) => {
-      const content = String(anchor.content || '').trim().slice(0, 1600);
+      const content = String(anchor.content || '').trim().slice(0, Math.max(120, Number(contentChars || 1600)));
       return `## ${anchor.relativePath}\n${content || '(empty)'}`;
     })
     .join('\n\n');
 }
 
-function buildBoardPromptSection(board = {}) {
+function buildBoardPromptSection(board = {}, { mode = 'full' } = {}) {
   const cards = Array.isArray(board.cards) ? board.cards : [];
   if (!cards.length) return 'No current board cards.';
+  if (mode === 'scoped') {
+    const selectedCard = cards.find((card) => card?.id === board?.selectedCardId) || null;
+    const activeCards = cards.filter((card) => card?.status !== 'binned');
+    return [
+      `Selected card: ${selectedCard?.title || board?.selectedCardId || 'none'}`,
+      `Active card count: ${activeCards.length}`,
+      ...activeCards
+        .slice(0, 3)
+        .map((card) => `- ${truncateText(card.title || card.summary || 'Untitled card', 96)} | status=${card.status || 'unknown'}`),
+    ].join('\n');
+  }
   return cards
     .filter((card) => card.status !== 'binned')
     .slice(0, 12)
     .map((card) => `- ${card.title} | status=${card.status} | handoff=${card.sourceHandoffId || 'none'} | anchors=${(card.sourceAnchorRefs || []).join(', ') || 'none'}`)
     .join('\n');
+}
+
+function normalizePlannerPromptScope(promptScope = '') {
+  const normalized = String(promptScope || '').trim().toLowerCase();
+  return ['scoped', 'broad', 'full'].includes(normalized) ? normalized : 'scoped';
+}
+
+function resolvePlannerPromptScope({ promptScope = null, handoff = null } = {}) {
+  if (promptScope) return normalizePlannerPromptScope(promptScope);
+  if (handoff?.contextScope) return normalizePlannerPromptScope(handoff.contextScope);
+  if (handoff?.requireBroadContext === true) return 'broad';
+  if (['architecture_request', 'constraint_request'].includes(String(handoff?.requestType || '').trim().toLowerCase())) {
+    return 'broad';
+  }
+  return 'scoped';
+}
+
+function buildPlannerOverrideLayerSection(overrideLayer = null, planningMode = 'normal', promptScope = 'scoped') {
+  const resolved = overrideLayer && typeof overrideLayer === 'object'
+    ? overrideLayer
+    : {
+      version: '1',
+      activeCount: 0,
+      flags: {
+        forcePlannerRouting: false,
+        forcePlanningGeneration: false,
+        reopenStalePlan: false,
+        supersedeQueuePriority: false,
+        requestEmergencyStaffingReview: false,
+        handoffMode: null,
+        forcePlanning: false,
+      },
+      activeOverrides: [],
+      planningMode,
+      canonicalTruthPreserved: true,
+    };
+  if (promptScope === 'scoped') {
+    const activeFlags = Object.entries(resolved.flags || {})
+      .filter(([, value]) => value === true || (typeof value === 'string' && value.trim()))
+      .map(([key, value]) => `${key}=${value}`)
+      .slice(0, 6);
+    return [
+      '## CTO Override Layer',
+      `Planning mode: ${resolved.planningMode || planningMode || 'normal'}`,
+      `Active overrides: ${Number(resolved.activeCount || 0)}`,
+      `Canonical truth preserved: ${resolved.canonicalTruthPreserved === false ? 'no' : 'yes'}`,
+      `Active flags: ${activeFlags.join(', ') || 'none'}`,
+    ].join('\n');
+  }
+  return [
+    '## CTO Override Layer',
+    'Treat overrides as explicit control signals. Do not rewrite canonical truth to make overrides look normal. Keep provenance intact and describe forced planning separately from ordinary planning.',
+    JSON.stringify(resolved, null, 2),
+  ].join('\n');
+}
+
+function buildPlannerContextLanesSection({ handoff = null, contextLanes = null, promptScope = 'scoped' } = {}) {
+  const requestedOutcomes = Array.isArray(handoff?.requestedOutcomes)
+    ? handoff.requestedOutcomes
+    : (Array.isArray(handoff?.tasks) ? handoff.tasks : []);
+  const resolvedContextLanes = contextLanes || handoff?.contextLanes || null;
+  if (promptScope === 'scoped') {
+    const narrow = resolvedContextLanes?.narrow || {};
+    const department = resolvedContextLanes?.department || {};
+    const broad = resolvedContextLanes?.broad || {};
+    return [
+      '## Planner Context Lanes',
+      'Stay with immediate task context by default. Pull broader context only when the canonical intent and active anchors are insufficient.',
+      `Narrow task: ${truncateText(narrow.currentTask || requestedOutcomes[0] || handoff?.summary || 'Plan the next action.', 180)}`,
+      `Department focus: ${truncateText(department.currentFocus || handoff?.summary || 'No department focus supplied.', 180)}`,
+      `Department blockers: ${uniqueStrings(department.blockers || handoff?.constraints || []).slice(0, 4).join(' | ') || 'none'}`,
+      `Broad context available on demand: ${(Array.isArray(broad.projectBrain) ? broad.projectBrain.length : 0) + (Array.isArray(broad.roadmap) ? broad.roadmap.length : 0) + (Array.isArray(broad.recentDecisions) ? broad.recentDecisions.length : 0)} summary entries`,
+    ].join('\n');
+  }
+  return [
+    '## Planner Context Lanes',
+    'Use the declared lanes intentionally: local/narrow for the current task and active intent, department/operational for recent handoffs and blockers, and broad/project for project brain, roadmap, and recent decisions.',
+    JSON.stringify(resolvedContextLanes || {
+      narrow: {
+        lane: 'local',
+        currentDesk: 'planner',
+        currentTask: requestedOutcomes[0] || handoff?.summary || 'Plan the next action.',
+      },
+      department: {
+        lane: 'department',
+        departmentId: 'dept-delivery',
+        currentFocus: handoff?.summary || '',
+        blockers: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
+      },
+      broad: {
+        lane: 'broad',
+        projectBrain: [],
+        roadmap: [],
+        recentDecisions: [],
+      },
+    }, null, 2),
+  ].join('\n');
+}
+
+function buildPlannerSecondaryRetrievalSection({ handoff = null, contextLanes = null, anchorBundle = null, board = null, promptScope = 'scoped' } = {}) {
+  const resolvedContextLanes = contextLanes || handoff?.contextLanes || null;
+  const broad = resolvedContextLanes?.broad || {};
+  const anchorRefs = uniqueStrings(handoff?.anchorRefs || []).map(normalizeRelativePath);
+  const retrievalLines = [
+    `Project brain summaries: ${Array.isArray(broad.projectBrain) ? broad.projectBrain.length : 0}`,
+    `Roadmap summaries: ${Array.isArray(broad.roadmap) ? broad.roadmap.length : 0}`,
+    `Recent decisions: ${Array.isArray(broad.recentDecisions) ? broad.recentDecisions.length : 0}`,
+    `Truth sources: ${Array.isArray(broad.truthSources) ? broad.truthSources.length : 0}`,
+    `Anchor refs available: ${anchorRefs.join(', ') || 'none'}`,
+    `Board context available: ${Array.isArray(board?.cards) ? board.cards.filter((card) => card?.status !== 'binned').length : 0} active cards`,
+  ];
+  if (promptScope === 'scoped') {
+    return [
+      '## Secondary Retrieval Availability',
+      'Broader project context remains available through explicit broad planner scope. Do not load it unless the immediate handoff cannot be decomposed from the canonical intent, active anchors, and current blockers.',
+      ...retrievalLines,
+    ].join('\n');
+  }
+  const broadSummaries = [
+    ...(Array.isArray(broad.projectBrain) ? broad.projectBrain : []).slice(0, 2).map((entry) => `- project_brain: ${truncateText(entry.summary || entry.relativePath || '', 160)}`),
+    ...(Array.isArray(broad.roadmap) ? broad.roadmap : []).slice(0, 2).map((entry) => `- roadmap: ${truncateText(entry.summary || entry.relativePath || '', 160)}`),
+    ...(Array.isArray(broad.recentDecisions) ? broad.recentDecisions : []).slice(0, 2).map((entry) => `- decision: ${truncateText(entry.summary || entry.relativePath || '', 160)}`),
+  ];
+  return [
+    '## Secondary Retrieval Context',
+    'This broader context was explicitly requested. Keep using it as supporting context rather than replacing the canonical intent contract.',
+    ...retrievalLines,
+    ...broadSummaries,
+  ].join('\n');
+}
+
+function buildPlannerPromptProfile({ promptTemplate, handoff, anchorBundle, board, rootPath, taskCache = null, contextLanes = null, overrideLayer = null, talentAcquisition = null, promptScope = null }) {
+  const requestedOutcomes = Array.isArray(handoff?.requestedOutcomes)
+    ? handoff.requestedOutcomes
+    : (Array.isArray(handoff?.tasks) ? handoff.tasks : []);
+  const selectedCard = Array.isArray(board?.cards)
+    ? board.cards.find((card) => card?.id && card.id === board?.selectedCardId) || null
+    : null;
+  const resolvedTaskCache = taskCache || readTaskCache(rootPath, {
+    taskId: String(
+      handoff?.taskId
+      || handoff?.runnerTaskId
+      || selectedCard?.runnerTaskId
+      || selectedCard?.builderTaskId
+      || selectedCard?.executionPackage?.taskId
+      || '',
+    ).trim() || null,
+    stage: 'planner',
+  });
+  const fixTaskSection = buildFixTaskPromptSection(handoff?.sourceFixTask || null);
+  const intentContract = handoff?.intentContract || buildCanonicalIntentContract({
+    report: {
+      summary: handoff?.summary || '',
+      goal: handoff?.goal || handoff?.summary || '',
+      requestedOutcomes,
+      tasks: requestedOutcomes,
+      targets: Array.isArray(handoff?.targets) ? handoff.targets : [],
+      constraints: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
+      urgency: handoff?.urgency || 'normal',
+      requestType: handoff?.requestType || 'context_request',
+      nodeId: handoff?.sourceNodeId || null,
+      requestedBy: handoff?.requestedBy || 'context-manager',
+      priority: handoff?.priority || handoff?.urgency || 'normal',
+      anchorRefs: Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : [],
+    },
+    packet: {
+      summary: handoff?.summary || '',
+      goal: handoff?.goal || handoff?.summary || '',
+      requestedOutcomes,
+      tasks: requestedOutcomes,
+      targets: Array.isArray(handoff?.targets) ? handoff.targets : [],
+      constraints: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
+      urgency: handoff?.urgency || 'normal',
+      requestType: handoff?.requestType || 'context_request',
+      sourceType: handoff?.sourceType || 'context-manager',
+      sourceRef: handoff?.sourceRef || handoff?.sourceNodeId || null,
+      requestedBy: handoff?.requestedBy || 'context-manager',
+      priority: handoff?.priority || handoff?.urgency || 'normal',
+      anchorRefs: Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : [],
+    },
+    sourceType: handoff?.sourceType || 'context-manager',
+    sourceRef: handoff?.sourceRef || handoff?.sourceNodeId || null,
+    requestedBy: handoff?.requestedBy || 'context-manager',
+    priority: handoff?.priority || handoff?.urgency || 'normal',
+    timestamp: handoff?.timestamp || handoff?.createdAt || nowIso(),
+    provenance: handoff?.provenance || {},
+    intentId: handoff?.intentId || null,
+  });
+  const resolvedContextLanes = contextLanes || handoff?.contextLanes || null;
+  const resolvedOverrideLayer = overrideLayer || handoff?.overrideLayer || null;
+  const resolvedPromptScope = resolvePlannerPromptScope({ promptScope, handoff });
+  const scopedMode = resolvedPromptScope === 'scoped';
+  const includedSections = [
+    'known_fixes',
+    'task_cache',
+    'canonical_intent_contract',
+    'context_lanes',
+    'override_layer',
+    'required_output_contract',
+    'derived_brief',
+    'anchor_context',
+    'secondary_retrieval',
+    'team_board',
+  ];
+  if (fixTaskSection) includedSections.splice(2, 0, 'fix_task_intake');
+  if (talentAcquisition) includedSections.push('ta_coverage');
+  const lines = [
+    String(promptTemplate || FALLBACK_PLANNER_PROMPT).trim(),
+    '',
+    buildKnownFixesPromptSection(rootPath, { limit: scopedMode ? 2 : 5 }),
+    buildTaskCachePromptSection(resolvedTaskCache, {
+      stage: 'planner',
+      limitChars: scopedMode ? PLANNER_SCOPED_TASK_CACHE_LIMIT_CHARS : PLANNER_BROAD_TASK_CACHE_LIMIT_CHARS,
+    }),
+    fixTaskSection,
+    '## Canonical Intent Contract',
+    'Treat this contract as the source of truth. Do not invent tasks from summary text or UI state when this contract is available.',
+    JSON.stringify(intentContract, null, 2),
+    '',
+    buildPlannerContextLanesSection({
+      handoff,
+      contextLanes: resolvedContextLanes,
+      promptScope: resolvedPromptScope,
+    }),
+    '',
+    buildPlannerOverrideLayerSection(
+      resolvedOverrideLayer,
+      String(resolvedOverrideLayer?.planningMode || handoff?.planningMode || 'normal').trim() || 'normal',
+      resolvedPromptScope,
+    ),
+    '',
+    '## Required Planner Output Contract',
+    'Return machine-readable planner artefacts. Use the canonical intent to populate every object.',
+    'The planner must emit planBundle, taskBundle, dependencyMap, staffingRequest, qaRequest, outtray, archivalSummary, and contextUpdatePacket.',
+    'If staffing coverage is missing or risky, also emit hireRequest so TA can queue the work without blocking planning.',
+    'Every plan item must include planId, intentId, status, priority, summary, acceptanceCriteria, dependencies, targetDesk, targetRole, handoffState, provenance, createdBy, and createdAt.',
+    talentAcquisition ? [
+      '## TA Coverage Context',
+      `Department summary: ${talentAcquisition.department?.summary || 'unknown'}`,
+      `Planner coverage: ${talentAcquisition.plannerCoverage?.covered === false ? 'missing' : 'covered'}`,
+      `QA lead coverage: ${talentAcquisition.qaLeadCoverage?.covered === false ? 'missing' : 'covered'}`,
+      'Use staffing gaps as queueable work, not as a reason to stop planning.',
+    ].join('\n') : '',
+    '',
+    '## Derived Planner Brief',
+    `Handoff ID: ${handoff?.id || 'unknown'}`,
+    `Summary: ${handoff?.summary || ''}`,
+    `Problem statement: ${handoff?.problemStatement || ''}`,
+    '',
+    'Constraints:',
+    (handoff?.constraints || []).map((constraint) => `- ${constraint}`).join('\n') || '- None',
+    '',
+    'Anchor refs:',
+    (handoff?.anchorRefs || []).map((anchorRef) => `- ${anchorRef}`).join('\n') || '- None',
+    '',
+    '## Canonical Anchors',
+    buildAnchorPromptSections(anchorBundle, {
+      anchorRefs: handoff?.anchorRefs || [],
+      limit: scopedMode ? PLANNER_SCOPED_ANCHOR_LIMIT : PLANNER_BROAD_ANCHOR_LIMIT,
+      contentChars: scopedMode ? PLANNER_SCOPED_ANCHOR_CONTENT_CHARS : PLANNER_BROAD_ANCHOR_CONTENT_CHARS,
+    }),
+    '',
+    buildPlannerSecondaryRetrievalSection({
+      handoff,
+      contextLanes: resolvedContextLanes,
+      anchorBundle,
+      board,
+      promptScope: resolvedPromptScope,
+    }),
+    '',
+    '## Existing Team Board',
+    buildBoardPromptSection(board, { mode: scopedMode ? 'scoped' : 'full' }),
+  ];
+  const prompt = lines.filter(Boolean).join('\n').trim();
+  return {
+    prompt,
+    promptChars: prompt.length,
+    contextMode: resolvedPromptScope,
+    includedSections,
+    broaderContextAvailable: true,
+    repairApplied: {
+      timeout_changed: false,
+      prompt_scope_changed: true,
+      retrieval_shifted: true,
+      notes: 'Planner now defaults to a scoped planning brief and moves broad project context to explicit secondary retrieval.',
+    },
+  };
 }
 
 function executorTaskId(card = {}) {
@@ -864,146 +1220,8 @@ function buildExecutorPrompt({ promptTemplate, card, workspace, rootPath, taskCa
   ].join('\n').trim();
 }
 
-function buildPlannerPrompt({ promptTemplate, handoff, anchorBundle, board, rootPath, taskCache = null, contextLanes = null, overrideLayer = null, talentAcquisition = null }) {
-  const requestedOutcomes = Array.isArray(handoff?.requestedOutcomes)
-    ? handoff.requestedOutcomes
-    : (Array.isArray(handoff?.tasks) ? handoff.tasks : []);
-  const selectedCard = Array.isArray(board?.cards)
-    ? board.cards.find((card) => card?.id && card.id === board?.selectedCardId) || null
-    : null;
-  const resolvedTaskCache = taskCache || readTaskCache(rootPath, {
-    taskId: String(
-      handoff?.taskId
-      || handoff?.runnerTaskId
-      || selectedCard?.runnerTaskId
-      || selectedCard?.builderTaskId
-      || selectedCard?.executionPackage?.taskId
-      || '',
-    ).trim() || null,
-    stage: 'planner',
-  });
-  const fixTaskSection = buildFixTaskPromptSection(handoff?.sourceFixTask || null);
-  const intentContract = handoff?.intentContract || buildCanonicalIntentContract({
-    report: {
-      summary: handoff?.summary || '',
-      goal: handoff?.goal || handoff?.summary || '',
-      requestedOutcomes,
-      tasks: requestedOutcomes,
-      targets: Array.isArray(handoff?.targets) ? handoff.targets : [],
-      constraints: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
-      urgency: handoff?.urgency || 'normal',
-      requestType: handoff?.requestType || 'context_request',
-      nodeId: handoff?.sourceNodeId || null,
-      requestedBy: handoff?.requestedBy || 'context-manager',
-      priority: handoff?.priority || handoff?.urgency || 'normal',
-      anchorRefs: Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : [],
-    },
-    packet: {
-      summary: handoff?.summary || '',
-      goal: handoff?.goal || handoff?.summary || '',
-      requestedOutcomes,
-      tasks: requestedOutcomes,
-      targets: Array.isArray(handoff?.targets) ? handoff.targets : [],
-      constraints: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
-      urgency: handoff?.urgency || 'normal',
-      requestType: handoff?.requestType || 'context_request',
-      sourceType: handoff?.sourceType || 'context-manager',
-      sourceRef: handoff?.sourceRef || handoff?.sourceNodeId || null,
-      requestedBy: handoff?.requestedBy || 'context-manager',
-      priority: handoff?.priority || handoff?.urgency || 'normal',
-      anchorRefs: Array.isArray(handoff?.anchorRefs) ? handoff.anchorRefs : [],
-    },
-    sourceType: handoff?.sourceType || 'context-manager',
-    sourceRef: handoff?.sourceRef || handoff?.sourceNodeId || null,
-    requestedBy: handoff?.requestedBy || 'context-manager',
-    priority: handoff?.priority || handoff?.urgency || 'normal',
-    timestamp: handoff?.timestamp || handoff?.createdAt || nowIso(),
-    provenance: handoff?.provenance || {},
-    intentId: handoff?.intentId || null,
-  });
-  const resolvedContextLanes = contextLanes || handoff?.contextLanes || null;
-  const resolvedOverrideLayer = overrideLayer || handoff?.overrideLayer || null;
-  return [
-    String(promptTemplate || FALLBACK_PLANNER_PROMPT).trim(),
-    '',
-    buildKnownFixesPromptSection(rootPath),
-    buildTaskCachePromptSection(resolvedTaskCache, { stage: 'planner' }),
-    fixTaskSection,
-    '## Canonical Intent Contract',
-    'Treat this contract as the source of truth. Do not invent tasks from summary text or UI state when this contract is available.',
-    JSON.stringify(intentContract, null, 2),
-    '',
-    '## Planner Context Lanes',
-    'Use the declared lanes intentionally: local/narrow for the current task and active intent, department/operational for recent handoffs and blockers, and broad/project for project brain, roadmap, and recent decisions.',
-    JSON.stringify(resolvedContextLanes || {
-      narrow: {
-        lane: 'local',
-        currentDesk: 'planner',
-        currentTask: requestedOutcomes[0] || handoff?.summary || 'Plan the next action.',
-      },
-      department: {
-        lane: 'department',
-        departmentId: 'dept-delivery',
-        currentFocus: handoff?.summary || '',
-        blockers: Array.isArray(handoff?.constraints) ? handoff.constraints : [],
-      },
-      broad: {
-        lane: 'broad',
-        projectBrain: [],
-        roadmap: [],
-        recentDecisions: [],
-      },
-    }, null, 2),
-    '',
-    '## CTO Override Layer',
-    'Treat overrides as explicit control signals. Do not rewrite canonical truth to make overrides look normal. Keep provenance intact and describe forced planning separately from ordinary planning.',
-    JSON.stringify(resolvedOverrideLayer || {
-      version: '1',
-      activeCount: 0,
-      flags: {
-        forcePlannerRouting: false,
-        forcePlanningGeneration: false,
-        reopenStalePlan: false,
-        supersedeQueuePriority: false,
-        requestEmergencyStaffingReview: false,
-        handoffMode: null,
-        forcePlanning: false,
-      },
-      activeOverrides: [],
-      planningMode: 'normal',
-      canonicalTruthPreserved: true,
-    }, null, 2),
-    '',
-    '## Required Planner Output Contract',
-    'Return machine-readable planner artefacts. Use the canonical intent to populate every object.',
-    'The planner must emit planBundle, taskBundle, dependencyMap, staffingRequest, qaRequest, outtray, archivalSummary, and contextUpdatePacket.',
-    'If staffing coverage is missing or risky, also emit hireRequest so TA can queue the work without blocking planning.',
-    'Every plan item must include planId, intentId, status, priority, summary, acceptanceCriteria, dependencies, targetDesk, targetRole, handoffState, provenance, createdBy, and createdAt.',
-    talentAcquisition ? [
-      '## TA Coverage Context',
-      `Department summary: ${talentAcquisition.department?.summary || 'unknown'}`,
-      `Planner coverage: ${talentAcquisition.plannerCoverage?.covered === false ? 'missing' : 'covered'}`,
-      `QA lead coverage: ${talentAcquisition.qaLeadCoverage?.covered === false ? 'missing' : 'covered'}`,
-      'Use staffing gaps as queueable work, not as a reason to stop planning.',
-    ].join('\n') : '',
-    '',
-    '## Derived Planner Brief',
-    `Handoff ID: ${handoff?.id || 'unknown'}`,
-    `Summary: ${handoff?.summary || ''}`,
-    `Problem statement: ${handoff?.problemStatement || ''}`,
-    '',
-    'Constraints:',
-    (handoff?.constraints || []).map((constraint) => `- ${constraint}`).join('\n') || '- None',
-    '',
-    'Anchor refs:',
-    (handoff?.anchorRefs || []).map((anchorRef) => `- ${anchorRef}`).join('\n') || '- None',
-    '',
-    '## Canonical Anchors',
-    buildAnchorPromptSections(anchorBundle),
-    '',
-    '## Existing Team Board',
-    buildBoardPromptSection(board),
-  ].join('\n').trim();
+function buildPlannerPrompt(options = {}) {
+  return buildPlannerPromptProfile(options).prompt;
 }
 
 function normalizePlannerCard(card, handoff) {
@@ -1713,6 +1931,58 @@ function normalizePlannerPayload(payload, handoff, overrideLayer = null, options
   return buildPlannerArtifactContract(payload, handoff, overrideLayer, options);
 }
 
+function classifyAgentCognitionFailureReason(reason = '', { promptChars = 0, contextMode = 'scoped', overscopedThreshold = PLANNER_OVERSCOPED_PROMPT_CHARS } = {}) {
+  const message = String(reason || '').trim().toLowerCase();
+  if (!message) return null;
+  if (message.includes('timed out') || message.includes('timeout')) {
+    if (promptChars >= overscopedThreshold || contextMode === 'broad' || contextMode === 'full') {
+      return 'overscoped_context';
+    }
+    return 'timeout';
+  }
+  if (message.includes('econnrefused') || message.includes('fetch failed') || message.includes('no fetch implementation') || message.includes('ollama unavailable') || message.includes('http 404') || message.includes('http 500') || message.includes('connection refused')) {
+    return 'model_unavailable';
+  }
+  if (message.includes('not valid json') || message.includes('empty response')) {
+    return 'bad_prompt_shape';
+  }
+  return 'unknown';
+}
+
+function buildPlannerCognitionDiagnostics({
+  model = DEFAULT_PLANNER_MODEL,
+  timeoutMs = DEFAULT_PLANNER_TIMEOUT_MS,
+  promptProfile = null,
+  usedLiveCall = false,
+  usedFallback = false,
+  reason = '',
+}) {
+  return {
+    agent_id: 'planner',
+    intended_model: model || null,
+    actual_model: model || null,
+    timeout_ms: Number(timeoutMs || DEFAULT_PLANNER_TIMEOUT_MS),
+    prompt_chars: Number(promptProfile?.promptChars || 0),
+    context_mode: promptProfile?.contextMode || 'scoped',
+    used_live_call: Boolean(usedLiveCall),
+    used_fallback: Boolean(usedFallback),
+    failure_reason: usedFallback
+      ? classifyAgentCognitionFailureReason(reason, {
+        promptChars: Number(promptProfile?.promptChars || 0),
+        contextMode: promptProfile?.contextMode || 'scoped',
+      })
+      : null,
+    included_sections: Array.isArray(promptProfile?.includedSections) ? promptProfile.includedSections : [],
+    broader_context_available: Boolean(promptProfile?.broaderContextAvailable),
+    repair_applied: promptProfile?.repairApplied || {
+      timeout_changed: false,
+      prompt_scope_changed: true,
+      retrieval_shifted: true,
+      notes: 'Planner now defaults to scoped prompt construction.',
+    },
+  };
+}
+
 function runMatchesHandoff(run, handoff = null) {
   if (!run || !handoff) return false;
   if (run.handoffId !== handoff.id) return false;
@@ -1783,6 +2053,8 @@ function createPlannerRunRecord({
   plannerToContext = null,
   taskCache = null,
   rawResponse = '',
+  cognitionDiagnostics = null,
+  llmTrace = null,
   startedAt = nowIso(),
   completedAt = nowIso(),
 }) {
@@ -1828,12 +2100,17 @@ function createPlannerRunRecord({
     status: outcome,
     summary: String(summary || '').trim() || String(handoff?.summary || 'Planner worker finished.').trim(),
     reason: String(reason || '').trim() || null,
+    llmStatus: cognitionDiagnostics?.used_fallback
+      ? classifyLlmFailure(reason, true)
+      : (cognitionDiagnostics?.used_live_call ? 'live' : (outcome === 'completed' ? 'live' : classifyLlmFailure(reason, false))),
     cards,
     brainProposals,
     proposalArtifactRefs,
     plannerToContext,
     taskCache: taskCache ? summarizeTaskCache(taskCache) : null,
     rawResponse: rawResponse || null,
+    cognitionDiagnostics,
+    llmTrace: llmTrace && Array.isArray(llmTrace.steps) ? llmTrace : null,
   };
 }
 
@@ -1909,6 +2186,7 @@ async function runPlannerWorker(options = {}) {
     generator = null,
     fetchImpl = globalThis.fetch,
     talentAcquisition = null,
+    promptScope = null,
   } = options;
 
   if (!rootPath) throw new Error('rootPath is required for planner worker runs.');
@@ -1953,8 +2231,13 @@ async function runPlannerWorker(options = {}) {
   const blockedAttempt = (runs || []).filter((run) => runMatchesHandoff(run, handoff) && ['blocked', 'degraded'].includes(run.outcome)).length + 1;
   const blockedAction = blockedAttempt >= 2 ? 'bin-candidate' : 'retry-handoff';
   const startedAt = nowIso();
+  const llmTrace = {
+    runId,
+    steps: [],
+  };
+  let plannerPromptProfile = null;
 
-  const createBlockedResult = (reason, outcome = 'blocked', rawResponse = '') => {
+  const createBlockedResult = (reason, outcome = 'blocked', rawResponse = '', { usedLiveCall = false, usedFallback = false } = {}) => {
     const completedAt = nowIso();
     const plannerToContext = buildPlannerToContextHandoff({
       handoff,
@@ -1963,6 +2246,16 @@ async function runPlannerWorker(options = {}) {
       runId,
       attemptCount: blockedAttempt,
     });
+    const cognitionDiagnostics = plannerPromptProfile
+      ? buildPlannerCognitionDiagnostics({
+        model: resolvedModel,
+        timeoutMs: resolvedTimeoutMs,
+        promptProfile: plannerPromptProfile,
+        usedLiveCall,
+        usedFallback,
+        reason,
+      })
+      : null;
     const runRecord = persistPlannerRun(rootPath, createPlannerRunRecord({
       runId,
       handoff,
@@ -1995,6 +2288,8 @@ async function runPlannerWorker(options = {}) {
       plannerToContext,
       taskCache,
       rawResponse,
+      cognitionDiagnostics,
+      llmTrace,
       startedAt,
       completedAt,
     }));
@@ -2025,6 +2320,7 @@ async function runPlannerWorker(options = {}) {
       taskCacheSource: taskCache.source,
       overrideLayer,
       planningMode,
+      cognitionDiagnostics,
     };
   };
 
@@ -2037,6 +2333,26 @@ async function runPlannerWorker(options = {}) {
   if (!requestedOutcomes.length) return createBlockedResult('Planner handoff has no concrete requested outcomes to decompose.');
 
   try {
+    plannerPromptProfile = buildPlannerPromptProfile({
+      promptTemplate: config.prompt,
+      handoff,
+      anchorBundle: anchorBundle || {},
+      board: workspace?.studio?.teamBoard || { cards: [] },
+      rootPath,
+      taskCache,
+      contextLanes: handoff?.contextLanes || null,
+      overrideLayer,
+      talentAcquisition,
+      promptScope,
+    });
+    addTraceStep(llmTrace, 'llm_call_start', {
+      model: resolvedModel,
+      stage: 'planner',
+      promptChars: plannerPromptProfile.promptChars,
+      contextMode: plannerPromptProfile.contextMode,
+      includedSections: plannerPromptProfile.includedSections,
+      promptPreview: plannerPromptProfile.prompt.slice(0, 300),
+    });
     const generated = generator
       ? await generator({
           handoff,
@@ -2053,19 +2369,10 @@ async function runPlannerWorker(options = {}) {
           overrideLayer,
           planningMode,
           talentAcquisition,
+          promptProfile: plannerPromptProfile,
         })
       : await callOllamaGenerate({
-          prompt: buildPlannerPrompt({
-            promptTemplate: config.prompt,
-            handoff,
-          anchorBundle: anchorBundle || {},
-          board: workspace?.studio?.teamBoard || { cards: [] },
-          rootPath,
-          taskCache,
-          contextLanes: handoff?.contextLanes || null,
-          overrideLayer,
-          talentAcquisition,
-        }),
+          prompt: plannerPromptProfile.prompt,
           model: resolvedModel,
           host: resolvedHost,
           timeoutMs: resolvedTimeoutMs,
@@ -2073,15 +2380,30 @@ async function runPlannerWorker(options = {}) {
         });
     const rawPayload = generated?.json ?? generated;
     const rawResponse = generated?.text || (typeof generated === 'string' ? generated : JSON.stringify(rawPayload));
+    addTraceStep(llmTrace, 'llm_call_success', {
+      model: resolvedModel,
+      stage: 'planner',
+      textPreview: String(rawResponse || '').slice(0, 300),
+    });
     const payload = normalizePlannerPayload(rawPayload, handoff, overrideLayer, {
       talentAcquisition,
       workspace,
     });
     if (payload.needsContextRetry) {
-      return createBlockedResult(payload.retryReason || 'Planner requested a tighter context packet before decomposing work.', 'blocked', rawResponse);
+      return createBlockedResult(
+        payload.retryReason || 'Planner requested a tighter context packet before decomposing work.',
+        'blocked',
+        rawResponse,
+        { usedLiveCall: !generator, usedFallback: false },
+      );
     }
     if (!payload.planBundle.items.length && !payload.taskBundle.tasks.length && !payload.brainProposals.length) {
-      return createBlockedResult('Planner produced no structured plan, tasks, or review proposals for this handoff.', 'blocked', rawResponse);
+      return createBlockedResult(
+        'Planner produced no structured plan, tasks, or review proposals for this handoff.',
+        'blocked',
+        rawResponse,
+        { usedLiveCall: !generator, usedFallback: false },
+      );
     }
     const proposalArtifactRefs = writeProposalArtifacts(rootPath, runId, payload.brainProposals);
     const completedAt = nowIso();
@@ -2191,6 +2513,14 @@ async function runPlannerWorker(options = {}) {
       plannerToContext: null,
       taskCache,
       rawResponse,
+      cognitionDiagnostics: buildPlannerCognitionDiagnostics({
+        model: resolvedModel,
+        timeoutMs: resolvedTimeoutMs,
+        promptProfile: plannerPromptProfile,
+        usedLiveCall: !generator,
+        usedFallback: false,
+      }),
+      llmTrace,
       startedAt,
       completedAt,
     }));
@@ -2221,9 +2551,19 @@ async function runPlannerWorker(options = {}) {
       archivalSummary: payload.archivalSummary,
       contextUpdatePacket: payload.contextUpdatePacket,
       plannerToContext: null,
+      cognitionDiagnostics: runRecord.cognitionDiagnostics || null,
     };
   } catch (error) {
-    return createBlockedResult(String(error.message || error), 'degraded');
+    const reason = String(error.message || error);
+    addTraceStep(llmTrace, 'llm_call_failure', {
+      model: resolvedModel,
+      stage: 'planner',
+      error: reason,
+    });
+    return createBlockedResult(reason, 'degraded', '', {
+      usedLiveCall: !generator,
+      usedFallback: true,
+    });
   }
 }
 
@@ -3349,6 +3689,7 @@ module.exports = {
   buildCanonicalIntentContract,
   buildPlannerArtifactContract,
   buildPlannerPrompt,
+  buildPlannerPromptProfile,
   getAgentWorkerConfig,
   listContextManagerRuns,
   listExecutorRuns,

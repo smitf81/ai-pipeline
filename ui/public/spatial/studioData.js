@@ -113,10 +113,30 @@ function defaultExecutorWorkerState() {
   };
 }
 
+function defaultEvaluatorWorkerState() {
+  return {
+    status: 'idle',
+    statusReason: null,
+    mode: 'manual',
+    backend: 'ollama',
+    model: 'mistral:latest',
+    currentRunId: null,
+    lastRunId: null,
+    lastOutcome: null,
+    lastOutcomeAt: null,
+    lastComparedAt: null,
+    lastVerdict: null,
+    lastCognitionMode: null,
+    startedAt: null,
+    completedAt: null,
+  };
+}
+
 function normalizeAgentWorkersState(agentWorkers = {}) {
   const defaults = {
     'context-manager': defaultContextManagerWorkerState(),
     executor: defaultExecutorWorkerState(),
+    evaluator: defaultEvaluatorWorkerState(),
     planner: defaultPlannerWorkerState(),
   };
   return {
@@ -133,6 +153,10 @@ function normalizeAgentWorkersState(agentWorkers = {}) {
       lastAssessmentBlockers: Array.isArray(agentWorkers?.executor?.lastAssessmentBlockers)
         ? [...new Set(agentWorkers.executor.lastAssessmentBlockers.filter(Boolean))]
         : [],
+    },
+    evaluator: {
+      ...defaults.evaluator,
+      ...(agentWorkers?.evaluator || {}),
     },
     planner: {
       ...defaults.planner,
@@ -2610,6 +2634,29 @@ function normalizeLocalGateState(localGate = null) {
   };
 }
 
+function normalizeEvaluatorState(evaluator = null) {
+  const source = evaluator && typeof evaluator === 'object' ? evaluator : {};
+  return {
+    latestEvaluation: source.latestEvaluation || null,
+    latestSnapshot: source.latestSnapshot || null,
+    previousSnapshot: source.previousSnapshot || null,
+    history: Array.isArray(source.history) ? source.history.filter(Boolean) : [],
+    historyCount: Number.isFinite(Number(source.historyCount))
+      ? Number(source.historyCount)
+      : (Array.isArray(source.history) ? source.history.length : 0),
+    movement: source.movement || null,
+  };
+}
+
+function normalizeAgentCognitionSummary(summary = null) {
+  const source = summary && typeof summary === 'object' ? summary : {};
+  return {
+    generated_at: source.generated_at || null,
+    summary: source.summary || 'No assigned-agent cognition summary is available yet.',
+    agents: Array.isArray(source.agents) ? source.agents.filter(Boolean) : [],
+  };
+}
+
 function normalizeQAState(qaState = null) {
   return {
     structuredReport: qaState?.structuredReport || null,
@@ -2642,6 +2689,8 @@ function normalizeQAState(qaState = null) {
     researchSummary: qaState?.researchSummary || null,
     researchState: qaState?.researchState || null,
     repairLoop: qaState?.repairLoop || null,
+    evaluator: normalizeEvaluatorState(qaState?.evaluator || null),
+    agentCognitionSummary: normalizeAgentCognitionSummary(qaState?.agentCognitionSummary || qaState?.agent_cognition_summary || null),
     qaCanaries: qaState?.qaCanaries || null,
     qaMcpLiveStatus: qaState?.qaMcpLiveStatus || null,
     testRegistry: qaState?.testRegistry || null,
@@ -3035,6 +3084,8 @@ function buildQADeskReadabilityModel({
     qaLeadState,
     qaLeadLatestRun,
   });
+  const evaluator = normalizeEvaluatorState(qa.evaluator || null);
+  const agentCognitionSummary = normalizeAgentCognitionSummary(qa.agentCognitionSummary || null);
   const repairInspector = buildQARepairLaneInspectorModel(qa.repairLoop || null);
   const qaCanaries = buildQALaneCanaryModel(qa.qaCanaries || null);
   const qaMcpLiveStatus = buildQAMcpLiveStatusModel(qa.qaMcpLiveStatus || qaLeadState.live_status || null);
@@ -3157,6 +3208,21 @@ function buildQADeskReadabilityModel({
       ],
     }),
     buildQASurfaceRecord({
+      surface_id: 'evaluator',
+      label: 'Evaluator',
+      status: evaluator.latestEvaluation?.verdict === 'worse'
+        ? 'warn'
+        : (evaluator.latestEvaluation?.verdict === 'better' ? 'pass' : (evaluator.latestEvaluation ? 'unknown' : 'missing')),
+      freshness: evaluator.latestEvaluation?.compared_at ? 'fresh' : 'missing',
+      last_updated: latestKnownTimestamp(evaluator.latestEvaluation?.compared_at),
+      source: 'data/spatial/evaluator/history.json',
+      coverage_hint: `${Number(evaluator.historyCount || 0)} evaluation artefact${Number(evaluator.historyCount || 0) === 1 ? '' : 's'} | ${(agentCognitionSummary.agents || []).filter((entry) => entry.actual_last_cognition_mode === 'model_live').length} live path${(agentCognitionSummary.agents || []).filter((entry) => entry.actual_last_cognition_mode === 'model_live').length === 1 ? '' : 's'}`,
+      notes: [
+        evaluator.latestEvaluation?.progress_summary || 'Evaluator movement is not published yet.',
+        evaluator.latestEvaluation?.cognition_mode ? `Cognition ${evaluator.latestEvaluation.cognition_mode}` : null,
+      ].filter(Boolean),
+    }),
+    buildQASurfaceRecord({
       surface_id: 'qa-lead',
       label: 'QA Lead',
       status: qaLeadLatestRun.status === 'live' || qaLeadState.status === 'live'
@@ -3198,6 +3264,8 @@ function buildQADeskReadabilityModel({
   qaLead: qaLeadState,
   qaLeadLatestRun,
   qaLeadFeed,
+  evaluator,
+  agentCognitionSummary,
   hygieneSurfaces,
     openInvestigations,
     recurringInvestigations,
@@ -3444,6 +3512,27 @@ function buildQADeskSnapshot({ agent, workspace, status, qaState = null }) {
         emptyState: 'No active or recent repair lanes are recorded yet.',
         collapsible: true,
         defaultOpen: readability.repairLanes.length > 0,
+      },
+      {
+        id: 'qa-evaluator',
+        label: 'Evaluator Movement',
+        kind: 'qa-evaluator',
+        evaluator: readability.evaluator,
+        summary: readability.evaluator.latestEvaluation?.progress_summary
+          || 'Evaluator movement will appear once two comparable snapshots exist.',
+        emptyState: 'No evaluator artefact is recorded yet.',
+        collapsible: true,
+        defaultOpen: Boolean(readability.evaluator.latestEvaluation),
+      },
+      {
+        id: 'qa-agent-cognition',
+        label: 'Assigned Agent Liveness',
+        kind: 'qa-agent-cognition',
+        cognition: readability.agentCognitionSummary,
+        summary: readability.agentCognitionSummary.summary,
+        emptyState: 'Assigned-agent cognition telemetry is not available yet.',
+        collapsible: true,
+        defaultOpen: true,
       },
       {
         id: 'qa-scorecards',

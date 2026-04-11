@@ -100,6 +100,7 @@ function makeNode(partial = {}) {
     sourceRef: String(partial.sourceRef || '').trim() || null,
     canonicalSource: String(partial.canonicalSource || '').trim() || null,
     derivedSource: String(partial.derivedSource || '').trim() || null,
+    truthState: String(partial.truthState || '').trim() || null,
     verdict: String(partial.verdict || '').trim() || null,
     blocker: String(partial.blocker || '').trim() || null,
     owner: String(partial.owner || '').trim() || null,
@@ -121,6 +122,12 @@ function makeNode(partial = {}) {
     truthApplicationOrigin: normalizeText(partial.truthApplicationOrigin || partial.truth_application_origin) || null,
     postApplyVerificationVerdict: normalizeText(partial.postApplyVerificationVerdict || partial.post_apply_verification_verdict) || null,
     postApplyVerificationOrigin: normalizeText(partial.postApplyVerificationOrigin || partial.post_apply_verification_origin) || null,
+    evaluatorDeltaScore: Number.isFinite(Number(partial.evaluatorDeltaScore ?? partial.evaluator_delta_score))
+      ? Number(partial.evaluatorDeltaScore ?? partial.evaluator_delta_score)
+      : null,
+    evaluatorProgressState: normalizeText(partial.evaluatorProgressState || partial.evaluator_progress_state) || null,
+    evaluatorScorePressure: normalizeText(partial.evaluatorScorePressure || partial.evaluator_score_pressure) || null,
+    evaluatorCognitionMode: normalizeText(partial.evaluatorCognitionMode || partial.evaluator_cognition_mode) || null,
     consistencyStatus: normalizeText(partial.consistencyStatus || partial.consistency_status) || null,
     consistencyOrigin: normalizeText(partial.consistencyOrigin || partial.consistency_origin) || null,
     consistencyIssues: normalizeStringArray(partial.consistencyIssues || partial.consistency_issues || []),
@@ -144,8 +151,10 @@ function linkNodes(registry, parentId, childId) {
 }
 
 function shouldPreserveStandaloneNodeStatus(node = {}) {
-  return node?.sourceType === 'qa-investigation'
-    && ['healthy', 'degraded', 'blocked'].includes(String(node?.status || '').trim().toLowerCase());
+  return (
+    (node?.sourceType === 'qa-investigation' || node?.sourceType === 'ace-evaluator')
+    && ['healthy', 'degraded', 'blocked', 'informational'].includes(String(node?.status || '').trim().toLowerCase())
+  );
 }
 
 function finalizeNodes(registry) {
@@ -598,6 +607,57 @@ function collectCtoDiagnostics(registry, rootPath) {
   });
 }
 
+function mapEvaluatorStatus(verdict = '', progressState = '') {
+  const normalizedVerdict = String(verdict || '').trim().toLowerCase();
+  const normalizedProgress = String(progressState || '').trim().toLowerCase();
+  if (normalizedVerdict === 'worse' || normalizedProgress === 'regressive') return 'degraded';
+  if (normalizedVerdict === 'better' || normalizedProgress === 'stable') return 'healthy';
+  return 'informational';
+}
+
+function collectEvaluatorNodes(registry, rootPath) {
+  const history = safeReadJson(path.join(rootPath, 'data', 'spatial', 'evaluator', 'history.json'), []);
+  const evaluations = (Array.isArray(history) ? history : [])
+    .filter(Boolean)
+    .sort((left, right) => toTimestamp(left?.compared_at, 0) - toTimestamp(right?.compared_at, 0));
+  let previousEvaluationId = null;
+  evaluations.forEach((entry) => {
+    const evaluationId = String(entry?.run_id || entry?.evaluator_id || '').trim();
+    if (!evaluationId) return;
+    addNode(registry, {
+      id: evaluationId,
+      kind: 'artifact',
+      label: entry?.progress_summary || `${entry?.comparison_target || 'qa_scorecards'} evaluator`,
+      summary: entry?.progress_summary || null,
+      what: 'Evaluator comparison artefact',
+      why: 'Tracks bounded movement over time without replacing canonical QA truth.',
+      represents: 'A comparative evaluator judgement over two supplied snapshots.',
+      sourceType: 'ace-evaluator',
+      sourceRef: evaluationId,
+      canonicalSource: 'data/spatial/evaluator/history.json',
+      truthState: entry?.progress_state || entry?.verdict || null,
+      verdict: entry?.verdict || null,
+      blocker: entry?.verdict === 'worse' ? (entry?.progress_summary || 'Evaluator detected regression.') : null,
+      owner: 'evaluator',
+      recommendedOwner: 'evaluator',
+      timestamp: entry?.compared_at,
+      status: mapEvaluatorStatus(entry?.verdict, entry?.progress_state),
+      statusOrigin: 'derived',
+      confidence: clamp01(entry?.evaluation_confidence, 0.55),
+      confidenceOrigin: Number.isFinite(Number(entry?.evaluation_confidence)) ? 'derived' : 'unavailable',
+      weight: 0.57,
+      evaluatorDeltaScore: Number.isFinite(Number(entry?.delta_score)) ? Number(entry.delta_score) : 0,
+      evaluatorProgressState: entry?.progress_state || null,
+      evaluatorScorePressure: entry?.score_pressure || null,
+      evaluatorCognitionMode: entry?.cognition_mode || null,
+    });
+    if (previousEvaluationId) {
+      linkNodes(registry, previousEvaluationId, evaluationId);
+    }
+    previousEvaluationId = evaluationId;
+  });
+}
+
 function buildTruthKernelPayload({ rootPath, workspace } = {}) {
   const resolvedRoot = rootPath || process.cwd();
   const registry = new Map();
@@ -609,6 +669,7 @@ function buildTruthKernelPayload({ rootPath, workspace } = {}) {
   collectQaRuns(registry, resolvedRoot);
   collectInvestigations(registry, resolvedRoot);
   collectRepairLoopNodes(registry, resolvedRoot);
+  collectEvaluatorNodes(registry, resolvedRoot);
   collectCtoDiagnostics(registry, resolvedRoot);
   const nodes = finalizeNodes(registry);
   return {

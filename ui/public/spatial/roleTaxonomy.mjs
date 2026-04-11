@@ -231,6 +231,49 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
       }
     },
     {
+      "id": "evaluator",
+      "label": "Evaluator",
+      "kind": "operational",
+      "departmentIds": ["quality"],
+      "allowedDepartmentIds": ["quality"],
+      "allowedDeskIds": ["qa-lead"],
+      "leadOfDepartmentIds": [],
+      "capabilities": [
+        "compare prior and current state",
+        "publish better or worse movement",
+        "shape scorecard and truth-kernel progress"
+      ],
+      "station": {
+        "shortLabel": "Eval",
+        "role": "Compares bounded snapshots over time and publishes explicit movement without replacing QA validation truth.",
+        "responsibility": "comparison rail / movement board",
+        "scope": ["evaluation", "progress", "comparison", "movement", "trend"],
+        "theme": { "accent": "#8bc5ff", "shadow": "rgba(82, 122, 168, 0.36)" },
+        "position": { "x": 64, "y": 50 },
+        "mission": "Measure bounded movement across comparable QA states and project that movement into scorecards and truth."
+      },
+      "starterTemplate": {
+        "summary": "Default evaluator seat for bounded state comparison and progress calls.",
+        "prompt": "Compare the previous and current state, return structured movement only, and avoid replacing QA truth.",
+        "responsibility": "comparison rail / movement board"
+      },
+      "panel": {
+        "mission": "Compare bounded snapshots, publish structured movement, and expose when evaluation used a live model path or fallback.",
+        "responsibilities": [
+          "Compare prior versus current state and emit explicit better, worse, or no_change verdicts.",
+          "Influence scorecard movement and truth-kernel progress without changing canonical QA validation outputs.",
+          "Expose whether evaluator cognition used the intended live model path or a deterministic fallback."
+        ],
+        "hardRules": [
+          "Do not replace QA validation truth or test evidence.",
+          "Do not invent context outside the supplied snapshots.",
+          "Do not trigger execution or autonomous patch application."
+        ],
+        "deliveryRelationship": "Comparative assessment authority only; QA remains the canonical validation authority.",
+        "visibility": "read-only"
+      }
+    },
+    {
       "id": "cto-architect",
       "label": "CTO / Architect",
       "kind": "operational",

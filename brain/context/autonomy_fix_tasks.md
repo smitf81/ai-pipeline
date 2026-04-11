@@ -3,7 +3,7 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-04-11T08:16:19.832Z
+Updated: 2026-04-11T11:55:46.853Z
 
 ### 0001
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -51,6 +51,7 @@ M brain/context/autonomy_fix_tasks.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
+ M brain/context/safe_mode/boot-recovery-daemon.json
  M brain/emergence/slices.json
  M brain/emergence/slices.md
  M data/spatial/history.json
@@ -61,10 +62,22 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/ctoChiefOfStaff.js
- M ui/failureMemory.js
- M ui/public/index.html
+ M ui/agentWorkers.js
+ M ui/public/spatial/roleTaxonomy.mjs
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioData.js
+ M ui/public/spatial/truthKernelAdapter.js
+ M ui/server.js
+ M ui/studioLayoutSchema.js
+ M ui/tests/qaScorecardIntegrity.test.mjs
+ M ui/tests/roleTaxonomy.test.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/truthKernelAdapter.test.mjs
+ M ui/truthKernelAdapter.js
 
 ### 10000
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -126,6 +139,7 @@ M brain/context/autonomy_fix_tasks.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
+ M brain/context/safe_mode/boot-recovery-daemon.json
  M brain/emergence/slices.json
  M brain/emergence/slices.md
  M data/spatial/history.json
@@ -136,7 +150,19 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
+ M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/ctoChiefOfStaff.js
- M ui/failureMemory.js
- M ui/public/index.html
+ M ui/agentWorkers.js
+ M ui/public/spatial/roleTaxonomy.mjs
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioData.js
+ M ui/public/spatial/truthKernelAdapter.js
+ M ui/server.js
+ M ui/studioLayoutSchema.js
+ M ui/tests/qaScorecardIntegrity.test.mjs
+ M ui/tests/roleTaxonomy.test.mjs
+ M ui/tests/run-ui-tests.mjs
+ M ui/tests/server.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/truthKernelAdapter.test.mjs
+ M ui/truthKernelAdapter.js

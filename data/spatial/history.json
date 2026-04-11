@@ -1,201 +1,5 @@
 [
   {
-    "at": "2026-04-10T13:46:03.863Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T13:46:09.376Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:00:57.016Z",
-    "type": "planner-worker-start",
-    "summary": {
-      "handoffId": "handoff_1774615405452_2yc7",
-      "runId": "planner_1775829656985_4ko0ce",
-      "mode": "auto"
-    }
-  },
-  {
-    "at": "2026-04-10T14:00:57.088Z",
-    "type": "planner-worker-skipped",
-    "summary": {
-      "handoffId": "handoff_1774615405452_2yc7",
-      "runId": "planner_1775829656985_4ko0ce",
-      "reason": "Planner worker is already running.",
-      "producedCardIds": [],
-      "proposalArtifactRefs": []
-    }
-  },
-  {
-    "at": "2026-04-10T14:02:38.727Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:02:42.020Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:03:43.913Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:06:00.861Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:06:03.938Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:06:05.143Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:25:58.637Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:26:01.960Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:26:07.846Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:33:55.407Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:33:59.110Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:33:59.449Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:35:28.167Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
-    "at": "2026-04-10T14:35:28.823Z",
-    "type": "workspace-save",
-    "summary": {
-      "nodes": 0,
-      "edges": 0,
-      "versions": [],
-      "sketches": 0,
-      "annotations": 0
-    }
-  },
-  {
     "at": "2026-04-10T14:45:53.159Z",
     "type": "workspace-save",
     "summary": {
@@ -866,6 +670,204 @@
   },
   {
     "at": "2026-04-11T07:22:15.907Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T08:43:05.786Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T08:43:18.419Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T10:51:54.916Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T10:51:58.932Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T10:55:50.839Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T10:56:00.288Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:11:53.964Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:11:58.284Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:15:52.178Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:16:02.465Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:31:55.474Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:31:59.880Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:35:52.809Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:36:04.449Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:51:55.692Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:52:00.742Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:56:11.519Z",
+    "type": "workspace-save",
+    "summary": {
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
+    }
+  },
+  {
+    "at": "2026-04-11T11:56:12.069Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,

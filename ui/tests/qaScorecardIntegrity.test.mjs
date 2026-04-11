@@ -108,7 +108,36 @@ export default async function runQAScorecardIntegrityTests() {
       buildDeskTest({ desk: 'ta', status: 'pass', score: 2.2 }),
     ],
   });
-  const mixedBundle = buildStructuredQAScorecardBundle(mixedReport);
+  const mixedBundle = buildStructuredQAScorecardBundle(mixedReport, {
+    evaluator: {
+      latestEvaluation: {
+        compared_at: CURRENT_AT,
+        verdict: 'better',
+        delta_score: 0.55,
+        progress_summary: 'Planner coverage improved while TA remained weak.',
+        evaluation_confidence: 0.79,
+        cognition_mode: 'model_live',
+        model_name: 'mistral:latest',
+        score_pressure: 'upward',
+        progress_state: 'stable',
+        source_snapshot_ids: {
+          previous: 'snapshot_prev',
+          current: 'snapshot_curr',
+        },
+        scorecard_impacts: [{
+          card_id: 'planner.contract_check',
+          verdict: 'better',
+          delta_score: 0.9,
+          progress_summary: 'Planner contract_check recovered.',
+          score_pressure: 'upward',
+        }],
+      },
+      history: [{
+        compared_at: CURRENT_AT,
+        cognition_mode: 'model_live',
+      }],
+    },
+  });
   assert.equal(mixedBundle.status, 'fail');
   assert.deepEqual(
     mixedBundle.cards.map((card) => ({ desk: card.desk, rollupStatus: card.rollupStatus })),
@@ -118,6 +147,11 @@ export default async function runQAScorecardIntegrityTests() {
     ],
   );
   assert.match(mixedBundle.cards[1].summary, /below the fail threshold 2.5/i);
+  assert.equal(mixedBundle.evaluatorMovement.verdict, 'better');
+  assert.equal(mixedBundle.cards[0].evaluatorMovement.verdict, 'better');
+  assert.equal(mixedBundle.cards[0].evaluatorMovement.cognitionMode, 'model_live');
+  assert.equal(mixedBundle.cards[1].evaluatorMovement.verdict, 'better');
+  assert.match(mixedBundle.summary, /evaluator better/i);
 
   const missingBundle = buildStructuredQAScorecardBundle(null);
   assert.equal(missingBundle.status, 'missing');

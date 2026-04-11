@@ -1,0 +1,234 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { ensureQAStorage, writeStructuredQAReport } = require('../qaRunner.js');
+const {
+  buildDeskPropertiesPayload,
+  buildQAStatePayload,
+} = require('../server.js');
+
+function writeJson(rootPath, relativePath, value) {
+  const targetPath = path.join(rootPath, ...relativePath.split('/'));
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+export default async function runEvaluatorServerIntegrationTests() {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'evaluator-server-'));
+  ensureQAStorage(rootPath);
+  const staleTimestamp = '2026-04-10T09:00:00.000Z';
+  const freshTimestamp = '2026-04-11T09:30:00.000Z';
+
+  writeStructuredQAReport(rootPath, {
+    status: 'pass',
+    summary: 'Structured QA is available for evaluator projection.',
+    createdAt: freshTimestamp,
+    finishedAt: freshTimestamp,
+    metricDefinitions: {
+      schema: 'qa.test-metric-definitions.v1',
+      version: 1,
+      metrics: {
+        integrity: { label: 'Integrity' },
+      },
+    },
+    desks: [{
+      desk: 'planner',
+      status: 'pass',
+      tests: [{
+        name: 'contract_check',
+        status: 'pass',
+        qualityCard: {
+          id: 'planner.contract_check',
+          desk: 'planner',
+          testId: 'contract_check',
+          testName: 'Planner contract check',
+          status: 'pass',
+          updatedAt: freshTimestamp,
+          overallScore: { value: 3.8, max: 4 },
+          validation: {
+            ok: true,
+            issues: [],
+            summary: 'Quality card validation complete.',
+          },
+        },
+      }],
+    }],
+  }, 'latest');
+
+  writeJson(rootPath, 'data/spatial/evaluator/history.json', [{
+    run_id: 'evaluator_1',
+    evaluator_id: 'evaluator',
+    compared_at: freshTimestamp,
+    comparison_target: 'qa_scorecards',
+    verdict: 'better',
+    delta_score: 0.9,
+    progress_summary: 'Planner QA posture improved compared with the prior snapshot.',
+    changed_dimensions: ['scorecards'],
+    evaluation_confidence: 0.83,
+    cognition_mode: 'model_live',
+    model_name: 'mistral:latest',
+    score_pressure: 'upward',
+    progress_state: 'stable',
+    source_snapshot_ids: {
+      previous: 'eval_prev',
+      current: 'eval_curr',
+    },
+    scorecard_impacts: [{
+      card_id: 'planner.contract_check',
+      desk: 'planner',
+      test_id: 'contract_check',
+      verdict: 'better',
+      delta_score: 0.9,
+      progress_summary: 'Planner contract check recovered to a passing posture.',
+      score_pressure: 'upward',
+    }],
+  }]);
+  writeJson(rootPath, 'data/spatial/evaluator/state.json', {
+    updated_at: freshTimestamp,
+    latest_evaluation: {
+      run_id: 'evaluator_1',
+      evaluator_id: 'evaluator',
+      compared_at: freshTimestamp,
+      comparison_target: 'qa_scorecards',
+      verdict: 'better',
+      delta_score: 0.9,
+      progress_summary: 'Planner QA posture improved compared with the prior snapshot.',
+      changed_dimensions: ['scorecards'],
+      evaluation_confidence: 0.83,
+      cognition_mode: 'model_live',
+      model_name: 'mistral:latest',
+      score_pressure: 'upward',
+      progress_state: 'stable',
+      source_snapshot_ids: {
+        previous: 'eval_prev',
+        current: 'eval_curr',
+      },
+      scorecard_impacts: [{
+        card_id: 'planner.contract_check',
+        desk: 'planner',
+        test_id: 'contract_check',
+        verdict: 'better',
+        delta_score: 0.9,
+        progress_summary: 'Planner contract check recovered to a passing posture.',
+        score_pressure: 'upward',
+      }],
+    },
+    latest_snapshot: {
+      snapshot_id: 'eval_curr',
+      captured_at: freshTimestamp,
+      comparison_target: 'qa_scorecards',
+      fingerprint: 'eval-curr',
+      scorecard_count: 1,
+      counts: { pass: 1, warn: 0, stale: 0, fail: 0, missing: 0 },
+      aggregate_score: 3.8,
+      summary: 'Current evaluator snapshot',
+      scorecards: [],
+    },
+    previous_snapshot: {
+      snapshot_id: 'eval_prev',
+      captured_at: staleTimestamp,
+      comparison_target: 'qa_scorecards',
+      fingerprint: 'eval-prev',
+      scorecard_count: 1,
+      counts: { pass: 0, warn: 1, stale: 0, fail: 0, missing: 0 },
+      aggregate_score: 2.9,
+      summary: 'Previous evaluator snapshot',
+      scorecards: [],
+    },
+    history_count: 1,
+  });
+  writeJson(rootPath, 'data/spatial/agent-runs/context-manager/context_manager_1.json', {
+    id: 'context_manager_1',
+    createdAt: staleTimestamp,
+    completedAt: staleTimestamp,
+    status: 'completed',
+    usedFallback: false,
+  });
+  writeJson(rootPath, 'data/spatial/agent-runs/planner/planner_1.json', {
+    id: 'planner_1',
+    createdAt: staleTimestamp,
+    completedAt: staleTimestamp,
+    status: 'completed',
+    outcome: 'completed',
+    llmStatus: 'live',
+  });
+  writeJson(rootPath, 'data/spatial/agent-runs/executor/executor_1.json', {
+    id: 'executor_1',
+    createdAt: staleTimestamp,
+    completedAt: staleTimestamp,
+    status: 'completed',
+    usedFallback: true,
+  });
+
+  const workspace = {
+    studio: {
+      layout: {},
+      agentWorkers: {
+        'context-manager': { backend: 'ollama', model: 'mistral:latest' },
+        planner: { backend: 'ollama', model: 'mistral:latest' },
+        executor: { backend: 'ollama', model: 'mistral:latest' },
+        evaluator: { backend: 'ollama', model: 'mistral:latest' },
+      },
+      orchestrator: {
+        desks: {
+          'qa-lead': {
+            mission: 'Review QA movement',
+            currentGoal: 'Expose evaluator movement and agent liveness',
+            localState: 'review',
+            workItems: [],
+          },
+        },
+      },
+      deskProperties: {},
+      teamBoard: { cards: [] },
+      handoffs: {},
+      selfUpgrade: {},
+    },
+    graph: { nodes: [], edges: [] },
+    graphs: {
+      system: { nodes: [], edges: [] },
+      world: { nodes: [], edges: [] },
+    },
+    intentState: {
+      registry: {
+        currentIntentId: null,
+        latestIntentId: null,
+        byId: {},
+        records: [],
+      },
+      currentIntentId: null,
+      summary: '',
+      status: 'idle',
+    },
+  };
+
+  writeJson(rootPath, 'data/spatial/workspace.json', workspace);
+
+  const qaState = buildQAStatePayload(rootPath, {
+    workspace,
+    qaCanaries: {
+      summary: 'Canary suite bypassed for focused evaluator integration coverage.',
+      overall_status: 'pass',
+      total_canaries: 0,
+      passed_count: 0,
+      failed_count: 0,
+      failing_canary_ids: [],
+      results: [],
+    },
+  });
+  assert.equal(qaState.evaluator.latestEvaluation.verdict, 'better');
+  assert.equal(qaState.scorecards[0].evaluatorMovement.verdict, 'better');
+  assert.equal(qaState.scorecards[0].evaluatorMovement.cognitionMode, 'model_live');
+  assert.equal(qaState.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'evaluator').actual_last_cognition_mode, 'model_live');
+  assert.equal(qaState.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'executor').actual_last_cognition_mode, 'deterministic_fallback');
+
+  const deskPayload = buildDeskPropertiesPayload(workspace, 'qa-lead', qaState, { rootPath });
+  assert.equal(deskPayload.qa.evaluator.latestEvaluation.verdict, 'better');
+  assert.equal(Array.isArray(deskPayload.qa.agentCognitionSummary.agents), true);
+  assert.equal(deskPayload.truth.evaluator.latestEvaluation.verdict, 'better');
+  assert.equal(deskPayload.truth.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'planner').actual_last_cognition_mode, 'model_live');
+}

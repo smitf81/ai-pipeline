@@ -9,7 +9,7 @@ export default async function runRoleTaxonomyTests() {
   const taxonomy = await loadModuleCopy(taxonomyPath, { label: 'roleTaxonomy' });
 
   assert.equal(taxonomy.ROLE_TAXONOMY.version, 'role-taxonomy.v1');
-  assert.equal(taxonomy.getOperationalRoles().length, 10);
+  assert.equal(taxonomy.getOperationalRoles().length, 11);
   assert.equal(taxonomy.getTalentRoles().length, 6);
   assert.deepEqual(taxonomy.getDesignatedLeadRoleIds(), [
     'context-manager',
@@ -36,6 +36,11 @@ export default async function runRoleTaxonomyTests() {
     'executor',
     'integration_auditor',
     'pipeline_observer',
+  ]);
+  assert.deepEqual(taxonomy.getAssignableRoleIdsForDesk('qa-lead'), [
+    'qa-lead',
+    'evaluator',
+    'integration_auditor',
   ]);
 
   const planner = taxonomy.getRoleById('planner');

@@ -39,6 +39,8 @@ const testEntries = [
   { name: 'testAttributeCards', path: './testAttributeCards.test.mjs' },
   { name: 'aceRuntimeMcp', path: './aceRuntimeMcp.test.mjs' },
   { name: 'llmAdapter', path: './llmAdapter.test.mjs' },
+  { name: 'evaluatorAgent', path: './evaluatorAgent.test.mjs' },
+  { name: 'evaluatorServerIntegration', path: './evaluatorServerIntegration.test.mjs' },
   { name: 'moduleRunner', path: './moduleRunner.test.mjs' },
   { name: 'graphEngine', path: './graphEngine.test.mjs' },
   { name: 'graphQueries', path: './graphQueries.test.mjs' },

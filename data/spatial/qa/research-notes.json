@@ -1,5 +1,36 @@
 [
   {
+    "id": "qa_research_5810131564",
+    "research_note_id": "qa_research_5810131564",
+    "type": "qa_research_note",
+    "investigation_id": "qa_inv_001",
+    "trigger": "external_mismatch",
+    "status": "offline",
+    "ok": false,
+    "source": "external_mcp",
+    "created_at": "2026-04-10T08:35:31.564Z",
+    "updated_at": "2026-04-10T08:35:31.564Z",
+    "query": "QA validation issue external_mismatch External probe disagrees with internal QA status internal fail external pass probe unreachable test qa_mcp_helper_ping",
+    "evidence_hint": "",
+    "summary": "QA research server is offline.",
+    "recommendation": "Retry later with the same bounded query.",
+    "likely_causes": [
+      "QA research server is offline or not listening on 127.0.0.1:5052."
+    ],
+    "suggested_extra_checks": [
+      "Verify the local QA research server is running on 127.0.0.1:5052."
+    ],
+    "suggested_scorecard_additions": [
+      "research-server-availability"
+    ],
+    "sources": [],
+    "error_message": "QA research server is offline or not listening on 127.0.0.1:5052.",
+    "research_available": false,
+    "failure_kind": "offline",
+    "failure_detail": "fetch failed",
+    "server_url": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping"
+  },
+  {
     "id": "qa_research_5723646329",
     "research_note_id": "qa_research_5723646329",
     "type": "qa_research_note",
@@ -93,16 +124,16 @@
     "server_url": null
   },
   {
-    "id": "qa_research_5810131564",
-    "research_note_id": "qa_research_5810131564",
+    "id": "qa_research_5896532447",
+    "research_note_id": "qa_research_5896532447",
     "type": "qa_research_note",
     "investigation_id": "qa_inv_001",
     "trigger": "external_mismatch",
     "status": "offline",
     "ok": false,
     "source": "external_mcp",
-    "created_at": "2026-04-10T08:35:31.564Z",
-    "updated_at": "2026-04-10T08:35:31.564Z",
+    "created_at": "2026-04-11T08:35:32.447Z",
+    "updated_at": "2026-04-11T08:35:32.447Z",
     "query": "QA validation issue external_mismatch External probe disagrees with internal QA status internal fail external pass probe unreachable test qa_mcp_helper_ping",
     "evidence_hint": "",
     "summary": "QA research server is offline.",

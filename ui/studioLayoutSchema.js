@@ -26,7 +26,7 @@ const CORE_DESK_AGENT_DEFAULTS = {
   'rnd-lead': ['rnd-lead'],
   'cto-chief-of-staff': ['cto-chief-of-staff'],
   'cto-architect': ['cto-architect'],
-  'qa-lead': ['qa-lead'],
+  'qa-lead': ['qa-lead', 'evaluator'],
 };
 
 const DEPARTMENT_ROOM_SLOTS = [
@@ -350,7 +350,7 @@ const CORE_DESKS = {
     templateId: 'qa-node',
     departmentId: 'dept-quality',
     position: { x: 182, y: 510 },
-    assignedAgentIds: ['qa-lead'],
+    assignedAgentIds: ['qa-lead', 'evaluator'],
     editable: false,
     staffing: {
       seatKind: 'lead',

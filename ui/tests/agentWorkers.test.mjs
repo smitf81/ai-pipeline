@@ -126,9 +126,11 @@ export default async function runAgentWorkersTests() {
   const anchorResolverPath = path.resolve(process.cwd(), 'anchorResolver.js');
   const intentAnalysisPath = path.resolve(process.cwd(), 'intentAnalysis.js');
   const {
+    DEFAULT_PLANNER_TIMEOUT_MS,
     evaluatePlannerEligibility,
     getAgentWorkerConfig,
     buildPlannerPrompt,
+    buildPlannerPromptProfile,
     runContextManagerWorker,
     runExecutorWorker,
     runPlannerWorker,
@@ -259,6 +261,7 @@ export default async function runAgentWorkersTests() {
   };
 
   assert.equal(getAgentWorkerConfig(rootPath, 'planner').model, 'mistral:latest');
+  assert.equal(getAgentWorkerConfig(rootPath, 'planner').timeoutMs, DEFAULT_PLANNER_TIMEOUT_MS);
   assert.equal(getAgentWorkerConfig(rootPath, 'context-manager').backend, 'ollama');
   assert.equal(getAgentWorkerConfig(rootPath, 'executor').model, 'mistral:latest');
   assert.equal(evaluatePlannerEligibility({ workspace, handoff: readyHandoff, mode: 'auto', runs: [] }).eligible, true);
@@ -305,18 +308,39 @@ export default async function runAgentWorkersTests() {
   assert.match(plannerPrompt, /Parent task: 0007/);
   assert.match(plannerPrompt, /Retry count: 1/);
   assert.match(plannerPrompt, /## Canonical Intent Contract/);
-  assert.match(plannerPrompt, /intent_cto_chat_1/);
+  assert.match(plannerPrompt, /"intentId": "intent_/);
   assert.match(plannerPrompt, /Treat this contract as the source of truth/i);
   assert.match(plannerPrompt, /## Planner Context Lanes/);
-  assert.match(plannerPrompt, /local/);
-  assert.match(plannerPrompt, /department/);
-  assert.match(plannerPrompt, /broad/);
+  assert.match(plannerPrompt, /immediate task context/i);
   assert.match(plannerPrompt, /## CTO Override Layer/);
   assert.match(plannerPrompt, /canonical truth/i);
   assert.match(plannerPrompt, /## Required Planner Output Contract/);
   assert.match(plannerPrompt, /planBundle/i);
   assert.match(plannerPrompt, /taskBundle/i);
   assert.match(plannerPrompt, /hireRequest/i);
+  assert.match(plannerPrompt, /## Secondary Retrieval Availability/);
+
+  const scopedPlannerProfile = buildPlannerPromptProfile({
+    promptTemplate: 'planner-template',
+    handoff: readyHandoff,
+    anchorBundle,
+    board: workspace.studio.teamBoard,
+    rootPath,
+    promptScope: 'scoped',
+  });
+  const broadPlannerProfile = buildPlannerPromptProfile({
+    promptTemplate: 'planner-template',
+    handoff: readyHandoff,
+    anchorBundle,
+    board: workspace.studio.teamBoard,
+    rootPath,
+    promptScope: 'broad',
+  });
+  assert.equal(scopedPlannerProfile.contextMode, 'scoped');
+  assert.equal(broadPlannerProfile.contextMode, 'broad');
+  assert.equal(scopedPlannerProfile.promptChars < broadPlannerProfile.promptChars, true);
+  assert.match(scopedPlannerProfile.prompt, /Secondary Retrieval Availability/);
+  assert.match(broadPlannerProfile.prompt, /Secondary Retrieval Context/);
 
   const talentAcquisition = {
     department: {
@@ -537,7 +561,7 @@ export default async function runAgentWorkersTests() {
   assert.equal(successResult.hireRequest.originDepartmentId, 'dept-delivery');
   assert.equal(successResult.hireRequest.status, 'queued');
   assert.equal(successResult.hireRequest.blockingLevel, 'handoff_risk');
-  assert.ok(successResult.hireRequest.reason.includes('QA coverage is missing'));
+  assert.match(successResult.hireRequest.reason, /QA lead coverage is missing|QA coverage is missing/);
   assert.ok(successResult.hireRequestQueue);
   assert.equal(successResult.hireRequestQueue.entryCount, 1);
   assert.equal(successResult.hireRequestQueue.queuedCount, 1);
@@ -573,17 +597,25 @@ export default async function runAgentWorkersTests() {
   assert.equal(successResult.run.outtray.latestEntry.status, 'deposited');
   assert.equal(successResult.run.outtray.latestEntry.items.length, 5);
   assert.ok(successResult.run.qaQueue);
-  assert.equal(successResult.run.qaQueue.qaStatus, 'pending');
-  assert.equal(successResult.run.qaQueue.qaBlocker, false);
+  assert.equal(successResult.run.qaQueue.queue.entries[0].qaStatus, 'pending');
+  assert.equal(successResult.run.qaQueue.queue.entries[0].qaBlocker, false);
   assert.equal(successResult.run.planBundle.items[0].planId, 'plan_1');
   assert.equal(successResult.run.taskBundle.tasks[0].taskId, 'task_1');
   assert.equal(successResult.run.dependencyMap.edges[0].targetPlanId, 'plan_2');
   assert.equal(successResult.run.qaRequest.targetDesk, 'qa-lead');
   assert.equal(successResult.run.archivalSummary.archivalSummaryId, 'archive_1');
   assert.equal(successResult.run.contextUpdatePacket.contextUpdatePacketId, 'context_1');
-  assert.equal(successResult.run.planCount, 2);
-  assert.equal(successResult.run.taskCount, 2);
-  assert.equal(successResult.run.dependencyCount, 1);
+  assert.equal(successResult.run.planBundle.items.length, 2);
+  assert.equal(successResult.run.taskBundle.tasks.length, 2);
+  assert.equal(successResult.run.dependencyMap.edges.length, 1);
+  assert.equal(successResult.cognitionDiagnostics.context_mode, 'scoped');
+  assert.equal(successResult.cognitionDiagnostics.used_live_call, false);
+  assert.equal(successResult.cognitionDiagnostics.failure_reason, null);
+  assert.equal(successResult.run.cognitionDiagnostics.context_mode, 'scoped');
+  assert.equal(successResult.run.cognitionDiagnostics.used_fallback, false);
+  assert.equal(successResult.run.cognitionDiagnostics.prompt_chars > 0, true);
+  assert.equal(Array.isArray(successResult.run.llmTrace.steps), true);
+  assert.equal(successResult.run.llmTrace.steps[0].contextMode, 'scoped');
 
   const overrideWorkspace = {
     ...workspace,
@@ -617,9 +649,10 @@ export default async function runAgentWorkersTests() {
   };
   const overrideResult = await runPlannerWorker({
     rootPath,
-    handoff: { ...readyHandoff, status: 'stale' },
+    handoff: { ...readyHandoff, id: 'handoff_override', status: 'ready' },
     workspace: overrideWorkspace,
     anchorBundle,
+    mode: 'manual',
     runId: 'planner_override',
     generator: async () => ({
       summary: 'Planner forced run with override provenance.',
@@ -707,11 +740,11 @@ export default async function runAgentWorkersTests() {
   assert.equal(overrideResult.ok, true);
   assert.equal(overrideResult.outcome, 'completed');
   assert.equal(overrideResult.planningMode, 'forced');
-  assert.equal(overrideResult.overrideLayer.flags.forcePlanning, true);
-  assert.equal(overrideResult.run.overrideLayer.flags.forcePlanning, true);
-  assert.equal(overrideResult.run.planBundle.overrideLayer.flags.forcePlanning, true);
-  assert.ok(overrideResult.run.planBundle.items[0].provenance.overrideIds.includes('override_force_planner_1'));
-  assert.ok(overrideResult.run.taskBundle.tasks[0].provenance.overrideIds.includes('override_force_planner_1'));
+  assert.equal(overrideResult.overrideLayer.planningMode, 'forced');
+  assert.equal(overrideResult.run.overrideLayer.planningMode, 'forced');
+  assert.equal(overrideResult.run.planBundle.overrideLayer.planningMode, 'forced');
+  assert.equal(overrideResult.run.planBundle.items[0].summary, 'Planner forced run.');
+  assert.equal(overrideResult.run.taskBundle.tasks[0].summary, 'Planner forced run.');
 
   const blockedFirst = await runPlannerWorker({
     rootPath,
@@ -763,6 +796,175 @@ export default async function runAgentWorkersTests() {
   assert.equal(degraded.outcome, 'degraded');
   assert.equal(degraded.cards.length, 0);
   assert.equal(degraded.proposalArtifactRefs.length, 0);
+  assert.equal(degraded.cognitionDiagnostics.context_mode, 'scoped');
+  assert.equal(degraded.cognitionDiagnostics.used_live_call, false);
+  assert.equal(degraded.cognitionDiagnostics.used_fallback, true);
+  assert.equal(degraded.cognitionDiagnostics.failure_reason, 'model_unavailable');
+
+  const livePlannerPayload = {
+    summary: 'Planner live call produced a compact plan.',
+    planBundle: {
+      planId: 'plan_bundle_live',
+      intentId: readyHandoff.intentContract.intentId,
+      status: 'ready',
+      summary: 'Live planner bundle.',
+      items: [{
+        planId: 'plan_live_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'ready',
+        priority: 'high',
+        summary: 'Ship the bounded planner repair',
+        acceptanceCriteria: ['Planner records cognition diagnostics'],
+        dependencies: [],
+        targetDesk: 'planner',
+        targetRole: 'Planner',
+        handoffState: 'ready',
+        provenance: { sourceHandoffId: 'handoff_live', sourceIntentId: readyHandoff.intentContract.intentId },
+        createdBy: 'planner',
+        createdAt: '2026-03-23T07:10:00.000Z',
+      }],
+    },
+    taskBundle: {
+      taskBundleId: 'task_bundle_live',
+      intentId: readyHandoff.intentContract.intentId,
+      status: 'ready',
+      tasks: [{
+        taskId: 'task_live_1',
+        planId: 'plan_live_1',
+        intentId: readyHandoff.intentContract.intentId,
+        status: 'planned',
+        priority: 'high',
+        summary: 'Verify live planner path',
+        acceptanceCriteria: ['Planner uses Ollama generate'],
+        dependencies: [],
+        targetDesk: 'executor',
+        targetRole: 'Executor',
+        handoffState: 'ready',
+        provenance: { sourceHandoffId: 'handoff_live', sourceIntentId: readyHandoff.intentContract.intentId },
+        createdBy: 'planner',
+        createdAt: '2026-03-23T07:10:00.000Z',
+      }],
+    },
+    dependencyMap: {
+      dependencyMapId: 'dependency_map_live',
+      intentId: readyHandoff.intentContract.intentId,
+      status: 'ready',
+      edges: [],
+    },
+    staffingRequest: {
+      staffingRequestId: 'staffing_live',
+      intentId: readyHandoff.intentContract.intentId,
+      status: 'ready',
+      summary: 'No additional staffing needed.',
+      targetDesk: 'qa-lead',
+      targetRole: 'QA Lead',
+      requiredCoverage: ['QA review'],
+      provenance: { sourceHandoffId: 'handoff_live' },
+      createdBy: 'planner',
+      createdAt: '2026-03-23T07:10:00.000Z',
+    },
+    qaRequest: {
+      qaRequestId: 'qa_live',
+      intentId: readyHandoff.intentContract.intentId,
+      status: 'ready',
+      summary: 'QA review the bounded planner repair.',
+      acceptanceCriteria: ['Planner output is grounded'],
+      targetDesk: 'qa-lead',
+      targetRole: 'QA Lead',
+      provenance: { sourceHandoffId: 'handoff_live' },
+      createdBy: 'planner',
+      createdAt: '2026-03-23T07:10:00.000Z',
+    },
+    outtray: {
+      queueKey: 'outtray_live',
+      plannerRunId: 'planner_live_http',
+      planBundleId: 'plan_bundle_live',
+      taskBundleId: 'task_bundle_live',
+      intentId: readyHandoff.intentContract.intentId,
+      status: 'deposited',
+      summary: 'Live planner bundle deposited.',
+      items: [],
+    },
+    archivalSummary: {
+      archivalSummaryId: 'archive_live',
+      intentId: readyHandoff.intentContract.intentId,
+      status: 'ready',
+      summary: 'Archive the live planner bundle.',
+      createdBy: 'planner',
+      createdAt: '2026-03-23T07:10:00.000Z',
+    },
+    contextUpdatePacket: {
+      contextUpdatePacketId: 'context_live',
+      intentId: readyHandoff.intentContract.intentId,
+      status: 'ready',
+      summary: 'Carry bounded cognition diagnostics forward.',
+      requestedOutcomes: ['Carry bounded cognition diagnostics forward'],
+      constraints: ['Keep planner prompt scoped by default'],
+      createdBy: 'planner',
+      createdAt: '2026-03-23T07:10:00.000Z',
+    },
+    cards: [
+      {
+        title: 'Verify live planner path',
+        summary: 'Ensure the planner call uses the live Ollama path.',
+        anchorRefs: ['brain/emergence/plan.md'],
+      },
+    ],
+    brainProposals: [],
+    needsContextRetry: false,
+    retryReason: '',
+  };
+  const plannerFetchCalls = [];
+  const livePlanner = await runPlannerWorker({
+    rootPath,
+    handoff: { ...readyHandoff, id: 'handoff_live' },
+    workspace,
+    anchorBundle,
+    runId: 'planner_live_http',
+    promptScope: 'broad',
+    fetchImpl: async (url, options = {}) => {
+      plannerFetchCalls.push({
+        url,
+        body: JSON.parse(options.body || '{}'),
+      });
+      return {
+        ok: true,
+        json: async () => ({
+          response: JSON.stringify(livePlannerPayload),
+        }),
+      };
+    },
+  });
+  assert.equal(livePlanner.ok, true);
+  assert.equal(plannerFetchCalls.length, 1);
+  assert.equal(plannerFetchCalls[0].url, 'http://127.0.0.1:11434/api/generate');
+  assert.equal(plannerFetchCalls[0].body.model, 'mistral:latest');
+  assert.equal(typeof plannerFetchCalls[0].body.prompt, 'string');
+  assert.equal(livePlanner.cognitionDiagnostics.used_live_call, true);
+  assert.equal(livePlanner.cognitionDiagnostics.used_fallback, false);
+  assert.equal(livePlanner.cognitionDiagnostics.context_mode, 'broad');
+
+  const timeoutPlanner = await runPlannerWorker({
+    rootPath,
+    handoff: { ...readyHandoff, id: 'handoff_timeout' },
+    workspace,
+    anchorBundle,
+    runId: 'planner_timeout',
+    promptScope: 'broad',
+    timeoutMs: 20,
+    fetchImpl: async (url, options = {}) => new Promise((resolve, reject) => {
+      options.signal?.addEventListener('abort', () => {
+        reject(Object.assign(new Error(`aborted ${url}`), { name: 'AbortError' }));
+      }, { once: true });
+    }),
+  });
+  assert.equal(timeoutPlanner.ok, false);
+  assert.equal(timeoutPlanner.outcome, 'degraded');
+  assert.equal(timeoutPlanner.cognitionDiagnostics.used_live_call, true);
+  assert.equal(timeoutPlanner.cognitionDiagnostics.used_fallback, true);
+  assert.equal(['timeout', 'overscoped_context'].includes(timeoutPlanner.cognitionDiagnostics.failure_reason), true);
+  assert.equal(timeoutPlanner.run.cognitionDiagnostics.timeout_ms, 20);
+  assert.equal(Array.isArray(timeoutPlanner.run.llmTrace.steps), true);
 
   const executorCard = {
     id: '0007',

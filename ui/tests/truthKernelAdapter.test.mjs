@@ -123,6 +123,25 @@ export default async function runTruthKernelAdapterTests() {
       status: 'degraded',
     }],
   });
+  writeJson(rootPath, 'data/spatial/evaluator/history.json', [{
+    run_id: 'evaluator_1',
+    evaluator_id: 'evaluator',
+    compared_at: '2026-04-01T09:27:00.000Z',
+    comparison_target: 'qa_scorecards',
+    verdict: 'better',
+    delta_score: 0.85,
+    progress_summary: 'QA posture improved across the latest snapshot.',
+    changed_dimensions: ['scorecards', 'failure_pressure'],
+    evaluation_confidence: 0.8,
+    cognition_mode: 'model_live',
+    model_name: 'mistral:latest',
+    score_pressure: 'upward',
+    progress_state: 'stable',
+    source_snapshot_ids: {
+      previous: 'eval_prev',
+      current: 'eval_curr',
+    },
+  }]);
 
   const workspace = {
     studio: {
@@ -180,6 +199,7 @@ export default async function runTruthKernelAdapterTests() {
   assert.equal(ids.has('handoff_1'), true);
   assert.equal(ids.has('qa_run_1'), true);
   assert.equal(ids.has('cto_diag_1'), true);
+  assert.equal(ids.has('evaluator_1'), true);
   const intakeNode = payload.nodes.find((node) => node.id === 'intake_1');
   const intentNode = payload.nodes.find((node) => node.id === 'intent_1');
   const orphanIntentNode = payload.nodes.find((node) => node.id === 'intent_orphan_1');
@@ -190,6 +210,7 @@ export default async function runTruthKernelAdapterTests() {
   const inconsistentRepairNode = payload.nodes.find((node) => node.id === 'qa_repair_3');
   const applyReceiptNode = payload.nodes.find((node) => node.id === 'qa_receipt_1');
   const handoffNode = payload.nodes.find((node) => node.id === 'handoff_1');
+  const evaluatorNode = payload.nodes.find((node) => node.id === 'evaluator_1');
   assert.equal(intakeNode.kind, 'input');
   assert.equal(intentNode.kind, 'input');
   assert.equal(handoffNode.kind, 'artifact');
@@ -216,5 +237,10 @@ export default async function runTruthKernelAdapterTests() {
   assert.equal(inconsistentRepairNode.consistencyStatus, 'inconsistent');
   assert.deepEqual(inconsistentRepairNode.consistencyIssues, ['verified_healthy_missing_apply_receipt']);
   assert.equal(applyReceiptNode.status, 'healthy');
+  assert.equal(evaluatorNode.status, 'healthy');
+  assert.equal(evaluatorNode.truthState, 'stable');
+  assert.equal(evaluatorNode.verdict, 'better');
+  assert.equal(evaluatorNode.evaluatorDeltaScore, 0.85);
+  assert.equal(evaluatorNode.evaluatorCognitionMode, 'model_live');
   assert.equal(payload.nodes.every((node) => ['input', 'execution', 'artifact'].includes(node.kind)), true);
 }

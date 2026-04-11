@@ -1666,6 +1666,8 @@ export function buildQAReadableSectionsFromState(source = {}) {
   const qaLead = normalizeQALeadRunnerPayload(normalized.qaLead || null);
   const qaLeadLatestRun = normalizeQALeadRunnerPayload(normalized.qaLeadLatestRun || (Array.isArray(normalized.qaLeadRuns) ? normalized.qaLeadRuns[0] : null) || null);
   const qaLiveCycle = normalizeQALiveCyclePayload(normalized.qaLiveCycle || normalized.qa_live_cycle || null);
+  const evaluator = normalizeRenderObject(normalized.evaluator || {});
+  const agentCognitionSummary = normalizeRenderObject(normalized.agentCognitionSummary || normalized.agent_cognition_summary || {});
   const qaOutputFeedLoaded = Boolean(normalized.outputFeedLoaded || normalized.output_feed_loaded);
   const qaOutputFeed = normalizeRenderList(normalized.outputFeed || normalized.output_feed || []).map((item) => normalizeQALeadFeedItem(item));
   const qaLeadFeed = qaOutputFeedLoaded
@@ -1871,10 +1873,32 @@ export function buildQAReadableSectionsFromState(source = {}) {
       defaultOpen: repairLanes.length > 0,
     },
     {
+      id: 'qa-evaluator',
+      label: 'Evaluator Movement',
+      kind: 'qa-evaluator',
+      evaluator,
+      summary: normalizeRenderText(evaluator.latestEvaluation?.progress_summary || evaluator.movement?.progressSummary || '')
+        || 'Evaluator movement will appear once two comparable snapshots exist.',
+      emptyState: 'No evaluator artefact is recorded yet.',
+      collapsible: true,
+      defaultOpen: Boolean(evaluator.latestEvaluation),
+    },
+    {
+      id: 'qa-agent-cognition',
+      label: 'Assigned Agent Liveness',
+      kind: 'qa-agent-cognition',
+      cognition: agentCognitionSummary,
+      summary: normalizeRenderText(agentCognitionSummary.summary) || 'Assigned-agent cognition telemetry is not available yet.',
+      emptyState: 'Assigned-agent cognition telemetry is not available yet.',
+      collapsible: true,
+      defaultOpen: true,
+    },
+    {
       id: 'qa-scorecards',
       label: 'Scorecards',
       kind: 'qa-scorecards',
       cards: scorecards,
+      evaluator,
       sourceTrace: structuredReport?.sourceTrace || null,
       definitions: normalizeRenderObject(normalized.scorecardDefinitions || normalized.definitions || {}),
       suiteStatus: normalizeRenderText(normalized.suiteStatus || normalized.structuredStatus || structuredReport?.status || ''),
@@ -4551,6 +4575,7 @@ function renderDeskSection(rawSection, helpers = {}) {
   if (section.kind === 'qa-scorecards') {
     const cards = normalizeRenderList(section.cards);
     const summaryProvenance = renderQASummaryProvenanceChips(section.sourceTrace, 'Derived summary');
+    const evaluatorMovement = normalizeRenderObject(section.evaluator?.movement || section.evaluator?.latestEvaluation || {});
     return h('details', {
       key: section.id,
       className: 'inspector-block panel-card qa-scorecards-panel',
@@ -4566,6 +4591,9 @@ function renderDeskSection(rawSection, helpers = {}) {
         h('div', { className: 'qa-metric-pill-row' },
           h('span', { className: 'qa-metric-pill tone-neutral' }, `Tests ${Number(section.meta?.testCount || cards.length || 0)}`),
           h('span', { className: 'qa-metric-pill tone-neutral' }, `Desks ${Number(section.meta?.deskCount || 0)}`),
+          evaluatorMovement.verdict
+            ? h('span', { className: `qa-metric-pill tone-${evaluatorMovement.verdict === 'better' ? 'good' : (evaluatorMovement.verdict === 'worse' ? 'bad' : 'neutral')}` }, `Evaluator ${evaluatorMovement.verdict}`)
+            : null,
         ),
       ),
       cards.length
@@ -4577,18 +4605,89 @@ function renderDeskSection(rawSection, helpers = {}) {
               h('div', null,
                 h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
                 h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+                card.evaluatorMovement?.progressSummary
+                  ? h('div', { className: 'signal-meta muted' }, `Evaluator ${card.evaluatorMovement.verdict || 'no_change'} | ${card.evaluatorMovement.progressSummary}`)
+                  : null,
                 renderQASummaryProvenanceChips(card.sourceTrace, 'Derived summary'),
               ),
-              h('span', { className: `qa-metric-pill tone-${card.status === 'pass' ? 'good' : (card.status === 'fail' ? 'bad' : 'neutral')}` }, card.status || 'pass'),
+              h('div', { className: 'qa-metric-pill-row' },
+                h('span', { className: `qa-metric-pill tone-${card.status === 'pass' ? 'good' : (card.status === 'fail' ? 'bad' : 'neutral')}` }, card.status || 'pass'),
+                card.evaluatorMovement?.verdict
+                  ? h('span', { className: `qa-metric-pill tone-${card.evaluatorMovement.verdict === 'better' ? 'good' : (card.evaluatorMovement.verdict === 'worse' ? 'bad' : 'neutral')}` }, `${card.evaluatorMovement.verdict} ${Number.isFinite(Number(card.evaluatorMovement.deltaScore)) ? Number(card.evaluatorMovement.deltaScore).toFixed(2) : '0.00'}`)
+                  : null,
+              ),
             ),
             h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace?.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace?.freshnessClass)}`),
             card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
+            card.evaluatorMovement?.comparedAt ? h('div', { className: 'signal-meta muted' }, `Evaluator compared at: ${formatTimestamp(card.evaluatorMovement.comparedAt)} | cognition ${card.evaluatorMovement.cognitionMode || 'unknown'}`) : null,
             card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
             card.validation?.issues?.length
               ? h('ul', { className: 'signal-list compact' }, card.validation.issues.slice(0, 4).map((issue, index) => h('li', { key: `${card.id || 'scorecard'}-issue-${index}` }, issue)))
               : null,
           )))
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No structured QA scorecards recorded yet.'),
+    );
+  }
+  if (section.kind === 'qa-evaluator') {
+    const evaluator = normalizeRenderObject(section.evaluator || {});
+    const latestEvaluation = normalizeRenderObject(evaluator.latestEvaluation || evaluator.movement || {});
+    const history = normalizeRenderList(evaluator.history || []);
+    return h('details', {
+      key: section.id,
+      className: 'inspector-block panel-card qa-evaluator-panel',
+      open: Boolean(section.defaultOpen),
+      'data-qa': 'qa-evaluator',
+    },
+      h('summary', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.summary || section.emptyState || 'No evaluator artefact is recorded yet.'),
+        ),
+        h('div', { className: 'qa-metric-pill-row' },
+          h('span', { className: `qa-metric-pill tone-${latestEvaluation.verdict === 'better' ? 'good' : (latestEvaluation.verdict === 'worse' ? 'bad' : 'neutral')}` }, latestEvaluation.verdict || 'no_change'),
+          h('span', { className: 'qa-metric-pill tone-neutral' }, `History ${Number(evaluator.historyCount || history.length || 0)}`),
+        ),
+      ),
+      latestEvaluation.verdict
+        ? h(React.Fragment, null,
+            h('div', { className: 'signal-meta muted' }, `Delta ${Number.isFinite(Number(latestEvaluation.delta_score || latestEvaluation.deltaScore)) ? Number(latestEvaluation.delta_score || latestEvaluation.deltaScore).toFixed(2) : '0.00'} | pressure ${latestEvaluation.score_pressure || latestEvaluation.scorePressure || 'flat'} | confidence ${Number.isFinite(Number(latestEvaluation.evaluation_confidence || latestEvaluation.evaluationConfidence)) ? Math.round(Number(latestEvaluation.evaluation_confidence || latestEvaluation.evaluationConfidence) * 100) : '?'}%`),
+            h('div', { className: 'signal-meta muted' }, `Compared at: ${formatTimestamp(latestEvaluation.compared_at || latestEvaluation.comparedAt)} | cognition ${latestEvaluation.cognition_mode || latestEvaluation.cognitionMode || 'unknown'} | model ${latestEvaluation.model_name || latestEvaluation.modelName || 'n/a'}`),
+            h('div', { className: 'signal-meta muted' }, latestEvaluation.progress_summary || latestEvaluation.progressSummary || 'No evaluator summary recorded.'),
+          )
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No evaluator artefact is recorded yet.'),
+    );
+  }
+  if (section.kind === 'qa-agent-cognition') {
+    const cognition = normalizeRenderObject(section.cognition || {});
+    const agents = normalizeRenderList(cognition.agents || []);
+    return h('details', {
+      key: section.id,
+      className: 'inspector-block panel-card qa-agent-cognition-panel',
+      open: Boolean(section.defaultOpen),
+      'data-qa': 'qa-agent-cognition',
+    },
+      h('summary', { className: 'inline review-header' },
+        h('div', null,
+          h('div', { className: 'inspector-label' }, section.label),
+          h('div', { className: 'signal-summary' }, section.summary || section.emptyState || 'Assigned-agent cognition telemetry is not available yet.'),
+        ),
+      ),
+      agents.length
+        ? h('div', { className: 'desk-panel-list utility-list qa-agent-cognition-list' }, agents.map((entry) => h('div', {
+            key: entry.agent_id || entry.label,
+            className: 'desk-panel-item utility-card',
+          },
+            h('div', { className: 'inline review-header' },
+              h('div', null,
+                h('div', { className: 'signal-summary' }, entry.label || entry.agent_id || 'Agent'),
+                h('div', { className: 'signal-meta muted' }, `Intended ${entry.intended_cognition_mode || 'unknown'} | Actual ${entry.actual_last_cognition_mode || 'unknown'}`),
+              ),
+              h('span', { className: `qa-metric-pill tone-${entry.matches_intended === false ? 'bad' : (entry.actual_last_cognition_mode === 'model_live' ? 'good' : 'neutral')}` }, entry.matches_intended === false ? 'mismatch' : (entry.actual_last_cognition_mode || 'unknown')),
+            ),
+            h('div', { className: 'signal-meta muted' }, `Last live model call: ${entry.last_live_model_call_at ? formatTimestamp(entry.last_live_model_call_at) : 'none'} | fallbacks ${Number(entry.fallback_count || 0)}`),
+            h('div', { className: 'signal-meta muted' }, `Backend ${entry.backend || 'unknown'} | model ${entry.model_name || 'n/a'}`),
+          )))
+        : h('div', { className: 'signal-empty muted' }, section.emptyState || 'Assigned-agent cognition telemetry is not available yet.'),
     );
   }
   if (section.kind === 'qa-investigations') {

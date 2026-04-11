@@ -142,6 +142,12 @@ function normalizeTruthKernelNode(node = {}) {
     postApplyVerificationOrigin: ['canonical', 'derived', 'unavailable'].includes(normalizeRenderText(node?.postApplyVerificationOrigin || node?.post_apply_verification_origin))
       ? normalizeRenderText(node?.postApplyVerificationOrigin || node?.post_apply_verification_origin)
       : 'unavailable',
+    evaluatorDeltaScore: Number.isFinite(Number(node?.evaluatorDeltaScore ?? node?.evaluator_delta_score))
+      ? Number(node.evaluatorDeltaScore ?? node.evaluator_delta_score)
+      : null,
+    evaluatorProgressState: normalizeRenderText(node?.evaluatorProgressState || node?.evaluator_progress_state) || null,
+    evaluatorScorePressure: normalizeRenderText(node?.evaluatorScorePressure || node?.evaluator_score_pressure) || null,
+    evaluatorCognitionMode: normalizeRenderText(node?.evaluatorCognitionMode || node?.evaluator_cognition_mode) || null,
     consistencyStatus: normalizeRenderText(node?.consistencyStatus || node?.consistency_status) || null,
     consistencyOrigin: ['canonical', 'derived', 'unavailable'].includes(normalizeRenderText(node?.consistencyOrigin || node?.consistency_origin))
       ? normalizeRenderText(node?.consistencyOrigin || node?.consistency_origin)
@@ -488,6 +494,15 @@ export function buildTruthKernelNodeInspectorModel(node = null, truthKernel = EM
         ].filter(Boolean).join(' | ') : 'Insufficient evidence surfaced.', origin: node.supportingEvidence ? 'derived' : 'unavailable' },
       ]
     : [];
+  const evaluatorRows = (node.sourceType === 'ace-evaluator' || node.evaluatorProgressState || node.evaluatorCognitionMode || node.evaluatorDeltaScore !== null)
+    ? [
+        { label: 'Evaluator verdict', value: node.verdict || 'Insufficient evidence surfaced.', origin: node.verdict ? (node.statusOrigin || 'derived') : 'unavailable' },
+        { label: 'Progress state', value: node.evaluatorProgressState || node.truthState || 'Insufficient evidence surfaced.', origin: node.evaluatorProgressState || node.truthState ? 'derived' : 'unavailable' },
+        { label: 'Delta score', value: node.evaluatorDeltaScore === null ? 'Insufficient evidence surfaced.' : String(Number(node.evaluatorDeltaScore.toFixed(2))), origin: node.evaluatorDeltaScore === null ? 'unavailable' : 'derived' },
+        { label: 'Score pressure', value: node.evaluatorScorePressure || 'Insufficient evidence surfaced.', origin: node.evaluatorScorePressure ? 'derived' : 'unavailable' },
+        { label: 'Cognition mode', value: node.evaluatorCognitionMode || 'Insufficient evidence surfaced.', origin: node.evaluatorCognitionMode ? 'derived' : 'unavailable' },
+      ]
+    : [];
   return {
     id: node.id || 'unknown',
     label: node.label || node.summary || node.id || 'Unknown truth node',
@@ -498,6 +513,7 @@ export function buildTruthKernelNodeInspectorModel(node = null, truthKernel = EM
       { label: 'Represents', value: node.represents || 'Insufficient evidence surfaced.', origin: node.represents ? 'derived' : 'unavailable' },
       { label: 'Canonical / derived source', value: sourceDescriptor.value, origin: sourceDescriptor.origin },
       ...repairLifecycleRows,
+      ...evaluatorRows,
       { label: 'Status / verdict', value: node.verdict || node.status || 'Insufficient evidence surfaced.', origin: node.verdict || node.status ? (node.statusOrigin || 'derived') : 'unavailable' },
       { label: 'Blocker', value: node.blocker || 'Insufficient evidence surfaced.', origin: node.blocker ? 'derived' : 'unavailable' },
       { label: 'Health score', value: healthScoreValue === null ? 'Insufficient evidence surfaced.' : String(healthScoreValue), origin: healthScoreValue === null ? 'unavailable' : (node.healthOrigin || 'derived') },

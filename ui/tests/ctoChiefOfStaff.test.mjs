@@ -137,14 +137,18 @@ export default async function runChiefOfStaffTests() {
   buildChiefOfStaffFixture(rootPath);
 
   const {
+    DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS,
     buildChiefOfStaffPosture,
+    buildChiefOfStaffPromptProfile,
     clearLatestChiefOfStaffAdvisory,
     buildRecommendation,
     queryChiefOfStaff,
     readLatestChiefOfStaffAdvisory,
     requestChiefOfStaffModelReply,
+    runChiefOfStaffAgent,
   } = require(path.resolve(process.cwd(), 'ctoChiefOfStaff.js'));
   clearLatestChiefOfStaffAdvisory();
+  assert.equal(DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS >= 20000, true);
 
   const httpCalls = [];
   const httpReply = await requestChiefOfStaffModelReply({
@@ -172,6 +176,13 @@ export default async function runChiefOfStaffTests() {
   const response = await withWriteGuards(async (writes) => {
     const posture = buildChiefOfStaffPosture(rootPath);
     const recommendation = buildRecommendation(posture);
+    const chatProfile = buildChiefOfStaffPromptProfile(posture, recommendation, 'hey there');
+    const reportProfile = buildChiefOfStaffPromptProfile(posture, recommendation, 'write a summary report for the current blocker');
+    assert.equal(chatProfile.contextMode, 'scoped');
+    assert.equal(reportProfile.contextMode, 'broad');
+    assert.equal(chatProfile.promptChars < reportProfile.promptChars, true);
+    assert.match(chatProfile.prompt, /USER QUESTION:/);
+    assert.match(reportProfile.prompt, /Secondary Retrieval Summary/);
     const modelCalls = [];
     const reply = await queryChiefOfStaff(rootPath, 'why is planning failing?', {
       callModel: async (payload) => {
@@ -199,6 +210,13 @@ export default async function runChiefOfStaffTests() {
     assert.equal(reply.model_name, 'qwen2.5-coder:1.5b');
     assert.equal(reply.model_status, 'ok');
     assert.equal(reply.execution_ready, false);
+    assert.equal(reply.cognition_diagnostics.agent_id, 'cto-chief-of-staff');
+    assert.equal(reply.cognition_diagnostics.used_live_call, true);
+    assert.equal(reply.cognition_diagnostics.used_fallback, false);
+    assert.equal(reply.cognition_diagnostics.context_mode, 'scoped');
+    assert.equal(reply.cognition_diagnostics.failure_reason, null);
+    assert.equal(reply.cognition_diagnostics.timeout_ms, DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS);
+    assert.equal(reply.cognition_diagnostics.prompt_chars > 0, true);
     assert.equal(typeof reply.advisory_generated_at, 'string');
     assert.equal(typeof reply.reply_text, 'string');
     assert.match(reply.reply_text, /dirty_repo_blocked|repo/i);
@@ -212,6 +230,8 @@ export default async function runChiefOfStaffTests() {
   assert.equal(latest.model_status, 'ok');
   assert.equal(latest.execution_ready, false);
   assert.equal(latest.recommendation.blocker, 'dirty_repo_blocked');
+  assert.equal(latest.cognition_diagnostics.used_live_call, true);
+  assert.equal(latest.cognition_diagnostics.context_mode, 'scoped');
 
   const noCanonicalRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-chief-of-staff-lite-'));
   buildChiefOfStaffFixture(noCanonicalRoot, { includeCanonicalRegistry: false });
@@ -219,7 +239,7 @@ export default async function runChiefOfStaffTests() {
   assert.equal(noCanonicalPosture.canonical_available, false);
   assert.equal(noCanonicalPosture.canonical_summary, null);
 
-  const fallbackReply = await queryChiefOfStaff(rootPath, 'why is planning failing?', {
+  const fallbackReply = await runChiefOfStaffAgent(buildChiefOfStaffPosture(rootPath), buildRecommendation(buildChiefOfStaffPosture(rootPath)), 'write a summary report for the current blocker', {
     callModel: async () => {
       throw new Error('Ollama generate timed out after 4500ms.');
     },
@@ -228,6 +248,9 @@ export default async function runChiefOfStaffTests() {
   assert.equal(fallbackReply.model_backend, 'ollama_http');
   assert.equal(fallbackReply.model_name, 'qwen2.5-coder:1.5b');
   assert.equal(fallbackReply.model_status, 'timeout');
+  assert.equal(fallbackReply.cognition_diagnostics.used_fallback, true);
+  assert.equal(fallbackReply.cognition_diagnostics.failure_reason, 'overscoped_context');
+  assert.equal(fallbackReply.cognition_diagnostics.context_mode, 'broad');
   assert.equal(typeof fallbackReply.reply_text, 'string');
   assert.match(fallbackReply.reply_text, /dirty_repo_blocked|repo/i);
 
@@ -250,6 +273,8 @@ export default async function runChiefOfStaffTests() {
     assert.equal(payload.model_name, 'qwen2.5-coder:1.5b');
     assert.equal(payload.model_status, 'ok');
     assert.equal(payload.execution_ready, false);
+    assert.equal(payload.cognition_diagnostics.used_live_call, true);
+    assert.equal(payload.cognition_diagnostics.context_mode, 'scoped');
     assert.equal(typeof payload.advisory_generated_at, 'string');
 
     const latestResponse = await fetch('http://localhost:3237/api/cto-chief-of-staff/latest');
@@ -258,6 +283,7 @@ export default async function runChiefOfStaffTests() {
     assert.equal(latestPayload.advisory_available, true);
     assert.equal(latestPayload.reply_source, 'model_live');
     assert.equal(latestPayload.recommendation.blocker, 'dirty_repo_blocked');
+    assert.equal(latestPayload.cognition_diagnostics.used_live_call, true);
   } finally {
     delete app.locals.chiefOfStaffRootPath;
     delete app.locals.chiefOfStaffCallModel;

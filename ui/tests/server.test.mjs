@@ -1857,6 +1857,107 @@ export default async function runServerTests() {
     console: [],
     network: [],
   }, null, 2)}\n`, 'utf8');
+  fs.mkdirSync(path.join(qaRoot, 'data', 'spatial', 'evaluator'), { recursive: true });
+  fs.writeFileSync(path.join(qaRoot, 'data', 'spatial', 'evaluator', 'history.json'), `${JSON.stringify([{
+    run_id: 'evaluator_1',
+    evaluator_id: 'evaluator',
+    compared_at: freshTimestamp,
+    comparison_target: 'qa_scorecards',
+    verdict: 'better',
+    delta_score: 0.6,
+    progress_summary: 'QA scorecards improved after the latest run.',
+    changed_dimensions: ['scorecards'],
+    evaluation_confidence: 0.8,
+    cognition_mode: 'model_live',
+    model_name: 'mistral:latest',
+    score_pressure: 'upward',
+    progress_state: 'stable',
+    source_snapshot_ids: {
+      previous: 'eval_prev',
+      current: 'eval_curr',
+    },
+  }], null, 2)}\n`, 'utf8');
+  fs.writeFileSync(path.join(qaRoot, 'data', 'spatial', 'evaluator', 'state.json'), `${JSON.stringify({
+    updated_at: freshTimestamp,
+    latest_evaluation: {
+      run_id: 'evaluator_1',
+      evaluator_id: 'evaluator',
+      compared_at: freshTimestamp,
+      comparison_target: 'qa_scorecards',
+      verdict: 'better',
+      delta_score: 0.6,
+      progress_summary: 'QA scorecards improved after the latest run.',
+      changed_dimensions: ['scorecards'],
+      evaluation_confidence: 0.8,
+      cognition_mode: 'model_live',
+      model_name: 'mistral:latest',
+      score_pressure: 'upward',
+      progress_state: 'stable',
+      source_snapshot_ids: {
+        previous: 'eval_prev',
+        current: 'eval_curr',
+      },
+    },
+    latest_snapshot: {
+      snapshot_id: 'eval_curr',
+      captured_at: freshTimestamp,
+      comparison_target: 'qa_scorecards',
+      fingerprint: 'eval-fingerprint',
+      scorecard_count: 1,
+      counts: { pass: 1, warn: 0, stale: 0, fail: 0, missing: 0 },
+      aggregate_score: 3.8,
+      summary: 'Latest evaluator snapshot',
+      scorecards: [],
+    },
+    previous_snapshot: {
+      snapshot_id: 'eval_prev',
+      captured_at: staleTimestamp,
+      comparison_target: 'qa_scorecards',
+      fingerprint: 'eval-prev-fingerprint',
+      scorecard_count: 1,
+      counts: { pass: 0, warn: 1, stale: 0, fail: 0, missing: 0 },
+      aggregate_score: 2.6,
+      summary: 'Previous evaluator snapshot',
+      scorecards: [],
+    },
+    history_count: 1,
+  }, null, 2)}\n`, 'utf8');
+  fs.mkdirSync(path.join(qaRoot, 'data', 'spatial', 'agent-runs', 'context-manager'), { recursive: true });
+  fs.mkdirSync(path.join(qaRoot, 'data', 'spatial', 'agent-runs', 'planner'), { recursive: true });
+  fs.mkdirSync(path.join(qaRoot, 'data', 'spatial', 'agent-runs', 'executor'), { recursive: true });
+  fs.writeFileSync(path.join(qaRoot, 'data', 'spatial', 'agent-runs', 'context-manager', 'context_manager_1.json'), `${JSON.stringify({
+    id: 'context_manager_1',
+    createdAt: staleTimestamp,
+    completedAt: staleTimestamp,
+    status: 'completed',
+    usedFallback: false,
+  }, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(path.join(qaRoot, 'data', 'spatial', 'agent-runs', 'planner', 'planner_1.json'), `${JSON.stringify({
+    id: 'planner_1',
+    createdAt: staleTimestamp,
+    completedAt: staleTimestamp,
+    status: 'completed',
+    outcome: 'completed',
+    llmStatus: 'live',
+  }, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(path.join(qaRoot, 'data', 'spatial', 'agent-runs', 'executor', 'executor_1.json'), `${JSON.stringify({
+    id: 'executor_1',
+    createdAt: staleTimestamp,
+    completedAt: staleTimestamp,
+    status: 'completed',
+    usedFallback: true,
+  }, null, 2)}\n`, 'utf8');
+  fs.mkdirSync(path.join(qaRoot, 'data', 'spatial'), { recursive: true });
+  fs.writeFileSync(path.join(qaRoot, 'data', 'spatial', 'workspace.json'), `${JSON.stringify({
+    studio: {
+      agentWorkers: {
+        'context-manager': { backend: 'ollama', model: 'mistral:latest' },
+        planner: { backend: 'ollama', model: 'mistral:latest' },
+        executor: { backend: 'ollama', model: 'mistral:latest' },
+        evaluator: { backend: 'ollama', model: 'mistral:latest' },
+      },
+    },
+  }, null, 2)}\n`, 'utf8');
 
   const qaState = buildQAStatePayload(qaRoot);
   assert.equal(qaState.structuredReport.summary, 'All QA suites passed after stabilising the UI gate.');
@@ -1877,6 +1978,12 @@ export default async function runServerTests() {
   assert.ok(qaState.auditTrail.entries.some((entry) => entry.kind === 'structured-report'));
   assert.ok(qaState.auditTrail.entries.some((entry) => entry.kind === 'scorecard'));
   assert.ok(qaState.testRegistry.entries.some((entry) => entry.validityClass === 'stale_target'));
+  assert.equal(qaState.evaluator.latestEvaluation.verdict, 'better');
+  assert.equal(qaState.scorecards[0].evaluatorMovement.verdict, 'better');
+  assert.equal(qaState.scorecards[0].evaluatorMovement.cognitionMode, 'model_live');
+  assert.equal(Array.isArray(qaState.agentCognitionSummary.agents), true);
+  assert.equal(qaState.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'evaluator').actual_last_cognition_mode, 'model_live');
+  assert.equal(qaState.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'executor').actual_last_cognition_mode, 'deterministic_fallback');
 
   writeFailureHistory(qaRoot, {
     version: 'ace/failure-memory.v1',
@@ -2039,6 +2146,8 @@ export default async function runServerTests() {
   assert.equal(qaDeskPayload.ta.plannerCoverage.covered, true);
   assert.equal(qaDeskPayload.ta.qaLeadCoverage.covered, true);
   assert.ok(qaDeskPayload.qa.scorecards.every((card) => card.sourceTrace && card.sourceTrace.sourcePath));
+  assert.equal(qaDeskPayload.qa.evaluator.latestEvaluation.verdict, 'better');
+  assert.equal(Array.isArray(qaDeskPayload.qa.agentCognitionSummary.agents), true);
   assert.ok(qaDeskPayload.desk.panel);
   assert.ok(qaDeskPayload.desk.panel.responsibilities.includes('Review structured QA evidence and runtime scorecards from canonical sources.'));
   assert.ok(qaDeskPayload.desk.panel.hardRules.includes('No run, execute, or retry controls on the QA desk.'));

@@ -120,6 +120,13 @@ const {
   buildTruthKernelPayload,
 } = require('./truthKernelAdapter');
 const {
+  buildEvaluatorSnapshot,
+  maybeRunEvaluatorCycle,
+  readEvaluatorHistory,
+  readEvaluatorState,
+  readLatestEvaluation,
+} = require('./evaluatorAgent');
+const {
   createCanonicalTruthAccess,
 } = require('./canonicalTruthAccess');
 const {
@@ -180,6 +187,8 @@ const {
   createDefaultAgentWorkersState,
   evaluatePlannerEligibility,
   getAgentWorkerConfig,
+  listContextManagerRuns,
+  listExecutorRuns,
   makeExecutorRunId,
   listPlannerRuns,
   makeContextManagerRunId,
@@ -457,6 +466,7 @@ const {
 const {
   AGENTS_ROOT,
   normalizeAgentId,
+  resolveAgentDefinition,
 } = require('./agentRegistry');
 
 const app = express();
@@ -5911,7 +5921,263 @@ function summarizeQaScorecardRollup({
   return `${label}: ${rollupStatus}. ${reason}`;
 }
 
-function buildStructuredQAScorecardBundle(qaReport = null) {
+function normalizeEvaluatorVerdict(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'better' || normalized === 'worse' || normalized === 'no_change') return normalized;
+  return 'no_change';
+}
+
+function formatEvaluatorDeltaScore(value = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '0';
+  return numeric > 0 ? `+${numeric.toFixed(2)}` : numeric.toFixed(2);
+}
+
+function buildEvaluatorImpactIndex(latestEvaluation = null) {
+  const index = new Map();
+  (Array.isArray(latestEvaluation?.scorecard_impacts) ? latestEvaluation.scorecard_impacts : []).forEach((impact) => {
+    const cardId = String(impact?.card_id || '').trim();
+    if (!cardId) return;
+    index.set(cardId, {
+      cardId,
+      verdict: normalizeEvaluatorVerdict(impact?.verdict),
+      deltaScore: Number.isFinite(Number(impact?.delta_score)) ? Number(impact.delta_score) : 0,
+      progressSummary: String(impact?.progress_summary || '').trim() || 'No evaluator movement recorded for this scorecard.',
+      scorePressure: String(impact?.score_pressure || '').trim() || 'flat',
+      desk: String(impact?.desk || '').trim() || null,
+      testId: String(impact?.test_id || '').trim() || null,
+    });
+  });
+  return index;
+}
+
+function buildEvaluatorMovementSummary(latestEvaluation = null, evaluatorHistory = []) {
+  if (!latestEvaluation || typeof latestEvaluation !== 'object') return null;
+  const history = Array.isArray(evaluatorHistory) ? evaluatorHistory.filter(Boolean) : [];
+  const liveModelCount = history.filter((entry) => entry?.cognition_mode === 'model_live').length;
+  const fallbackCount = history.filter((entry) => entry?.cognition_mode === 'deterministic_fallback').length;
+  return {
+    verdict: normalizeEvaluatorVerdict(latestEvaluation.verdict),
+    deltaScore: Number.isFinite(Number(latestEvaluation.delta_score)) ? Number(latestEvaluation.delta_score) : 0,
+    progressSummary: String(latestEvaluation.progress_summary || '').trim() || 'Evaluator has not published movement yet.',
+    scorePressure: String(latestEvaluation.score_pressure || '').trim() || 'flat',
+    progressState: String(latestEvaluation.progress_state || '').trim() || 'stalled',
+    evaluationConfidence: Number.isFinite(Number(latestEvaluation.evaluation_confidence))
+      ? Number(latestEvaluation.evaluation_confidence)
+      : null,
+    cognitionMode: String(latestEvaluation.cognition_mode || '').trim() || null,
+    modelName: String(latestEvaluation.model_name || '').trim() || null,
+    comparedAt: String(latestEvaluation.compared_at || '').trim() || null,
+    sourceSnapshotIds: latestEvaluation.source_snapshot_ids && typeof latestEvaluation.source_snapshot_ids === 'object'
+      ? {
+          previous: String(latestEvaluation.source_snapshot_ids.previous || '').trim() || null,
+          current: String(latestEvaluation.source_snapshot_ids.current || '').trim() || null,
+        }
+      : { previous: null, current: null },
+    historyCount: history.length,
+    liveModelCount,
+    fallbackCount,
+  };
+}
+
+function decorateScorecardWithEvaluatorMovement(card, {
+  latestEvaluation = null,
+  evaluatorHistory = [],
+  impactIndex = new Map(),
+} = {}) {
+  const impact = impactIndex.get(String(card?.id || '').trim()) || null;
+  const movement = buildEvaluatorMovementSummary(latestEvaluation, evaluatorHistory);
+  return {
+    ...card,
+    evaluatorMovement: {
+      verdict: impact?.verdict || movement?.verdict || 'no_change',
+      deltaScore: impact?.deltaScore ?? movement?.deltaScore ?? 0,
+      progressSummary: impact?.progressSummary || movement?.progressSummary || 'Evaluator has not published movement for this scorecard.',
+      scorePressure: impact?.scorePressure || movement?.scorePressure || 'flat',
+      comparedAt: movement?.comparedAt || null,
+      evaluationConfidence: movement?.evaluationConfidence ?? null,
+      cognitionMode: movement?.cognitionMode || null,
+      modelName: movement?.modelName || null,
+      sourceSnapshotIds: movement?.sourceSnapshotIds || { previous: null, current: null },
+    },
+    evaluatorVerdict: impact?.verdict || movement?.verdict || 'no_change',
+    evaluatorDeltaScore: impact?.deltaScore ?? movement?.deltaScore ?? 0,
+    evaluatorProgressSummary: impact?.progressSummary || movement?.progressSummary || null,
+    evaluatorScorePressure: impact?.scorePressure || movement?.scorePressure || 'flat',
+  };
+}
+
+function fallbackManifestForAgent(agentId) {
+  if (agentId === 'context-manager') {
+    return {
+      id: 'context-manager',
+      backend: 'ollama',
+      runtime: 'ollama-json',
+      model: 'mistral:latest',
+      host: DEFAULT_OLLAMA_HOST,
+      timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
+    };
+  }
+  if (agentId === 'planner') {
+    return {
+      id: 'planner',
+      backend: 'ollama',
+      runtime: 'ollama-json',
+      model: 'mistral:latest',
+      host: DEFAULT_OLLAMA_HOST,
+      timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
+    };
+  }
+  if (agentId === 'executor') {
+    return {
+      id: 'executor',
+      backend: 'ollama',
+      runtime: 'ollama-json',
+      model: 'mistral:latest',
+      host: DEFAULT_OLLAMA_HOST,
+      timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
+    };
+  }
+  if (agentId === 'evaluator') {
+    return {
+      id: 'evaluator',
+      backend: 'ollama',
+      runtime: 'ollama-json',
+      model: 'mistral:latest',
+      host: DEFAULT_OLLAMA_HOST,
+      timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
+    };
+  }
+  return {
+    id: agentId,
+  };
+}
+
+function resolveAssignedAgentIntendedCognition(rootPath, workspace, agentId) {
+  const workers = normalizeAgentWorkersState(workspace?.studio?.agentWorkers || {});
+  const worker = workers?.[agentId] || workspace?.studio?.agentWorkers?.[agentId] || null;
+  const definition = resolveAgentDefinition(rootPath, agentId, {
+    fallbackManifest: fallbackManifestForAgent(agentId),
+    fallbackPrompt: '',
+  });
+  const backend = String(worker?.backend || definition?.manifest?.backend || '').trim() || null;
+  const runtime = String(definition?.manifest?.runtime || '').trim() || null;
+  const modelName = String(worker?.model || definition?.manifest?.model || '').trim() || null;
+  const intendedCognitionMode = backend === 'ollama' || String(runtime || '').toLowerCase().includes('ollama')
+    ? 'model_live'
+    : 'deterministic_fallback';
+  return {
+    backend,
+    runtime,
+    modelName,
+    intendedCognitionMode,
+  };
+}
+
+function deriveRunCognitionMode(runSummary = null) {
+  if (!runSummary || typeof runSummary !== 'object') return null;
+  if (runSummary.cognition_mode === 'model_live' || runSummary.cognitionMode === 'model_live') return 'model_live';
+  if (runSummary.cognition_mode === 'deterministic_fallback' || runSummary.cognitionMode === 'deterministic_fallback') {
+    return 'deterministic_fallback';
+  }
+  if (Object.prototype.hasOwnProperty.call(runSummary, 'usedFallback')) {
+    return runSummary.usedFallback ? 'deterministic_fallback' : 'model_live';
+  }
+  if (String(runSummary.llmStatus || '').trim().toLowerCase() === 'live') return 'model_live';
+  if (runSummary.llmStatus) return 'deterministic_fallback';
+  return null;
+}
+
+function summarizeAssignedAgentCognition({
+  agentId,
+  label,
+  intended,
+  latestRun = null,
+  runs = [],
+  actualMode = null,
+  comparedAt = null,
+} = {}) {
+  const resolvedRuns = Array.isArray(runs) ? runs.filter(Boolean) : [];
+  const actualLastCognitionMode = actualMode || deriveRunCognitionMode(latestRun);
+  const liveRun = resolvedRuns.find((run) => deriveRunCognitionMode(run) === 'model_live') || null;
+  const fallbackRun = resolvedRuns.find((run) => deriveRunCognitionMode(run) === 'deterministic_fallback') || null;
+  const fallbackCount = resolvedRuns.filter((run) => deriveRunCognitionMode(run) === 'deterministic_fallback').length;
+  return {
+    agent_id: agentId,
+    label,
+    intended_cognition_mode: intended.intendedCognitionMode,
+    actual_last_cognition_mode: actualLastCognitionMode,
+    last_live_model_call_at: liveRun
+      ? (liveRun.compared_at || liveRun.comparedAt || liveRun.completedAt || liveRun.createdAt || null)
+      : null,
+    fallback_count: fallbackCount,
+    last_fallback_at: fallbackRun
+      ? (fallbackRun.compared_at || fallbackRun.comparedAt || fallbackRun.completedAt || fallbackRun.createdAt || null)
+      : null,
+    last_activity_at: comparedAt || latestRun?.compared_at || latestRun?.comparedAt || latestRun?.completedAt || latestRun?.createdAt || null,
+    backend: intended.backend,
+    runtime: intended.runtime,
+    model_name: intended.modelName,
+    matches_intended: actualLastCognitionMode
+      ? actualLastCognitionMode === intended.intendedCognitionMode
+      : null,
+  };
+}
+
+function buildAssignedAgentCognitionSummary({
+  rootPath,
+  workspace,
+  latestEvaluation = null,
+  evaluatorHistory = [],
+} = {}) {
+  const contextRuns = listContextManagerRuns(rootPath).map((run) => summarizeContextManagerRun(run)).filter(Boolean);
+  const plannerRuns = listPlannerRuns(rootPath).map((run) => summarizePlannerRun(run)).filter(Boolean);
+  const executorRuns = listExecutorRuns(rootPath).map((run) => summarizeExecutorRun(run)).filter(Boolean);
+  const evaluatorRuns = (Array.isArray(evaluatorHistory) ? evaluatorHistory : []).filter(Boolean);
+  const agents = [
+    summarizeAssignedAgentCognition({
+      agentId: 'context-manager',
+      label: 'Context Manager',
+      intended: resolveAssignedAgentIntendedCognition(rootPath, workspace, 'context-manager'),
+      latestRun: contextRuns[0] || null,
+      runs: contextRuns,
+    }),
+    summarizeAssignedAgentCognition({
+      agentId: 'planner',
+      label: 'Planner',
+      intended: resolveAssignedAgentIntendedCognition(rootPath, workspace, 'planner'),
+      latestRun: plannerRuns[0] || null,
+      runs: plannerRuns,
+    }),
+    summarizeAssignedAgentCognition({
+      agentId: 'executor',
+      label: 'Executor',
+      intended: resolveAssignedAgentIntendedCognition(rootPath, workspace, 'executor'),
+      latestRun: executorRuns[0] || null,
+      runs: executorRuns,
+    }),
+    summarizeAssignedAgentCognition({
+      agentId: 'evaluator',
+      label: 'Evaluator',
+      intended: resolveAssignedAgentIntendedCognition(rootPath, workspace, 'evaluator'),
+      latestRun: latestEvaluation,
+      runs: evaluatorRuns,
+      actualMode: String(latestEvaluation?.cognition_mode || '').trim() || null,
+      comparedAt: latestEvaluation?.compared_at || null,
+    }),
+  ].filter(Boolean);
+  const liveCount = agents.filter((entry) => entry.actual_last_cognition_mode === 'model_live').length;
+  const fallbackObservedCount = agents.filter((entry) => Number(entry.fallback_count || 0) > 0).length;
+  return {
+    generated_at: nowIso(),
+    summary: `${liveCount} live cognition path${liveCount === 1 ? '' : 's'} visible | ${fallbackObservedCount} agent${fallbackObservedCount === 1 ? '' : 's'} observed with fallback history`,
+    agents,
+  };
+}
+
+function buildStructuredQAScorecardBundle(qaReport = null, options = {}) {
+  const latestEvaluation = options?.evaluator?.latestEvaluation || options?.latestEvaluation || null;
+  const evaluatorHistory = options?.evaluator?.history || options?.evaluatorHistory || [];
   const definitions = normalizeQaScorecardDefinitions(qaReport?.metricDefinitions || null);
   const reportTrace = qaReport?.sourceTrace || null;
   const reportFreshness = normalizeQaScorecardFreshness(
@@ -6052,16 +6318,23 @@ function buildStructuredQAScorecardBundle(qaReport = null) {
     return String(left.id || '').localeCompare(String(right.id || ''));
   });
 
+  const evaluatorImpactIndex = buildEvaluatorImpactIndex(latestEvaluation);
+  const decoratedCards = cards.map((card) => decorateScorecardWithEvaluatorMovement(card, {
+    latestEvaluation,
+    evaluatorHistory,
+    impactIndex: evaluatorImpactIndex,
+  }));
   const counts = {
-    pass: cards.filter((card) => card.rollupStatus === 'pass').length,
-    warn: cards.filter((card) => card.rollupStatus === 'warn').length,
-    stale: cards.filter((card) => card.rollupStatus === 'stale').length,
-    fail: cards.filter((card) => card.rollupStatus === 'fail').length,
-    missing: cards.filter((card) => card.rollupStatus === 'missing').length,
+    pass: decoratedCards.filter((card) => card.rollupStatus === 'pass').length,
+    warn: decoratedCards.filter((card) => card.rollupStatus === 'warn').length,
+    stale: decoratedCards.filter((card) => card.rollupStatus === 'stale').length,
+    fail: decoratedCards.filter((card) => card.rollupStatus === 'fail').length,
+    missing: decoratedCards.filter((card) => card.rollupStatus === 'missing').length,
   };
+  const evaluatorMovement = buildEvaluatorMovementSummary(latestEvaluation, evaluatorHistory);
   const status = !qaReport
     ? 'missing'
-    : cards.length === 0
+    : decoratedCards.length === 0
       ? 'missing'
       : counts.fail > 0
         ? 'fail'
@@ -6070,22 +6343,23 @@ function buildStructuredQAScorecardBundle(qaReport = null) {
           : counts.warn > 0 || counts.missing > 0
             ? 'warn'
             : 'pass';
-  const deskCount = new Set(cards.map((card) => String(card.desk || '').trim()).filter(Boolean)).size;
+  const deskCount = new Set(decoratedCards.map((card) => String(card.desk || '').trim()).filter(Boolean)).size;
   const summary = !qaReport
     ? 'Structured QA report is missing, so no scorecards can be derived.'
-    : !cards.length
+    : !decoratedCards.length
       ? 'Structured QA report did not include any quality cards.'
-      : `${cards.length} scorecards | ${counts.pass} pass | ${counts.warn} warn | ${counts.stale} stale | ${counts.fail} fail | ${counts.missing} missing`;
+      : `${decoratedCards.length} scorecards | ${counts.pass} pass | ${counts.warn} warn | ${counts.stale} stale | ${counts.fail} fail | ${counts.missing} missing${evaluatorMovement ? ` | evaluator ${evaluatorMovement.verdict} ${formatEvaluatorDeltaScore(evaluatorMovement.deltaScore)}` : ''}`;
   return {
     classification: 'derived_projection',
     sourceSeam: 'structured_qa_report',
     status,
     summary,
     deskCount,
-    testCount: cards.length,
+    testCount: decoratedCards.length,
     definitions,
-    cards,
+    cards: decoratedCards,
     counts,
+    evaluatorMovement,
   };
 }
 
@@ -6528,6 +6802,7 @@ function resolvePersistedExternalValidationSnapshot(qaLeadOutput = null) {
 }
 
 function buildQAStatePayload(rootPath = ROOT, options = {}) {
+  const workspace = normalizeSpatialWorkspaceShape(options.workspace || readSpatialWorkspace(rootPath));
   const structuredReport = readStructuredQAReport(rootPath, 'latest');
   const interactiveRuns = listInteractiveBrowserRuns(rootPath);
   const structuredSummary = buildStructuredQASummary(structuredReport);
@@ -6623,8 +6898,35 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
     } : null;
   }).filter(Boolean);
   const localGate = buildLocalGatePayload(rootPath);
-  const qaScorecardBundle = buildStructuredQAScorecardBundle(structuredReportWithTrace);
+  const evaluatorState = readEvaluatorState(rootPath);
+  const latestEvaluation = evaluatorState?.state?.latest_evaluation || null;
+  const evaluatorHistory = Array.isArray(evaluatorState?.history) ? evaluatorState.history.slice(0, 12) : [];
+  const baseScorecardBundle = buildStructuredQAScorecardBundle(structuredReportWithTrace);
+  const qaScorecardBundle = buildStructuredQAScorecardBundle(structuredReportWithTrace, {
+    evaluator: {
+      latestEvaluation,
+      history: evaluatorHistory,
+    },
+  });
   const qaScorecards = qaScorecardBundle.cards;
+  const evaluator = {
+    latestEvaluation,
+    latestSnapshot: evaluatorState?.state?.latest_snapshot || buildEvaluatorSnapshot({
+      scorecards: baseScorecardBundle.cards,
+      comparisonTarget: 'qa_scorecards',
+      capturedAt: structuredSummary.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+    }),
+    previousSnapshot: evaluatorState?.state?.previous_snapshot || null,
+    history: evaluatorHistory,
+    historyCount: Number(evaluatorState?.state?.history_count || evaluatorHistory.length) || 0,
+    movement: qaScorecardBundle.evaluatorMovement || null,
+  };
+  const agentCognitionSummary = buildAssignedAgentCognitionSummary({
+    rootPath,
+    workspace,
+    latestEvaluation,
+    evaluatorHistory,
+  });
   const evidenceAudit = buildQaEvidenceOverview({
     structuredReport: structuredReportWithTrace,
     structuredSummary,
@@ -6713,6 +7015,8 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
     qaLeadRuns: qaLeadOutput.recentRuns,
     qaLeadLatestRun: qaLeadOutput.latestRun,
     qaLiveCycle,
+    evaluator,
+    agentCognitionSummary,
     outputFeedLoaded: true,
     outputFeed: outputFeed.items,
     qaCanaries,
@@ -7351,7 +7655,7 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
   };
   const modules = listModuleManifests(rootPath);
   const tasks = collectDeskTasks(workspace, deskId, { rootPath });
-  const resolvedQAState = deskId === QA_LEAD_DESK_ID ? (qaState || buildQAStatePayload()) : null;
+  const resolvedQAState = deskId === QA_LEAD_DESK_ID ? (qaState || buildQAStatePayload(rootPath, { workspace })) : null;
   const structuredReport = resolvedQAState?.structuredReport
     || ((deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect')
       ? readStructuredQAReport(rootPath, 'latest')
@@ -7371,7 +7675,12 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
   const qaCanaries = deskId === QA_LEAD_DESK_ID
     ? (resolvedQAState?.qaCanaries || runQaLaneCanarySuite(rootPath))
     : null;
-  const derivedQaScorecardBundle = buildStructuredQAScorecardBundle(structuredReport);
+  const derivedQaScorecardBundle = buildStructuredQAScorecardBundle(structuredReport, {
+    evaluator: {
+      latestEvaluation: resolvedQAState?.evaluator?.latestEvaluation || readLatestEvaluation(rootPath),
+      history: resolvedQAState?.evaluator?.history || readEvaluatorHistory(rootPath, 12),
+    },
+  });
   const qaScorecardBundle = deskId === QA_LEAD_DESK_ID && resolvedQAState
     ? {
         ...derivedQaScorecardBundle,
@@ -7414,10 +7723,11 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
     .map((agentId) => {
       const worker = workspace?.studio?.agentWorkers?.[agentId] || null;
       const currentTask = tasks.find((task) => task.lifecycle === 'in_progress') || tasks[0] || null;
+      const intended = resolveAssignedAgentIntendedCognition(rootPath, workspace, agentId);
       return {
         id: agentId,
-        model: worker?.model || null,
-        backend: worker?.backend || null,
+        model: worker?.model || intended.modelName || null,
+        backend: worker?.backend || intended.backend || null,
         status: worker?.status || desk.localState || 'idle',
         currentTask: currentTask ? {
           id: currentTask.id,
@@ -7454,6 +7764,8 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
     testRegistrySummary: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.testRegistrySummary || testRegistry.summary) : null,
     openInvestigations: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.openInvestigations || []) : [],
     repairLoop: deskId === QA_LEAD_DESK_ID ? repairLoop : null,
+    evaluator: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.evaluator || null) : null,
+    agentCognitionSummary: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.agentCognitionSummary || null) : null,
     assessments: deskProperties.manualTests,
     ctoOversight,
     context: {
@@ -7559,6 +7871,16 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
           fallbackUsed: !resolvedQAState?.qaMcpLiveStatus,
           derivation: 'heuristic_summary',
         },
+        evaluator: {
+          classification: 'projection',
+          fallbackUsed: !resolvedQAState?.evaluator?.latestEvaluation,
+          derivation: 'evaluator_projection',
+        },
+        agentCognitionSummary: {
+          classification: 'projection',
+          fallbackUsed: !(resolvedQAState?.agentCognitionSummary?.agents || []).length,
+          derivation: 'agent_cognition_projection',
+        },
         investigations: {
           classification: 'projection',
           fallbackUsed: !researchState?.investigations && Array.isArray(resolvedQAState?.openInvestigations),
@@ -7647,6 +7969,20 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
           researchState,
           repairLoop,
           qaCanaries,
+          evaluator: resolvedQAState?.evaluator || {
+            latestEvaluation: readLatestEvaluation(rootPath),
+            history: readEvaluatorHistory(rootPath, 12),
+            historyCount: Number(readEvaluatorState(rootPath)?.state?.history_count || 0) || 0,
+            latestSnapshot: readEvaluatorState(rootPath)?.state?.latest_snapshot || null,
+            previousSnapshot: readEvaluatorState(rootPath)?.state?.previous_snapshot || null,
+            movement: derivedQaScorecardBundle.evaluatorMovement || null,
+          },
+          agentCognitionSummary: resolvedQAState?.agentCognitionSummary || buildAssignedAgentCognitionSummary({
+            rootPath,
+            workspace,
+            latestEvaluation: resolvedQAState?.evaluator?.latestEvaluation || readLatestEvaluation(rootPath),
+            evaluatorHistory: resolvedQAState?.evaluator?.history || readEvaluatorHistory(rootPath, 12),
+          }),
         }
       : undefined,
     sources: {
@@ -13442,31 +13778,38 @@ app.get('/api/runs', (req, res) => {
   app.post('/api/qa/run', async (req, res) => {
     try {
       const body = req.body || {};
-    const report = await runStructuredQA({
-      rootPath: ROOT,
-      existingApp: app,
-      allowedPaths: body.allowedPaths,
-      fixture: body.fixture,
-    });
-    writeStructuredQAReport(ROOT, report, 'latest');
-    res.json({
-      ...report,
-      runtime: await refreshSpatialRuntime({ persist: true }),
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'fail',
-      summary: 'qa lead crashed',
-      failures: [
-        {
-          desk: 'qa',
-          test: 'suite_boot',
-          reason: String(error.message || error),
-        },
-      ],
-    });
-  }
-});
+      const report = await runStructuredQA({
+        rootPath: ROOT,
+        existingApp: app,
+        allowedPaths: body.allowedPaths,
+        fixture: body.fixture,
+      });
+      writeStructuredQAReport(ROOT, report, 'latest');
+      const evaluatorCycle = await maybeRunEvaluatorCycle({
+        rootPath: ROOT,
+        scorecards: buildStructuredQAScorecardBundle(report).cards,
+        comparisonTarget: 'qa_scorecards',
+        contextSummary: report.summary || 'Structured QA report completed.',
+      });
+      res.json({
+        ...report,
+        evaluator: evaluatorCycle?.evaluation || null,
+        runtime: await refreshSpatialRuntime({ persist: true }),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'fail',
+        summary: 'qa lead crashed',
+        failures: [
+          {
+            desk: 'qa',
+            test: 'suite_boot',
+            reason: String(error.message || error),
+          },
+        ],
+      });
+    }
+  });
 
 async function buildQaMcpPreflightResponse({
   rootPath = ROOT,

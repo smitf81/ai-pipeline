@@ -773,14 +773,16 @@ export default async function runStudioDataTests() {
   const plannerSnapshot = snapshots.find((agent) => agent.id === 'planner');
   const executorSnapshot = snapshots.find((agent) => agent.id === 'executor');
   const qaLeadSnapshot = snapshots.find((agent) => agent.id === 'qa-lead');
+  const evaluatorSnapshot = snapshots.find((agent) => agent.id === 'evaluator');
   const ctoSnapshot = snapshots.find((agent) => agent.id === 'cto-architect');
 
-  assert.equal(snapshots.length, 10);
+  assert.equal(snapshots.length, 11);
   assert.ok(contextSnapshot);
   assert.ok(archivistSnapshot);
   assert.ok(plannerSnapshot);
   assert.ok(executorSnapshot);
   assert.ok(qaLeadSnapshot);
+  assert.ok(evaluatorSnapshot);
   assert.ok(ctoSnapshot);
   assert.ok(plannerSnapshot.agentContext);
   assert.equal(plannerSnapshot.agentContext.desk.label, 'Planner');
@@ -811,11 +813,11 @@ export default async function runStudioDataTests() {
   assert.equal(executorSnapshot.deskSnapshot.taskEconomy.rewardState, plannerSnapshot.deskSnapshot.taskEconomy.rewardState);
   assert.deepEqual(
     qaLeadSnapshot.deskSnapshot.sections.map((section) => section.label),
-    ['QA Health Overview', 'QA MCP Proof of Life', 'QA Live Operator', 'QA Output Feed', 'Lane Canaries', 'Freshness & Hygiene', 'Repair Lanes', 'Scorecards', 'Investigations', 'Advisory / Research'],
+    ['QA Health Overview', 'QA MCP Proof of Life', 'QA Live Operator', 'QA Output Feed', 'Lane Canaries', 'Freshness & Hygiene', 'Repair Lanes', 'Evaluator Movement', 'Assigned Agent Liveness', 'Scorecards', 'Investigations', 'Advisory / Research'],
   );
   assert.deepEqual(
     qaLeadSnapshot.deskSnapshot.sections.map((section) => section.kind),
-    ['qa-overview', 'qa-mcp-live', 'qa-operator', 'qa-output-feed', 'qa-canaries', 'qa-hygiene', 'qa-repair-lanes', 'qa-scorecards', 'qa-investigations', 'qa-research'],
+    ['qa-overview', 'qa-mcp-live', 'qa-operator', 'qa-output-feed', 'qa-canaries', 'qa-hygiene', 'qa-repair-lanes', 'qa-evaluator', 'qa-agent-cognition', 'qa-scorecards', 'qa-investigations', 'qa-research'],
   );
   const qaOverviewSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-overview');
   assert.ok(qaOverviewSection);
@@ -857,6 +859,12 @@ export default async function runStudioDataTests() {
   assert.equal(qaRepairLaneSection.lanes[0].outcome_status, 'policy_blocked');
   assert.match(qaRepairLaneSection.lanes[0].latest_policy_block_reason, /Auto-apply is not permitted/);
   assert.equal(qaRepairLaneSection.lanes[1].outcome_status, 'success');
+  const qaEvaluatorSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-evaluator');
+  assert.ok(qaEvaluatorSection);
+  assert.equal(qaEvaluatorSection.kind, 'qa-evaluator');
+  const qaAgentCognitionSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-agent-cognition');
+  assert.ok(qaAgentCognitionSection);
+  assert.equal(qaAgentCognitionSection.kind, 'qa-agent-cognition');
   const qaInvestigationsSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-investigations');
   assert.ok(qaInvestigationsSection);
   assert.equal(qaInvestigationsSection.kind, 'qa-investigations');

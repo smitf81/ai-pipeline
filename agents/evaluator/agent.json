@@ -1,0 +1,22 @@
+{
+  "autoRun": false,
+  "backend": "ollama",
+  "deskId": "qa-lead",
+  "host": "http://127.0.0.1:11434",
+  "id": "evaluator",
+  "inputs": [
+    "qa.scorecards.previous_snapshot",
+    "qa.scorecards.current_snapshot",
+    "qa.context_summary"
+  ],
+  "model": "mistral:latest",
+  "name": "Evaluator",
+  "outputs": [
+    "data/spatial/evaluator/runs/*.json",
+    "data/spatial/evaluator/history.json",
+    "data/spatial/evaluator/state.json"
+  ],
+  "runtime": "ollama-json",
+  "timeoutMs": 30000,
+  "writesCanonicalBrain": false
+}
