@@ -1,0 +1,114 @@
+{
+  "id": "qa_1775977323160_od6h5c",
+  "scenario": "studio-smoke",
+  "mode": "observation",
+  "trigger": "qa_lead_cycle",
+  "prompt": null,
+  "baseUrl": "http://127.0.0.1:3000",
+  "status": "failed",
+  "verdict": "failed",
+  "createdAt": "2026-04-12T07:02:03.160Z",
+  "finishedAt": "2026-04-12T07:03:04.413Z",
+  "linked": {
+    "qaLeadRunId": "qa_lead_1775977322942_ldh6fl"
+  },
+  "browser": {
+    "executablePath": null,
+    "engine": "chromium"
+  },
+  "browser_status": "fail",
+  "browser_failure_stage": "run",
+  "browser_failure_code": "run_timeout",
+  "browser_failure_summary": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "browser_runtime_target": {
+    "attempted": [
+      "chromium"
+    ],
+    "used": "chromium",
+    "fallbackUsed": false
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-12T07:02:03.161Z",
+      "finishedAt": "2026-04-12T07:02:03.190Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-12T07:02:03.191Z",
+      "finishedAt": "2026-04-12T07:02:16.422Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "failed",
+      "verdict": "failed",
+      "startedAt": "2026-04-12T07:02:16.424Z",
+      "finishedAt": "2026-04-12T07:03:04.413Z",
+      "error": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    }
+  ],
+  "findings": [],
+  "artifacts": {
+    "screenshots": [],
+    "domSnapshot": null,
+    "consoleLog": null,
+    "networkSummary": null,
+    "runtimeSnapshot": null,
+    "layoutFindings": null
+  },
+  "console": [],
+  "network": [],
+  "error": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m\n"
+}

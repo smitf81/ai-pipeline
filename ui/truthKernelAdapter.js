@@ -84,6 +84,80 @@ function normalizeSupportingEvidence(partial = {}) {
   };
 }
 
+function resolveHealthIntegrity(node = {}) {
+  if (Number.isFinite(Number(node.healthScore))) {
+    const numeric = Number(node.healthScore);
+    return numeric > 1 ? clamp01(numeric / 100, 0.5) : clamp01(numeric, 0.5);
+  }
+  if (node.status === 'healthy') return 0.92;
+  if (node.status === 'degraded') return 0.46;
+  if (node.status === 'blocked') return 0.12;
+  if (node.status === 'orphaned') return 0.28;
+  return 0.62;
+}
+
+function resolveActivityLevel(node = {}, nowMs = Date.now()) {
+  const timestamp = Number(node.timestamp || 0);
+  const freshness = timestamp > 0
+    ? clamp01(1 - ((nowMs - timestamp) / (60 * 60 * 1000)), 0)
+    : 0.08;
+  const sourceBoost = ['context-manager-run', 'qa-run', 'ace-evaluator', 'qa-repair-job'].includes(node.sourceType)
+    ? 0.18
+    : 0.05;
+  const cognitionBoost = node.evaluatorCognitionMode === 'model_live' ? 0.12 : 0;
+  const pendingBoost = String(node.truthApplicationStatus || '').includes('pending') ? 0.14 : 0;
+  const blockedPenalty = node.status === 'blocked' ? 0.12 : 0;
+  return clamp01(freshness * 0.62 + sourceBoost + cognitionBoost + pendingBoost - blockedPenalty, 0.12);
+}
+
+function resolveDecayLevel(node = {}, nowMs = Date.now()) {
+  const timestamp = Number(node.timestamp || 0);
+  const ageRatio = timestamp > 0
+    ? clamp01((nowMs - timestamp) / (48 * 60 * 60 * 1000), 0.18)
+    : 0.38;
+  const orphanPenalty = node.status === 'orphaned' ? 0.18 : 0;
+  const stalePenalty = node.sourceType === 'ace-evaluator' ? 0.04 : 0;
+  return clamp01(ageRatio + orphanPenalty + stalePenalty, 0.24);
+}
+
+function resolveInstability(node = {}) {
+  if (node.consistencyStatus === 'inconsistent') return 0.68;
+  if (node.status === 'blocked') return 0.56;
+  if (node.status === 'degraded') return 0.34;
+  if (node.evaluatorProgressState === 'regressive') return 0.44;
+  return 0.08;
+}
+
+function buildNodeVisualState(node = {}, nowMs = Date.now()) {
+  const healthIntegrity = resolveHealthIntegrity(node);
+  const healthDegradation = clamp01(1 - healthIntegrity, 0.5);
+  const activityLevel = resolveActivityLevel(node, nowMs);
+  const decayLevel = resolveDecayLevel(node, nowMs);
+  const confidence = clamp01(node.confidence, 0.5);
+  const vividness = clamp01(0.3 + (confidence * 0.7), 0.65);
+  const instability = resolveInstability(node);
+  const alpha = Number((0.18 + ((1 - decayLevel) * 0.76)).toFixed(3));
+  const red = Math.round(healthDegradation * 255);
+  const green = Math.round(healthIntegrity * 255);
+  const blue = Math.round(activityLevel * 255);
+  return {
+    rgba: `rgba(${red}, ${green}, ${blue}, ${alpha})`,
+    channels: {
+      r: red,
+      g: green,
+      b: blue,
+      a: alpha,
+    },
+    health_integrity: Number(healthIntegrity.toFixed(2)),
+    health_degradation: Number(healthDegradation.toFixed(2)),
+    activity_level: Number(activityLevel.toFixed(2)),
+    decay_level: Number(decayLevel.toFixed(2)),
+    confidence: Number(confidence.toFixed(2)),
+    vividness: Number(vividness.toFixed(2)),
+    instability: Number(instability.toFixed(2)),
+  };
+}
+
 function makeNode(partial = {}) {
   const kind = KINDS.has(partial.kind) ? partial.kind : 'artifact';
   const hasExplicitStatus = Object.prototype.hasOwnProperty.call(partial, 'status') && partial.status !== undefined && partial.status !== null && String(partial.status).trim() !== '';
@@ -158,14 +232,20 @@ function shouldPreserveStandaloneNodeStatus(node = {}) {
 }
 
 function finalizeNodes(registry) {
+  const nowMs = Date.now();
   return [...registry.values()]
     .map((node) => {
       const relationshipCount = node.parents.length + node.children.length;
       const preserveStandaloneStatus = shouldPreserveStandaloneNodeStatus(node);
+      const resolvedStatus = relationshipCount === 0 && node.status !== 'blocked' && !preserveStandaloneStatus ? 'orphaned' : node.status;
+      const visual = buildNodeVisualState({ ...node, status: resolvedStatus }, nowMs);
       return {
         ...node,
-        status: relationshipCount === 0 && node.status !== 'blocked' && !preserveStandaloneStatus ? 'orphaned' : node.status,
+        status: resolvedStatus,
         statusOrigin: relationshipCount === 0 && node.status !== 'blocked' && !preserveStandaloneStatus ? 'derived' : node.statusOrigin,
+        visual,
+        rgba: visual.rgba,
+        activity_level: visual.activity_level,
       };
     })
     .sort((left, right) => {
@@ -627,7 +707,7 @@ function collectEvaluatorNodes(registry, rootPath) {
     addNode(registry, {
       id: evaluationId,
       kind: 'artifact',
-      label: entry?.progress_summary || `${entry?.comparison_target || 'qa_scorecards'} evaluator`,
+      label: entry?.progress_summary || `${entry?.comparison_target || 'system_runtime'} evaluator`,
       summary: entry?.progress_summary || null,
       what: 'Evaluator comparison artefact',
       why: 'Tracks bounded movement over time without replacing canonical QA truth.',

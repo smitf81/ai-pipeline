@@ -3,26 +3,27 @@
 Deterministic failure tracking for repeated recognisable failures. Candidate fixes are review-only.
 
 Version: ace/failure-memory.v1
-Updated: 2026-04-11T14:37:00.182Z
+Updated: 2026-04-12T07:22:29.754Z
 
 ### dirty_repo_blocked
-- Count: 27990
+- Count: 31668
 - Stage: planner
 - Agent: planner (ace/agent-attribution.v0)
 - First seen: 2026-04-09T18:59:24.976Z
-- Last seen: 2026-04-11T14:37:00.182Z
-- Failure class: boot_critical
-- Last error timestamp: 2026-04-11T14:37:00.182Z
-- Last error: Repository has uncommitted tracked changes.
-M brain/context/autonomy_fix_tasks.json
+- Last seen: 2026-04-12T07:22:29.754Z
+- Failure class: panel_degraded
+- Last error timestamp: 2026-04-12T07:22:29.754Z
+- Last error: blocked | Repository has uncommitted tracked changes.
+M agents/evaluator/prompt.md
+ M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/safe_mode/boot-recovery-daemon.json
  M brain/emergence/slices.json
  M brain/emergence/slices.md
+ M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/qa/investigations.json
  M data/spatial/qa/lead-state.json
@@ -31,40 +32,36 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/agentWorkers.js
- M ui/ctoChiefOfStaff.js
- M ui/public/spatial/roleTaxonomy.mjs
+ M ui/evaluatorAgent.js
  M ui/public/spatial/spatialApp.js
  M ui/public/spatial/studioData.js
  M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/agentWorkers.test.mjs
- M ui/tests/ctoChiefOfStaff.test.mjs
- M ui/tests/qaScorecardIntegrity.test.mjs
- M ui/tests/roleTaxonomy.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
+ M ui/tests/evaluatorAgent.test.mjs
+ M ui/tests/evaluatorServerIntegration.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
  M ui/tests/studioData.test.mjs
  M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelView.test.mjs
  M ui/truthKernelAdapter.js
-- Related tools: node, autonomy-policy, git
+- Related tools: autonomy-policy, git, node
 - Related stages: planner, builder-preflight
 - Related projects: ace-self
 - Related agents: planner, builder
 - Example messages:
-  - Repository has uncommitted tracked changes.
-M brain/context/autonomy_fix_tasks.json
+  - blocked | Repository has uncommitted tracked changes.
+M agents/evaluator/prompt.md
+ M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/safe_mode/boot-recovery-daemon.json
  M brain/emergence/slices.json
  M brain/emergence/slices.md
+ M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/qa/investigations.json
  M data/spatial/qa/lead-state.json
@@ -73,35 +70,31 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/agentWorkers.js
- M ui/ctoChiefOfStaff.js
- M ui/public/spatial/roleTaxonomy.mjs
+ M ui/evaluatorAgent.js
  M ui/public/spatial/spatialApp.js
  M ui/public/spatial/studioData.js
  M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/agentWorkers.test.mjs
- M ui/tests/ctoChiefOfStaff.test.mjs
- M ui/tests/qaScorecardIntegrity.test.mjs
- M ui/tests/roleTaxonomy.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
+ M ui/tests/evaluatorAgent.test.mjs
+ M ui/tests/evaluatorServerIntegration.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
  M ui/tests/studioData.test.mjs
  M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelView.test.mjs
  M ui/truthKernelAdapter.js
   - Repository has uncommitted tracked changes.
-M brain/context/autonomy_fix_tasks.json
+M agents/evaluator/prompt.md
+ M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/safe_mode/boot-recovery-daemon.json
  M brain/emergence/slices.json
  M brain/emergence/slices.md
+ M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/qa/investigations.json
  M data/spatial/qa/lead-state.json
@@ -110,32 +103,29 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/agentWorkers.js
- M ui/ctoChiefOfStaff.js
- M ui/public/spatial/roleTaxonomy.mjs
+ M ui/evaluatorAgent.js
  M ui/public/spatial/spatialApp.js
  M ui/public/spatial/studioData.js
  M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/ctoChiefOfStaff.test.mjs
- M ui/tests/qaScorecardIntegrity.test.mjs
- M ui/tests/roleTaxonomy.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
+ M ui/tests/evaluatorAgent.test.mjs
+ M ui/tests/evaluatorServerIntegration.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
  M ui/tests/studioData.test.mjs
  M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelView.test.mjs
  M ui/truthKernelAdapter.js
   - Repository has uncommitted tracked changes.
-M brain/context/autonomy_fix_tasks.json
+  - Repository has uncommitted tracked changes.
+M agents/evaluator/prompt.md
+ M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/safe_mode/boot-recovery-daemon.json
  M brain/emergence/slices.json
  M brain/emergence/slices.md
  M data/spatial/history.json
@@ -146,149 +136,28 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/agentWorkers.js
- M ui/ctoChiefOfStaff.js
- M ui/public/spatial/roleTaxonomy.mjs
+ M ui/evaluatorAgent.js
  M ui/public/spatial/spatialApp.js
  M ui/public/spatial/studioData.js
  M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/qaScorecardIntegrity.test.mjs
- M ui/tests/roleTaxonomy.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
+ M ui/tests/evaluatorAgent.test.mjs
+ M ui/tests/evaluatorServerIntegration.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
  M ui/tests/studioData.test.mjs
  M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelView.test.mjs
  M ui/truthKernelAdapter.js
-  - Repository has uncommitted tracked changes.
-A  agents/evaluator/agent.json
-A  agents/evaluator/prompt.md
-M  brain/context/autonomy_fix_tasks.json
-M  brain/context/autonomy_fix_tasks.md
-MM brain/context/failure_history.json
-MM brain/context/failure_history.md
-MM brain/context/known_fixes_candidates.json
-MM brain/context/known_fixes_candidates.md
-M  brain/context/safe_mode/boot-recovery-daemon.json
-M  brain/emergence/slices.json
-M  brain/emergence/slices.md
-M  data/spatial/history.json
-M  data/spatial/qa/investigations.json
-A  data/spatial/qa/lead-runs/qa_lead_1775896267775_f9xy2t.json
-A  data/spatial/qa/lead-runs/qa_lead_1775896532416_6ge5c8.json
-A  data/spatial/qa/lead-runs/qa_lead_1775897479076_bht3bn.json
-A  data/spatial/qa/lead-runs/qa_lead_1775897732416_04iaxo.json
-A  data/spatial/qa/lead-runs/qa_lead_1775898679731_fbbfdl.json
-A  data/spatial/qa/lead-runs/qa_lead_1775898932421_941f97.json
-A  data/spatial/qa/lead-runs/qa_lead_1775899880928_vefa7a.json
-A  data/spatial/qa/lead-runs/qa_lead_1775900132422_iy5uj9.json
-A  data/spatial/qa/lead-runs/qa_lead_1775901084722_05ob1u.json
-A  data/spatial/qa/lead-runs/qa_lead_1775901332425_dm3zu4.json
-A  data/spatial/qa/lead-runs/qa_lead_1775902290432_deo5u8.json
-A  data/spatial/qa/lead-runs/qa_lead_1775902532428_mvctq5.json
-A  data/spatial/qa/lead-runs/qa_lead_1775903493222_9tjglo.json
-A  data/spatial/qa/lead-runs/qa_lead_1775903732430_zbhr4o.json
-A  data/spatial/qa/lead-runs/qa_lead_1775904693232_6ezjxw.json
-A  data/spatial/qa/lead-runs/qa_lead_1775904932441_8n5fx1.json
-A  data/spatial/qa/lead-runs/qa_lead_1775905893241_4h8kta.json
-A  data/spatial/qa/lead-runs/qa_lead_1775906132441_e1xcib.json
-A  data/spatial/qa/lead-runs/qa_lead_1775907093251_s2iyj2.json
-A  data/spatial/qa/lead-runs/qa_lead_1775907332451_rfyv5p.json
-A  data/spatial/qa/lead-runs/qa_lead_1775908293356_kueepy.json
-A  data/spatial/qa/lead-runs/qa_lead_1775908532455_60l60v.json
-A  data/spatial/qa/lead-runs/qa_lead_1775909732465_hqlop1.json
-M  data/spatial/qa/lead-state.json
-M  data/spatial/qa/output-feed.json
-M  data/spatial/qa/planner-qa-queue.json
-M  data/spatial/qa/planner-qa-queue.md
-A  data/spatial/qa/qa_1775896272132_lnkgkm.json
-A  data/spatial/qa/qa_1775896532451_8sgt3r.json
-A  data/spatial/qa/qa_1775897480965_v4s7la.json
-A  data/spatial/qa/qa_1775897732437_fp4hah.json
-A  data/spatial/qa/qa_1775898685932_weyplb.json
-A  data/spatial/qa/qa_1775898932438_mgxojt.json
-A  data/spatial/qa/qa_1775899884982_pjwb2j.json
-A  data/spatial/qa/qa_1775900132441_teowd7.json
-A  data/spatial/qa/qa_1775901104811_oj285r.json
-A  data/spatial/qa/qa_1775901332451_666n6c.json
-A  data/spatial/qa/qa_1775902301650_evdyw6.json
-A  data/spatial/qa/qa_1775902532445_8uu2j3.json
-A  data/spatial/qa/qa_1775903500236_47mtm1.json
-A  data/spatial/qa/qa_1775903732450_4bcatm.json
-A  data/spatial/qa/qa_1775904693250_stt4ri.json
-A  data/spatial/qa/qa_1775904932460_04mb4z.json
-A  data/spatial/qa/qa_1775904932460_04mb4z/01-initial.png
-A  data/spatial/qa/qa_1775904932460_04mb4z/02-studio-smoke.png
-A  data/spatial/qa/qa_1775904932460_04mb4z/console.json
-A  data/spatial/qa/qa_1775904932460_04mb4z/dom.html
-A  data/spatial/qa/qa_1775904932460_04mb4z/layout-findings.json
-A  data/spatial/qa/qa_1775904932460_04mb4z/network.json
-A  data/spatial/qa/qa_1775904932460_04mb4z/runtime.json
-A  data/spatial/qa/qa_1775905893255_98absl.json
-A  data/spatial/qa/qa_1775905893255_98absl/01-initial.png
-A  data/spatial/qa/qa_1775906132451_gq3c36.json
-A  data/spatial/qa/qa_1775906132451_gq3c36/01-initial.png
-A  data/spatial/qa/qa_1775906132451_gq3c36/02-studio-smoke.png
-A  data/spatial/qa/qa_1775906132451_gq3c36/console.json
-A  data/spatial/qa/qa_1775906132451_gq3c36/dom.html
-A  data/spatial/qa/qa_1775906132451_gq3c36/layout-findings.json
-A  data/spatial/qa/qa_1775906132451_gq3c36/network.json
-A  data/spatial/qa/qa_1775906132451_gq3c36/runtime.json
-A  data/spatial/qa/qa_1775907093263_g53ufu.json
-A  data/spatial/qa/qa_1775907093263_g53ufu/01-initial.png
-A  data/spatial/qa/qa_1775907332468_atk1ff.json
-A  data/spatial/qa/qa_1775907332468_atk1ff/01-initial.png
-A  data/spatial/qa/qa_1775907332468_atk1ff/02-studio-smoke.png
-A  data/spatial/qa/qa_1775907332468_atk1ff/console.json
-A  data/spatial/qa/qa_1775907332468_atk1ff/dom.html
-A  data/spatial/qa/qa_1775907332468_atk1ff/layout-findings.json
-A  data/spatial/qa/qa_1775907332468_atk1ff/network.json
-A  data/spatial/qa/qa_1775907332468_atk1ff/runtime.json
-A  data/spatial/qa/qa_1775908293374_48lju9.json
-A  data/spatial/qa/qa_1775908293374_48lju9/01-initial.png
-A  data/spatial/qa/qa_1775908532470_1rxhm8.json
-A  data/spatial/qa/qa_1775908532470_1rxhm8/01-initial.png
-A  data/spatial/qa/qa_1775908532470_1rxhm8/02-studio-smoke.png
-A  data/spatial/qa/qa_1775908532470_1rxhm8/console.json
-A  data/spatial/qa/qa_1775908532470_1rxhm8/dom.html
-A  data/spatial/qa/qa_1775908532470_1rxhm8/layout-findings.json
-A  data/spatial/qa/qa_1775908532470_1rxhm8/network.json
-A  data/spatial/qa/qa_1775908532470_1rxhm8/runtime.json
-A  data/spatial/qa/qa_1775909732473_ka13ec.json
-M  data/spatial/qa/repair-events.json
-M  data/spatial/qa/repair-jobs.json
-M  data/spatial/qa/research-notes.json
-M  data/spatial/workspace.json
-MM ui/agentWorkers.js
-M  ui/ctoChiefOfStaff.js
-A  ui/evaluatorAgent.js
-M  ui/public/spatial/roleTaxonomy.mjs
-M  ui/public/spatial/spatialApp.js
-M  ui/public/spatial/studioData.js
-M  ui/public/spatial/truthKernelAdapter.js
-M  ui/server.js
-M  ui/studioLayoutSchema.js
-A  ui/tests/evaluatorAgent.test.mjs
-A  ui/tests/evaluatorServerIntegration.test.mjs
-M  ui/tests/qaScorecardIntegrity.test.mjs
-M  ui/tests/roleTaxonomy.test.mjs
-M  ui/tests/run-ui-tests.mjs
-M  ui/tests/server.test.mjs
-M  ui/tests/studioData.test.mjs
-M  ui/tests/truthKernelAdapter.test.mjs
-M  ui/truthKernelAdapter.js
-A  ui/uievaluator.js
-  - Repository has uncommitted tracked changes.
-M brain/context/autonomy_fix_tasks.json
+  - blocked | Repository has uncommitted tracked changes.
+M agents/evaluator/prompt.md
+ M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/safe_mode/boot-recovery-daemon.json
  M brain/emergence/slices.json
  M brain/emergence/slices.md
  M data/spatial/history.json
@@ -299,21 +168,19 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/agentWorkers.js
- M ui/public/spatial/roleTaxonomy.mjs
+ M ui/evaluatorAgent.js
  M ui/public/spatial/spatialApp.js
  M ui/public/spatial/studioData.js
  M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/qaScorecardIntegrity.test.mjs
- M ui/tests/roleTaxonomy.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
+ M ui/tests/evaluatorAgent.test.mjs
+ M ui/tests/evaluatorServerIntegration.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
  M ui/tests/studioData.test.mjs
  M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelView.test.mjs
  M ui/truthKernelAdapter.js
 
 ### git_apply_check_failed

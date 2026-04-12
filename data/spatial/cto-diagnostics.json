@@ -1,7 +1,159 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-04-09T14:30:04.329Z",
+  "updated_at": "2026-04-11T19:24:40.564Z",
   "entries": [
+    {
+      "id": "cto_diag_1775935480562",
+      "timestamp": "2026-04-11T19:24:40.562Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": null,
+      "runId": "cto-chat-1775935480556-4yprvx",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 30000,
+      "prompt_chars": 90157,
+      "context_mode": "broad",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "overscoped_context",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1775935317887",
+      "timestamp": "2026-04-11T19:21:57.887Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": null,
+      "runId": "cto-chat-1775935317884-rw0kw4",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 30000,
+      "prompt_chars": 90157,
+      "context_mode": "broad",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "overscoped_context",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1775935255129",
+      "timestamp": "2026-04-11T19:20:55.129Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": null,
+      "runId": "cto-chat-1775935255126-krey4f",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 30000,
+      "prompt_chars": 90157,
+      "context_mode": "broad",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "overscoped_context",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1775935177059",
+      "timestamp": "2026-04-11T19:19:37.059Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1775935177056-jgige5",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 30000,
+      "prompt_chars": 90157,
+      "context_mode": "broad",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
     {
       "id": "cto_diag_1775745004329",
       "timestamp": "2026-04-09T14:30:04.329Z",
@@ -15,11 +167,20 @@
       "reason": "Ollama generate timed out after 30000ms.",
       "failureKind": "parse",
       "runId": "cto-chat-1775744974311-gemnmr",
-      "httpStatus": null,
+      "httpStatus": 0,
       "actionId": null,
       "availableActionIds": [
         "request-qa"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775740031624",
@@ -38,7 +199,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775656501598",
@@ -57,7 +227,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775643835030",
@@ -76,7 +255,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775641991924",
@@ -95,7 +283,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775640316205",
@@ -114,7 +311,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775634136245",
@@ -133,7 +339,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775487475110",
@@ -150,7 +365,16 @@
       "runId": null,
       "httpStatus": 0,
       "actionId": null,
-      "availableActionIds": []
+      "availableActionIds": [],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775126786872",
@@ -169,7 +393,16 @@
       "actionId": "request-execution",
       "availableActionIds": [
         "request-execution"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775126728861",
@@ -188,7 +421,16 @@
       "actionId": "assign-agent-to-desk",
       "availableActionIds": [
         "request-execution"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775126667808",
@@ -207,7 +449,16 @@
       "actionId": "request-plan",
       "availableActionIds": [
         "assign-agent-to-desk"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775126616930",
@@ -226,7 +477,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775122356484",
@@ -245,7 +505,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-qa"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775122356022",
@@ -264,7 +533,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775122355577",
@@ -283,7 +561,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775122355135",
@@ -302,7 +589,16 @@
       "actionId": null,
       "availableActionIds": [
         "request-plan"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775067325270",
@@ -321,7 +617,16 @@
       "actionId": "hire-role",
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775066452838",
@@ -340,7 +645,16 @@
       "actionId": "hire-role",
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775062060625",
@@ -357,7 +671,16 @@
       "runId": null,
       "httpStatus": 0,
       "actionId": null,
-      "availableActionIds": []
+      "availableActionIds": [],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775062043840",
@@ -374,7 +697,16 @@
       "runId": null,
       "httpStatus": 0,
       "actionId": null,
-      "availableActionIds": []
+      "availableActionIds": [],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775061641959",
@@ -393,7 +725,16 @@
       "actionId": "hire-role",
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775060902027",
@@ -412,7 +753,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775060901530",
@@ -431,7 +781,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775060901047",
@@ -450,7 +809,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775060867701",
@@ -469,7 +837,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775058657209",
@@ -488,7 +865,16 @@
       "actionId": "hire-role",
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775037118853",
@@ -507,7 +893,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1775033189303",
@@ -526,7 +921,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-role"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774966752685",
@@ -545,7 +949,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774956093881",
@@ -564,7 +977,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774955855242",
@@ -584,7 +1006,16 @@
       "availableActionIds": [
         "hire-planner",
         "route-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774954967152",
@@ -603,7 +1034,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774954474107",
@@ -622,7 +1062,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-integration_auditor"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774951651979",
@@ -641,7 +1090,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-integration_auditor"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774950820612",
@@ -660,7 +1118,16 @@
       "actionId": "hire-planner",
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774950435553",
@@ -679,7 +1146,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774950271271",
@@ -698,7 +1174,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774948870658",
@@ -717,7 +1202,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774948784438",
@@ -736,7 +1230,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774948784008",
@@ -755,7 +1258,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774948783573",
@@ -774,7 +1286,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     },
     {
       "id": "cto_diag_1774874607407",
@@ -793,7 +1314,16 @@
       "actionId": null,
       "availableActionIds": [
         "hire-planner"
-      ]
+      ],
+      "timeout_ms": null,
+      "prompt_chars": null,
+      "context_mode": null,
+      "used_live_call": false,
+      "used_fallback": false,
+      "failure_reason": null,
+      "included_sections": [],
+      "broader_context_available": false,
+      "repair_applied": null
     }
   ]
 }

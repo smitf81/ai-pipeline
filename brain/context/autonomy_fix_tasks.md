@@ -3,7 +3,7 @@
 Review-only bounded fix proposals queued from deterministic policy checks.
 
 Version: ace/autonomy-policy.v0
-Updated: 2026-04-11T11:55:46.853Z
+Updated: 2026-04-12T07:22:29.753Z
 
 ### 0001
 - Agent: autonomy-policy (ace/agent-attribution.v0)
@@ -14,7 +14,8 @@ Updated: 2026-04-11T11:55:46.853Z
 - Retry count: 0
 - Retry limit: 2
 - Reasons: Repository has uncommitted tracked changes.
-M brain/context/autonomy_fix_tasks.json
+M agents/evaluator/prompt.md
+ M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
@@ -22,6 +23,7 @@ M brain/context/autonomy_fix_tasks.json
  M brain/context/known_fixes_candidates.md
  M brain/emergence/slices.json
  M brain/emergence/slices.md
+ M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/qa/investigations.json
  M data/spatial/qa/lead-state.json
@@ -30,10 +32,20 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
+ M ui/evaluatorAgent.js
+ M ui/public/spatial/spatialApp.js
+ M ui/public/spatial/studioData.js
+ M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/server.js
- M ui/tests/run-ui-tests.mjs
+ M ui/tests/evaluatorAgent.test.mjs
+ M ui/tests/evaluatorServerIntegration.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
+ M ui/tests/studioData.test.mjs
+ M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelView.test.mjs
+ M ui/truthKernelAdapter.js
 - Candidate fix: Keep apply and build stages off dirty repositories
 
 ### 0001-Blender-UE-import-hygiene
@@ -45,15 +57,16 @@ M brain/context/autonomy_fix_tasks.json
 - Retry count: 0
 - Retry limit: 2
 - Reasons: Repository has uncommitted tracked changes.
-M brain/context/autonomy_fix_tasks.json
+M agents/evaluator/prompt.md
+ M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/safe_mode/boot-recovery-daemon.json
  M brain/emergence/slices.json
  M brain/emergence/slices.md
+ M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/qa/investigations.json
  M data/spatial/qa/lead-state.json
@@ -62,21 +75,19 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/agentWorkers.js
- M ui/public/spatial/roleTaxonomy.mjs
+ M ui/evaluatorAgent.js
  M ui/public/spatial/spatialApp.js
  M ui/public/spatial/studioData.js
  M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/qaScorecardIntegrity.test.mjs
- M ui/tests/roleTaxonomy.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
+ M ui/tests/evaluatorAgent.test.mjs
+ M ui/tests/evaluatorServerIntegration.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
  M ui/tests/studioData.test.mjs
  M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelView.test.mjs
  M ui/truthKernelAdapter.js
 
 ### 10000
@@ -133,15 +144,16 @@ M brain/context/autonomy_fix_tasks.json
 - Retry count: 0
 - Retry limit: 2
 - Reasons: Repository has uncommitted tracked changes.
-M brain/context/autonomy_fix_tasks.json
+M agents/evaluator/prompt.md
+ M brain/context/autonomy_fix_tasks.json
  M brain/context/autonomy_fix_tasks.md
  M brain/context/failure_history.json
  M brain/context/failure_history.md
  M brain/context/known_fixes_candidates.json
  M brain/context/known_fixes_candidates.md
- M brain/context/safe_mode/boot-recovery-daemon.json
  M brain/emergence/slices.json
  M brain/emergence/slices.md
+ M data/spatial/cto-diagnostics.json
  M data/spatial/history.json
  M data/spatial/qa/investigations.json
  M data/spatial/qa/lead-state.json
@@ -150,19 +162,17 @@ M brain/context/autonomy_fix_tasks.json
  M data/spatial/qa/planner-qa-queue.md
  M data/spatial/qa/repair-events.json
  M data/spatial/qa/repair-jobs.json
- M data/spatial/qa/research-notes.json
  M data/spatial/workspace.json
- M ui/agentWorkers.js
- M ui/public/spatial/roleTaxonomy.mjs
+ M ui/evaluatorAgent.js
  M ui/public/spatial/spatialApp.js
  M ui/public/spatial/studioData.js
  M ui/public/spatial/truthKernelAdapter.js
+ M ui/public/spatial/truthKernelView.js
  M ui/server.js
- M ui/studioLayoutSchema.js
- M ui/tests/qaScorecardIntegrity.test.mjs
- M ui/tests/roleTaxonomy.test.mjs
- M ui/tests/run-ui-tests.mjs
- M ui/tests/server.test.mjs
+ M ui/tests/evaluatorAgent.test.mjs
+ M ui/tests/evaluatorServerIntegration.test.mjs
+ M ui/tests/spatialApp.smoke.test.mjs
  M ui/tests/studioData.test.mjs
  M ui/tests/truthKernelAdapter.test.mjs
+ M ui/tests/truthKernelView.test.mjs
  M ui/truthKernelAdapter.js

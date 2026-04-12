@@ -713,6 +713,26 @@ function normalizeCtoDiagnosticsEntry(entry = {}) {
     availableActionIds: Array.isArray(entry.availableActionIds)
       ? entry.availableActionIds.map((value) => String(value || '').trim()).filter(Boolean).slice(0, 12)
       : [],
+    timeout_ms: Number.isFinite(Number(entry.timeout_ms ?? entry.timeoutMs)) ? Number(entry.timeout_ms ?? entry.timeoutMs) : null,
+    prompt_chars: Number.isFinite(Number(entry.prompt_chars ?? entry.promptChars)) ? Number(entry.prompt_chars ?? entry.promptChars) : null,
+    context_mode: String(entry.context_mode || entry.contextMode || '').trim() || null,
+    used_live_call: entry.used_live_call === undefined ? null : Boolean(entry.used_live_call),
+    used_fallback: entry.used_fallback === undefined ? null : Boolean(entry.used_fallback),
+    failure_reason: String(entry.failure_reason || entry.failureReason || '').trim() || null,
+    included_sections: Array.isArray(entry.included_sections || entry.includedSections)
+      ? (entry.included_sections || entry.includedSections).map((value) => String(value || '').trim()).filter(Boolean).slice(0, 20)
+      : [],
+    broader_context_available: entry.broader_context_available === undefined
+      ? null
+      : Boolean(entry.broader_context_available),
+    repair_applied: entry.repair_applied && typeof entry.repair_applied === 'object' && !Array.isArray(entry.repair_applied)
+      ? {
+          timeout_changed: entry.repair_applied.timeout_changed === true,
+          prompt_scope_changed: entry.repair_applied.prompt_scope_changed === true,
+          retrieval_shifted: entry.repair_applied.retrieval_shifted === true,
+          notes: String(entry.repair_applied.notes || '').trim() || null,
+        }
+      : null,
   };
 }
 
@@ -1897,6 +1917,136 @@ function getCtoRoleHintFromText(text = '') {
   if (targets.includes('qa-lead')) return 'qa-lead';
   if (targets.includes('executor')) return 'executor';
   return 'planner';
+}
+
+const CTO_CHAT_OVERSCOPED_PROMPT_CHARS = 6500;
+const CTO_CHAT_SCOPED_HISTORY_LIMIT = 4;
+const CTO_CHAT_BROAD_HISTORY_LIMIT = 8;
+const CTO_CHAT_SCOPED_ACTION_LIMIT = 3;
+const CTO_CHAT_BROAD_ACTION_LIMIT = 6;
+const CTO_CHAT_SCOPED_DESK_LIMIT = 3;
+const CTO_CHAT_BROAD_DESK_LIMIT = 6;
+
+function classifyCtoChatPromptMode(text = '', { availableActions = [], execution = null } = {}) {
+  const normalized = String(text || '').trim().toLowerCase();
+  if (!normalized) return 'scoped';
+  if (
+    normalized.includes('full context')
+    || normalized.includes('everything')
+    || normalized.includes('handover')
+    || normalized.includes('summary report')
+    || normalized.includes('state of all')
+    || normalized.includes('audit the desks')
+    || normalized.includes('system summary')
+  ) {
+    return 'broad';
+  }
+  if (execution || (Array.isArray(availableActions) && availableActions.length > 0) || isAffirmativeCtoReply(text)) {
+    return 'scoped';
+  }
+  if (
+    normalized.includes('why')
+    || normalized.includes('blocker')
+    || normalized.includes('blocked')
+    || normalized.includes('what next')
+    || normalized.includes('can we')
+    || normalized.includes('should we')
+    || normalized.includes('planner')
+    || normalized.includes('executor')
+    || normalized.includes('qa')
+    || normalized.length <= 180
+  ) {
+    return 'scoped';
+  }
+  return 'broad';
+}
+
+function summarizeWorkspaceForCtoPrompt(workspace = {}, { contextMode = 'scoped' } = {}) {
+  const pages = Array.isArray(workspace?.pages) ? workspace.pages : [];
+  const activePageId = workspace?.activePageId || workspace?.studio?.orchestrator?.activePageId || null;
+  const activePage = pages.find((page) => page?.id === activePageId) || null;
+  const boardCards = Array.isArray(workspace?.studio?.teamBoard?.cards) ? workspace.studio.teamBoard.cards : [];
+  const activeDeskIds = Array.isArray(workspace?.studio?.orchestrator?.activeDeskIds)
+    ? workspace.studio.orchestrator.activeDeskIds
+    : [];
+  return {
+    active_page_id: activePageId,
+    active_page_title: activePage?.title || null,
+    graph_counts: {
+      system_nodes: Array.isArray(workspace?.graphs?.system?.nodes) ? workspace.graphs.system.nodes.length : 0,
+      system_edges: Array.isArray(workspace?.graphs?.system?.edges) ? workspace.graphs.system.edges.length : 0,
+      world_nodes: Array.isArray(workspace?.graphs?.world?.nodes) ? workspace.graphs.world.nodes.length : 0,
+      world_edges: Array.isArray(workspace?.graphs?.world?.edges) ? workspace.graphs.world.edges.length : 0,
+    },
+    board: {
+      selected_card_id: workspace?.studio?.teamBoard?.selectedCardId || null,
+      active_card_count: boardCards.filter((card) => card?.status !== 'binned').length,
+    },
+    active_desk_ids: activeDeskIds.slice(0, contextMode === 'broad' ? 8 : 4),
+  };
+}
+
+function summarizeCtoActionForPrompt(action = null) {
+  if (!action || typeof action !== 'object') return null;
+  return {
+    id: String(action.id || '').trim() || null,
+    kind: String(action.kind || '').trim() || null,
+    label: truncatePromptText(action.label || action.id || '', 96) || null,
+    available: action.available !== false,
+    requires_confirmation: action.requiresConfirmation !== false,
+    status: String(action.status || '').trim() || null,
+    reason: truncatePromptText(action.reason || '', 140) || null,
+    target_desk_id: String(action.targetDeskId || action.deskId || '').trim() || null,
+  };
+}
+
+function summarizeCtoExecutionForPrompt(execution = null) {
+  if (!execution || typeof execution !== 'object') return null;
+  return {
+    ok: execution.ok === true,
+    status: String(execution.status || '').trim() || null,
+    action_id: String(execution.actionId || '').trim() || null,
+    desk_id: String(execution.deskId || '').trim() || null,
+    summary: truncatePromptText(execution.summary || execution.reason || '', 180) || null,
+  };
+}
+
+function selectCtoPromptDesks(desks = [], {
+  contextMode = 'scoped',
+  roleHint = null,
+  availableActions = [],
+  execution = null,
+} = {}) {
+  const source = Array.isArray(desks) ? desks : [];
+  const limit = contextMode === 'broad' ? CTO_CHAT_BROAD_DESK_LIMIT : CTO_CHAT_SCOPED_DESK_LIMIT;
+  if (contextMode === 'broad') {
+    return source.slice(0, limit);
+  }
+  const targetDeskIds = new Set();
+  if (roleHint) targetDeskIds.add(roleHint);
+  (Array.isArray(availableActions) ? availableActions : []).forEach((action) => {
+    const deskId = String(action?.targetDeskId || action?.deskId || '').trim();
+    if (deskId) targetDeskIds.add(deskId);
+  });
+  const executionDeskId = String(execution?.deskId || '').trim();
+  if (executionDeskId) targetDeskIds.add(executionDeskId);
+
+  const prioritized = [];
+  const seen = new Set();
+  const pushDesk = (desk) => {
+    if (!desk || seen.has(desk.deskId)) return;
+    seen.add(desk.deskId);
+    prioritized.push(desk);
+  };
+
+  source
+    .filter((desk) => targetDeskIds.has(String(desk?.deskId || '').trim()))
+    .forEach(pushDesk);
+  source
+    .filter((desk) => Number(desk?.liveAgentCount || 0) > 0 || Number(desk?.taskCount || 0) > 0 || Number(desk?.reportCount || 0) > 0)
+    .forEach(pushDesk);
+  source.forEach(pushDesk);
+  return prioritized.slice(0, limit);
 }
 
 function getCtoRoleLabel(roleId = '') {
@@ -3396,11 +3546,21 @@ function parseCtoStructuredReply(text = '', options = {}) {
   };
 }
 
-function buildCtoPromptContext(context = null) {
+function buildCtoPromptContext(context = null, options = {}) {
+  const contextMode = options?.contextMode === 'broad' ? 'broad' : 'scoped';
+  const roleHint = String(options?.roleHint || '').trim() || null;
+  const availableActions = Array.isArray(options?.availableActions) ? options.availableActions : [];
+  const execution = options?.execution || null;
+  const selectedDesks = selectCtoPromptDesks(context?.desks || [], {
+    contextMode,
+    roleHint,
+    availableActions,
+    execution,
+  });
   return {
-    workspace: context?.workspace || {},
+    workspace: summarizeWorkspaceForCtoPrompt(context?.workspace || {}, { contextMode }),
     pipeline: context?.pipeline || null,
-    desks: (context?.desks || []).map((desk) => ({
+    desks: selectedDesks.map((desk) => ({
       deskId: desk.deskId,
       label: desk.label,
       departmentLabel: desk.departmentLabel,
@@ -3421,7 +3581,14 @@ function buildCtoPromptContext(context = null) {
       plannerCoverage: context?.ta?.plannerCoverage || null,
       qaLeadCoverage: context?.ta?.qaLeadCoverage || null,
       rosterCount: context?.ta?.rosterCount || 0,
-      openRoles: (context?.ta?.openRoles || []).slice(0, 12),
+      openRoles: (context?.ta?.openRoles || [])
+        .slice(0, contextMode === 'broad' ? 8 : 3)
+        .map((entry) => ({
+          roleId: String(entry?.roleId || '').trim() || null,
+          roleLabel: truncatePromptText(entry?.roleLabel || entry?.roleId || '', 80) || null,
+          urgency: String(entry?.urgency || '').trim() || null,
+          blocker: entry?.blocker === true,
+        })),
     },
     cto: {
       overrides: context?.cto?.overrides || null,
@@ -3432,34 +3599,50 @@ function buildCtoPromptContext(context = null) {
   };
 }
 
-function buildCtoChatPrompt({
+function buildCtoChatPromptProfile({
   text = '',
   history = [],
   context = null,
   availableActions = [],
   execution = null,
 } = {}) {
+  const contextMode = classifyCtoChatPromptMode(text, { availableActions, execution });
+  const roleHint = getCtoRoleHintFromText(text);
+  const includedSections = [
+    'identity',
+    'conversation',
+    'scoped_context',
+    'available_actions',
+  ];
   const promptPayload = {
-    latest_user_message: text,
-    history: history.map((entry) => ({
+    latest_user_message: truncatePromptText(text, contextMode === 'broad' ? 520 : 220),
+    history: history
+      .slice(-(contextMode === 'broad' ? CTO_CHAT_BROAD_HISTORY_LIMIT : CTO_CHAT_SCOPED_HISTORY_LIMIT))
+      .map((entry) => ({
       role: entry.role,
       text: truncatePromptText(entry.text, 220),
       action: entry.action ? {
         id: entry.action.id,
         kind: entry.action.kind,
         label: entry.action.label,
-        params: entry.action.params || {},
         available: entry.action.available,
         requiresConfirmation: entry.action.requiresConfirmation,
         status: entry.action.status,
-        reason: entry.action.reason,
+        reason: truncatePromptText(entry.action.reason, 120),
       } : null,
     })),
-    context: buildCtoPromptContext(context),
-    available_actions: availableActions,
-    execution_result: execution || null,
+    context: buildCtoPromptContext(context, {
+      contextMode,
+      roleHint,
+      availableActions,
+      execution,
+    }),
+    available_actions: (Array.isArray(availableActions) ? availableActions : [])
+      .slice(0, contextMode === 'broad' ? CTO_CHAT_BROAD_ACTION_LIMIT : CTO_CHAT_SCOPED_ACTION_LIMIT)
+      .map((action) => summarizeCtoActionForPrompt(action)),
+    execution_result: summarizeCtoExecutionForPrompt(execution),
   };
-  return [
+  const prompt = [
     'You are the ACE CTO / Architect chat utility.',
     'Use only grounded facts from the supplied ACE context.',
     'Do not invent departments, desks, routes, or completed actions.',
@@ -3488,10 +3671,115 @@ function buildCtoChatPrompt({
     'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.',
     'Do not emit route status fields. Route status is owned by the server, not the model.',
     'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.',
+    contextMode === 'broad'
+      ? 'Broader desk state was requested, but it has been compacted into summaries instead of dumping the full workspace.'
+      : 'Stay within the immediate task context. Broader workspace state remains available on demand and is intentionally not injected here.',
     '',
     'ACE context:',
     JSON.stringify(promptPayload, null, 2),
   ].join('\n');
+  return {
+    prompt,
+    promptChars: prompt.length,
+    contextMode,
+    includedSections,
+    broaderContextAvailable: true,
+    repairApplied: {
+      timeout_changed: false,
+      prompt_scope_changed: true,
+      retrieval_shifted: true,
+      notes: 'CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default.',
+    },
+  };
+}
+
+function buildCtoChatPrompt(options = {}) {
+  return buildCtoChatPromptProfile(options).prompt;
+}
+
+function classifyCtoChatFailureReason(reason = '', {
+  promptChars = 0,
+  contextMode = 'scoped',
+  failureKind = '',
+} = {}) {
+  const message = String(reason || '').trim().toLowerCase();
+  const normalizedFailureKind = String(failureKind || '').trim().toLowerCase();
+  if (!message && !normalizedFailureKind) return 'unknown';
+  if (normalizedFailureKind === 'contract' || normalizedFailureKind === 'parse') {
+    return 'bad_prompt_shape';
+  }
+  if (message.includes('timed out') || message.includes('timeout')) {
+    if (promptChars >= CTO_CHAT_OVERSCOPED_PROMPT_CHARS || contextMode === 'broad') {
+      return 'overscoped_context';
+    }
+    return 'timeout';
+  }
+  if (
+    message.includes('fetch failed')
+    || message.includes('econnrefused')
+    || message.includes('connection refused')
+    || message.includes('unavailable')
+    || message.includes('offline')
+    || message.includes('unsupported cto backend')
+    || message.includes('no fetch implementation')
+  ) {
+    return 'model_unavailable';
+  }
+  return 'unknown';
+}
+
+function buildCtoChatCognitionDiagnostics({
+  route = '/api/spatial/cto/chat',
+  source = 'cto-chat',
+  status = 'live',
+  backend = null,
+  model = null,
+  host = null,
+  timeoutMs = null,
+  promptProfile = null,
+  usedLiveCall = false,
+  usedFallback = false,
+  reason = '',
+  failureKind = '',
+  runId = null,
+  actionId = null,
+  availableActionIds = [],
+  category = null,
+} = {}) {
+  return normalizeCtoDiagnosticsEntry({
+    route,
+    source,
+    status,
+    backend,
+    model,
+    host,
+    reason,
+    failureKind,
+    runId,
+    actionId,
+    availableActionIds,
+    category: category || classifyCtoDiagnosticCategory({ status, reason, failureKind }),
+    timeout_ms: timeoutMs,
+    prompt_chars: Number(promptProfile?.promptChars || 0),
+    context_mode: promptProfile?.contextMode || 'scoped',
+    used_live_call: usedLiveCall,
+    used_fallback: usedFallback,
+    failure_reason: usedFallback
+      ? classifyCtoChatFailureReason(reason, {
+          promptChars: Number(promptProfile?.promptChars || 0),
+          contextMode: promptProfile?.contextMode || 'scoped',
+          failureKind,
+        })
+      : null,
+    included_sections: Array.isArray(promptProfile?.includedSections) ? promptProfile.includedSections : [],
+    broader_context_available: Boolean(promptProfile?.broaderContextAvailable),
+    repair_applied: promptProfile?.repairApplied || {
+      timeout_changed: false,
+      prompt_scope_changed: true,
+      retrieval_shifted: true,
+      notes: 'CTO chat now defaults to scoped context summaries.',
+    },
+  });
 }
 
 async function runCtoGovernanceChat({
@@ -3617,13 +3905,14 @@ async function runCtoGovernanceChat({
     };
   }
   const runId = `cto-chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const prompt = buildCtoChatPrompt({
+  const promptProfile = buildCtoChatPromptProfile({
     text: promptText,
     history: reconciledHistory,
     context,
     availableActions: postExecutionAvailableActions,
     execution,
   });
+  const prompt = promptProfile.prompt;
   try {
     const modelResult = await callOllamaGenerate({
       prompt,
@@ -3640,6 +3929,22 @@ async function runCtoGovernanceChat({
     const raw = parsedReply.payload;
     const replyText = parsedReply.replyText;
     const responseKind = parsedReply.responseKind;
+    const diagnostic = buildCtoChatCognitionDiagnostics({
+      source,
+      status: 'live',
+      backend: requestedBackend,
+      model: requestedModel,
+      host: requestedHost,
+      timeoutMs: requestedTimeout,
+      promptProfile,
+      usedLiveCall: true,
+      usedFallback: false,
+      reason: 'Live CTO chat call completed successfully.',
+      runId,
+      actionId: execution?.actionId || null,
+      availableActionIds: postExecutionAvailableActions.map((entry) => entry.id),
+      category: 'live_call',
+    });
     return {
       ok: true,
       status: 'live',
@@ -3653,24 +3958,37 @@ async function runCtoGovernanceChat({
       action: normalizeCtoResponseAction(raw.action, postExecutionAvailableActions, execution),
       execution,
       backendStatus,
+      diagnostic,
     };
   } catch (error) {
     const reason = String(error.message || error);
-    const failureDetail = error?.ctoFailureKind === 'contract'
+    const normalizedReason = reason.trim().toLowerCase();
+    const failureKind = error?.ctoFailureKind
+      || (normalizedReason.includes('timed out') || normalizedReason.includes('timeout') ? '' : 'parse');
+    const failureDetail = failureKind === 'contract'
       ? `returned parseable JSON that failed CTO contract validation`
-      : 'returned an unreadable structured reply';
-    const diagnostic = recordCtoDiagnostic({
-      route: '/api/spatial/cto/chat',
+      : ((normalizedReason.includes('timed out') || normalizedReason.includes('timeout'))
+        ? 'timed out before returning a governance response'
+        : 'returned an unreadable structured reply');
+    const diagnosticEntry = buildCtoChatCognitionDiagnostics({
       source,
       status: 'degraded',
       backend: requestedBackend,
       model: requestedModel,
       host: requestedHost,
+      timeoutMs: requestedTimeout,
+      promptProfile,
+      usedLiveCall: true,
+      usedFallback: true,
       reason,
-      failureKind: error?.ctoFailureKind || 'parse',
+      failureKind,
       runId,
       actionId: execution?.actionId || null,
       availableActionIds: postExecutionAvailableActions.map((entry) => entry.id),
+    });
+    const diagnostic = recordCtoDiagnostic({
+      ...diagnosticEntry,
+      route: '/api/spatial/cto/chat',
     });
     return {
       ok: false,
@@ -5968,12 +6286,23 @@ function buildEvaluatorMovementSummary(latestEvaluation = null, evaluatorHistory
     cognitionMode: String(latestEvaluation.cognition_mode || '').trim() || null,
     modelName: String(latestEvaluation.model_name || '').trim() || null,
     comparedAt: String(latestEvaluation.compared_at || '').trim() || null,
+    comparisonTarget: String(latestEvaluation.comparison_target || '').trim() || null,
     sourceSnapshotIds: latestEvaluation.source_snapshot_ids && typeof latestEvaluation.source_snapshot_ids === 'object'
       ? {
           previous: String(latestEvaluation.source_snapshot_ids.previous || '').trim() || null,
           current: String(latestEvaluation.source_snapshot_ids.current || '').trim() || null,
         }
       : { previous: null, current: null },
+    dimensionImpacts: Array.isArray(latestEvaluation.dimension_impacts)
+      ? latestEvaluation.dimension_impacts.map((entry) => ({
+          id: String(entry?.id || '').trim() || null,
+          label: String(entry?.label || '').trim() || null,
+          verdict: normalizeEvaluatorVerdict(entry?.verdict),
+          delta: Number.isFinite(Number(entry?.delta)) ? Number(entry.delta) : 0,
+          summary: String(entry?.summary || '').trim() || null,
+          weight: Number.isFinite(Number(entry?.weight)) ? Number(entry.weight) : null,
+        })).filter((entry) => entry.id)
+      : [],
     historyCount: history.length,
     liveModelCount,
     fallbackCount,
@@ -6912,8 +7241,10 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
   const evaluator = {
     latestEvaluation,
     latestSnapshot: evaluatorState?.state?.latest_snapshot || buildEvaluatorSnapshot({
+      rootPath,
+      workspace,
       scorecards: baseScorecardBundle.cards,
-      comparisonTarget: 'qa_scorecards',
+      comparisonTarget: 'system_runtime',
       capturedAt: structuredSummary.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
     }),
     previousSnapshot: evaluatorState?.state?.previous_snapshot || null,
@@ -13787,8 +14118,9 @@ app.get('/api/runs', (req, res) => {
       writeStructuredQAReport(ROOT, report, 'latest');
       const evaluatorCycle = await maybeRunEvaluatorCycle({
         rootPath: ROOT,
+        workspace: readSpatialWorkspace(ROOT),
         scorecards: buildStructuredQAScorecardBundle(report).cards,
-        comparisonTarget: 'qa_scorecards',
+        comparisonTarget: 'system_runtime',
         contextSummary: report.summary || 'Structured QA report completed.',
       });
       res.json({
@@ -16506,7 +16838,11 @@ module.exports = {
   readCtoDiagnostics,
   probeCtoBackendStatus,
   buildCtoGovernanceContext,
+  buildCtoChatCognitionDiagnostics,
+  buildCtoChatPrompt,
+  buildCtoChatPromptProfile,
   buildCtoPromptContext,
+  classifyCtoChatFailureReason,
   summarizeCtoPipelineState,
   normalizeCtoPipelineState,
   advanceCtoPipelineState,

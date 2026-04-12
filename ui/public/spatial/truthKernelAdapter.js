@@ -68,6 +68,27 @@ function normalizeSupportingEvidence(value = null) {
   };
 }
 
+function normalizeTruthKernelVisual(value = null) {
+  if (!isRenderObject(value)) return null;
+  const channels = isRenderObject(value.channels) ? value.channels : {};
+  return {
+    rgba: normalizeRenderText(value.rgba) || null,
+    channels: {
+      r: Number.isFinite(Number(channels.r)) ? Number(channels.r) : null,
+      g: Number.isFinite(Number(channels.g)) ? Number(channels.g) : null,
+      b: Number.isFinite(Number(channels.b)) ? Number(channels.b) : null,
+      a: Number.isFinite(Number(channels.a)) ? Number(channels.a) : null,
+    },
+    health_integrity: clamp01(value.health_integrity, null),
+    health_degradation: clamp01(value.health_degradation, null),
+    activity_level: clamp01(value.activity_level, null),
+    decay_level: clamp01(value.decay_level, null),
+    confidence: clamp01(value.confidence, null),
+    vividness: clamp01(value.vividness, null),
+    instability: clamp01(value.instability, null),
+  };
+}
+
 function normalizeStatus(value) {
   const normalized = String(value || '').trim().toLowerCase();
   if (normalized === 'healthy' || normalized === 'degraded' || normalized === 'blocked' || normalized === 'orphaned' || normalized === 'informational') {
@@ -154,6 +175,9 @@ function normalizeTruthKernelNode(node = {}) {
       : 'unavailable',
     consistencyIssues: normalizeRenderStringArray(node?.consistencyIssues || node?.consistency_issues || []),
     supportingEvidence: normalizeSupportingEvidence(node?.supportingEvidence || node?.supporting_evidence || null),
+    rgba: normalizeRenderText(node?.rgba) || null,
+    activity_level: Number.isFinite(Number(node?.activity_level)) ? Number(node.activity_level) : null,
+    visual: normalizeTruthKernelVisual(node?.visual || null),
   };
 }
 
@@ -263,6 +287,9 @@ export function normalizeTruthKernelPayload(payload = null, options = {}) {
       truthApplicationStatus: dot.truthApplicationStatus,
       postApplyVerificationVerdict: dot.postApplyVerificationVerdict,
       consistencyStatus: dot.consistencyStatus,
+      rgba: dot.rgba,
+      activity_level: dot.activity_level,
+      visual: dot.visual,
     })),
   };
 }
@@ -503,6 +530,21 @@ export function buildTruthKernelNodeInspectorModel(node = null, truthKernel = EM
         { label: 'Cognition mode', value: node.evaluatorCognitionMode || 'Insufficient evidence surfaced.', origin: node.evaluatorCognitionMode ? 'derived' : 'unavailable' },
       ]
     : [];
+  const visualRows = node.visual
+    ? [
+        { label: 'RGBA', value: node.visual.rgba || node.rgba || 'Insufficient evidence surfaced.', origin: node.visual.rgba || node.rgba ? 'derived' : 'unavailable' },
+        { label: 'Health / decay', value: [
+          node.visual.health_integrity != null ? `integrity ${Math.round(node.visual.health_integrity * 100)}%` : null,
+          node.visual.health_degradation != null ? `degradation ${Math.round(node.visual.health_degradation * 100)}%` : null,
+          node.visual.decay_level != null ? `decay ${Math.round(node.visual.decay_level * 100)}%` : null,
+        ].filter(Boolean).join(' | ') || 'Insufficient evidence surfaced.', origin: 'derived' },
+        { label: 'Activity / confidence', value: [
+          node.visual.activity_level != null ? `activity ${Math.round(node.visual.activity_level * 100)}%` : null,
+          node.visual.confidence != null ? `confidence ${Math.round(node.visual.confidence * 100)}%` : null,
+          node.visual.instability != null ? `instability ${Math.round(node.visual.instability * 100)}%` : null,
+        ].filter(Boolean).join(' | ') || 'Insufficient evidence surfaced.', origin: 'derived' },
+      ]
+    : [];
   return {
     id: node.id || 'unknown',
     label: node.label || node.summary || node.id || 'Unknown truth node',
@@ -514,6 +556,7 @@ export function buildTruthKernelNodeInspectorModel(node = null, truthKernel = EM
       { label: 'Canonical / derived source', value: sourceDescriptor.value, origin: sourceDescriptor.origin },
       ...repairLifecycleRows,
       ...evaluatorRows,
+      ...visualRows,
       { label: 'Status / verdict', value: node.verdict || node.status || 'Insufficient evidence surfaced.', origin: node.verdict || node.status ? (node.statusOrigin || 'derived') : 'unavailable' },
       { label: 'Blocker', value: node.blocker || 'Insufficient evidence surfaced.', origin: node.blocker ? 'derived' : 'unavailable' },
       { label: 'Health score', value: healthScoreValue === null ? 'Insufficient evidence surfaced.' : String(healthScoreValue), origin: healthScoreValue === null ? 'unavailable' : (node.healthOrigin || 'derived') },

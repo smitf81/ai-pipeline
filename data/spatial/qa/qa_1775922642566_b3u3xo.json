@@ -1,0 +1,115 @@
+{
+  "id": "qa_1775922642566_b3u3xo",
+  "scenario": "studio-smoke",
+  "mode": "observation",
+  "trigger": "qa_lead_cycle",
+  "prompt": null,
+  "baseUrl": "http://127.0.0.1:3000",
+  "status": "failed",
+  "verdict": "failed",
+  "createdAt": "2026-04-11T15:50:42.566Z",
+  "finishedAt": "2026-04-11T15:50:57.711Z",
+  "linked": {
+    "qaLeadRunId": "qa_lead_1775922642557_p0jkjg"
+  },
+  "browser": {
+    "executablePath": null,
+    "engine": "chromium"
+  },
+  "browser_status": "fail",
+  "browser_failure_stage": "run",
+  "browser_failure_code": "econnrefused",
+  "browser_failure_summary": "fetch failed",
+  "browser_runtime_target": {
+    "attempted": [
+      "chromium",
+      "firefox"
+    ],
+    "used": null,
+    "fallbackUsed": false
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "failed",
+      "verdict": "failed",
+      "startedAt": "2026-04-11T15:50:42.566Z",
+      "finishedAt": "2026-04-11T15:50:57.712Z",
+      "error": "fetch failed"
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    }
+  ],
+  "findings": [],
+  "artifacts": {
+    "screenshots": [],
+    "domSnapshot": null,
+    "consoleLog": null,
+    "networkSummary": null,
+    "runtimeSnapshot": null,
+    "layoutFindings": null
+  },
+  "console": [],
+  "network": [],
+  "error": "fetch failed"
+}

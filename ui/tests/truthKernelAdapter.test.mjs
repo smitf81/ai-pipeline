@@ -4,6 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 
+import { loadModuleCopy } from './helpers/browser-module-loader.mjs';
+
 const require = createRequire(import.meta.url);
 const { buildTruthKernelPayload } = require(path.resolve(process.cwd(), 'truthKernelAdapter.js'));
 
@@ -127,11 +129,11 @@ export default async function runTruthKernelAdapterTests() {
     run_id: 'evaluator_1',
     evaluator_id: 'evaluator',
     compared_at: '2026-04-01T09:27:00.000Z',
-    comparison_target: 'qa_scorecards',
+    comparison_target: 'system_runtime',
     verdict: 'better',
     delta_score: 0.85,
-    progress_summary: 'QA posture improved across the latest snapshot.',
-    changed_dimensions: ['scorecards', 'failure_pressure'],
+    progress_summary: 'Runtime posture improved across the latest snapshot.',
+    changed_dimensions: ['agent_cognition', 'fallback_pressure', 'task_progress', 'truth_kernel', 'qa_support'],
     evaluation_confidence: 0.8,
     cognition_mode: 'model_live',
     model_name: 'mistral:latest',
@@ -141,6 +143,14 @@ export default async function runTruthKernelAdapterTests() {
       previous: 'eval_prev',
       current: 'eval_curr',
     },
+    dimension_impacts: [{
+      id: 'truth_kernel',
+      label: 'Truth kernel',
+      verdict: 'better',
+      delta: 0.58,
+      summary: 'Healthy and active truth nodes increased.',
+      weight: 0.22,
+    }],
   }]);
 
   const workspace = {
@@ -242,5 +252,21 @@ export default async function runTruthKernelAdapterTests() {
   assert.equal(evaluatorNode.verdict, 'better');
   assert.equal(evaluatorNode.evaluatorDeltaScore, 0.85);
   assert.equal(evaluatorNode.evaluatorCognitionMode, 'model_live');
+  assert.match(String(evaluatorNode.label || ''), /Runtime posture improved/i);
+  assert.ok(evaluatorNode.visual);
+  assert.ok(String(evaluatorNode.rgba || evaluatorNode.visual?.rgba || '').startsWith('rgba('));
+  assert.equal(Number.isFinite(Number(evaluatorNode.activity_level)), true);
+  const browserAdapterPath = path.resolve(process.cwd(), 'public', 'spatial', 'truthKernelAdapter.js');
+  const {
+    normalizeTruthKernelPayload,
+    buildTruthKernelNodeInspectorModel,
+  } = await loadModuleCopy(browserAdapterPath, { label: 'truthKernelAdapter-browser' });
+  const normalizedPayload = normalizeTruthKernelPayload(payload);
+  const normalizedEvaluatorNode = normalizedPayload.dots.find((node) => node.id === 'evaluator_1');
+  const inspector = buildTruthKernelNodeInspectorModel(normalizedEvaluatorNode, normalizedPayload);
+  assert.ok(inspector);
+  assert.equal(inspector.rows.some((row) => row.label === 'RGBA' && /^rgba\(/.test(String(row.value || ''))), true);
+  assert.equal(inspector.rows.some((row) => row.label === 'Health / decay'), true);
+  assert.equal(inspector.rows.some((row) => row.label === 'Activity / confidence'), true);
   assert.equal(payload.nodes.every((node) => ['input', 'execution', 'artifact'].includes(node.kind)), true);
 }

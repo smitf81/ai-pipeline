@@ -2657,6 +2657,94 @@ function normalizeAgentCognitionSummary(summary = null) {
   };
 }
 
+function indexAgentCognitionSummary(summary = null) {
+  return new Map(normalizeAgentCognitionSummary(summary).agents
+    .map((entry) => [String(entry?.agent_id || '').trim(), entry])
+    .filter(([agentId]) => agentId));
+}
+
+function derivePresenceCognitionMode({ workerState = {}, cognitionEntry = null } = {}) {
+  const actualMode = String(cognitionEntry?.actual_last_cognition_mode || '').trim().toLowerCase();
+  if (actualMode === 'model_live') return 'model_live';
+  if (actualMode === 'deterministic_fallback') return 'fallback';
+  if (workerState?.lastUsedFallback === true) return 'fallback';
+  const backend = String(workerState?.backend || cognitionEntry?.backend || '').trim().toLowerCase();
+  return backend === 'ollama' ? 'deterministic_tool' : 'deterministic_tool';
+}
+
+function clampPresenceValue(value, fallback = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.max(0, Math.min(1, numeric));
+}
+
+function derivePresenceEnergy({ status = 'idle', workload = {}, latestRunStatus = null } = {}) {
+  const normalizedStatus = String(latestRunStatus || status || '').trim().toLowerCase();
+  const queuePressure = Math.min(0.26, Math.max(0, Number(workload.queueSize || 0)) * 0.04);
+  if (['running', 'processing', 'active'].includes(normalizedStatus)) return Number((0.82 + queuePressure).toFixed(2));
+  if (['queued', 'review', 'thinking'].includes(normalizedStatus)) return Number((0.62 + queuePressure).toFixed(2));
+  if (['blocked', 'degraded', 'error'].includes(normalizedStatus)) return Number((0.34 + queuePressure).toFixed(2));
+  return Number((0.22 + queuePressure).toFixed(2));
+}
+
+function derivePresenceHealth({ status = 'idle', cognitionEntry = null, workerState = {} } = {}) {
+  const fallbackCount = Number(cognitionEntry?.fallback_count || 0);
+  const fallbackPenalty = Math.min(0.42, fallbackCount * 0.12);
+  const blockedPenalty = ['blocked', 'degraded', 'review'].includes(String(status || '').trim().toLowerCase()) ? 0.22 : 0;
+  const fallbackModePenalty = derivePresenceCognitionMode({ workerState, cognitionEntry }) === 'fallback' ? 0.24 : 0;
+  return Number((1 - Math.min(0.78, fallbackPenalty + blockedPenalty + fallbackModePenalty)).toFixed(2));
+}
+
+function derivePresenceTone({ status = 'idle', cognitionMode = 'deterministic_tool' } = {}) {
+  if (cognitionMode === 'fallback' || ['blocked', 'degraded', 'review'].includes(String(status || '').trim().toLowerCase())) {
+    return 'blocked';
+  }
+  if (['processing', 'queued', 'thinking'].includes(String(status || '').trim().toLowerCase())) {
+    return 'active';
+  }
+  return 'idle';
+}
+
+function buildAgentPresenceCard({
+  agent,
+  workerState = {},
+  cognitionEntry = null,
+  status = 'idle',
+  workload = {},
+  latestSignal = null,
+  latestRunSummary = null,
+} = {}) {
+  const cognitionMode = derivePresenceCognitionMode({ workerState, cognitionEntry });
+  const energy = derivePresenceEnergy({ status, workload, latestRunStatus: workerState?.status || null });
+  const health = derivePresenceHealth({ status, cognitionEntry, workerState });
+  const confidence = Number.isFinite(Number(cognitionEntry?.evaluation_confidence))
+    ? clampPresenceValue(cognitionEntry.evaluation_confidence, null)
+    : null;
+  return {
+    name: agent?.name || 'Agent',
+    role: agent?.role || 'Desk worker',
+    cognitionMode,
+    intendedCognitionMode: String(cognitionEntry?.intended_cognition_mode || '').trim() || null,
+    currentActivity: String(
+      workerState?.currentTask
+      || workerState?.currentGoal
+      || latestSignal
+      || latestRunSummary
+      || agent?.focusSummary
+      || ''
+    ).trim() || null,
+    energy,
+    health,
+    confidence,
+    fallbackCount: Number(cognitionEntry?.fallback_count || 0),
+    lastLiveModelCallAt: cognitionEntry?.last_live_model_call_at || null,
+    icon: cognitionMode === 'model_live'
+      ? '🧠'
+      : (cognitionMode === 'fallback' ? '⚠️' : '⚙️'),
+    tone: derivePresenceTone({ status, cognitionMode }),
+  };
+}
+
 function normalizeQAState(qaState = null) {
   return {
     structuredReport: qaState?.structuredReport || null,
@@ -3777,6 +3865,7 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
   });
   const workers = normalizeAgentWorkersState(workspace?.studio?.agentWorkers);
   const normalizedQA = normalizeQAState(qaState);
+  const cognitionIndex = indexAgentCognitionSummary(normalizedQA.agentCognitionSummary || null);
   const qaScorecards = resolveQAScorecardBundle(normalizedQA);
   const latestBrowserRun = normalizedQA.latestBrowserRun || normalizedQA.browserRuns[0] || null;
   const qaLeadState = normalizeQALeadRunnerPayload(normalizedQA.qaLead || null);
@@ -3800,6 +3889,7 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
     const intent = latestIntentReport(workspace);
     const runSignal = latestRunSignal(agent.id, runs);
     const reviewReport = agent.id === 'context-manager' ? intent : null;
+    const cognitionEntry = cognitionIndex.get(agent.id) || null;
     const governedDesk = workspace.studio?.orchestrator?.desks?.[agent.id] || null;
     const governedStatusMap = {
       running: 'processing',
@@ -3834,6 +3924,7 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
       name: profileName,
       role: profileRole,
       workerState,
+      cognitionEntry,
       status,
       statusDetail: statusDetail(status),
       workload,
@@ -3869,6 +3960,15 @@ export function buildAgentSnapshots({ workspace, dashboardState, runs, agentComm
       latestSignal: runSignal?.summary || governedDesk?.lastOutput || governedDesk?.currentGoal || reviewReport?.summary || null,
       latestRunStatus: runSignal?.status || governedDesk?.localState || null,
       latestRunSummary: runSignal?.summary || governedDesk?.blockedReason || governedDesk?.currentGoal || null,
+      presence: buildAgentPresenceCard({
+        agent: { ...agent, name: profileName, role: profileRole },
+        workerState,
+        cognitionEntry,
+        status,
+        workload,
+        latestSignal: runSignal?.summary || governedDesk?.lastOutput || governedDesk?.currentGoal || reviewReport?.summary || null,
+        latestRunSummary: runSignal?.summary || governedDesk?.blockedReason || governedDesk?.currentGoal || null,
+      }),
       reviewReport,
       deskSnapshot: agent.id === 'context-manager'
         ? buildContextDeskSnapshot({

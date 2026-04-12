@@ -745,6 +745,40 @@ export default async function runStudioDataTests() {
           },
         ],
       },
+      agentCognitionSummary: {
+        generated_at: '2026-03-24T10:22:00.000Z',
+        summary: '3 live cognition paths visible | 1 agent observed with fallback history',
+        agents: [
+          {
+            agent_id: 'context-manager',
+            intended_cognition_mode: 'model_live',
+            actual_last_cognition_mode: 'model_live',
+            fallback_count: 0,
+            last_live_model_call_at: '2026-03-24T10:13:00.000Z',
+          },
+          {
+            agent_id: 'planner',
+            intended_cognition_mode: 'model_live',
+            actual_last_cognition_mode: 'model_live',
+            fallback_count: 0,
+            last_live_model_call_at: '2026-03-24T10:14:00.000Z',
+          },
+          {
+            agent_id: 'executor',
+            intended_cognition_mode: 'model_live',
+            actual_last_cognition_mode: 'deterministic_fallback',
+            fallback_count: 2,
+            last_live_model_call_at: '2026-03-24T09:58:00.000Z',
+          },
+          {
+            agent_id: 'evaluator',
+            intended_cognition_mode: 'model_live',
+            actual_last_cognition_mode: 'model_live',
+            fallback_count: 0,
+            last_live_model_call_at: '2026-03-24T10:16:00.000Z',
+          },
+        ],
+      },
     },
   });
 
@@ -806,11 +840,16 @@ export default async function runStudioDataTests() {
   assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Produced Cards'));
   assert.ok(plannerSnapshot.deskSnapshot.sections.some((section) => section.label === 'Proposal Artifacts'));
   assert.ok(plannerSnapshot.deskSnapshot.taskEconomy.backlogPressure >= 0);
+  assert.equal(plannerSnapshot.presence.cognitionMode, 'model_live');
+  assert.equal(plannerSnapshot.presence.icon, '🧠');
   assert.equal(executorSnapshot.deskSnapshot.sections[0].label, 'Desk Truth');
   assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'execution-selection').label, 'Mutation Queue');
   assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'executor-worker').value, 'Status: idle | backend ollama | model mistral:latest');
   assert.ok(executorSnapshot.deskSnapshot.sections.some((section) => section.label === 'Task Economy'));
   assert.equal(executorSnapshot.deskSnapshot.taskEconomy.rewardState, plannerSnapshot.deskSnapshot.taskEconomy.rewardState);
+  assert.equal(executorSnapshot.presence.cognitionMode, 'fallback');
+  assert.equal(executorSnapshot.presence.fallbackCount, 2);
+  assert.equal(executorSnapshot.presence.health < plannerSnapshot.presence.health, true);
   assert.deepEqual(
     qaLeadSnapshot.deskSnapshot.sections.map((section) => section.label),
     ['QA Health Overview', 'QA MCP Proof of Life', 'QA Live Operator', 'QA Output Feed', 'Lane Canaries', 'Freshness & Hygiene', 'Repair Lanes', 'Evaluator Movement', 'Assigned Agent Liveness', 'Scorecards', 'Investigations', 'Advisory / Research'],

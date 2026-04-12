@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { loadModuleCopy, smokeLoadSpatialApp } from './helpers/browser-module-loader.mjs';
@@ -10,6 +11,15 @@ export default async function runSpatialAppSmokeTest() {
   assert.ok(spatialApp.default.firstRender);
   assert.equal(spatialApp.default.rootElement.getAttribute('data-boot'), 'studio-mounted');
   assert.equal(spatialApp.default.rootElement.childNodes.length > 0, true);
+  const spatialAppSource = fs.readFileSync(spatialAppPath, 'utf8');
+  const canvasShellIndex = spatialAppSource.indexOf("className: 'canvas-shell'");
+  const truthCanvasIndex = spatialAppSource.indexOf("className: 'truth-kernel-canvas'");
+  const mainCanvasIndex = spatialAppSource.indexOf("className: 'spatial-main-canvas'");
+  const railIndex = spatialAppSource.indexOf("className: `observability-rail");
+  assert.equal(canvasShellIndex >= 0, true);
+  assert.equal(truthCanvasIndex > canvasShellIndex, true);
+  assert.equal(mainCanvasIndex > truthCanvasIndex, true);
+  assert.equal(railIndex > mainCanvasIndex, true);
   assert.equal(typeof spatialApp.buildRsgActivityEntry, 'function');
   assert.equal(typeof spatialApp.pushRsgActivityEntry, 'function');
   assert.equal(typeof spatialApp.shouldRunFocusedRsgLoop, 'function');
@@ -25,6 +35,9 @@ export default async function runSpatialAppSmokeTest() {
   assert.equal(typeof spatialApp.normalizeRosterSurfacePayload, 'function');
   assert.equal(typeof spatialApp.normalizeTruthPayload, 'function');
   assert.equal(typeof spatialApp.normalizeQAReportPayload, 'function');
+  assert.equal(typeof spatialApp.resolveEvaluatorDirection, 'function');
+  assert.equal(typeof spatialApp.buildScorecardMovementModel, 'function');
+  assert.equal(typeof spatialApp.buildAgentWorkerCardModel, 'function');
   assert.equal(typeof spatialApp.buildChiefOfStaffQuickPrompts, 'function');
   assert.equal(typeof spatialApp.normalizeChiefOfStaffAdvisoryPayload, 'function');
   assert.equal(typeof spatialApp.buildChiefOfStaffDeskPresentation, 'function');
@@ -100,6 +113,67 @@ export default async function runSpatialAppSmokeTest() {
   });
   assert.equal(normalizedQaReport.status, 'idle');
   assert.deepEqual(normalizedQaReport.failures, []);
+  assert.deepEqual(
+    spatialApp.buildTruthInspectionLegend().map((entry) => entry.axis),
+    ['R', 'G', 'B', 'A', 'SAT', 'NOISE'],
+  );
+  assert.equal(spatialApp.resolveEvaluatorDirection('better').arrow, '↑');
+  assert.equal(spatialApp.resolveEvaluatorDirection('worse').arrow, '↓');
+  assert.equal(spatialApp.resolveEvaluatorDirection('no_change').arrow, '→');
+  assert.deepEqual(spatialApp.buildScorecardMovementModel({
+    overallScore: { value: 3.7, max: 4 },
+    evaluatorMovement: {
+      verdict: 'better',
+      deltaScore: 0.45,
+      evaluationConfidence: 0.81,
+      cognitionMode: 'model_live',
+      progressSummary: 'Runtime posture improved.',
+    },
+  }), {
+    direction: {
+      verdict: 'better',
+      arrow: '↑',
+      tone: 'good',
+      label: 'improving',
+      color: '#7fdca4',
+    },
+    delta: 0.45,
+    deltaLabel: '+0.45',
+    confidence: 0.81,
+    comparedAt: null,
+    cognitionMode: 'model_live',
+    progressSummary: 'Runtime posture improved.',
+    scorePressure: null,
+    currentScore: 3.7,
+    maxScore: 4,
+  });
+  assert.deepEqual(spatialApp.buildAgentWorkerCardModel({
+    name: 'Planner',
+    role: 'Planning',
+    latestSignal: 'Planning next slice.',
+    presence: {
+      cognitionMode: 'fallback',
+      icon: '⚠️',
+      currentActivity: 'Awaiting clearer acceptance criteria.',
+      energy: 0.44,
+      health: 0.28,
+      confidence: null,
+      fallbackCount: 2,
+    },
+  }), {
+    name: 'Planner',
+    role: 'Planning',
+    cognitionMode: 'fallback',
+    icon: '⚠️',
+    tone: 'idle',
+    currentActivity: 'Awaiting clearer acceptance criteria.',
+    energy: 0.44,
+    health: 0.28,
+    confidence: null,
+    fallbackCount: 2,
+    intendedCognitionMode: null,
+    lastLiveModelCallAt: null,
+  });
 
   const layoutModelPath = path.resolve(process.cwd(), 'public', 'spatial', 'studioLayoutModel.js');
   const layoutModel = await loadModuleCopy(layoutModelPath, { label: 'studioLayoutModel-smoke' });

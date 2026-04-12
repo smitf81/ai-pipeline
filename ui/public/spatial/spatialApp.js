@@ -109,10 +109,6 @@ import {
   decorateQaReadableSections,
 } from './qaReadableSections.js';
 import {
-  buildQAEvidenceProvenancePresentation,
-  normalizeQAEvidenceProvenance,
-} from './qaEvidenceProvenance.js';
-import {
   buildTruthKernelNodeInspectorModel,
   buildTruthKernelRenderModel,
   buildTruthKernelProvenancePresentation,
@@ -334,9 +330,12 @@ export function resolveTruthInspectionPanelState({
 
 export function buildTruthInspectionLegend() {
   return [
-    { axis: 'X', meaning: 'Temporal / process flow' },
-    { axis: 'Y', meaning: 'Semantic / organisational spread' },
-    { axis: 'Z', meaning: 'Depth / authority / certainty layer' },
+    { axis: 'R', meaning: 'Health degradation rises toward red' },
+    { axis: 'G', meaning: 'Health integrity rises toward green' },
+    { axis: 'B', meaning: 'Activity / live processing rises toward blue glow' },
+    { axis: 'A', meaning: 'Decay lowers opacity as nodes go stale or redundant' },
+    { axis: 'SAT', meaning: 'Confidence increases vividness and saturation' },
+    { axis: 'NOISE', meaning: 'Instability adds subtle flicker and visual noise' },
   ];
 }
 
@@ -838,6 +837,60 @@ function normalizeRenderList(value = []) {
 
 function normalizeRenderText(value = '', fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function normalizeQaEvidenceProvenance(trace = null) {
+  const source = normalizeRenderObject(trace);
+  const sourcePath = normalizeRenderText(source.sourcePath || source.source_route || source.route || source.routePath, '') || null;
+  const classification = normalizeRenderText(source.classification || source.sourceClass || source.kind, '') || null;
+  const freshnessClass = normalizeRenderText(source.freshnessClass || source.freshness, '') || null;
+  const generatedAt = normalizeRenderText(source.generatedAt || source.updatedAt || source.observedAt || source.createdAt || source.lastUpdatedAt, '') || null;
+  const observedAt = normalizeRenderText(source.observedAt || source.updatedAt || source.generatedAt || source.createdAt || source.lastUpdatedAt, '') || null;
+  const fallbackUsed = typeof source.fallbackUsed === 'boolean'
+    ? source.fallbackUsed
+    : (typeof source.usedFallback === 'boolean' ? source.usedFallback : null);
+  const chips = [];
+  if (sourcePath) chips.push({ label: 'Source', value: sourcePath, tone: 'neutral' });
+  if (classification) {
+    chips.push({
+      label: 'Class',
+      value: classification,
+      tone: ['live', 'live_canonical', 'projection', 'canonical'].includes(classification)
+        ? 'good'
+        : (['derived_current', 'derived', 'fallback'].includes(classification) ? 'warn' : 'neutral'),
+    });
+  }
+  if (freshnessClass) {
+    chips.push({
+      label: 'Freshness',
+      value: freshnessClass.replace(/_/g, ' '),
+      tone: freshnessClass === 'stale' ? 'warn' : (freshnessClass === 'missing' ? 'bad' : 'good'),
+    });
+  }
+  if (generatedAt) chips.push({ label: 'Generated', value: generatedAt, tone: 'neutral' });
+  if (observedAt && observedAt !== generatedAt) chips.push({ label: 'Observed', value: observedAt, tone: 'neutral' });
+  if (fallbackUsed !== null) chips.push({ label: 'Fallback', value: fallbackUsed ? 'yes' : 'no', tone: fallbackUsed ? 'warn' : 'good' });
+  return {
+    sourcePath,
+    classification,
+    freshnessClass,
+    generatedAt,
+    observedAt,
+    fallbackUsed,
+    chips,
+    hasProvenance: chips.length > 0,
+  };
+}
+
+function buildQaEvidenceProvenance(trace = null, { fallbackLabel = '' } = {}) {
+  const provenance = normalizeQaEvidenceProvenance(trace);
+  const chips = Array.isArray(provenance?.chips) ? provenance.chips.slice(0, 6) : [];
+  return {
+    ...provenance,
+    chips,
+    hasRenderableProvenance: Boolean(provenance?.hasProvenance) && chips.length > 0,
+    fallbackLabel: provenance?.hasProvenance ? '' : normalizeRenderText(fallbackLabel, ''),
+  };
 }
 
 function normalizeQAEvidenceTracePayload(trace = {}) {
@@ -3285,6 +3338,83 @@ export function resolveGeneratedNodeInspection(node = null) {
   };
 }
 
+export function resolveEvaluatorDirection(verdict = '') {
+  const normalized = String(verdict || '').trim().toLowerCase();
+  if (normalized === 'better') {
+    return {
+      verdict: 'better',
+      arrow: '↑',
+      tone: 'good',
+      label: 'improving',
+      color: '#7fdca4',
+    };
+  }
+  if (normalized === 'worse') {
+    return {
+      verdict: 'worse',
+      arrow: '↓',
+      tone: 'bad',
+      label: 'degrading',
+      color: '#ff8c6f',
+    };
+  }
+  return {
+    verdict: 'no_change',
+    arrow: '→',
+    tone: 'neutral',
+    label: 'stable',
+    color: '#9ab7d7',
+  };
+}
+
+export function formatSignedDelta(value = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '0.00';
+  return numeric > 0 ? `+${numeric.toFixed(2)}` : numeric.toFixed(2);
+}
+
+export function buildScorecardMovementModel(card = {}) {
+  const movement = normalizeRenderObject(card.evaluatorMovement || {});
+  const confidence = Number.isFinite(Number(movement.evaluationConfidence))
+    ? Math.max(0, Math.min(1, Number(movement.evaluationConfidence)))
+    : null;
+  const delta = Number.isFinite(Number(movement.deltaScore)) ? Number(movement.deltaScore) : 0;
+  const direction = resolveEvaluatorDirection(movement.verdict || card.evaluatorVerdict || 'no_change');
+  return {
+    direction,
+    delta,
+    deltaLabel: formatSignedDelta(delta),
+    confidence,
+    comparedAt: normalizeRenderText(movement.comparedAt, '') || null,
+    cognitionMode: normalizeRenderText(movement.cognitionMode, '') || null,
+    progressSummary: normalizeRenderText(movement.progressSummary, '') || null,
+    scorePressure: normalizeRenderText(movement.scorePressure, '') || null,
+    currentScore: Number.isFinite(Number(card?.overallScore?.value)) ? Number(card.overallScore.value) : null,
+    maxScore: Number.isFinite(Number(card?.overallScore?.max)) ? Number(card.overallScore.max) : null,
+  };
+}
+
+export function buildAgentWorkerCardModel(agent = null) {
+  const presence = normalizeRenderObject(agent?.presence || {});
+  const cognitionMode = normalizeRenderText(presence.cognitionMode, '') || 'deterministic_tool';
+  return {
+    name: normalizeRenderText(presence.name, '') || normalizeRenderText(agent?.name, '') || 'Agent',
+    role: normalizeRenderText(presence.role, '') || normalizeRenderText(agent?.role, '') || 'Desk worker',
+    cognitionMode,
+    icon: normalizeRenderText(presence.icon, '') || (cognitionMode === 'model_live' ? '🧠' : (cognitionMode === 'fallback' ? '⚠️' : '⚙️')),
+    tone: normalizeRenderText(presence.tone, '') || 'idle',
+    currentActivity: normalizeRenderText(presence.currentActivity, '') || normalizeRenderText(agent?.latestSignal, '') || normalizeRenderText(agent?.focusSummary, '') || 'No active task recorded.',
+    energy: Number.isFinite(Number(presence.energy)) ? Math.max(0, Math.min(1, Number(presence.energy))) : 0,
+    health: Number.isFinite(Number(presence.health)) ? Math.max(0, Math.min(1, Number(presence.health))) : 0,
+    confidence: presence.confidence == null
+      ? null
+      : (Number.isFinite(Number(presence.confidence)) ? Math.max(0, Math.min(1, Number(presence.confidence))) : null),
+    fallbackCount: Number.isFinite(Number(presence.fallbackCount)) ? Number(presence.fallbackCount) : 0,
+    intendedCognitionMode: normalizeRenderText(presence.intendedCognitionMode, '') || null,
+    lastLiveModelCallAt: normalizeRenderText(presence.lastLiveModelCallAt, '') || null,
+  };
+}
+
 export function buildRsgActivityEntry({
   type = 'rsg-skip',
   sourceNode = null,
@@ -3628,6 +3758,46 @@ export function buildSpatialNotebookErrorFallback({ boundaryId = 'panel', title 
   );
 }
 
+function renderContinuousMeter(value = null, {
+  fill = '#7fdca4',
+  track = 'rgba(255, 255, 255, 0.12)',
+  label = '',
+} = {}) {
+  const normalized = Number.isFinite(Number(value)) ? Math.max(0, Math.min(1, Number(value))) : null;
+  return h('div', {
+    className: 'continuous-meter',
+    title: normalized === null ? `${label || 'value'} unavailable` : `${label || 'value'} ${Math.round(normalized * 100)}%`,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      minWidth: 0,
+    },
+  },
+    h('div', {
+      style: {
+        flex: 1,
+        height: '7px',
+        borderRadius: '999px',
+        background: track,
+        overflow: 'hidden',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+      },
+    },
+      h('div', {
+        style: {
+          width: `${Math.max(0, Math.min(100, (normalized ?? 0) * 100))}%`,
+          height: '100%',
+          borderRadius: '999px',
+          background: fill,
+          transition: 'width 160ms ease',
+        },
+      }),
+    ),
+    h('span', { className: 'signal-meta muted', style: { minWidth: '42px', textAlign: 'right' } }, normalized === null ? 'n/a' : normalized.toFixed(2)),
+  );
+}
+
 export class SpatialNotebookErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -3714,7 +3884,7 @@ function toneForQAEvidenceFreshness(freshnessClass = '') {
 }
 
 function renderQAEvidenceProvenanceChips(trace = null, emptyState = null) {
-  const provenance = buildQAEvidenceProvenancePresentation(trace);
+  const provenance = buildQaEvidenceProvenance(trace);
   if (!provenance.hasRenderableProvenance) {
     return emptyState ? h('div', { className: 'signal-meta muted' }, emptyState) : null;
   }
@@ -3728,7 +3898,7 @@ function renderQAEvidenceProvenanceChips(trace = null, emptyState = null) {
 }
 
 function renderQASummaryProvenanceChips(trace = null, fallbackLabel = 'Derived summary') {
-  const provenance = buildQAEvidenceProvenancePresentation(trace, { fallbackLabel });
+  const provenance = buildQaEvidenceProvenance(trace, { fallbackLabel });
   if (provenance.hasRenderableProvenance) {
     return h('div', { className: 'qa-metric-pill-row qa-summary-provenance-row' },
       provenance.chips.map((chip) => h('span', {
@@ -4576,6 +4746,7 @@ function renderDeskSection(rawSection, helpers = {}) {
     const cards = normalizeRenderList(section.cards);
     const summaryProvenance = renderQASummaryProvenanceChips(section.sourceTrace, 'Derived summary');
     const evaluatorMovement = normalizeRenderObject(section.evaluator?.movement || section.evaluator?.latestEvaluation || {});
+    const suiteDirection = resolveEvaluatorDirection(evaluatorMovement.verdict || 'no_change');
     return h('details', {
       key: section.id,
       className: 'inspector-block panel-card qa-scorecards-panel',
@@ -4592,31 +4763,64 @@ function renderDeskSection(rawSection, helpers = {}) {
           h('span', { className: 'qa-metric-pill tone-neutral' }, `Tests ${Number(section.meta?.testCount || cards.length || 0)}`),
           h('span', { className: 'qa-metric-pill tone-neutral' }, `Desks ${Number(section.meta?.deskCount || 0)}`),
           evaluatorMovement.verdict
-            ? h('span', { className: `qa-metric-pill tone-${evaluatorMovement.verdict === 'better' ? 'good' : (evaluatorMovement.verdict === 'worse' ? 'bad' : 'neutral')}` }, `Evaluator ${evaluatorMovement.verdict}`)
+            ? h('span', { className: `qa-metric-pill tone-${suiteDirection.tone}` }, `Evaluator ${suiteDirection.arrow} ${suiteDirection.verdict}`)
             : null,
         ),
       ),
+      evaluatorMovement.verdict
+        ? h('div', {
+            style: {
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) auto',
+              gap: '8px 12px',
+              alignItems: 'center',
+              marginBottom: '10px',
+            },
+          },
+            h('div', null,
+              h('div', { className: 'signal-meta muted' }, `${suiteDirection.arrow} ${suiteDirection.label} | delta ${formatSignedDelta(evaluatorMovement.deltaScore || evaluatorMovement.delta_score || 0)} | pressure ${evaluatorMovement.scorePressure || evaluatorMovement.score_pressure || 'flat'}`),
+              h('div', { className: 'signal-meta muted' }, normalizeRenderText(evaluatorMovement.progressSummary || evaluatorMovement.progress_summary, '') || 'Evaluator movement is ready once two grounded snapshots exist.'),
+            ),
+            Number.isFinite(Number(evaluatorMovement.evaluationConfidence || evaluatorMovement.evaluation_confidence))
+              ? renderContinuousMeter(Number(evaluatorMovement.evaluationConfidence || evaluatorMovement.evaluation_confidence), {
+                  fill: suiteDirection.color,
+                  label: 'confidence',
+                })
+              : null,
+          )
+        : null,
       cards.length
         ? h('div', { className: 'desk-panel-list utility-list qa-scorecard-list' }, cards.slice(0, 6).map((card) => h('details', {
             key: card.id || `${card.desk}-${card.testId}`,
             className: `desk-panel-item utility-card qa-scorecard-card status-${card.status || 'pass'}`,
           },
-            h('summary', { className: 'inline review-header' },
-              h('div', null,
-                h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
-                h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
-                card.evaluatorMovement?.progressSummary
-                  ? h('div', { className: 'signal-meta muted' }, `Evaluator ${card.evaluatorMovement.verdict || 'no_change'} | ${card.evaluatorMovement.progressSummary}`)
+            (() => {
+              const movement = buildScorecardMovementModel(card);
+              return h(React.Fragment, null,
+                h('summary', { className: 'inline review-header' },
+                  h('div', null,
+                    h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
+                    h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Score ${movement.currentScore ?? 'n/a'} / ${movement.maxScore ?? 4} | Delta ${movement.deltaLabel}`),
+                    movement.progressSummary
+                      ? h('div', { className: 'signal-meta muted', style: { color: movement.direction.color } }, `${movement.direction.arrow} ${movement.direction.label} | ${movement.progressSummary}`)
+                      : null,
+                    renderQASummaryProvenanceChips(card.sourceTrace, 'Derived summary'),
+                  ),
+                  h('div', { className: 'qa-metric-pill-row' },
+                    h('span', { className: `qa-metric-pill tone-${card.status === 'pass' ? 'good' : (card.status === 'fail' ? 'bad' : 'neutral')}` }, card.status || 'pass'),
+                    h('span', { className: `qa-metric-pill tone-${movement.direction.tone}` }, `${movement.direction.arrow} ${movement.direction.verdict}`),
+                  ),
+                ),
+                movement.confidence !== null
+                  ? h('div', { style: { marginBottom: '8px' } },
+                      renderContinuousMeter(movement.confidence, {
+                        fill: movement.direction.color,
+                        label: 'confidence',
+                      }),
+                    )
                   : null,
-                renderQASummaryProvenanceChips(card.sourceTrace, 'Derived summary'),
-              ),
-              h('div', { className: 'qa-metric-pill-row' },
-                h('span', { className: `qa-metric-pill tone-${card.status === 'pass' ? 'good' : (card.status === 'fail' ? 'bad' : 'neutral')}` }, card.status || 'pass'),
-                card.evaluatorMovement?.verdict
-                  ? h('span', { className: `qa-metric-pill tone-${card.evaluatorMovement.verdict === 'better' ? 'good' : (card.evaluatorMovement.verdict === 'worse' ? 'bad' : 'neutral')}` }, `${card.evaluatorMovement.verdict} ${Number.isFinite(Number(card.evaluatorMovement.deltaScore)) ? Number(card.evaluatorMovement.deltaScore).toFixed(2) : '0.00'}`)
-                  : null,
-              ),
-            ),
+              );
+            })(),
             h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace?.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace?.freshnessClass)}`),
             card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
             card.evaluatorMovement?.comparedAt ? h('div', { className: 'signal-meta muted' }, `Evaluator compared at: ${formatTimestamp(card.evaluatorMovement.comparedAt)} | cognition ${card.evaluatorMovement.cognitionMode || 'unknown'}`) : null,
@@ -4632,6 +4836,8 @@ function renderDeskSection(rawSection, helpers = {}) {
     const evaluator = normalizeRenderObject(section.evaluator || {});
     const latestEvaluation = normalizeRenderObject(evaluator.latestEvaluation || evaluator.movement || {});
     const history = normalizeRenderList(evaluator.history || []);
+    const direction = resolveEvaluatorDirection(latestEvaluation.verdict || 'no_change');
+    const dimensionImpacts = normalizeRenderList(latestEvaluation.dimensionImpacts || latestEvaluation.dimension_impacts || []);
     return h('details', {
       key: section.id,
       className: 'inspector-block panel-card qa-evaluator-panel',
@@ -4644,15 +4850,35 @@ function renderDeskSection(rawSection, helpers = {}) {
           h('div', { className: 'signal-summary' }, section.summary || section.emptyState || 'No evaluator artefact is recorded yet.'),
         ),
         h('div', { className: 'qa-metric-pill-row' },
-          h('span', { className: `qa-metric-pill tone-${latestEvaluation.verdict === 'better' ? 'good' : (latestEvaluation.verdict === 'worse' ? 'bad' : 'neutral')}` }, latestEvaluation.verdict || 'no_change'),
+          h('span', { className: `qa-metric-pill tone-${direction.tone}` }, `${direction.arrow} ${direction.verdict}`),
           h('span', { className: 'qa-metric-pill tone-neutral' }, `History ${Number(evaluator.historyCount || history.length || 0)}`),
         ),
       ),
       latestEvaluation.verdict
         ? h(React.Fragment, null,
-            h('div', { className: 'signal-meta muted' }, `Delta ${Number.isFinite(Number(latestEvaluation.delta_score || latestEvaluation.deltaScore)) ? Number(latestEvaluation.delta_score || latestEvaluation.deltaScore).toFixed(2) : '0.00'} | pressure ${latestEvaluation.score_pressure || latestEvaluation.scorePressure || 'flat'} | confidence ${Number.isFinite(Number(latestEvaluation.evaluation_confidence || latestEvaluation.evaluationConfidence)) ? Math.round(Number(latestEvaluation.evaluation_confidence || latestEvaluation.evaluationConfidence) * 100) : '?'}%`),
+            h('div', { className: 'signal-meta muted' }, `${direction.arrow} ${direction.label} | target ${latestEvaluation.comparison_target || latestEvaluation.comparisonTarget || 'system_runtime'} | delta ${formatSignedDelta(latestEvaluation.delta_score || latestEvaluation.deltaScore || 0)} | pressure ${latestEvaluation.score_pressure || latestEvaluation.scorePressure || 'flat'}`),
+            Number.isFinite(Number(latestEvaluation.evaluation_confidence || latestEvaluation.evaluationConfidence))
+              ? renderContinuousMeter(Number(latestEvaluation.evaluation_confidence || latestEvaluation.evaluationConfidence), {
+                  fill: direction.color,
+                  label: 'confidence',
+                })
+              : null,
             h('div', { className: 'signal-meta muted' }, `Compared at: ${formatTimestamp(latestEvaluation.compared_at || latestEvaluation.comparedAt)} | cognition ${latestEvaluation.cognition_mode || latestEvaluation.cognitionMode || 'unknown'} | model ${latestEvaluation.model_name || latestEvaluation.modelName || 'n/a'}`),
             h('div', { className: 'signal-meta muted' }, latestEvaluation.progress_summary || latestEvaluation.progressSummary || 'No evaluator summary recorded.'),
+            dimensionImpacts.length
+              ? h('div', { className: 'desk-panel-list utility-list', style: { marginTop: '8px' } }, dimensionImpacts.map((impact, index) => {
+                  const impactDirection = resolveEvaluatorDirection(impact.verdict || 'no_change');
+                  return h('div', {
+                    key: impact.id || `${section.id}-impact-${index}`,
+                    className: 'desk-panel-item utility-card',
+                    style: { padding: '10px 12px' },
+                  },
+                    h('div', { className: 'signal-summary', style: { color: impactDirection.color } }, `${impactDirection.arrow} ${impact.label || impact.id || 'dimension'}`),
+                    h('div', { className: 'signal-meta muted' }, `Delta ${formatSignedDelta(impact.delta || 0)} | weight ${Number.isFinite(Number(impact.weight)) ? Number(impact.weight).toFixed(2) : 'n/a'}`),
+                    impact.summary ? h('div', { className: 'signal-meta muted' }, impact.summary) : null,
+                  );
+                }))
+              : null,
           )
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No evaluator artefact is recorded yet.'),
     );
@@ -4815,7 +5041,7 @@ function renderDeskSection(rawSection, helpers = {}) {
   }
   if (section.kind === 'qa-browser') {
     const run = section.latestRun || null;
-    const provenance = run?.sourceTrace ? normalizeQAEvidenceProvenance({
+  const provenance = run?.sourceTrace ? normalizeQaEvidenceProvenance({
       ...run.sourceTrace,
       classification: run.sourceTrace.sourceClass || run.sourceTrace.freshnessClass || null,
     }) : null;
@@ -4852,11 +5078,11 @@ function renderDeskSection(rawSection, helpers = {}) {
   if (section.kind === 'qa-local-gates') {
     const unitGate = section.gate?.unit || null;
     const studioBootGate = section.gate?.studioBoot || null;
-    const unitProvenance = unitGate?.sourceTrace ? normalizeQAEvidenceProvenance({
+  const unitProvenance = unitGate?.sourceTrace ? normalizeQaEvidenceProvenance({
       ...unitGate.sourceTrace,
       classification: unitGate.sourceTrace.sourceClass || unitGate.sourceTrace.freshnessClass || null,
     }) : null;
-    const bootProvenance = studioBootGate?.sourceTrace ? normalizeQAEvidenceProvenance({
+  const bootProvenance = studioBootGate?.sourceTrace ? normalizeQaEvidenceProvenance({
       ...studioBootGate.sourceTrace,
       classification: studioBootGate.sourceTrace.sourceClass || studioBootGate.sourceTrace.freshnessClass || null,
     }) : null;
@@ -9136,12 +9362,53 @@ function syncRecentWorldChange(change = null) {
     (Array.isArray(scorecards) ? scorecards : []).length
       ? h('div', { className: 'desk-panel-list utility-list' }, (Array.isArray(scorecards) ? scorecards : []).map((card) => {
           const lifecycleStatus = card.rollupStatus || card.status || 'missing';
+          const movement = buildScorecardMovementModel(card);
           return h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item utility-card' },
-            h('div', { className: 'signal-summary' }, `${card.desk || 'Desk'} | ${card.testName || card.testId || 'Scorecard'}`),
-            h('div', { className: 'signal-meta muted' }, `Rollup ${lifecycleStatus} | Reported ${card.reportedStatus || card.status || 'missing'} | Overall ${card.overallScore?.value ?? 'n/a'} / ${card.overallScore?.max ?? 4}`),
+            h('div', {
+              className: 'inline review-header',
+              style: { alignItems: 'flex-start' },
+            },
+              h('div', null,
+                h('div', { className: 'signal-summary' }, `${card.desk || 'Desk'} | ${card.testName || card.testId || 'Scorecard'}`),
+                h('div', { className: 'signal-meta muted' }, `Rollup ${lifecycleStatus} | Reported ${card.reportedStatus || card.status || 'missing'} | Score ${movement.currentScore ?? 'n/a'} / ${movement.maxScore ?? 4}`),
+              ),
+              h('div', {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: movement.direction.color,
+                  fontWeight: 600,
+                },
+              },
+                h('span', { 'aria-hidden': true }, movement.direction.arrow),
+                h('span', null, movement.deltaLabel),
+              ),
+            ),
+            h('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginTop: '6px',
+                color: movement.direction.color,
+                fontSize: '12px',
+              },
+            },
+              h('span', null, `${movement.direction.arrow} ${movement.direction.verdict}`),
+              h('span', { className: 'muted' }, movement.progressSummary || 'No evaluator movement recorded.'),
+            ),
+            movement.confidence !== null
+              ? h('div', { style: { marginTop: '8px' } },
+                  renderContinuousMeter(movement.confidence, {
+                    fill: movement.direction.color,
+                    label: 'confidence',
+                  }),
+                )
+              : null,
             card.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace.sourcePath || card.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace.freshnessClass)}`) : null,
             !card.sourceTrace && card.sourceSeam ? h('div', { className: 'signal-meta muted' }, `Source seam: ${card.sourceSeam}`) : null,
-          card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
+          card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}${movement.comparedAt ? ` | evaluated ${formatTimestamp(movement.comparedAt)}` : ''}`) : null,
             card.rollupReasons?.[0] ? h('div', { className: 'signal-meta muted' }, card.rollupReasons[0]) : null,
           card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
           );
@@ -10826,7 +11093,7 @@ function syncRecentWorldChange(change = null) {
               className: 'truth-kernel-status-line',
               'data-qa': 'truth-kernel-status',
             },
-              h('span', { className: 'truth-kernel-status-line__label' }, 'Truth Render'),
+              h('span', { className: 'truth-kernel-status-line__label' }, truthKernelVisible ? 'Truth Overlay' : 'Truth Render'),
               h('span', { className: 'truth-kernel-status-line__value mono' }, truthKernelRenderSummary.line),
             ),
             truthKernelVisible && truthKernelRenderSummary.spread ? h('div', {
@@ -10847,7 +11114,7 @@ function syncRecentWorldChange(change = null) {
               className: 'truth-inspection-legend',
               'data-qa': 'truth-inspection-legend',
             },
-              h('div', { className: 'truth-inspection-legend__title' }, 'Inspection Space'),
+              h('div', { className: 'truth-inspection-legend__title' }, 'RGBA Truth Encoding'),
               truthInspectionLegend.map((entry) => h('div', {
                 key: entry.axis,
                 className: 'truth-inspection-legend__row',
@@ -11347,6 +11614,7 @@ function syncRecentWorldChange(change = null) {
               studioDeskEntries.map((desk) => {
                 const deskPosition = desk.position || deskStagePoint(desk.id, studioLayout);
                 const meta = STATUS_META[desk.status] || STATUS_META.idle;
+                const workerCard = buildAgentWorkerCardModel(desk);
                 const chiefDesk = desk.id === 'cto-chief-of-staff';
                 const cardMeta = chiefDesk
                   ? {
@@ -11401,10 +11669,102 @@ function syncRecentWorldChange(change = null) {
                     h('div', { className: 'station-prop' }),
                     h('div', { className: 'station-screen' }),
                   ),
-                  h(PixelAvatar, { accent: desk.theme.accent, status: desk.status }),
+                  h('div', {
+                    style: {
+                      position: 'relative',
+                      display: 'inline-flex',
+                    },
+                  },
+                    h(PixelAvatar, { accent: desk.theme.accent, status: desk.status }),
+                    h('div', {
+                      style: {
+                        position: 'absolute',
+                        right: '-10px',
+                        bottom: '2px',
+                        minWidth: '22px',
+                        height: '22px',
+                        borderRadius: '999px',
+                        border: `1px solid ${workerCard.cognitionMode === 'fallback' ? 'rgba(255, 120, 95, 0.52)' : (workerCard.cognitionMode === 'model_live' ? 'rgba(127, 220, 164, 0.5)' : 'rgba(152, 183, 215, 0.45)')}`,
+                        background: 'rgba(9, 15, 24, 0.9)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        boxShadow: '0 8px 18px rgba(0, 0, 0, 0.28)',
+                      },
+                      title: `${workerCard.name} | ${workerCard.cognitionMode}`,
+                    }, workerCard.icon),
+                  ),
                   h('div', { className: `status-chip ${cardMeta.tone}` }, cardMeta.badge),
                   h('div', { className: `org-status-chip ${getOrgStatusMeta(desk.statusLabel || desk.orgStatus).tone}` }, getOrgStatusMeta(desk.statusLabel || desk.orgStatus).badge),
                   h('div', { className: 'agent-label' }, desk.shortLabel),
+                  selectedAgentId === desk.id ? h('div', {
+                    style: {
+                      position: 'absolute',
+                      left: 'calc(100% + 14px)',
+                      top: '-6px',
+                      width: '228px',
+                      padding: '12px 14px',
+                      borderRadius: '16px',
+                      background: 'rgba(8, 13, 22, 0.96)',
+                      border: `1px solid ${workerCard.cognitionMode === 'fallback' ? 'rgba(255, 120, 95, 0.36)' : (workerCard.cognitionMode === 'model_live' ? 'rgba(127, 220, 164, 0.34)' : 'rgba(152, 183, 215, 0.28)')}`,
+                      boxShadow: '0 18px 42px rgba(0, 0, 0, 0.38)',
+                      zIndex: 7,
+                      pointerEvents: 'none',
+                    },
+                    'data-qa': `worker-card-${desk.id}`,
+                  },
+                    h('div', {
+                      style: {
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        gap: '10px',
+                      },
+                    },
+                      h('div', null,
+                        h('div', { className: 'signal-summary' }, workerCard.name),
+                        h('div', { className: 'signal-meta muted' }, workerCard.role),
+                      ),
+                      h('div', {
+                        style: {
+                          fontSize: '18px',
+                          lineHeight: 1,
+                        },
+                      }, workerCard.icon),
+                    ),
+                    h('div', {
+                      style: {
+                        marginTop: '8px',
+                        color: workerCard.cognitionMode === 'fallback' ? '#ff9a82' : (workerCard.cognitionMode === 'model_live' ? '#8fe1af' : '#b6cae6'),
+                        fontSize: '12px',
+                        fontWeight: 600,
+                      },
+                    }, workerCard.cognitionMode),
+                    h('div', { className: 'signal-meta muted', style: { marginTop: '6px' } }, workerCard.currentActivity),
+                    h('div', { style: { marginTop: '10px' } },
+                      h('div', { className: 'signal-meta muted', style: { marginBottom: '4px' } }, 'Energy'),
+                      renderContinuousMeter(workerCard.energy, {
+                        fill: '#77c8ff',
+                        label: 'energy',
+                      }),
+                    ),
+                    h('div', { style: { marginTop: '8px' } },
+                      h('div', { className: 'signal-meta muted', style: { marginBottom: '4px' } }, 'Health'),
+                      renderContinuousMeter(workerCard.health, {
+                        fill: workerCard.cognitionMode === 'fallback' ? '#ff8c6f' : '#7fdca4',
+                        label: 'health',
+                      }),
+                    ),
+                    workerCard.confidence !== null ? h('div', { style: { marginTop: '8px' } },
+                      h('div', { className: 'signal-meta muted', style: { marginBottom: '4px' } }, 'Confidence'),
+                      renderContinuousMeter(workerCard.confidence, {
+                        fill: '#c7b2ff',
+                        label: 'confidence',
+                      }),
+                    ) : null,
+                    h('div', { className: 'signal-meta muted', style: { marginTop: '8px' } }, `Fallbacks ${workerCard.fallbackCount}${workerCard.lastLiveModelCallAt ? ` | live ${formatTimestamp(workerCard.lastLiveModelCallAt)}` : ''}`),
+                  ) : null,
                 );
               }),
               h('div', { className: 'studio-plaque' },

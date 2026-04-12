@@ -1,220 +1,25 @@
 {
   "source": "qa_lead_runner",
   "agent_id": "qa-lead",
-  "run_id": "qa_lead_1775917842532_6lde3o",
-  "status": "live",
+  "run_id": "qa_lead_1775978493061_i626pc",
+  "status": "running",
   "current_task": "QA proof-of-life, browser pass, lane canaries, and loop audit",
-  "current_batch": "qa_lead_1775917842532_6lde3o",
-  "started_at": "2026-04-11T14:30:42.532Z",
-  "finished_at": "2026-04-11T14:31:31.106Z",
-  "last_completed_cycle_at": "2026-04-11T14:31:31.106Z",
+  "current_batch": "qa_lead_1775978493061_i626pc",
+  "base_url": "http://127.0.0.1:3000",
+  "probe_url": "http://127.0.0.1:5051/run_test",
+  "started_at": "2026-04-12T07:21:33.061Z",
+  "finished_at": null,
+  "last_completed_cycle_at": null,
   "active_tools": [
     "boot_preflight",
     "ui_boot_repair",
     "external_probe_check",
-    "qa_research_note",
     "browser_qa_run",
     "lane_canary_suite",
-    "loop_audit"
+    "loop_audit",
+    "qa_research_note"
   ],
-  "live_status": {
-    "source": "qa_mcp_live_status",
-    "status": "live",
-    "usage_state": "active_gating",
-    "freshness": "fresh",
-    "summary": "QA is live and actively gating with MCP-backed evidence.",
-    "heartbeat_at": "2026-04-11T14:30:57.811Z",
-    "last_completed_cycle_at": "2026-04-11T14:30:57.811Z",
-    "mcp_configured": true,
-    "configured_tools": [
-      "external_probe_check",
-      "qa_research_note"
-    ],
-    "mcp_reachable": true,
-    "last_ping_at": "2026-04-11T14:30:42.580Z",
-    "last_ping_status": "ok",
-    "last_ping_source": "external_mcp",
-    "last_ping_failure_kind": null,
-    "last_ping_failure_detail": null,
-    "last_ping_http_status": null,
-    "last_ping_target": "http://127.0.0.1:5051/run_test",
-    "research_target": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping",
-    "research_last_call_at": "2026-04-11T08:35:32.447Z",
-    "research_last_call_status": "offline",
-    "research_failure_kind": "offline",
-    "research_failure_detail": "fetch failed",
-    "last_call_at": "2026-04-11T14:30:42.580Z",
-    "last_call_tool": "external_probe_check",
-    "last_call_status": "ok",
-    "last_call_source": "external_mcp",
-    "last_qa_gate_source": "structured_qa",
-    "using_mcp_for_qa_decisions": true,
-    "last_success_at": "2026-04-11T14:30:42.580Z",
-    "last_failure_at": "2026-04-11T08:35:32.447Z",
-    "current_failure_kind": "offline",
-    "current_failure_tool": "qa_research_note",
-    "recovery_detected": true,
-    "recovered_at": "2026-04-11T14:30:42.580Z",
-    "recovered_from_kind": "offline",
-    "notes": [
-      "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
-      "Latest QA gate source: structured_qa.",
-      "Last MCP ping status: ok.",
-      "Probe target: http://127.0.0.1:5051/run_test.",
-      "Last MCP call: external_probe_check (ok).",
-      "Latest research call status: offline.",
-      "Latest research failure: offline.",
-      "Research failure detail: fetch failed",
-      "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping.",
-      "Recovery detected after offline."
-    ]
-  },
-  "output_feed": [
-    {
-      "id": "boot-preflight",
-      "label": "Boot preflight",
-      "tool": "boot_preflight",
-      "status": "validated",
-      "verdict": "pass",
-      "summary": "Boot preflight passed.",
-      "detail": "",
-      "observed_at": "2026-04-11T08:15:32.375Z",
-      "artifact_refs": [
-        "/api/health"
-      ],
-      "notes": []
-    },
-    {
-      "id": "proof-of-life",
-      "label": "MCP proof of life",
-      "tool": "external_probe_check",
-      "status": "validated",
-      "verdict": "pass",
-      "summary": "External QA probe returned a fresh live QA MCP helper result.",
-      "detail": "1 of 4 desks failed; 1 of 19 checks failed",
-      "observed_at": "2026-04-11T14:30:42.580Z",
-      "artifact_refs": [
-        "http://127.0.0.1:5051/run_test"
-      ],
-      "notes": [
-        "Evidence source: live_helper",
-        "Fallback used: no",
-        "Live helper evidence was consumed through external_probe_check.",
-        "Status mismatch: external pass vs internal fail."
-      ]
-    },
-    {
-      "id": "browser-pass",
-      "label": "Browser QA run",
-      "tool": "browser_qa_run",
-      "status": "degraded",
-      "verdict": "fail",
-      "summary": "fetch failed",
-      "detail": "fetch failed",
-      "observed_at": "2026-04-11T14:30:57.811Z",
-      "artifact_refs": [
-        "data/spatial/qa/qa_1775917842589_9fuxcb.json"
-      ],
-      "notes": [
-        "Runtime attempted: chromium -> firefox",
-        "Runtime fallback used: no",
-        "Failure stage: run",
-        "Failure code: econnrefused"
-      ]
-    },
-    {
-      "id": "lane-canaries",
-      "label": "Lane canary suite",
-      "tool": "lane_canary_suite",
-      "status": "degraded",
-      "verdict": "fail",
-      "summary": "2 QA lane canaryies failing.",
-      "detail": "Failing canaries: ui_boot_integrity_missing_asset | planner_canonical_identity_guard",
-      "observed_at": "2026-04-11T14:31:24.198Z",
-      "artifact_refs": [],
-      "notes": [
-        "UI boot missing asset route: fail",
-        "Route contract payload drift: pass",
-        "Planner canonical identity guard: fail"
-      ]
-    },
-    {
-      "id": "loop-audit",
-      "label": "Closed-loop fault audit",
-      "tool": "loop_audit",
-      "status": "validated",
-      "verdict": "pass",
-      "summary": "All 3 injected loop faults behaved as expected.",
-      "detail": "All injected loop faults behaved as expected.",
-      "observed_at": "2026-04-11T14:31:30.946Z",
-      "artifact_refs": [],
-      "notes": [
-        "missing_required_asset: pass",
-        "planner_canonical_mismatch: pass",
-        "qa_mcp_stale: pass"
-      ]
-    },
-    {
-      "id": "research-note",
-      "label": "Research note",
-      "tool": "qa_research_note",
-      "status": "degraded",
-      "verdict": "unavailable",
-      "summary": "QA research server is offline.",
-      "detail": "Retry later with the same bounded query.",
-      "observed_at": "2026-04-11T08:35:32.447Z",
-      "artifact_refs": [],
-      "notes": [
-        "QA research server is offline or not listening on 127.0.0.1:5052.",
-        "Verify the local QA research server is running on 127.0.0.1:5052."
-      ]
-    },
-    {
-      "id": "mcp-live-status",
-      "label": "QA MCP live status",
-      "tool": "qa_mcp_live_status",
-      "status": "validated",
-      "verdict": "live",
-      "summary": "QA is live and actively gating with MCP-backed evidence.",
-      "detail": "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
-      "observed_at": "2026-04-11T14:30:57.811Z",
-      "artifact_refs": [],
-      "notes": [
-        "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
-        "Latest QA gate source: structured_qa.",
-        "Last MCP ping status: ok.",
-        "Probe target: http://127.0.0.1:5051/run_test.",
-        "Last MCP call: external_probe_check (ok).",
-        "Latest research call status: offline.",
-        "Latest research failure: offline.",
-        "Research failure detail: fetch failed",
-        "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping.",
-        "Recovery detected after offline."
-      ]
-    },
-    {
-      "id": "repair-loop",
-      "label": "Repair loop summary",
-      "tool": "qa_repair_loop",
-      "status": "validated",
-      "verdict": "pass",
-      "summary": "1 repair job tracked.",
-      "detail": "open",
-      "observed_at": "2026-04-11T12:00:41.562Z",
-      "artifact_refs": [],
-      "notes": [
-        "UI Boot Integrity: idle",
-        "Validation Seam: idle",
-        "Route + Contract Health: idle"
-      ]
-    }
-  ],
-  "latest_run": "QA lead cycle degraded: fetch failed",
-  "result_paths": {
-    "researchNotes": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\research-notes.json",
-    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1775917842589_9fuxcb.json",
-    "loopAudit": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\qaLoopAudit.js"
-  },
-  "summary": "QA lead cycle degraded: fetch failed",
-  "last_updated_at": "2026-04-11T14:31:31.106Z"
+  "output_feed": [],
+  "result_paths": {},
+  "summary": "QA lead cycle is running."
 }
