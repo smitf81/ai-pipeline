@@ -680,6 +680,21 @@ async function runQARun(options = {}) {
 
     const consoleEntries = [];
     const networkFailures = [];
+    async function captureScreenshotArtifact(fileName, label) {
+      try {
+        const binary = await page.screenshot({ fullPage: true, timeout: 10000 });
+        return {
+          ...saveArtifact(rootPath, run, fileName, binary, 'binary'),
+          label,
+        };
+      } catch (error) {
+        consoleEntries.push({
+          type: 'warning',
+          text: `Screenshot capture skipped for ${fileName}: ${String(error?.message || error)}`,
+        });
+        return null;
+      }
+    }
     page.on('console', (message) => {
       consoleEntries.push({
         type: message.type(),
@@ -704,10 +719,10 @@ async function runQARun(options = {}) {
     beginStep(run, 'open');
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
     await page.locator('[data-qa="spatial-root"]').waitFor({ state: 'visible', timeout: 15000 });
-    run.artifacts.screenshots.push({
-      ...saveArtifact(rootPath, run, '01-initial.png', await page.screenshot({ fullPage: true }), 'binary'),
-      label: 'Initial ACE render',
-    });
+    {
+      const screenshotArtifact = await captureScreenshotArtifact('01-initial.png', 'Initial ACE render');
+      if (screenshotArtifact) run.artifacts.screenshots.push(screenshotArtifact);
+    }
     finishStep(run, 'open', 'pass');
     persist();
 
@@ -724,10 +739,10 @@ async function runQARun(options = {}) {
       await performAction(page, action);
       await page.waitForTimeout(200);
     }
-    run.artifacts.screenshots.push({
-      ...saveArtifact(rootPath, run, `02-${scenario}.png`, await page.screenshot({ fullPage: true }), 'binary'),
-      label: `Scenario ${scenario}`,
-    });
+    {
+      const screenshotArtifact = await captureScreenshotArtifact(`02-${scenario}.png`, `Scenario ${scenario}`);
+      if (screenshotArtifact) run.artifacts.screenshots.push(screenshotArtifact);
+    }
     finishStep(run, 'scenario', 'pass');
     persist();
 

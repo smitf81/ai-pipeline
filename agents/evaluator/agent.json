@@ -5,8 +5,12 @@
   "host": "http://127.0.0.1:11434",
   "id": "evaluator",
   "inputs": [
-    "qa.scorecards.previous_snapshot",
-    "qa.scorecards.current_snapshot",
+    "runtime.agent_states",
+    "runtime.task_progress",
+    "truth_kernel.summary",
+    "qa.posture",
+    "qa.scorecards",
+    "failure_memory.summary",
     "qa.context_summary"
   ],
   "model": "mistral:latest",

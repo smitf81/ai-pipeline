@@ -5,10 +5,10 @@
   "trigger": "qa_lead_cycle",
   "prompt": null,
   "baseUrl": "http://127.0.0.1:3000",
-  "status": "running",
-  "verdict": "pending",
+  "status": "failed",
+  "verdict": "failed",
   "createdAt": "2026-04-12T07:21:44.535Z",
-  "finishedAt": null,
+  "finishedAt": "2026-04-12T07:27:02.873Z",
   "linked": {
     "qaLeadRunId": "qa_lead_1775978493061_i626pc"
   },
@@ -16,16 +16,15 @@
     "executablePath": null,
     "engine": "chromium"
   },
-  "browser_status": "pending",
-  "browser_failure_stage": null,
-  "browser_failure_code": null,
-  "browser_failure_summary": null,
+  "browser_status": "fail",
+  "browser_failure_stage": "run",
+  "browser_failure_code": "run_timeout",
+  "browser_failure_summary": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m\n",
   "browser_runtime_target": {
     "attempted": [
-      "chromium",
-      "firefox"
+      "chromium"
     ],
-    "used": null,
+    "used": "chromium",
     "fallbackUsed": false
   },
   "steps": [
@@ -43,21 +42,21 @@
       "id": "launch",
       "label": "Launch browser",
       "details": null,
-      "status": "pending",
-      "verdict": "pending",
-      "startedAt": null,
-      "finishedAt": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-12T07:21:56.735Z",
+      "finishedAt": "2026-04-12T07:26:09.109Z",
       "error": null
     },
     {
       "id": "open",
       "label": "Open ACE",
       "details": null,
-      "status": "pending",
-      "verdict": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "error": null
+      "status": "failed",
+      "verdict": "failed",
+      "startedAt": "2026-04-12T07:26:09.111Z",
+      "finishedAt": "2026-04-12T07:27:02.873Z",
+      "error": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m\n"
     },
     {
       "id": "studio",
@@ -111,5 +110,5 @@
   },
   "console": [],
   "network": [],
-  "error": null
+  "error": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m\n"
 }

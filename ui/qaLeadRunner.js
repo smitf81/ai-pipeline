@@ -22,6 +22,7 @@ const QA_LEAD_STATE_RELATIVE_FILE = path.join('data', 'spatial', 'qa', 'lead-sta
 const QA_LEAD_DEFAULT_BASE_URL = 'http://127.0.0.1:3000';
 const QA_LEAD_DEFAULT_PROBE_URL = 'http://127.0.0.1:5051/run_test';
 const QA_LEAD_DEFAULT_INTERVAL_MS = 20 * 60 * 1000;
+const QA_LEAD_STALE_RUNNING_WINDOW_MS = 60 * 60 * 1000;
 
 const qaLeadAutomationInProgress = new Map();
 
@@ -31,6 +32,11 @@ function nowIso() {
 
 function normalizeText(value = '') {
   return String(value || '').trim();
+}
+
+function getTimeMs(value = null) {
+  const parsed = Date.parse(normalizeText(value));
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function makeId(prefix) {
@@ -407,10 +413,56 @@ function appendQaLeadCycleOutputFeedEntry(rootPath = null, persistedRun = null) 
   return appendQaOutputFeedEntry(rootPath, buildQaOutputFeedEntryFromQaLeadRun(persistedRun));
 }
 
+function maybeRecoverStaleQaLeadState(rootPath = null, state = null, latestRun = null) {
+  const normalizedRoot = rootPath || process.cwd();
+  const currentState = state && typeof state === 'object' ? state : null;
+  if (!currentState) {
+    return null;
+  }
+  const currentStatus = normalizeText(currentState.status).toLowerCase();
+  const finishedAt = normalizeText(currentState.finished_at || currentState.finishedAt);
+  if (currentStatus !== 'running' || finishedAt || qaLeadAutomationInProgress.get(normalizedRoot)) {
+    return currentState;
+  }
+  const startedAtMs = getTimeMs(
+    currentState.started_at
+    || currentState.startedAt
+    || currentState.last_updated_at
+    || currentState.updated_at,
+  );
+  if (startedAtMs != null && (Date.now() - startedAtMs) < QA_LEAD_STALE_RUNNING_WINDOW_MS) {
+    return currentState;
+  }
+  const recoveredState = {
+    ...currentState,
+    status: 'degraded',
+    summary: 'QA lead cycle appears interrupted before completion; recovered from stale running state.',
+    current_task: normalizeText(currentState.current_task) || 'QA proof-of-life, browser pass, lane canaries, and loop audit',
+    finished_at: normalizeText(currentState.finished_at || latestRun?.finished_at || latestRun?.finishedAt) || null,
+    last_completed_cycle_at: normalizeText(
+      currentState.last_completed_cycle_at
+      || latestRun?.finished_at
+      || latestRun?.finishedAt,
+    ) || null,
+    live_status: currentState.live_status || latestRun?.live_status || null,
+    output_feed: Array.isArray(currentState.output_feed) && currentState.output_feed.length
+      ? currentState.output_feed
+      : (Array.isArray(latestRun?.output_feed) ? latestRun.output_feed : []),
+    latest_run: normalizeText(currentState.latest_run || latestRun?.summary || '') || null,
+    stale_recovery: true,
+    recovered_from_status: 'running',
+    recovered_at: nowIso(),
+    last_updated_at: nowIso(),
+  };
+  writeQaLeadState(normalizedRoot, recoveredState);
+  return recoveredState;
+}
+
 function readQaLeadOutput(rootPath = null) {
   const state = readQaLeadState(rootPath);
   const runs = readQaLeadRuns(rootPath, 8);
   const latestRun = runs[0] || null;
+  const recoveredState = maybeRecoverStaleQaLeadState(rootPath, state, latestRun);
   const fallback = latestRun
     ? {
         ...latestRun,
@@ -418,7 +470,7 @@ function readQaLeadOutput(rootPath = null) {
       }
     : null;
   return {
-    state: state || fallback || {
+    state: recoveredState || fallback || {
       source: 'qa_lead_runner',
       agent_id: 'qa-lead',
       status: 'idle',
@@ -624,7 +676,7 @@ async function runQaLeadCycle(rootPath = null, options = {}) {
     );
     const status = overallPass
       ? (liveStatus?.status === 'live' ? 'live' : 'processing')
-      : (liveStatus?.status || 'degraded');
+      : 'degraded';
     const finishedAt = nowIso();
     const runRecord = buildQaLeadRunState({
       runId,

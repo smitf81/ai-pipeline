@@ -213,6 +213,7 @@ export default async function runTruthKernelAdapterTests() {
   const intakeNode = payload.nodes.find((node) => node.id === 'intake_1');
   const intentNode = payload.nodes.find((node) => node.id === 'intent_1');
   const orphanIntentNode = payload.nodes.find((node) => node.id === 'intent_orphan_1');
+  const contextManagerNode = payload.nodes.find((node) => node.id === 'context_manager_1');
   const openInvestigationNode = payload.nodes.find((node) => node.id === 'qa_inv_1');
   const resolvedInvestigationNode = payload.nodes.find((node) => node.id === 'qa_inv_resolved_1');
   const pendingRepairNode = payload.nodes.find((node) => node.id === 'qa_repair_1');
@@ -223,6 +224,7 @@ export default async function runTruthKernelAdapterTests() {
   const evaluatorNode = payload.nodes.find((node) => node.id === 'evaluator_1');
   assert.equal(intakeNode.kind, 'input');
   assert.equal(intentNode.kind, 'input');
+  assert.equal(intentNode.sourceNodeId, 'node_input_1');
   assert.equal(handoffNode.kind, 'artifact');
   assert.equal(intakeNode.children.includes('intent_1'), true);
   assert.equal(intentNode.parents.includes('intake_1'), true);
@@ -238,10 +240,15 @@ export default async function runTruthKernelAdapterTests() {
   assert.equal(pendingRepairNode.postApplyVerificationVerdict, 'inconclusive');
   assert.equal(pendingRepairNode.consistencyStatus, 'consistent');
   assert.equal(verifiedRepairNode.status, 'healthy');
+  assert.equal(evaluatorNode.derivedSource, 'data/spatial/evaluator/history.json');
+  assert.equal(evaluatorNode.canonicalSource, null);
   assert.equal(verifiedRepairNode.verdict, 'verified_healthy');
   assert.equal(verifiedRepairNode.postApplyVerificationVerdict, 'accepted');
   assert.equal(verifiedRepairNode.supportingEvidence.lastApplyReceiptId, 'qa_receipt_1');
   assert.deepEqual(verifiedRepairNode.supportingEvidence.eventStages, ['apply_executed', 'qa_revalidation_result']);
+  assert.equal(contextManagerNode.sourceNodeId, 'node_input_1');
+  assert.equal(contextManagerNode.agentRunId, 'context_manager_1');
+  assert.equal(contextManagerNode.intentId, null);
   assert.equal(inconsistentRepairNode.status, 'blocked');
   assert.equal(inconsistentRepairNode.truthApplicationStatus, 'verified_healthy');
   assert.equal(inconsistentRepairNode.consistencyStatus, 'inconsistent');
@@ -263,10 +270,14 @@ export default async function runTruthKernelAdapterTests() {
   } = await loadModuleCopy(browserAdapterPath, { label: 'truthKernelAdapter-browser' });
   const normalizedPayload = normalizeTruthKernelPayload(payload);
   const normalizedEvaluatorNode = normalizedPayload.dots.find((node) => node.id === 'evaluator_1');
+  const normalizedContextManagerNode = normalizedPayload.dots.find((node) => node.id === 'context_manager_1');
   const inspector = buildTruthKernelNodeInspectorModel(normalizedEvaluatorNode, normalizedPayload);
+  const contextInspector = buildTruthKernelNodeInspectorModel(normalizedContextManagerNode, normalizedPayload);
   assert.ok(inspector);
   assert.equal(inspector.rows.some((row) => row.label === 'RGBA' && /^rgba\(/.test(String(row.value || ''))), true);
   assert.equal(inspector.rows.some((row) => row.label === 'Health / decay'), true);
   assert.equal(inspector.rows.some((row) => row.label === 'Activity / confidence'), true);
+  assert.equal(contextInspector.rows.some((row) => row.label === 'Source node' && row.value === 'node_input_1'), true);
+  assert.equal(contextInspector.rows.some((row) => row.label === 'Intent / run binding' && /context_manager_1/.test(String(row.value || ''))), true);
   assert.equal(payload.nodes.every((node) => ['input', 'execution', 'artifact'].includes(node.kind)), true);
 }

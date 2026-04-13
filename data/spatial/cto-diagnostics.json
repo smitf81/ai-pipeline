@@ -1,7 +1,83 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-04-11T19:24:40.564Z",
+  "updated_at": "2026-04-13T09:30:50.080Z",
   "entries": [
+    {
+      "id": "cto_diag_1776072650079",
+      "timestamp": "2026-04-13T09:30:50.079Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "canvas-cto-utility",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1776072634817-c1ukq0",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-qa"
+      ],
+      "timeout_ms": 30000,
+      "prompt_chars": 93536,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1776069551079",
+      "timestamp": "2026-04-13T08:39:11.079Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "canvas-cto-utility",
+      "category": "timeout",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "Ollama generate timed out after 30000ms.",
+      "failureKind": null,
+      "runId": "cto-chat-1776069498305-dlcd5o",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 30000,
+      "prompt_chars": 93487,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "overscoped_context",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
     {
       "id": "cto_diag_1775935480562",
       "timestamp": "2026-04-11T19:24:40.562Z",

@@ -65,7 +65,7 @@ export default async function runTruthKernelIntegrationTests() {
   });
   assert.equal(compactPanel.compact, true);
   assert.equal(compactPanel.showObservabilityCards, false);
-  assert.equal(compactPanel.railWidth, 280);
+  assert.equal(compactPanel.railWidth, 256);
   assert.equal(compactPanel.toggleLabel, 'Expand');
   const expandedPanel = spatialApp.resolveTruthInspectionPanelState({
     truthKernelVisible: true,
@@ -73,10 +73,11 @@ export default async function runTruthKernelIntegrationTests() {
   });
   assert.equal(expandedPanel.compact, false);
   assert.equal(expandedPanel.showObservabilityCards, true);
+  assert.equal(expandedPanel.railWidth, 332);
   assert.equal(expandedPanel.toggleLabel, 'Compact');
   const legend = spatialApp.buildTruthInspectionLegend();
   assert.equal(Array.isArray(legend), true);
-  assert.deepEqual(legend.map((entry) => entry.axis), ['X', 'Y', 'Z']);
+  assert.deepEqual(legend.map((entry) => entry.axis), ['R', 'G', 'B', 'A', 'SAT', 'NOISE']);
   const healthySpread = spatialApp.summarizeTruthKernelSpread({
     dots: [
       { id: 'a', x: 100, y: 100 },
@@ -94,6 +95,15 @@ export default async function runTruthKernelIntegrationTests() {
   assert.equal(narrowSpread.diagnosis, 'spread narrow');
   assert.equal(narrowSpread.causeClass, 'x-axis compression or vertical clustering');
   assert.equal(narrowSpread.boundsLine, 'render bounds: x 412-468, y 120-910');
+  const pressuredSpread = spatialApp.summarizeTruthKernelSpread({
+    dots: [
+      { id: 'a', x: 120, y: 120 },
+      { id: 'b', x: 136, y: 132 },
+      { id: 'c', x: 1490, y: 820 },
+      { id: 'd', x: 1502, y: 834 },
+    ],
+  }, { width: 1600, height: 920 });
+  assert.equal(pressuredSpread.diagnosis, 'spread pressured');
   const sourceNarrowOrigin = spatialApp.summarizeTruthKernelPositionOrigin({
     dots: [
       { id: 'a', sourceX: 0.41, sourceY: 0.1, normalizedX: 0.41, normalizedY: 0.1, x: 412, y: 120 },
@@ -118,9 +128,13 @@ export default async function runTruthKernelIntegrationTests() {
     why: 'Carries routed work into planning.',
     represents: 'A planning checkpoint.',
     derivedSource: 'workspace.studio.handoffs',
+    sourceNodeId: 'node_123',
+    intentId: 'intent_123',
+    agentRunId: 'run_123',
     status: 'blocked',
     statusOrigin: 'derived',
     blocker: 'Needs clarification.',
+    reason: 'handoff_incomplete',
     confidence: 0.67,
     confidenceOrigin: 'derived',
     confidenceAvailable: true,
@@ -131,6 +145,9 @@ export default async function runTruthKernelIntegrationTests() {
   assert.equal(inspector.rows.find((row) => row.label === 'Status / verdict').value, 'blocked');
   assert.equal(inspector.rows.find((row) => row.label === 'Confidence score').value, '67');
   assert.equal(inspector.rows.find((row) => row.label === 'Recommended owner').value, 'planner');
+  assert.equal(inspector.rows.find((row) => row.label === 'Source node').value, 'node_123');
+  assert.match(inspector.rows.find((row) => row.label === 'Intent / run binding').value, /intent_123/);
+  assert.equal(inspector.rows.find((row) => row.label === 'Reason').value, 'handoff_incomplete');
   const repairInspector = spatialApp.buildTruthKernelNodeInspectorModel({
     id: 'qa_repair_1',
     label: 'Validation Seam',

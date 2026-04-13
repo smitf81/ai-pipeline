@@ -101,11 +101,11 @@
           "A desk-ready contract for the roster."
         ]
       },
-      "hiredAt": "2026-04-09T08:43:53.428Z",
+      "hiredAt": "2026-04-13T09:52:57.496Z",
       "hiredDeskId": "executor",
       "contractLocked": true
     }
   ],
-  "updatedAt": "2026-04-09T08:43:53.428Z",
+  "updatedAt": "2026-04-13T09:52:57.496Z",
   "lastGeneratedGap": "UI actions appear disconnected from backend execution"
 }

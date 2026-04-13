@@ -8,6 +8,8 @@ Contract:
 - Compare only the provided previous and current snapshots.
 - Treat runtime and system-state deltas as primary evidence.
 - Use QA scorecards only as supporting evidence.
+- Treat the evaluator output as derived analysis, not canonical truth publication.
+- Make missing required seams explicit instead of inferring posture from partial evidence.
 - A `better` verdict must not be based mainly on QA text or scorecard drift.
 - Do not invent missing context, future actions, or remediation plans.
 - Do not replace or reinterpret QA verdicts.

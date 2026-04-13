@@ -241,7 +241,7 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
       "capabilities": [
         "compare prior and current state",
         "publish better or worse movement",
-        "shape scorecard and truth-kernel progress"
+        "publish derived cross-system analysis"
       ],
       "station": {
         "shortLabel": "Eval",
@@ -250,7 +250,7 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
         "scope": ["evaluation", "progress", "comparison", "movement", "trend"],
         "theme": { "accent": "#8bc5ff", "shadow": "rgba(82, 122, 168, 0.36)" },
         "position": { "x": 64, "y": 50 },
-        "mission": "Measure bounded movement across comparable QA states and project that movement into scorecards and truth."
+        "mission": "Measure bounded movement across grounded system seams and publish inspectable derived analysis."
       },
       "starterTemplate": {
         "summary": "Default evaluator seat for bounded state comparison and progress calls.",
@@ -260,12 +260,13 @@ export const ROLE_TAXONOMY_JSON = String.raw`{
       "panel": {
         "mission": "Compare bounded snapshots, publish structured movement, and expose when evaluation used a live model path or fallback.",
         "responsibilities": [
-          "Compare prior versus current state and emit explicit better, worse, or no_change verdicts.",
-          "Influence scorecard movement and truth-kernel progress without changing canonical QA validation outputs.",
-          "Expose whether evaluator cognition used the intended live model path or a deterministic fallback."
+          "Compare prior versus current grounded state and emit explicit better, worse, or no_change verdicts.",
+          "Reference QA posture, truth-kernel state, runtime posture, and other consulted seams without changing canonical QA validation outputs.",
+          "Expose provenance, completeness, and whether evaluator cognition used the intended live model path or a deterministic fallback."
         ],
         "hardRules": [
           "Do not replace QA validation truth or test evidence.",
+          "Do not infer posture from scorecards alone or other summary-only surfaces.",
           "Do not invent context outside the supplied snapshots.",
           "Do not trigger execution or autonomous patch application."
         ],

@@ -2982,6 +2982,16 @@ function buildFallbackExtractedIntent({
     packet.summary,
     packet.goal,
   ]).slice(0, MAX_EXTRACTED_INTENT_CANDIDATES);
+  const assessment = classifyExtractedIntentAssessment({
+    summary: packet?.summary || report?.summary || rawText || '',
+    explicitClaims,
+    inferredClaims: [],
+    candidateNodes: literalCandidates.map((label) => ({ label })),
+    candidateEdges: [],
+    gaps: uniqueStrings([...(packet?.clarifications || []), ...(report?.truth?.unresolved || [])]).slice(0, 4),
+    structureValid: true,
+    usedFallback: true,
+  });
   return {
     id: `extracted_intent_${runId}`,
     sourceNodeId: sourceNodeId || report?.nodeId || null,
@@ -2989,6 +2999,15 @@ function buildFallbackExtractedIntent({
     summary: String(packet?.summary || report?.summary || rawText || '').trim().slice(0, 180),
     explicitClaims,
     inferredClaims: [],
+    status: assessment.status,
+    confidence: assessment.confidence,
+    reason: assessment.reason,
+    completeness: assessment.completeness,
+    quality: {
+      structure: assessment.structure,
+      specificity: assessment.specificity,
+      actionability: assessment.actionability,
+    },
     candidateNodes: literalCandidates.map((label, index) => ({
       id: `literal_${index + 1}`,
       label,
@@ -3007,13 +3026,109 @@ function buildFallbackExtractedIntent({
       runId,
       usedFallback: Boolean(usedFallback),
       inferenceMode,
+      liveResultPreserved: false,
+      liveAssessmentStatus: assessment.status,
+      liveAssessmentReason: assessment.reason,
     },
     audit: {
       confidence: Number.isFinite(Number(report?.confidence)) ? Number(report.confidence) : 0,
       criteria: Array.isArray(report?.criteria) ? report.criteria : [],
       classification: report?.classification || { role: 'thought', labels: [] },
       matchedTerms: Array.isArray(report?.projectContext?.matchedTerms) ? report.projectContext.matchedTerms : [],
+      extractedIntentAssessment: assessment,
     },
+  };
+}
+
+function hasExtractedIntentPayloadShape(rawPayload) {
+  if (!rawPayload || typeof rawPayload !== 'object' || Array.isArray(rawPayload)) return false;
+  return [
+    'summary',
+    'explicitClaims',
+    'inferredClaims',
+    'candidateNodes',
+    'candidateEdges',
+    'gaps',
+  ].some((key) => Object.prototype.hasOwnProperty.call(rawPayload, key));
+}
+
+function classifyExtractedIntentAssessment({
+  summary = '',
+  explicitClaims = [],
+  inferredClaims = [],
+  candidateNodes = [],
+  candidateEdges = [],
+  gaps = [],
+  structureValid = false,
+  usedFallback = false,
+}) {
+  if (usedFallback) {
+    return {
+      status: 'fallback_used',
+      confidence: 'failed',
+      reason: 'fallback_used',
+      completeness: 'fallback',
+      structure: 'synthetic',
+      specificity: 'derived',
+      actionability: candidateNodes.length ? 'usable' : 'none',
+    };
+  }
+
+  if (!structureValid) {
+    return {
+      status: 'live_invalid',
+      confidence: 'failed',
+      reason: 'invalid_structure',
+      completeness: 'missing',
+      structure: 'invalid',
+      specificity: 'missing',
+      actionability: 'none',
+    };
+  }
+
+  const hasSummary = Boolean(String(summary || '').trim());
+  const claimCount = explicitClaims.length + inferredClaims.length;
+  const hasClaims = claimCount > 0;
+  const hasEdges = candidateEdges.length > 0;
+  const hasGaps = gaps.length > 0;
+  const structureScore = Number(hasSummary) + Number(hasClaims) + Number(Array.isArray(candidateNodes)) + Number(Array.isArray(candidateEdges));
+  const specificityScore = Number(hasSummary) + Math.min(claimCount, 2) + Number(hasGaps);
+  const actionabilityScore = candidateNodes.length > 0
+    ? (candidateNodes.length > 1 || hasEdges ? 3 : 2)
+    : (hasClaims || hasSummary ? 1 : 0);
+
+  if (!candidateNodes.length) {
+    return {
+      status: 'live_valid_no_candidates',
+      confidence: 'low',
+      reason: 'no_candidates',
+      completeness: hasClaims || hasSummary ? 'partial' : 'minimal',
+      structure: structureScore >= 3 ? 'coherent' : 'thin',
+      specificity: specificityScore >= 2 ? 'weak' : 'minimal',
+      actionability: 'none',
+    };
+  }
+
+  if (structureScore >= 4 && specificityScore >= 2 && actionabilityScore >= 2) {
+    return {
+      status: 'live_valid',
+      confidence: candidateNodes.length > 1 || hasEdges ? 'high' : 'medium',
+      reason: hasEdges ? 'usable_candidates' : 'usable_candidate',
+      completeness: hasEdges ? 'complete' : 'partial',
+      structure: 'coherent',
+      specificity: specificityScore >= 3 ? 'specific' : 'adequate',
+      actionability: candidateNodes.length > 1 || hasEdges ? 'strong' : 'limited',
+    };
+  }
+
+  return {
+    status: 'live_valid',
+    confidence: 'medium',
+    reason: hasEdges ? 'missing_specificity' : 'weak_specificity',
+    completeness: 'partial',
+    structure: structureScore >= 3 ? 'coherent' : 'thin',
+    specificity: specificityScore >= 2 ? 'adequate' : 'weak',
+    actionability: 'limited',
   };
 }
 
@@ -3028,7 +3143,22 @@ function normalizeExtractedIntent(rawPayload, {
   usedFallback = false,
   inferenceMode = 'small-inference',
 }) {
-  const safePayload = rawPayload && typeof rawPayload === 'object' ? rawPayload : {};
+  const structureValid = hasExtractedIntentPayloadShape(rawPayload);
+  if (!structureValid) {
+    return buildFallbackExtractedIntent({
+      rawText,
+      packet,
+      report,
+      sourceNodeId,
+      backend,
+      model,
+      runId,
+      usedFallback: true,
+      inferenceMode,
+    });
+  }
+
+  const safePayload = rawPayload;
   const explicitClaims = uniqueStrings(Array.isArray(safePayload.explicitClaims) ? safePayload.explicitClaims : []).slice(0, 6);
   const inferredClaims = uniqueStrings(Array.isArray(safePayload.inferredClaims) ? safePayload.inferredClaims : []).slice(0, 2);
   const candidateNodes = (Array.isArray(safePayload.candidateNodes) ? safePayload.candidateNodes : [])
@@ -3054,20 +3184,17 @@ function normalizeExtractedIntent(rawPayload, {
     .filter((edge) => edge.sourceCandidateId && edge.targetCandidateId)
     .filter((edge) => candidateIds.has(edge.sourceCandidateId) && candidateIds.has(edge.targetCandidateId))
     .slice(0, MAX_EXTRACTED_INTENT_CANDIDATES);
-
-  if (!candidateNodes.length) {
-    return buildFallbackExtractedIntent({
-      rawText,
-      packet,
-      report,
-      sourceNodeId,
-      backend,
-      model,
-      runId,
-      usedFallback: true,
-      inferenceMode,
-    });
-  }
+  const gaps = uniqueStrings(Array.isArray(safePayload.gaps) ? safePayload.gaps : []).slice(0, 4);
+  const assessment = classifyExtractedIntentAssessment({
+    summary: safePayload.summary || packet?.summary || report?.summary || rawText || '',
+    explicitClaims,
+    inferredClaims,
+    candidateNodes,
+    candidateEdges,
+    gaps,
+    structureValid,
+    usedFallback,
+  });
 
   return {
     id: String(safePayload.id || `extracted_intent_${runId}`).trim() || `extracted_intent_${runId}`,
@@ -3078,19 +3205,32 @@ function normalizeExtractedIntent(rawPayload, {
     inferredClaims: usedFallback ? [] : inferredClaims,
     candidateNodes: usedFallback ? candidateNodes.filter((node) => node.basis === 'explicit') : candidateNodes,
     candidateEdges: usedFallback ? candidateEdges.filter((edge) => edge.basis === 'explicit') : candidateEdges,
-    gaps: uniqueStrings(Array.isArray(safePayload.gaps) ? safePayload.gaps : []).slice(0, 4),
+    gaps,
+    status: assessment.status,
+    confidence: assessment.confidence,
+    reason: assessment.reason,
+    completeness: assessment.completeness,
+    quality: {
+      structure: assessment.structure,
+      specificity: assessment.specificity,
+      actionability: assessment.actionability,
+    },
     provenance: {
       backend,
       model,
       runId,
       usedFallback: Boolean(usedFallback),
       inferenceMode,
+      liveResultPreserved: !usedFallback,
+      liveAssessmentStatus: assessment.status,
+      liveAssessmentReason: assessment.reason,
     },
     audit: {
       confidence: Number.isFinite(Number(report?.confidence)) ? Number(report.confidence) : 0,
       criteria: Array.isArray(report?.criteria) ? report.criteria : [],
       classification: report?.classification || { role: 'thought', labels: [] },
       matchedTerms: Array.isArray(report?.projectContext?.matchedTerms) ? report.projectContext.matchedTerms : [],
+      extractedIntentAssessment: assessment,
     },
   };
 }
@@ -3493,6 +3633,8 @@ async function runContextManagerWorker(options = {}) {
         usedFallback: true,
       });
     } else if (generator) {
+      extractedIntentUsedFallback = true;
+      extractedIntentReason = 'no_response';
       extractedIntent = buildFallbackExtractedIntent({
         rawText,
         packet,
@@ -3501,7 +3643,7 @@ async function runContextManagerWorker(options = {}) {
         backend: resolvedBackend,
         model: resolvedModel,
         runId,
-        usedFallback: false,
+        usedFallback: true,
       });
     } else {
       try {

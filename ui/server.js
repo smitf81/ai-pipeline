@@ -6274,12 +6274,55 @@ function buildEvaluatorMovementSummary(latestEvaluation = null, evaluatorHistory
   const history = Array.isArray(evaluatorHistory) ? evaluatorHistory.filter(Boolean) : [];
   const liveModelCount = history.filter((entry) => entry?.cognition_mode === 'model_live').length;
   const fallbackCount = history.filter((entry) => entry?.cognition_mode === 'deterministic_fallback').length;
+  const consultedSeams = Array.isArray(latestEvaluation.consulted_seams)
+    ? latestEvaluation.consulted_seams.map((entry) => ({
+        id: String(entry?.id || '').trim() || null,
+        label: String(entry?.label || '').trim() || null,
+        role: String(entry?.role || '').trim() || null,
+        owner: String(entry?.owner || '').trim() || null,
+        classification: String(entry?.classification || '').trim() || null,
+        available: entry?.available !== false,
+        freshness: String(entry?.freshness || '').trim() || null,
+        summary: String(entry?.summary || '').trim() || null,
+        sourcePaths: Array.isArray(entry?.source_paths)
+          ? entry.source_paths.map((value) => String(value || '').trim()).filter(Boolean)
+          : [],
+      })).filter((entry) => entry.id)
+    : [];
+  const grounding = latestEvaluation.grounding && typeof latestEvaluation.grounding === 'object'
+    ? {
+        status: String(latestEvaluation.grounding.status || '').trim() || 'unknown',
+        completeness: Number.isFinite(Number(latestEvaluation.grounding.completeness))
+          ? Number(latestEvaluation.grounding.completeness)
+          : null,
+        isGrounded: latestEvaluation.grounding.isGrounded !== false,
+        missingInputIds: Array.isArray(latestEvaluation.grounding.missing_input_ids)
+          ? latestEvaluation.grounding.missing_input_ids.map((value) => String(value || '').trim()).filter(Boolean)
+          : [],
+        caveats: Array.isArray(latestEvaluation.grounding.caveats)
+          ? latestEvaluation.grounding.caveats.map((value) => String(value || '').trim()).filter(Boolean)
+          : [],
+      }
+    : null;
+  const provenance = latestEvaluation.provenance && typeof latestEvaluation.provenance === 'object'
+    ? {
+        comparisonBasis: String(latestEvaluation.provenance.comparison_basis || '').trim() || null,
+        qaRole: String(latestEvaluation.provenance.qa_role || '').trim() || null,
+        scorecardRole: String(latestEvaluation.provenance.scorecard_role || '').trim() || null,
+        consultedSeamIds: Array.isArray(latestEvaluation.provenance.consulted_seam_ids)
+          ? latestEvaluation.provenance.consulted_seam_ids.map((value) => String(value || '').trim()).filter(Boolean)
+          : consultedSeams.map((entry) => entry.id),
+        comparedAt: String(latestEvaluation.provenance.compared_at || latestEvaluation.compared_at || '').trim() || null,
+      }
+    : null;
   return {
     verdict: normalizeEvaluatorVerdict(latestEvaluation.verdict),
     deltaScore: Number.isFinite(Number(latestEvaluation.delta_score)) ? Number(latestEvaluation.delta_score) : 0,
     progressSummary: String(latestEvaluation.progress_summary || '').trim() || 'Evaluator has not published movement yet.',
     scorePressure: String(latestEvaluation.score_pressure || '').trim() || 'flat',
     progressState: String(latestEvaluation.progress_state || '').trim() || 'stalled',
+    analysisClassification: String(latestEvaluation.analysis_classification || '').trim() || 'derived_analysis',
+    authorityScope: String(latestEvaluation.authority_scope || '').trim() || 'comparative_projection',
     evaluationConfidence: Number.isFinite(Number(latestEvaluation.evaluation_confidence))
       ? Number(latestEvaluation.evaluation_confidence)
       : null,
@@ -6303,6 +6346,20 @@ function buildEvaluatorMovementSummary(latestEvaluation = null, evaluatorHistory
           weight: Number.isFinite(Number(entry?.weight)) ? Number(entry.weight) : null,
         })).filter((entry) => entry.id)
       : [],
+    consultedSeams,
+    grounding,
+    qaAuthority: latestEvaluation.qa_authority && typeof latestEvaluation.qa_authority === 'object'
+      ? {
+          owner: String(latestEvaluation.qa_authority.owner || '').trim() || 'qa',
+          role: String(latestEvaluation.qa_authority.role || '').trim() || 'adjudicated_reference',
+          evaluatorRole: String(latestEvaluation.qa_authority.evaluator_role || '').trim() || 'derived_analysis_only',
+        }
+      : {
+          owner: 'qa',
+          role: 'adjudicated_reference',
+          evaluatorRole: 'derived_analysis_only',
+        },
+    provenance,
     historyCount: history.length,
     liveModelCount,
     fallbackCount,
@@ -6647,23 +6704,17 @@ function buildStructuredQAScorecardBundle(qaReport = null, options = {}) {
     return String(left.id || '').localeCompare(String(right.id || ''));
   });
 
-  const evaluatorImpactIndex = buildEvaluatorImpactIndex(latestEvaluation);
-  const decoratedCards = cards.map((card) => decorateScorecardWithEvaluatorMovement(card, {
-    latestEvaluation,
-    evaluatorHistory,
-    impactIndex: evaluatorImpactIndex,
-  }));
   const counts = {
-    pass: decoratedCards.filter((card) => card.rollupStatus === 'pass').length,
-    warn: decoratedCards.filter((card) => card.rollupStatus === 'warn').length,
-    stale: decoratedCards.filter((card) => card.rollupStatus === 'stale').length,
-    fail: decoratedCards.filter((card) => card.rollupStatus === 'fail').length,
-    missing: decoratedCards.filter((card) => card.rollupStatus === 'missing').length,
+    pass: cards.filter((card) => card.rollupStatus === 'pass').length,
+    warn: cards.filter((card) => card.rollupStatus === 'warn').length,
+    stale: cards.filter((card) => card.rollupStatus === 'stale').length,
+    fail: cards.filter((card) => card.rollupStatus === 'fail').length,
+    missing: cards.filter((card) => card.rollupStatus === 'missing').length,
   };
   const evaluatorMovement = buildEvaluatorMovementSummary(latestEvaluation, evaluatorHistory);
   const status = !qaReport
     ? 'missing'
-    : decoratedCards.length === 0
+    : cards.length === 0
       ? 'missing'
       : counts.fail > 0
         ? 'fail'
@@ -6672,21 +6723,21 @@ function buildStructuredQAScorecardBundle(qaReport = null, options = {}) {
           : counts.warn > 0 || counts.missing > 0
             ? 'warn'
             : 'pass';
-  const deskCount = new Set(decoratedCards.map((card) => String(card.desk || '').trim()).filter(Boolean)).size;
+  const deskCount = new Set(cards.map((card) => String(card.desk || '').trim()).filter(Boolean)).size;
   const summary = !qaReport
     ? 'Structured QA report is missing, so no scorecards can be derived.'
-    : !decoratedCards.length
+    : !cards.length
       ? 'Structured QA report did not include any quality cards.'
-      : `${decoratedCards.length} scorecards | ${counts.pass} pass | ${counts.warn} warn | ${counts.stale} stale | ${counts.fail} fail | ${counts.missing} missing${evaluatorMovement ? ` | evaluator ${evaluatorMovement.verdict} ${formatEvaluatorDeltaScore(evaluatorMovement.deltaScore)}` : ''}`;
+      : `${cards.length} scorecards | ${counts.pass} pass | ${counts.warn} warn | ${counts.stale} stale | ${counts.fail} fail | ${counts.missing} missing`;
   return {
     classification: 'derived_projection',
     sourceSeam: 'structured_qa_report',
     status,
     summary,
     deskCount,
-    testCount: decoratedCards.length,
+    testCount: cards.length,
     definitions,
-    cards: decoratedCards,
+    cards,
     counts,
     evaluatorMovement,
   };
@@ -7250,7 +7301,7 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
     previousSnapshot: evaluatorState?.state?.previous_snapshot || null,
     history: evaluatorHistory,
     historyCount: Number(evaluatorState?.state?.history_count || evaluatorHistory.length) || 0,
-    movement: qaScorecardBundle.evaluatorMovement || null,
+    movement: buildEvaluatorMovementSummary(latestEvaluation, evaluatorHistory),
   };
   const agentCognitionSummary = buildAssignedAgentCognitionSummary({
     rootPath,
@@ -8306,7 +8357,10 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
             historyCount: Number(readEvaluatorState(rootPath)?.state?.history_count || 0) || 0,
             latestSnapshot: readEvaluatorState(rootPath)?.state?.latest_snapshot || null,
             previousSnapshot: readEvaluatorState(rootPath)?.state?.previous_snapshot || null,
-            movement: derivedQaScorecardBundle.evaluatorMovement || null,
+            movement: buildEvaluatorMovementSummary(
+              readLatestEvaluation(rootPath),
+              readEvaluatorHistory(rootPath, 12),
+            ),
           },
           agentCognitionSummary: resolvedQAState?.agentCognitionSummary || buildAssignedAgentCognitionSummary({
             rootPath,
@@ -10421,6 +10475,7 @@ async function buildIntentProjectionPayload({
       model: String(body.model || '').trim() || null,
       host: String(body.host || '').trim() || null,
       timeoutMs: Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : null,
+      skipPreflight: true,
     });
     if (!cycle.result?.report) {
       return {
@@ -10445,72 +10500,44 @@ async function buildIntentProjectionPayload({
         },
       };
     }
-    if (!cycle.ok || cycle.result?.usedFallback) {
-      return {
-        __statusCode: 503,
-        __canonicalTruthMeta: {
-          classification: 'fallback',
-          freshness: 'live',
-          fallbackUsed: true,
-        },
-        ...buildAgentFailurePayload(cycle.result, {
-          report: cycle.result.report,
-          handoff: cycle.result.handoff,
-        }),
-        canonicalTruthSections: {
-          route: {
-            classification: 'fallback',
-            fallbackUsed: true,
-            derivation: 'context_manager_degraded',
-          },
-          report: {
-            classification: 'projection',
-            fallbackUsed: Boolean(cycle.result?.usedFallback),
-            derivation: 'worker_report',
-          },
-          canonicalIntent: {
-            classification: 'fallback',
-            fallbackUsed: true,
-            derivation: 'degraded_worker_result',
-          },
-        },
-      };
-    }
-
     const runtimeWorkspace = refreshSpatialOrchestrator({
       persist: true,
       workspace: cycle.workspace,
     });
     const runtime = buildSpatialRuntimePayload(runtimeWorkspace);
+    const report = cycle.result.report;
     const canonicalIntent = getCurrentSpatialIntent(runtimeWorkspace?.intentState)
-      || cycle.result.report?.canonicalIntent
+      || report?.canonicalIntent
       || cycle.result.handoff?.intentContract?.canonicalIntent
       || null;
-    const extractedIntent = cycle.result.extractedIntent || cycle.result.report?.extractedIntent || null;
+    const extractedIntent = cycle.result.extractedIntent || report?.extractedIntent || null;
+    const workerUsedFallback = Boolean(cycle.result?.usedFallback);
+    const extractedIntentUsedFallback = Boolean(extractedIntent?.provenance?.usedFallback);
     return {
       __statusCode: 200,
       __canonicalTruthMeta: {
         classification: 'projection',
         freshness: 'live',
-        fallbackUsed: false,
+        fallbackUsed: workerUsedFallback || extractedIntentUsedFallback,
       },
-      ...cycle.result.report,
+      ...report,
       extractedIntent,
       canonicalIntent,
-      intentContract: cycle.result.report?.intentContract || null,
+      intentContract: report?.intentContract || null,
       worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
-      report: cycle.result.report,
+      report,
       handoff: cycle.result.handoff,
       runtime,
+      preflight: cycle.preflight || cycle.result?.preflight || null,
       canonicalTruthSections: {
         route: {
           classification: 'projection',
-          fallbackUsed: false,
+          fallbackUsed: workerUsedFallback,
           derivation: 'context_manager_projection',
         },
         report: {
           classification: 'projection',
-          fallbackUsed: false,
+          fallbackUsed: workerUsedFallback,
           derivation: 'worker_report',
         },
         canonicalIntent: {
@@ -10519,9 +10546,13 @@ async function buildIntentProjectionPayload({
           derivation: canonicalIntent ? 'workspace.intentState.registry' : 'missing_canonical_intent',
         },
         extractedIntent: {
-          classification: extractedIntent ? 'projection' : 'fallback',
-          fallbackUsed: !extractedIntent,
-          derivation: extractedIntent ? 'worker_extracted_intent' : 'not_extracted',
+          classification: extractedIntent
+            ? (extractedIntentUsedFallback ? 'fallback' : 'projection')
+            : 'fallback',
+          fallbackUsed: !extractedIntent || extractedIntentUsedFallback,
+          derivation: extractedIntent
+            ? (extractedIntentUsedFallback ? 'worker_fallback_extracted_intent' : 'worker_extracted_intent')
+            : 'not_extracted',
         },
         runtime: {
           classification: 'projection',
@@ -11354,6 +11385,7 @@ async function maybeRunContextManagerWorker(workspace = null, {
   model = null,
   host = null,
   timeoutMs = null,
+  skipPreflight = false,
 } = {}) {
   const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
   const rawText = String(text || '').trim();
@@ -11386,7 +11418,7 @@ async function maybeRunContextManagerWorker(workspace = null, {
       args: ['--version'],
     },
   });
-  if (!preflight.ok) {
+  if (!preflight.ok && !skipPreflight) {
     return createPreLlmBlockedResult(preflight.blockers[0], currentWorkspace, {
       report: null,
       handoff: null,

@@ -172,6 +172,31 @@ export default async function runQaLeadRunnerTests() {
     fs.rmSync(rootPath, { recursive: true, force: true });
   }
 
+  const staleStateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-qa-lead-stale-state-'));
+  try {
+    fs.mkdirSync(path.join(staleStateRoot, 'data', 'spatial', 'qa', 'lead-runs'), { recursive: true });
+    fs.writeFileSync(path.join(staleStateRoot, 'data', 'spatial', 'qa', 'lead-state.json'), `${JSON.stringify({
+      source: 'qa_lead_runner',
+      agent_id: 'qa-lead',
+      run_id: 'qa_lead_stuck_cycle',
+      status: 'running',
+      current_task: 'QA proof-of-life, browser pass, lane canaries, and loop audit',
+      started_at: '2026-04-06T08:00:00.000Z',
+      finished_at: null,
+      last_completed_cycle_at: null,
+      output_feed: [],
+      active_tools: ['external_probe_check'],
+      summary: 'QA lead cycle is running.',
+    }, null, 2)}\n`);
+    const recovered = readQaLeadOutput(staleStateRoot);
+    assert.equal(recovered.state.status, 'degraded');
+    assert.equal(recovered.state.stale_recovery, true);
+    assert.equal(recovered.state.recovered_from_status, 'running');
+    assert.match(recovered.state.summary, /interrupted/i);
+  } finally {
+    fs.rmSync(staleStateRoot, { recursive: true, force: true });
+  }
+
   const mcpRootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-qa-lead-mcp-proof-'));
   try {
     const failedRun = await runQaLeadCycle(mcpRootPath, {
@@ -327,5 +352,71 @@ export default async function runQaLeadRunnerTests() {
     assert.equal(persistedRecoveredState.qaLiveCycle.mcp_status, persistedRecoveredState.qaMcpLiveStatus.status);
   } finally {
     fs.rmSync(mcpRootPath, { recursive: true, force: true });
+  }
+
+  const scopedFailureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-qa-lead-scoped-failure-'));
+  try {
+    const scopedFailureRun = await runQaLeadCycle(scopedFailureRoot, {
+      runId: 'qa_lead_scoped_browser_failure',
+      startedAt: '2026-04-06T12:10:00.000Z',
+      baseUrl: 'http://127.0.0.1:3000',
+      probeUrl: 'http://127.0.0.1:5051/run_test',
+      externalProbeRunner: async () => ({
+        ok: true,
+        source: 'external_mcp',
+        probeStatus: 'ok',
+        status: 'pass',
+        lastCheckedAt: '2026-04-06T12:10:01.000Z',
+        probeTarget: 'http://127.0.0.1:5051/run_test',
+        source_ref: 'ui/externalQaProbe.buildExternalQaProbeCheckPayload',
+        externalProbeLive: true,
+      }),
+      browserRunner: async () => ({
+        id: 'qa_browser_scoped_failure',
+        status: 'failed',
+        verdict: 'fail',
+        browser_status: 'fail',
+        browser_failure_stage: 'goto',
+        browser_failure_code: 'timeout',
+        browser_failure_summary: 'page.goto: Timeout 30000ms exceeded.',
+        error: 'page.goto: Timeout 30000ms exceeded.',
+        scenario: 'studio-smoke',
+        createdAt: '2026-04-06T12:10:02.000Z',
+        finishedAt: '2026-04-06T12:10:32.000Z',
+      }),
+      canaryRunner: async () => ({
+        overall_status: 'pass',
+        summary: 'All lane canaries passed.',
+        last_run_at: '2026-04-06T12:10:33.000Z',
+        passed_count: 1,
+        failed_count: 0,
+        results: [],
+      }),
+      loopAuditRunner: async () => ({
+        overall_status: 'pass',
+        summary: 'All injected loop faults behaved as expected.',
+        completed_at: '2026-04-06T12:10:34.000Z',
+        failing_fault_ids: [],
+        comparisons: [],
+      }),
+      qaRepairLoopModule: {
+        buildQaRepairLoopState: () => ({
+          summary: { totalJobs: 0, blockedLanes: 0, activeLanes: 0 },
+          latestAttempt: null,
+          latestJob: null,
+          lanes: [],
+        }),
+      },
+    });
+
+    assert.equal(scopedFailureRun.status, 'degraded');
+    assert.equal(scopedFailureRun.live_status.status, 'live');
+    assert.equal(scopedFailureRun.external_validation.externalProbeLive, true);
+    assert.match(scopedFailureRun.failure_reason || '', /page\.goto/i);
+    const scopedFeed = readQaOutputFeed(scopedFailureRoot);
+    assert.equal(scopedFeed.items.length, 1);
+    assert.equal(scopedFeed.items[0].meta.externalProbeLive, true);
+  } finally {
+    fs.rmSync(scopedFailureRoot, { recursive: true, force: true });
   }
 }

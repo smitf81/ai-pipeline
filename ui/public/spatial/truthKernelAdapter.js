@@ -133,9 +133,13 @@ function normalizeTruthKernelNode(node = {}) {
     truthState: String(node?.truthState || node?.status || '').trim() || normalizeStatus(node?.status),
     sourceType: String(node?.sourceType || '').trim() || null,
     sourceRef: String(node?.sourceRef || '').trim() || null,
+    sourceNodeId: String(node?.sourceNodeId || '').trim() || null,
+    intentId: String(node?.intentId || '').trim() || null,
+    agentRunId: String(node?.agentRunId || '').trim() || null,
     canonicalSource: String(node?.canonicalSource || '').trim() || null,
     derivedSource: String(node?.derivedSource || '').trim() || null,
     verdict: String(node?.verdict || '').trim() || null,
+    reason: String(node?.reason || '').trim() || null,
     blocker: String(node?.blocker || '').trim() || null,
     owner: String(node?.owner || '').trim() || null,
     recommendedOwner: String(node?.recommendedOwner || '').trim() || null,
@@ -393,6 +397,47 @@ function summarizeStageBounds(dots = [], xKey, yKey, bounds = {}) {
   };
 }
 
+function summarizeNeighbourPressure(dots = [], bounds = {}) {
+  const nodes = (Array.isArray(dots) ? dots : []).filter((dot) => Number.isFinite(dot?.x) && Number.isFinite(dot?.y));
+  const canvasWidth = Number.isFinite(Number(bounds?.width)) ? Math.max(1, Number(bounds.width)) : 1600;
+  const canvasHeight = Number.isFinite(Number(bounds?.height)) ? Math.max(1, Number(bounds.height)) : 920;
+  const marginX = Math.max(54, Math.round(canvasWidth * 0.08));
+  const marginY = Math.max(54, Math.round(canvasHeight * 0.1));
+  if (nodes.length < 2) {
+    return {
+      crowdedRatio: 0,
+      edgeRatio: nodes.length === 1 ? 1 : 0,
+      minDistance: null,
+      line: nodes.length ? 'single node only | edge pressure unknown' : 'no rendered nodes',
+    };
+  }
+  let minDistance = Number.POSITIVE_INFINITY;
+  let crowdedCount = 0;
+  let edgeCount = 0;
+  nodes.forEach((node, index) => {
+    let nearest = Number.POSITIVE_INFINITY;
+    for (let otherIndex = 0; otherIndex < nodes.length; otherIndex += 1) {
+      if (otherIndex === index) continue;
+      const other = nodes[otherIndex];
+      const distance = Math.hypot(node.x - other.x, node.y - other.y);
+      if (distance < nearest) nearest = distance;
+    }
+    if (nearest < 34) crowdedCount += 1;
+    if (nearest < minDistance) minDistance = nearest;
+    if (node.x <= marginX || node.x >= canvasWidth - marginX || node.y <= marginY || node.y >= canvasHeight - marginY) {
+      edgeCount += 1;
+    }
+  });
+  const crowdedRatio = crowdedCount / Math.max(1, nodes.length);
+  const edgeRatio = edgeCount / Math.max(1, nodes.length);
+  return {
+    crowdedRatio,
+    edgeRatio,
+    minDistance: Number.isFinite(minDistance) ? minDistance : null,
+    line: `nearest ${Number.isFinite(minDistance) ? Math.round(minDistance) : '?'} | crowded ${Math.round(crowdedRatio * 100)}% | edge ${Math.round(edgeRatio * 100)}%`,
+  };
+}
+
 export function summarizeTruthKernelSpread(renderModel = null, bounds = {}) {
   const dots = Array.isArray(renderModel?.dots) ? renderModel.dots.filter((dot) => Number.isFinite(dot?.x) && Number.isFinite(dot?.y)) : [];
   const canvasWidth = Number.isFinite(Number(bounds?.width)) ? Math.max(1, Number(bounds.width)) : 1600;
@@ -425,6 +470,7 @@ export function summarizeTruthKernelSpread(renderModel = null, bounds = {}) {
   const spanY = Math.max(0, maxY - minY);
   const widthRatio = spanX / canvasWidth;
   const heightRatio = spanY / canvasHeight;
+  const pressure = summarizeNeighbourPressure(dots, bounds);
   let diagnosis = 'spread healthy';
   let causeClass = 'distributed layout';
   if (dots.length <= 1 || (widthRatio < 0.03 && heightRatio < 0.03)) {
@@ -437,6 +483,13 @@ export function summarizeTruthKernelSpread(renderModel = null, bounds = {}) {
       : heightRatio < 0.08 && widthRatio >= 0.18
         ? 'y-axis compression or horizontal clustering'
         : 'tight data clustering or projection compression';
+  } else if (pressure.crowdedRatio >= 0.3 || pressure.edgeRatio >= 0.34 || (pressure.minDistance !== null && pressure.minDistance < 26)) {
+    diagnosis = 'spread pressured';
+    causeClass = pressure.edgeRatio >= 0.34 && pressure.crowdedRatio >= 0.3
+      ? 'edge crowding and node overlap pressure'
+      : pressure.edgeRatio >= 0.34
+        ? 'edge crowding'
+        : 'node overlap pressure';
   }
   const boundsLine = `render bounds: x ${Math.round(minX)}-${Math.round(maxX)}, y ${Math.round(minY)}-${Math.round(maxY)}`;
   const spanLine = `span: ${Math.round(spanX)} x ${Math.round(spanY)}`;
@@ -452,9 +505,10 @@ export function summarizeTruthKernelSpread(renderModel = null, bounds = {}) {
     heightRatio,
     diagnosis,
     causeClass,
+    pressure,
     boundsLine,
     spanLine,
-    line: `${boundsLine} | ${spanLine} | ${diagnosis}`,
+    line: `${boundsLine} | ${spanLine} | ${pressure.line} | ${diagnosis}`,
   };
 }
 
@@ -463,6 +517,7 @@ export function summarizeTruthKernelPositionOrigin(renderModel = null, bounds = 
   const source = summarizeStageBounds(dots, 'sourceX', 'sourceY', bounds);
   const normalized = summarizeStageBounds(dots, 'normalizedX', 'normalizedY', bounds);
   const render = summarizeStageBounds(dots, 'x', 'y', bounds);
+  const pressure = summarizeNeighbourPressure(dots, bounds);
   let verdict = 'positions healthy';
   let likelyOrigin = 'distributed layout';
   if (!render.available) {
@@ -479,6 +534,9 @@ export function summarizeTruthKernelPositionOrigin(renderModel = null, bounds = 
     likelyOrigin = (!source.available && !normalized.available)
       ? 'insufficient position data'
       : 'render scaling/compression';
+  } else if (pressure.crowdedRatio >= 0.3 || pressure.edgeRatio >= 0.34) {
+    verdict = 'render pressured';
+    likelyOrigin = pressure.edgeRatio >= 0.34 ? 'edge crowding in render mapping' : 'render density pressure';
   } else if (!source.available && !normalized.available) {
     verdict = 'position origin unavailable';
     likelyOrigin = 'insufficient position data';
@@ -487,9 +545,35 @@ export function summarizeTruthKernelPositionOrigin(renderModel = null, bounds = 
     source,
     normalized,
     render,
+    pressure,
     verdict,
     likelyOrigin,
-    line: `source ${source.line} | normalized ${normalized.line} | render ${render.line} | ${verdict} | ${likelyOrigin}`,
+    line: `source ${source.line} | normalized ${normalized.line} | render ${render.line} | pressure ${pressure.line} | ${verdict} | ${likelyOrigin}`,
+  };
+}
+
+export function summarizeTruthKernelStatusCounts(renderModel = null) {
+  const dots = Array.isArray(renderModel?.dots) ? renderModel.dots : [];
+  const counts = {
+    healthy: 0,
+    degraded: 0,
+    blocked: 0,
+    orphaned: 0,
+    informational: 0,
+  };
+  dots.forEach((node) => {
+    const key = normalizeStatus(node?.status);
+    counts[key] += 1;
+  });
+  const issueCount = counts.blocked + counts.degraded + counts.orphaned;
+  return {
+    counts,
+    total: dots.length,
+    issueCount,
+    dominantStatus: issueCount > 0
+      ? (counts.blocked > 0 ? 'blocked' : (counts.degraded > 0 ? 'degraded' : 'orphaned'))
+      : (counts.healthy > 0 ? 'healthy' : 'informational'),
+    line: `${counts.healthy} healthy | ${counts.degraded} degraded | ${counts.blocked} blocked | ${counts.orphaned} orphaned | ${counts.informational} informational`,
   };
 }
 
@@ -525,7 +609,13 @@ export function buildTruthKernelNodeInspectorModel(node = null, truthKernel = EM
     ? [
         { label: 'Evaluator verdict', value: node.verdict || 'Insufficient evidence surfaced.', origin: node.verdict ? (node.statusOrigin || 'derived') : 'unavailable' },
         { label: 'Progress state', value: node.evaluatorProgressState || node.truthState || 'Insufficient evidence surfaced.', origin: node.evaluatorProgressState || node.truthState ? 'derived' : 'unavailable' },
-        { label: 'Delta score', value: node.evaluatorDeltaScore === null ? 'Insufficient evidence surfaced.' : String(Number(node.evaluatorDeltaScore.toFixed(2))), origin: node.evaluatorDeltaScore === null ? 'unavailable' : 'derived' },
+        {
+          label: 'Delta score',
+          value: Number.isFinite(Number(node.evaluatorDeltaScore))
+            ? String(Number(Number(node.evaluatorDeltaScore).toFixed(2)))
+            : 'Insufficient evidence surfaced.',
+          origin: Number.isFinite(Number(node.evaluatorDeltaScore)) ? 'derived' : 'unavailable',
+        },
         { label: 'Score pressure', value: node.evaluatorScorePressure || 'Insufficient evidence surfaced.', origin: node.evaluatorScorePressure ? 'derived' : 'unavailable' },
         { label: 'Cognition mode', value: node.evaluatorCognitionMode || 'Insufficient evidence surfaced.', origin: node.evaluatorCognitionMode ? 'derived' : 'unavailable' },
       ]
@@ -557,7 +647,13 @@ export function buildTruthKernelNodeInspectorModel(node = null, truthKernel = EM
       ...repairLifecycleRows,
       ...evaluatorRows,
       ...visualRows,
+      { label: 'Source node', value: node.sourceNodeId || 'Insufficient evidence surfaced.', origin: node.sourceNodeId ? 'derived' : 'unavailable' },
+      { label: 'Intent / run binding', value: [
+        node.intentId ? `intent ${node.intentId}` : null,
+        node.agentRunId ? `run ${node.agentRunId}` : null,
+      ].filter(Boolean).join(' | ') || 'Insufficient evidence surfaced.', origin: node.intentId || node.agentRunId ? 'derived' : 'unavailable' },
       { label: 'Status / verdict', value: node.verdict || node.status || 'Insufficient evidence surfaced.', origin: node.verdict || node.status ? (node.statusOrigin || 'derived') : 'unavailable' },
+      { label: 'Reason', value: node.reason || node.blocker || 'Insufficient evidence surfaced.', origin: node.reason || node.blocker ? 'derived' : 'unavailable' },
       { label: 'Blocker', value: node.blocker || 'Insufficient evidence surfaced.', origin: node.blocker ? 'derived' : 'unavailable' },
       { label: 'Health score', value: healthScoreValue === null ? 'Insufficient evidence surfaced.' : String(healthScoreValue), origin: healthScoreValue === null ? 'unavailable' : (node.healthOrigin || 'derived') },
       { label: 'Confidence score', value: confidenceScoreValue === null ? 'Insufficient evidence surfaced.' : String(confidenceScoreValue), origin: confidenceScoreValue === null ? 'unavailable' : (node.confidenceOrigin || 'derived') },
@@ -566,6 +662,9 @@ export function buildTruthKernelNodeInspectorModel(node = null, truthKernel = EM
     meta: {
       sourceType: node.sourceType || 'unknown',
       sourceRef: node.sourceRef || node.id || 'unknown',
+      sourceNodeId: node.sourceNodeId || null,
+      intentId: node.intentId || null,
+      agentRunId: node.agentRunId || null,
       parents: Array.isArray(node.parents) ? node.parents.length : 0,
       children: Array.isArray(node.children) ? node.children.length : 0,
       summary: node.summary || null,

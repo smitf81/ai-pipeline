@@ -172,13 +172,19 @@ function makeNode(partial = {}) {
     represents: String(partial.represents || '').trim() || null,
     sourceType: String(partial.sourceType || '').trim() || null,
     sourceRef: String(partial.sourceRef || '').trim() || null,
+    sourceNodeId: String(partial.sourceNodeId || '').trim() || null,
+    intentId: String(partial.intentId || '').trim() || null,
+    agentRunId: String(partial.agentRunId || '').trim() || null,
     canonicalSource: String(partial.canonicalSource || '').trim() || null,
     derivedSource: String(partial.derivedSource || '').trim() || null,
     truthState: String(partial.truthState || '').trim() || null,
     verdict: String(partial.verdict || '').trim() || null,
+    reason: String(partial.reason || '').trim() || null,
     blocker: String(partial.blocker || '').trim() || null,
     owner: String(partial.owner || '').trim() || null,
     recommendedOwner: String(partial.recommendedOwner || '').trim() || null,
+    sourceX: Number.isFinite(Number(partial.sourceX)) ? Number(partial.sourceX) : null,
+    sourceY: Number.isFinite(Number(partial.sourceY)) ? Number(partial.sourceY) : null,
     timestamp: toTimestamp(partial.timestamp, 0),
     parents: Array.isArray(partial.parents) ? [...new Set(partial.parents.filter(Boolean).map((value) => String(value)))] : [],
     children: Array.isArray(partial.children) ? [...new Set(partial.children.filter(Boolean).map((value) => String(value)))] : [],
@@ -207,6 +213,61 @@ function makeNode(partial = {}) {
     consistencyIssues: normalizeStringArray(partial.consistencyIssues || partial.consistency_issues || []),
     supportingEvidence: normalizeSupportingEvidence(partial.supportingEvidence || partial.supporting_evidence || null),
   };
+}
+
+function buildWorkspaceSourceNodeIndex(workspace = {}) {
+  const index = new Map();
+  const registerGraph = (graph = {}) => {
+    const nodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
+    nodes.forEach((node) => {
+      const nodeId = String(node?.id || '').trim();
+      const x = Number(node?.position?.x);
+      const y = Number(node?.position?.y);
+      if (!nodeId || !Number.isFinite(x) || !Number.isFinite(y)) return;
+      if (!index.has(nodeId)) {
+        index.set(nodeId, { x, y });
+      }
+    });
+  };
+  registerGraph(workspace?.graph);
+  if (workspace?.graphs && typeof workspace.graphs === 'object') {
+    Object.values(workspace.graphs).forEach((graph) => registerGraph(graph));
+  }
+  return index;
+}
+
+function resolveSourceNodePosition(sourceNodeIndex = new Map(), sourceNodeId = null) {
+  const normalized = String(sourceNodeId || '').trim();
+  if (!normalized || !(sourceNodeIndex instanceof Map)) return null;
+  return sourceNodeIndex.get(normalized) || null;
+}
+
+function resolveContextManagerRunStatus(run = {}) {
+  const extractedStatus = String(run?.extractedIntent?.status || '').trim().toLowerCase();
+  if (extractedStatus === 'live_valid_no_candidates') return 'degraded';
+  if (String(run?.usedFallback || '').trim().toLowerCase() === 'true') return 'degraded';
+  return run?.status || run?.outcome || 'informational';
+}
+
+function resolveContextManagerRunReason(run = {}) {
+  return String(
+    run?.extractedIntent?.reason
+    || run?.report?.extractedIntent?.reason
+    || run?.reason
+    || run?.report?.reason
+    || ''
+  ).trim() || null;
+}
+
+function resolveContextManagerRunConfidence(run = {}) {
+  const extractedConfidence = String(run?.extractedIntent?.confidence || '').trim().toLowerCase();
+  if (extractedConfidence === 'low') return 0.28;
+  if (extractedConfidence === 'failed') return 0.12;
+  const extractedAuditConfidence = Number(run?.extractedIntent?.audit?.confidence);
+  if (Number.isFinite(extractedAuditConfidence)) return clamp01(extractedAuditConfidence, 0.5);
+  const reportConfidence = Number(run?.report?.confidence);
+  if (Number.isFinite(reportConfidence)) return clamp01(reportConfidence, 0.5);
+  return 0.6;
 }
 
 function addNode(registry, partial) {
@@ -286,14 +347,15 @@ function collectIntakeNodes(registry, workspace = {}, intentByCanonicalId = new 
   });
 }
 
-function collectIntentNodes(registry, workspace = {}) {
+function collectIntentNodes(registry, workspace = {}, sourceNodeIndex = new Map()) {
   const records = Array.isArray(workspace?.intentState?.registry?.records) ? workspace.intentState.registry.records : [];
   const intentByCanonicalId = new Map();
   const intentBySourceNodeId = new Map();
   records.forEach((record, index) => {
     const intentId = String(record?.id || '').trim();
     if (!intentId) return;
-    const sourceNodeId = String(record?.sourceNodeId || '').trim();
+    const sourceNodeId = String(record?.sourceNodeId || record?.nodeId || record?.provenance?.sourceNodeId || '').trim();
+    const sourceNodePosition = resolveSourceNodePosition(sourceNodeIndex, sourceNodeId);
     addNode(registry, {
       id: intentId,
       kind: 'input',
@@ -304,9 +366,13 @@ function collectIntentNodes(registry, workspace = {}) {
       represents: 'The current grounded intent artifact used to steer planning and execution.',
       sourceType: record?.provenance?.sourceType || 'intent-registry',
       sourceRef: record?.provenance?.sourceRef || record?.sourceRef || sourceNodeId || intentId,
+      sourceNodeId,
+      intentId: record?.intentId || intentId,
+      agentRunId: record?.agentRunId || record?.provenance?.runId || null,
       canonicalSource: record?.canonicalIntentId ? 'workspace.intentState.registry.records' : null,
       derivedSource: 'workspace.intentState.registry.records',
       verdict: record?.status || null,
+      reason: record?.reason || null,
       blocker: Array.isArray(record?.missingFields) && record.missingFields.length ? `Missing: ${record.missingFields.join(', ')}` : null,
       recommendedOwner: 'context-manager',
       timestamp: record?.updatedAt || record?.createdAt || Date.now() + index,
@@ -315,6 +381,8 @@ function collectIntentNodes(registry, workspace = {}) {
       confidence: record?.confidence ?? record?.audit?.confidence ?? 0.6,
       confidenceOrigin: Number.isFinite(Number(record?.confidence)) || Number.isFinite(Number(record?.audit?.confidence)) ? 'derived' : 'unavailable',
       weight: 0.5,
+      sourceX: sourceNodePosition?.x ?? null,
+      sourceY: sourceNodePosition?.y ?? null,
     });
     const canonicalIntentId = String(record?.canonicalIntentId || '').trim();
     if (canonicalIntentId) intentByCanonicalId.set(canonicalIntentId, intentId);
@@ -361,12 +429,15 @@ function collectHandoffNodes(registry, workspace = {}, intentBySourceNodeId = ne
   });
 }
 
-function collectContextManagerRuns(registry, rootPath, intentBySourceNodeId = new Map()) {
+function collectContextManagerRuns(registry, rootPath, intentBySourceNodeId = new Map(), sourceNodeIndex = new Map()) {
   const runsDir = path.join(rootPath, 'data', 'spatial', 'agent-runs', 'context-manager');
   listJsonFiles(runsDir).forEach((filePath) => {
     const run = safeReadJson(filePath, null);
     const runId = String(run?.id || '').trim();
     if (!runId) return;
+    const sourceNodeId = String(run?.sourceNodeId || run?.handoff?.sourceNodeId || '').trim();
+    const sourceNodePosition = resolveSourceNodePosition(sourceNodeIndex, sourceNodeId);
+    const runReason = resolveContextManagerRunReason(run);
     addNode(registry, {
       id: runId,
       kind: 'execution',
@@ -377,19 +448,24 @@ function collectContextManagerRuns(registry, rootPath, intentBySourceNodeId = ne
       represents: 'A grounded execution step in the intent-processing lane.',
       sourceType: 'agent-run/context-manager',
       sourceRef: runId,
+      sourceNodeId,
+      intentId: run?.intentId || run?.report?.intentContract?.intentId || run?.report?.intentId || null,
+      agentRunId: runId,
       derivedSource: 'data/spatial/agent-runs/context-manager',
       verdict: run?.status || run?.outcome || null,
-      blocker: run?.report?.reason || null,
+      reason: runReason,
+      blocker: runReason || run?.report?.reason || null,
       owner: 'context-manager',
       recommendedOwner: 'context-manager',
       timestamp: run?.completedAt || run?.startedAt || run?.createdAt,
-      status: run?.status || run?.outcome || 'informational',
-      statusOrigin: run?.status || run?.outcome ? 'derived' : 'unavailable',
-      confidence: run?.report?.confidence ?? run?.extractedIntent?.audit?.confidence ?? 0.6,
-      confidenceOrigin: Number.isFinite(Number(run?.report?.confidence)) || Number.isFinite(Number(run?.extractedIntent?.audit?.confidence)) ? 'derived' : 'unavailable',
+      status: resolveContextManagerRunStatus(run),
+      statusOrigin: run?.status || run?.outcome || run?.extractedIntent?.status ? 'derived' : 'unavailable',
+      confidence: resolveContextManagerRunConfidence(run),
+      confidenceOrigin: Number.isFinite(Number(run?.report?.confidence)) || Number.isFinite(Number(run?.extractedIntent?.audit?.confidence)) || run?.extractedIntent?.confidence ? 'derived' : 'unavailable',
       weight: 0.65,
+      sourceX: sourceNodePosition?.x ?? null,
+      sourceY: sourceNodePosition?.y ?? null,
     });
-    const sourceNodeId = String(run?.sourceNodeId || run?.handoff?.sourceNodeId || '').trim();
     if (sourceNodeId && intentBySourceNodeId.has(sourceNodeId)) {
       linkNodes(registry, intentBySourceNodeId.get(sourceNodeId), runId);
     }
@@ -710,11 +786,11 @@ function collectEvaluatorNodes(registry, rootPath) {
       label: entry?.progress_summary || `${entry?.comparison_target || 'system_runtime'} evaluator`,
       summary: entry?.progress_summary || null,
       what: 'Evaluator comparison artefact',
-      why: 'Tracks bounded movement over time without replacing canonical QA truth.',
-      represents: 'A comparative evaluator judgement over two supplied snapshots.',
+      why: 'Tracks derived movement over time without replacing canonical QA truth.',
+      represents: 'A derived comparative evaluator analysis over two supplied snapshots.',
       sourceType: 'ace-evaluator',
       sourceRef: evaluationId,
-      canonicalSource: 'data/spatial/evaluator/history.json',
+      derivedSource: 'data/spatial/evaluator/history.json',
       truthState: entry?.progress_state || entry?.verdict || null,
       verdict: entry?.verdict || null,
       blocker: entry?.verdict === 'worse' ? (entry?.progress_summary || 'Evaluator detected regression.') : null,
@@ -742,10 +818,11 @@ function buildTruthKernelPayload({ rootPath, workspace } = {}) {
   const resolvedRoot = rootPath || process.cwd();
   const registry = new Map();
   const normalizedWorkspace = workspace || {};
-  const { intentByCanonicalId, intentBySourceNodeId } = collectIntentNodes(registry, normalizedWorkspace);
+  const sourceNodeIndex = buildWorkspaceSourceNodeIndex(normalizedWorkspace);
+  const { intentByCanonicalId, intentBySourceNodeId } = collectIntentNodes(registry, normalizedWorkspace, sourceNodeIndex);
   collectIntakeNodes(registry, normalizedWorkspace, intentByCanonicalId);
   collectHandoffNodes(registry, normalizedWorkspace, intentBySourceNodeId);
-  collectContextManagerRuns(registry, resolvedRoot, intentBySourceNodeId);
+  collectContextManagerRuns(registry, resolvedRoot, intentBySourceNodeId, sourceNodeIndex);
   collectQaRuns(registry, resolvedRoot);
   collectInvestigations(registry, resolvedRoot);
   collectRepairLoopNodes(registry, resolvedRoot);

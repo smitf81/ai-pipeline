@@ -1,6 +1,44 @@
 {
   "items": [
     {
+      "id": "qa_output_20260412T072959453Z",
+      "createdAt": "2026-04-12T07:29:59.453Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "degraded",
+        "cycleId": "qa_lead_1775978493061_i626pc",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260412T070706226Z",
+      "createdAt": "2026-04-12T07:07:06.226Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 4,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1775977322942_ldh6fl",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
       "id": "qa_output_20260411T210743434Z",
       "createdAt": "2026-04-11T21:07:43.434Z",
       "type": "qa_cycle",
@@ -2319,18 +2357,18 @@
       }
     },
     {
-      "id": "qa_output_20260412T070706226Z",
-      "createdAt": "2026-04-12T07:07:06.226Z",
+      "id": "qa_output_20260413T095939168Z",
+      "createdAt": "2026-04-13T09:59:39.168Z",
       "type": "qa_cycle",
-      "summary": "QA lead cycle degraded: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m Live MCP helper evidence captured.",
+      "summary": "QA lead cycle degraded: browserType.launch: spawn EPERM\nCall log:\n\u001b[2m  - <launching> C:\\Users\\felix\\AppData\\Local\\ms-playwright\\firefox-1511\\firefox\\firefox.exe -no-remote -headless -profile C:\\Users\\felix\\AppData\\Local\\Temp\\playwright_firefoxdev_profile-vW4zYS -juggler-pipe --disable-gpu --no-first-run --disable-background-networking -silent\u001b[22m Live MCP helper evidence captured.",
       "result": "fail",
       "source": "qa_lead_runner",
       "meta": {
-        "investigationCount": 4,
+        "investigationCount": 6,
         "failedChecks": 2,
         "activeLanes": 1,
         "externalStatus": "ok",
-        "cycleId": "qa_lead_1775977322942_ldh6fl",
+        "cycleId": "qa_live_gate_1776074342561",
         "mcpEvidenceSource": "live_helper",
         "externalProbeLive": true,
         "usedFallback": false,

@@ -2,7 +2,7 @@
   "version": "ace/boot-recovery-daemon.v0",
   "daemon_id": "autonomous_boot_recovery_daemon",
   "started_at": "2026-04-08T07:08:10.890Z",
-  "updated_at": "2026-04-11T09:10:01.218Z",
+  "updated_at": "2026-04-13T10:06:49.560Z",
   "status": "healthy",
   "phase": "healthy",
   "failure_class": null,
@@ -20,7 +20,7 @@
     "ok": true,
     "safeMode": false,
     "reason": "",
-    "checkedAt": "2026-04-11T09:10:01.187Z",
+    "checkedAt": "2026-04-13T10:06:49.493Z",
     "failureClass": null,
     "failureStage": null,
     "asset": null,
@@ -74,6 +74,32 @@
       "assets": [
         {
           "id": "studio_boot_asset_1",
+          "path": "/vendor/react.development.js",
+          "label": "Local React runtime",
+          "kind": "core_runtime",
+          "stage": "core_bundle_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/vendor/react.development.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_2",
+          "path": "/vendor/react-dom.development.js",
+          "label": "Local React DOM runtime",
+          "kind": "core_runtime",
+          "stage": "core_bundle_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/vendor/react-dom.development.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_3",
           "path": "/spatial/spatialBootstrap.js",
           "label": "Studio bootstrap entry",
           "kind": "boot_entry",
@@ -86,7 +112,7 @@
           "reason": ""
         },
         {
-          "id": "studio_boot_asset_2",
+          "id": "studio_boot_asset_4",
           "path": "/spatial/spatialApp.js",
           "label": "Spatial app entry module",
           "kind": "app_entry",
@@ -99,7 +125,7 @@
           "reason": ""
         },
         {
-          "id": "studio_boot_asset_3",
+          "id": "studio_boot_asset_5",
           "path": "/spatial/intentContract.browser.js",
           "label": "Browser intent contract helper",
           "kind": "required_module",
@@ -112,7 +138,20 @@
           "reason": ""
         },
         {
-          "id": "studio_boot_asset_4",
+          "id": "studio_boot_asset_6",
+          "path": "/spatial/spatialSeamContract.js",
+          "label": "Spatial seam contract",
+          "kind": "required_module",
+          "stage": "required_modules_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/spatial/spatialSeamContract.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_7",
           "path": "/favicon.ico",
           "label": "Favicon",
           "kind": "favicon",
@@ -127,7 +166,7 @@
       ],
       "warnings": [
         {
-          "id": "studio_boot_asset_4",
+          "id": "studio_boot_asset_7",
           "path": "/favicon.ico",
           "label": "Favicon",
           "kind": "favicon",

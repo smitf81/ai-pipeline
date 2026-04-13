@@ -148,10 +148,9 @@ export default async function runQAScorecardIntegrityTests() {
   );
   assert.match(mixedBundle.cards[1].summary, /below the fail threshold 2.5/i);
   assert.equal(mixedBundle.evaluatorMovement.verdict, 'better');
-  assert.equal(mixedBundle.cards[0].evaluatorMovement.verdict, 'better');
-  assert.equal(mixedBundle.cards[0].evaluatorMovement.cognitionMode, 'model_live');
-  assert.equal(mixedBundle.cards[1].evaluatorMovement.verdict, 'better');
-  assert.match(mixedBundle.summary, /evaluator better/i);
+  assert.equal(Object.prototype.hasOwnProperty.call(mixedBundle.cards[0], 'evaluatorMovement'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(mixedBundle.cards[1], 'evaluatorMovement'), false);
+  assert.doesNotMatch(mixedBundle.summary, /evaluator better/i);
 
   const missingBundle = buildStructuredQAScorecardBundle(null);
   assert.equal(missingBundle.status, 'missing');

@@ -1153,6 +1153,8 @@ export default async function runAgentWorkersTests() {
   assert.ok(contextSuccess.report.canonicalIntent);
   assert.ok(contextSuccess.extractedIntent);
   assert.equal(contextSuccess.extractedIntent.provenance.usedFallback, false);
+  assert.equal(contextSuccess.extractedIntent.status, 'live_valid');
+  assert.ok(['medium', 'high'].includes(contextSuccess.extractedIntent.confidence));
   assert.ok(contextSuccess.report.extractedIntent);
   assert.ok(contextSuccess.report.extractedIntent.candidateNodes.length >= 3);
   assert.equal(contextSuccess.report.extractedIntent.inferredClaims.length, 1);
@@ -1197,9 +1199,142 @@ export default async function runAgentWorkersTests() {
   assert.ok(contextFallback.handoff);
   assert.ok(contextFallback.extractedIntent);
   assert.equal(contextFallback.extractedIntent.provenance.usedFallback, true);
+  assert.equal(contextFallback.extractedIntent.status, 'fallback_used');
+  assert.equal(contextFallback.extractedIntent.confidence, 'failed');
   assert.equal(contextFallback.extractedIntent.inferredClaims.length, 0);
   assert.ok(contextFallback.extractedIntent.candidateNodes.every((node) => node.basis === 'explicit'));
   assert.match(contextFallback.run.reason || '', /Ollama unavailable/);
+
+  const contextWeakLive = await runContextManagerWorker({
+    rootPath,
+    text: 'Maybe improve planner visibility somehow.',
+    sourceNodeId: 'node_ctx_weak',
+    source: 'context-intake',
+    workspace,
+    anchorBundle,
+    dashboardState: {},
+    runId: 'context_weak_live',
+    generator: async () => ({
+      packet: {
+        summary: 'Planner visibility needs attention.',
+        statement: 'Make planner visibility better.',
+        goal: 'Make planner visibility better.',
+        requestedOutcomes: ['Improve planner visibility'],
+        targets: ['planner'],
+        constraints: [],
+        urgency: 'normal',
+        requestType: 'planning_request',
+        signals: { actionSignals: 1 },
+        clarifications: ['Need a concrete representation target'],
+        focusTerms: ['planner', 'visibility'],
+        suggestedAnchorRefs: ['brain/emergence/plan.md'],
+      },
+      extractedIntent: {
+        summary: 'Planner visibility may need a clearer representation.',
+        explicitClaims: ['Planner visibility should improve'],
+        inferredClaims: ['A clearer planner state surface may help'],
+        candidateNodes: [],
+        candidateEdges: [],
+        gaps: ['No concrete node candidate was identified'],
+      },
+    }),
+    fallbackAnalyze: (text, currentWorkspace) => analyzeSpatialIntent(text, buildIntentProjectContext({
+      workspace: currentWorkspace,
+      rootPath,
+    })),
+  });
+
+  assert.equal(contextWeakLive.ok, true);
+  assert.equal(contextWeakLive.outcome, 'completed');
+  assert.equal(contextWeakLive.usedFallback, false);
+  assert.ok(contextWeakLive.extractedIntent);
+  assert.equal(contextWeakLive.extractedIntent.provenance.usedFallback, false);
+  assert.equal(contextWeakLive.extractedIntent.provenance.liveResultPreserved, true);
+  assert.equal(contextWeakLive.extractedIntent.status, 'live_valid_no_candidates');
+  assert.equal(contextWeakLive.extractedIntent.confidence, 'low');
+  assert.equal(contextWeakLive.extractedIntent.reason, 'no_candidates');
+  assert.equal(contextWeakLive.extractedIntent.candidateNodes.length, 0);
+  assert.equal(contextWeakLive.extractedIntent.audit.extractedIntentAssessment.actionability, 'none');
+  assert.equal(contextWeakLive.report.extractedIntent.status, 'live_valid_no_candidates');
+  assert.equal(contextWeakLive.report.extractedIntent.provenance.liveAssessmentReason, 'no_candidates');
+
+  const contextMissingLive = await runContextManagerWorker({
+    rootPath,
+    text: 'Keep planner routing concise.',
+    sourceNodeId: 'node_ctx_missing',
+    source: 'context-intake',
+    workspace,
+    anchorBundle,
+    dashboardState: {},
+    runId: 'context_missing_live',
+    generator: async () => ({
+      packet: {
+        summary: 'Keep planner routing concise.',
+        statement: 'Keep planner routing concise.',
+        goal: 'Keep planner routing concise.',
+        requestedOutcomes: ['Keep planner routing concise'],
+        targets: ['planner'],
+        constraints: [],
+        urgency: 'normal',
+        requestType: 'planning_request',
+        signals: {},
+        clarifications: [],
+        focusTerms: ['planner', 'routing'],
+        suggestedAnchorRefs: ['brain/emergence/plan.md'],
+      },
+    }),
+    fallbackAnalyze: (text, currentWorkspace) => analyzeSpatialIntent(text, buildIntentProjectContext({
+      workspace: currentWorkspace,
+      rootPath,
+    })),
+  });
+
+  assert.equal(contextMissingLive.ok, false);
+  assert.equal(contextMissingLive.outcome, 'degraded');
+  assert.equal(contextMissingLive.usedFallback, true);
+  assert.equal(contextMissingLive.reason, 'no_response');
+  assert.equal(contextMissingLive.extractedIntent.provenance.usedFallback, true);
+  assert.equal(contextMissingLive.extractedIntent.status, 'fallback_used');
+  assert.equal(contextMissingLive.extractedIntent.confidence, 'failed');
+
+  const contextInvalidLive = await runContextManagerWorker({
+    rootPath,
+    text: 'Route planner review details.',
+    sourceNodeId: 'node_ctx_invalid',
+    source: 'context-intake',
+    workspace,
+    anchorBundle,
+    dashboardState: {},
+    runId: 'context_invalid_live',
+    generator: async () => ({
+      packet: {
+        summary: 'Route planner review details.',
+        statement: 'Route planner review details.',
+        goal: 'Route planner review details.',
+        requestedOutcomes: ['Route planner review details'],
+        targets: ['planner'],
+        constraints: [],
+        urgency: 'normal',
+        requestType: 'planning_request',
+        signals: {},
+        clarifications: [],
+        focusTerms: ['planner'],
+        suggestedAnchorRefs: ['brain/emergence/plan.md'],
+      },
+      extractedIntent: 'not-json-object',
+    }),
+    fallbackAnalyze: (text, currentWorkspace) => analyzeSpatialIntent(text, buildIntentProjectContext({
+      workspace: currentWorkspace,
+      rootPath,
+    })),
+  });
+
+  assert.equal(contextInvalidLive.ok, false);
+  assert.equal(contextInvalidLive.outcome, 'degraded');
+  assert.equal(contextInvalidLive.usedFallback, true);
+  assert.equal(contextInvalidLive.extractedIntent.provenance.usedFallback, true);
+  assert.equal(contextInvalidLive.extractedIntent.status, 'fallback_used');
+  assert.equal(contextInvalidLive.extractedIntent.confidence, 'failed');
 
   const normalizedGraphContext = await runContextManagerWorker({
     rootPath,

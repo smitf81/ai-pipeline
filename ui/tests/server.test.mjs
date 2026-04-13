@@ -1862,11 +1862,13 @@ export default async function runServerTests() {
     run_id: 'evaluator_1',
     evaluator_id: 'evaluator',
     compared_at: freshTimestamp,
-    comparison_target: 'qa_scorecards',
+    comparison_target: 'system_runtime',
+    analysis_classification: 'derived_analysis',
+    authority_scope: 'comparative_projection',
     verdict: 'better',
     delta_score: 0.6,
-    progress_summary: 'QA scorecards improved after the latest run.',
-    changed_dimensions: ['scorecards'],
+    progress_summary: 'Runtime posture improved after the latest comparison.',
+    changed_dimensions: ['agent_cognition', 'task_progress', 'truth_kernel'],
     evaluation_confidence: 0.8,
     cognition_mode: 'model_live',
     model_name: 'mistral:latest',
@@ -1876,6 +1878,18 @@ export default async function runServerTests() {
       previous: 'eval_prev',
       current: 'eval_curr',
     },
+    grounding: {
+      status: 'grounded',
+      completeness: 1,
+      isGrounded: true,
+      missing_input_ids: [],
+      caveats: [],
+    },
+    qa_authority: {
+      owner: 'qa',
+      role: 'adjudicated_reference',
+      evaluator_role: 'derived_analysis_only',
+    },
   }], null, 2)}\n`, 'utf8');
   fs.writeFileSync(path.join(qaRoot, 'data', 'spatial', 'evaluator', 'state.json'), `${JSON.stringify({
     updated_at: freshTimestamp,
@@ -1883,11 +1897,13 @@ export default async function runServerTests() {
       run_id: 'evaluator_1',
       evaluator_id: 'evaluator',
       compared_at: freshTimestamp,
-      comparison_target: 'qa_scorecards',
+      comparison_target: 'system_runtime',
+      analysis_classification: 'derived_analysis',
+      authority_scope: 'comparative_projection',
       verdict: 'better',
       delta_score: 0.6,
-      progress_summary: 'QA scorecards improved after the latest run.',
-      changed_dimensions: ['scorecards'],
+      progress_summary: 'Runtime posture improved after the latest comparison.',
+      changed_dimensions: ['agent_cognition', 'task_progress', 'truth_kernel'],
       evaluation_confidence: 0.8,
       cognition_mode: 'model_live',
       model_name: 'mistral:latest',
@@ -1897,11 +1913,23 @@ export default async function runServerTests() {
         previous: 'eval_prev',
         current: 'eval_curr',
       },
+      grounding: {
+        status: 'grounded',
+        completeness: 1,
+        isGrounded: true,
+        missing_input_ids: [],
+        caveats: [],
+      },
+      qa_authority: {
+        owner: 'qa',
+        role: 'adjudicated_reference',
+        evaluator_role: 'derived_analysis_only',
+      },
     },
     latest_snapshot: {
       snapshot_id: 'eval_curr',
       captured_at: freshTimestamp,
-      comparison_target: 'qa_scorecards',
+      comparison_target: 'system_runtime',
       fingerprint: 'eval-fingerprint',
       scorecard_count: 1,
       counts: { pass: 1, warn: 0, stale: 0, fail: 0, missing: 0 },
@@ -1912,7 +1940,7 @@ export default async function runServerTests() {
     previous_snapshot: {
       snapshot_id: 'eval_prev',
       captured_at: staleTimestamp,
-      comparison_target: 'qa_scorecards',
+      comparison_target: 'system_runtime',
       fingerprint: 'eval-prev-fingerprint',
       scorecard_count: 1,
       counts: { pass: 0, warn: 1, stale: 0, fail: 0, missing: 0 },
@@ -1979,8 +2007,8 @@ export default async function runServerTests() {
   assert.ok(qaState.auditTrail.entries.some((entry) => entry.kind === 'scorecard'));
   assert.ok(qaState.testRegistry.entries.some((entry) => entry.validityClass === 'stale_target'));
   assert.equal(qaState.evaluator.latestEvaluation.verdict, 'better');
-  assert.equal(qaState.scorecards[0].evaluatorMovement.verdict, 'better');
-  assert.equal(qaState.scorecards[0].evaluatorMovement.cognitionMode, 'model_live');
+  assert.equal(qaState.evaluator.latestEvaluation.analysis_classification, 'derived_analysis');
+  assert.equal(Object.prototype.hasOwnProperty.call(qaState.scorecards[0], 'evaluatorMovement'), false);
   assert.equal(Array.isArray(qaState.agentCognitionSummary.agents), true);
   assert.equal(qaState.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'evaluator').actual_last_cognition_mode, 'model_live');
   assert.equal(qaState.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'executor').actual_last_cognition_mode, 'deterministic_fallback');

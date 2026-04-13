@@ -29,6 +29,15 @@ function makeSnapshot(id, score, status = 'pass') {
     },
     aggregate_score: score,
     summary: `${id} summary`,
+    agent_runtime: {
+      agent_count: 4,
+      contract_complete_count: 4,
+      runtime_configured_count: status === 'pass' ? 4 : 3,
+      degraded_count: status === 'pass' ? 0 : 1,
+      summary: status === 'pass'
+        ? 'Agent runtime contracts are fully configured.'
+        : 'One agent runtime contract is degraded.',
+    },
     agent_cognition: {
       agents: [{
         agent_id: 'planner',
@@ -54,6 +63,23 @@ function makeSnapshot(id, score, status = 'pass') {
       degraded_count: status === 'pass' ? 1 : 3,
       active_count: status === 'pass' ? 2 : 1,
       stale_count: status === 'pass' ? 0 : 2,
+    },
+    qa_posture: {
+      verdict: status === 'pass' ? 'pass' : 'warn',
+      status: status === 'pass' ? 'completed' : 'degraded',
+      freshness: 'fresh',
+      adjudicated_at: '2026-04-11T10:00:00.000Z',
+      summary: status === 'pass'
+        ? 'QA is fresh and adjudicated.'
+        : 'QA remains degraded but fresh.',
+    },
+    failure_memory: {
+      exists: true,
+      repeated_keys: status === 'pass' ? 0 : 2,
+      total_keys: status === 'pass' ? 1 : 3,
+      summary: status === 'pass'
+        ? 'Failure memory pressure is low.'
+        : 'Failure memory shows repeated regressions.',
     },
     qa_support: {
       aggregate_score: score,
@@ -103,7 +129,7 @@ export default async function runEvaluatorAgentTests() {
   assert.equal(classifyEvaluatorFailureReason('Local model request timed out after 30000ms.', {
     promptChars: promptProfile.promptChars,
     contextMode: promptProfile.contextMode,
-  }), 'timeout');
+  }), 'overscoped_context');
 
   const liveResult = await evaluateSnapshots({
     rootPath,
@@ -172,6 +198,14 @@ export default async function runEvaluatorAgentTests() {
   assert.equal(liveResult.evaluation.cognition_diagnostics.failure_reason, null);
   assert.equal(liveResult.evaluation.cognition_diagnostics.prompt_chars > 0, true);
   assert.equal(liveResult.evaluation.cognition_diagnostics.timeout_ms, 30000);
+  assert.equal(liveResult.evaluation.analysis_classification, 'derived_analysis');
+  assert.equal(liveResult.evaluation.authority_scope, 'comparative_projection');
+  assert.equal(liveResult.evaluation.qa_authority.owner, 'qa');
+  assert.equal(liveResult.evaluation.provenance.classification, 'derived_analysis');
+  assert.equal(liveResult.evaluation.provenance.scorecards_role, 'supporting_evidence');
+  assert.equal(Array.isArray(liveResult.evaluation.consulted_seams), true);
+  assert.equal(liveResult.evaluation.consulted_seams.some((entry) => entry.id === 'truth_kernel' && entry.classification === 'derived_projection'), true);
+  assert.equal(liveResult.evaluation.grounding.status, 'grounded');
 
   const persistedState = readEvaluatorState(rootPath);
   assert.equal(persistedState.state.latest_evaluation.verdict, 'better');
@@ -197,10 +231,15 @@ export default async function runEvaluatorAgentTests() {
   });
 
   assert.equal(fallbackResult.evaluation.cognition_mode, 'deterministic_fallback');
-  assert.equal(['better', 'worse', 'no_change'].includes(fallbackResult.evaluation.verdict), true);
+  assert.equal(fallbackResult.evaluation.verdict, 'no_change');
   assert.match(String(fallbackResult.evaluation.fallback_reason || ''), /ollama unavailable/i);
   assert.equal(fallbackResult.evaluation.cognition_diagnostics.used_fallback, true);
   assert.equal(fallbackResult.evaluation.cognition_diagnostics.failure_reason, 'model_unavailable');
   assert.equal(fallbackResult.evaluation.cognition_diagnostics.prompt_chars > 0, true);
+  assert.equal(fallbackResult.evaluation.analysis_classification, 'derived_analysis');
+  assert.equal(fallbackResult.evaluation.grounding.status, 'insufficient_inputs');
+  assert.equal(fallbackResult.evaluation.grounding.missing_input_ids.includes('task_progress'), true);
+  assert.equal(fallbackResult.evaluation.grounding.missing_input_ids.includes('qa_posture'), true);
+  assert.match(String(fallbackResult.evaluation.progress_summary || ''), /first grounded system snapshot/i);
   assert.equal(readEvaluatorState(fallbackRoot).history.length, 1);
 }

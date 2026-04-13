@@ -17,10 +17,21 @@ const {
 } = require('./agentWorkers');
 const {
   resolveAgentDefinition,
+  readAgentDefinition,
 } = require('./agentRegistry');
 const {
   buildTruthKernelPayload,
 } = require('./truthKernelAdapter');
+const {
+  readStructuredQAReport,
+} = require('./qaRunner');
+const {
+  readQaLeadOutput,
+} = require('./qaLeadRunner');
+const {
+  readFailureHistory,
+  summarizeFailureHistory,
+} = require('./failureMemory');
 
 const EVALUATOR_DIR = path.join('data', 'spatial', 'evaluator');
 const EVALUATOR_RUNS_DIR = path.join(EVALUATOR_DIR, 'runs');
@@ -30,11 +41,16 @@ const CORE_AGENT_IDS = ['context-manager', 'planner', 'executor'];
 const TASK_STALE_AFTER_MS = 36 * 60 * 60 * 1000;
 const TRUTH_ACTIVE_WINDOW_MS = 60 * 60 * 1000;
 const TRUTH_STALE_WINDOW_MS = 48 * 60 * 60 * 1000;
+const QA_STALE_WINDOW_MS = 24 * 60 * 60 * 1000;
 const SNAPSHOT_COMPARISON_TARGET = 'system_runtime';
 const EVALUATOR_CONTEXT_MODE = 'scoped';
 const EVALUATOR_OVERSCOPED_PROMPT_CHARS = 5200;
 const EVALUATOR_AGENT_PROMPT_LIMIT = 6;
 const EVALUATOR_SCORECARD_PROMPT_LIMIT = 4;
+const EVALUATOR_ANALYSIS_CLASSIFICATION = 'derived_analysis';
+const EVALUATOR_AUTHORITY_SCOPE = 'comparative_projection';
+const EVALUATOR_REQUIRED_PRIMARY_SEAMS = ['agent_runtime', 'task_progress', 'truth_kernel', 'qa_posture'];
+const EVALUATOR_RUNTIME_AGENT_IDS = [...CORE_AGENT_IDS, 'evaluator'];
 
 const ALLOWED_VERDICTS = new Set(['better', 'worse', 'no_change']);
 const MODEL_COGNITION_MODE = 'model_live';
@@ -152,6 +168,309 @@ function snapshotAggregateScore(snapshot = null) {
 
 function readWorkspace(rootPath) {
   return readJsonSafe(path.join(rootPath, WORKSPACE_RELATIVE_PATH), {});
+}
+
+function parseTimestamp(...values) {
+  for (const value of values) {
+    const timestamp = Date.parse(String(value || '').trim());
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  return null;
+}
+
+function resolveFreshness(timestamp, staleAfterMs = QA_STALE_WINDOW_MS) {
+  const resolvedTimestamp = Number.isFinite(Number(timestamp)) ? Number(timestamp) : parseTimestamp(timestamp);
+  if (!Number.isFinite(resolvedTimestamp)) return 'missing';
+  return (Date.now() - resolvedTimestamp) > staleAfterMs ? 'stale' : 'fresh';
+}
+
+function hasWorkspaceRuntimeState(workspace = {}) {
+  return Boolean(
+    Array.isArray(workspace?.studio?.teamBoard?.cards) && workspace.studio.teamBoard.cards.length
+    || Object.keys(workspace?.studio?.orchestrator?.desks || {}).length
+    || Object.keys(workspace?.studio?.agentWorkers || {}).length
+    || Array.isArray(workspace?.graph?.nodes) && workspace.graph.nodes.length
+    || Array.isArray(workspace?.graphs?.system?.nodes) && workspace.graphs.system.nodes.length
+  );
+}
+
+function uniqueSourcePaths(paths = []) {
+  return [...new Set((Array.isArray(paths) ? paths : []).map((value) => normalizeText(value)).filter(Boolean))];
+}
+
+function buildAgentRuntimeSnapshot(rootPath, workspace = {}) {
+  const workerState = workspace?.studio?.agentWorkers && typeof workspace.studio.agentWorkers === 'object'
+    ? workspace.studio.agentWorkers
+    : {};
+  const agents = EVALUATOR_RUNTIME_AGENT_IDS.map((agentId) => {
+    const definition = readAgentDefinition(rootPath, agentId);
+    const manifest = definition?.manifest && typeof definition.manifest === 'object' ? definition.manifest : {};
+    const worker = workerState?.[agentId] && typeof workerState[agentId] === 'object' ? workerState[agentId] : null;
+    const contractComplete = Boolean(
+      definition?.valid
+      && normalizeText(manifest.id)
+      && normalizeText(manifest.backend)
+      && normalizeText(manifest.runtime)
+      && normalizeText(manifest.model)
+    );
+    const runtimeConfigured = Boolean(worker && normalizeText(worker.backend) && normalizeText(worker.model));
+    const status = normalizeText(worker?.status) || (runtimeConfigured ? 'configured' : 'missing');
+    return {
+      agent_id: agentId,
+      contract_present: Boolean(definition?.exists),
+      contract_complete: contractComplete,
+      runtime_configured: runtimeConfigured,
+      status,
+      backend: normalizeText(worker?.backend || manifest.backend) || null,
+      runtime: normalizeText(manifest.runtime) || null,
+      model_name: normalizeText(worker?.model || manifest.model) || null,
+      manifest_path: definition?.manifestPath || null,
+      prompt_path: definition?.promptPath || null,
+    };
+  });
+  const agentCount = agents.length;
+  const contractCompleteCount = agents.filter((entry) => entry.contract_complete).length;
+  const runtimeConfiguredCount = agents.filter((entry) => entry.runtime_configured).length;
+  const degradedCount = agents.filter((entry) => ['blocked', 'degraded', 'offline', 'error', 'missing'].includes(String(entry.status || '').toLowerCase())).length;
+  return {
+    agent_count: agentCount,
+    contract_complete_count: contractCompleteCount,
+    runtime_configured_count: runtimeConfiguredCount,
+    degraded_count: degradedCount,
+    agents,
+    summary: `${runtimeConfiguredCount}/${agentCount} runtime seats configured | ${contractCompleteCount}/${agentCount} contract-complete | ${degradedCount} degraded or missing`,
+  };
+}
+
+function buildQaPostureSnapshot(rootPath) {
+  const qaLeadOutput = readQaLeadOutput(rootPath);
+  const state = qaLeadOutput?.state && typeof qaLeadOutput.state === 'object' ? qaLeadOutput.state : {};
+  const latestRun = qaLeadOutput?.latestRun && typeof qaLeadOutput.latestRun === 'object' ? qaLeadOutput.latestRun : {};
+  const structuredReport = readStructuredQAReport(rootPath, 'latest');
+  const structuredStatus = normalizeText(structuredReport?.status) || 'missing';
+  const adjudicatedAt = parseTimestamp(
+    latestRun.finished_at,
+    latestRun.finishedAt,
+    latestRun.last_completed_cycle_at,
+    latestRun.lastCompletedCycleAt,
+    state.finished_at,
+    state.finishedAt,
+    state.last_completed_cycle_at,
+    state.lastCompletedCycleAt,
+    structuredReport?.finishedAt,
+    structuredReport?.updatedAt,
+    structuredReport?.createdAt,
+  );
+  const status = normalizeText(latestRun.status || state.status || structuredStatus) || 'unknown';
+  const normalizedStatus = status.toLowerCase();
+  let verdict = 'unknown';
+  if (structuredStatus === 'fail' || ['failed', 'fail', 'error', 'blocked'].includes(normalizedStatus)) {
+    verdict = 'fail';
+  } else if (['degraded', 'offline', 'stale', 'warn', 'warning'].includes(normalizedStatus)) {
+    verdict = 'degraded';
+  } else if (structuredStatus === 'pass' || ['pass', 'live', 'healthy', 'completed'].includes(normalizedStatus)) {
+    verdict = 'pass';
+  }
+  return {
+    run_id: normalizeText(latestRun.id || state.run_id || state.id) || null,
+    cycle_id: normalizeText(state.current_batch || state.run_id || latestRun.id) || null,
+    status,
+    verdict,
+    structured_status: structuredStatus,
+    adjudicated_at: adjudicatedAt == null ? null : new Date(adjudicatedAt).toISOString(),
+    freshness: resolveFreshness(adjudicatedAt, QA_STALE_WINDOW_MS),
+    output_feed_count: Array.isArray(latestRun.output_feed) ? latestRun.output_feed.length : (Array.isArray(state.output_feed) ? state.output_feed.length : 0),
+    summary: normalizeText(latestRun.summary || state.summary || structuredReport?.summary) || 'QA posture is not adjudicated yet.',
+  };
+}
+
+function buildFailureMemorySnapshot(rootPath) {
+  const failureStore = readFailureHistory(rootPath);
+  const history = failureStore?.history && typeof failureStore.history === 'object' ? failureStore.history : { entries: [] };
+  const summary = summarizeFailureHistory(rootPath);
+  return {
+    exists: Boolean(failureStore?.exists),
+    updated_at: history.updated_at || null,
+    total_keys: Number(summary?.totalKeys || 0),
+    repeated_keys: Number(summary?.repeatedKeys || 0),
+    top_failures: Array.isArray(summary?.topFailures) ? summary.topFailures.slice(0, 3) : [],
+    summary: failureStore?.exists
+      ? `${Number(summary?.repeatedKeys || 0)} repeated failure key${Number(summary?.repeatedKeys || 0) === 1 ? '' : 's'} across ${Number(summary?.totalKeys || 0)} tracked key${Number(summary?.totalKeys || 0) === 1 ? '' : 's'}`
+      : 'Failure memory has not recorded canonical entries yet.',
+  };
+}
+
+function buildEvaluatorInputContract({
+  rootPath,
+  workspace,
+  agentRuntime,
+  agentCognition,
+  taskProgress,
+  truthKernel,
+  qaPosture,
+  qaSupport,
+  failureMemory,
+} = {}) {
+  const seams = [
+    {
+      id: 'agent_runtime',
+      label: 'Agent runtime state',
+      role: 'primary',
+      owner: 'runtime',
+      classification: 'canonical_source',
+      source_paths: uniqueSourcePaths([WORKSPACE_RELATIVE_PATH, ...agentRuntime.agents.map((entry) => entry.manifest_path).filter(Boolean)]),
+      available: hasWorkspaceRuntimeState(workspace),
+      freshness: hasWorkspaceRuntimeState(workspace) ? 'fresh' : 'missing',
+      summary: agentRuntime.summary,
+    },
+    {
+      id: 'agent_cognition',
+      label: 'Agent cognition evidence',
+      role: 'primary',
+      owner: 'runtime',
+      classification: 'evidence_artefact',
+      source_paths: uniqueSourcePaths([
+        'data/spatial/agent-runs/context-manager/*.json',
+        'data/spatial/agent-runs/planner/*.json',
+        'data/spatial/agent-runs/executor/*.json',
+      ]),
+      available: Number(agentCognition?.observed_agent_count || 0) > 0,
+      freshness: Number(agentCognition?.observed_agent_count || 0) > 0 ? 'fresh' : 'missing',
+      summary: agentCognition.summary,
+    },
+    {
+      id: 'task_progress',
+      label: 'Task progress',
+      role: 'primary',
+      owner: 'workspace',
+      classification: 'canonical_source',
+      source_paths: uniqueSourcePaths([WORKSPACE_RELATIVE_PATH]),
+      available: hasWorkspaceRuntimeState(workspace),
+      freshness: hasWorkspaceRuntimeState(workspace) ? 'fresh' : 'missing',
+      summary: taskProgress.summary,
+    },
+    {
+      id: 'truth_kernel',
+      label: 'Truth-kernel projection',
+      role: 'primary',
+      owner: 'truth-kernel',
+      classification: 'derived_projection',
+      source_paths: uniqueSourcePaths(['/api/spatial/truth-kernel']),
+      available: Number(truthKernel?.node_count || 0) > 0,
+      freshness: Number(truthKernel?.node_count || 0) > 0 ? 'fresh' : 'missing',
+      summary: truthKernel.summary,
+    },
+    {
+      id: 'qa_posture',
+      label: 'QA adjudicated posture',
+      role: 'adjudicated_reference',
+      owner: 'qa',
+      classification: 'canonical_source',
+      source_paths: uniqueSourcePaths(['data/spatial/qa/lead-state.json', 'data/spatial/qa/lead-runs/*.json', 'data/spatial/qa/structured/latest.json']),
+      available: Boolean(qaPosture?.run_id || qaPosture?.cycle_id || qaPosture?.adjudicated_at),
+      freshness: qaPosture?.freshness || 'missing',
+      summary: qaPosture.summary,
+    },
+    {
+      id: 'failure_memory',
+      label: 'Failure memory',
+      role: 'primary',
+      owner: 'runtime',
+      classification: 'canonical_source',
+      source_paths: uniqueSourcePaths([failureStorePath(rootPath, failureMemory)]),
+      available: Boolean(failureMemory?.exists),
+      freshness: resolveFreshness(failureMemory?.updated_at, QA_STALE_WINDOW_MS),
+      summary: failureMemory.summary,
+    },
+    {
+      id: 'qa_support',
+      label: 'QA scorecards',
+      role: 'supporting',
+      owner: 'qa',
+      classification: 'derived_projection',
+      source_paths: uniqueSourcePaths(['data/spatial/qa/structured/latest.json']),
+      available: Number(qaSupport?.scorecard_count || 0) > 0,
+      freshness: Number(qaSupport?.scorecard_count || 0) > 0 ? 'fresh' : 'missing',
+      summary: qaSupport.summary,
+    },
+  ];
+  const availablePrimary = seams.filter((entry) => entry.role !== 'supporting' && entry.available);
+  const availableRequired = availablePrimary.filter((entry) => EVALUATOR_REQUIRED_PRIMARY_SEAMS.includes(entry.id));
+  const canonicalAvailable = availablePrimary.filter((entry) => entry.classification === 'canonical_source');
+  const completeness = Number(((
+    (availableRequired.length / Math.max(1, EVALUATOR_REQUIRED_PRIMARY_SEAMS.length)) * 0.7
+  ) + (
+    (canonicalAvailable.length / Math.max(1, availablePrimary.length || 1)) * 0.2
+  ) + (
+    (availablePrimary.length / Math.max(1, seams.filter((entry) => entry.role !== 'supporting').length)) * 0.1
+  )).toFixed(2));
+  const supportingOnly = seams.some((entry) => entry.id === 'qa_support' && entry.available) && availablePrimary.length === 0;
+  const groundingStatus = supportingOnly || availableRequired.length < 2 ? 'insufficient_inputs' : 'grounded';
+  return {
+    classification: 'derived_projection',
+    authority_scope: EVALUATOR_AUTHORITY_SCOPE,
+    required_primary_seams: [...EVALUATOR_REQUIRED_PRIMARY_SEAMS],
+    consulted_seams: seams,
+    completeness,
+    grounding_status: groundingStatus,
+    supporting_only: supportingOnly,
+    available_primary_count: availablePrimary.length,
+    missing_input_ids: seams.filter((entry) => entry.role !== 'supporting' && !entry.available).map((entry) => entry.id),
+    caveats: [
+      supportingOnly ? 'QA scorecards are present, but grounded runtime seams are missing.' : null,
+      availableRequired.length < 2 ? 'At least two non-scorecard primary seams are required before evaluator posture is trustworthy.' : null,
+      qaPosture?.freshness === 'stale' ? 'QA adjudication is stale and should not be treated as current posture.' : null,
+    ].filter(Boolean),
+  };
+}
+
+function failureStorePath(rootPath, failureMemory = {}) {
+  if (!failureMemory?.exists) return 'brain/context/failure_history.json';
+  const store = readFailureHistory(rootPath);
+  return store?.jsonPath
+    ? path.relative(rootPath, store.jsonPath).replace(/\\/g, '/')
+    : 'brain/context/failure_history.json';
+}
+
+function resolveSyntheticSeamAvailability(snapshot = {}) {
+  return {
+    agent_runtime: Boolean(snapshot?.agent_runtime?.agent_count || snapshot?.agent_runtime?.runtime_configured_count),
+    agent_cognition: Number(snapshot?.agent_cognition?.observed_agent_count || 0) > 0,
+    task_progress: Boolean(snapshot?.task_progress && (Number(snapshot?.task_progress?.total_count || 0) > 0 || normalizeText(snapshot?.task_progress?.summary))),
+    truth_kernel: Number(snapshot?.truth_kernel?.node_count || 0) > 0,
+    qa_posture: Boolean(snapshot?.qa_posture?.run_id || snapshot?.qa_posture?.cycle_id || snapshot?.qa_posture?.adjudicated_at),
+    failure_memory: Boolean(snapshot?.failure_memory?.exists || snapshot?.failure_memory?.updated_at),
+    qa_support: Number(snapshot?.qa_support?.scorecard_count || snapshot?.scorecard_count || 0) > 0,
+  };
+}
+
+function resolveSnapshotInputContract(snapshot = null) {
+  if (snapshot?.input_contract && typeof snapshot.input_contract === 'object') return snapshot.input_contract;
+  const availability = resolveSyntheticSeamAvailability(snapshot || {});
+  const consultedSeams = [
+    { id: 'agent_runtime', role: 'primary', classification: 'canonical_source', available: availability.agent_runtime, summary: snapshot?.agent_runtime?.summary || null },
+    { id: 'agent_cognition', role: 'primary', classification: 'evidence_artefact', available: availability.agent_cognition, summary: snapshot?.agent_cognition?.summary || null },
+    { id: 'task_progress', role: 'primary', classification: 'canonical_source', available: availability.task_progress, summary: snapshot?.task_progress?.summary || null },
+    { id: 'truth_kernel', role: 'primary', classification: 'derived_projection', available: availability.truth_kernel, summary: snapshot?.truth_kernel?.summary || null },
+    { id: 'qa_posture', role: 'adjudicated_reference', classification: 'canonical_source', available: availability.qa_posture, summary: snapshot?.qa_posture?.summary || null },
+    { id: 'failure_memory', role: 'primary', classification: 'canonical_source', available: availability.failure_memory, summary: snapshot?.failure_memory?.summary || null },
+    { id: 'qa_support', role: 'supporting', classification: 'derived_projection', available: availability.qa_support, summary: snapshot?.qa_support?.summary || null },
+  ];
+  const availablePrimary = consultedSeams.filter((entry) => entry.role !== 'supporting' && entry.available);
+  const availableRequired = availablePrimary.filter((entry) => EVALUATOR_REQUIRED_PRIMARY_SEAMS.includes(entry.id));
+  const supportingOnly = consultedSeams.find((entry) => entry.id === 'qa_support')?.available && availablePrimary.length === 0;
+  return {
+    classification: 'derived_projection',
+    authority_scope: EVALUATOR_AUTHORITY_SCOPE,
+    required_primary_seams: [...EVALUATOR_REQUIRED_PRIMARY_SEAMS],
+    consulted_seams: consultedSeams,
+    completeness: Number((availableRequired.length / Math.max(1, EVALUATOR_REQUIRED_PRIMARY_SEAMS.length)).toFixed(2)),
+    grounding_status: supportingOnly || availableRequired.length < 2 ? 'insufficient_inputs' : 'grounded',
+    supporting_only: supportingOnly,
+    available_primary_count: availablePrimary.length,
+    missing_input_ids: consultedSeams.filter((entry) => entry.role !== 'supporting' && !entry.available).map((entry) => entry.id),
+    caveats: supportingOnly ? ['QA scorecards are present, but grounded runtime seams are missing.'] : [],
+  };
 }
 
 function fallbackManifestForAgent(agentId) {
@@ -364,9 +683,12 @@ function buildEvaluatorSnapshot({
     : readWorkspace(rootPath);
   const normalizedScorecards = buildSnapshotScorecards(scorecards);
   const counts = buildScorecardCounts(normalizedScorecards);
+  const agentRuntime = buildAgentRuntimeSnapshot(rootPath, resolvedWorkspace);
   const agentCognition = buildAgentCognitionSnapshot(rootPath, resolvedWorkspace);
   const taskProgress = buildTaskSnapshot(resolvedWorkspace);
   const truthKernel = buildTruthKernelSummary(rootPath, resolvedWorkspace);
+  const qaPosture = buildQaPostureSnapshot(rootPath);
+  const failureMemory = buildFailureMemorySnapshot(rootPath);
   const qaSupport = {
     scorecard_count: normalizedScorecards.length,
     counts,
@@ -375,15 +697,34 @@ function buildEvaluatorSnapshot({
       ? `${normalizedScorecards.length} scorecards | ${counts.pass} pass | ${counts.warn} warn | ${counts.stale} stale | ${counts.fail} fail`
       : 'No comparable QA scorecards were available as supporting evidence.',
   };
+  const inputContract = buildEvaluatorInputContract({
+    rootPath,
+    workspace: resolvedWorkspace,
+    agentRuntime,
+    agentCognition,
+    taskProgress,
+    truthKernel,
+    qaPosture,
+    qaSupport,
+    failureMemory,
+  });
   const fingerprint = sha1(JSON.stringify({
     comparisonTarget,
+    agent_runtime: agentRuntime,
     agent_cognition: agentCognition,
     task_progress: taskProgress,
     truth_kernel: truthKernel,
+    qa_posture: qaPosture,
+    failure_memory: failureMemory,
     qa_support: {
       scorecard_count: qaSupport.scorecard_count,
       counts: qaSupport.counts,
       aggregate_score: qaSupport.aggregate_score,
+    },
+    input_contract: {
+      completeness: inputContract.completeness,
+      grounding_status: inputContract.grounding_status,
+      missing_input_ids: inputContract.missing_input_ids,
     },
   }));
   const resolvedCapturedAt = normalizeText(capturedAt) || nowIso();
@@ -396,11 +737,18 @@ function buildEvaluatorSnapshot({
     counts,
     aggregate_score: qaSupport.aggregate_score,
     summary: [
+      agentRuntime.summary,
       agentCognition.summary,
       taskProgress.summary,
       truthKernel.summary,
+      qaPosture.summary,
+      failureMemory.summary,
       qaSupport.summary,
     ].filter(Boolean).join(' | '),
+    analysis_classification: EVALUATOR_ANALYSIS_CLASSIFICATION,
+    authority_scope: EVALUATOR_AUTHORITY_SCOPE,
+    input_contract: inputContract,
+    agent_runtime: agentRuntime,
     agent_cognition: agentCognition,
     fallback_pressure: {
       total_count: agentCognition.total_fallback_count,
@@ -409,6 +757,8 @@ function buildEvaluatorSnapshot({
     },
     task_progress: taskProgress,
     truth_kernel: truthKernel,
+    qa_posture: qaPosture,
+    failure_memory: failureMemory,
     qa_support: qaSupport,
     scorecards: normalizedScorecards,
   };
@@ -494,6 +844,12 @@ function summarizeEvaluatorScorecardForPrompt(card = {}) {
 
 function compactSnapshotForEvaluatorPrompt(snapshot = null) {
   if (!snapshot || typeof snapshot !== 'object') return null;
+  const inputContract = snapshot.input_contract && typeof snapshot.input_contract === 'object'
+    ? snapshot.input_contract
+    : resolveSnapshotInputContract(snapshot);
+  const agentRuntime = snapshot.agent_runtime && typeof snapshot.agent_runtime === 'object'
+    ? snapshot.agent_runtime
+    : {};
   const agentCognition = snapshot.agent_cognition && typeof snapshot.agent_cognition === 'object'
     ? snapshot.agent_cognition
     : {};
@@ -503,6 +859,12 @@ function compactSnapshotForEvaluatorPrompt(snapshot = null) {
   const truthKernel = snapshot.truth_kernel && typeof snapshot.truth_kernel === 'object'
     ? snapshot.truth_kernel
     : {};
+  const qaPosture = snapshot.qa_posture && typeof snapshot.qa_posture === 'object'
+    ? snapshot.qa_posture
+    : {};
+  const failureMemory = snapshot.failure_memory && typeof snapshot.failure_memory === 'object'
+    ? snapshot.failure_memory
+    : {};
   const qaSupport = snapshot.qa_support && typeof snapshot.qa_support === 'object'
     ? snapshot.qa_support
     : {};
@@ -511,6 +873,27 @@ function compactSnapshotForEvaluatorPrompt(snapshot = null) {
     captured_at: snapshot.captured_at || null,
     comparison_target: normalizeText(snapshot.comparison_target) || SNAPSHOT_COMPARISON_TARGET,
     summary: truncateText(snapshot.summary || '', 180) || null,
+    input_contract: {
+      grounding_status: normalizeText(inputContract.grounding_status) || 'insufficient_inputs',
+      completeness: Number(inputContract.completeness || 0),
+      missing_input_ids: normalizeStringArray(inputContract.missing_input_ids),
+      caveats: normalizeStringArray(inputContract.caveats),
+      consulted_seams: (Array.isArray(inputContract.consulted_seams) ? inputContract.consulted_seams : [])
+        .map((entry) => ({
+          id: normalizeText(entry?.id) || null,
+          role: normalizeText(entry?.role) || null,
+          classification: normalizeText(entry?.classification) || null,
+          available: entry?.available === true,
+        }))
+        .filter((entry) => entry.id),
+    },
+    agent_runtime: {
+      agent_count: Number(agentRuntime.agent_count || 0),
+      contract_complete_count: Number(agentRuntime.contract_complete_count || 0),
+      runtime_configured_count: Number(agentRuntime.runtime_configured_count || 0),
+      degraded_count: Number(agentRuntime.degraded_count || 0),
+      summary: normalizeText(agentRuntime.summary) || null,
+    },
     agent_cognition: {
       summary: normalizeText(agentCognition.summary) || null,
       observed_agent_count: Number(agentCognition.observed_agent_count || 0),
@@ -540,6 +923,20 @@ function compactSnapshotForEvaluatorPrompt(snapshot = null) {
         ? truthKernel.status_counts
         : {},
       summary: normalizeText(truthKernel.summary) || null,
+    },
+    qa_posture: {
+      verdict: normalizeText(qaPosture.verdict) || null,
+      status: normalizeText(qaPosture.status) || null,
+      freshness: normalizeText(qaPosture.freshness) || null,
+      adjudicated_at: qaPosture.adjudicated_at || null,
+      summary: normalizeText(qaPosture.summary) || null,
+    },
+    failure_memory: {
+      exists: failureMemory.exists === true,
+      total_keys: Number(failureMemory.total_keys || 0),
+      repeated_keys: Number(failureMemory.repeated_keys || 0),
+      updated_at: failureMemory.updated_at || null,
+      summary: normalizeText(failureMemory.summary) || null,
     },
     qa_support: {
       scorecard_count: Number(qaSupport.scorecard_count || 0),
@@ -575,7 +972,9 @@ function buildEvaluatorPromptProfile({
     normalizeText(promptTemplate),
     'Compare only the supplied previous and current snapshots.',
     'Treat runtime/system-state deltas as primary evidence.',
+    'If grounded non-scorecard seams are missing, keep the verdict at no_change and say why.',
     'Treat QA scorecards as supporting evidence only.',
+    'Treat QA posture as adjudicated reference, not something to re-adjudicate.',
     'Do not invent context, missing history, or remediation steps.',
     'Return JSON only with these fields:',
     '{',
@@ -588,7 +987,7 @@ function buildEvaluatorPromptProfile({
     '  "progress_state": "stable" | "regressive" | "stalled",',
     '  "dimension_impacts": [',
     '    {',
-    '      "id": "agent_cognition" | "fallback_pressure" | "task_progress" | "truth_kernel" | "qa_support",',
+    '      "id": "agent_runtime" | "agent_cognition" | "fallback_pressure" | "task_progress" | "truth_kernel" | "qa_posture" | "failure_memory" | "qa_support",',
     '      "label": "string",',
     '      "verdict": "better" | "worse" | "no_change",',
     '      "delta": number,',
@@ -751,6 +1150,10 @@ function buildScorecardImpactsFromSnapshots(previousSnapshot = null, currentSnap
 }
 
 function deriveComparisonEvidence(previousSnapshot = null, currentSnapshot = null) {
+  const currentContract = resolveSnapshotInputContract(currentSnapshot);
+  const previousContract = resolveSnapshotInputContract(previousSnapshot);
+  const currentQaPosture = currentSnapshot?.qa_posture || {};
+  const previousQaPosture = previousSnapshot?.qa_posture || {};
   if (!previousSnapshot) {
     return {
       verdict: 'no_change',
@@ -762,16 +1165,53 @@ function deriveComparisonEvidence(previousSnapshot = null, currentSnapshot = nul
       progress_state: 'stalled',
       dimension_impacts: [],
       scorecard_impacts: buildScorecardImpactsFromSnapshots(previousSnapshot, currentSnapshot),
+      analysis_classification: EVALUATOR_ANALYSIS_CLASSIFICATION,
+      authority_scope: EVALUATOR_AUTHORITY_SCOPE,
+      consulted_seams: Array.isArray(currentContract?.consulted_seams) ? currentContract.consulted_seams : [],
+      grounding: {
+        status: currentContract?.grounding_status || 'insufficient_inputs',
+        completeness: Number(currentContract?.completeness || 0),
+        missing_input_ids: normalizeStringArray(currentContract?.missing_input_ids),
+        caveats: normalizeStringArray(currentContract?.caveats),
+        required_primary_seams: normalizeStringArray(currentContract?.required_primary_seams),
+      },
+      qa_authority: {
+        owner: 'qa',
+        verdict: normalizeText(currentQaPosture?.verdict) || null,
+        freshness: normalizeText(currentQaPosture?.freshness) || null,
+        adjudicated_at: currentQaPosture?.adjudicated_at || null,
+        summary: normalizeText(currentQaPosture?.summary) || null,
+        source_paths: ['data/spatial/qa/lead-state.json', 'data/spatial/qa/lead-runs/*.json', 'data/spatial/qa/structured/latest.json'],
+      },
+      provenance: {
+        classification: EVALUATOR_ANALYSIS_CLASSIFICATION,
+        consulted_source_paths: uniqueSourcePaths(
+          (Array.isArray(currentContract?.consulted_seams) ? currentContract.consulted_seams : [])
+            .flatMap((entry) => Array.isArray(entry?.source_paths) ? entry.source_paths : [])
+        ),
+        truth_kernel_source: '/api/spatial/truth-kernel',
+        qa_posture_source: 'data/spatial/qa/lead-state.json',
+        scorecards_role: 'supporting_evidence',
+      },
     };
   }
+  const previousRuntime = previousSnapshot?.agent_runtime || {};
+  const currentRuntime = currentSnapshot?.agent_runtime || {};
   const previousAgents = previousSnapshot?.agent_cognition || {};
   const currentAgents = currentSnapshot?.agent_cognition || {};
   const previousTasks = previousSnapshot?.task_progress || {};
   const currentTasks = currentSnapshot?.task_progress || {};
   const previousTruth = previousSnapshot?.truth_kernel || {};
   const currentTruth = currentSnapshot?.truth_kernel || {};
+  const previousFailures = previousSnapshot?.failure_memory || {};
+  const currentFailures = currentSnapshot?.failure_memory || {};
   const previousQa = previousSnapshot?.qa_support || {};
   const currentQa = currentSnapshot?.qa_support || {};
+  const runtimeDenominator = Math.max(
+    1,
+    Number(previousRuntime.agent_count || 0),
+    Number(currentRuntime.agent_count || 0),
+  );
   const agentDenominator = Math.max(
     1,
     Number(previousAgents.observed_agent_count || 0),
@@ -787,6 +1227,25 @@ function deriveComparisonEvidence(previousSnapshot = null, currentSnapshot = nul
     Number(previousTruth.node_count || 0),
     Number(currentTruth.node_count || 0),
   );
+  const failureDenominator = Math.max(
+    1,
+    Number(previousFailures.total_keys || 0),
+    Number(currentFailures.total_keys || 0),
+    Number(previousFailures.repeated_keys || 0),
+    Number(currentFailures.repeated_keys || 0),
+  );
+  const qaStatusWeight = (value = '') => {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (normalized === 'pass') return 1;
+    if (normalized === 'degraded') return -0.5;
+    if (normalized === 'fail') return -1;
+    return 0;
+  };
+  const runtimeDelta = Number(((
+    ((Number(currentRuntime.runtime_configured_count || 0) - Number(previousRuntime.runtime_configured_count || 0)) / runtimeDenominator) * 0.6
+  ) + (
+    ((Number(previousRuntime.degraded_count || 0) - Number(currentRuntime.degraded_count || 0)) / runtimeDenominator) * 0.4
+  )).toFixed(2));
   const cognitionDelta = Number((
     (((Number(currentAgents.live_count || 0) - Number(previousAgents.live_count || 0)) / agentDenominator) * 0.7)
     + (((Number(currentAgents.matches_intended_count || 0) - Number(previousAgents.matches_intended_count || 0)) / agentDenominator) * 0.3)
@@ -804,18 +1263,32 @@ function deriveComparisonEvidence(previousSnapshot = null, currentSnapshot = nul
     + (((Number(previousTruth.status_counts?.blocked || 0) - Number(currentTruth.status_counts?.blocked || 0)) / truthDenominator) * 0.25)
     + ((Number(currentTruth.avg_confidence || 0) - Number(previousTruth.avg_confidence || 0)) * 0.25)
   ).toFixed(2));
+  const failureDelta = Number(((
+    ((Number(previousFailures.repeated_keys || 0) - Number(currentFailures.repeated_keys || 0)) / failureDenominator) * 0.7
+  ) + (
+    ((Number(previousFailures.total_keys || 0) - Number(currentFailures.total_keys || 0)) / failureDenominator) * 0.3
+  )).toFixed(2));
+  const qaPostureDelta = Number(((qaStatusWeight(currentQaPosture.verdict) - qaStatusWeight(previousQaPosture.verdict)) * 0.5).toFixed(2));
   const qaDelta = Number((
     (Number(currentQa.aggregate_score || 0) - Number(previousQa.aggregate_score || 0))
     / 4
   ).toFixed(2));
   const dimensionImpacts = [
     {
+      id: 'agent_runtime',
+      label: 'Agent runtime state',
+      verdict: inferDimensionVerdict(runtimeDelta),
+      delta: runtimeDelta,
+      summary: `Runtime-configured agents ${Number(currentRuntime.runtime_configured_count || 0)}/${runtimeDenominator} vs ${Number(previousRuntime.runtime_configured_count || 0)}/${runtimeDenominator}; degraded or missing ${Number(currentRuntime.degraded_count || 0)} vs ${Number(previousRuntime.degraded_count || 0)}.`,
+      weight: 0.18,
+    },
+    {
       id: 'agent_cognition',
       label: 'Agent cognition',
       verdict: inferDimensionVerdict(cognitionDelta),
       delta: cognitionDelta,
       summary: `Live cognition ${Number(currentAgents.live_count || 0)}/${agentDenominator} vs ${Number(previousAgents.live_count || 0)}/${agentDenominator}; intended-path matches ${Number(currentAgents.matches_intended_count || 0)}/${agentDenominator} vs ${Number(previousAgents.matches_intended_count || 0)}/${agentDenominator}.`,
-      weight: 0.35,
+      weight: 0.22,
     },
     {
       id: 'fallback_pressure',
@@ -823,7 +1296,7 @@ function deriveComparisonEvidence(previousSnapshot = null, currentSnapshot = nul
       verdict: inferDimensionVerdict(fallbackDelta),
       delta: fallbackDelta,
       summary: `Fallbacks ${Number(currentAgents.total_fallback_count || 0)} vs ${Number(previousAgents.total_fallback_count || 0)} across observed agents.`,
-      weight: 0.25,
+      weight: 0.17,
     },
     {
       id: 'task_progress',
@@ -831,7 +1304,7 @@ function deriveComparisonEvidence(previousSnapshot = null, currentSnapshot = nul
       verdict: inferDimensionVerdict(taskDelta),
       delta: taskDelta,
       summary: `Tasks ${Number(currentTasks.complete_count || 0)} complete / ${Number(currentTasks.in_progress_count || 0)} in progress / ${Number(currentTasks.stalled_count || 0)} stalled versus ${Number(previousTasks.complete_count || 0)} / ${Number(previousTasks.in_progress_count || 0)} / ${Number(previousTasks.stalled_count || 0)}.`,
-      weight: 0.2,
+      weight: 0.14,
     },
     {
       id: 'truth_kernel',
@@ -839,7 +1312,23 @@ function deriveComparisonEvidence(previousSnapshot = null, currentSnapshot = nul
       verdict: inferDimensionVerdict(truthDelta),
       delta: truthDelta,
       summary: `Truth nodes ${Number(currentTruth.status_counts?.healthy || 0)} healthy / ${Number(currentTruth.status_counts?.blocked || 0)} blocked / ${Number(currentTruth.active_count || 0)} active versus ${Number(previousTruth.status_counts?.healthy || 0)} / ${Number(previousTruth.status_counts?.blocked || 0)} / ${Number(previousTruth.active_count || 0)}.`,
-      weight: 0.15,
+      weight: 0.17,
+    },
+    {
+      id: 'failure_memory',
+      label: 'Failure memory',
+      verdict: inferDimensionVerdict(failureDelta),
+      delta: failureDelta,
+      summary: `Repeated failures ${Number(currentFailures.repeated_keys || 0)} vs ${Number(previousFailures.repeated_keys || 0)}; tracked failure keys ${Number(currentFailures.total_keys || 0)} vs ${Number(previousFailures.total_keys || 0)}.`,
+      weight: 0.12,
+    },
+    {
+      id: 'qa_posture',
+      label: 'QA adjudicated posture',
+      verdict: inferDimensionVerdict(qaPostureDelta),
+      delta: qaPostureDelta,
+      summary: `QA adjudication ${normalizeText(currentQaPosture.verdict) || 'unknown'} (${normalizeText(currentQaPosture.freshness) || 'missing'}) vs ${normalizeText(previousQaPosture.verdict) || 'unknown'} (${normalizeText(previousQaPosture.freshness) || 'missing'}).`,
+      weight: 0,
     },
     {
       id: 'qa_support',
@@ -847,36 +1336,84 @@ function deriveComparisonEvidence(previousSnapshot = null, currentSnapshot = nul
       verdict: inferDimensionVerdict(qaDelta),
       delta: qaDelta,
       summary: `Supporting QA aggregate ${Number(currentQa.aggregate_score || 0).toFixed(2)} vs ${Number(previousQa.aggregate_score || 0).toFixed(2)} across ${Number(currentQa.scorecard_count || 0)} scorecards.`,
-      weight: 0.05,
+      weight: 0,
     },
   ];
   const scorecardImpacts = buildScorecardImpactsFromSnapshots(previousSnapshot, currentSnapshot);
-  const primaryDimensionImpacts = dimensionImpacts.filter((entry) => entry.id !== 'qa_support');
-  const overallDelta = Number((primaryDimensionImpacts.reduce((sum, entry) => sum + (entry.delta * entry.weight), 0) * 4).toFixed(2));
-  const verdict = inferVerdict(overallDelta);
+  const primaryDimensionImpacts = dimensionImpacts.filter((entry) => !['qa_support', 'qa_posture'].includes(entry.id));
+  const primaryWeight = Math.max(0.01, primaryDimensionImpacts.reduce((sum, entry) => sum + Number(entry.weight || 0), 0));
+  const rawOverallDelta = Number(((primaryDimensionImpacts.reduce((sum, entry) => sum + (entry.delta * entry.weight), 0) / primaryWeight) * 4).toFixed(2));
+  const groundedComparison = currentContract?.grounding_status === 'grounded' && previousContract?.grounding_status === 'grounded';
+  const overallDelta = groundedComparison ? rawOverallDelta : 0;
+  const verdict = groundedComparison ? inferVerdict(rawOverallDelta) : 'no_change';
   const improved = primaryDimensionImpacts.filter((entry) => entry.verdict === 'better').map((entry) => entry.label);
   const regressed = primaryDimensionImpacts.filter((entry) => entry.verdict === 'worse').map((entry) => entry.label);
-  const changedDimensions = normalizeStringArray(dimensionImpacts
+  const changedDimensions = normalizeStringArray((groundedComparison ? dimensionImpacts : [])
     .filter((entry) => entry.verdict !== 'no_change')
     .map((entry) => entry.id));
-  const progressSummary = regressed.length
-    ? `Grounded regression detected in ${regressed.join(', ')}.${improved.length ? ` Offsetting improvement in ${improved.join(', ')}.` : ''}`
-    : improved.length
-      ? `Grounded improvement detected in ${improved.join(', ')}.${scorecardImpacts.length ? ` QA support observed ${scorecardImpacts.length} scorecard movement signal${scorecardImpacts.length === 1 ? '' : 's'}.` : ''}`
-      : (dimensionImpacts.find((entry) => entry.id === 'qa_support' && entry.verdict !== 'no_change')
-          ? 'Grounded system state remained materially stable across cognition, fallback pressure, task progress, and truth-kernel movement. QA moved only as supporting evidence.'
-          : 'Grounded system state remained materially stable across cognition, fallback pressure, task progress, and truth-kernel movement.');
+  const missingInputIds = normalizeStringArray([
+    ...(Array.isArray(currentContract?.missing_input_ids) ? currentContract.missing_input_ids : []),
+    ...(Array.isArray(previousContract?.missing_input_ids) ? previousContract.missing_input_ids : []),
+  ]);
+  const progressSummary = !groundedComparison
+    ? `Evaluator comparison is incomplete because grounded seams are missing: ${missingInputIds.join(', ') || 'required runtime inputs'}. QA scorecards remain supporting evidence only.`
+    : regressed.length
+      ? `Grounded regression detected in ${regressed.join(', ')}.${improved.length ? ` Offsetting improvement in ${improved.join(', ')}.` : ''}`
+      : improved.length
+        ? `Grounded improvement detected in ${improved.join(', ')}.${scorecardImpacts.length ? ` QA support observed ${scorecardImpacts.length} scorecard movement signal${scorecardImpacts.length === 1 ? '' : 's'}.` : ''}`
+        : (dimensionImpacts.find((entry) => entry.id === 'qa_support' && entry.verdict !== 'no_change')
+            ? 'Grounded system state remained materially stable across runtime, cognition, task progress, truth-kernel, and failure-memory movement. QA moved only as supporting evidence.'
+            : 'Grounded system state remained materially stable across runtime, cognition, task progress, truth-kernel, and failure-memory movement.');
   const availableDimensionCount = dimensionImpacts.filter((entry) => entry.summary).length;
+  const consultedSeams = [
+    ...(Array.isArray(previousContract?.consulted_seams) ? previousContract.consulted_seams : []),
+    ...(Array.isArray(currentContract?.consulted_seams) ? currentContract.consulted_seams : []),
+  ].filter((entry, index, items) => items.findIndex((candidate) => candidate?.id === entry?.id) === index);
   return {
     verdict,
     delta_score: overallDelta,
     progress_summary: progressSummary,
     changed_dimensions: changedDimensions,
-    evaluation_confidence: clamp01(previousSnapshot ? (0.58 + (availableDimensionCount * 0.05)) : 0.42, 0.64),
-    score_pressure: inferScorePressure(overallDelta),
-    progress_state: verdict === 'better' ? 'stable' : (verdict === 'worse' ? 'regressive' : 'stalled'),
+    evaluation_confidence: groundedComparison
+      ? clamp01(previousSnapshot ? (0.48 + (Number(currentContract?.completeness || 0) * 0.4) + (availableDimensionCount * 0.02)) : 0.42, 0.64)
+      : clamp01(0.2 + (Number(currentContract?.completeness || 0) * 0.3), 0.34),
+    score_pressure: groundedComparison ? inferScorePressure(overallDelta) : 'flat',
+    progress_state: groundedComparison
+      ? (verdict === 'better' ? 'stable' : (verdict === 'worse' ? 'regressive' : 'stalled'))
+      : 'stalled',
     dimension_impacts: dimensionImpacts,
     scorecard_impacts: scorecardImpacts,
+    analysis_classification: EVALUATOR_ANALYSIS_CLASSIFICATION,
+    authority_scope: EVALUATOR_AUTHORITY_SCOPE,
+    consulted_seams: consultedSeams,
+    grounding: {
+      status: groundedComparison ? 'grounded' : 'insufficient_inputs',
+      completeness: Number(Math.min(
+        Number(previousContract?.completeness || 0),
+        Number(currentContract?.completeness || 0),
+      ).toFixed(2)),
+      missing_input_ids: missingInputIds,
+      caveats: normalizeStringArray([
+        ...(Array.isArray(previousContract?.caveats) ? previousContract.caveats : []),
+        ...(Array.isArray(currentContract?.caveats) ? currentContract.caveats : []),
+      ]),
+      required_primary_seams: normalizeStringArray(currentContract?.required_primary_seams),
+    },
+    qa_authority: {
+      owner: 'qa',
+      verdict: normalizeText(currentQaPosture?.verdict) || null,
+      freshness: normalizeText(currentQaPosture?.freshness) || null,
+      adjudicated_at: currentQaPosture?.adjudicated_at || null,
+      summary: normalizeText(currentQaPosture?.summary) || null,
+      source_paths: ['data/spatial/qa/lead-state.json', 'data/spatial/qa/lead-runs/*.json', 'data/spatial/qa/structured/latest.json'],
+    },
+    provenance: {
+      classification: EVALUATOR_ANALYSIS_CLASSIFICATION,
+      consulted_source_paths: uniqueSourcePaths(consultedSeams.flatMap((entry) => Array.isArray(entry?.source_paths) ? entry.source_paths : [])),
+      truth_kernel_source: '/api/spatial/truth-kernel',
+      qa_posture_source: 'data/spatial/qa/lead-state.json',
+      scorecards_role: 'supporting_evidence',
+    },
   };
 }
 
@@ -898,6 +1435,8 @@ function buildDeterministicFallback({
     evaluator_id: definition.manifest.id || 'evaluator',
     compared_at: comparedAt,
     comparison_target: comparisonTarget,
+    analysis_classification: baseline.analysis_classification || EVALUATOR_ANALYSIS_CLASSIFICATION,
+    authority_scope: baseline.authority_scope || EVALUATOR_AUTHORITY_SCOPE,
     verdict: baseline.verdict,
     delta_score: baseline.delta_score,
     progress_summary: baseline.progress_summary,
@@ -916,6 +1455,14 @@ function buildDeterministicFallback({
       ...entry,
       progress_summary: entry.progress_summary || `QA support changed from aggregate ${previousAggregate.toFixed(2)} to ${currentAggregate.toFixed(2)}.`,
     })),
+    consulted_seams: Array.isArray(baseline.consulted_seams) ? baseline.consulted_seams : [],
+    grounding: baseline.grounding || null,
+    qa_authority: baseline.qa_authority || {
+      owner: 'qa',
+      role: 'adjudicated_reference',
+      evaluator_role: 'derived_analysis_only',
+    },
+    provenance: baseline.provenance || null,
     fallback_reason: normalizeText(fallbackReason) || 'Evaluator fell back to deterministic comparison.',
     cognition_diagnostics: cognitionDiagnostics,
   };
@@ -933,8 +1480,13 @@ function normalizeEvaluationPayload(rawPayload = {}, {
   cognitionDiagnostics = null,
 } = {}) {
   const baseline = baselineComparison || deriveComparisonEvidence(previousSnapshot, currentSnapshot);
-  const deltaScore = Number(asFiniteNumber(rawPayload.delta_score ?? rawPayload.deltaScore, baseline.delta_score).toFixed(2));
-  const verdict = normalizeVerdict(rawPayload.verdict || inferVerdict(deltaScore));
+  const grounded = baseline?.grounding?.isGrounded !== false;
+  const deltaScore = grounded
+    ? Number(asFiniteNumber(rawPayload.delta_score ?? rawPayload.deltaScore, baseline.delta_score).toFixed(2))
+    : Number(asFiniteNumber(baseline.delta_score, 0).toFixed(2));
+  const verdict = grounded
+    ? normalizeVerdict(rawPayload.verdict || inferVerdict(deltaScore))
+    : normalizeVerdict(baseline.verdict || 'no_change');
   const changedDimensions = normalizeStringArray(
     (Array.isArray(rawPayload.changed_dimensions) ? rawPayload.changed_dimensions : []).map((entry) => normalizeText(entry))
   );
@@ -949,9 +1501,17 @@ function normalizeEvaluationPayload(rawPayload = {}, {
     evaluator_id: definition.manifest.id || 'evaluator',
     compared_at: comparedAt,
     comparison_target: normalizeText(rawPayload.comparison_target || comparisonTarget) || comparisonTarget,
+    analysis_classification: normalizeText(rawPayload.analysis_classification || rawPayload.analysisClassification)
+      || baseline.analysis_classification
+      || EVALUATOR_ANALYSIS_CLASSIFICATION,
+    authority_scope: normalizeText(rawPayload.authority_scope || rawPayload.authorityScope)
+      || baseline.authority_scope
+      || EVALUATOR_AUTHORITY_SCOPE,
     verdict,
     delta_score: deltaScore,
-    progress_summary: normalizeText(rawPayload.progress_summary || rawPayload.delta_summary || rawPayload.summary) || baseline.progress_summary || 'Evaluator completed comparison.',
+    progress_summary: grounded
+      ? (normalizeText(rawPayload.progress_summary || rawPayload.delta_summary || rawPayload.summary) || baseline.progress_summary || 'Evaluator completed comparison.')
+      : (baseline.progress_summary || 'Evaluator completed comparison.'),
     changed_dimensions: changedDimensions.length
       ? changedDimensions
       : baseline.changed_dimensions,
@@ -962,10 +1522,22 @@ function normalizeEvaluationPayload(rawPayload = {}, {
       previous: previousSnapshot?.snapshot_id || null,
       current: currentSnapshot?.snapshot_id || null,
     },
-    score_pressure: normalizeText(rawPayload.score_pressure || rawPayload.scorePressure) || baseline.score_pressure || inferScorePressure(deltaScore),
-    progress_state: normalizeText(rawPayload.progress_state || rawPayload.progressState) || baseline.progress_state || (verdict === 'better' ? 'stable' : (verdict === 'worse' ? 'regressive' : 'stalled')),
-    dimension_impacts: normalizedDimensionImpacts.length ? normalizedDimensionImpacts : baseline.dimension_impacts,
+    score_pressure: grounded
+      ? (normalizeText(rawPayload.score_pressure || rawPayload.scorePressure) || baseline.score_pressure || inferScorePressure(deltaScore))
+      : (baseline.score_pressure || 'flat'),
+    progress_state: grounded
+      ? (normalizeText(rawPayload.progress_state || rawPayload.progressState) || baseline.progress_state || (verdict === 'better' ? 'stable' : (verdict === 'worse' ? 'regressive' : 'stalled')))
+      : (baseline.progress_state || 'stalled'),
+    dimension_impacts: grounded && normalizedDimensionImpacts.length ? normalizedDimensionImpacts : baseline.dimension_impacts,
     scorecard_impacts: normalizedImpacts.length ? normalizedImpacts : baseline.scorecard_impacts,
+    consulted_seams: Array.isArray(baseline.consulted_seams) ? baseline.consulted_seams : [],
+    grounding: baseline.grounding || null,
+    qa_authority: baseline.qa_authority || {
+      owner: 'qa',
+      role: 'adjudicated_reference',
+      evaluator_role: 'derived_analysis_only',
+    },
+    provenance: baseline.provenance || null,
     cognition_diagnostics: cognitionDiagnostics,
   };
 }

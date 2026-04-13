@@ -94,12 +94,127 @@ export function resolveTruthKernelNodeVisual(node = {}, options = {}) {
 }
 
 export function truthKernelNodeRadius(node = {}) {
-  return 3.8 + ((Number(node?.weight) || 0) * 3.2);
+  return 4.6 + ((Number(node?.weight) || 0) * 4.1);
 }
 
 export function truthKernelRingWidth(node = {}) {
   if (!node?.confidenceAvailable) return 1.2;
   return 1.2 + ((Number(node?.confidence) || 0) * 1.8);
+}
+
+function resolveStatusEdgeColor(status = '') {
+  return STATUS_COLORS[String(status || '').trim()] || STATUS_COLORS.informational;
+}
+
+function resolveKindBand(kind = 'artifact', height = 920) {
+  const topPadding = 54;
+  const bottomPadding = 54;
+  const usableHeight = Math.max(1, height - topPadding - bottomPadding);
+  if (kind === 'input') {
+    return {
+      label: 'Inputs',
+      top: topPadding,
+      bottom: topPadding + (usableHeight * 0.28),
+      fill: 'rgba(56, 117, 214, 0.07)',
+      stroke: 'rgba(112, 161, 255, 0.16)',
+    };
+  }
+  if (kind === 'execution') {
+    return {
+      label: 'Runtime',
+      top: topPadding + (usableHeight * 0.33),
+      bottom: topPadding + (usableHeight * 0.67),
+      fill: 'rgba(92, 226, 159, 0.05)',
+      stroke: 'rgba(92, 226, 159, 0.14)',
+    };
+  }
+  return {
+    label: 'Artefacts',
+    top: topPadding + (usableHeight * 0.72),
+    bottom: height - bottomPadding,
+    fill: 'rgba(255, 198, 92, 0.05)',
+    stroke: 'rgba(255, 198, 92, 0.12)',
+  };
+}
+
+function drawBandGuides(ctx, width, height) {
+  ['input', 'execution', 'artifact'].forEach((kind) => {
+    const band = resolveKindBand(kind, height);
+    const bandHeight = Math.max(1, band.bottom - band.top);
+    ctx.fillStyle = band.fill;
+    ctx.globalAlpha = 1;
+    ctx.fillRect(28, band.top, Math.max(1, width - 56), bandHeight);
+    ctx.strokeStyle = band.stroke;
+    ctx.lineWidth = 1;
+    if (typeof ctx.setLineDash === 'function') ctx.setLineDash([6, 10]);
+    ctx.beginPath();
+    ctx.moveTo?.(28, band.top);
+    ctx.lineTo?.(width - 28, band.top);
+    ctx.stroke();
+    if (typeof ctx.fillText === 'function') {
+      ctx.fillStyle = 'rgba(223, 236, 255, 0.62)';
+      ctx.font = '11px Consolas';
+      ctx.fillText(band.label, 40, band.top + 16);
+    }
+  });
+  if (typeof ctx.setLineDash === 'function') ctx.setLineDash([]);
+}
+
+function drawRelationshipLines(ctx, nodes = []) {
+  const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+  nodes.forEach((node) => {
+    (Array.isArray(node?.children) ? node.children : []).forEach((childId) => {
+      const child = nodeMap.get(childId);
+      if (!child) return;
+      const emphasis = node.status === 'blocked' || child.status === 'blocked'
+        ? 0.46
+        : node.status === 'degraded' || child.status === 'degraded'
+          ? 0.32
+          : 0.18;
+      ctx.beginPath();
+      ctx.strokeStyle = resolveStatusEdgeColor(child.status);
+      ctx.lineWidth = child.status === 'blocked' ? 1.8 : 1.1;
+      ctx.globalAlpha = emphasis;
+      if (typeof ctx.setLineDash === 'function') {
+        ctx.setLineDash(child.status === 'orphaned' ? [3, 6] : []);
+      }
+      ctx.moveTo?.(node.x, node.y);
+      ctx.lineTo?.(child.x, child.y);
+      ctx.stroke();
+    });
+  });
+  if (typeof ctx.setLineDash === 'function') ctx.setLineDash([]);
+}
+
+function drawStatusHalo(ctx, node = {}, radius = 0) {
+  if (node.status === 'healthy' || node.status === 'informational') return;
+  ctx.beginPath();
+  ctx.strokeStyle = resolveStatusEdgeColor(node.status);
+  ctx.globalAlpha = node.status === 'blocked' ? 0.9 : (node.status === 'degraded' ? 0.72 : 0.52);
+  ctx.lineWidth = node.status === 'blocked' ? 2.4 : 1.6;
+  if (typeof ctx.setLineDash === 'function') {
+    ctx.setLineDash(node.status === 'orphaned' ? [4, 5] : []);
+  }
+  ctx.arc(node.x, node.y, radius + (node.status === 'blocked' ? 8 : 6), 0, Math.PI * 2);
+  ctx.stroke();
+  if (typeof ctx.setLineDash === 'function') ctx.setLineDash([]);
+}
+
+function drawNodeLabel(ctx, node = {}, radius = 0) {
+  if (typeof ctx.fillText !== 'function') return;
+  const shouldLabel = node.status === 'blocked' || node.status === 'degraded' || node.isSelected;
+  if (!shouldLabel) return;
+  const label = String(node.label || node.id || '').trim();
+  if (!label) return;
+  ctx.fillStyle = 'rgba(8, 13, 22, 0.9)';
+  ctx.globalAlpha = 0.98;
+  const labelWidth = Math.max(68, Math.min(196, (label.length * 6.8) + 14));
+  const labelX = Math.max(18, Math.min((node.x + radius + 10), 1600 - labelWidth - 18));
+  const labelY = Math.max(18, node.y - radius - 24);
+  ctx.fillRect(labelX, labelY, labelWidth, 18);
+  ctx.fillStyle = '#edf5ff';
+  ctx.font = '11px Consolas';
+  ctx.fillText(label.slice(0, 28), labelX + 7, labelY + 12);
 }
 
 function resolveTruthKernelDots(truthKernel = {}, layout = null) {
@@ -157,20 +272,23 @@ export function drawTruthKernelScene(canvas, truthKernel, layout, options = {}) 
   const nodes = resolveTruthKernelDots(truthKernel, layout);
   const selectedNodeId = String(options?.selectedNodeId || '').trim();
   const nowMs = Number.isFinite(Number(options?.nowMs)) ? Number(options.nowMs) : Date.now();
+  drawBandGuides(ctx, width, height);
+  drawRelationshipLines(ctx, nodes);
   nodes.forEach((node) => {
     const radius = truthKernelNodeRadius(node);
     const visual = resolveTruthKernelNodeVisual(node, { nowMs });
     const pulseRadius = radius * visual.pulse;
+    const isSelected = node.id === selectedNodeId;
 
     ctx.beginPath();
     ctx.fillStyle = visual.glow;
-    ctx.globalAlpha = node.id === selectedNodeId ? 0.74 : 0.58;
+    ctx.globalAlpha = isSelected ? 0.74 : 0.58;
     ctx.arc(node.x, node.y, pulseRadius + 10.5, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.beginPath();
     ctx.fillStyle = visual.glow;
-    ctx.globalAlpha = node.id === selectedNodeId ? 0.46 : 0.32;
+    ctx.globalAlpha = isSelected ? 0.46 : 0.32;
     ctx.arc(node.x, node.y, pulseRadius + 5.5, 0, Math.PI * 2);
     ctx.fill();
 
@@ -180,8 +298,9 @@ export function drawTruthKernelScene(canvas, truthKernel, layout, options = {}) 
     ctx.lineWidth = truthKernelRingWidth(node);
     ctx.arc(node.x, node.y, radius + 2.4, 0, Math.PI * 2);
     ctx.stroke();
+    drawStatusHalo(ctx, node, radius);
 
-    if (node.id === selectedNodeId) {
+    if (isSelected) {
       ctx.beginPath();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.94)';
       ctx.lineWidth = 1.8;
@@ -192,9 +311,10 @@ export function drawTruthKernelScene(canvas, truthKernel, layout, options = {}) 
 
     ctx.beginPath();
     ctx.fillStyle = visual.fill;
-    ctx.globalAlpha = node.id === selectedNodeId ? 0.98 : 0.84;
+    ctx.globalAlpha = isSelected ? 0.98 : 0.84;
     ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
     ctx.fill();
+    drawNodeLabel(ctx, { ...node, isSelected }, radius);
   });
   ctx.globalAlpha = 1;
 }

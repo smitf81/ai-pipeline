@@ -64,6 +64,8 @@ export default async function runEvaluatorServerIntegrationTests() {
     evaluator_id: 'evaluator',
     compared_at: freshTimestamp,
     comparison_target: 'system_runtime',
+    analysis_classification: 'derived_analysis',
+    authority_scope: 'comparative_projection',
     verdict: 'better',
     delta_score: 0.9,
     progress_summary: 'Planner runtime posture improved compared with the prior snapshot.',
@@ -94,6 +96,32 @@ export default async function runEvaluatorServerIntegrationTests() {
       summary: 'Planner stayed live instead of falling back.',
       weight: 0.32,
     }],
+    consulted_seams: [
+      { id: 'agent_runtime', label: 'Agent runtime', classification: 'canonical_source', available: true, freshness: 'fresh', source_paths: ['data/spatial/workspace.json'] },
+      { id: 'task_progress', label: 'Task progress', classification: 'canonical_source', available: true, freshness: 'fresh', source_paths: ['data/spatial/workspace.json'] },
+      { id: 'truth_kernel', label: 'Truth kernel', classification: 'derived_projection', available: true, freshness: 'fresh', source_paths: ['ui/truthKernelAdapter.buildTruthKernelPayload'] },
+      { id: 'qa_posture', label: 'QA posture', classification: 'canonical_source', available: true, freshness: 'fresh', source_paths: ['data/spatial/qa/lead-state.json', 'data/spatial/qa/structured/latest.json'] },
+      { id: 'qa_support', label: 'QA scorecards', classification: 'derived_projection', available: true, freshness: 'fresh', source_paths: ['data/spatial/qa/structured/latest.json'] },
+    ],
+    grounding: {
+      status: 'grounded',
+      completeness: 1,
+      isGrounded: true,
+      missing_input_ids: [],
+      caveats: [],
+    },
+    qa_authority: {
+      owner: 'qa',
+      role: 'adjudicated_reference',
+      evaluator_role: 'derived_analysis_only',
+    },
+    provenance: {
+      comparison_basis: 'system_runtime',
+      qa_role: 'adjudicated_reference_only',
+      scorecard_role: 'supporting_signal_only',
+      consulted_seam_ids: ['agent_runtime', 'task_progress', 'truth_kernel', 'qa_posture', 'qa_support'],
+      compared_at: freshTimestamp,
+    },
   }]);
   writeJson(rootPath, 'data/spatial/evaluator/state.json', {
     updated_at: freshTimestamp,
@@ -102,6 +130,8 @@ export default async function runEvaluatorServerIntegrationTests() {
       evaluator_id: 'evaluator',
       compared_at: freshTimestamp,
       comparison_target: 'system_runtime',
+      analysis_classification: 'derived_analysis',
+      authority_scope: 'comparative_projection',
       verdict: 'better',
       delta_score: 0.9,
       progress_summary: 'Planner runtime posture improved compared with the prior snapshot.',
@@ -132,6 +162,32 @@ export default async function runEvaluatorServerIntegrationTests() {
         summary: 'Planner stayed live instead of falling back.',
         weight: 0.32,
       }],
+      consulted_seams: [
+        { id: 'agent_runtime', label: 'Agent runtime', classification: 'canonical_source', available: true, freshness: 'fresh', source_paths: ['data/spatial/workspace.json'] },
+        { id: 'task_progress', label: 'Task progress', classification: 'canonical_source', available: true, freshness: 'fresh', source_paths: ['data/spatial/workspace.json'] },
+        { id: 'truth_kernel', label: 'Truth kernel', classification: 'derived_projection', available: true, freshness: 'fresh', source_paths: ['ui/truthKernelAdapter.buildTruthKernelPayload'] },
+        { id: 'qa_posture', label: 'QA posture', classification: 'canonical_source', available: true, freshness: 'fresh', source_paths: ['data/spatial/qa/lead-state.json', 'data/spatial/qa/structured/latest.json'] },
+        { id: 'qa_support', label: 'QA scorecards', classification: 'derived_projection', available: true, freshness: 'fresh', source_paths: ['data/spatial/qa/structured/latest.json'] },
+      ],
+      grounding: {
+        status: 'grounded',
+        completeness: 1,
+        isGrounded: true,
+        missing_input_ids: [],
+        caveats: [],
+      },
+      qa_authority: {
+        owner: 'qa',
+        role: 'adjudicated_reference',
+        evaluator_role: 'derived_analysis_only',
+      },
+      provenance: {
+        comparison_basis: 'system_runtime',
+        qa_role: 'adjudicated_reference_only',
+        scorecard_role: 'supporting_signal_only',
+        consulted_seam_ids: ['agent_runtime', 'task_progress', 'truth_kernel', 'qa_posture', 'qa_support'],
+        compared_at: freshTimestamp,
+      },
     },
     latest_snapshot: {
       snapshot_id: 'eval_curr',
@@ -142,6 +198,12 @@ export default async function runEvaluatorServerIntegrationTests() {
       counts: { pass: 1, warn: 0, stale: 0, fail: 0, missing: 0 },
       aggregate_score: 3.8,
       summary: 'Current evaluator snapshot',
+      agent_runtime: {
+        agent_count: 4,
+        contract_complete_count: 4,
+        runtime_configured_count: 4,
+        degraded_count: 0,
+      },
       agent_cognition: {
         agents: [],
         live_count: 2,
@@ -150,6 +212,8 @@ export default async function runEvaluatorServerIntegrationTests() {
       fallback_pressure: { total_count: 0, observed_agent_count: 0 },
       task_progress: { complete_count: 3, stalled_count: 0, total_count: 4 },
       truth_kernel: { node_count: 8, healthy_count: 6, degraded_count: 1, active_count: 3, stale_count: 1 },
+      qa_posture: { verdict: 'pass', status: 'completed', freshness: 'fresh', adjudicated_at: freshTimestamp },
+      failure_memory: { exists: true, repeated_keys: 0, total_keys: 1 },
       qa_support: { aggregate_score: 3.8, pass_count: 1, fail_count: 0 },
       scorecards: [],
     },
@@ -162,6 +226,12 @@ export default async function runEvaluatorServerIntegrationTests() {
       counts: { pass: 0, warn: 1, stale: 0, fail: 0, missing: 0 },
       aggregate_score: 2.9,
       summary: 'Previous evaluator snapshot',
+      agent_runtime: {
+        agent_count: 4,
+        contract_complete_count: 4,
+        runtime_configured_count: 3,
+        degraded_count: 1,
+      },
       agent_cognition: {
         agents: [],
         live_count: 1,
@@ -170,6 +240,8 @@ export default async function runEvaluatorServerIntegrationTests() {
       fallback_pressure: { total_count: 2, observed_agent_count: 1 },
       task_progress: { complete_count: 1, stalled_count: 2, total_count: 4 },
       truth_kernel: { node_count: 8, healthy_count: 3, degraded_count: 3, active_count: 1, stale_count: 2 },
+      qa_posture: { verdict: 'warn', status: 'degraded', freshness: 'fresh', adjudicated_at: staleTimestamp },
+      failure_memory: { exists: true, repeated_keys: 2, total_keys: 3 },
       qa_support: { aggregate_score: 2.9, pass_count: 0, fail_count: 1 },
       scorecards: [],
     },
@@ -256,14 +328,18 @@ export default async function runEvaluatorServerIntegrationTests() {
   });
   assert.equal(qaState.evaluator.latestEvaluation.verdict, 'better');
   assert.equal(qaState.evaluator.latestEvaluation.comparison_target, 'system_runtime');
+  assert.equal(qaState.evaluator.latestEvaluation.analysis_classification, 'derived_analysis');
+  assert.equal(qaState.evaluator.movement.analysisClassification, 'derived_analysis');
+  assert.equal(qaState.evaluator.movement.grounding.status, 'grounded');
+  assert.equal(qaState.evaluator.movement.consultedSeams.some((entry) => entry.id === 'truth_kernel' && entry.classification === 'derived_projection'), true);
   assert.equal(Array.isArray(qaState.evaluator.latestEvaluation.dimension_impacts), true);
-  assert.equal(qaState.scorecards[0].evaluatorMovement.verdict, 'better');
-  assert.equal(qaState.scorecards[0].evaluatorMovement.cognitionMode, 'model_live');
+  assert.equal(Object.prototype.hasOwnProperty.call(qaState.scorecards[0], 'evaluatorMovement'), false);
   assert.equal(qaState.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'evaluator').actual_last_cognition_mode, 'model_live');
   assert.equal(qaState.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'executor').actual_last_cognition_mode, 'deterministic_fallback');
 
   const deskPayload = buildDeskPropertiesPayload(workspace, 'qa-lead', qaState, { rootPath });
   assert.equal(deskPayload.qa.evaluator.latestEvaluation.verdict, 'better');
+  assert.equal(deskPayload.qa.evaluator.movement.qaAuthority.owner, 'qa');
   assert.equal(Array.isArray(deskPayload.qa.agentCognitionSummary.agents), true);
   assert.equal(deskPayload.truth.evaluator.latestEvaluation.verdict, 'better');
   assert.equal(deskPayload.truth.agentCognitionSummary.agents.find((entry) => entry.agent_id === 'planner').actual_last_cognition_mode, 'model_live');

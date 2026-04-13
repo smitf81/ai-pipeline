@@ -24,7 +24,10 @@ export default async function runBootIntegrityTests() {
   assert.equal(liveContract.failure_stage, null);
   assert.equal(liveContract.asset, null);
   assert.equal(liveContract.http_status, null);
+  assert.equal(liveContract.assets.some((asset) => asset.path === '/vendor/react.development.js' && asset.ok), true);
+  assert.equal(liveContract.assets.some((asset) => asset.path === '/vendor/react-dom.development.js' && asset.ok), true);
   assert.equal(liveContract.assets.some((asset) => asset.path === '/spatial/intentContract.browser.js' && asset.ok), true);
+  assert.equal(liveContract.assets.some((asset) => asset.path === '/spatial/spatialSeamContract.js' && asset.ok), true);
 
   const bootHealth = evaluateSpatialBootHealth();
   assert.equal(bootHealth.checked, true);

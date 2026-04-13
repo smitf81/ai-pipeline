@@ -156,4 +156,41 @@ export default async function runQaMcpLiveStatusTests() {
   assert.equal(researchRecoveryState.research_last_call_status, 'ok');
   assert.equal(researchRecoveryState.recovery_detected, true);
   assert.equal(researchRecoveryState.recovered_from_kind, 'offline');
+
+  const freshProbeWithResearchTimeout = buildQaMcpLiveStatus({
+    externalValidation: {
+      source: 'external_mcp',
+      probeStatus: 'ok',
+      status: 'pass',
+      lastCheckedAt: '2026-04-06T11:59:58.000Z',
+      externalProbeLive: true,
+      probeTarget: 'http://127.0.0.1:5051/run_test',
+    },
+    researchState: {
+      notes: [
+        {
+          id: 'qa_research_timeout',
+          created_at: '2026-04-06T11:59:59.000Z',
+          status: 'timeout',
+          research_available: false,
+          failure_kind: 'timeout',
+          error_message: 'This operation was aborted',
+          source: 'external_mcp',
+          server_url: 'http://127.0.0.1:5052/research_note',
+        },
+      ],
+    },
+    openInvestigations: [
+      {
+        id: 'qa_inv_live_1',
+        trigger: 'external_mismatch',
+        status: 'open',
+      },
+    ],
+  }, { now });
+  assert.equal(freshProbeWithResearchTimeout.status, 'live');
+  assert.equal(freshProbeWithResearchTimeout.external_probe_live, true);
+  assert.equal(freshProbeWithResearchTimeout.last_ping_status, 'ok');
+  assert.equal(freshProbeWithResearchTimeout.research_last_call_status, 'timeout');
+  assert.match(freshProbeWithResearchTimeout.notes.join(' '), /research failure/i);
 }

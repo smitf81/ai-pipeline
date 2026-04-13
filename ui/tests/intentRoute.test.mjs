@@ -17,34 +17,32 @@ export default async function runIntentRouteTests() {
         text: 'Summarize the planner backlog and prepare a handoff.',
         nodeId: 'context-manager-node',
         source: 'context-intake',
+        host: 'http://127.0.0.1:9',
+        timeoutMs: 25,
       }),
     });
     const intentPayload = await intentResponse.json();
-    assert.equal([200, 500, 503].includes(intentResponse.status), true);
+    assert.equal(intentResponse.status, 200);
     assert.equal(intentPayload.canonicalTruth.domain, 'intent');
     assert.equal(intentPayload.canonicalTruth.projectionId, 'intent');
     assert.equal(intentPayload.canonicalTruth.classification, 'projection');
-    assert.equal(intentPayload.canonicalTruth.fallbackUsed, false);
+    assert.equal(intentPayload.canonicalTruth.fallbackUsed, true);
     assert.equal(Boolean(intentPayload.canonicalTruth.sourceOfTruth), true);
     assert.equal(Boolean(intentPayload.canonicalTruth.owner), true);
     assert.equal(Boolean(intentPayload.canonicalTruth.generatedAt), true);
     assert.equal(Boolean(intentPayload.canonicalTruth.freshness), true);
     assert.equal(Boolean(intentPayload.canonicalTruthSections?.route?.derivation), true);
-    assert.equal(
-      ['context_manager_projection', 'worker_no_report', 'context_manager_degraded', 'server_error'].includes(
-        intentPayload.canonicalTruthSections.route.derivation,
-      ),
-      true,
-    );
-    if (intentResponse.status === 200) {
-      assert.equal(Boolean(intentPayload.report), true);
-      assert.equal(Boolean(intentPayload.canonicalIntent), true);
-      assert.equal(intentPayload.canonicalTruthSections.route.derivation, 'context_manager_projection');
-      assert.equal(intentPayload.canonicalTruthSections.canonicalIntent.classification, 'canonical');
-    } else {
-      assert.equal(Boolean(intentPayload.error), true);
-      assert.equal(Boolean(intentPayload.canonicalTruthSections?.canonicalIntent), true);
-    }
+    assert.equal(intentPayload.canonicalTruthSections.route.derivation, 'context_manager_projection');
+    assert.equal(Boolean(intentPayload.report), true);
+    assert.equal(Boolean(intentPayload.canonicalIntent), true);
+    assert.equal(Boolean(intentPayload.extractedIntent), true);
+    assert.equal(Boolean(intentPayload.worker), true);
+    assert.equal(Boolean(intentPayload.preflight), true);
+    assert.equal(intentPayload.worker.usedFallback, true);
+    assert.equal(intentPayload.canonicalTruthSections.report.derivation, 'worker_report');
+    assert.equal(intentPayload.canonicalTruthSections.extractedIntent.classification, 'fallback');
+    assert.equal(intentPayload.canonicalTruthSections.extractedIntent.derivation, 'worker_fallback_extracted_intent');
+    assert.equal(intentPayload.canonicalTruthSections.canonicalIntent.classification, 'canonical');
 
     const moduleResponse = await fetch('http://localhost:3218/api/spatial/intent', {
       method: 'POST',

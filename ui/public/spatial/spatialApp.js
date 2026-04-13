@@ -132,6 +132,9 @@ import {
   buildTruthKernelLayout,
 } from './truthKernelLayout.js';
 import {
+  buildSketchNodeAnchorMap,
+} from './spatialSeamContract.js';
+import {
   drawTruthKernelScene,
   hitTestTruthKernelNode,
 } from './truthKernelView.js';
@@ -321,7 +324,7 @@ export function resolveTruthInspectionPanelState({
   const compact = !!truthKernelVisible && !!compactPreference;
   return {
     compact,
-    railWidth: compact ? 280 : 360,
+    railWidth: compact ? 256 : 332,
     showObservabilityCards: !compact,
     toggleLabel: compact ? 'Expand' : 'Compact',
     title: compact ? 'Expand observability details' : 'Compact observability details',
@@ -504,6 +507,9 @@ function normalizeIntentRecord(report = {}) {
   record.sourceType = record.source.type;
   record.sourceRef = record.source.ref;
   record.nodeId = String(source.provenance?.sourceNodeId || report?.nodeId || record.source.ref || '').trim() || null;
+  record.sourceNodeId = record.nodeId;
+  record.agentRunId = String(source.provenance?.runId || report?.provenance?.runId || '').trim() || null;
+  record.reason = String(source.reason || report?.extractedIntent?.reason || report?.reason || '').trim() || null;
   record.requestedBy = record.source.requestedBy;
   record.timestamp = record.createdAt;
   record.priority = record.semanticMeaning.urgency;
@@ -3373,6 +3379,58 @@ export function formatSignedDelta(value = 0) {
   return numeric > 0 ? `+${numeric.toFixed(2)}` : numeric.toFixed(2);
 }
 
+function toneForTruthKernelStatus(status = '') {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (normalized === 'healthy') return 'good';
+  if (normalized === 'degraded') return 'warn';
+  if (normalized === 'blocked' || normalized === 'orphaned') return 'bad';
+  return 'neutral';
+}
+
+function toneForTruthKernelDiagnosis(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized.includes('healthy')) return 'good';
+  if (normalized.includes('pressured') || normalized.includes('narrow')) return 'warn';
+  if (normalized.includes('collapsed') || normalized.includes('unavailable')) return 'bad';
+  return 'neutral';
+}
+
+function toneForDeskReportVerdict(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'pass' || normalized === 'healthy' || normalized === 'better' || normalized === 'verified_healthy') return 'good';
+  if (normalized === 'warn' || normalized === 'degraded' || normalized === 'no_change' || normalized === 'informational') return 'warn';
+  if (normalized === 'fail' || normalized === 'blocked' || normalized === 'worse' || normalized === 'orphaned') return 'bad';
+  return 'neutral';
+}
+
+function buildTruthKernelStatusSummary(renderModel = null) {
+  const dots = Array.isArray(renderModel?.dots) ? renderModel.dots : [];
+  const counts = {
+    healthy: 0,
+    degraded: 0,
+    blocked: 0,
+    orphaned: 0,
+    informational: 0,
+  };
+  dots.forEach((node) => {
+    const status = String(node?.status || '').trim().toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(counts, status)) {
+      counts[status] += 1;
+      return;
+    }
+    counts.informational += 1;
+  });
+  const issueCount = counts.blocked + counts.degraded + counts.orphaned;
+  return {
+    counts,
+    total: dots.length,
+    issueCount,
+    dominantStatus: issueCount > 0
+      ? (counts.blocked > 0 ? 'blocked' : (counts.degraded > 0 ? 'degraded' : 'orphaned'))
+      : (counts.healthy > 0 ? 'healthy' : 'informational'),
+  };
+}
+
 export function buildScorecardMovementModel(card = {}) {
   const movement = normalizeRenderObject(card.evaluatorMovement || {});
   const confidence = Number.isFinite(Number(movement.evaluationConfidence))
@@ -4242,15 +4300,18 @@ function renderDeskSection(rawSection, helpers = {}) {
     return h('div', { key: section.id, className: 'inspector-block panel-card qa-overview-panel' },
       h('div', { className: 'inspector-label' }, section.label),
       h('div', { className: 'signal-summary' }, section.summary || 'Overall QA health at a glance.'),
-      h('div', { className: 'qa-metric-pill-row' },
+      h('div', { className: 'qa-metric-pill-row truth-surface-banner' },
+        h('span', { className: 'qa-metric-pill tone-good' }, 'Adjudicated QA posture'),
         h('span', { className: `qa-metric-pill tone-${statusTone}` }, `Overall ${overview.status || 'unknown'}`),
         h('span', { className: `qa-metric-pill tone-${structuredTone}` }, `Structured ${overview.structuredStatus || 'unknown'}`),
         h('span', { className: `qa-metric-pill tone-${externalTone}` }, `External ${overview.externalStatus || 'unknown'}`),
       ),
+      h('div', { className: 'qa-metric-pill-row' },
+        h('span', { className: 'qa-metric-pill tone-neutral' }, `Investigations ${Number(overview.openInvestigationsCount || 0)}`),
+        h('span', { className: 'qa-metric-pill tone-neutral' }, `Recurring ${Number(overview.recurringInvestigationsCount || 0)}`),
+        h('span', { className: 'qa-metric-pill tone-neutral' }, `Research-backed ${Number(overview.researchBackedInvestigationsCount || 0)}`),
+      ),
       h('div', { className: 'criteria-list desk-metric-list' },
-        metricRow('Open investigations', `${Number(overview.openInvestigationsCount || 0)}`),
-        metricRow('Recurring issues', `${Number(overview.recurringInvestigationsCount || 0)}`),
-        metricRow('Research-backed', `${Number(overview.researchBackedInvestigationsCount || 0)}`),
         metricRow('Structured updated', overview.latestStructuredAt ? formatTimestamp(overview.latestStructuredAt) : 'unknown'),
         metricRow('External checked', overview.latestExternalAt ? formatTimestamp(overview.latestExternalAt) : 'unknown'),
         metricRow('Research updated', overview.latestResearchAt ? formatTimestamp(overview.latestResearchAt) : 'unknown'),
@@ -4723,6 +4784,9 @@ function renderDeskSection(rawSection, helpers = {}) {
   }
   if (section.kind === 'qa-structured') {
     const report = section.report || null;
+    const freshnessTone = report?.sourceTrace?.freshnessClass === 'fresh'
+      ? 'good'
+      : (report?.sourceTrace?.freshnessClass === 'stale' ? 'warn' : 'neutral');
     return h('div', { key: section.id, className: 'inspector-block panel-card review-panel' },
       h('div', { className: 'inline review-header' },
         h('div', null,
@@ -4733,10 +4797,15 @@ function renderDeskSection(rawSection, helpers = {}) {
       ),
       report
         ? h(React.Fragment, null,
+            h('div', { className: 'qa-metric-pill-row truth-surface-banner' },
+              h('span', { className: 'qa-metric-pill tone-good' }, 'QA evidence'),
+              h('span', { className: `qa-metric-pill tone-${report.status === 'pass' ? 'good' : (report.status === 'fail' ? 'bad' : 'warn')}` }, `Status ${report.status || 'unknown'}`),
+              h('span', { className: `qa-metric-pill tone-${freshnessTone}` }, formatQAEvidenceFreshness(report.sourceTrace?.freshnessClass)),
+            ),
             h('div', { className: 'signal-meta muted' }, `Status: ${report.status || 'unknown'} | Desks ${(report.desks || []).length} | Scorecards ${section.scorecardCount || 0}`),
             report.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${report.sourceTrace.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(report.sourceTrace.freshnessClass)}`) : null,
             (report.failures || []).length
-              ? h('ul', { className: 'signal-list' }, report.failures.slice(0, 4).map((failure, index) => h('li', { key: `${section.id}-failure-${index}` }, `${failure.desk}: ${failure.test} | ${failure.reason}`)))
+              ? h('ul', { className: 'signal-list qa-important-list' }, report.failures.slice(0, 4).map((failure, index) => h('li', { key: `${section.id}-failure-${index}` }, `${failure.desk}: ${failure.test} | ${failure.reason}`)))
               : h('div', { className: 'signal-meta muted' }, 'No structured QA failures are recorded in the latest suite.'),
           )
         : h('div', { className: 'signal-empty muted' }, section.emptyState || 'No structured QA report loaded yet.'),
@@ -4745,8 +4814,6 @@ function renderDeskSection(rawSection, helpers = {}) {
   if (section.kind === 'qa-scorecards') {
     const cards = normalizeRenderList(section.cards);
     const summaryProvenance = renderQASummaryProvenanceChips(section.sourceTrace, 'Derived summary');
-    const evaluatorMovement = normalizeRenderObject(section.evaluator?.movement || section.evaluator?.latestEvaluation || {});
-    const suiteDirection = resolveEvaluatorDirection(evaluatorMovement.verdict || 'no_change');
     return h('details', {
       key: section.id,
       className: 'inspector-block panel-card qa-scorecards-panel',
@@ -4760,70 +4827,37 @@ function renderDeskSection(rawSection, helpers = {}) {
           summaryProvenance,
         ),
         h('div', { className: 'qa-metric-pill-row' },
+          h('span', { className: 'qa-metric-pill tone-neutral' }, 'Derived score summaries'),
           h('span', { className: 'qa-metric-pill tone-neutral' }, `Tests ${Number(section.meta?.testCount || cards.length || 0)}`),
           h('span', { className: 'qa-metric-pill tone-neutral' }, `Desks ${Number(section.meta?.deskCount || 0)}`),
-          evaluatorMovement.verdict
-            ? h('span', { className: `qa-metric-pill tone-${suiteDirection.tone}` }, `Evaluator ${suiteDirection.arrow} ${suiteDirection.verdict}`)
-            : null,
         ),
       ),
-      evaluatorMovement.verdict
-        ? h('div', {
-            style: {
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr) auto',
-              gap: '8px 12px',
-              alignItems: 'center',
-              marginBottom: '10px',
-            },
-          },
-            h('div', null,
-              h('div', { className: 'signal-meta muted' }, `${suiteDirection.arrow} ${suiteDirection.label} | delta ${formatSignedDelta(evaluatorMovement.deltaScore || evaluatorMovement.delta_score || 0)} | pressure ${evaluatorMovement.scorePressure || evaluatorMovement.score_pressure || 'flat'}`),
-              h('div', { className: 'signal-meta muted' }, normalizeRenderText(evaluatorMovement.progressSummary || evaluatorMovement.progress_summary, '') || 'Evaluator movement is ready once two grounded snapshots exist.'),
-            ),
-            Number.isFinite(Number(evaluatorMovement.evaluationConfidence || evaluatorMovement.evaluation_confidence))
-              ? renderContinuousMeter(Number(evaluatorMovement.evaluationConfidence || evaluatorMovement.evaluation_confidence), {
-                  fill: suiteDirection.color,
-                  label: 'confidence',
-                })
-              : null,
-          )
-        : null,
       cards.length
         ? h('div', { className: 'desk-panel-list utility-list qa-scorecard-list' }, cards.slice(0, 6).map((card) => h('details', {
             key: card.id || `${card.desk}-${card.testId}`,
             className: `desk-panel-item utility-card qa-scorecard-card status-${card.status || 'pass'}`,
           },
             (() => {
-              const movement = buildScorecardMovementModel(card);
-              return h(React.Fragment, null,
-                h('summary', { className: 'inline review-header' },
-                  h('div', null,
-                    h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
-                    h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Score ${movement.currentScore ?? 'n/a'} / ${movement.maxScore ?? 4} | Delta ${movement.deltaLabel}`),
-                    movement.progressSummary
-                      ? h('div', { className: 'signal-meta muted', style: { color: movement.direction.color } }, `${movement.direction.arrow} ${movement.direction.label} | ${movement.progressSummary}`)
-                      : null,
-                    renderQASummaryProvenanceChips(card.sourceTrace, 'Derived summary'),
-                  ),
-                  h('div', { className: 'qa-metric-pill-row' },
-                    h('span', { className: `qa-metric-pill tone-${card.status === 'pass' ? 'good' : (card.status === 'fail' ? 'bad' : 'neutral')}` }, card.status || 'pass'),
-                    h('span', { className: `qa-metric-pill tone-${movement.direction.tone}` }, `${movement.direction.arrow} ${movement.direction.verdict}`),
-                  ),
+              const scoreValue = Number.isFinite(Number(card?.overallScore?.value)) ? Number(card.overallScore.value) : null;
+              const scoreMax = Number.isFinite(Number(card?.overallScore?.max)) ? Number(card.overallScore.max) : null;
+              const statusTone = card.status === 'pass' ? 'good' : (card.status === 'fail' ? 'bad' : 'neutral');
+              return h('summary', { className: 'inline review-header' },
+                h('div', null,
+                  h('div', { className: 'signal-summary' }, `${card.desk || 'desk'} | ${card.testName || card.testId || 'QA test'}`),
+                  h('div', { className: 'signal-meta muted' }, `Status ${card.status || 'pass'} | Rollup ${card.rollupStatus || 'missing'} | Score ${scoreValue ?? 'n/a'} / ${scoreMax ?? 4}`),
+                  renderQASummaryProvenanceChips(card.sourceTrace, 'Derived summary'),
                 ),
-                movement.confidence !== null
-                  ? h('div', { style: { marginBottom: '8px' } },
-                      renderContinuousMeter(movement.confidence, {
-                        fill: movement.direction.color,
-                        label: 'confidence',
-                      }),
-                    )
-                  : null,
+                h('div', { className: 'qa-metric-pill-row' },
+                  h('span', { className: `qa-metric-pill tone-${statusTone}` }, card.status || 'pass'),
+                  h('span', { className: `qa-metric-pill tone-${card.rollupStatus === 'pass' ? 'good' : (card.rollupStatus === 'fail' ? 'bad' : 'neutral')}` }, card.rollupStatus || 'missing'),
+                ),
               );
             })(),
             h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace?.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace?.freshnessClass)}`),
             card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
-            card.evaluatorMovement?.comparedAt ? h('div', { className: 'signal-meta muted' }, `Evaluator compared at: ${formatTimestamp(card.evaluatorMovement.comparedAt)} | cognition ${card.evaluatorMovement.cognitionMode || 'unknown'}`) : null,
+            card.rollupReasons?.length
+              ? h('ul', { className: 'signal-list compact qa-scorecard-reasons' }, card.rollupReasons.slice(0, 3).map((reason, index) => h('li', { key: `${card.id || 'scorecard'}-rollup-${index}` }, reason)))
+              : null,
             card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
             card.validation?.issues?.length
               ? h('ul', { className: 'signal-list compact' }, card.validation.issues.slice(0, 4).map((issue, index) => h('li', { key: `${card.id || 'scorecard'}-issue-${index}` }, issue)))
@@ -4838,6 +4872,14 @@ function renderDeskSection(rawSection, helpers = {}) {
     const history = normalizeRenderList(evaluator.history || []);
     const direction = resolveEvaluatorDirection(latestEvaluation.verdict || 'no_change');
     const dimensionImpacts = normalizeRenderList(latestEvaluation.dimensionImpacts || latestEvaluation.dimension_impacts || []);
+    const grounding = normalizeRenderObject(latestEvaluation.grounding || {});
+    const consultedSeams = normalizeRenderList(latestEvaluation.consultedSeams || latestEvaluation.consulted_seams || []);
+    const missingInputIds = normalizeRenderList(grounding.missingInputIds || grounding.missing_input_ids || []);
+    const caveats = normalizeRenderList(grounding.caveats || []);
+    const sourceSnapshotIds = normalizeRenderObject(latestEvaluation.sourceSnapshotIds || latestEvaluation.source_snapshot_ids || {});
+    const qaAuthority = normalizeRenderObject(latestEvaluation.qaAuthority || latestEvaluation.qa_authority || {});
+    const provenance = normalizeRenderObject(latestEvaluation.provenance || {});
+    const groundingTone = grounding.status === 'grounded' ? 'good' : (missingInputIds.length ? 'warn' : 'neutral');
     return h('details', {
       key: section.id,
       className: 'inspector-block panel-card qa-evaluator-panel',
@@ -4852,27 +4894,82 @@ function renderDeskSection(rawSection, helpers = {}) {
         h('div', { className: 'qa-metric-pill-row' },
           h('span', { className: `qa-metric-pill tone-${direction.tone}` }, `${direction.arrow} ${direction.verdict}`),
           h('span', { className: 'qa-metric-pill tone-neutral' }, `History ${Number(evaluator.historyCount || history.length || 0)}`),
+          h('span', { className: 'qa-metric-pill tone-neutral' }, normalizeRenderText(latestEvaluation.analysis_classification || latestEvaluation.analysisClassification, '') || 'derived_analysis'),
         ),
       ),
       latestEvaluation.verdict
         ? h(React.Fragment, null,
-            h('div', { className: 'signal-meta muted' }, `${direction.arrow} ${direction.label} | target ${latestEvaluation.comparison_target || latestEvaluation.comparisonTarget || 'system_runtime'} | delta ${formatSignedDelta(latestEvaluation.delta_score || latestEvaluation.deltaScore || 0)} | pressure ${latestEvaluation.score_pressure || latestEvaluation.scorePressure || 'flat'}`),
+            h('div', { className: 'qa-metric-pill-row truth-surface-banner' },
+              h('span', { className: `qa-metric-pill tone-${direction.tone}` }, `${direction.arrow} ${direction.verdict}`),
+              h('span', { className: 'qa-metric-pill tone-neutral' }, normalizeRenderText(latestEvaluation.analysis_classification || latestEvaluation.analysisClassification, '') || 'derived_analysis'),
+              h('span', { className: `qa-metric-pill tone-${groundingTone}` }, `Grounding ${grounding.status || 'unknown'}`),
+              h('span', { className: 'qa-metric-pill tone-neutral' }, `Authority ${normalizeRenderText(latestEvaluation.authority_scope || latestEvaluation.authorityScope, '') || 'comparative_projection'}`),
+            ),
+            h('div', { className: 'truth-surface-grid' },
+              h('div', { className: 'truth-surface-card truth-surface-card--derived' },
+                h('div', { className: 'truth-surface-card__label' }, 'Evaluator judgement'),
+                h('div', { className: 'truth-surface-card__value', style: { color: direction.color } }, `${direction.arrow} ${direction.label}`),
+                h('div', { className: 'signal-meta muted' }, `Target ${latestEvaluation.comparison_target || latestEvaluation.comparisonTarget || 'system_runtime'} | delta ${formatSignedDelta(latestEvaluation.delta_score || latestEvaluation.deltaScore || 0)} | pressure ${latestEvaluation.score_pressure || latestEvaluation.scorePressure || 'flat'}`),
+                h('div', { className: 'signal-meta muted' }, latestEvaluation.progress_summary || latestEvaluation.progressSummary || 'No evaluator summary recorded.'),
+              ),
+              h('div', { className: 'truth-surface-card' },
+                h('div', { className: 'truth-surface-card__label' }, 'Grounding and provenance'),
+                h('div', { className: 'truth-surface-card__value' }, Number.isFinite(Number(grounding.completeness)) ? `${Math.round(Number(grounding.completeness) * 100)}% complete` : 'Completeness unknown'),
+                h('div', { className: 'signal-meta muted' }, `Compared ${formatTimestamp(latestEvaluation.compared_at || latestEvaluation.comparedAt)} | cognition ${latestEvaluation.cognition_mode || latestEvaluation.cognitionMode || 'unknown'} | model ${latestEvaluation.model_name || latestEvaluation.modelName || 'n/a'}`),
+                sourceSnapshotIds.previous || sourceSnapshotIds.current
+                  ? h('div', { className: 'signal-meta muted' }, `Snapshots: prev ${sourceSnapshotIds.previous || 'n/a'} | curr ${sourceSnapshotIds.current || 'n/a'}`)
+                  : null,
+                qaAuthority.owner || qaAuthority.role || qaAuthority.evaluatorRole
+                  ? h('div', { className: 'signal-meta muted' }, `QA authority: ${qaAuthority.owner || 'qa'} | ${qaAuthority.role || 'adjudicated_reference'} | evaluator ${qaAuthority.evaluatorRole || 'derived_analysis_only'}`)
+                  : null,
+                provenance.comparisonBasis || provenance.qaRole || provenance.scorecardRole
+                  ? h('div', { className: 'signal-meta muted' }, [
+                      provenance.comparisonBasis ? `Basis ${provenance.comparisonBasis}` : null,
+                      provenance.qaRole ? `QA ${provenance.qaRole}` : null,
+                      provenance.scorecardRole ? `Scorecards ${provenance.scorecardRole}` : null,
+                    ].filter(Boolean).join(' | '))
+                  : null,
+              ),
+            ),
             Number.isFinite(Number(latestEvaluation.evaluation_confidence || latestEvaluation.evaluationConfidence))
               ? renderContinuousMeter(Number(latestEvaluation.evaluation_confidence || latestEvaluation.evaluationConfidence), {
                   fill: direction.color,
                   label: 'confidence',
                 })
               : null,
-            h('div', { className: 'signal-meta muted' }, `Compared at: ${formatTimestamp(latestEvaluation.compared_at || latestEvaluation.comparedAt)} | cognition ${latestEvaluation.cognition_mode || latestEvaluation.cognitionMode || 'unknown'} | model ${latestEvaluation.model_name || latestEvaluation.modelName || 'n/a'}`),
-            h('div', { className: 'signal-meta muted' }, latestEvaluation.progress_summary || latestEvaluation.progressSummary || 'No evaluator summary recorded.'),
+            missingInputIds.length
+              ? h('div', { className: 'signal-meta warn' }, `Missing inputs: ${missingInputIds.join(', ')}`)
+              : null,
+            caveats.length
+              ? h('ul', { className: 'signal-list compact qa-important-list' }, caveats.slice(0, 4).map((caveat, index) => h('li', { key: `${section.id}-caveat-${index}` }, caveat)))
+              : null,
+            consultedSeams.length
+              ? h('div', { className: 'desk-panel-list utility-list truth-surface-grid', style: { marginTop: '8px' } }, consultedSeams.map((seam, index) => h('div', {
+                  key: seam.id || `${section.id}-seam-${index}`,
+                  className: `desk-panel-item utility-card truth-surface-card ${seam.available === false ? 'truth-surface-card--warn' : ''}`,
+                },
+                  h('div', { className: 'truth-surface-card__label' }, 'Consulted seam'),
+                  h('div', { className: 'signal-summary' }, seam.label || seam.id || 'source seam'),
+                  h('div', { className: 'signal-meta muted' }, [
+                    seam.role || null,
+                    seam.classification || null,
+                    seam.available === false ? 'missing' : 'available',
+                    seam.freshness || null,
+                  ].filter(Boolean).join(' | ')),
+                  seam.summary ? h('div', { className: 'signal-meta muted' }, seam.summary) : null,
+                  Array.isArray(seam.sourcePaths) && seam.sourcePaths.length
+                    ? h('div', { className: 'signal-meta muted' }, `Sources: ${seam.sourcePaths.slice(0, 3).join(', ')}`)
+                    : null,
+                )))
+              : null,
             dimensionImpacts.length
-              ? h('div', { className: 'desk-panel-list utility-list', style: { marginTop: '8px' } }, dimensionImpacts.map((impact, index) => {
+              ? h('div', { className: 'desk-panel-list utility-list truth-surface-grid', style: { marginTop: '8px' } }, dimensionImpacts.map((impact, index) => {
                   const impactDirection = resolveEvaluatorDirection(impact.verdict || 'no_change');
                   return h('div', {
                     key: impact.id || `${section.id}-impact-${index}`,
-                    className: 'desk-panel-item utility-card',
-                    style: { padding: '10px 12px' },
+                    className: 'desk-panel-item utility-card truth-surface-card',
                   },
+                    h('div', { className: 'truth-surface-card__label' }, 'Change driver'),
                     h('div', { className: 'signal-summary', style: { color: impactDirection.color } }, `${impactDirection.arrow} ${impact.label || impact.id || 'dimension'}`),
                     h('div', { className: 'signal-meta muted' }, `Delta ${formatSignedDelta(impact.delta || 0)} | weight ${Number.isFinite(Number(impact.weight)) ? Number(impact.weight).toFixed(2) : 'n/a'}`),
                     impact.summary ? h('div', { className: 'signal-meta muted' }, impact.summary) : null,
@@ -5530,7 +5627,13 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     [activeGraphLayer]: graph,
   }), [graphLayers, activeGraphLayer, graph]);
   const truthInspectionLegend = useMemo(() => buildTruthInspectionLegend(), []);
-  const truthKernelLayout = useMemo(() => buildTruthKernelLayout(truthKernel.dots), [truthKernel]);
+  const truthKernelSourceAnchors = useMemo(
+    () => buildSketchNodeAnchorMap(graphBundle, canvasViewport),
+    [graphBundle, canvasViewport],
+  );
+  const truthKernelLayout = useMemo(() => buildTruthKernelLayout(truthKernel.dots, {
+    sourceAnchors: truthKernelSourceAnchors,
+  }), [truthKernel, truthKernelSourceAnchors]);
   const truthKernelRenderModel = useMemo(() => {
     const model = buildTruthKernelRenderModel(truthKernel, truthKernelLayout);
     return {
@@ -5543,6 +5646,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     };
   }, [truthKernel, truthKernelLayout]);
   const truthKernelRenderSummary = useMemo(() => summarizeTruthKernelRenderStatus(truthKernelRenderModel), [truthKernelRenderModel]);
+  const truthKernelStatusSummary = useMemo(() => buildTruthKernelStatusSummary(truthKernelRenderModel), [truthKernelRenderModel]);
   const truthKernelToggleState = useMemo(() => resolveTruthKernelToggleState({
     scene,
     truthKernel,
@@ -9351,66 +9455,52 @@ function syncRecentWorldChange(change = null) {
 
   const renderReportsList = (reports = [], emptyState = 'No desk reports are cached yet.') => (
     (Array.isArray(reports) ? reports : []).length
-      ? h('div', { className: 'desk-panel-list utility-list' }, (Array.isArray(reports) ? reports : []).map((report) => h('div', { key: report.id || `${report.name}-${report.source}`, className: 'desk-panel-item utility-card' },
-          h('div', { className: 'signal-summary' }, `${report.name || report.id || 'Report'}${report.verdict ? ` (${report.verdict})` : ''}`),
-          h('div', { className: 'signal-meta muted' }, `${report.type || 'report'} | ${report.source || 'unknown source'}${report.detail ? ` | ${report.detail}` : ''}`),
+      ? h('div', { className: 'desk-panel-list utility-list truth-report-list' }, (Array.isArray(reports) ? reports : []).map((report) => h('div', {
+          key: report.id || `${report.name}-${report.source}`,
+          className: `desk-panel-item utility-card truth-report-card verdict-${report.verdict || 'unknown'}`,
+        },
+          h('div', { className: 'inline review-header', style: { alignItems: 'flex-start' } },
+            h('div', null,
+              h('div', { className: 'signal-summary' }, report.name || report.id || 'Report'),
+              h('div', { className: 'signal-meta muted' }, report.detail || 'No additional report detail surfaced.'),
+            ),
+            h('div', { className: 'qa-metric-pill-row truth-report-pill-row' },
+              report.verdict ? h('span', { className: `qa-metric-pill tone-${toneForDeskReportVerdict(report.verdict)}` }, report.verdict) : null,
+              h('span', { className: 'qa-metric-pill tone-neutral' }, report.type || 'report'),
+            ),
+          ),
+          h('div', { className: 'signal-meta muted' }, `Source ${report.source || 'unknown source'}`),
         )))
       : h('div', { className: 'signal-empty muted' }, emptyState)
   );
 
   const renderScorecardsList = (scorecards = [], emptyState = 'No scorecards are available yet.') => (
     (Array.isArray(scorecards) ? scorecards : []).length
-      ? h('div', { className: 'desk-panel-list utility-list' }, (Array.isArray(scorecards) ? scorecards : []).map((card) => {
+      ? h('div', { className: 'desk-panel-list utility-list qa-scorecard-list' }, (Array.isArray(scorecards) ? scorecards : []).map((card) => {
           const lifecycleStatus = card.rollupStatus || card.status || 'missing';
-          const movement = buildScorecardMovementModel(card);
-          return h('div', { key: card.id || `${card.desk}-${card.testId}`, className: 'desk-panel-item utility-card' },
+          const scoreValue = Number.isFinite(Number(card?.overallScore?.value)) ? Number(card.overallScore.value) : null;
+          const scoreMax = Number.isFinite(Number(card?.overallScore?.max)) ? Number(card.overallScore.max) : null;
+          return h('div', {
+            key: card.id || `${card.desk}-${card.testId}`,
+            className: `desk-panel-item utility-card qa-scorecard-card status-${card.status || 'pass'}`,
+          },
             h('div', {
               className: 'inline review-header',
               style: { alignItems: 'flex-start' },
             },
               h('div', null,
                 h('div', { className: 'signal-summary' }, `${card.desk || 'Desk'} | ${card.testName || card.testId || 'Scorecard'}`),
-                h('div', { className: 'signal-meta muted' }, `Rollup ${lifecycleStatus} | Reported ${card.reportedStatus || card.status || 'missing'} | Score ${movement.currentScore ?? 'n/a'} / ${movement.maxScore ?? 4}`),
+                h('div', { className: 'signal-meta muted' }, `Rollup ${lifecycleStatus} | Reported ${card.reportedStatus || card.status || 'missing'} | Score ${scoreValue ?? 'n/a'} / ${scoreMax ?? 4}`),
               ),
-              h('div', {
-                style: {
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: movement.direction.color,
-                  fontWeight: 600,
-                },
-              },
-                h('span', { 'aria-hidden': true }, movement.direction.arrow),
-                h('span', null, movement.deltaLabel),
+              h('div', { className: 'qa-metric-pill-row' },
+                h('span', { className: 'qa-metric-pill tone-neutral' }, 'Derived score summary'),
               ),
             ),
-            h('div', {
-              style: {
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginTop: '6px',
-                color: movement.direction.color,
-                fontSize: '12px',
-              },
-            },
-              h('span', null, `${movement.direction.arrow} ${movement.direction.verdict}`),
-              h('span', { className: 'muted' }, movement.progressSummary || 'No evaluator movement recorded.'),
-            ),
-            movement.confidence !== null
-              ? h('div', { style: { marginTop: '8px' } },
-                  renderContinuousMeter(movement.confidence, {
-                    fill: movement.direction.color,
-                    label: 'confidence',
-                  }),
-                )
-              : null,
             card.sourceTrace ? h('div', { className: 'signal-meta muted' }, `Source: ${card.sourceTrace.sourcePath || card.sourcePath || 'unknown'} | ${formatQAEvidenceFreshness(card.sourceTrace.freshnessClass)}`) : null,
             !card.sourceTrace && card.sourceSeam ? h('div', { className: 'signal-meta muted' }, `Source seam: ${card.sourceSeam}`) : null,
-          card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}${movement.comparedAt ? ` | evaluated ${formatTimestamp(movement.comparedAt)}` : ''}`) : null,
+            card.sourceTrace?.observedAt ? h('div', { className: 'signal-meta muted' }, `Last updated: ${formatTimestamp(card.sourceTrace.observedAt)}`) : null,
             card.rollupReasons?.[0] ? h('div', { className: 'signal-meta muted' }, card.rollupReasons[0]) : null,
-          card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
+            card.validation?.summary ? h('div', { className: 'signal-meta muted' }, card.validation.summary) : null,
           );
         }))
       : h('div', { className: 'signal-empty muted' }, emptyState)
@@ -10827,14 +10917,9 @@ function syncRecentWorldChange(change = null) {
               ))
             : h('div', { className: 'signal-empty muted' }, 'No modules found in workspace registry.'),
         ) : null,
-        !deskPanelBusy && panelData && deskPanelTab === 'reports' ? h('div', { className: 'desk-panel-list' },
-          (panelData.reports || []).length
-            ? panelData.reports.map((report) => h('div', { key: report.id, className: 'desk-panel-item' },
-                h('div', { className: 'signal-summary' }, `${report.name} (${report.verdict})`),
-                h('div', { className: 'signal-meta muted' }, `${report.type} | ${report.source}${report.detail ? ` | ${report.detail}` : ''}`),
-              ))
-            : h('div', { className: 'signal-empty muted' }, 'no reports available'),
-        ) : null,
+        !deskPanelBusy && panelData && deskPanelTab === 'reports'
+          ? renderReportsList(panelData.reports || [], 'no reports available')
+          : null,
         isCtoEdit ? h('div', { className: 'desk-chat-panel' },
           h('div', { className: 'signal-summary' }, 'Shared CTO utility'),
           h('div', { className: 'signal-meta muted' }, 'The live CTO chat now lives in one shared floating panel so Studio and Canvas use the same grounded backend path.'),
@@ -11090,31 +11175,56 @@ function syncRecentWorldChange(change = null) {
               'aria-hidden': true,
             }) : null,
             h('div', {
-              className: 'truth-kernel-status-line',
+              className: 'truth-kernel-hud',
               'data-qa': 'truth-kernel-status',
             },
-              h('span', { className: 'truth-kernel-status-line__label' }, truthKernelVisible ? 'Truth Overlay' : 'Truth Render'),
-              h('span', { className: 'truth-kernel-status-line__value mono' }, truthKernelRenderSummary.line),
+              h('div', { className: 'truth-kernel-hud__header' },
+                h('div', null,
+                  h('div', { className: 'truth-kernel-hud__eyebrow' }, truthKernelVisible ? 'Truth overlay active' : 'Truth render ready'),
+                  h('div', { className: 'truth-kernel-hud__title' }, truthKernelRenderSummary.line),
+                ),
+                h('div', { className: 'qa-metric-pill-row truth-kernel-status-pills' },
+                  h('span', { className: `qa-metric-pill tone-${toneForTruthKernelStatus(truthKernelStatusSummary.dominantStatus)}` }, `${truthKernelStatusSummary.issueCount ? 'Issues surfaced' : 'Kernel stable'}`),
+                  h('span', { className: 'qa-metric-pill tone-neutral' }, `Nodes ${truthKernelStatusSummary.total}`),
+                  truthKernelRenderSummary.fallbackUsed ? h('span', { className: 'qa-metric-pill tone-warn' }, 'Fallback route') : null,
+                ),
+              ),
+              truthKernelVisible ? h('div', { className: 'qa-metric-pill-row truth-kernel-status-pills' },
+                Object.entries(truthKernelStatusSummary.counts).map(([status, count]) => h('span', {
+                  key: status,
+                  className: `qa-metric-pill tone-${toneForTruthKernelStatus(status)}`,
+                }, `${status} ${count}`)),
+              ) : null,
+              truthKernelVisible ? h('div', { className: 'truth-kernel-diagnostic-grid' },
+                h('div', {
+                  className: `truth-kernel-diagnostic-card tone-${toneForTruthKernelDiagnosis(truthKernelRenderSummary.spread?.diagnosis)}`,
+                  'data-qa': 'truth-kernel-spread',
+                },
+                  h('div', { className: 'truth-kernel-diagnostic-card__label' }, 'Spread'),
+                  h('div', { className: 'truth-kernel-diagnostic-card__value' }, truthKernelRenderSummary.spread?.diagnosis || 'unavailable'),
+                  h('div', { className: 'truth-kernel-diagnostic-card__detail mono' }, truthKernelRenderSummary.spread?.line || 'No spread diagnostics available.'),
+                ),
+                h('div', {
+                  className: `truth-kernel-diagnostic-card tone-${toneForTruthKernelDiagnosis(truthKernelRenderSummary.positionOrigin?.verdict)}`,
+                  'data-qa': 'truth-kernel-origin',
+                },
+                  h('div', { className: 'truth-kernel-diagnostic-card__label' }, 'Position origin'),
+                  h('div', { className: 'truth-kernel-diagnostic-card__value' }, truthKernelRenderSummary.positionOrigin?.verdict || 'unavailable'),
+                  h('div', { className: 'truth-kernel-diagnostic-card__detail mono' }, truthKernelRenderSummary.positionOrigin?.likelyOrigin || 'No position-origin diagnosis available.'),
+                ),
+              ) : null,
             ),
-            truthKernelVisible && truthKernelRenderSummary.spread ? h('div', {
-              className: 'truth-kernel-spread-line',
-              'data-qa': 'truth-kernel-spread',
-            },
-              h('span', { className: 'truth-kernel-spread-line__label' }, 'Truth Spread'),
-              h('span', { className: 'truth-kernel-spread-line__value mono' }, truthKernelRenderSummary.spread.line),
-            ) : null,
-            truthKernelVisible && truthKernelRenderSummary.positionOrigin ? h('div', {
-              className: 'truth-kernel-origin-line',
-              'data-qa': 'truth-kernel-origin',
-            },
-              h('span', { className: 'truth-kernel-origin-line__label' }, 'Truth Origin'),
-              h('span', { className: 'truth-kernel-origin-line__value mono' }, truthKernelRenderSummary.positionOrigin.line),
-            ) : null,
             truthKernelVisible ? h('div', {
               className: 'truth-inspection-legend',
               'data-qa': 'truth-inspection-legend',
             },
-              h('div', { className: 'truth-inspection-legend__title' }, 'RGBA Truth Encoding'),
+              h('div', { className: 'truth-inspection-legend__title' }, 'Truth Status + Visual Encoding'),
+              h('div', { className: 'qa-metric-pill-row truth-kernel-status-pills' },
+                h('span', { className: 'qa-metric-pill tone-good' }, 'healthy'),
+                h('span', { className: 'qa-metric-pill tone-warn' }, 'degraded'),
+                h('span', { className: 'qa-metric-pill tone-bad' }, 'blocked / orphaned'),
+                h('span', { className: 'qa-metric-pill tone-neutral' }, 'derived visual'),
+              ),
               truthInspectionLegend.map((entry) => h('div', {
                 key: entry.axis,
                 className: 'truth-inspection-legend__row',
@@ -11139,7 +11249,7 @@ function syncRecentWorldChange(change = null) {
                 flexDirection: 'column',
                 gap: '8px',
                 zIndex: 6,
-              },
+            },
             },
               truthKernelVisible && selectedTruthNodeInspector ? h('div', {
                 className: 'truth-kernel-inspector',
@@ -11148,11 +11258,15 @@ function syncRecentWorldChange(change = null) {
                 h('div', { className: 'truth-kernel-inspector-label' }, 'Truth Node'),
                 h('div', { className: 'truth-kernel-inspector-value' }, selectedTruthNodeInspector.label),
                 h('div', { className: 'truth-kernel-inspector-meta mono' }, selectedTruthNodeInspector.id),
-                h('div', { className: 'truth-kernel-inspector-meta' }, `type ${selectedTruthNodeInspector.type}`),
+                h('div', { className: 'qa-metric-pill-row truth-kernel-status-pills' },
+                  h('span', { className: `qa-metric-pill tone-${toneForTruthKernelStatus(selectedTruthNode.status)}` }, selectedTruthNode.status || 'informational'),
+                  h('span', { className: 'qa-metric-pill tone-neutral' }, selectedTruthNodeInspector.type),
+                  h('span', {
+                    className: `qa-metric-pill tone-${selectedTruthNode.canonicalSource ? 'good' : (selectedTruthNode.derivedSource ? 'warn' : 'neutral')}`,
+                  }, selectedTruthNode.canonicalSource ? 'canonical source' : (selectedTruthNode.derivedSource ? 'derived source' : 'source unknown')),
+                ),
                 h('div', { className: 'truth-kernel-inspector-meta' }, `source ${selectedTruthNodeInspector.meta.sourceType} / ${selectedTruthNodeInspector.meta.sourceRef}`),
-                h('div', { className: 'truth-kernel-inspector-meta' }, `timestamp ${formatTruthKernelTimestamp(selectedTruthNode.timestamp)}`),
-                h('div', { className: 'truth-kernel-inspector-meta' }, `parents ${selectedTruthNodeInspector.meta.parents}`),
-                h('div', { className: 'truth-kernel-inspector-meta' }, `children ${selectedTruthNodeInspector.meta.children}`),
+                h('div', { className: 'truth-kernel-inspector-meta' }, `timestamp ${formatTruthKernelTimestamp(selectedTruthNode.timestamp)} | parents ${selectedTruthNodeInspector.meta.parents} | children ${selectedTruthNodeInspector.meta.children}`),
                 selectedTruthNodeInspector.meta.summary ? h('div', { className: 'truth-kernel-inspector-summary' }, selectedTruthNodeInspector.meta.summary) : null,
                 h('div', { className: 'truth-kernel-inspector-grid' },
                   selectedTruthNodeInspector.rows.map((row) => h('div', {

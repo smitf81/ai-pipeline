@@ -3307,6 +3307,14 @@ function buildQADeskReadabilityModel({
       coverage_hint: `${Number(evaluator.historyCount || 0)} evaluation artefact${Number(evaluator.historyCount || 0) === 1 ? '' : 's'} | ${(agentCognitionSummary.agents || []).filter((entry) => entry.actual_last_cognition_mode === 'model_live').length} live path${(agentCognitionSummary.agents || []).filter((entry) => entry.actual_last_cognition_mode === 'model_live').length === 1 ? '' : 's'}`,
       notes: [
         evaluator.latestEvaluation?.progress_summary || 'Evaluator movement is not published yet.',
+        evaluator.latestEvaluation?.analysis_classification ? `Classification ${evaluator.latestEvaluation.analysis_classification}` : 'Classification derived_analysis',
+        evaluator.latestEvaluation?.grounding?.status ? `Grounding ${evaluator.latestEvaluation.grounding.status}` : null,
+        Number.isFinite(Number(evaluator.latestEvaluation?.grounding?.completeness))
+          ? `Completeness ${Math.round(Number(evaluator.latestEvaluation.grounding.completeness) * 100)}%`
+          : null,
+        Array.isArray(evaluator.latestEvaluation?.grounding?.missing_input_ids) && evaluator.latestEvaluation.grounding.missing_input_ids.length
+          ? `Missing ${evaluator.latestEvaluation.grounding.missing_input_ids.join(', ')}`
+          : null,
         evaluator.latestEvaluation?.cognition_mode ? `Cognition ${evaluator.latestEvaluation.cognition_mode}` : null,
       ].filter(Boolean),
     }),

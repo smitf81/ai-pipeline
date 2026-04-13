@@ -42,6 +42,26 @@ function normalizeNumeric(value = null) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
+function toBool(value = false) {
+  return value === true;
+}
+
+function parseTargetUrl(target = '') {
+  const normalized = normalizeText(target);
+  if (!normalized) return null;
+  try {
+    return new URL(normalized);
+  } catch {
+    return null;
+  }
+}
+
+function isLocalProbeTarget(target = '') {
+  const parsed = parseTargetUrl(target);
+  const hostname = normalizeText(parsed?.hostname).toLowerCase();
+  return ['127.0.0.1', 'localhost', '::1'].includes(hostname);
+}
+
 function latestTimestamp(...values) {
   let latestMs = null;
   for (const value of values) {
@@ -383,6 +403,14 @@ function buildQaMcpLiveStatus(input = {}, options = {}) {
   );
   const lastCallStatus = normalizeCallStatus(lastCall?.status);
   const mcpReachable = lastPingStatus === 'ok' || lastCallStatus === 'ok' || researchLastCallStatus === 'ok';
+  const freshSuccessfulPing = Boolean(probeLastSuccessAt) && !isStale(probeLastSuccessAt, nowMs);
+  const liveHelperEvidence = toBool(externalValidation?.externalProbeLive)
+    || (
+      freshSuccessfulPing
+      && lastPingSource === 'external_mcp'
+      && isLocalProbeTarget(lastPingTarget || DEFAULT_EXTERNAL_QA_PROBE_URL)
+    );
+  const freshLiveProbe = freshSuccessfulPing && liveHelperEvidence;
   const recentProofAt = lastCall?.at || lastPingAt || null;
   const lastSuccessAt = latestTimestamp(probeLastSuccessAt, researchLastSuccessAt);
   const currentFailure = buildCurrentFailure({
@@ -429,6 +457,12 @@ function buildQaMcpLiveStatus(input = {}, options = {}) {
   } else if (!lastPingAt && !lastCall?.at) {
     status = 'offline';
     usageState = 'configured_but_unused';
+  } else if (freshLiveProbe && usingMcpForQaDecisions) {
+    status = 'live';
+    usageState = 'active_gating';
+  } else if (freshSuccessfulPing) {
+    status = 'reachable_but_idle';
+    usageState = lastCall?.at || lastPingAt ? 'idle' : 'configured_but_unused';
   } else if (recentProofAt && isStale(recentProofAt, nowMs)) {
     status = 'stale';
     usageState = 'stale';
@@ -454,6 +488,7 @@ function buildQaMcpLiveStatus(input = {}, options = {}) {
     mcp_configured: mcpConfigured,
     configured_tools: configuredTools,
     mcp_reachable: mcpReachable,
+    external_probe_live: liveHelperEvidence,
     last_ping_at: lastPingAt,
     last_ping_status: lastPingStatus,
     last_ping_source: lastPingSource,

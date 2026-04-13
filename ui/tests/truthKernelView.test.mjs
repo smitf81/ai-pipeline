@@ -10,11 +10,16 @@ function createMockCanvas() {
     strokeStyle: null,
     lineWidth: 0,
     globalAlpha: 1,
+    font: '',
     setTransform: (...args) => operations.push(['setTransform', ...args]),
+    setLineDash: (...args) => operations.push(['setLineDash', ...args]),
     clearRect: (...args) => operations.push(['clearRect', ...args]),
     fillRect: (...args) => operations.push(['fillRect', context.fillStyle, ...args]),
     beginPath: () => operations.push(['beginPath']),
+    moveTo: (...args) => operations.push(['moveTo', ...args]),
+    lineTo: (...args) => operations.push(['lineTo', ...args]),
     arc: (...args) => operations.push(['arc', ...args]),
+    fillText: (...args) => operations.push(['fillText', context.fillStyle, context.font, ...args]),
     fill: () => operations.push(['fill', context.fillStyle, context.globalAlpha]),
     stroke: () => operations.push(['stroke', context.strokeStyle, context.lineWidth, context.globalAlpha]),
   };
@@ -101,9 +106,11 @@ export default async function runTruthKernelViewTests() {
   assert.equal(fills.some((entry) => String(entry[1] || '').includes('232, 88, 72')), true);
   assert.equal(fills.some((entry) => String(entry[1] || '').includes('124, 132, 154')), true);
   const arcs = canvas.operations.filter((entry) => entry[0] === 'arc');
-  assert.equal(arcs.length, 13);
-  assert.equal(canvas.operations.some((entry) => entry[0] === 'fillRect'), false);
-  assert.equal(canvas.operations.filter((entry) => entry[0] === 'stroke').length >= 4, true);
+  assert.equal(arcs.length, 15);
+  assert.equal(canvas.operations.some((entry) => entry[0] === 'fillRect'), true);
+  assert.equal(canvas.operations.filter((entry) => entry[0] === 'lineTo').length >= 2, true);
+  assert.equal(canvas.operations.filter((entry) => entry[0] === 'fillText').length >= 2, true);
+  assert.equal(canvas.operations.filter((entry) => entry[0] === 'stroke').length >= 6, true);
   assert.equal(hitTestTruthKernelNode({ x: 200, y: 140 }, truthKernel, layout)?.id, 'blocked_node');
   assert.equal(hitTestTruthKernelNode({ x: 20, y: 20 }, truthKernel, layout), null);
 }

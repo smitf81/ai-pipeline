@@ -104,6 +104,7 @@ export async function smokeLoadSpatialApp(modulePath, { locationHref = 'http://l
   const truthKernelAdapterModule = await materializeModuleCopy(path.join(spatialDir, 'truthKernelAdapter.js'), { label: 'truthKernelAdapter' });
   const truthKernelLayoutModule = await materializeModuleCopy(path.join(spatialDir, 'truthKernelLayout.js'), { label: 'truthKernelLayout' });
   const truthKernelViewModule = await materializeModuleCopy(path.join(spatialDir, 'truthKernelView.js'), { label: 'truthKernelView' });
+  const spatialSeamContractModule = await materializeModuleCopy(path.join(spatialDir, 'spatialSeamContract.js'), { label: 'spatialSeamContract' });
   const qaReadableSectionsModule = await materializeModuleCopy(path.join(spatialDir, 'qaReadableSections.js'), { label: 'qaReadableSections' });
   const source = await fs.readFile(modulePath, 'utf8');
   const withoutImports = stripImportLines(source);
@@ -201,6 +202,9 @@ import {
 import {
   buildTruthKernelLayout,
 } from ${JSON.stringify(truthKernelLayoutModule.url)};
+import {
+  buildSketchNodeAnchorMap,
+} from ${JSON.stringify(spatialSeamContractModule.url)};
 import {
   decorateQaReadableSections,
 } from ${JSON.stringify(qaReadableSectionsModule.url)};
