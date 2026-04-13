@@ -373,17 +373,17 @@
     "type": "qa_investigation",
     "trigger": "probe_failure",
     "severity": "medium",
-    "created_at": "2026-04-13T10:00:33.531Z",
+    "created_at": "2026-04-13T21:16:29.898Z",
     "first_seen_at": "2026-04-06T09:18:40.859Z",
-    "last_seen_at": "2026-04-13T10:00:33.531Z",
-    "repeat_count": 96,
+    "last_seen_at": "2026-04-13T21:16:29.898Z",
+    "repeat_count": 136,
     "status": "open",
     "summary": "External probe disagrees with internal QA status",
     "evidence": {
       "external": null,
       "internal": {
         "status": "fail",
-        "source": "qa/desks/*.js",
+        "source": "data/spatial/qa/structured/latest.json",
         "timestamp": "2026-03-28T13:58:44.234Z",
         "details": "1 of 4 desks failed; 1 of 19 checks failed"
       },
@@ -397,7 +397,7 @@
       }
     },
     "latest_evidence": {
-      "seen_at": "2026-04-13T10:00:33.531Z",
+      "seen_at": "2026-04-13T21:16:29.898Z",
       "trigger": "probe_failure",
       "internal_status": "fail",
       "external_status": "unavailable",
@@ -411,7 +411,7 @@
     },
     "evidence_events": [
       {
-        "seen_at": "2026-04-11T09:31:24.979Z",
+        "seen_at": "2026-04-13T19:55:01.001Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -424,7 +424,7 @@
         "promoted_at": null
       },
       {
-        "seen_at": "2026-04-11T17:23:57.440Z",
+        "seen_at": "2026-04-13T19:56:29.903Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -437,7 +437,7 @@
         "promoted_at": null
       },
       {
-        "seen_at": "2026-04-11T18:03:43.787Z",
+        "seen_at": "2026-04-13T20:15:01.002Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -450,7 +450,7 @@
         "promoted_at": null
       },
       {
-        "seen_at": "2026-04-11T18:44:23.647Z",
+        "seen_at": "2026-04-13T20:16:29.900Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -463,7 +463,7 @@
         "promoted_at": null
       },
       {
-        "seen_at": "2026-04-11T19:04:26.287Z",
+        "seen_at": "2026-04-13T20:35:01.010Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -476,7 +476,7 @@
         "promoted_at": null
       },
       {
-        "seen_at": "2026-04-12T07:21:44.531Z",
+        "seen_at": "2026-04-13T20:36:29.898Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -489,7 +489,7 @@
         "promoted_at": null
       },
       {
-        "seen_at": "2026-04-13T09:08:20.728Z",
+        "seen_at": "2026-04-13T20:55:01.009Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -502,7 +502,7 @@
         "promoted_at": null
       },
       {
-        "seen_at": "2026-04-13T09:39:43.059Z",
+        "seen_at": "2026-04-13T20:56:29.901Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -515,7 +515,7 @@
         "promoted_at": null
       },
       {
-        "seen_at": "2026-04-13T09:40:07.094Z",
+        "seen_at": "2026-04-13T21:15:01.017Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -528,7 +528,7 @@
         "promoted_at": null
       },
       {
-        "seen_at": "2026-04-13T10:00:33.531Z",
+        "seen_at": "2026-04-13T21:16:29.898Z",
         "trigger": "probe_failure",
         "internal_status": "fail",
         "external_status": "unavailable",
@@ -555,10 +555,10 @@
     "type": "qa_investigation",
     "trigger": "external_mismatch",
     "severity": "medium",
-    "created_at": "2026-04-13T10:24:03.191Z",
+    "created_at": "2026-04-13T14:36:29.691Z",
     "first_seen_at": "2026-04-09T16:32:50.214Z",
-    "last_seen_at": "2026-04-13T10:24:03.191Z",
-    "repeat_count": 146,
+    "last_seen_at": "2026-04-13T14:36:29.691Z",
+    "repeat_count": 155,
     "status": "open",
     "summary": "External probe disagrees with internal QA status",
     "evidence": {
@@ -566,12 +566,12 @@
         "test_id": "qa_mcp_helper_ping",
         "status": "pass",
         "details": "qa_mcp_helper.py is reachable.",
-        "timestamp": "2026-04-13T10:24:02.966589Z",
+        "timestamp": "2026-04-13T14:36:29.687867Z",
         "source": "external_mcp"
       },
       "internal": {
         "status": "fail",
-        "source": "qa/desks/*.js",
+        "source": "data/spatial/qa/structured/latest.json",
         "timestamp": "2026-03-28T13:58:44.234Z",
         "details": "1 of 4 desks failed; 1 of 19 checks failed"
       },
@@ -584,7 +584,7 @@
       }
     },
     "latest_evidence": {
-      "seen_at": "2026-04-13T10:24:03.191Z",
+      "seen_at": "2026-04-13T14:36:29.691Z",
       "trigger": "external_mismatch",
       "internal_status": "fail",
       "external_status": "pass",
@@ -598,124 +598,124 @@
     },
     "evidence_events": [
       {
-        "seen_at": "2026-04-12T07:02:03.154Z",
-        "trigger": "external_mismatch",
-        "internal_status": "fail",
-        "external_status": "pass",
-        "probe_status": "unreachable",
-        "test_id": "qa_mcp_helper_ping",
-        "pre_adjudication": true,
-        "adjudication_state": "pending_lead_cycle",
-        "evidence_id": "qa_inv_001",
-        "promoted_by_posture_id": null,
-        "promoted_at": null
-      },
-      {
-        "seen_at": "2026-04-12T07:42:14.196Z",
-        "trigger": "external_mismatch",
-        "internal_status": "fail",
-        "external_status": "pass",
-        "probe_status": "unreachable",
-        "test_id": "qa_mcp_helper_ping",
-        "pre_adjudication": true,
-        "adjudication_state": "pending_lead_cycle",
-        "evidence_id": "qa_inv_001",
-        "promoted_by_posture_id": null,
-        "promoted_at": null
-      },
-      {
-        "seen_at": "2026-04-12T10:17:36.433Z",
-        "trigger": "external_mismatch",
-        "internal_status": "fail",
-        "external_status": "pass",
-        "probe_status": "unreachable",
-        "test_id": "qa_mcp_helper_ping",
-        "pre_adjudication": true,
-        "adjudication_state": "pending_lead_cycle",
-        "evidence_id": "qa_inv_001",
-        "promoted_by_posture_id": null,
-        "promoted_at": null
-      },
-      {
-        "seen_at": "2026-04-13T08:42:32.536Z",
-        "trigger": "external_mismatch",
-        "internal_status": "fail",
-        "external_status": "pass",
-        "probe_status": "unreachable",
-        "test_id": "qa_mcp_helper_ping",
-        "pre_adjudication": true,
-        "adjudication_state": "pending_lead_cycle",
-        "evidence_id": "qa_inv_001",
-        "promoted_by_posture_id": null,
-        "promoted_at": null
-      },
-      {
-        "seen_at": "2026-04-13T09:29:35.496Z",
-        "trigger": "external_mismatch",
-        "internal_status": "fail",
-        "external_status": "pass",
-        "probe_status": "unreachable",
-        "test_id": "qa_mcp_helper_ping",
-        "pre_adjudication": true,
-        "adjudication_state": "pending_lead_cycle",
-        "evidence_id": "qa_inv_001",
-        "promoted_by_posture_id": null,
-        "promoted_at": null
-      },
-      {
-        "seen_at": "2026-04-13T09:39:25.435Z",
-        "trigger": "external_mismatch",
-        "internal_status": "fail",
-        "external_status": "pass",
-        "probe_status": "unreachable",
-        "test_id": "qa_mcp_helper_ping",
-        "pre_adjudication": true,
-        "adjudication_state": "pending_lead_cycle",
-        "evidence_id": "qa_inv_001",
-        "promoted_by_posture_id": null,
-        "promoted_at": null
-      },
-      {
-        "seen_at": "2026-04-13T09:39:52.424Z",
-        "trigger": "external_mismatch",
-        "internal_status": "fail",
-        "external_status": "pass",
-        "probe_status": "unreachable",
-        "test_id": "qa_mcp_helper_ping",
-        "pre_adjudication": true,
-        "adjudication_state": "pending_lead_cycle",
-        "evidence_id": "qa_inv_001",
-        "promoted_by_posture_id": null,
-        "promoted_at": null
-      },
-      {
-        "seen_at": "2026-04-13T09:59:02.567Z",
-        "trigger": "external_mismatch",
-        "internal_status": "fail",
-        "external_status": "pass",
-        "probe_status": "unreachable",
-        "test_id": "qa_mcp_helper_ping",
-        "pre_adjudication": true,
-        "adjudication_state": "pending_lead_cycle",
-        "evidence_id": "qa_inv_001",
-        "promoted_by_posture_id": null,
-        "promoted_at": null
-      },
-      {
-        "seen_at": "2026-04-13T10:23:04.075Z",
-        "trigger": "external_mismatch",
-        "internal_status": "fail",
-        "external_status": "pass",
-        "probe_status": "unreachable",
-        "test_id": "qa_mcp_helper_ping",
-        "pre_adjudication": true,
-        "adjudication_state": "pending_lead_cycle",
-        "evidence_id": "qa_inv_001",
-        "promoted_by_posture_id": null,
-        "promoted_at": null
-      },
-      {
         "seen_at": "2026-04-13T10:24:03.191Z",
+        "trigger": "external_mismatch",
+        "internal_status": "fail",
+        "external_status": "pass",
+        "probe_status": "unreachable",
+        "test_id": "qa_mcp_helper_ping",
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null
+      },
+      {
+        "seen_at": "2026-04-13T12:36:57.040Z",
+        "trigger": "external_mismatch",
+        "internal_status": "fail",
+        "external_status": "pass",
+        "probe_status": "unreachable",
+        "test_id": "qa_mcp_helper_ping",
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null
+      },
+      {
+        "seen_at": "2026-04-13T12:39:06.602Z",
+        "trigger": "external_mismatch",
+        "internal_status": "fail",
+        "external_status": "pass",
+        "probe_status": "unreachable",
+        "test_id": "qa_mcp_helper_ping",
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null
+      },
+      {
+        "seen_at": "2026-04-13T12:49:22.110Z",
+        "trigger": "external_mismatch",
+        "internal_status": "fail",
+        "external_status": "pass",
+        "probe_status": "unreachable",
+        "test_id": "qa_mcp_helper_ping",
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null
+      },
+      {
+        "seen_at": "2026-04-13T12:52:54.838Z",
+        "trigger": "external_mismatch",
+        "internal_status": "fail",
+        "external_status": "pass",
+        "probe_status": "unreachable",
+        "test_id": "qa_mcp_helper_ping",
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null
+      },
+      {
+        "seen_at": "2026-04-13T12:53:21.646Z",
+        "trigger": "external_mismatch",
+        "internal_status": "fail",
+        "external_status": "pass",
+        "probe_status": "unreachable",
+        "test_id": "qa_mcp_helper_ping",
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null
+      },
+      {
+        "seen_at": "2026-04-13T13:56:33.680Z",
+        "trigger": "external_mismatch",
+        "internal_status": "fail",
+        "external_status": "pass",
+        "probe_status": "unreachable",
+        "test_id": "qa_mcp_helper_ping",
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null
+      },
+      {
+        "seen_at": "2026-04-13T14:16:32.190Z",
+        "trigger": "external_mismatch",
+        "internal_status": "fail",
+        "external_status": "pass",
+        "probe_status": "unreachable",
+        "test_id": "qa_mcp_helper_ping",
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null
+      },
+      {
+        "seen_at": "2026-04-13T14:35:02.202Z",
+        "trigger": "external_mismatch",
+        "internal_status": "fail",
+        "external_status": "pass",
+        "probe_status": "unreachable",
+        "test_id": "qa_mcp_helper_ping",
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null
+      },
+      {
+        "seen_at": "2026-04-13T14:36:29.691Z",
         "trigger": "external_mismatch",
         "internal_status": "fail",
         "external_status": "pass",

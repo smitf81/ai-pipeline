@@ -1159,6 +1159,25 @@ body.qa-mode .status-row:last-child {
   z-index: 1;
 }
 
+.studio-department-layer {
+  position: absolute;
+  overflow: hidden;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.studio-department-layer.debug-overflow-visible {
+  overflow: visible;
+}
+
+.studio-department-desks {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
 .studio-boundary-status {
   pointer-events: none;
 }
@@ -1596,12 +1615,19 @@ body.qa-mode .status-row:last-child {
   background: transparent;
   padding: 0;
   text-align: left;
-  z-index: 5;
+  z-index: 10;
   cursor: grab;
+  overflow: visible;
+  pointer-events: auto;
 }
 
 .agent-station:active {
   cursor: grabbing;
+}
+
+.agent-station.selected,
+.agent-station.expanded {
+  z-index: 24;
 }
 
 .station-edit-handle {
@@ -1642,6 +1668,7 @@ body.qa-mode .status-row:last-child {
   text-align: left;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
   pointer-events: none;
+  z-index: 80;
 }
 
 .desk-thought-bubble::after {
@@ -1787,6 +1814,31 @@ body.qa-mode .status-row:last-child {
   font-family: 'Courier New', monospace;
   font-size: 11px;
   letter-spacing: 0.04em;
+}
+
+.desk-station-expansion {
+  position: absolute;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(8, 13, 22, 0.96);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+  z-index: 30;
+  overflow-y: auto;
+  overflow-x: hidden;
+  pointer-events: none;
+}
+
+.desk-station-expansion-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.desk-station-expansion-mode {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .status-chip {
@@ -2030,6 +2082,10 @@ body.qa-mode .status-row:last-child {
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 11px;
   line-height: 1.35;
+}
+
+.agent-station.collapsed .desk-card-truth {
+  max-width: 124px;
 }
 
 .desk-card-truth-line {
@@ -2941,7 +2997,7 @@ body.qa-mode .status-row:last-child {
 .desk-properties-modal {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: 72;
   background: rgba(1, 4, 10, 0.78);
   display: flex;
   align-items: center;
@@ -2954,6 +3010,9 @@ body.qa-mode .status-row:last-child {
   width: min(820px, 100%);
   max-height: 80vh;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background: linear-gradient(180deg, rgba(8, 14, 24, 0.99), rgba(4, 9, 17, 0.97));
   border: 1px solid rgba(208, 223, 241, 0.2);
   box-shadow: 0 24px 46px rgba(0, 0, 0, 0.4);
@@ -3008,6 +3067,7 @@ body.qa-mode .status-row:last-child {
   background: linear-gradient(180deg, rgba(8, 14, 24, 0.98), rgba(4, 9, 17, 0.96));
   box-shadow: 0 24px 46px rgba(0, 0, 0, 0.36);
   overflow: hidden;
+  z-index: 70;
 }
 
 .utility-window.docked {
@@ -3088,6 +3148,7 @@ body.qa-mode .status-row:last-child {
 .utility-window-stack {
   display: grid;
   gap: 12px;
+  min-height: 0;
 }
 
 .utility-window-section {
@@ -3097,6 +3158,8 @@ body.qa-mode .status-row:last-child {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .utility-window-hero {
@@ -3418,6 +3481,16 @@ body.qa-mode .status-row:last-child {
 .desk-panel-list {
   display: grid;
   gap: 8px;
+  min-width: 0;
+}
+
+.desk-properties-card .desk-panel-list,
+.utility-window-body .desk-panel-list,
+.utility-window-stack .desk-panel-list {
+  max-height: min(38vh, 320px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
 }
 
 .desk-panel-item {
@@ -3425,6 +3498,8 @@ body.qa-mode .status-row:last-child {
   border-radius: 10px;
   padding: 10px;
   background: linear-gradient(180deg, rgba(9, 15, 24, 0.9), rgba(6, 10, 18, 0.88));
+  min-width: 0;
+  overflow: hidden;
 }
 
 .truth-report-list {

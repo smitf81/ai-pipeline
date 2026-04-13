@@ -186,11 +186,35 @@ const EMPTY_INTENT_STATE = {
 const EMPTY_GHOST_PROJECTION_REGISTRY = createEmptyGhostProjectionRegistry();
 const CANVAS_BACKGROUND_SOLID = '#08111d';
 const CANVAS_BACKGROUND_TRUTH_VISIBLE = 'rgba(8, 17, 29, 0.72)';
+const DESK_EXPANSION_WIDTH = 228;
+const DESK_EXPANSION_GAP = 14;
 const TRUTH_KERNEL_LOAD_STATES = Object.freeze({
   LOADING: 'loading',
   READY: 'ready',
   ERROR: 'error',
 });
+
+function buildDeskExpansionStyle(localPosition = {}, departmentBounds = {}) {
+  const departmentWidth = Math.max(0, Number(departmentBounds?.width || 0));
+  const departmentHeight = Math.max(0, Number(departmentBounds?.height || 0));
+  const panelWidth = Math.min(DESK_EXPANSION_WIDTH, Math.max(176, departmentWidth - 16));
+  const preferRight = Number(localPosition?.x || 0) <= (departmentWidth / 2);
+  const rawLeft = preferRight
+    ? Number(localPosition?.x || 0) + (STUDIO_DESK_SIZE.width / 2) + DESK_EXPANSION_GAP
+    : Number(localPosition?.x || 0) - (STUDIO_DESK_SIZE.width / 2) - panelWidth - DESK_EXPANSION_GAP;
+  const left = clamp(rawLeft, 8, Math.max(8, departmentWidth - panelWidth - 8));
+  const top = clamp(
+    Number(localPosition?.y || 0) - 10,
+    8,
+    Math.max(8, departmentHeight - 188),
+  );
+  return {
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${panelWidth}px`,
+    maxHeight: `${Math.max(132, departmentHeight - 16)}px`,
+  };
+}
 
 export function normalizeSketchPath(path = []) {
   return (Array.isArray(path) ? path : [])
@@ -8373,6 +8397,7 @@ function syncRecentWorldChange(change = null) {
   };
 
   const resetStudioView = () => {
+    setStudioLayout((current) => normalizeStudioLayout(current));
     centerStudioOnRoom('studio recentered on room');
   };
 
@@ -8662,7 +8687,11 @@ function syncRecentWorldChange(change = null) {
   }, []);
 
   const onStudioMouseDown = (event) => {
-    if (event.target.closest('.agent-station') || event.target.closest('.studio-team-board')) return;
+    if (event.target.closest('.agent-station') || event.target.closest('.studio-team-board') || event.target.closest('.desk-properties-card')) return;
+    if (selectedAgentId || deskPanelState.open) {
+      closeDeskInspector();
+      setSelectedAgentId(null);
+    }
     studioPanning.current = true;
   };
 
@@ -8866,6 +8895,7 @@ function syncRecentWorldChange(change = null) {
     ))
     || null
   ), [teamBoard]);
+  const studioDebugOverflowVisible = Boolean(globalThis.window?.__ACE_STUDIO_DEBUG_OVERFLOW);
   const latestThroughputSession = throughputDebug.latestSession || throughputDebug.sessions?.[0] || null;
   useEffect(() => {
     setOpenTaskId(latestThroughputSession?.runnerTaskId || null);
@@ -11725,160 +11755,174 @@ function syncRecentWorldChange(change = null) {
                   );
                 }),
               ),
-              studioDeskEntries.map((desk) => {
-                const deskPosition = desk.position || deskStagePoint(desk.id, studioLayout);
-                const meta = STATUS_META[desk.status] || STATUS_META.idle;
-                const workerCard = buildAgentWorkerCardModel(desk);
-                const chiefDesk = desk.id === 'cto-chief-of-staff';
-                const cardMeta = chiefDesk
-                  ? {
-                      tone: chiefOfStaffDeskPresentation.statusTone,
-                      badge: chiefOfStaffDeskPresentation.statusBadge,
-                    }
-                  : meta;
-                const cardFocusSummary = chiefDesk ? chiefOfStaffDeskPresentation.focusSummary : desk.focusSummary;
-                const cardThroughputLabel = chiefDesk ? chiefOfStaffDeskPresentation.throughputLabel : desk.throughputLabel;
-                const cardLatestSignal = chiefDesk ? chiefOfStaffDeskPresentation.latestSignal : desk.latestSignal;
-                const thoughtBubble = orchestratorState.desks?.[desk.id]?.thoughtBubble || desk.thoughtBubble || null;
-                const pageBadge = orchestratorState.activeDeskIds?.includes(desk.id)
-                  ? buildDeskBadge(desk.id, orchestratorState, activePage)
-                  : null;
+              studioRenderModel.departments.map((room) => {
+                const roomDesks = studioDeskEntries.filter((desk) => desk.departmentId === room.id);
                 return h('div', {
-                  key: desk.id,
-                  className: `agent-station ${selectedAgentId === desk.id ? 'selected' : ''} ${desk.isOversight ? 'oversight' : ''} ${getOrgStatusClass(desk.statusLabel || desk.orgStatus || 'ready')}`,
-                  'data-qa': `desk-${desk.id}`,
-                  'data-desk-id': desk.id,
-                  'data-desk-label': desk.name,
-                  'data-desk-status': desk.statusLabel || desk.orgStatus || 'ready',
-                  'data-stage-x': deskPosition.x,
-                  'data-stage-y': deskPosition.y,
+                  key: `department-layer-${room.id}`,
+                  className: `studio-department-layer tone-${room.tone || room.id} ${studioDebugOverflowVisible ? 'debug-overflow-visible' : ''}`,
+                  'data-qa': `department-${room.id}`,
+                  'data-room-id': room.id,
                   style: {
-                    left: `${deskPosition.x}px`,
-                    top: `${deskPosition.y}px`,
-                    '--agent-accent': desk.theme.accent,
-                    '--agent-shadow': desk.theme.shadow,
+                    left: `${room.bounds.x}px`,
+                    top: `${room.bounds.y}px`,
+                    width: `${room.bounds.width}px`,
+                    height: `${room.bounds.height}px`,
                   },
-                  role: 'button',
-                  tabIndex: 0,
-                  onMouseDown: (event) => startStudioElementDrag(event, { type: 'desk', id: desk.id }),
-                  onClick: () => focusStudioAgent(desk.id),
-                  onKeyDown: (event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      focusStudioAgent(desk.id);
-                    }
-                  },
-                  title: `${desk.name} | ${orchestratorState.desks?.[desk.id]?.currentGoal || desk.role}`,
                 },
-                  h(DeskThoughtBubble, { text: thoughtBubble, tone: meta.tone }),
-                  h('div', { className: 'desk-card-truth' },
-                    h('div', { className: 'desk-card-truth-line' }, cardFocusSummary || desk.role),
-                    h('div', { className: 'desk-card-truth-line muted' }, cardThroughputLabel),
-                    cardLatestSignal ? h('div', { className: 'desk-card-truth-line muted' }, cardLatestSignal) : null,
-                    desk.dependencyWarningSummary ? h('div', { className: 'desk-card-truth-line warning' }, desk.dependencyWarningSummary) : null,
-                  ),
-                  pageBadge ? h('div', { className: 'desk-page-badge' }, pageBadge) : null,
-                  h('div', { className: 'station-desk' },
-                    h('div', { className: `desk-light ${desk.activityPulse ? 'pulse' : ''} ${desk.unresolved ? 'warning' : ''}` }),
-                    h('div', { className: 'station-prop' }),
-                    h('div', { className: 'station-screen' }),
-                  ),
-                  h('div', {
-                    style: {
-                      position: 'relative',
-                      display: 'inline-flex',
-                    },
-                  },
-                    h(PixelAvatar, { accent: desk.theme.accent, status: desk.status }),
-                    h('div', {
-                      style: {
-                        position: 'absolute',
-                        right: '-10px',
-                        bottom: '2px',
-                        minWidth: '22px',
-                        height: '22px',
-                        borderRadius: '999px',
-                        border: `1px solid ${workerCard.cognitionMode === 'fallback' ? 'rgba(255, 120, 95, 0.52)' : (workerCard.cognitionMode === 'model_live' ? 'rgba(127, 220, 164, 0.5)' : 'rgba(152, 183, 215, 0.45)')}`,
-                        background: 'rgba(9, 15, 24, 0.9)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '12px',
-                        boxShadow: '0 8px 18px rgba(0, 0, 0, 0.28)',
-                      },
-                      title: `${workerCard.name} | ${workerCard.cognitionMode}`,
-                    }, workerCard.icon),
-                  ),
-                  h('div', { className: `status-chip ${cardMeta.tone}` }, cardMeta.badge),
-                  h('div', { className: `org-status-chip ${getOrgStatusMeta(desk.statusLabel || desk.orgStatus).tone}` }, getOrgStatusMeta(desk.statusLabel || desk.orgStatus).badge),
-                  h('div', { className: 'agent-label' }, desk.shortLabel),
-                  selectedAgentId === desk.id ? h('div', {
-                    style: {
-                      position: 'absolute',
-                      left: 'calc(100% + 14px)',
-                      top: '-6px',
-                      width: '228px',
-                      padding: '12px 14px',
-                      borderRadius: '16px',
-                      background: 'rgba(8, 13, 22, 0.96)',
-                      border: `1px solid ${workerCard.cognitionMode === 'fallback' ? 'rgba(255, 120, 95, 0.36)' : (workerCard.cognitionMode === 'model_live' ? 'rgba(127, 220, 164, 0.34)' : 'rgba(152, 183, 215, 0.28)')}`,
-                      boxShadow: '0 18px 42px rgba(0, 0, 0, 0.38)',
-                      zIndex: 7,
-                      pointerEvents: 'none',
-                    },
-                    'data-qa': `worker-card-${desk.id}`,
-                  },
-                    h('div', {
-                      style: {
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        justifyContent: 'space-between',
-                        gap: '10px',
-                      },
-                    },
-                      h('div', null,
-                        h('div', { className: 'signal-summary' }, workerCard.name),
-                        h('div', { className: 'signal-meta muted' }, workerCard.role),
-                      ),
-                      h('div', {
+                  h('div', { className: 'studio-department-desks' },
+                    roomDesks.map((desk) => {
+                      const deskPosition = snapDeskPositionToDepartment(desk.position || deskStagePoint(desk.id, studioLayout), desk.id, studioLayout);
+                      const localDeskPosition = {
+                        x: clamp(
+                          deskPosition.x - room.bounds.x,
+                          STUDIO_DESK_SIZE.width / 2,
+                          room.bounds.width - (STUDIO_DESK_SIZE.width / 2),
+                        ),
+                        y: clamp(
+                          deskPosition.y - room.bounds.y,
+                          STUDIO_DESK_SIZE.height / 2,
+                          room.bounds.height - (STUDIO_DESK_SIZE.height / 2),
+                        ),
+                      };
+                      const meta = STATUS_META[desk.status] || STATUS_META.idle;
+                      const workerCard = buildAgentWorkerCardModel(desk);
+                      const chiefDesk = desk.id === 'cto-chief-of-staff';
+                      const isExpandedDesk = selectedAgentId === desk.id;
+                      const cardMeta = chiefDesk
+                        ? {
+                            tone: chiefOfStaffDeskPresentation.statusTone,
+                            badge: chiefOfStaffDeskPresentation.statusBadge,
+                          }
+                        : meta;
+                      const cardFocusSummary = chiefDesk ? chiefOfStaffDeskPresentation.focusSummary : desk.focusSummary;
+                      const cardThroughputLabel = chiefDesk ? chiefOfStaffDeskPresentation.throughputLabel : desk.throughputLabel;
+                      const cardLatestSignal = chiefDesk ? chiefOfStaffDeskPresentation.latestSignal : desk.latestSignal;
+                      const thoughtBubble = orchestratorState.desks?.[desk.id]?.thoughtBubble || desk.thoughtBubble || null;
+                      const pageBadge = orchestratorState.activeDeskIds?.includes(desk.id)
+                        ? buildDeskBadge(desk.id, orchestratorState, activePage)
+                        : null;
+                      return h('div', {
+                        key: desk.id,
+                        className: `agent-station ${isExpandedDesk ? 'selected expanded' : 'collapsed'} ${desk.isOversight ? 'oversight' : ''} ${getOrgStatusClass(desk.statusLabel || desk.orgStatus || 'ready')}`,
+                        'data-qa': `desk-${desk.id}`,
+                        'data-desk-id': desk.id,
+                        'data-desk-label': desk.name,
+                        'data-desk-status': desk.statusLabel || desk.orgStatus || 'ready',
+                        'data-stage-x': deskPosition.x,
+                        'data-stage-y': deskPosition.y,
                         style: {
-                          fontSize: '18px',
-                          lineHeight: 1,
+                          left: `${localDeskPosition.x}px`,
+                          top: `${localDeskPosition.y}px`,
+                          '--agent-accent': desk.theme.accent,
+                          '--agent-shadow': desk.theme.shadow,
                         },
-                      }, workerCard.icon),
-                    ),
-                    h('div', {
-                      style: {
-                        marginTop: '8px',
-                        color: workerCard.cognitionMode === 'fallback' ? '#ff9a82' : (workerCard.cognitionMode === 'model_live' ? '#8fe1af' : '#b6cae6'),
-                        fontSize: '12px',
-                        fontWeight: 600,
+                        role: 'button',
+                        tabIndex: 0,
+                        onMouseDown: (event) => startStudioElementDrag(event, { type: 'desk', id: desk.id }),
+                        onClick: () => focusStudioAgent(desk.id),
+                        onKeyDown: (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            focusStudioAgent(desk.id);
+                          }
+                        },
+                        title: `${desk.name} | ${orchestratorState.desks?.[desk.id]?.currentGoal || desk.role}`,
                       },
-                    }, workerCard.cognitionMode),
-                    h('div', { className: 'signal-meta muted', style: { marginTop: '6px' } }, workerCard.currentActivity),
-                    h('div', { style: { marginTop: '10px' } },
-                      h('div', { className: 'signal-meta muted', style: { marginBottom: '4px' } }, 'Energy'),
-                      renderContinuousMeter(workerCard.energy, {
-                        fill: '#77c8ff',
-                        label: 'energy',
-                      }),
-                    ),
-                    h('div', { style: { marginTop: '8px' } },
-                      h('div', { className: 'signal-meta muted', style: { marginBottom: '4px' } }, 'Health'),
-                      renderContinuousMeter(workerCard.health, {
-                        fill: workerCard.cognitionMode === 'fallback' ? '#ff8c6f' : '#7fdca4',
-                        label: 'health',
-                      }),
-                    ),
-                    workerCard.confidence !== null ? h('div', { style: { marginTop: '8px' } },
-                      h('div', { className: 'signal-meta muted', style: { marginBottom: '4px' } }, 'Confidence'),
-                      renderContinuousMeter(workerCard.confidence, {
-                        fill: '#c7b2ff',
-                        label: 'confidence',
-                      }),
-                    ) : null,
-                    h('div', { className: 'signal-meta muted', style: { marginTop: '8px' } }, `Fallbacks ${workerCard.fallbackCount}${workerCard.lastLiveModelCallAt ? ` | live ${formatTimestamp(workerCard.lastLiveModelCallAt)}` : ''}`),
-                  ) : null,
+                        h(DeskThoughtBubble, { text: thoughtBubble, tone: meta.tone }),
+                        h('div', { className: 'desk-card-truth' },
+                          h('div', { className: 'desk-card-truth-line' }, cardFocusSummary || desk.role),
+                          isExpandedDesk ? h('div', { className: 'desk-card-truth-line muted' }, cardThroughputLabel) : null,
+                          isExpandedDesk && cardLatestSignal ? h('div', { className: 'desk-card-truth-line muted' }, cardLatestSignal) : null,
+                          isExpandedDesk && desk.dependencyWarningSummary ? h('div', { className: 'desk-card-truth-line warning' }, desk.dependencyWarningSummary) : null,
+                        ),
+                        pageBadge ? h('div', { className: 'desk-page-badge' }, pageBadge) : null,
+                        h('div', { className: 'station-desk' },
+                          h('div', { className: `desk-light ${desk.activityPulse ? 'pulse' : ''} ${desk.unresolved ? 'warning' : ''}` }),
+                          h('div', { className: 'station-prop' }),
+                          h('div', { className: 'station-screen' }),
+                        ),
+                        h('div', {
+                          style: {
+                            position: 'relative',
+                            display: 'inline-flex',
+                          },
+                        },
+                          h(PixelAvatar, { accent: desk.theme.accent, status: desk.status }),
+                          h('div', {
+                            style: {
+                              position: 'absolute',
+                              right: '-10px',
+                              bottom: '2px',
+                              minWidth: '22px',
+                              height: '22px',
+                              borderRadius: '999px',
+                              border: `1px solid ${workerCard.cognitionMode === 'fallback' ? 'rgba(255, 120, 95, 0.52)' : (workerCard.cognitionMode === 'model_live' ? 'rgba(127, 220, 164, 0.5)' : 'rgba(152, 183, 215, 0.45)')}`,
+                              background: 'rgba(9, 15, 24, 0.9)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '12px',
+                              boxShadow: '0 8px 18px rgba(0, 0, 0, 0.28)',
+                            },
+                            title: `${workerCard.name} | ${workerCard.cognitionMode}`,
+                          }, workerCard.icon),
+                        ),
+                        h('div', { className: `status-chip ${cardMeta.tone}` }, cardMeta.badge),
+                        h('div', { className: `org-status-chip ${getOrgStatusMeta(desk.statusLabel || desk.orgStatus).tone}` }, getOrgStatusMeta(desk.statusLabel || desk.orgStatus).badge),
+                        h('div', { className: 'agent-label' }, desk.shortLabel),
+                        isExpandedDesk ? h('div', {
+                          className: 'desk-station-expansion',
+                          style: {
+                            ...buildDeskExpansionStyle(localDeskPosition, room.bounds),
+                            border: `1px solid ${workerCard.cognitionMode === 'fallback' ? 'rgba(255, 120, 95, 0.36)' : (workerCard.cognitionMode === 'model_live' ? 'rgba(127, 220, 164, 0.34)' : 'rgba(152, 183, 215, 0.28)')}`,
+                          },
+                          'data-qa': `worker-card-${desk.id}`,
+                        },
+                          h('div', { className: 'desk-station-expansion-header' },
+                            h('div', null,
+                              h('div', { className: 'signal-summary' }, workerCard.name),
+                              h('div', { className: 'signal-meta muted' }, workerCard.role),
+                            ),
+                            h('div', {
+                              style: {
+                                fontSize: '18px',
+                                lineHeight: 1,
+                              },
+                            }, workerCard.icon),
+                          ),
+                          h('div', {
+                            className: 'desk-station-expansion-mode',
+                            style: {
+                              color: workerCard.cognitionMode === 'fallback' ? '#ff9a82' : (workerCard.cognitionMode === 'model_live' ? '#8fe1af' : '#b6cae6'),
+                            },
+                          }, workerCard.cognitionMode),
+                          h('div', { className: 'signal-meta muted', style: { marginTop: '6px' } }, workerCard.currentActivity),
+                          h('div', { style: { marginTop: '10px' } },
+                            h('div', { className: 'signal-meta muted', style: { marginBottom: '4px' } }, 'Energy'),
+                            renderContinuousMeter(workerCard.energy, {
+                              fill: '#77c8ff',
+                              label: 'energy',
+                            }),
+                          ),
+                          h('div', { style: { marginTop: '8px' } },
+                            h('div', { className: 'signal-meta muted', style: { marginBottom: '4px' } }, 'Health'),
+                            renderContinuousMeter(workerCard.health, {
+                              fill: workerCard.cognitionMode === 'fallback' ? '#ff8c6f' : '#7fdca4',
+                              label: 'health',
+                            }),
+                          ),
+                          workerCard.confidence !== null ? h('div', { style: { marginTop: '8px' } },
+                            h('div', { className: 'signal-meta muted', style: { marginBottom: '4px' } }, 'Confidence'),
+                            renderContinuousMeter(workerCard.confidence, {
+                              fill: '#c7b2ff',
+                              label: 'confidence',
+                            }),
+                          ) : null,
+                          h('div', { className: 'signal-meta muted', style: { marginTop: '8px' } }, `Fallbacks ${workerCard.fallbackCount}${workerCard.lastLiveModelCallAt ? ` | live ${formatTimestamp(workerCard.lastLiveModelCallAt)}` : ''}`),
+                        ) : null,
+                      );
+                    }),
+                  ),
                 );
               }),
               h('div', { className: 'studio-plaque' },

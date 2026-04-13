@@ -130,6 +130,7 @@ const {
   createCanonicalTruthAccess,
 } = require('./canonicalTruthAccess');
 const {
+  createCanonicalTruthEnvelope,
   decorateCanonicalTruthPayload,
 } = require('./canonicalTruthEnvelope');
 const {
@@ -225,6 +226,7 @@ const {
 } = require('./constrainedAutoFix');
 const {
   DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
+  ensureChiefOfStaffReadiness,
   queryChiefOfStaff,
   readLatestChiefOfStaffAdvisory,
 } = require('./ctoChiefOfStaff');
@@ -459,6 +461,8 @@ const {
 const {
   DEFAULT_OLLAMA_HOST,
   DEFAULT_OLLAMA_TIMEOUT_MS,
+  readOllamaLauncherStatus,
+  ensureOllamaBootstrapped,
 } = require('./localModelClient');
 const {
   runAll: runStructuredQA,
@@ -611,9 +615,340 @@ const TA_COVERAGE_REQUIREMENTS = [
 let staffingRulesModulePromise = null;
 let spatialBootHealthSnapshot = null;
 let bootRecoveryRuntimeStatus = null;
+let aceDependencyRegistry = null;
+let aceDependencyRefreshPromise = null;
+
+const ACE_DEPENDENCY_IDS = Object.freeze({
+  OLLAMA: 'ollama',
+  QA_MCP_HELPER: 'qa_mcp_helper',
+});
+const ACE_DEPENDENCY_STATUSES = new Set(['live', 'warming', 'degraded', 'unavailable']);
+const ACE_DEPENDENCY_STALE_AFTER_MS = 15000;
+
+function cloneJson(value) {
+  return value && typeof value === 'object'
+    ? JSON.parse(JSON.stringify(value))
+    : value;
+}
+
+function normalizeAceDependencyStatus(value, fallback = 'warming') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ACE_DEPENDENCY_STATUSES.has(normalized) ? normalized : fallback;
+}
+
+function buildAceDependencyEntry(dependencyId, overrides = {}) {
+  const now = nowIso();
+  const ctoConfig = resolveCtoGovernanceConfig();
+  const defaults = dependencyId === ACE_DEPENDENCY_IDS.OLLAMA
+    ? {
+        id: ACE_DEPENDENCY_IDS.OLLAMA,
+        label: 'Ollama',
+        endpoint: `${ctoConfig.host.replace(/\/+$/, '')}/api/tags`,
+        launch: {
+          command: 'ollama serve',
+          mechanism: 'local_process_spawn',
+        },
+      }
+    : {
+        id: ACE_DEPENDENCY_IDS.QA_MCP_HELPER,
+        label: 'QA MCP Helper',
+        endpoint: 'http://127.0.0.1:5051/run_test',
+        launch: {
+          command: `python ${path.join(ROOT, 'qa_mcp_helper.py')}`,
+          mechanism: 'python_helper_spawn',
+        },
+      };
+  return {
+    ...defaults,
+    status: 'warming',
+    failureReason: null,
+    launchAttemptedThisBoot: false,
+    launchAttemptedAt: null,
+    lastProofOfLifeCheck: null,
+    lastUpdatedAt: now,
+    launcherStatus: null,
+    ...cloneJson(overrides),
+    status: normalizeAceDependencyStatus(overrides.status, 'warming'),
+    lastUpdatedAt: now,
+  };
+}
+
+function createInitialAceDependencyRegistry() {
+  return {
+    [ACE_DEPENDENCY_IDS.OLLAMA]: buildAceDependencyEntry(ACE_DEPENDENCY_IDS.OLLAMA),
+    [ACE_DEPENDENCY_IDS.QA_MCP_HELPER]: buildAceDependencyEntry(ACE_DEPENDENCY_IDS.QA_MCP_HELPER),
+  };
+}
+
+function ensureAceDependencyRegistry() {
+  if (!aceDependencyRegistry) {
+    aceDependencyRegistry = createInitialAceDependencyRegistry();
+  }
+  return aceDependencyRegistry;
+}
+
+function getAceDependencyRegistrySnapshot() {
+  return cloneJson(ensureAceDependencyRegistry());
+}
+
+function syncAceDependencyRuntimeStatus() {
+  if (!bootRecoveryRuntimeStatus) {
+    return;
+  }
+  updateBootRecoveryRuntimeStatus({
+    dependencies: getAceDependencyRegistrySnapshot(),
+  });
+}
+
+function updateAceDependencyEntry(dependencyId, patch = {}) {
+  const registry = ensureAceDependencyRegistry();
+  const current = registry[dependencyId] || buildAceDependencyEntry(dependencyId);
+  aceDependencyRegistry = {
+    ...registry,
+    [dependencyId]: {
+      ...current,
+      ...cloneJson(patch),
+      status: normalizeAceDependencyStatus(patch.status, current.status),
+      lastUpdatedAt: nowIso(),
+    },
+  };
+  syncAceDependencyRuntimeStatus();
+  return aceDependencyRegistry[dependencyId];
+}
+
+function dependencyProofIsStale(entry = null, maxAgeMs = ACE_DEPENDENCY_STALE_AFTER_MS) {
+  const checkedAt = String(entry?.lastProofOfLifeCheck?.checkedAt || '').trim();
+  if (!checkedAt) return true;
+  const timestamp = Date.parse(checkedAt);
+  if (!Number.isFinite(timestamp)) return true;
+  return (Date.now() - timestamp) > Math.max(1000, Number(maxAgeMs) || ACE_DEPENDENCY_STALE_AFTER_MS);
+}
+
+function aceDependencyRegistryNeedsRefresh(maxAgeMs = ACE_DEPENDENCY_STALE_AFTER_MS) {
+  const registry = ensureAceDependencyRegistry();
+  return Object.values(registry).some((entry) => (
+    entry?.status === 'warming'
+    || dependencyProofIsStale(entry, maxAgeMs)
+  ));
+}
+
+function normalizeOllamaDependencyEntry({
+  probe = null,
+  launcherStatus = null,
+  launchAttemptedThisBoot = false,
+} = {}) {
+  const config = resolveCtoGovernanceConfig();
+  const checkedAt = String(probe?.checkedAt || launcherStatus?.checked_at || nowIso()).trim() || nowIso();
+  const sourceStatus = String(probe?.status || '').trim() || 'offline';
+  const availableModels = Array.isArray(probe?.availableModels) ? probe.availableModels : [];
+  const status = probe?.ok
+    ? 'live'
+    : (sourceStatus === 'degraded' ? 'degraded' : 'unavailable');
+  const failureReason = status === 'live'
+    ? null
+    : String(probe?.reason || launcherStatus?.failure_reason || '').trim()
+      || 'Ollama is not currently reachable.';
+  return {
+    endpoint: `${config.host.replace(/\/+$/, '')}/api/tags`,
+    status,
+    failureReason,
+    launchAttemptedThisBoot,
+    launchAttemptedAt: launchAttemptedThisBoot ? nowIso() : null,
+    lastProofOfLifeCheck: {
+      checkedAt,
+      status: sourceStatus,
+      reachable: sourceStatus !== 'offline',
+      reason: String(probe?.reason || '').trim() || null,
+      availableModels,
+    },
+    launcherStatus: launcherStatus ? cloneJson(launcherStatus) : null,
+  };
+}
+
+function normalizeQaMcpDependencyEntry({
+  preflight = null,
+  launcherStatus = null,
+  launchAttemptedThisBoot = false,
+} = {}) {
+  const checkedAt = String(preflight?.checked_at || launcherStatus?.checked_at || nowIso()).trim() || nowIso();
+  const transport = preflight?.transport || null;
+  const verdict = String(preflight?.verdict || '').trim() || 'unreachable';
+  const reachable = Boolean(transport?.reachable || transport?.responded);
+  const status = verdict === 'ok'
+    ? 'live'
+    : (reachable ? 'degraded' : 'unavailable');
+  const failureReason = status === 'live'
+    ? null
+    : String(preflight?.summary || launcherStatus?.failure_reason || '').trim()
+      || 'QA MCP helper is not currently reachable.';
+  return {
+    endpoint: 'http://127.0.0.1:5051/run_test',
+    status,
+    failureReason,
+    launchAttemptedThisBoot,
+    launchAttemptedAt: launchAttemptedThisBoot ? nowIso() : null,
+    lastProofOfLifeCheck: {
+      checkedAt,
+      status: verdict,
+      reachable,
+      reason: String(preflight?.summary || '').trim() || null,
+      transport: transport ? cloneJson(transport) : null,
+    },
+    launcherStatus: launcherStatus ? cloneJson(launcherStatus) : null,
+  };
+}
+
+async function refreshOllamaDependencyStatus({
+  attemptLaunch = false,
+  fetchImpl = globalThis.fetch,
+  probeFn = probeCtoBackendStatus,
+  launchFn = ensureOllamaBootstrapped,
+} = {}) {
+  updateAceDependencyEntry(ACE_DEPENDENCY_IDS.OLLAMA, {
+    status: 'warming',
+  });
+  let probe = await probeFn({
+    fetchImpl,
+  });
+  let launcherStatus = readOllamaLauncherStatus();
+  let launchAttemptedThisBoot = false;
+
+  if (attemptLaunch && probe?.status === 'offline') {
+    launcherStatus = await launchFn({
+      host: resolveCtoGovernanceConfig().host,
+      timeoutMs: 1500,
+      fetchImpl,
+    });
+    launchAttemptedThisBoot = Boolean(launcherStatus?.launch_attempted);
+    probe = await probeFn({
+      fetchImpl,
+    });
+  }
+
+  return updateAceDependencyEntry(
+    ACE_DEPENDENCY_IDS.OLLAMA,
+    normalizeOllamaDependencyEntry({
+      probe,
+      launcherStatus,
+      launchAttemptedThisBoot,
+    }),
+  );
+}
+
+async function refreshQaMcpHelperDependencyStatus({
+  rootPath = ROOT,
+  attemptLaunch = false,
+  preflightFn = buildQaMcpPreflightResponse,
+  launchFn = ensureQaMcpHelperBootstrapped,
+} = {}) {
+  updateAceDependencyEntry(ACE_DEPENDENCY_IDS.QA_MCP_HELPER, {
+    status: 'warming',
+  });
+  let preflight = await preflightFn({
+    rootPath,
+    probeUrl: 'http://127.0.0.1:5051/run_test',
+    timeoutMs: 1500,
+  });
+  let launcherStatus = preflight?.launcher_status || readQaMcpLauncherStatus();
+  let launchAttemptedThisBoot = false;
+
+  if (attemptLaunch && preflight?.verdict !== 'ok' && !preflight?.transport?.reachable && !preflight?.transport?.responded) {
+    launcherStatus = await launchFn({
+      rootPath,
+      probeUrl: 'http://127.0.0.1:5051/run_test',
+      timeoutMs: 1500,
+    });
+    launchAttemptedThisBoot = Boolean(launcherStatus?.launch_attempted);
+    preflight = await preflightFn({
+      rootPath,
+      probeUrl: 'http://127.0.0.1:5051/run_test',
+      timeoutMs: 1500,
+    });
+  }
+
+  return updateAceDependencyEntry(
+    ACE_DEPENDENCY_IDS.QA_MCP_HELPER,
+    normalizeQaMcpDependencyEntry({
+      preflight,
+      launcherStatus: preflight?.launcher_status || launcherStatus,
+      launchAttemptedThisBoot,
+    }),
+  );
+}
+
+async function refreshAceDependencyRegistry({
+  rootPath = ROOT,
+  attemptLaunch = false,
+  force = false,
+  fetchImpl = globalThis.fetch,
+  ollamaProbeFn = probeCtoBackendStatus,
+  ollamaLaunchFn = ensureOllamaBootstrapped,
+  qaPreflightFn = buildQaMcpPreflightResponse,
+  qaLaunchFn = ensureQaMcpHelperBootstrapped,
+} = {}) {
+  if (aceDependencyRefreshPromise && !force) {
+    return aceDependencyRefreshPromise;
+  }
+  aceDependencyRefreshPromise = (async () => {
+    await refreshOllamaDependencyStatus({
+      attemptLaunch,
+      fetchImpl,
+      probeFn: ollamaProbeFn,
+      launchFn: ollamaLaunchFn,
+    });
+    await refreshQaMcpHelperDependencyStatus({
+      rootPath,
+      attemptLaunch,
+      preflightFn: qaPreflightFn,
+      launchFn: qaLaunchFn,
+    });
+    return getAceDependencyRegistrySnapshot();
+  })();
+  try {
+    return await aceDependencyRefreshPromise;
+  } finally {
+    aceDependencyRefreshPromise = null;
+  }
+}
+
+async function refreshAceDependencyRegistryIfStale(options = {}) {
+  if (!aceDependencyRegistryNeedsRefresh(options.maxAgeMs)) {
+    return getAceDependencyRegistrySnapshot();
+  }
+  return refreshAceDependencyRegistry(options);
+}
+
+async function orchestrateAceDependenciesOnBoot(rootPath = ROOT) {
+  updateBootRecoveryRuntimeStatus({
+    phase: 'dependency_orchestration',
+    currentStep: 'Checking local dependency proof-of-life.',
+    dependencies: getAceDependencyRegistrySnapshot(),
+  });
+  try {
+    const dependencies = await refreshAceDependencyRegistry({
+      rootPath,
+      attemptLaunch: true,
+      force: true,
+    });
+    updateBootRecoveryRuntimeStatus({
+      currentStep: 'Local dependency proof-of-life complete.',
+      dependencies,
+    });
+    return dependencies;
+  } catch (error) {
+    updateBootRecoveryRuntimeStatus({
+      currentStep: 'Local dependency proof-of-life failed.',
+      lastError: String(error?.message || error),
+      dependencies: getAceDependencyRegistrySnapshot(),
+    });
+    return getAceDependencyRegistrySnapshot();
+  }
+}
 
 function createInitialBootRecoveryRuntimeStatus() {
   const now = nowIso();
+  aceDependencyRefreshPromise = null;
+  aceDependencyRegistry = createInitialAceDependencyRegistry();
   return {
     phase: 'booting',
     safeMode: false,
@@ -625,6 +960,7 @@ function createInitialBootRecoveryRuntimeStatus() {
     repairInProgress: false,
     recoveryFinished: false,
     recoveryBlocked: false,
+    dependencies: getAceDependencyRegistrySnapshot(),
   };
 }
 
@@ -10376,6 +10712,108 @@ async function buildQaEvidenceProjectionPayload({
   };
 }
 
+function buildIntentDependencyFallbackPayload({
+  requestBody = {},
+  reason = 'Intent projection is temporarily unavailable because a required local dependency is not live.',
+  derivation = 'dependency_unavailable_projection',
+  dependencyStatus = null,
+} = {}) {
+  const workspace = readSpatialWorkspace(ROOT);
+  const runtime = buildSpatialRuntimePayload(workspace);
+  const normalizedReason = String(reason || '').trim()
+    || 'Intent projection is temporarily unavailable because a required local dependency is not live.';
+  const dependencies = dependencyStatus || getAceDependencyRegistrySnapshot();
+  const extractedIntent = {
+    confidence: 'low',
+    reason: 'dependency_unavailable',
+    candidates: [],
+    provenance: {
+      source: 'intent_route_fallback',
+      usedFallback: true,
+      reason: normalizedReason,
+    },
+  };
+  return {
+    __statusCode: 200,
+    __canonicalTruthMeta: {
+      classification: 'fallback',
+      freshness: 'live',
+      fallbackUsed: true,
+      owner: 'ACE Context Manager',
+    },
+    route: 'context-manager',
+    error: normalizedReason,
+    report: {
+      ok: false,
+      status: 'dependency_unavailable',
+      summary: normalizedReason,
+      text: String(requestBody?.text || '').trim() || null,
+    },
+    canonicalIntent: null,
+    extractedIntent,
+    worker: {
+      usedFallback: true,
+      status: 'dependency_unavailable',
+      reason: normalizedReason,
+    },
+    preflight: {
+      ok: false,
+      status: 'dependency_unavailable',
+      reason: normalizedReason,
+    },
+    runtime,
+    dependencyStatus: dependencies,
+    canonicalTruthSections: {
+      route: {
+        classification: 'fallback',
+        fallbackUsed: true,
+        derivation,
+      },
+      report: {
+        classification: 'fallback',
+        fallbackUsed: true,
+        derivation: 'dependency_unavailable_report',
+      },
+      canonicalIntent: {
+        classification: 'fallback',
+        fallbackUsed: true,
+        derivation: 'not_extracted',
+      },
+      extractedIntent: {
+        classification: 'fallback',
+        fallbackUsed: true,
+        derivation: 'dependency_unavailable_extracted_intent',
+      },
+      runtime: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'runtime_projection',
+      },
+      dependencyStatus: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'server_dependency_registry',
+      },
+    },
+  };
+}
+
+function shouldReturnIntentDependencyFallback(error, dependencyStatus = null) {
+  const message = String(error?.message || error || '').toLowerCase();
+  const dependencies = dependencyStatus || getAceDependencyRegistrySnapshot();
+  const ollamaStatus = String(dependencies?.[ACE_DEPENDENCY_IDS.OLLAMA]?.status || '').trim().toLowerCase();
+  if (ollamaStatus && ollamaStatus !== 'live') {
+    return true;
+  }
+  return (
+    message.includes('econnrefused')
+    || message.includes('fetch failed')
+    || message.includes('timed out')
+    || message.includes('ollama')
+    || message.includes('worker_no_report')
+  );
+}
+
 async function buildIntentProjectionPayload({
   sourceData = {},
   requestBody = {},
@@ -10478,6 +10916,15 @@ async function buildIntentProjectionPayload({
       skipPreflight: true,
     });
     if (!cycle.result?.report) {
+      const dependencyStatus = getAceDependencyRegistrySnapshot();
+      if (shouldReturnIntentDependencyFallback(cycle.reason || 'worker_no_report', dependencyStatus)) {
+        return buildIntentDependencyFallbackPayload({
+          requestBody: body,
+          reason: cycle.reason || 'Context Manager could not produce an intent report because a required dependency is not live.',
+          derivation: 'worker_dependency_unavailable',
+          dependencyStatus,
+        });
+      }
       return {
         __statusCode: 500,
         __canonicalTruthMeta: {
@@ -10513,6 +10960,7 @@ async function buildIntentProjectionPayload({
     const extractedIntent = cycle.result.extractedIntent || report?.extractedIntent || null;
     const workerUsedFallback = Boolean(cycle.result?.usedFallback);
     const extractedIntentUsedFallback = Boolean(extractedIntent?.provenance?.usedFallback);
+    const dependencyStatus = getAceDependencyRegistrySnapshot();
     return {
       __statusCode: 200,
       __canonicalTruthMeta: {
@@ -10529,6 +10977,7 @@ async function buildIntentProjectionPayload({
       handoff: cycle.result.handoff,
       runtime,
       preflight: cycle.preflight || cycle.result?.preflight || null,
+      dependencyStatus,
       canonicalTruthSections: {
         route: {
           classification: 'projection',
@@ -10559,9 +11008,23 @@ async function buildIntentProjectionPayload({
           fallbackUsed: false,
           derivation: 'runtime_projection',
         },
+        dependencyStatus: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'server_dependency_registry',
+        },
       },
     };
   } catch (error) {
+    const dependencyStatus = getAceDependencyRegistrySnapshot();
+    if (shouldReturnIntentDependencyFallback(error, dependencyStatus)) {
+      return buildIntentDependencyFallbackPayload({
+        requestBody: body,
+        reason: String(error.message || error),
+        derivation: 'projection_dependency_unavailable',
+        dependencyStatus,
+      });
+    }
     return {
       __statusCode: 500,
       __canonicalTruthMeta: {
@@ -13654,6 +14117,7 @@ function getHealthSnapshot() {
     startedAt: SERVER_STARTED_AT,
     safeMode: Boolean(bootHealth.safeMode),
     bootHealth,
+    dependencies: getAceDependencyRegistrySnapshot(),
     selfUpgrade: {
       status: selfUpgrade.status,
       deploy: selfUpgrade.deploy,
@@ -14083,7 +14547,11 @@ app.get('/api/runs', (req, res) => {
     res.json(getHealthSnapshot());
   });
   
-  app.get('/api/spatial/boot-status', (req, res) => {
+  app.get('/api/spatial/boot-status', async (req, res) => {
+    await refreshAceDependencyRegistryIfStale({
+      rootPath: ROOT,
+      attemptLaunch: false,
+    }).catch(() => {});
     res.json({
       ok: true,
       status: ensureBootRecoveryRuntimeStatus(),
@@ -14195,14 +14663,13 @@ async function buildQaMcpPreflightResponse({
 
 function bootQaMcpHelperIfNeeded(rootPath = ROOT) {
   Promise.resolve()
-    .then(() => ensureQaMcpHelperBootstrapped({
+    .then(() => refreshQaMcpHelperDependencyStatus({
       rootPath,
-      probeUrl: 'http://127.0.0.1:5051/run_test',
-      timeoutMs: 1500,
+      attemptLaunch: true,
     }))
     .then((status) => {
-      if (status?.summary) {
-        console.log(`[${nowIso()}] ${status.summary}`);
+      if (status?.launcherStatus?.summary) {
+        console.log(`[${nowIso()}] ${status.launcherStatus.summary}`);
       }
     })
     .catch((error) => {
@@ -16313,7 +16780,18 @@ app.get('/api/cto-chief-of-staff/query', async (req, res) => {
   }
 });
 
-app.get('/api/cto-chief-of-staff/latest', (req, res) => {
+app.get('/api/cto-chief-of-staff/latest', async (req, res) => {
+  const rootPath = req.app?.locals?.chiefOfStaffRootPath || ROOT;
+  try {
+    await ensureChiefOfStaffReadiness({
+      rootPath,
+      fetchImpl: req.app?.locals?.chiefOfStaffFetchImpl || globalThis.fetch,
+      callModel: req.app?.locals?.chiefOfStaffCallModel,
+      warmIfNeeded: true,
+    });
+  } catch (error) {
+    console.warn(`[${nowIso()}] chief-of-staff readiness refresh failed: ${error.message}`);
+  }
   return res.json(readLatestChiefOfStaffAdvisory());
 });
 
@@ -16594,6 +17072,11 @@ app.post('/api/spatial/cto/chat', async (req, res) => {
 
 app.post('/api/spatial/intent', async (req, res) => {
   try {
+    await refreshAceDependencyRegistryIfStale({
+      rootPath: ROOT,
+      attemptLaunch: false,
+      maxAgeMs: 5000,
+    }).catch(() => {});
     const envelope = await canonicalTruthAccess.resolveProjection('intent', {
       rootPath: ROOT,
       freshness: 'live',
@@ -16604,6 +17087,30 @@ app.post('/api/spatial/intent', async (req, res) => {
       : 200;
     return res.status(statusCode).json(decorateCanonicalTruthPayload(envelope));
   } catch (error) {
+    const dependencyStatus = await refreshAceDependencyRegistryIfStale({
+      rootPath: ROOT,
+      attemptLaunch: false,
+      maxAgeMs: 5000,
+    }).catch(() => getAceDependencyRegistrySnapshot());
+    if (shouldReturnIntentDependencyFallback(error, dependencyStatus)) {
+      const payload = buildIntentDependencyFallbackPayload({
+        requestBody: req.body || {},
+        reason: String(error.message || error),
+        derivation: 'route_dependency_unavailable',
+        dependencyStatus,
+      });
+      const envelope = createCanonicalTruthEnvelope({
+        domain: 'intent',
+        projectionId: 'intent',
+        classification: payload.__canonicalTruthMeta?.classification || 'fallback',
+        sourceOfTruth: '/api/spatial/intent',
+        owner: payload.__canonicalTruthMeta?.owner || 'ACE Context Manager',
+        freshness: payload.__canonicalTruthMeta?.freshness || 'live',
+        fallbackUsed: Boolean(payload.__canonicalTruthMeta?.fallbackUsed),
+        data: payload,
+      });
+      return res.status(200).json(decorateCanonicalTruthPayload(envelope));
+    }
     return res.status(500).json({ error: String(error.message || error) });
   }
 });
@@ -16746,10 +17253,19 @@ function startServer() {
     recoveryFinished: false,
     recoveryBlocked: false,
     repairInProgress: false,
+    dependencies: getAceDependencyRegistrySnapshot(),
   });
 
-  setTimeout(() => {
-    bootQaMcpHelperIfNeeded(ROOT);
+  setTimeout(async () => {
+    await orchestrateAceDependenciesOnBoot(ROOT);
+    try {
+      await ensureChiefOfStaffReadiness({
+        rootPath: ROOT,
+        warmIfNeeded: true,
+      });
+    } catch (error) {
+      console.warn(`[${nowIso()}] chief-of-staff warmup failed during boot: ${error.message}`);
+    }
     runDeferredBootRecovery();
   }, 0);
 
@@ -16863,6 +17379,9 @@ module.exports = {
   addDeskToLayout,
   buildStudioLayoutCatalog,
   listStudioDeskIds,
+  getAceDependencyRegistrySnapshot,
+  refreshAceDependencyRegistry,
+  orchestrateAceDependenciesOnBoot,
   resolveCtoGovernanceConfig,
   parseCtoStructuredReply,
   classifyCtoDiagnosticCategory,

@@ -1,0 +1,299 @@
+{
+  "id": "qa_1776088593686_wskp4n",
+  "scenario": "studio-smoke",
+  "mode": "observation",
+  "trigger": "qa_lead_cycle",
+  "prompt": null,
+  "baseUrl": "http://127.0.0.1:3000",
+  "status": "completed",
+  "verdict": "failed",
+  "createdAt": "2026-04-13T13:56:33.686Z",
+  "finishedAt": "2026-04-13T13:58:25.737Z",
+  "linked": {
+    "qaLeadRunId": "qa_lead_1776088593675_yf6vgk"
+  },
+  "browser": {
+    "executablePath": null,
+    "engine": "chromium"
+  },
+  "browser_status": "fail",
+  "browser_failure_stage": null,
+  "browser_failure_code": null,
+  "browser_failure_summary": null,
+  "browser_runtime_target": {
+    "attempted": [
+      "chromium"
+    ],
+    "used": "chromium",
+    "fallbackUsed": false
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-13T13:56:33.687Z",
+      "finishedAt": "2026-04-13T13:56:53.407Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-13T13:56:53.407Z",
+      "finishedAt": "2026-04-13T13:56:54.401Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-13T13:56:54.402Z",
+      "finishedAt": "2026-04-13T13:57:21.307Z",
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-13T13:57:21.308Z",
+      "finishedAt": "2026-04-13T13:57:21.739Z",
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-13T13:57:21.740Z",
+      "finishedAt": "2026-04-13T13:57:22.179Z",
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-13T13:57:22.179Z",
+      "finishedAt": "2026-04-13T13:58:25.712Z",
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "weak",
+      "startedAt": "2026-04-13T13:58:25.713Z",
+      "finishedAt": "2026-04-13T13:58:25.737Z",
+      "error": null
+    }
+  ],
+  "findings": [
+    {
+      "id": "desk-overlap-planner-executor",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "planner",
+        "executor"
+      ],
+      "summary": "Planner overlaps Executor.",
+      "details": "Overlap area is 3640px."
+    },
+    {
+      "id": "desk-overlap-cto-chief-of-staff-cto-architect",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "cto-chief-of-staff",
+        "cto-architect"
+      ],
+      "summary": "Chief of Staff overlaps CTO / Architect.",
+      "details": "Overlap area is 8120px."
+    },
+    {
+      "id": "whiteboard-overlap-teamBoard-planner",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "planner"
+      ],
+      "relatedWhiteboardIds": [
+        "teamBoard"
+      ],
+      "summary": "Team Board overlaps Planner.",
+      "details": "Overlap area is 19608px."
+    },
+    {
+      "id": "whiteboard-overlap-teamBoard-executor",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "executor"
+      ],
+      "relatedWhiteboardIds": [
+        "teamBoard"
+      ],
+      "summary": "Team Board overlaps Executor.",
+      "details": "Overlap area is 19608px."
+    },
+    {
+      "id": "control-hidden-recent-saves-select",
+      "severity": "warning",
+      "kind": "visibility",
+      "summary": "Recent Saves is clipped or hidden.",
+      "details": "Required control recent-saves-select was not fully visible in the current browser pass."
+    },
+    {
+      "id": "stale-anchor-planner-executor",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "planner",
+        "executor"
+      ],
+      "summary": "1 plan item is not anchored to the current desk positions.",
+      "details": "Connector drift is 14px from the expected anchor geometry."
+    },
+    {
+      "id": "stale-anchor-work-to-memory",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "executor",
+        "memory-archivist"
+      ],
+      "summary": "1 outputs is not anchored to the current desk positions.",
+      "details": "Connector drift is 14px from the expected anchor geometry."
+    },
+    {
+      "id": "stale-anchor-conflict-0-planner",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "cto-architect",
+        "planner"
+      ],
+      "summary": "Low confidence is not anchored to the current desk positions.",
+      "details": "Connector drift is 20px from the expected anchor geometry."
+    },
+    {
+      "id": "stale-anchor-conflict-0-executor",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "cto-architect",
+        "executor"
+      ],
+      "summary": "Low confidence is not anchored to the current desk positions.",
+      "details": "Connector drift is 20px from the expected anchor geometry."
+    },
+    {
+      "id": "stale-anchor-conflict-1-planner",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "cto-architect",
+        "planner"
+      ],
+      "summary": "Scope overlap is not anchored to the current desk positions.",
+      "details": "Connector drift is 20px from the expected anchor geometry."
+    },
+    {
+      "id": "stale-anchor-conflict-1-executor",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "cto-architect",
+        "executor"
+      ],
+      "summary": "Scope overlap is not anchored to the current desk positions.",
+      "details": "Connector drift is 20px from the expected anchor geometry."
+    },
+    {
+      "id": "stale-anchor-conflict-2-executor",
+      "severity": "warning",
+      "kind": "connector",
+      "relatedDeskIds": [
+        "cto-architect",
+        "executor"
+      ],
+      "summary": "Needs review is not anchored to the current desk positions.",
+      "details": "Connector drift is 20px from the expected anchor geometry."
+    }
+  ],
+  "artifacts": {
+    "screenshots": [
+      {
+        "name": "01-initial.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1776088593686_wskp4n\\01-initial.png",
+        "url": "/api/spatial/qa/runs/qa_1776088593686_wskp4n/artifacts/01-initial.png",
+        "label": "Initial ACE render"
+      },
+      {
+        "name": "02-studio-smoke.png",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1776088593686_wskp4n\\02-studio-smoke.png",
+        "url": "/api/spatial/qa/runs/qa_1776088593686_wskp4n/artifacts/02-studio-smoke.png",
+        "label": "Scenario studio-smoke"
+      }
+    ],
+    "domSnapshot": {
+      "name": "dom.html",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1776088593686_wskp4n\\dom.html",
+      "url": "/api/spatial/qa/runs/qa_1776088593686_wskp4n/artifacts/dom.html"
+    },
+    "consoleLog": {
+      "name": "console.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1776088593686_wskp4n\\console.json",
+      "url": "/api/spatial/qa/runs/qa_1776088593686_wskp4n/artifacts/console.json"
+    },
+    "networkSummary": {
+      "name": "network.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1776088593686_wskp4n\\network.json",
+      "url": "/api/spatial/qa/runs/qa_1776088593686_wskp4n/artifacts/network.json"
+    },
+    "runtimeSnapshot": {
+      "name": "runtime.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1776088593686_wskp4n\\runtime.json",
+      "url": "/api/spatial/qa/runs/qa_1776088593686_wskp4n/artifacts/runtime.json"
+    },
+    "layoutFindings": {
+      "name": "layout-findings.json",
+      "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1776088593686_wskp4n\\layout-findings.json",
+      "url": "/api/spatial/qa/runs/qa_1776088593686_wskp4n/artifacts/layout-findings.json"
+    }
+  },
+  "console": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "http://127.0.0.1:3000/vendor/react-dom.development.js",
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://127.0.0.1:3000/favicon.ico",
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    }
+  ],
+  "network": [],
+  "error": null
+}

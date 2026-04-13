@@ -1,6 +1,861 @@
 {
   "items": [
     {
+      "id": "qa_output_20260413T211625118Z",
+      "createdAt": "2026-04-13T21:16:25.118Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776114900999_nwc530",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T205816037Z",
+      "createdAt": "2026-04-13T20:58:16.037Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776113789882_utsovh",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T205642880Z",
+      "createdAt": "2026-04-13T20:56:42.880Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776113700990_0r1nbx",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T203803933Z",
+      "createdAt": "2026-04-13T20:38:03.933Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776112589879_qc75ju",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T203641139Z",
+      "createdAt": "2026-04-13T20:36:41.139Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776112500989_ctab4y",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T201811312Z",
+      "createdAt": "2026-04-13T20:18:11.312Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776111389879_rc0xht",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T201640453Z",
+      "createdAt": "2026-04-13T20:16:40.453Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776111300984_v3m85n",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T195808301Z",
+      "createdAt": "2026-04-13T19:58:08.301Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776110189879_mijs2q",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T195638093Z",
+      "createdAt": "2026-04-13T19:56:38.093Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776110100982_895oen",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T193810325Z",
+      "createdAt": "2026-04-13T19:38:10.325Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776108989874_4x6t0z",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T193640063Z",
+      "createdAt": "2026-04-13T19:36:40.063Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776108900973_2cif1g",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T191809955Z",
+      "createdAt": "2026-04-13T19:18:09.955Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776107789866_c5ogkr",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T191638713Z",
+      "createdAt": "2026-04-13T19:16:38.713Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776107700966_lqikzz",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T185806151Z",
+      "createdAt": "2026-04-13T18:58:06.151Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776106589864_y6dbnp",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T185637215Z",
+      "createdAt": "2026-04-13T18:56:37.215Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776106500965_nc3jgh",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T183804565Z",
+      "createdAt": "2026-04-13T18:38:04.565Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776105389863_4o3e9m",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T183637111Z",
+      "createdAt": "2026-04-13T18:36:37.111Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776105300951_budqei",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T181804285Z",
+      "createdAt": "2026-04-13T18:18:04.285Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776104189852_cq69cd",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T181635048Z",
+      "createdAt": "2026-04-13T18:16:35.048Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776104100950_auqspx",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T175800554Z",
+      "createdAt": "2026-04-13T17:58:00.554Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776102989845_xxgqyf",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T175630226Z",
+      "createdAt": "2026-04-13T17:56:30.226Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776102900762_iguf40",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T173801978Z",
+      "createdAt": "2026-04-13T17:38:01.978Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776101789837_qwn252",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T173632654Z",
+      "createdAt": "2026-04-13T17:36:32.654Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776101700759_xrx6te",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T171801707Z",
+      "createdAt": "2026-04-13T17:18:01.707Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776100589824_19urmn",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T171632583Z",
+      "createdAt": "2026-04-13T17:16:32.583Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776100500753_zwjvf0",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T165800400Z",
+      "createdAt": "2026-04-13T16:58:00.400Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776099389819_xfg1r6",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T165630885Z",
+      "createdAt": "2026-04-13T16:56:30.885Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776099300742_z52q9q",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T163759485Z",
+      "createdAt": "2026-04-13T16:37:59.485Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776098189817_r3ksxl",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T163632073Z",
+      "createdAt": "2026-04-13T16:36:32.073Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776098100729_hhggnj",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T161756446Z",
+      "createdAt": "2026-04-13T16:17:56.446Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776096989810_2vtprz",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T161627973Z",
+      "createdAt": "2026-04-13T16:16:27.973Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776096900727_kzvdl1",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T155755207Z",
+      "createdAt": "2026-04-13T15:57:55.207Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776095789704_hh17sm",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T155628458Z",
+      "createdAt": "2026-04-13T15:56:28.458Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776095700717_hu005f",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T153749743Z",
+      "createdAt": "2026-04-13T15:37:49.743Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776094589703_mpsd8m",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T153627077Z",
+      "createdAt": "2026-04-13T15:36:27.077Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776094500703_pewsmb",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T151753773Z",
+      "createdAt": "2026-04-13T15:17:53.773Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776093389693_0lck4m",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T151627792Z",
+      "createdAt": "2026-04-13T15:16:27.792Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776093300701_qstosc",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T145755362Z",
+      "createdAt": "2026-04-13T14:57:55.362Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776092189692_lqtt8q",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T145628315Z",
+      "createdAt": "2026-04-13T14:56:28.315Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776092100697_znz54p",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T143745178Z",
+      "createdAt": "2026-04-13T14:37:45.178Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776090989677_x6yw1k",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T143612281Z",
+      "createdAt": "2026-04-13T14:36:12.281Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776090902196_ddmfle",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T141722032Z",
+      "createdAt": "2026-04-13T14:17:22.032Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776089792179_tucqx6",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T135902867Z",
+      "createdAt": "2026-04-13T13:59:02.867Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected. Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776088593675_yf6vgk",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T125400209Z",
+      "createdAt": "2026-04-13T12:54:00.209Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: browserType.launch: spawn EPERM\nCall log:\n\u001b[2m  - <launching> C:\\Users\\felix\\AppData\\Local\\ms-playwright\\firefox-1511\\firefox\\firefox.exe -no-remote -headless -profile C:\\Users\\felix\\AppData\\Local\\Temp\\playwright_firefoxdev_profile-60yYx4 -juggler-pipe --disable-gpu --no-first-run --disable-background-networking -silent\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776084801641_vldodt",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T095939168Z",
+      "createdAt": "2026-04-13T09:59:39.168Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: browserType.launch: spawn EPERM\nCall log:\n\u001b[2m  - <launching> C:\\Users\\felix\\AppData\\Local\\ms-playwright\\firefox-1511\\firefox\\firefox.exe -no-remote -headless -profile C:\\Users\\felix\\AppData\\Local\\Temp\\playwright_firefoxdev_profile-vW4zYS -juggler-pipe --disable-gpu --no-first-run --disable-background-networking -silent\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_live_gate_1776074342561",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
       "id": "qa_output_20260412T072959453Z",
       "createdAt": "2026-04-12T07:29:59.453Z",
       "type": "qa_cycle",
@@ -2357,20 +3212,20 @@
       }
     },
     {
-      "id": "qa_output_20260413T095939168Z",
-      "createdAt": "2026-04-13T09:59:39.168Z",
+      "id": "qa_output_20260413T211733557Z",
+      "createdAt": "2026-04-13T21:17:33.557Z",
       "type": "qa_cycle",
-      "summary": "QA lead cycle degraded: browserType.launch: spawn EPERM\nCall log:\n\u001b[2m  - <launching> C:\\Users\\felix\\AppData\\Local\\ms-playwright\\firefox-1511\\firefox\\firefox.exe -no-remote -headless -profile C:\\Users\\felix\\AppData\\Local\\Temp\\playwright_firefoxdev_profile-vW4zYS -juggler-pipe --disable-gpu --no-first-run --disable-background-networking -silent\u001b[22m Live MCP helper evidence captured.",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
       "result": "fail",
       "source": "qa_lead_runner",
       "meta": {
         "investigationCount": 6,
         "failedChecks": 2,
         "activeLanes": 1,
-        "externalStatus": "ok",
-        "cycleId": "qa_live_gate_1776074342561",
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776114989888_9xwe8q",
         "mcpEvidenceSource": "live_helper",
-        "externalProbeLive": true,
+        "externalProbeLive": false,
         "usedFallback": false,
         "probeTarget": "http://127.0.0.1:5051/run_test"
       }

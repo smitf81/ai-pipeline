@@ -10,6 +10,17 @@ export default async function runIntentRouteTests() {
   const server = startServer();
   await new Promise((resolve) => setTimeout(resolve, 2500));
   try {
+    const bootStatusResponse = await fetch('http://localhost:3218/api/spatial/boot-status');
+    const bootStatusPayload = await bootStatusResponse.json();
+    assert.equal(bootStatusResponse.status, 200);
+    assert.equal(bootStatusPayload.ok, true);
+    assert.equal(Boolean(bootStatusPayload.status?.dependencies?.ollama), true);
+    assert.equal(Boolean(bootStatusPayload.status?.dependencies?.qa_mcp_helper), true);
+    assert.equal(
+      ['live', 'warming', 'degraded', 'unavailable'].includes(bootStatusPayload.status.dependencies.ollama.status),
+      true,
+    );
+
     const intentResponse = await fetch('http://localhost:3218/api/spatial/intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -38,11 +49,14 @@ export default async function runIntentRouteTests() {
     assert.equal(Boolean(intentPayload.extractedIntent), true);
     assert.equal(Boolean(intentPayload.worker), true);
     assert.equal(Boolean(intentPayload.preflight), true);
+    assert.equal(Boolean(intentPayload.dependencyStatus?.ollama), true);
+    assert.equal(Boolean(intentPayload.dependencyStatus?.qa_mcp_helper), true);
     assert.equal(intentPayload.worker.usedFallback, true);
     assert.equal(intentPayload.canonicalTruthSections.report.derivation, 'worker_report');
     assert.equal(intentPayload.canonicalTruthSections.extractedIntent.classification, 'fallback');
     assert.equal(intentPayload.canonicalTruthSections.extractedIntent.derivation, 'worker_fallback_extracted_intent');
     assert.equal(intentPayload.canonicalTruthSections.canonicalIntent.classification, 'canonical');
+    assert.equal(intentPayload.canonicalTruthSections.dependencyStatus.derivation, 'server_dependency_registry');
 
     const moduleResponse = await fetch('http://localhost:3218/api/spatial/intent', {
       method: 'POST',

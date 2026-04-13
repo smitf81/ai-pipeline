@@ -10,7 +10,11 @@ const {
 } = require('./llmAdapter');
 const {
   DEFAULT_OLLAMA_HOST,
+  runOllamaTagsProbe,
 } = require('./localModelClient');
+const {
+  resolveAgentDefinition,
+} = require('./agentRegistry');
 
 const CHIEF_OF_STAFF_REGISTRATION = Object.freeze({
   id: 'cto-chief-of-staff',
@@ -25,8 +29,13 @@ const DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS = 25000;
 const DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND = 'ollama_http';
 const DEFAULT_CHIEF_OF_STAFF_MAX_REPLY_CHARS = 1200;
 const CHIEF_OF_STAFF_OVERSCOPED_PROMPT_CHARS = 3200;
+const CHIEF_OF_STAFF_READINESS_STALE_MS = 45000;
+const CHIEF_OF_STAFF_WARM_TIMEOUT_MS = 7000;
+const CHIEF_OF_STAFF_WARM_PROMPT = 'Reply with READY.';
 
 let latestChiefOfStaffAdvisory = null;
+let latestChiefOfStaffReadiness = null;
+let chiefOfStaffWarmPromise = null;
 
 function safeReadJson(filePath) {
   try {
@@ -47,6 +56,314 @@ function truncateText(value = '', limit = 220) {
   const text = String(value || '').trim();
   if (text.length <= limit) return text;
   return `${text.slice(0, Math.max(0, limit - 1)).trimEnd()}...`;
+}
+
+function normalizeText(value = '') {
+  return String(value || '').trim();
+}
+
+function clampPositiveInteger(value, fallback) {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized) || normalized <= 0) return fallback;
+  return Math.round(normalized);
+}
+
+function buildChiefOfStaffFallbackManifest() {
+  return {
+    id: CHIEF_OF_STAFF_REGISTRATION.id,
+    name: CHIEF_OF_STAFF_REGISTRATION.name,
+    deskId: 'cto-architect',
+    runtime: 'ollama-shell',
+    backend: 'ollama',
+    model: DEFAULT_CHIEF_OF_STAFF_MODEL,
+    host: DEFAULT_OLLAMA_HOST,
+    timeoutMs: DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS,
+    autoRun: false,
+    type: CHIEF_OF_STAFF_REGISTRATION.type,
+    authority: CHIEF_OF_STAFF_REGISTRATION.authority,
+    reports_to: CHIEF_OF_STAFF_REGISTRATION.reports_to,
+    inputs: [
+      'brain/context/failure_history.json',
+      'brain/context/canonical_truth.json',
+      'brain/emergence/canonical_truth_domains.json',
+      'brain/emergence/canonical_truth_projections.json',
+      'data/spatial/qa/structured/latest.json',
+      'data/spatial/workspace.json',
+    ],
+    outputs: ['advisory-response'],
+    writesCanonicalBrain: false,
+  };
+}
+
+function resolveChiefOfStaffRuntime(rootPath, options = {}) {
+  const definition = rootPath
+    ? resolveAgentDefinition(rootPath, CHIEF_OF_STAFF_REGISTRATION.id, {
+      fallbackManifest: buildChiefOfStaffFallbackManifest(),
+      fallbackPrompt: '',
+    })
+    : {
+      valid: false,
+      manifestPath: null,
+      manifest: buildChiefOfStaffFallbackManifest(),
+      errors: ['rootPath missing; using fallback Chief of Staff manifest.'],
+    };
+  const manifest = definition?.manifest || buildChiefOfStaffFallbackManifest();
+  return {
+    definition,
+    manifest,
+    model: normalizeText(options.model) || normalizeText(manifest.model) || DEFAULT_CHIEF_OF_STAFF_MODEL,
+    host: normalizeText(options.host) || normalizeText(manifest.host) || DEFAULT_OLLAMA_HOST,
+    timeoutMs: clampPositiveInteger(options.timeoutMs, clampPositiveInteger(manifest.timeoutMs, DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS)),
+    configuredBackend: normalizeText(manifest.backend) || 'ollama',
+    manifestPath: definition?.manifestPath || null,
+    manifestValid: definition?.valid !== false,
+    manifestErrors: Array.isArray(definition?.errors) ? definition.errors.slice() : [],
+  };
+}
+
+function normalizeChiefOfStaffPromptScope(promptScope = '') {
+  const normalized = normalizeText(promptScope).toLowerCase();
+  if (normalized === 'targeted') return 'scoped';
+  return ['scoped', 'broad', 'full'].includes(normalized) ? normalized : 'scoped';
+}
+
+function classifyChiefOfStaffPromptScope(userQuery = '') {
+  const mode = classifyChiefOfStaffQuery(userQuery);
+  if (mode === 'structured_report' || mode === 'action_request') return 'broad';
+  return 'scoped';
+}
+
+function resolveChiefOfStaffPromptScope({ userQuery = '', promptScope = null } = {}) {
+  if (promptScope) return normalizeChiefOfStaffPromptScope(promptScope);
+  return classifyChiefOfStaffPromptScope(userQuery);
+}
+
+function toChiefOfStaffScopeTier(contextMode = 'scoped') {
+  return contextMode === 'scoped' ? 'targeted' : contextMode;
+}
+
+function buildChiefOfStaffReadinessSnapshot({
+  rootPath = null,
+  runtime = null,
+  status = 'unavailable',
+  reason = null,
+  source = 'chief_of_staff',
+  stage = 'probe',
+  checkedAt = null,
+  warmed = false,
+  warmAttempted = false,
+  availableModels = [],
+} = {}) {
+  const resolvedRuntime = runtime || resolveChiefOfStaffRuntime(rootPath);
+  return {
+    agent_id: CHIEF_OF_STAFF_REGISTRATION.id,
+    status: normalizeText(status) || 'unavailable',
+    reason: normalizeText(reason) || null,
+    source: normalizeText(source) || 'chief_of_staff',
+    stage: normalizeText(stage) || 'probe',
+    checked_at: normalizeText(checkedAt) || new Date().toISOString(),
+    warm_attempted: Boolean(warmAttempted),
+    warmed: Boolean(warmed),
+    model: resolvedRuntime.model,
+    host: resolvedRuntime.host,
+    timeout_ms: resolvedRuntime.timeoutMs,
+    configured_backend: resolvedRuntime.configuredBackend,
+    manifest_path: resolvedRuntime.manifestPath,
+    manifest_valid: Boolean(resolvedRuntime.manifestValid),
+    manifest_errors: resolvedRuntime.manifestErrors,
+    available_models: Array.isArray(availableModels)
+      ? availableModels.map((entry) => normalizeText(entry)).filter(Boolean)
+      : [],
+  };
+}
+
+function cloneChiefOfStaffReadiness(payload = null) {
+  if (!payload || typeof payload !== 'object') return null;
+  return JSON.parse(JSON.stringify(payload));
+}
+
+function recordChiefOfStaffReadiness(payload = null) {
+  latestChiefOfStaffReadiness = buildChiefOfStaffReadinessSnapshot(payload || {});
+  return cloneChiefOfStaffReadiness(latestChiefOfStaffReadiness);
+}
+
+function readChiefOfStaffReadiness() {
+  return cloneChiefOfStaffReadiness(latestChiefOfStaffReadiness);
+}
+
+function isChiefOfStaffReadinessFresh(snapshot = null, maxAgeMs = CHIEF_OF_STAFF_READINESS_STALE_MS) {
+  const checkedAt = Date.parse(snapshot?.checked_at || 0) || 0;
+  if (!checkedAt) return false;
+  return (Date.now() - checkedAt) <= Math.max(1000, Number(maxAgeMs) || CHIEF_OF_STAFF_READINESS_STALE_MS);
+}
+
+async function probeChiefOfStaffReadiness({ rootPath, fetchImpl = globalThis.fetch, runtime = null } = {}) {
+  const resolvedRuntime = runtime || resolveChiefOfStaffRuntime(rootPath);
+  const probe = await runOllamaTagsProbe({
+    host: resolvedRuntime.host,
+    timeoutMs: Math.min(1800, resolvedRuntime.timeoutMs),
+    fetchImpl,
+  });
+  if (!probe?.ok) {
+    return recordChiefOfStaffReadiness({
+      rootPath,
+      runtime: resolvedRuntime,
+      status: 'unavailable',
+      reason: probe?.reason || 'Chief of Staff model host is unreachable.',
+      stage: 'reachability_probe',
+      checkedAt: probe?.checkedAt,
+      availableModels: probe?.availableModels,
+    });
+  }
+  const availableModels = Array.isArray(probe.availableModels) ? probe.availableModels : [];
+  const modelAdvertised = !availableModels.length || availableModels.includes(resolvedRuntime.model);
+  if (!modelAdvertised) {
+    return recordChiefOfStaffReadiness({
+      rootPath,
+      runtime: resolvedRuntime,
+      status: 'unavailable',
+      reason: `Assigned Chief of Staff model "${resolvedRuntime.model}" is not advertised by Ollama.`,
+      stage: 'reachability_probe',
+      checkedAt: probe.checkedAt,
+      availableModels,
+    });
+  }
+  return recordChiefOfStaffReadiness({
+    rootPath,
+    runtime: resolvedRuntime,
+    status: 'warming',
+    reason: 'Assigned Chief of Staff model is reachable and warming.',
+    stage: 'reachability_probe',
+    checkedAt: probe.checkedAt,
+    availableModels,
+  });
+}
+
+async function warmChiefOfStaffModel({ rootPath, fetchImpl = globalThis.fetch, callModel = callOllamaGenerate, force = false } = {}) {
+  if (chiefOfStaffWarmPromise && !force) {
+    return chiefOfStaffWarmPromise;
+  }
+  chiefOfStaffWarmPromise = (async () => {
+    const runtime = resolveChiefOfStaffRuntime(rootPath);
+    const readiness = await probeChiefOfStaffReadiness({ rootPath, fetchImpl, runtime });
+    if (readiness.status === 'unavailable') {
+      return readiness;
+    }
+    recordChiefOfStaffReadiness({
+      rootPath,
+      runtime,
+      status: 'warming',
+      reason: 'Assigned Chief of Staff model warmup is in progress.',
+      stage: 'warm_probe',
+      checkedAt: new Date().toISOString(),
+      warmAttempted: true,
+      availableModels: readiness.available_models,
+    });
+    try {
+      const reply = await requestChiefOfStaffModelReply({
+        prompt: CHIEF_OF_STAFF_WARM_PROMPT,
+        model: runtime.model,
+        host: runtime.host,
+        timeoutMs: Math.min(runtime.timeoutMs, CHIEF_OF_STAFF_WARM_TIMEOUT_MS),
+        callModel,
+        fetchImpl,
+      });
+      return recordChiefOfStaffReadiness({
+        rootPath,
+        runtime,
+        status: 'live',
+        reason: normalizeText(reply) ? 'Assigned Chief of Staff model warmed successfully.' : 'Assigned Chief of Staff model responded to warmup.',
+        stage: 'warm_probe',
+        checkedAt: new Date().toISOString(),
+        warmAttempted: true,
+        warmed: true,
+        availableModels: readiness.available_models,
+      });
+    } catch (error) {
+      const failureReason = classifyChiefOfStaffFailureReason(error, {
+        promptChars: CHIEF_OF_STAFF_WARM_PROMPT.length,
+        contextMode: 'scoped',
+      });
+      if (failureReason === 'timeout') {
+        return recordChiefOfStaffReadiness({
+          rootPath,
+          runtime,
+          status: 'warming',
+          reason: 'Assigned Chief of Staff model is reachable but still warming.',
+          stage: 'warm_probe',
+          checkedAt: new Date().toISOString(),
+          warmAttempted: true,
+          availableModels: readiness.available_models,
+        });
+      }
+      if (failureReason === 'model_unavailable') {
+        return recordChiefOfStaffReadiness({
+          rootPath,
+          runtime,
+          status: 'unavailable',
+          reason: normalizeText(error?.message || error) || 'Assigned Chief of Staff model became unavailable during warmup.',
+          stage: 'warm_probe',
+          checkedAt: new Date().toISOString(),
+          warmAttempted: true,
+          availableModels: readiness.available_models,
+        });
+      }
+      return recordChiefOfStaffReadiness({
+        rootPath,
+        runtime,
+        status: 'degraded',
+        reason: normalizeText(error?.message || error) || 'Chief of Staff warmup failed.',
+        stage: 'warm_probe',
+        checkedAt: new Date().toISOString(),
+        warmAttempted: true,
+        availableModels: readiness.available_models,
+      });
+    } finally {
+      chiefOfStaffWarmPromise = null;
+    }
+  })();
+  return chiefOfStaffWarmPromise;
+}
+
+async function ensureChiefOfStaffReadiness({
+  rootPath,
+  fetchImpl = globalThis.fetch,
+  callModel = callOllamaGenerate,
+  warmIfNeeded = true,
+  force = false,
+} = {}) {
+  const snapshot = readChiefOfStaffReadiness();
+  if (!force && isChiefOfStaffReadinessFresh(snapshot) && snapshot?.status === 'live') {
+    return snapshot;
+  }
+  if (!force && isChiefOfStaffReadinessFresh(snapshot) && !warmIfNeeded) {
+    return snapshot;
+  }
+  if (warmIfNeeded) {
+    return warmChiefOfStaffModel({ rootPath, fetchImpl, callModel, force });
+  }
+  return probeChiefOfStaffReadiness({ rootPath, fetchImpl });
+}
+
+function classifyChiefOfStaffLiveStatus({ usedFallback = false, failureReason = null, readiness = null } = {}) {
+  if (!usedFallback) return 'live';
+  if ((failureReason === 'timeout') && readiness?.status === 'warming') return 'warming';
+  if (failureReason === 'model_unavailable') return 'unavailable';
+  return 'degraded';
+}
+
+function classifyChiefOfStaffResponseModelStatus({ error = null, promptProfile = null, readiness = null } = {}) {
+  const failureReason = classifyChiefOfStaffFailureReason(error, {
+    promptChars: Number(promptProfile?.promptChars || 0),
+    contextMode: promptProfile?.contextMode || 'scoped',
+  });
+  if (failureReason === 'timeout' && readiness?.status === 'warming' && promptProfile?.contextMode === 'scoped') {
+    return 'warming';
+  }
+  return classifyChiefOfStaffModelFailure(error, {
+    promptChars: Number(promptProfile?.promptChars || 0),
+    contextMode: promptProfile?.contextMode || 'scoped',
+  });
 }
 
 function normalizeStatusFlags(flags = {}) {
@@ -327,11 +644,13 @@ function buildChiefOfStaffRecommendationLines(recommendation = {}) {
   ];
 }
 
-function buildChiefOfStaffPromptProfile(posture, recommendation, userQuery) {
+function buildChiefOfStaffPromptProfile(posture, recommendation, userQuery, options = {}) {
   const mode = classifyChiefOfStaffQuery(userQuery);
-  const contextMode = mode === 'chat'
-    ? 'scoped'
-    : (mode === 'structured_report' || mode === 'action_request' ? 'broad' : 'scoped');
+  const contextMode = resolveChiefOfStaffPromptScope({
+    userQuery,
+    promptScope: options?.promptScope || null,
+  });
+  const scopeTier = toChiefOfStaffScopeTier(contextMode);
   const broaderContextAvailable = posture?.canonical_available === true;
   const includedSections = ['identity', 'user_question'];
   const lines = [
@@ -363,7 +682,7 @@ function buildChiefOfStaffPromptProfile(posture, recommendation, userQuery) {
       String(userQuery || '').trim(),
     );
 
-    if (contextMode === 'broad') {
+    if (contextMode === 'broad' || contextMode === 'full') {
       includedSections.push('secondary_retrieval_summary');
       lines.push(
         '',
@@ -402,6 +721,7 @@ function buildChiefOfStaffPromptProfile(posture, recommendation, userQuery) {
   return {
     mode,
     contextMode,
+    scopeTier,
     prompt,
     promptChars: prompt.length,
     broaderContextAvailable,
@@ -474,6 +794,8 @@ function buildChiefOfStaffCognitionDiagnostics({
   model = DEFAULT_CHIEF_OF_STAFF_MODEL,
   timeoutMs = DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS,
   promptProfile = null,
+  runtime = null,
+  readiness = null,
   usedLiveCall = false,
   usedFallback = false,
   error = null,
@@ -488,14 +810,19 @@ function buildChiefOfStaffCognitionDiagnostics({
     agent_id: CHIEF_OF_STAFF_REGISTRATION.id,
     intended_model: model || null,
     actual_model: model || null,
+    configured_model: runtime?.model || model || null,
+    manifest_backed_model: runtime?.model || null,
     timeout_ms: Number(timeoutMs || DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS),
     prompt_chars: Number(promptProfile?.promptChars || 0),
     context_mode: promptProfile?.contextMode || 'scoped',
+    context_scope_tier: promptProfile?.scopeTier || toChiefOfStaffScopeTier(promptProfile?.contextMode || 'scoped'),
     used_live_call: Boolean(usedLiveCall),
     used_fallback: Boolean(usedFallback),
     failure_reason: failureReason,
     included_sections: Array.isArray(promptProfile?.includedSections) ? promptProfile.includedSections : [],
     broader_context_available: Boolean(promptProfile?.broaderContextAvailable),
+    readiness_status: readiness?.status || null,
+    readiness_reason: readiness?.reason || null,
     repair_applied: promptProfile?.repairApplied || {
       timeout_changed: true,
       prompt_scope_changed: true,
@@ -511,6 +838,7 @@ function cloneChiefOfStaffPayload(payload = null) {
 }
 
 function buildChiefOfStaffLatestSnapshot(payload = null) {
+  const readiness = readChiefOfStaffReadiness();
   if (!payload || typeof payload !== 'object') {
     return {
       advisory_available: false,
@@ -519,11 +847,13 @@ function buildChiefOfStaffLatestSnapshot(payload = null) {
       model_backend: null,
       model_name: null,
       model_status: null,
+      live_status: readiness?.status || 'unavailable',
       advisory_generated_at: null,
       execution_ready: false,
       fallback_used: false,
       recommendation: null,
       posture: null,
+      agent_readiness: readiness,
     };
   }
 
@@ -534,6 +864,7 @@ function buildChiefOfStaffLatestSnapshot(payload = null) {
     model_backend: payload.model_backend || DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
     model_name: payload.model_name || DEFAULT_CHIEF_OF_STAFF_MODEL,
     model_status: payload.model_status || null,
+    live_status: payload.live_status || readiness?.status || null,
     advisory_generated_at: payload.advisory_generated_at || null,
     execution_ready: Boolean(payload.execution_ready),
     fallback_used: payload.reply_source === 'deterministic_fallback',
@@ -571,6 +902,7 @@ function buildChiefOfStaffLatestSnapshot(payload = null) {
         : null,
     } : null,
     cognition_diagnostics: payload.cognition_diagnostics || null,
+    agent_readiness: payload.agent_readiness || readiness || null,
   };
 }
 
@@ -587,6 +919,8 @@ function readLatestChiefOfStaffAdvisory() {
 
 function clearLatestChiefOfStaffAdvisory() {
   latestChiefOfStaffAdvisory = null;
+  latestChiefOfStaffReadiness = null;
+  chiefOfStaffWarmPromise = null;
 }
 
 async function requestChiefOfStaffModelReply({
@@ -609,12 +943,16 @@ async function requestChiefOfStaffModelReply({
 }
 
 async function runChiefOfStaffAgent(posture, recommendation, userQuery, options = {}) {
-  const promptProfile = buildChiefOfStaffPromptProfile(posture, recommendation, userQuery);
+  const runtime = resolveChiefOfStaffRuntime(options.rootPath || null, options);
+  const readiness = options.readiness || null;
+  const promptProfile = buildChiefOfStaffPromptProfile(posture, recommendation, userQuery, {
+    promptScope: options.promptScope || null,
+  });
   const prompt = promptProfile.prompt;
   const advisory_generated_at = new Date().toISOString();
-  const model = options.model || DEFAULT_CHIEF_OF_STAFF_MODEL;
-  const host = options.host || DEFAULT_OLLAMA_HOST;
-  const timeoutMs = Number(options.timeoutMs || DEFAULT_CHIEF_OF_STAFF_TIMEOUT_MS);
+  const model = runtime.model;
+  const host = runtime.host;
+  const timeoutMs = runtime.timeoutMs;
   const callModel = typeof options.callModel === 'function'
     ? options.callModel
     : callOllamaGenerate;
@@ -645,21 +983,61 @@ async function runChiefOfStaffAgent(posture, recommendation, userQuery, options 
       model_backend: DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
       model_name: model,
       model_status: 'ok',
+      live_status: 'live',
       advisory_generated_at,
       execution_ready: Boolean(recommendation?.execution_ready),
+      agent_readiness: recordChiefOfStaffReadiness({
+        rootPath: options.rootPath || null,
+        runtime,
+        status: 'live',
+        reason: 'Chief of Staff live model reply completed successfully.',
+        stage: 'direct_query',
+        checkedAt: advisory_generated_at,
+        warmAttempted: Boolean(readiness?.warm_attempted),
+        warmed: true,
+        availableModels: readiness?.available_models,
+      }),
       cognition_diagnostics: buildChiefOfStaffCognitionDiagnostics({
         model,
         timeoutMs,
         promptProfile,
+        runtime,
+        readiness: {
+          ...(readiness || {}),
+          status: 'live',
+          reason: 'Chief of Staff live model reply completed successfully.',
+        },
         usedLiveCall: true,
         usedFallback: false,
       }),
     };
   } catch (error) {
+    const failureReason = classifyChiefOfStaffFailureReason(error, {
+      promptChars: Number(promptProfile?.promptChars || 0),
+      contextMode: promptProfile?.contextMode || 'scoped',
+    });
+    const liveStatus = classifyChiefOfStaffLiveStatus({
+      usedFallback: true,
+      failureReason,
+      readiness,
+    });
+    const recordedReadiness = recordChiefOfStaffReadiness({
+      rootPath: options.rootPath || null,
+      runtime,
+      status: liveStatus,
+      reason: normalizeText(error?.message || error) || null,
+      stage: 'direct_query',
+      checkedAt: advisory_generated_at,
+      warmAttempted: Boolean(readiness?.warm_attempted),
+      warmed: Boolean(readiness?.warmed),
+      availableModels: readiness?.available_models,
+    });
     const cognitionDiagnostics = buildChiefOfStaffCognitionDiagnostics({
       model,
       timeoutMs,
       promptProfile,
+      runtime,
+      readiness: recordedReadiness,
       usedLiveCall: true,
       usedFallback: true,
       error,
@@ -669,12 +1047,15 @@ async function runChiefOfStaffAgent(posture, recommendation, userQuery, options 
       reply_source: 'deterministic_fallback',
       model_backend: DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
       model_name: model,
-      model_status: classifyChiefOfStaffModelFailure(error, {
-        promptChars: cognitionDiagnostics.prompt_chars,
-        contextMode: cognitionDiagnostics.context_mode,
+      model_status: classifyChiefOfStaffResponseModelStatus({
+        error,
+        promptProfile,
+        readiness: recordedReadiness,
       }),
+      live_status: liveStatus,
       advisory_generated_at,
       execution_ready: Boolean(recommendation?.execution_ready),
+      agent_readiness: recordedReadiness,
       cognition_diagnostics: cognitionDiagnostics,
     };
   }
@@ -683,7 +1064,17 @@ async function runChiefOfStaffAgent(posture, recommendation, userQuery, options 
 async function queryChiefOfStaff(rootPath, userQuery, options = {}) {
   const posture = buildChiefOfStaffPosture(rootPath);
   const recommendation = buildRecommendation(posture);
-  const reply = await runChiefOfStaffAgent(posture, recommendation, userQuery, options);
+  const readiness = await ensureChiefOfStaffReadiness({
+    rootPath,
+    fetchImpl: options.fetchImpl || globalThis.fetch,
+    callModel: typeof options.callModel === 'function' ? options.callModel : callOllamaGenerate,
+    warmIfNeeded: true,
+  });
+  const reply = await runChiefOfStaffAgent(posture, recommendation, userQuery, {
+    ...options,
+    rootPath,
+    readiness,
+  });
   const response = {
     ...reply,
     recommendation,
@@ -703,15 +1094,21 @@ module.exports = {
   buildChiefOfStaffPosture,
   buildChiefOfStaffPromptProfile,
   buildChiefOfStaffCognitionDiagnostics,
+  buildChiefOfStaffReadinessSnapshot,
   buildRecommendation,
   buildChiefOfStaffPrompt,
   buildChiefOfStaffLatestSnapshot,
   clearLatestChiefOfStaffAdvisory,
+  ensureChiefOfStaffReadiness,
   classifyChiefOfStaffFailureReason,
   classifyChiefOfStaffModelFailure,
+  probeChiefOfStaffReadiness,
   queryChiefOfStaff,
   readLatestChiefOfStaffAdvisory,
+  readChiefOfStaffReadiness,
   recordLatestChiefOfStaffAdvisory,
   requestChiefOfStaffModelReply,
+  resolveChiefOfStaffRuntime,
   runChiefOfStaffAgent,
+  warmChiefOfStaffModel,
 };

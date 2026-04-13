@@ -1,0 +1,114 @@
+{
+  "id": "qa_1776093300728_x4febr",
+  "scenario": "studio-smoke",
+  "mode": "observation",
+  "trigger": "qa_lead_cycle",
+  "prompt": null,
+  "baseUrl": "http://127.0.0.1:3000",
+  "status": "failed",
+  "verdict": "failed",
+  "createdAt": "2026-04-13T15:15:00.728Z",
+  "finishedAt": "2026-04-13T15:15:16.221Z",
+  "linked": {
+    "qaLeadRunId": "qa_lead_1776093300701_qstosc"
+  },
+  "browser": {
+    "executablePath": null,
+    "engine": "chromium"
+  },
+  "browser_status": "fail",
+  "browser_failure_stage": "run",
+  "browser_failure_code": "run_timeout",
+  "browser_failure_summary": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m\n",
+  "browser_runtime_target": {
+    "attempted": [
+      "chromium"
+    ],
+    "used": "chromium",
+    "fallbackUsed": false
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-13T15:15:00.730Z",
+      "finishedAt": "2026-04-13T15:15:00.746Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-13T15:15:00.748Z",
+      "finishedAt": "2026-04-13T15:15:01.039Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "failed",
+      "verdict": "failed",
+      "startedAt": "2026-04-13T15:15:01.041Z",
+      "finishedAt": "2026-04-13T15:15:16.222Z",
+      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    }
+  ],
+  "findings": [],
+  "artifacts": {
+    "screenshots": [],
+    "domSnapshot": null,
+    "consoleLog": null,
+    "networkSummary": null,
+    "runtimeSnapshot": null,
+    "layoutFindings": null
+  },
+  "console": [],
+  "network": [],
+  "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m\n"
+}

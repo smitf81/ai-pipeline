@@ -235,7 +235,7 @@
       "status": "active",
       "summary": "Prove planner desk canonical visibility.",
       "title": "Prove planner desk canonical visibility.",
-      "updatedAt": "2026-04-13T11:02:42.415Z"
+      "updatedAt": "2026-04-13T21:17:33.782Z"
     }
   ],
   "activePageId": "page_1774615405445_ect6",
@@ -269,7 +269,7 @@
     "lastSourceNodeId": null,
     "lastGenerationAt": null,
     "lastStatus": "idle",
-    "lastEvaluatedAt": "2026-04-13T11:02:42.415Z"
+    "lastEvaluatedAt": "2026-04-13T21:17:33.782Z"
   },
   "mutationGate": {
     "activity": [],
@@ -2206,8 +2206,8 @@
           "commit": null,
           "auditSessionId": null,
           "provenance": null,
-          "createdAt": "2026-04-13T10:38:43.793Z",
-          "updatedAt": "2026-04-13T11:02:42.415Z",
+          "createdAt": "2026-04-13T14:37:42.679Z",
+          "updatedAt": "2026-04-13T21:17:33.782Z",
           "desk": "CTO",
           "state": "Flagged",
           "sourceIntakeId": null,
@@ -2215,7 +2215,7 @@
         }
       ],
       "selectedCardId": "0001",
-      "updatedAt": "2026-04-13T11:02:42.415Z",
+      "updatedAt": "2026-04-13T21:17:33.782Z",
       "summary": {
         "plan": 0,
         "active": 0,
@@ -2335,9 +2335,9 @@
           "reason": "Force planner generation for the smoke pack.",
           "requestedBy": "cto",
           "status": "active",
-          "createdAt": "2026-04-13T11:01:43.730Z",
-          "updatedAt": "2026-04-13T11:01:43.730Z",
-          "appliedAt": "2026-04-13T11:01:43.730Z",
+          "createdAt": "2026-04-13T21:17:18.335Z",
+          "updatedAt": "2026-04-13T21:17:18.335Z",
+          "appliedAt": "2026-04-13T21:17:18.335Z",
           "explicit": true,
           "target": {
             "deskId": "planner",
@@ -2483,15 +2483,15 @@
         "restartedAt": null,
         "health": {
           "status": "ready",
-          "pid": 23808,
-          "startedAt": "2026-04-13T11:01:43.722Z"
+          "pid": 8912,
+          "startedAt": "2026-04-13T21:17:18.324Z"
         }
       },
       "requiresPermission": "none"
     },
     "orchestrator": {
       "status": "needs-attention",
-      "lastTickAt": "2026-04-13T11:02:42.415Z",
+      "lastTickAt": "2026-04-13T21:17:33.782Z",
       "activeDeskIds": [
         "context-manager",
         "memory-archivist",
@@ -2581,7 +2581,7 @@
             "pageGoal": "Prove planner desk canonical visibility.",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-13T11:02:42.415Z",
+          "freshAt": "2026-04-13T21:17:33.782Z",
           "thoughtBubble": "Context status: queued. Clarification is needed before planner can continue."
         },
         "planner": {
@@ -2632,7 +2632,7 @@
             "pageGoal": "Prove planner desk canonical visibility.",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-13T11:02:42.415Z",
+          "freshAt": "2026-04-13T21:17:33.782Z",
           "thoughtBubble": "Planner status: blocked. Waiting for a clarified handoff."
         },
         "executor": {
@@ -2683,7 +2683,7 @@
             "pageGoal": "Prove planner desk canonical visibility.",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-13T11:02:42.415Z",
+          "freshAt": "2026-04-13T21:17:33.782Z",
           "thoughtBubble": "Executor status: blocked. Waiting for clearer context."
         },
         "memory-archivist": {
@@ -2731,7 +2731,7 @@
             "pageGoal": "Prove planner desk canonical visibility.",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-13T11:02:42.415Z",
+          "freshAt": "2026-04-13T21:17:33.782Z",
           "thoughtBubble": "Archivist status: running. Logging summaries."
         },
         "cto-architect": {
@@ -2782,7 +2782,7 @@
             "pageGoal": "Prove planner desk canonical visibility.",
             "matchedTerms": []
           },
-          "freshAt": "2026-04-13T11:02:42.415Z",
+          "freshAt": "2026-04-13T21:17:33.782Z",
           "thoughtBubble": "Governance status: blocked. Reviewing blocker: Repository has uncommitted tracked changes.\nM agents/evaluator/agent.json\n M agents/evaluator/prompt.md\n M brain/context/agent_audits/builder/builder_0001.json\n M brain/context/agent_audits/builder/builder_0001.md\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/context/ui_backend_drift.md\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/architecture-memory.json\n M data/spatial/cto-diagnostics.json\n M data/spatial/history.json\n M data/spatial/intent-state.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/qa_1775978504535_bx6x8f.json\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/ta-department.json\n M data/spatial/workspace.json\n M qa_mcp_helper.py\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/public/index.html\n M ui/public/spatial/boot-manifest.json\n M ui/public/spatial/roleTaxonomy.mjs\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/public/spatial/truthKernelAdapter.js\n M ui/public/spatial/truthKernelLayout.js\n M ui/public/spatial/truthKernelView.js\n M ui/public/style.css\n M ui/qaLeadRunner.js\n M ui/qaMcpLiveStatus.js\n M ui/qaRunner.js\n M ui/server.js\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/bootIntegrity.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/helpers/browser-module-loader.mjs\n M ui/tests/intentRoute.test.mjs\n M ui/tests/qaLeadRunner.test.mjs\n M ui/tests/qaMcpLiveStatus.test.mjs\n M ui/tests/qaScorecardIntegrity.test.mjs\n M ui/tests/server.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/tests/truthKernelIntegration.test.mjs\n M ui/tests/truthKernelLayout.test.mjs\n M ui/tests/truthKernelView.test.mjs\n M ui/truthKernelAdapter.js"
         }
       },

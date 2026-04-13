@@ -55,6 +55,9 @@ export default async function runServerTests() {
     runConstrainedSafeModeFixPass,
     readDashboardFileForRoot,
     getHealthSnapshot,
+    getAceDependencyRegistrySnapshot,
+    refreshAceDependencyRegistry,
+    orchestrateAceDependenciesOnBoot,
     resolveLegacyFallbackPayload,
     smokeCheckStaticWebBoot,
     stopProjectRun,
@@ -704,6 +707,91 @@ export default async function runServerTests() {
   assert.equal(healthSnapshot.safeMode, Boolean(bootHealth.safeMode));
   assert.equal(healthSnapshot.bootHealth.checked, true);
   assert.equal(healthSnapshot.bootHealth.safeMode, Boolean(bootHealth.safeMode));
+  assert.equal(Boolean(healthSnapshot.dependencies?.ollama), true);
+  assert.equal(Boolean(healthSnapshot.dependencies?.qa_mcp_helper), true);
+  assert.equal(['warming', 'live', 'degraded', 'unavailable'].includes(healthSnapshot.dependencies.ollama.status), true);
+  const initialDependencySnapshot = getAceDependencyRegistrySnapshot();
+  assert.equal(initialDependencySnapshot.ollama.status, 'warming');
+  assert.equal(initialDependencySnapshot.qa_mcp_helper.status, 'warming');
+  let ollamaProbeCount = 0;
+  let qaPreflightCount = 0;
+  const refreshedDependencies = await refreshAceDependencyRegistry({
+    force: true,
+    attemptLaunch: true,
+    ollamaProbeFn: async () => {
+      ollamaProbeCount += 1;
+      if (ollamaProbeCount === 1) {
+        return {
+          ok: false,
+          status: 'offline',
+          checkedAt: '2026-04-13T08:00:00.000Z',
+          reason: 'Ollama status check timed out after 1500ms.',
+          availableModels: [],
+        };
+      }
+      return {
+        ok: true,
+        status: 'live',
+        checkedAt: '2026-04-13T08:00:02.000Z',
+        reason: null,
+        availableModels: ['mixtral:latest'],
+      };
+    },
+    ollamaLaunchFn: async () => ({
+      launch_attempted: true,
+      status: 'launch_started',
+      summary: 'Ollama launch started and became reachable.',
+      checked_at: '2026-04-13T08:00:01.000Z',
+    }),
+    qaPreflightFn: async () => {
+      qaPreflightCount += 1;
+      if (qaPreflightCount === 1) {
+        return {
+          verdict: 'timeout',
+          checked_at: '2026-04-13T08:00:00.000Z',
+          summary: 'External QA probe timed out after 1500ms.',
+          transport: {
+            reachable: false,
+            responded: false,
+            kind: 'timeout',
+          },
+          launcher_status: null,
+        };
+      }
+      return {
+        verdict: 'ok',
+        checked_at: '2026-04-13T08:00:02.000Z',
+        summary: 'External QA probe answered successfully.',
+        transport: {
+          reachable: true,
+          responded: true,
+          kind: 'ok',
+        },
+        launcher_status: {
+          launch_attempted: true,
+          status: 'launch_started',
+          summary: 'QA MCP helper launch started and became reachable.',
+        },
+      };
+    },
+    qaLaunchFn: async () => ({
+      launch_attempted: true,
+      status: 'launch_started',
+      summary: 'QA MCP helper launch started and became reachable.',
+      checked_at: '2026-04-13T08:00:01.000Z',
+    }),
+  });
+  assert.equal(ollamaProbeCount, 2);
+  assert.equal(qaPreflightCount, 2);
+  assert.equal(refreshedDependencies.ollama.status, 'live');
+  assert.equal(refreshedDependencies.ollama.launchAttemptedThisBoot, true);
+  assert.equal(refreshedDependencies.ollama.failureReason, null);
+  assert.equal(refreshedDependencies.qa_mcp_helper.status, 'live');
+  assert.equal(refreshedDependencies.qa_mcp_helper.launchAttemptedThisBoot, true);
+  assert.equal(refreshedDependencies.qa_mcp_helper.failureReason, null);
+  const refreshedHealthSnapshot = getHealthSnapshot();
+  assert.equal(refreshedHealthSnapshot.dependencies.ollama.status, 'live');
+  assert.equal(refreshedHealthSnapshot.dependencies.qa_mcp_helper.status, 'live');
   const oversizedStudioState = {
     handoffs: {
       contextToPlanner: { id: 'handoff_1', title: 'Planner brief' },
