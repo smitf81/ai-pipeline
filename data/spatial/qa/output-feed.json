@@ -1,6 +1,1184 @@
 {
   "items": [
     {
+      "id": "qa_output_20260505T053243318Z",
+      "createdAt": "2026-05-05T05:32:43.318Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777958334118_apanxw",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260505T050604384Z",
+      "createdAt": "2026-05-05T05:06:04.384Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777957078357_j88ebv",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260505T044219622Z",
+      "createdAt": "2026-05-05T04:42:19.622Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777955878344_lf8gek",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260505T042736381Z",
+      "createdAt": "2026-05-05T04:27:36.381Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777954678341_9mkkgq",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260505T041758113Z",
+      "createdAt": "2026-05-05T04:17:58.113Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: page.goto: net::ERR_SOCKET_NOT_CONNECTED at http://127.0.0.1:3000/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777919454762_rjfnfx",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T165815649Z",
+      "createdAt": "2026-05-04T16:58:15.649Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777913388096_supv8m",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T163840757Z",
+      "createdAt": "2026-05-04T16:38:40.757Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777912188084_d2pw6x",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T161922237Z",
+      "createdAt": "2026-05-04T16:19:22.237Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777910988069_lc8v8c",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T155710862Z",
+      "createdAt": "2026-05-04T15:57:10.862Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777909788062_h0jfw7",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T153736330Z",
+      "createdAt": "2026-05-04T15:37:36.330Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777908588061_743kvb",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T151659533Z",
+      "createdAt": "2026-05-04T15:16:59.533Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777907388047_wjwevk",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T145149108Z",
+      "createdAt": "2026-05-04T14:51:49.108Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777906188047_i1w03s",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T143707454Z",
+      "createdAt": "2026-05-04T14:37:07.454Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777904988039_rbodt6",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T141832690Z",
+      "createdAt": "2026-05-04T14:18:32.690Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777903788035_89fbbk",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T135506463Z",
+      "createdAt": "2026-05-04T13:55:06.463Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777902588027_53y4h1",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T133658774Z",
+      "createdAt": "2026-05-04T13:36:58.774Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777901388022_mlw8wt",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T131258603Z",
+      "createdAt": "2026-05-04T13:12:58.603Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777900188014_252zcu",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T125808931Z",
+      "createdAt": "2026-05-04T12:58:08.931Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777898988011_opgbem",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T123146304Z",
+      "createdAt": "2026-05-04T12:31:46.304Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777897788009_pzmr4b",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T121408376Z",
+      "createdAt": "2026-05-04T12:14:08.376Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777896588003_vxxryd",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T115803876Z",
+      "createdAt": "2026-05-04T11:58:03.876Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777895388005_pm6uvk",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T113714474Z",
+      "createdAt": "2026-05-04T11:37:14.474Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777894187995_qnn2ub",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T111412623Z",
+      "createdAt": "2026-05-04T11:14:12.623Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777892987995_b1lb8z",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T105713268Z",
+      "createdAt": "2026-05-04T10:57:13.268Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777891787998_yjyvja",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T103652614Z",
+      "createdAt": "2026-05-04T10:36:52.614Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"mini \" type=\"button\" data-qa=\"scene-studio-button\">ACE Studio</button>\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777890587992_lwdg8q",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T101401448Z",
+      "createdAt": "2026-05-04T10:14:01.448Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777889388000_2dnmk0",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T095547426Z",
+      "createdAt": "2026-05-04T09:55:47.426Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777888188014_hd2jk8",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T093521085Z",
+      "createdAt": "2026-05-04T09:35:21.085Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"mini \" type=\"button\" data-qa=\"scene-studio-button\">ACE Studio</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777886988027_jqo3ih",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T091434204Z",
+      "createdAt": "2026-05-04T09:14:34.204Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777885788052_mbnsp1",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T085351596Z",
+      "createdAt": "2026-05-04T08:53:51.596Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777884588110_zfns23",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T083310075Z",
+      "createdAt": "2026-05-04T08:33:10.075Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777882133105_8asdqo",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260504T080028563Z",
+      "createdAt": "2026-05-04T08:00:28.563Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777880974841_xjn3hx",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T202304889Z",
+      "createdAt": "2026-04-14T20:23:04.889Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776197574534_lworl1",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T200448359Z",
+      "createdAt": "2026-04-14T20:04:48.359Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776196374525_4849kq",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T194445736Z",
+      "createdAt": "2026-04-14T19:44:45.736Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776195174516_oaos2i",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T192445780Z",
+      "createdAt": "2026-04-14T19:24:45.780Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776193974508_rgiqru",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T190311405Z",
+      "createdAt": "2026-04-14T19:03:11.405Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776192774497_mh3ua5",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T184517532Z",
+      "createdAt": "2026-04-14T18:45:17.532Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776191574370_mzcvve",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T182518633Z",
+      "createdAt": "2026-04-14T18:25:18.633Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776190374354_urqrst",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T180913608Z",
+      "createdAt": "2026-04-14T18:09:13.608Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776189174261_kkc316",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T174251040Z",
+      "createdAt": "2026-04-14T17:42:51.040Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776187974258_qvq6u6",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T172115454Z",
+      "createdAt": "2026-04-14T17:21:15.454Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776186774259_sqx001",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T170425600Z",
+      "createdAt": "2026-04-14T17:04:25.600Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776185574253_c1eqf6",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T164105202Z",
+      "createdAt": "2026-04-14T16:41:05.202Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776184374246_2xqps8",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T162421044Z",
+      "createdAt": "2026-04-14T16:24:21.044Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776183174234_51gcoy",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T160405327Z",
+      "createdAt": "2026-04-14T16:04:05.327Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776181974221_qc8c19",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T154402460Z",
+      "createdAt": "2026-04-14T15:44:02.460Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776180774209_7ot7wd",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T152226702Z",
+      "createdAt": "2026-04-14T15:22:26.702Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776179574200_nlhebt",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T150406411Z",
+      "createdAt": "2026-04-14T15:04:06.411Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776178374194_cx6f08",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T144359298Z",
+      "createdAt": "2026-04-14T14:43:59.298Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776177174178_hiuoz7",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T142227069Z",
+      "createdAt": "2026-04-14T14:22:27.069Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776175974169_n4atl6",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T140343217Z",
+      "createdAt": "2026-04-14T14:03:43.217Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776174774163_709dch",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T134349908Z",
+      "createdAt": "2026-04-14T13:43:49.908Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776173574153_wvtsze",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T132216288Z",
+      "createdAt": "2026-04-14T13:22:16.288Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776172374152_ncz3vs",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T130348908Z",
+      "createdAt": "2026-04-14T13:03:48.908Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776171174141_s846m0",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T124156887Z",
+      "createdAt": "2026-04-14T12:41:56.887Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776169974127_6mxdnl",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T122339825Z",
+      "createdAt": "2026-04-14T12:23:39.825Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"scene-studio-button\"]')\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776168774113_4q0twu",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T115722197Z",
+      "createdAt": "2026-04-14T11:57:22.197Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: browserType.launch: Timeout 180000ms exceeded.\nCall log:\n\u001b[2m  - <launching> C:\\Users\\felix\\AppData\\Local\\ms-playwright\\firefox-1511\\firefox\\firefox.exe -no-remote -headless -profile C:\\Users\\felix\\AppData\\Local\\Temp\\playwright_firefoxdev_profile-SZ6Jen -juggler-pipe --disable-gpu --no-first-run --disable-background-networking -silent\u001b[22m\n\u001b[2m  - <launched> pid=32548\u001b[22m\n\u001b[2m  - [pid=32548][err] *** You are running in headless mode.\u001b[22m\n\u001b[2m  - [pid=32548][err] JavaScript warning: resource://services-settings/Utils.sys.mjs, line 116: unreachable code after return statement\u001b[22m\n\u001b[2m  - [pid=32548][err] JavaScript error: chrome://juggler/content/Helper.js, line 82: NS_ERROR_FAILURE: Component returned failure code: 0x80004005 (NS_ERROR_FAILURE) [nsIWebProgress.removeProgressListener]\u001b[22m\n\u001b[2m  - [pid=32548][err] JavaScript warning: resource://gre/modules/UpdateService.sys.mjs, line 4026: unreachable code after return statement\u001b[22m\n\u001b[2m  - [pid=32548][out] console.warn: services.settings: Ignoring preference override of remote settings server\u001b[22m\n\u001b[2m  - [pid=32548][out] console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment\u001b[22m\n\u001b[2m  - [pid=32548][out]\u001b[22m\n\u001b[2m  - [pid=32548][out] Juggler listening to the pipe\u001b[22m\n\u001b[2m  - [pid=32548][out] console.error: \"Warning: unrecognized command line flag\" \"-disable-gpu\"\u001b[22m\n\u001b[2m  - [pid=32548][out] console.error: \"Warning: unrecognized command line flag\" \"-disable-background-networking\"\u001b[22m\n\u001b[2m  - [pid=32548][out] Crash Annotation GraphicsCriticalError: |[0][GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt (t=1.75779) [GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776166282643_m31z7q",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T112814194Z",
+      "createdAt": "2026-04-14T11:28:14.194Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776165061138_iyx9ez",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T105303565Z",
+      "createdAt": "2026-04-14T10:53:03.565Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776163813714_g0byej",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260414T104450440Z",
+      "createdAt": "2026-04-14T10:44:50.440Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:3000/\", waiting until \"domcontentloaded\"\u001b[22m Live MCP helper evidence captured.",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1776162632552_g652rl",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": true,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
+      "id": "qa_output_20260413T211733557Z",
+      "createdAt": "2026-04-13T21:17:33.557Z",
+      "type": "qa_cycle",
+      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "result": "fail",
+      "source": "qa_lead_runner",
+      "meta": {
+        "investigationCount": 6,
+        "failedChecks": 2,
+        "activeLanes": 1,
+        "externalStatus": "unreachable",
+        "cycleId": "qa_lead_1776114989888_9xwe8q",
+        "mcpEvidenceSource": "live_helper",
+        "externalProbeLive": false,
+        "usedFallback": false,
+        "probeTarget": "http://127.0.0.1:5051/run_test"
+      }
+    },
+    {
       "id": "qa_output_20260413T211625118Z",
       "createdAt": "2026-04-13T21:16:25.118Z",
       "type": "qa_cycle",
@@ -3212,20 +4390,20 @@
       }
     },
     {
-      "id": "qa_output_20260413T211733557Z",
-      "createdAt": "2026-04-13T21:17:33.557Z",
+      "id": "qa_output_20260505T054559575Z",
+      "createdAt": "2026-05-05T05:45:59.575Z",
       "type": "qa_cycle",
-      "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "summary": "QA lead cycle degraded: fetch failed Live MCP helper evidence captured.",
       "result": "fail",
       "source": "qa_lead_runner",
       "meta": {
         "investigationCount": 6,
         "failedChecks": 2,
         "activeLanes": 1,
-        "externalStatus": "unreachable",
-        "cycleId": "qa_lead_1776114989888_9xwe8q",
+        "externalStatus": "ok",
+        "cycleId": "qa_lead_1777959568070_j9po3j",
         "mcpEvidenceSource": "live_helper",
-        "externalProbeLive": false,
+        "externalProbeLive": true,
         "usedFallback": false,
         "probeTarget": "http://127.0.0.1:5051/run_test"
       }

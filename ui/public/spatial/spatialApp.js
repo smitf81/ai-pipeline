@@ -162,7 +162,7 @@ const ORG_STATUS_META = {
   'optional hire': { badge: 'OPTIONAL HIRE', tone: 'review' },
   'missing lead': { badge: 'MISSING LEAD', tone: 'blocked' },
 };
-const DAVE_DEFAULT_MODEL = 'mistral:latest';
+const DAVE_DEFAULT_MODEL = 'qwen3.5-9b';
 const DAVE_STATUS_OPTIONS = ['idle', 'queued', 'processing', 'blocked', 'degraded', 'review'];
 const DAVE_RESPONSE_STATUSES = ['live', 'degraded_fallback', 'model_unavailable', 'timed_out', 'model_error'];
 

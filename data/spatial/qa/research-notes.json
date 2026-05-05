@@ -1,5 +1,67 @@
 [
   {
+    "id": "qa_research_6162632888",
+    "research_note_id": "qa_research_6162632888",
+    "type": "qa_research_note",
+    "investigation_id": "qa_inv_001",
+    "trigger": "external_mismatch",
+    "status": "offline",
+    "ok": false,
+    "source": "external_mcp",
+    "created_at": "2026-04-14T10:30:32.888Z",
+    "updated_at": "2026-04-14T10:30:32.888Z",
+    "query": "QA validation issue external_mismatch External probe disagrees with internal QA status internal fail external pass probe unreachable test qa_mcp_helper_ping",
+    "evidence_hint": "",
+    "summary": "QA research server is offline.",
+    "recommendation": "Retry later with the same bounded query.",
+    "likely_causes": [
+      "QA research server is offline or not listening on 127.0.0.1:5052."
+    ],
+    "suggested_extra_checks": [
+      "Verify the local QA research server is running on 127.0.0.1:5052."
+    ],
+    "suggested_scorecard_additions": [
+      "research-server-availability"
+    ],
+    "sources": [],
+    "error_message": "QA research server is offline or not listening on 127.0.0.1:5052.",
+    "research_available": false,
+    "failure_kind": "offline",
+    "failure_detail": "fetch failed",
+    "server_url": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping"
+  },
+  {
+    "id": "qa_research_6074063270",
+    "research_note_id": "qa_research_6074063270",
+    "type": "qa_research_note",
+    "investigation_id": "qa_inv_001",
+    "trigger": "external_mismatch",
+    "status": "timeout",
+    "ok": false,
+    "source": "external_mcp",
+    "created_at": "2026-04-13T09:54:23.270Z",
+    "updated_at": "2026-04-13T09:54:23.270Z",
+    "query": "QA validation issue external_mismatch External probe disagrees with internal QA status internal pass external fail probe unreachable test ollama_ping",
+    "evidence_hint": "",
+    "summary": "QA research request timed out.",
+    "recommendation": "Retry later with the same bounded query.",
+    "likely_causes": [
+      "QA research request timed out after 2500ms."
+    ],
+    "suggested_extra_checks": [
+      "Verify the local QA research server is running on 127.0.0.1:5052."
+    ],
+    "suggested_scorecard_additions": [
+      "research-server-availability"
+    ],
+    "sources": [],
+    "error_message": "QA research request timed out after 2500ms.",
+    "research_available": false,
+    "failure_kind": "timeout",
+    "failure_detail": "This operation was aborted",
+    "server_url": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+pass+external+fail+probe+unreachable+test+ollama_ping&current_method=internal%3Dpass+%2F+external%3Dfail+%2F+probe%3Dunreachable+%2F+test%3Dollama_ping"
+  },
+  {
     "id": "qa_research_5987615657",
     "research_note_id": "qa_research_5987615657",
     "type": "qa_research_note",
@@ -186,22 +248,22 @@
     "server_url": null
   },
   {
-    "id": "qa_research_6074063270",
-    "research_note_id": "qa_research_6074063270",
+    "id": "qa_research_7880980980",
+    "research_note_id": "qa_research_7880980980",
     "type": "qa_research_note",
     "investigation_id": "qa_inv_001",
     "trigger": "external_mismatch",
-    "status": "timeout",
+    "status": "offline",
     "ok": false,
     "source": "external_mcp",
-    "created_at": "2026-04-13T09:54:23.270Z",
-    "updated_at": "2026-04-13T09:54:23.270Z",
-    "query": "QA validation issue external_mismatch External probe disagrees with internal QA status internal pass external fail probe unreachable test ollama_ping",
+    "created_at": "2026-05-04T07:49:40.980Z",
+    "updated_at": "2026-05-04T07:49:40.980Z",
+    "query": "QA validation issue external_mismatch External probe disagrees with internal QA status internal fail external pass probe unreachable test qa_mcp_helper_ping",
     "evidence_hint": "",
-    "summary": "QA research request timed out.",
+    "summary": "QA research server is offline.",
     "recommendation": "Retry later with the same bounded query.",
     "likely_causes": [
-      "QA research request timed out after 2500ms."
+      "QA research server is offline or not listening on 127.0.0.1:5052."
     ],
     "suggested_extra_checks": [
       "Verify the local QA research server is running on 127.0.0.1:5052."
@@ -210,10 +272,10 @@
       "research-server-availability"
     ],
     "sources": [],
-    "error_message": "QA research request timed out after 2500ms.",
+    "error_message": "QA research server is offline or not listening on 127.0.0.1:5052.",
     "research_available": false,
-    "failure_kind": "timeout",
-    "failure_detail": "This operation was aborted",
-    "server_url": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+pass+external+fail+probe+unreachable+test+ollama_ping&current_method=internal%3Dpass+%2F+external%3Dfail+%2F+probe%3Dunreachable+%2F+test%3Dollama_ping"
+    "failure_kind": "offline",
+    "failure_detail": "fetch failed",
+    "server_url": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping"
   }
 ]

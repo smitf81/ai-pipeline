@@ -72,7 +72,7 @@ export default async function runEvaluatorServerIntegrationTests() {
     changed_dimensions: ['agent_cognition', 'fallback_pressure', 'task_progress', 'truth_kernel', 'qa_support'],
     evaluation_confidence: 0.83,
     cognition_mode: 'model_live',
-    model_name: 'mistral:latest',
+    model_name: 'qwen3.5-9b',
     score_pressure: 'upward',
     progress_state: 'stable',
     source_snapshot_ids: {
@@ -138,7 +138,7 @@ export default async function runEvaluatorServerIntegrationTests() {
       changed_dimensions: ['agent_cognition', 'fallback_pressure', 'task_progress', 'truth_kernel', 'qa_support'],
       evaluation_confidence: 0.83,
       cognition_mode: 'model_live',
-      model_name: 'mistral:latest',
+      model_name: 'qwen3.5-9b',
       score_pressure: 'upward',
       progress_state: 'stable',
       source_snapshot_ids: {
@@ -274,10 +274,10 @@ export default async function runEvaluatorServerIntegrationTests() {
     studio: {
       layout: {},
       agentWorkers: {
-        'context-manager': { backend: 'ollama', model: 'mistral:latest' },
-        planner: { backend: 'ollama', model: 'mistral:latest' },
-        executor: { backend: 'ollama', model: 'mistral:latest' },
-        evaluator: { backend: 'ollama', model: 'mistral:latest' },
+        'context-manager': { backend: 'ollama', model: 'qwen3.5-9b' },
+        planner: { backend: 'ollama', model: 'qwen3.5-9b' },
+        executor: { backend: 'ollama', model: 'qwen3.5-9b' },
+        evaluator: { backend: 'ollama', model: 'qwen3.5-9b' },
       },
       orchestrator: {
         desks: {

@@ -391,6 +391,112 @@ function collectIntentNodes(registry, workspace = {}, sourceNodeIndex = new Map(
   return { intentByCanonicalId, intentBySourceNodeId };
 }
 
+function normalizeIntentText(record = {}) {
+  return [
+    record?.summary,
+    record?.statement,
+    record?.goal,
+    ...(Array.isArray(record?.requestedOutcomes) ? record.requestedOutcomes : []),
+    ...(Array.isArray(record?.targets) ? record.targets : []),
+    ...(Array.isArray(record?.constraints) ? record.constraints : []),
+  ]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function collectQaCycleNodes(registry, rootPath, intentRecord = {}, sourceNodeId = null, intentId = null) {
+  const intentText = normalizeIntentText(intentRecord);
+  if (!intentText || !/(?:\brun\b|\bstart\b|\btrigger\b)?\s*qa cycle\b/.test(intentText)) {
+    return;
+  }
+  const resolvedRoot = rootPath || process.cwd();
+  const qaLeadState = safeReadJson(path.join(resolvedRoot, 'data', 'spatial', 'qa', 'lead-state.json'), null);
+  const structuredReport = safeReadJson(path.join(resolvedRoot, 'data', 'spatial', 'qa', 'structured', 'latest.json'), null);
+  const cycleNodeId = `${intentId || sourceNodeId || 'qa'}__qa_cycle`;
+  const reportNodeId = `${cycleNodeId}__report`;
+  const cycleSummary = structuredReport?.summary
+    || qaLeadState?.summary
+    || 'QA cycle requested from a user-created sketchpad node.';
+  addNode(registry, {
+    id: cycleNodeId,
+    kind: 'execution',
+    label: 'QA cycle requested',
+    summary: cycleSummary,
+    what: 'User-requested QA cycle',
+    why: 'Turns sketchpad intent into a visible QA activity artifact.',
+    represents: 'The mutation from user input to QA desk activity.',
+    sourceType: 'qa-cycle-intent',
+    sourceRef: intentId || sourceNodeId || cycleNodeId,
+    sourceNodeId: sourceNodeId || null,
+    intentId: intentId || null,
+    canonicalSource: 'workspace.intentState.registry.records',
+    derivedSource: structuredReport ? 'data/spatial/qa/structured/latest.json' : 'data/spatial/qa/lead-state.json',
+    verdict: structuredReport?.status || qaLeadState?.status || 'pending',
+    reason: structuredReport?.summary || qaLeadState?.summary || null,
+    blocker: structuredReport ? null : 'QA report not ready yet.',
+    owner: 'qa',
+    recommendedOwner: 'qa',
+    timestamp: structuredReport?.finishedAt || qaLeadState?.last_completed_cycle_at || intentRecord?.updatedAt || intentRecord?.createdAt || Date.now(),
+    status: structuredReport ? 'healthy' : 'degraded',
+    statusOrigin: structuredReport ? 'derived' : 'canonical',
+    confidence: structuredReport ? 0.88 : 0.58,
+    confidenceOrigin: 'derived',
+    weight: 0.72,
+    supportingEvidence: {
+      classification: 'evidence_artefact',
+      lastApplyReceiptId: null,
+      evidenceSources: [
+        'workspace.intentState.registry.records',
+        structuredReport ? 'data/spatial/qa/structured/latest.json' : null,
+        qaLeadState ? 'data/spatial/qa/lead-state.json' : null,
+      ].filter(Boolean),
+      eventStages: structuredReport
+        ? ['intent_registered', 'qa_cycle_requested', 'qa_report_ready']
+        : ['intent_registered', 'qa_cycle_requested', 'qa_report_pending'],
+    },
+  });
+  addNode(registry, {
+    id: reportNodeId,
+    kind: 'artifact',
+    label: structuredReport?.summary || qaLeadState?.latest_run || 'QA report pending',
+    summary: structuredReport?.summary || qaLeadState?.latest_run || null,
+    what: 'QA report artifact',
+    why: 'Records the visible output that the user-triggered QA cycle should surface.',
+    represents: 'The downstream QA output created from the user intent.',
+    sourceType: 'qa-cycle-report',
+    sourceRef: structuredReport?.finishedAt || qaLeadState?.last_completed_cycle_at || reportNodeId,
+    sourceNodeId: sourceNodeId || null,
+    intentId: intentId || null,
+    canonicalSource: structuredReport ? 'data/spatial/qa/structured/latest.json' : null,
+    derivedSource: qaLeadState ? 'data/spatial/qa/lead-state.json' : null,
+    verdict: structuredReport?.status || qaLeadState?.status || 'pending',
+    blocker: structuredReport ? null : 'QA report not ready yet.',
+    owner: 'qa',
+    recommendedOwner: 'qa',
+    timestamp: structuredReport?.finishedAt || structuredReport?.updatedAt || qaLeadState?.last_completed_cycle_at || intentRecord?.updatedAt || intentRecord?.createdAt || Date.now(),
+    status: structuredReport?.status === 'pass' ? 'healthy' : (structuredReport ? 'degraded' : 'informational'),
+    statusOrigin: structuredReport ? 'canonical' : 'derived',
+    confidence: structuredReport ? 0.92 : 0.48,
+    confidenceOrigin: structuredReport ? 'canonical' : 'derived',
+    weight: 0.66,
+    supportingEvidence: {
+      classification: 'evidence_artefact',
+      lastApplyReceiptId: null,
+      evidenceSources: [
+        structuredReport ? 'data/spatial/qa/structured/latest.json' : null,
+        qaLeadState ? 'data/spatial/qa/lead-state.json' : null,
+      ].filter(Boolean),
+      eventStages: structuredReport
+        ? ['qa_report_published']
+        : ['qa_report_pending'],
+    },
+  });
+  linkNodes(registry, intentId || sourceNodeId || cycleNodeId, cycleNodeId);
+  linkNodes(registry, cycleNodeId, reportNodeId);
+}
+
 function collectHandoffNodes(registry, workspace = {}, intentBySourceNodeId = new Map()) {
   const handoffs = [];
   const current = workspace?.studio?.handoffs?.contextToPlanner;
@@ -819,7 +925,19 @@ function buildTruthKernelPayload({ rootPath, workspace } = {}) {
   const registry = new Map();
   const normalizedWorkspace = workspace || {};
   const sourceNodeIndex = buildWorkspaceSourceNodeIndex(normalizedWorkspace);
+  const intentRecords = Array.isArray(normalizedWorkspace?.intentState?.registry?.records)
+    ? normalizedWorkspace.intentState.registry.records
+    : [];
   const { intentByCanonicalId, intentBySourceNodeId } = collectIntentNodes(registry, normalizedWorkspace, sourceNodeIndex);
+  intentRecords.forEach((record) => {
+    collectQaCycleNodes(
+      registry,
+      resolvedRoot,
+      record,
+      record?.sourceNodeId || record?.nodeId || null,
+      record?.id || null,
+    );
+  });
   collectIntakeNodes(registry, normalizedWorkspace, intentByCanonicalId);
   collectHandoffNodes(registry, normalizedWorkspace, intentBySourceNodeId);
   collectContextManagerRuns(registry, resolvedRoot, intentBySourceNodeId, sourceNodeIndex);

@@ -1,13 +1,13 @@
 {
   "source": "qa_lead_runner",
   "agent_id": "qa-lead",
-  "run_id": "qa_lead_1776114989888_9xwe8q",
+  "run_id": "qa_lead_1777959568070_j9po3j",
   "status": "degraded",
   "current_task": "QA proof-of-life, browser pass, lane canaries, and loop audit",
-  "current_batch": "qa_lead_1776114989888_9xwe8q",
-  "started_at": "2026-04-13T21:16:29.888Z",
-  "finished_at": "2026-04-13T21:17:33.557Z",
-  "last_completed_cycle_at": "2026-04-13T21:17:33.557Z",
+  "current_batch": "qa_lead_1777959568070_j9po3j",
+  "started_at": "2026-05-05T05:39:28.070Z",
+  "finished_at": "2026-05-05T05:45:59.575Z",
+  "last_completed_cycle_at": "2026-05-05T05:45:59.575Z",
   "active_tools": [
     "boot_preflight",
     "ui_boot_repair",
@@ -19,56 +19,55 @@
   ],
   "live_status": {
     "source": "qa_mcp_live_status",
-    "status": "offline",
-    "usage_state": "offline",
+    "status": "live",
+    "usage_state": "active_gating",
     "freshness": "fresh",
-    "summary": "QA MCP is offline or has not produced a usable proof-of-life signal yet.",
-    "heartbeat_at": "2026-04-13T21:16:45.517Z",
-    "last_completed_cycle_at": "2026-04-13T21:16:45.517Z",
+    "summary": "QA is live and actively gating with MCP-backed evidence.",
+    "heartbeat_at": "2026-05-05T05:44:59.238Z",
+    "last_completed_cycle_at": "2026-05-05T05:44:59.238Z",
     "mcp_configured": true,
     "configured_tools": [
       "external_probe_check",
       "qa_research_note"
     ],
-    "mcp_reachable": false,
-    "external_probe_live": false,
-    "last_ping_at": "2026-04-13T21:16:29.899Z",
-    "last_ping_status": "offline",
+    "mcp_reachable": true,
+    "external_probe_live": true,
+    "last_ping_at": "2026-05-05T05:41:41.759Z",
+    "last_ping_status": "ok",
     "last_ping_source": "external_mcp",
-    "last_ping_failure_kind": "offline",
-    "last_ping_failure_detail": "fetch failed",
+    "last_ping_failure_kind": null,
+    "last_ping_failure_detail": null,
     "last_ping_http_status": null,
     "last_ping_target": "http://127.0.0.1:5051/run_test",
-    "research_target": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+pass+external+fail+probe+unreachable+test+ollama_ping&current_method=internal%3Dpass+%2F+external%3Dfail+%2F+probe%3Dunreachable+%2F+test%3Dollama_ping",
-    "research_last_call_at": "2026-04-13T09:54:23.270Z",
-    "research_last_call_status": "timeout",
-    "research_failure_kind": "timeout",
-    "research_failure_detail": "This operation was aborted",
-    "last_call_at": "2026-04-13T21:16:29.899Z",
+    "research_target": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping",
+    "research_last_call_at": "2026-05-04T07:49:40.980Z",
+    "research_last_call_status": "offline",
+    "research_failure_kind": "offline",
+    "research_failure_detail": "fetch failed",
+    "last_call_at": "2026-05-05T05:41:41.759Z",
     "last_call_tool": "external_probe_check",
-    "last_call_status": "offline",
+    "last_call_status": "ok",
     "last_call_source": "external_mcp",
     "last_qa_gate_source": "structured_qa",
     "using_mcp_for_qa_decisions": true,
-    "last_success_at": null,
-    "last_failure_at": "2026-04-13T21:16:29.899Z",
+    "last_success_at": "2026-05-05T05:41:41.759Z",
+    "last_failure_at": "2026-05-04T07:49:40.980Z",
     "current_failure_kind": "offline",
-    "current_failure_tool": "external_probe_check",
-    "recovery_detected": false,
-    "recovered_at": null,
-    "recovered_from_kind": null,
+    "current_failure_tool": "qa_research_note",
+    "recovery_detected": true,
+    "recovered_at": "2026-05-05T05:41:41.759Z",
+    "recovered_from_kind": "offline",
     "notes": [
-      "Offline: no recent usable MCP heartbeat is available.",
+      "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
       "Latest QA gate source: structured_qa.",
-      "Last MCP ping status: offline.",
-      "Latest MCP ping failure: offline. HTTP 0.",
-      "Failure detail: fetch failed",
+      "Last MCP ping status: ok.",
       "Probe target: http://127.0.0.1:5051/run_test.",
-      "Last MCP call: external_probe_check (offline).",
-      "Latest research call status: timeout.",
-      "Latest research failure: timeout.",
-      "Research failure detail: This operation was aborted",
-      "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+pass+external+fail+probe+unreachable+test+ollama_ping&current_method=internal%3Dpass+%2F+external%3Dfail+%2F+probe%3Dunreachable+%2F+test%3Dollama_ping."
+      "Last MCP call: external_probe_check (ok).",
+      "Latest research call status: offline.",
+      "Latest research failure: offline.",
+      "Research failure detail: fetch failed",
+      "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping.",
+      "Recovery detected after offline."
     ]
   },
   "output_feed": [
@@ -80,7 +79,7 @@
       "verdict": "pass",
       "summary": "Boot preflight passed.",
       "detail": "",
-      "observed_at": "2026-04-13T13:56:32.152Z",
+      "observed_at": "2026-05-04T07:48:34.327Z",
       "artifact_refs": [
         "/api/health"
       ],
@@ -90,40 +89,38 @@
       "id": "proof-of-life",
       "label": "MCP proof of life",
       "tool": "external_probe_check",
-      "status": "degraded",
-      "verdict": "offline",
-      "summary": "External QA probe server is offline or not listening on 127.0.0.1:5051.",
-      "detail": "fetch failed",
-      "observed_at": "2026-04-13T21:16:29.899Z",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "External QA probe returned a fresh live QA MCP helper result.",
+      "detail": "1 of 4 desks failed; 1 of 19 checks failed",
+      "observed_at": "2026-05-05T05:41:41.759Z",
       "artifact_refs": [
         "http://127.0.0.1:5051/run_test"
       ],
       "notes": [
         "Evidence source: live_helper",
         "Fallback used: no",
-        "External probe status is missing.",
-        "External probe timestamp is missing.",
-        "Failure kind: offline"
+        "Live helper evidence was consumed through external_probe_check.",
+        "Status mismatch: external pass vs internal fail."
       ]
     },
     {
       "id": "browser-pass",
       "label": "Browser QA run",
-      "tool": "chromium",
+      "tool": "browser_qa_run",
       "status": "degraded",
       "verdict": "fail",
-      "summary": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
-      "detail": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
-      "observed_at": "2026-04-13T21:16:45.517Z",
+      "summary": "fetch failed",
+      "detail": "fetch failed",
+      "observed_at": "2026-05-05T05:44:59.238Z",
       "artifact_refs": [
-        "data/spatial/qa/qa_1776114989901_ezxcr7.json"
+        "data/spatial/qa/qa_1777959701761_z3750d.json"
       ],
       "notes": [
-        "Runtime attempted: chromium",
-        "Runtime used: chromium",
+        "Runtime attempted: chromium -> firefox",
         "Runtime fallback used: no",
         "Failure stage: run",
-        "Failure code: run_timeout"
+        "Failure code: econnreset"
       ]
     },
     {
@@ -134,7 +131,7 @@
       "verdict": "fail",
       "summary": "2 QA lane canaryies failing.",
       "detail": "Failing canaries: ui_boot_integrity_missing_asset | planner_canonical_identity_guard",
-      "observed_at": "2026-04-13T21:17:18.460Z",
+      "observed_at": "2026-05-05T05:45:40.543Z",
       "artifact_refs": [],
       "notes": [
         "UI boot missing asset route: fail",
@@ -150,7 +147,7 @@
       "verdict": "pass",
       "summary": "All 3 injected loop faults behaved as expected.",
       "detail": "All injected loop faults behaved as expected.",
-      "observed_at": "2026-04-13T21:17:33.474Z",
+      "observed_at": "2026-05-05T05:45:59.523Z",
       "artifact_refs": [],
       "notes": [
         "missing_required_asset: pass",
@@ -164,12 +161,12 @@
       "tool": "qa_research_note",
       "status": "degraded",
       "verdict": "unavailable",
-      "summary": "QA research request timed out.",
+      "summary": "QA research server is offline.",
       "detail": "Retry later with the same bounded query.",
-      "observed_at": "2026-04-13T09:54:23.270Z",
+      "observed_at": "2026-05-04T07:49:40.980Z",
       "artifact_refs": [],
       "notes": [
-        "QA research request timed out after 2500ms.",
+        "QA research server is offline or not listening on 127.0.0.1:5052.",
         "Verify the local QA research server is running on 127.0.0.1:5052."
       ]
     },
@@ -177,24 +174,23 @@
       "id": "mcp-live-status",
       "label": "QA MCP live status",
       "tool": "qa_mcp_live_status",
-      "status": "degraded",
-      "verdict": "offline",
-      "summary": "QA MCP is offline or has not produced a usable proof-of-life signal yet.",
-      "detail": "Offline: no recent usable MCP heartbeat is available.",
-      "observed_at": "2026-04-13T21:16:45.517Z",
+      "status": "validated",
+      "verdict": "live",
+      "summary": "QA is live and actively gating with MCP-backed evidence.",
+      "detail": "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
+      "observed_at": "2026-05-05T05:44:59.238Z",
       "artifact_refs": [],
       "notes": [
-        "Offline: no recent usable MCP heartbeat is available.",
+        "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
         "Latest QA gate source: structured_qa.",
-        "Last MCP ping status: offline.",
-        "Latest MCP ping failure: offline. HTTP 0.",
-        "Failure detail: fetch failed",
+        "Last MCP ping status: ok.",
         "Probe target: http://127.0.0.1:5051/run_test.",
-        "Last MCP call: external_probe_check (offline).",
-        "Latest research call status: timeout.",
-        "Latest research failure: timeout.",
-        "Research failure detail: This operation was aborted",
-        "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+pass+external+fail+probe+unreachable+test+ollama_ping&current_method=internal%3Dpass+%2F+external%3Dfail+%2F+probe%3Dunreachable+%2F+test%3Dollama_ping."
+        "Last MCP call: external_probe_check (ok).",
+        "Latest research call status: offline.",
+        "Latest research failure: offline.",
+        "Research failure detail: fetch failed",
+        "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping.",
+        "Recovery detected after offline."
       ]
     },
     {
@@ -205,7 +201,7 @@
       "verdict": "pass",
       "summary": "1 repair job tracked.",
       "detail": "open",
-      "observed_at": "2026-04-13T14:37:26.135Z",
+      "observed_at": "2026-05-05T05:43:53.661Z",
       "artifact_refs": [],
       "notes": [
         "UI Boot Integrity: idle",
@@ -214,12 +210,12 @@
       ]
     }
   ],
-  "latest_run": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m\n",
+  "latest_run": "QA lead cycle degraded: fetch failed",
   "result_paths": {
     "researchNotes": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\research-notes.json",
-    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1776114989901_ezxcr7.json",
+    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777959701761_z3750d.json",
     "loopAudit": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\qaLoopAudit.js"
   },
-  "summary": "QA lead cycle degraded: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m\n",
-  "last_updated_at": "2026-04-13T21:17:33.557Z"
+  "summary": "QA lead cycle degraded: fetch failed",
+  "last_updated_at": "2026-05-05T05:45:59.575Z"
 }

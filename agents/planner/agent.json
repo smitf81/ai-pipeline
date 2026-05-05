@@ -9,7 +9,7 @@
     "brain/emergence/*",
     "studio.teamBoard"
   ],
-  "model": "mistral:latest",
+  "model": "qwen3.5-9b",
   "name": "Planner",
   "outputs": [
     "studio.teamBoard.cards(plan)",

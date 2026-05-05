@@ -13,7 +13,7 @@
     "failure_memory.summary",
     "qa.context_summary"
   ],
-  "model": "mistral:latest",
+  "model": "qwen3.5-9b",
   "name": "Evaluator",
   "outputs": [
     "data/spatial/evaluator/runs/*.json",

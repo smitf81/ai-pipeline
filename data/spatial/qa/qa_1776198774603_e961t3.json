@@ -1,0 +1,114 @@
+{
+  "id": "qa_1776198774603_e961t3",
+  "scenario": "studio-smoke",
+  "mode": "observation",
+  "trigger": "qa_lead_cycle",
+  "prompt": null,
+  "baseUrl": "http://127.0.0.1:3000",
+  "status": "running",
+  "verdict": "pending",
+  "createdAt": "2026-04-14T20:32:54.604Z",
+  "finishedAt": null,
+  "linked": {
+    "qaLeadRunId": "qa_lead_1776198774546_x1umwg"
+  },
+  "browser": {
+    "executablePath": null,
+    "engine": "chromium"
+  },
+  "browser_status": "pass",
+  "browser_failure_stage": null,
+  "browser_failure_code": null,
+  "browser_failure_summary": null,
+  "browser_runtime_target": {
+    "attempted": [
+      "chromium"
+    ],
+    "used": "chromium",
+    "fallbackUsed": false
+  },
+  "steps": [
+    {
+      "id": "health",
+      "label": "Wait for ACE runtime",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-14T20:32:54.606Z",
+      "finishedAt": "2026-04-14T20:32:54.624Z",
+      "error": null
+    },
+    {
+      "id": "launch",
+      "label": "Launch browser",
+      "details": null,
+      "status": "completed",
+      "verdict": "pass",
+      "startedAt": "2026-04-14T20:32:54.626Z",
+      "finishedAt": "2026-04-14T20:32:55.008Z",
+      "error": null
+    },
+    {
+      "id": "open",
+      "label": "Open ACE",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "studio",
+      "label": "Enter ACE Studio",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "scenario",
+      "label": "Run QA scenario actions",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "capture",
+      "label": "Capture artifacts",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    },
+    {
+      "id": "analyze",
+      "label": "Analyze layout and runtime",
+      "details": null,
+      "status": "pending",
+      "verdict": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "error": null
+    }
+  ],
+  "findings": [],
+  "artifacts": {
+    "screenshots": [],
+    "domSnapshot": null,
+    "consoleLog": null,
+    "networkSummary": null,
+    "runtimeSnapshot": null,
+    "layoutFindings": null
+  },
+  "console": [],
+  "network": [],
+  "error": null
+}

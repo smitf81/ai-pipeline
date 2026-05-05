@@ -55,7 +55,7 @@
     "attempt_count": 0,
     "status": "open",
     "created_at": "2026-04-06T09:18:40.921Z",
-    "updated_at": "2026-04-13T14:37:26.135Z",
+    "updated_at": "2026-05-05T05:52:50.607Z",
     "allowed_trigger_classes": [
       "external_mismatch",
       "probe_failure",

@@ -471,6 +471,7 @@ const {
   AGENTS_ROOT,
   normalizeAgentId,
   resolveAgentDefinition,
+  modelSupportsToolUse,
 } = require('./agentRegistry');
 
 const app = express();
@@ -533,7 +534,7 @@ const EXECUTIVE_ENVELOPE_VERSION = 'ace/studio-envelope.v1';
 const EXECUTIVE_EXPORT_DIR = path.join(ROOT, 'data', 'spatial', 'exports');
 const LEARNING_LEDGER_ROOT = path.join(ROOT, 'data', 'spatial', 'learning-ledger');
 const AGENTS_DIR = path.join(ROOT, AGENTS_ROOT);
-const DEFAULT_CONTEXT_MANAGER_MODEL = 'mistral:latest';
+const DEFAULT_CONTEXT_MANAGER_MODEL = 'qwen3.5-9b';
 const DEFAULT_CONTEXT_MANAGER_BACKEND = 'ollama';
 const DEFAULT_SCAFFOLD_INTERPRETER_MODEL = DEFAULT_CONTEXT_MANAGER_MODEL;
 const DEFAULT_SCAFFOLD_INTERPRETER_BACKEND = DEFAULT_CONTEXT_MANAGER_BACKEND;
@@ -6735,7 +6736,7 @@ function fallbackManifestForAgent(agentId) {
       id: 'context-manager',
       backend: 'ollama',
       runtime: 'ollama-json',
-      model: 'mistral:latest',
+      model: 'qwen3.5-9b',
       host: DEFAULT_OLLAMA_HOST,
       timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
     };
@@ -6745,7 +6746,7 @@ function fallbackManifestForAgent(agentId) {
       id: 'planner',
       backend: 'ollama',
       runtime: 'ollama-json',
-      model: 'mistral:latest',
+      model: 'qwen3.5-9b',
       host: DEFAULT_OLLAMA_HOST,
       timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
     };
@@ -6755,7 +6756,7 @@ function fallbackManifestForAgent(agentId) {
       id: 'executor',
       backend: 'ollama',
       runtime: 'ollama-json',
-      model: 'mistral:latest',
+      model: 'qwen3.5-9b',
       host: DEFAULT_OLLAMA_HOST,
       timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
     };
@@ -6765,7 +6766,7 @@ function fallbackManifestForAgent(agentId) {
       id: 'evaluator',
       backend: 'ollama',
       runtime: 'ollama-json',
-      model: 'mistral:latest',
+      model: 'qwen3.5-9b',
       host: DEFAULT_OLLAMA_HOST,
       timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
     };
@@ -6785,6 +6786,7 @@ function resolveAssignedAgentIntendedCognition(rootPath, workspace, agentId) {
   const backend = String(worker?.backend || definition?.manifest?.backend || '').trim() || null;
   const runtime = String(definition?.manifest?.runtime || '').trim() || null;
   const modelName = String(worker?.model || definition?.manifest?.model || '').trim() || null;
+  const toolUseCapable = modelSupportsToolUse(modelName);
   const intendedCognitionMode = backend === 'ollama' || String(runtime || '').toLowerCase().includes('ollama')
     ? 'model_live'
     : 'deterministic_fallback';
@@ -6792,6 +6794,7 @@ function resolveAssignedAgentIntendedCognition(rootPath, workspace, agentId) {
     backend,
     runtime,
     modelName,
+    toolUseCapable,
     intendedCognitionMode,
   };
 }
@@ -6840,6 +6843,7 @@ function summarizeAssignedAgentCognition({
     backend: intended.backend,
     runtime: intended.runtime,
     model_name: intended.modelName,
+    tool_use_capable: Boolean(intended.toolUseCapable),
     matches_intended: actualLastCognitionMode
       ? actualLastCognitionMode === intended.intendedCognitionMode
       : null,
@@ -11686,13 +11690,20 @@ async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffI
     workspace: currentWorkspace,
     rootPath: ROOT,
   });
+  const plannerModel = String(
+    currentWorkspace?.studio?.agentWorkers?.planner?.model
+    || resolveAgentDefinition(ROOT, 'planner', { fallbackManifest: fallbackManifestForAgent('planner') }).manifest?.model
+    || '',
+  ).trim() || null;
   const preflight = buildPreLlmGuardInput({
-     requiredFiles: [
-       'brain/emergence/project_brain.md',
-       'brain/emergence/roadmap.md',
-       'brain/emergence/plan.md',
-      'brain/emergence/tasks.md',
-    ],
+    model: plannerModel,
+    requireToolUse: true,
+    requiredFiles: [
+        'brain/emergence/project_brain.md',
+        'brain/emergence/roadmap.md',
+        'brain/emergence/plan.md',
+       'brain/emergence/tasks.md',
+     ],
     validationCommand: {
        command: 'node',
        args: ['--version'],
@@ -11870,6 +11881,8 @@ async function maybeRunContextManagerWorker(workspace = null, {
     };
   }
   const preflight = buildPreLlmGuardInput({
+    model: config.model,
+    requireToolUse: true,
     requiredFiles: [
       'brain/emergence/project_brain.md',
       'brain/emergence/plan.md',
@@ -12009,6 +12022,8 @@ async function maybeRunExecutorWorker(workspace = null, { mode = 'manual', cardI
   }
   const targetProject = resolveProjectTarget(card.targetProjectKey || SELF_TARGET_KEY);
   const preflight = buildPreLlmGuardInput({
+    model: config.model,
+    requireToolUse: true,
     requiredFiles: [
       'brain/emergence/project_brain.md',
       'brain/emergence/plan.md',
@@ -12103,6 +12118,8 @@ function buildPreLlmGuardInput({
   projectPath = null,
   validationCommand = null,
   patchPath = null,
+  model = null,
+  requireToolUse = false,
 } = {}) {
   return evaluatePreLlmGuards({
     rootPath,
@@ -12111,6 +12128,8 @@ function buildPreLlmGuardInput({
     projectPath,
     validationCommand,
     patchPath,
+    model,
+    requireToolUse,
     commandRunner: spawnSyncSafe,
   });
 }
@@ -14910,7 +14929,7 @@ app.post('/api/llm/test', async (req, res) => {
   if (!prompt) {
     return res.status(400).json({ error: 'prompt is required.' });
   }
-  const requestedModel = String(body.model || 'mistral:latest').trim() || 'mistral:latest';
+  const requestedModel = String(body.model || 'qwen3.5-9b').trim() || 'qwen3.5-9b';
   try {
     const result = await callOllamaGenerate({
       prompt,

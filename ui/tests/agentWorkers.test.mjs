@@ -32,7 +32,7 @@ function seedAgents(rootPath) {
     deskId: 'planner',
     runtime: 'ollama-json',
     backend: 'ollama',
-    model: 'mistral:latest',
+    model: 'qwen3.5-9b',
     host: 'http://127.0.0.1:11434',
     timeoutMs: 30000,
     autoRun: true,
@@ -44,7 +44,7 @@ function seedAgents(rootPath) {
     deskId: 'context-manager',
     runtime: 'ollama-json',
     backend: 'ollama',
-    model: 'mistral:latest',
+    model: 'qwen3.5-9b',
     host: 'http://127.0.0.1:11434',
     timeoutMs: 30000,
     autoRun: false,
@@ -56,7 +56,7 @@ function seedAgents(rootPath) {
     deskId: 'executor',
     runtime: 'ollama-json',
     backend: 'ollama',
-    model: 'mistral:latest',
+    model: 'qwen3.5-9b',
     host: 'http://127.0.0.1:11434',
     timeoutMs: 30000,
     autoRun: false,
@@ -260,10 +260,10 @@ export default async function runAgentWorkersTests() {
     },
   };
 
-  assert.equal(getAgentWorkerConfig(rootPath, 'planner').model, 'mistral:latest');
+  assert.equal(getAgentWorkerConfig(rootPath, 'planner').model, 'qwen3.5-9b');
   assert.equal(getAgentWorkerConfig(rootPath, 'planner').timeoutMs, DEFAULT_PLANNER_TIMEOUT_MS);
   assert.equal(getAgentWorkerConfig(rootPath, 'context-manager').backend, 'ollama');
-  assert.equal(getAgentWorkerConfig(rootPath, 'executor').model, 'mistral:latest');
+  assert.equal(getAgentWorkerConfig(rootPath, 'executor').model, 'qwen3.5-9b');
   assert.equal(evaluatePlannerEligibility({ workspace, handoff: readyHandoff, mode: 'auto', runs: [] }).eligible, true);
   assert.equal(evaluatePlannerEligibility({
     workspace,
@@ -938,7 +938,7 @@ export default async function runAgentWorkersTests() {
   assert.equal(livePlanner.ok, true);
   assert.equal(plannerFetchCalls.length, 1);
   assert.equal(plannerFetchCalls[0].url, 'http://127.0.0.1:11434/api/generate');
-  assert.equal(plannerFetchCalls[0].body.model, 'mistral:latest');
+  assert.equal(plannerFetchCalls[0].body.model, 'qwen3.5-9b');
   assert.equal(typeof plannerFetchCalls[0].body.prompt, 'string');
   assert.equal(livePlanner.cognitionDiagnostics.used_live_call, true);
   assert.equal(livePlanner.cognitionDiagnostics.used_fallback, false);

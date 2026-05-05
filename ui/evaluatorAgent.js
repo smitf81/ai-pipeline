@@ -18,6 +18,7 @@ const {
 const {
   resolveAgentDefinition,
   readAgentDefinition,
+  modelSupportsToolUse,
 } = require('./agentRegistry');
 const {
   buildTruthKernelPayload,
@@ -224,6 +225,7 @@ function buildAgentRuntimeSnapshot(rootPath, workspace = {}) {
       backend: normalizeText(worker?.backend || manifest.backend) || null,
       runtime: normalizeText(manifest.runtime) || null,
       model_name: normalizeText(worker?.model || manifest.model) || null,
+      tool_use_capable: modelSupportsToolUse(worker?.model || manifest.model),
       manifest_path: definition?.manifestPath || null,
       prompt_path: definition?.promptPath || null,
     };
@@ -478,7 +480,7 @@ function fallbackManifestForAgent(agentId) {
     id: agentId,
     backend: 'ollama',
     runtime: 'ollama-json',
-    model: 'mistral:latest',
+    model: 'qwen3.5-9b',
     host: DEFAULT_OLLAMA_HOST,
     timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
   };
@@ -1059,7 +1061,7 @@ function classifyEvaluatorFailureReason(error, { promptChars = 0, contextMode = 
 }
 
 function buildEvaluatorCognitionDiagnostics({
-  model = 'mistral:latest',
+  model = 'qwen3.5-9b',
   timeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
   promptProfile = null,
   usedLiveCall = false,
@@ -1611,7 +1613,7 @@ async function evaluateSnapshots({
       deskId: 'qa-lead',
       runtime: 'ollama-json',
       backend: 'ollama',
-      model: 'mistral:latest',
+      model: 'qwen3.5-9b',
       host: DEFAULT_OLLAMA_HOST,
       timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
       autoRun: false,

@@ -5,6 +5,9 @@ const {
   DEFAULT_OLLAMA_TIMEOUT_MS,
 } = require('./localModelClient');
 const {
+  modelSupportsToolUse,
+} = require('./agentRegistry');
+const {
   callOllamaGenerate,
 } = require('./llmAdapter');
 const { resolveAgentDefinition } = require('./agentRegistry');
@@ -57,13 +60,13 @@ const {
 } = require('./agentAudit');
 
 const DEFAULT_PLANNER_BACKEND = 'ollama';
-const DEFAULT_PLANNER_MODEL = 'mistral:latest';
+const DEFAULT_PLANNER_MODEL = 'qwen3.5-9b';
 const DEFAULT_PLANNER_TIMEOUT_MS = 30000;
 const DEFAULT_CONTEXT_MANAGER_BACKEND = 'ollama';
-const DEFAULT_CONTEXT_MANAGER_MODEL = 'mistral:latest';
+const DEFAULT_CONTEXT_MANAGER_MODEL = 'qwen3.5-9b';
 const DEFAULT_CONTEXT_MANAGER_TIMEOUT_MS = 30000;
 const DEFAULT_EXECUTOR_BACKEND = 'ollama';
-const DEFAULT_EXECUTOR_MODEL = 'mistral:latest';
+const DEFAULT_EXECUTOR_MODEL = 'qwen3.5-9b';
 const DEFAULT_EXECUTOR_TIMEOUT_MS = 30000;
 const PLANNER_SCOPED_TASK_CACHE_LIMIT_CHARS = 900;
 const PLANNER_BROAD_TASK_CACHE_LIMIT_CHARS = 2200;
@@ -347,6 +350,7 @@ function agentFallbackConfigFor(agentId) {
       inputs: ['studio.handoffs.contextToPlanner', 'brain/emergence/*', 'studio.teamBoard'],
       outputs: ['studio.teamBoard.cards(plan)', 'proposal-artifacts'],
       writesCanonicalBrain: false,
+      toolUseCapable: modelSupportsToolUse(DEFAULT_PLANNER_MODEL),
     };
   }
   if (agentId === 'executor') {
@@ -361,6 +365,7 @@ function agentFallbackConfigFor(agentId) {
       inputs: ['studio.teamBoard', 'brain/emergence/*', 'ace_commands.json', 'studio.selfUpgrade'],
       outputs: ['studio.teamBoard.cards(execution)', 'executor-artifacts'],
       writesCanonicalBrain: false,
+      toolUseCapable: modelSupportsToolUse(DEFAULT_EXECUTOR_MODEL),
     };
   }
   return {
@@ -374,6 +379,7 @@ function agentFallbackConfigFor(agentId) {
     inputs: ['raw-context-text', 'brain/emergence/*', 'studio.handoffs.plannerToContext'],
     outputs: ['intent-report', 'studio.handoffs.contextToPlanner'],
     writesCanonicalBrain: false,
+    toolUseCapable: modelSupportsToolUse(DEFAULT_CONTEXT_MANAGER_MODEL),
   };
 }
 
@@ -401,6 +407,9 @@ function resolveWorkerDefinition(rootPath, agentId) {
       timeoutMs: Number(manifest.timeoutMs || agentFallbackConfigFor(agentId).timeoutMs || DEFAULT_OLLAMA_TIMEOUT_MS),
       autoRun: Boolean(manifest.autoRun),
       prompt: String(resolved.prompt || agentPromptFallbackFor(agentId)).trim() || agentPromptFallbackFor(agentId),
+      toolUseCapable: typeof manifest.toolUseCapable === 'boolean'
+        ? manifest.toolUseCapable
+        : modelSupportsToolUse(String(manifest.model || agentFallbackConfigFor(agentId).model).trim() || agentFallbackConfigFor(agentId).model),
     },
   };
 }
@@ -2327,6 +2336,9 @@ async function runPlannerWorker(options = {}) {
   if (!handoff) return createBlockedResult('Planner handoff is missing.');
   if (handoff.status !== 'ready') return createBlockedResult('Planner handoff is not ready and must be clarified before planning.');
   if (!Array.isArray(handoff.anchorRefs) || !handoff.anchorRefs.length) return createBlockedResult('Planner handoff has no anchor provenance.');
+  if (!config.toolUseCapable) {
+    return createBlockedResult(`Planner model ${resolvedModel} is not tool-use capable.`);
+  }
   const requestedOutcomes = Array.isArray(handoff.requestedOutcomes)
     ? handoff.requestedOutcomes.filter(Boolean)
     : (Array.isArray(handoff.tasks) ? handoff.tasks.filter(Boolean) : []);

@@ -52,7 +52,7 @@ function defaultPlannerWorkerState() {
     statusReason: null,
     mode: 'auto',
     backend: 'ollama',
-    model: 'mistral:latest',
+    model: 'qwen3.5-9b',
     currentRunId: null,
     lastRunId: null,
     lastOutcome: null,
@@ -72,7 +72,7 @@ function defaultContextManagerWorkerState() {
     statusReason: null,
     mode: 'manual',
     backend: 'ollama',
-    model: 'mistral:latest',
+    model: 'qwen3.5-9b',
     currentRunId: null,
     lastRunId: null,
     lastOutcome: null,
@@ -94,7 +94,7 @@ function defaultExecutorWorkerState() {
     statusReason: null,
     mode: 'manual',
     backend: 'ollama',
-    model: 'mistral:latest',
+    model: 'qwen3.5-9b',
     currentRunId: null,
     lastRunId: null,
     lastOutcome: null,
@@ -119,7 +119,7 @@ function defaultEvaluatorWorkerState() {
     statusReason: null,
     mode: 'manual',
     backend: 'ollama',
-    model: 'mistral:latest',
+    model: 'qwen3.5-9b',
     currentRunId: null,
     lastRunId: null,
     lastOutcome: null,
@@ -1777,7 +1777,7 @@ function buildContextDeskSnapshot({ agent, workspace, dashboardState, runs, runS
         id: 'context-worker',
         label: 'Context Worker',
         kind: 'summary',
-      value: `Status: ${contextWorker?.status || 'idle'} | backend ${contextWorker?.backend || 'ollama'} | model ${contextWorker?.model || 'mistral:latest'}`,
+      value: `Status: ${contextWorker?.status || 'idle'} | backend ${contextWorker?.backend || 'ollama'} | model ${contextWorker?.model || 'qwen3.5-9b'}`,
         detail: contextWorker?.currentRunId
           ? `Running ${contextWorker.currentRunId}`
           : (contextWorker?.lastRunId
@@ -1882,7 +1882,7 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
       id: 'planner-worker',
       label: 'Planner Worker',
       kind: 'summary',
-      value: `Status: ${plannerWorker.status || 'idle'} | backend ${plannerWorker.backend || 'ollama'} | model ${plannerWorker.model || 'mistral:latest'}`,
+      value: `Status: ${plannerWorker.status || 'idle'} | backend ${plannerWorker.backend || 'ollama'} | model ${plannerWorker.model || 'qwen3.5-9b'}`,
       detail: plannerWorker.currentRunId
         ? `Running ${plannerWorker.currentRunId}`
         : (plannerWorker.lastRunId
@@ -1952,7 +1952,7 @@ function buildGovernedDeskSnapshot({ agent, workspace, metrics, runs, runSignal,
       id: 'executor-worker',
       label: 'Executor Worker',
       kind: 'summary',
-      value: `Status: ${executorWorker.status || 'idle'} | backend ${executorWorker.backend || 'ollama'} | model ${executorWorker.model || 'mistral:latest'}`,
+      value: `Status: ${executorWorker.status || 'idle'} | backend ${executorWorker.backend || 'ollama'} | model ${executorWorker.model || 'qwen3.5-9b'}`,
       detail: executorWorker.currentRunId
         ? `Running ${executorWorker.currentRunId}`
         : (executorWorker.lastRunId
@@ -3439,6 +3439,33 @@ function buildQADeskSnapshot({ agent, workspace, status, qaState = null }) {
     workspace,
     normalizedQA,
   });
+  const assignedAgents = Array.isArray(readability.agentCognitionSummary?.agents)
+    ? readability.agentCognitionSummary.agents
+    : [];
+  const qaProperties = [
+    {
+      label: 'QA report state',
+      value: readability.qaLiveCycle.output_feed_captured
+        ? 'QA report and output feed are visible.'
+        : 'No QA report is ready yet.',
+      origin: readability.qaLiveCycle.output_feed_captured ? 'canonical' : 'derived',
+    },
+    {
+      label: 'QA MCP status',
+      value: readability.qaMcpLiveStatus.summary || 'QA MCP status is unavailable.',
+      origin: readability.qaMcpLiveStatus.status ? 'derived' : 'unavailable',
+    },
+    ...assignedAgents.map((agent) => ({
+      label: `${agent.label || agent.agent_id} model`,
+      value: [
+        `model ${agent.model_name || 'unassigned'}`,
+        `tool use ${agent.tool_use_capable ? 'yes' : 'no'}`,
+        `intended ${agent.intended_cognition_mode || 'unknown'}`,
+        `actual ${agent.actual_last_cognition_mode || 'unknown'}`,
+      ].join(' | '),
+      origin: agent.tool_use_capable ? 'canonical' : 'derived',
+    })),
+  ];
   const scorecards = readability.scorecards;
   const latestBrowserRun = normalizedQA.latestBrowserRun || normalizedQA.browserRuns[0] || null;
   const browserRuns = mergeBrowserRuns(latestBrowserRun, normalizedQA.browserRuns).slice(0, 6);
@@ -3545,6 +3572,18 @@ function buildQADeskSnapshot({ agent, workspace, status, qaState = null }) {
         liveStatus: readability.qaMcpLiveStatus,
         liveCycle: readability.qaLiveCycle,
         summary: readability.qaMcpLiveStatus.summary,
+        collapsible: false,
+        defaultOpen: true,
+      },
+      {
+        id: 'qa-properties',
+        label: 'Desk Properties',
+        kind: 'qa-properties',
+        items: qaProperties,
+        summary: assignedAgents.length
+          ? 'Desk properties are visible with model assignments, tool-use capability, and QA posture.'
+          : 'Desk properties are visible, but the agent cognition bundle is missing so model and tool-use status cannot be populated yet.',
+        emptyState: 'Desk properties are unavailable until QA state loads.',
         collapsible: false,
         defaultOpen: true,
       },

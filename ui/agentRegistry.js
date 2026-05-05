@@ -4,7 +4,19 @@ const { DEFAULT_OLLAMA_HOST, DEFAULT_OLLAMA_TIMEOUT_MS } = require('./localModel
 
 const AGENTS_ROOT = 'agents';
 const DEFAULT_AGENT_BACKEND = 'ollama';
-const DEFAULT_AGENT_MODEL = 'mistral:latest';
+const DEFAULT_AGENT_MODEL = 'qwen3.5-9b';
+
+function normalizeModelName(modelName = '') {
+  return String(modelName || '').trim().toLowerCase();
+}
+
+function modelSupportsToolUse(modelName = '') {
+  const normalized = normalizeModelName(modelName);
+  if (!normalized) return false;
+  return normalized.startsWith('qwen3.5-9b')
+    || normalized.startsWith('qwen3.5:9b')
+    || normalized.startsWith('qwen3.5');
+}
 
 function normalizeAgentId(agentId = '') {
   return String(agentId || '').trim().toLowerCase();
@@ -16,19 +28,23 @@ function readJson(filePath) {
 
 function buildFallbackManifest(agentId, fallbackManifest = {}) {
   const id = normalizeAgentId(agentId);
+  const model = fallbackManifest.model || DEFAULT_AGENT_MODEL;
   return {
     id,
     name: fallbackManifest.name || id,
     deskId: fallbackManifest.deskId || id,
     runtime: fallbackManifest.runtime || 'ollama-json',
     backend: fallbackManifest.backend || DEFAULT_AGENT_BACKEND,
-    model: fallbackManifest.model || DEFAULT_AGENT_MODEL,
+    model,
     host: fallbackManifest.host || DEFAULT_OLLAMA_HOST,
     timeoutMs: Number(fallbackManifest.timeoutMs || DEFAULT_OLLAMA_TIMEOUT_MS),
     autoRun: Boolean(fallbackManifest.autoRun),
     inputs: Array.isArray(fallbackManifest.inputs) ? fallbackManifest.inputs : [],
     outputs: Array.isArray(fallbackManifest.outputs) ? fallbackManifest.outputs : [],
     writesCanonicalBrain: Boolean(fallbackManifest.writesCanonicalBrain),
+    toolUseCapable: typeof fallbackManifest.toolUseCapable === 'boolean'
+      ? fallbackManifest.toolUseCapable
+      : modelSupportsToolUse(model),
   };
 }
 
@@ -152,6 +168,7 @@ module.exports = {
   buildFallbackManifest,
   loadAgentDefinition,
   normalizeAgentId,
+  modelSupportsToolUse,
   readAgentDefinition,
   resolveAgentDefinition,
   validateManifest,

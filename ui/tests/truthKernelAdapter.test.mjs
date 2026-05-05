@@ -41,6 +41,17 @@ export default async function runTruthKernelAdapterTests() {
       failures: [],
     },
   });
+  writeJson(rootPath, 'data/spatial/qa/lead-state.json', {
+    status: 'pass',
+    summary: 'QA desk report is ready for the requested cycle.',
+    latest_run: 'QA desk report is ready for the requested cycle.',
+    last_completed_cycle_at: '2026-04-01T09:20:00.000Z',
+  });
+  writeJson(rootPath, 'data/spatial/qa/structured/latest.json', {
+    status: 'pass',
+    summary: 'Structured QA report is available.',
+    finishedAt: '2026-04-01T09:20:00.000Z',
+  });
   writeJson(rootPath, 'data/spatial/qa/investigations.json', [{
     id: 'qa_inv_1',
     created_at: '2026-04-01T09:21:00.000Z',
@@ -136,7 +147,7 @@ export default async function runTruthKernelAdapterTests() {
     changed_dimensions: ['agent_cognition', 'fallback_pressure', 'task_progress', 'truth_kernel', 'qa_support'],
     evaluation_confidence: 0.8,
     cognition_mode: 'model_live',
-    model_name: 'mistral:latest',
+    model_name: 'qwen3.5-9b',
     score_pressure: 'upward',
     progress_state: 'stable',
     source_snapshot_ids: {
@@ -187,6 +198,8 @@ export default async function runTruthKernelAdapterTests() {
           updatedAt: '2026-04-01T09:05:30.000Z',
           status: 'active',
           confidence: 0.82,
+          summary: 'run qa cycle for the current sketchpad node',
+          statement: 'run qa cycle for the current sketchpad node',
         }, {
           id: 'intent_orphan_1',
           canonicalIntentId: 'intent_orphan_1',
@@ -205,6 +218,8 @@ export default async function runTruthKernelAdapterTests() {
   const ids = new Set(payload.nodes.map((node) => node.id));
   assert.equal(ids.has('intake_1'), true);
   assert.equal(ids.has('intent_1'), true);
+  assert.equal(ids.has('intent_1__qa_cycle'), true);
+  assert.equal(ids.has('intent_1__qa_cycle__report'), true);
   assert.equal(ids.has('context_manager_1'), true);
   assert.equal(ids.has('handoff_1'), true);
   assert.equal(ids.has('qa_run_1'), true);
@@ -214,6 +229,8 @@ export default async function runTruthKernelAdapterTests() {
   const intentNode = payload.nodes.find((node) => node.id === 'intent_1');
   const orphanIntentNode = payload.nodes.find((node) => node.id === 'intent_orphan_1');
   const contextManagerNode = payload.nodes.find((node) => node.id === 'context_manager_1');
+  const qaCycleNode = payload.nodes.find((node) => node.id === 'intent_1__qa_cycle');
+  const qaReportNode = payload.nodes.find((node) => node.id === 'intent_1__qa_cycle__report');
   const openInvestigationNode = payload.nodes.find((node) => node.id === 'qa_inv_1');
   const resolvedInvestigationNode = payload.nodes.find((node) => node.id === 'qa_inv_resolved_1');
   const pendingRepairNode = payload.nodes.find((node) => node.id === 'qa_repair_1');
@@ -229,6 +246,11 @@ export default async function runTruthKernelAdapterTests() {
   assert.equal(intakeNode.children.includes('intent_1'), true);
   assert.equal(intentNode.parents.includes('intake_1'), true);
   assert.equal(intentNode.children.includes('handoff_1') || intentNode.children.includes('context_manager_1'), true);
+  assert.equal(qaCycleNode.kind, 'execution');
+  assert.equal(qaCycleNode.children.includes('intent_1__qa_cycle__report'), true);
+  assert.equal(qaReportNode.kind, 'artifact');
+  assert.equal(qaReportNode.parents.includes('intent_1__qa_cycle'), true);
+  assert.equal(qaReportNode.status, 'healthy');
   assert.equal(orphanIntentNode.status, 'orphaned');
   assert.equal(openInvestigationNode.status, 'degraded');
   assert.equal(resolvedInvestigationNode.status, 'healthy');

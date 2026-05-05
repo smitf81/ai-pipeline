@@ -10,7 +10,7 @@
     "workspace.active-page",
     "studio.handoffs.plannerToContext"
   ],
-  "model": "mistral:latest",
+  "model": "qwen3.5-9b",
   "name": "Context Manager",
   "outputs": [
     "intent-report",

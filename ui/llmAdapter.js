@@ -12,7 +12,7 @@ function createTimeoutController(timeoutMs) {
 
 async function callOllamaGenerate({
   prompt,
-  model = 'mistral:latest',
+  model = 'qwen3.5-9b',
   host = DEFAULT_OLLAMA_HOST,
   timeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
   stream = false,
@@ -56,7 +56,7 @@ async function callOllamaGenerate({
 
 async function callOllamaChat({
   messages = [],
-  model = 'mistral:latest',
+  model = 'qwen3.5-9b',
   host = DEFAULT_OLLAMA_HOST,
   timeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
   stream = false,

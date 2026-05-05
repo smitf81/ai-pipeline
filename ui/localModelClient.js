@@ -363,7 +363,7 @@ async function ensureOllamaBootstrapped({
 
 async function requestOllamaJson({
   prompt,
-  model = 'mistral:latest',
+  model = 'qwen3.5-9b',
   host = DEFAULT_OLLAMA_HOST,
   timeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
   fetchImpl = globalThis.fetch,

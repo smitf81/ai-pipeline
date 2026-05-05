@@ -179,13 +179,13 @@ export default async function runEvaluatorAgentTests() {
   assert.equal(liveResult.ok, true);
   assert.equal(requests.length, 1);
   assert.ok(requests[0].url.endsWith('/api/generate'));
-  assert.equal(requests[0].body.model, 'mistral:latest');
+  assert.equal(requests[0].body.model, 'qwen3.5-9b');
   assert.match(requests[0].body.prompt, /Compare only the supplied previous and current snapshots/i);
   assert.match(requests[0].body.prompt, /runtime\/system-state deltas as primary evidence/i);
   assert.equal(liveResult.evaluation.verdict, 'better');
   assert.equal(liveResult.evaluation.comparison_target, 'system_runtime');
   assert.equal(liveResult.evaluation.cognition_mode, 'model_live');
-  assert.equal(liveResult.evaluation.model_name, 'mistral:latest');
+  assert.equal(liveResult.evaluation.model_name, 'qwen3.5-9b');
   assert.equal(liveResult.evaluation.source_snapshot_ids.previous, 'snapshot_prev');
   assert.equal(liveResult.evaluation.source_snapshot_ids.current, 'snapshot_curr');
   assert.equal(Array.isArray(liveResult.evaluation.changed_dimensions), true);

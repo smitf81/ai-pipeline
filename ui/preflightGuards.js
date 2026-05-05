@@ -1,5 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const {
+  modelSupportsToolUse,
+} = require('./agentRegistry');
 
 function uniqueStrings(values = []) {
   return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
@@ -104,6 +107,29 @@ function checkPatchAlreadyExists(patchPath) {
   };
 }
 
+function checkModelToolUseCapability(model, { requireToolUse = true } = {}) {
+  const normalizedModel = String(model || '').trim();
+  if (!normalizedModel) {
+    return {
+      ok: !requireToolUse,
+      model: null,
+      tool_use_capable: false,
+      required: Boolean(requireToolUse),
+      message: requireToolUse ? 'No model was provided for a tool-use gate.' : 'No model was provided.',
+    };
+  }
+  const toolUseCapable = modelSupportsToolUse(normalizedModel);
+  return {
+    ok: !requireToolUse || toolUseCapable,
+    model: normalizedModel,
+    tool_use_capable: toolUseCapable,
+    required: Boolean(requireToolUse),
+    message: toolUseCapable
+      ? `Model ${normalizedModel} is tool-use capable.`
+      : `Model ${normalizedModel} is not tool-use capable.`,
+  };
+}
+
 function evaluatePreLlmGuards({
   rootPath,
   requiredFiles = [],
@@ -114,6 +140,8 @@ function evaluatePreLlmGuards({
   commandRunner = null,
   requireRepoClean = true,
   blockOnExistingPatch = true,
+  model = null,
+  requireToolUse = false,
 } = {}) {
   const checks = {};
   const blockers = [];
@@ -148,6 +176,11 @@ function evaluatePreLlmGuards({
     if (!checks.patch.ok) blockers.push(checks.patch.message);
   }
 
+  if (model || requireToolUse) {
+    checks.modelToolUse = checkModelToolUseCapability(model, { requireToolUse });
+    if (!checks.modelToolUse.ok) blockers.push(checks.modelToolUse.message);
+  }
+
   return {
     ok: blockers.length === 0,
     blockers,
@@ -158,6 +191,7 @@ function evaluatePreLlmGuards({
 
 module.exports = {
   checkPatchAlreadyExists,
+  checkModelToolUseCapability,
   checkProjectKeyResolves,
   checkRepoClean,
   checkRequiredFiles,

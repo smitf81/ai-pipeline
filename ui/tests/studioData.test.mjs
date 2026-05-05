@@ -275,7 +275,7 @@ export default async function runStudioDataTests() {
           status: 'running',
           mode: 'manual',
           backend: 'ollama',
-          model: 'mistral:latest',
+          model: 'qwen3.5-9b',
           currentRunId: 'context_1',
           lastRunId: 'context_prev',
           lastSourceNodeId: 'node_ctx',
@@ -291,7 +291,7 @@ export default async function runStudioDataTests() {
           status: 'idle',
           mode: 'auto',
           backend: 'ollama',
-          model: 'mistral:latest',
+          model: 'qwen3.5-9b',
           currentRunId: null,
           lastRunId: 'planner_1',
           lastSourceHandoffId: 'handoff_1',
@@ -305,7 +305,7 @@ export default async function runStudioDataTests() {
           status: 'idle',
           mode: 'manual',
           backend: 'ollama',
-          model: 'mistral:latest',
+          model: 'qwen3.5-9b',
           currentRunId: null,
           lastRunId: 'executor_1',
           lastOutcome: 'blocked',
@@ -825,7 +825,7 @@ export default async function runStudioDataTests() {
     contextSnapshot.deskSnapshot.sections.map((section) => section.label),
     ['Desk Truth', 'Current Job', 'Context Worker', 'Core Truth', 'Problem To Solve', 'Task Creation', 'Intent Extraction', 'KPIs', 'Recent History', 'Waiting On You'],
   );
-  assert.equal(contextSnapshot.deskSnapshot.sections.find((section) => section.label === 'Context Worker').value, 'Status: running | backend ollama | model mistral:latest');
+  assert.equal(contextSnapshot.deskSnapshot.sections.find((section) => section.label === 'Context Worker').value, 'Status: running | backend ollama | model qwen3.5-9b');
   assert.equal(contextSnapshot.deskSnapshot.sections.find((section) => section.label === 'Task Creation').items.length, 2);
   assert.equal(archivistSnapshot.deskSnapshot.sections[0].label, 'Desk Truth');
   assert.match(archivistSnapshot.deskSnapshot.sections[0].truth.department, /Memory Archive/i);
@@ -844,7 +844,7 @@ export default async function runStudioDataTests() {
   assert.equal(plannerSnapshot.presence.icon, '🧠');
   assert.equal(executorSnapshot.deskSnapshot.sections[0].label, 'Desk Truth');
   assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'execution-selection').label, 'Mutation Queue');
-  assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'executor-worker').value, 'Status: idle | backend ollama | model mistral:latest');
+  assert.equal(executorSnapshot.deskSnapshot.sections.find((section) => section.id === 'executor-worker').value, 'Status: idle | backend ollama | model qwen3.5-9b');
   assert.ok(executorSnapshot.deskSnapshot.sections.some((section) => section.label === 'Task Economy'));
   assert.equal(executorSnapshot.deskSnapshot.taskEconomy.rewardState, plannerSnapshot.deskSnapshot.taskEconomy.rewardState);
   assert.equal(executorSnapshot.presence.cognitionMode, 'fallback');
@@ -852,12 +852,17 @@ export default async function runStudioDataTests() {
   assert.equal(executorSnapshot.presence.health < plannerSnapshot.presence.health, true);
   assert.deepEqual(
     qaLeadSnapshot.deskSnapshot.sections.map((section) => section.label),
-    ['QA Health Overview', 'QA MCP Proof of Life', 'QA Live Operator', 'QA Output Feed', 'Lane Canaries', 'Freshness & Hygiene', 'Repair Lanes', 'Evaluator Movement', 'Assigned Agent Liveness', 'Scorecards', 'Investigations', 'Advisory / Research'],
+    ['QA Health Overview', 'QA MCP Proof of Life', 'Desk Properties', 'QA Live Operator', 'QA Output Feed', 'Lane Canaries', 'Freshness & Hygiene', 'Repair Lanes', 'Evaluator Movement', 'Assigned Agent Liveness', 'Scorecards', 'Investigations', 'Advisory / Research'],
   );
   assert.deepEqual(
     qaLeadSnapshot.deskSnapshot.sections.map((section) => section.kind),
-    ['qa-overview', 'qa-mcp-live', 'qa-operator', 'qa-output-feed', 'qa-canaries', 'qa-hygiene', 'qa-repair-lanes', 'qa-evaluator', 'qa-agent-cognition', 'qa-scorecards', 'qa-investigations', 'qa-research'],
+    ['qa-overview', 'qa-mcp-live', 'qa-properties', 'qa-operator', 'qa-output-feed', 'qa-canaries', 'qa-hygiene', 'qa-repair-lanes', 'qa-evaluator', 'qa-agent-cognition', 'qa-scorecards', 'qa-investigations', 'qa-research'],
   );
+  assert.equal(qaLeadSnapshot.deskSnapshot.sections.length, 13);
+  const qaPropertiesSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-properties');
+  assert.ok(qaPropertiesSection);
+  assert.equal(Array.isArray(qaPropertiesSection.items), true);
+  assert.ok(qaPropertiesSection.items.some((item) => /tool use/i.test(String(item?.value || ''))));
   const qaOverviewSection = qaLeadSnapshot.deskSnapshot.sections.find((section) => section.id === 'qa-overview');
   assert.ok(qaOverviewSection);
   assert.equal(qaOverviewSection.overview.openInvestigationsCount, 0);

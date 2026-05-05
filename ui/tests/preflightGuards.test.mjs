@@ -17,6 +17,7 @@ export default async function runPreflightGuardsTests() {
   const modulePath = path.resolve(process.cwd(), 'preflightGuards.js');
   const {
     checkPatchAlreadyExists,
+    checkModelToolUseCapability,
     checkProjectKeyResolves,
     checkRepoClean,
     checkRequiredFiles,
@@ -71,6 +72,8 @@ export default async function runPreflightGuardsTests() {
 
   assert.equal(checkPatchAlreadyExists(path.join(rootPath, 'work', 'tasks', '0001-cache-me', 'patch.diff')).exists, false);
   assert.equal(checkPatchAlreadyExists(path.join(rootPath, 'work', 'tasks', '0002-cache-me', 'patch.diff')).exists, true);
+  assert.equal(checkModelToolUseCapability('qwen3.5-9b', { requireToolUse: true }).ok, true);
+  assert.equal(checkModelToolUseCapability('mistral:latest', { requireToolUse: true }).ok, false);
   assert.deepEqual(checkRepoClean({
     commandRunner: () => ({
       code: 0,
@@ -99,6 +102,8 @@ export default async function runPreflightGuardsTests() {
       command: 'git',
       args: ['--version'],
     },
+    model: 'qwen3.5-9b',
+    requireToolUse: true,
     commandRunner,
   });
   assert.equal(okGuard.ok, true);
@@ -117,9 +122,12 @@ export default async function runPreflightGuardsTests() {
       args: ['--version'],
     },
     patchPath: path.join(rootPath, 'work', 'tasks', '0002-cache-me', 'patch.diff'),
+    model: 'mistral:latest',
+    requireToolUse: true,
     commandRunner,
   });
   assert.equal(blockedGuard.ok, false);
   assert.ok(blockedGuard.blockers.some((reason) => /Missing required files/i.test(reason)));
   assert.ok(blockedGuard.blockers.some((reason) => /Patch already exists/i.test(reason)));
+  assert.ok(blockedGuard.blockers.some((reason) => /tool-use capable/i.test(reason)));
 }
