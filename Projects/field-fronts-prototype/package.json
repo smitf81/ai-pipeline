@@ -1,0 +1,10 @@
+{
+  "name": "field-fronts-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node tools/static-server.mjs 4184",
+    "test:browser": "node tools/run-web-game-client.mjs",
+    "test": "node tests/runInProcessTests.mjs"
+  }
+}

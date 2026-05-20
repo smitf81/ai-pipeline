@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620" role="img" aria-label="Runtime Cadence Map">
+
+<style>
+  .bg{fill:#07101b}.panel{fill:#0f1a2a;stroke:#29405d;stroke-width:1.2}.panel2{fill:#122236;stroke:#355272;stroke-width:1.2}
+  .title{font:700 26px system-ui,Segoe UI,Arial;fill:#e9f4ff}.subtitle{font:500 13px system-ui,Segoe UI,Arial;fill:#9fb6cc}
+  .label{font:600 13px system-ui,Segoe UI,Arial;fill:#e9f4ff}.small{font:500 11px system-ui,Segoe UI,Arial;fill:#b6c8d8}
+  .tiny{font:500 9px system-ui,Segoe UI,Arial;fill:#91a7bb}.cyan{fill:#63e6ff}.blue{fill:#8fb7ff}.green{fill:#84f0a8}.amber{fill:#ffd166}.orange{fill:#ff9f68}.red{fill:#ff6b6b}.purple{fill:#c39bff}.muted{fill:#8195aa}
+  .arrow{stroke:#9fb6cc;stroke-width:2;fill:none;marker-end:url(#arrow)}.softarrow{stroke:#536b82;stroke-width:1.5;fill:none;marker-end:url(#softarrow)}
+  .dash{stroke-dasharray:6 5}.boxtext{font:600 12px system-ui,Segoe UI,Arial;fill:#e9f4ff}.note{font:500 10px system-ui,Segoe UI,Arial;fill:#a9bfd2}
+</style>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#9fb6cc"/></marker>
+  <marker id="softarrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#536b82"/></marker>
+  <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+
+<rect class="bg" width="1100" height="620"/>
+<text class="title" x="28" y="42">Runtime Cadence Map</text>
+<text class="subtitle" x="30" y="66">What can run every frame, tick, event, or persistence boundary</text>
+<text class="label" x="40" y="112">Lane</text>
+<text class="label" x="210" y="112">Allowed</text>
+<text class="label" x="500" y="112">Forbidden</text>
+<text class="label" x="780" y="112">Validation</text>
+<rect x="30" y="115" width="1035" height="58" rx="9" fill="#163d55" opacity="0.68" stroke="#304960"/>
+<text class="small" x="40" y="140">Render frame</text>
+<text class="small" x="210" y="140">Draw/interpolate</text>
+<text class="small" x="500" y="140">Heavy field rebuilds</text>
+<text class="small" x="780" y="140">browser smoke/FPS</text>
+<rect x="30" y="183" width="1035" height="58" rx="9" fill="#1b4a3b" opacity="0.68" stroke="#304960"/>
+<text class="small" x="40" y="208">Visual interpolation</text>
+<text class="small" x="210" y="208">Smooth positions</text>
+<text class="small" x="500" y="208">Mutate canonical pos</text>
+<text class="small" x="780" y="208">movement tests</text>
+<rect x="30" y="251" width="1035" height="58" rx="9" fill="#4d3b19" opacity="0.68" stroke="#304960"/>
+<text class="small" x="40" y="276">Simulation tick</text>
+<text class="small" x="210" y="276">advance jobs/units</text>
+<text class="small" x="500" y="276">unbounded catch-up</text>
+<text class="small" x="780" y="276">runtime perf QA</text>
+<rect x="30" y="319" width="1035" height="58" rx="9" fill="#4b315d" opacity="0.68" stroke="#304960"/>
+<text class="small" x="40" y="344">Diagnostic overlay</text>
+<text class="small" x="210" y="344">visible cached layers</text>
+<text class="small" x="500" y="344">default heavy overlays</text>
+<text class="small" x="780" y="344">overlay tests</text>
+<rect x="30" y="387" width="1035" height="58" rx="9" fill="#55351b" opacity="0.68" stroke="#304960"/>
+<text class="small" x="40" y="412">Player event</text>
+<text class="small" x="210" y="412">buy/place/select</text>
+<text class="small" x="500" y="412">repeat spending</text>
+<text class="small" x="780" y="412">construction tests</text>
+<rect x="30" y="455" width="1035" height="58" rx="9" fill="#552828" opacity="0.68" stroke="#304960"/>
+<text class="small" x="40" y="480">Persistence</text>
+<text class="small" x="210" y="480">save/export</text>
+<text class="small" x="500" y="480">save every frame</text>
+<text class="small" x="780" y="480">contract tests</text>
+<text class="small" x="42" y="585">Most useful agent check: ask “which cadence lane owns this work?” before adding code.</text>
+</svg>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Field Fronts Core Loop</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell" data-app>
+      <section class="canvas-stage" aria-label="Field Fronts map canvas">
+        <canvas id="map-canvas" width="1280" height="768"></canvas>
+      </section>
+      <aside class="tool-panel" aria-label="Field Fronts prototype controls">
+        <header class="panel-header">
+          <p class="eyebrow">Field Fronts</p>
+          <h1>Core Loop Prototype</h1>
+        </header>
+        <div id="mode-controls"></div>
+        <div id="game-controls"></div>
+        <div id="command-graph"></div>
+        <div id="terrain-palette"></div>
+        <div id="brush-controls"></div>
+        <div id="field-controls"></div>
+        <div id="map-controls"></div>
+        <div id="tile-inspector"></div>
+      </aside>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
