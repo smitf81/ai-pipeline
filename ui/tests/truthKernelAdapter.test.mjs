@@ -163,6 +163,16 @@ export default async function runTruthKernelAdapterTests() {
       weight: 0.22,
     }],
   }]);
+  writeJson(rootPath, 'brain/context/subconscious/status.json', {
+    contract: 'subconscious.advisory.v1',
+    classification: 'derived_advisory',
+    canonical: false,
+    state: 'live',
+    model: 'qwen2.5-coder:1.5b',
+    lastGeneratedAt: '2026-04-01T09:28:00.000Z',
+    latestMemory: 'brain/context/subconscious/memory.md',
+    latestPreview: 'Observed a coherent bounded runtime update.',
+  });
 
   const workspace = {
     studio: {
@@ -225,6 +235,8 @@ export default async function runTruthKernelAdapterTests() {
   assert.equal(ids.has('qa_run_1'), true);
   assert.equal(ids.has('cto_diag_1'), true);
   assert.equal(ids.has('evaluator_1'), true);
+  assert.equal(ids.has('subconscious_advisory_observer'), true);
+  assert.equal(ids.has('subconscious_advisory_memory'), true);
   const intakeNode = payload.nodes.find((node) => node.id === 'intake_1');
   const intentNode = payload.nodes.find((node) => node.id === 'intent_1');
   const orphanIntentNode = payload.nodes.find((node) => node.id === 'intent_orphan_1');
@@ -239,6 +251,8 @@ export default async function runTruthKernelAdapterTests() {
   const applyReceiptNode = payload.nodes.find((node) => node.id === 'qa_receipt_1');
   const handoffNode = payload.nodes.find((node) => node.id === 'handoff_1');
   const evaluatorNode = payload.nodes.find((node) => node.id === 'evaluator_1');
+  const subconsciousNode = payload.nodes.find((node) => node.id === 'subconscious_advisory_observer');
+  const subconsciousMemoryNode = payload.nodes.find((node) => node.id === 'subconscious_advisory_memory');
   assert.equal(intakeNode.kind, 'input');
   assert.equal(intentNode.kind, 'input');
   assert.equal(intentNode.sourceNodeId, 'node_input_1');
@@ -281,6 +295,12 @@ export default async function runTruthKernelAdapterTests() {
   assert.equal(evaluatorNode.verdict, 'better');
   assert.equal(evaluatorNode.evaluatorDeltaScore, 0.85);
   assert.equal(evaluatorNode.evaluatorCognitionMode, 'model_live');
+  assert.equal(subconsciousNode.status, 'healthy');
+  assert.equal(subconsciousNode.canonicalSource, null);
+  assert.equal(subconsciousNode.derivedSource, 'brain/context/subconscious/status.json');
+  assert.equal(subconsciousNode.truthState, 'derived_advisory_not_canonical');
+  assert.equal(subconsciousNode.children.includes('subconscious_advisory_memory'), true);
+  assert.equal(subconsciousMemoryNode.parents.includes('subconscious_advisory_observer'), true);
   assert.match(String(evaluatorNode.label || ''), /Runtime posture improved/i);
   assert.ok(evaluatorNode.visual);
   assert.ok(String(evaluatorNode.rgba || evaluatorNode.visual?.rgba || '').startsWith('rgba('));

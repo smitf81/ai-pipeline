@@ -16,40 +16,47 @@ These are safe next implementation slices, not promises. Pick one, keep it narro
 | Cover/visibility refinement | Improve visual density and readability of physical cover after v0 | `coverSystem.js`, `canvasRenderer.js`, `gameUI.js` | Cover truth remains in simulation, not renderer | cover/combat tests + browser smoke | v0 landed; next is readability/perf, not a second stealth engine. |
 | Supply route pressure | Make logistics matter spatially | `gameModel.js`, `fields.js`, economy docs | Supply contract remains expandable | `gameModel`, runtime QA | Keep it pressure-based first, not a full transport sim. |
 
+## Latest completed slice
+
+**First Night Shelter-Chain Truth Pass v0.**
+
+- Replaced the misleading `visible` shelter claim with an explicit commander-known target contract and direct-visibility boundary.
+- Removed completed objective shelters from Mouse's next offered choices and ranks the active objective shelter ahead of nearby support stops.
+- Made the local-model example follow the current offered target, so a completed opening shelter cannot leak into a later decision.
+- Added `npm.cmd run test:shelter-route`, which completes all five First Night objectives through real survival orders, including required route-support shelter stops.
+- Extended `npm.cmd run test:mouse:live` to prove accepted first-shelter and follow-on dense-canopy commands.
+
 ## Recommended immediate next slice
 
-**Tick-frame p95 smoothing v0.**
+**First Night consequence/readability v0.**
 
 Why:
 
-- Cadence Regression Recovery v0 restored the major leaked cadence paths.
-- `npm.cmd run test:validation` now exits successfully, but the sim frame-budget report still warns on p95 stress-frame jank.
-- Cadence Obligation Guard v0 is now in place.
-- Future runtime systems must declare cadence/dirty/version ownership in `src/game/cadenceRegistry.js`.
-- The next optimisation should focus on tick-frame staging/recompute bursts. Blueprint validation has already been brought back under budget by direct access proofing.
+- The route is now commandable and mechanically provable end to end.
+- The next visible payoff is making one existing decision point, preferably the crossing or final regroup, legible and consequential to the player.
+- Keep survival objectives and command authority canonical; use existing cover, sound, visibility, or scenario-event truth rather than introducing parallel progress logic.
 
 ## Slice prompt skeleton
 
 ```txt
-Implement Tick-frame p95 smoothing v0.
+Implement First Night consequence/readability v0.
 
 Scope:
-- reduce remaining sim-frame p95 warning without changing gameplay truth
-- use the cadence registry as a guardrail, not as a new scheduler
-- identify which stress-frame phase spikes most: spawn, path order, blueprint validation/place, tick, or summary
-- stage/cache only the expensive work that proves up in the report
+- choose one existing shelter-route decision point, preferably the crossing or final regroup
+- surface one readable gameplay consequence through current simulation/event ownership
+- keep Mouse and player commands on the same commander-authority path
 
 Must preserve:
-- average frame proxy under budget
-- existing cadence registry contracts
-- movement, construction, logistics, combat and cover behaviour
-- player/enemy starting state
-- progression locks
+- First Night five-objective scenario spine
+- commander-known shelter target contract and direct-visibility honesty
+- deterministic shelter-chain browser completion
+- optional Mouse visibility with no direct simulation mutation
 
 Validation:
 - node --check changed JS
 - npm.cmd test
+- npm.cmd run test:mouse
+- npm.cmd run test:shelter-route
+- npm.cmd run test:mouse:live
 - npm.cmd run test:validation
-- inspect output/cadence-obligation-audit/report.json
-- inspect output/sim-frame-budget-qa/report.json
 ```

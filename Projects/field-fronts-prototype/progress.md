@@ -1,3 +1,31 @@
+# 2026-05-27 - First Night Shelter-Chain Truth Pass v0
+
+Mouse can now proceed beyond the opening shelter without claiming sight it does not possess or repeating a completed target.
+
+### Landed
+
+- Replaced the shelter option's asserted `visible` state with a commander-known contract that reports knowledge source and leaves direct visibility unasserted.
+- Ranked in-reach active objective shelter options first and removed completed objective shelters from follow-on choices, while preserving nearby route-support stops needed between objectives.
+- Kept execution on the existing `orders:survival-intent` authority path; the browser QA bridge issues legal commands and only gameplay ticks advance scenario progress.
+- Made the Mouse local-model example derive from the current active offered shelter, and reject non-listed follow-on targets before they reach gameplay validation.
+- Added `npm.cmd run test:shelter-route`, which waits for objective milestones and completes all five First Night objectives through six legal shelter orders, including two route-support moves.
+- Extended `npm.cmd run test:mouse:live` to require two accepted, honoured model actions: `light tree cover`, then `dense canopy` after the first objective completes.
+
+### Validation
+
+- `node --check` passed for the changed runtime, Mouse service and browser-runner modules.
+- `npm.cmd test` passed all in-process tests.
+- `npm.cmd run test:mouse` passed.
+- `npm.cmd run test:shelter-route` passed: `5/5` objectives complete at tick `304`, with active-objective receipts for tree cover, canopy, riverbank hollow and final cave.
+- `npm.cmd run test:mouse:live` passed against Ollama `qwen2.5-coder:1.5b`: `seek_shelter -> light tree cover`, followed by `seek_shelter -> dense canopy`, both `accepted/executed/accepted` and target-honoured.
+- `npm.cmd run test:browser` passed using the web-game Playwright client.
+- `npm.cmd run test:validation` passed: cadence audit `0` findings; sim frame-budget QA `7.26ms` average / `41.429ms` p95.
+- Inspected `output/shelter-chain-qa/shelter-chain-complete.png` and `output/mouse-playtest/mouse-live.png`; the completion state and follow-on Mouse command are readable with no browser console errors reported by the QA runs.
+
+### Residual
+
+- Route-support stops are now truthful and provable, but their player-facing distinction from objective shelters is still subtle. A narrow consequence/readability pass can build on this contract without adding a parallel objective path.
+
 # 2026-05-26 - Shelter Intent Contract v1: Mouse's First Finding
 
 Mouse's first live playtest finding is now resolved: a legal `seek_shelter -> light tree cover` command no longer degrades into vague escape movement when the target is valid.

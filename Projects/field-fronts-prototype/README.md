@@ -85,12 +85,24 @@ Runtime/performance validation:
 npm.cmd run test:validation
 ```
 
-## Current known blocker
+First Night shelter-chain browser proof:
 
-`npm.cmd run test:validation` now includes the cadence obligation audit and exits successfully, but the sim-frame report still returns `WARN` on p95 stress-frame jank.
+```powershell
+npm.cmd run test:shelter-route
+```
 
-Current diagnosis: average frame proxy is back under budget, weather/AI cadence leaks are fixed, blueprint validation p95 is back under budget, and the old hard-blocker/pathfinding explosion has not returned. The remaining issue is chunky tick-heavy stress frames when the QA scenario combines spawn, path orders, tick advancement, and summary generation.
+Live local-model Mouse proof:
+
+```powershell
+npm.cmd run test:mouse:live
+```
+
+## Latest completed pass
+
+**First Night Shelter-Chain Truth Pass v0** grounds Mouse shelter choices in commander-known command options rather than asserted visibility. Completed shelters are removed from the next-choice set, active objective shelters outrank support stops, and the browser proof completes all five First Night objectives through real `orders:survival-intent` commands and gameplay ticks.
+
+The live Mouse proof now requires an accepted first shelter action followed by an accepted dense-canopy action after objective progress advances.
 
 ## Current next pass
 
-Cadence Obligation Guard v0 is now in place. Next do a focused **Tick-frame p95 smoothing v0** pass around stress-frame staging/recompute bursts.
+Use the truthful shelter chain as the base for a narrow **First Night consequence/readability v0** pass: make the crossing or regroup choice feel consequential and readable without adding a second objective system or bypassing commander authority.

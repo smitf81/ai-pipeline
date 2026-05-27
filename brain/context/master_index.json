@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-05-27T14:10:38.414Z",
+  "generated_at": "2026-05-27T14:14:32.438Z",
   "root": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline",
-  "files_indexed": 1277,
+  "files_indexed": 1282,
   "appendix_path": "brain/context/chat_appendix.md",
   "records": [
     {
@@ -1440,9 +1440,9 @@
     {
       "path": "AXIOM/apps/launcher/public/axiom-editor.html",
       "category": "code",
-      "size_bytes": 529166,
-      "modified_at": "2026-05-16T07:58:02.841Z",
-      "sha256": "9d4522d004964462f97a1aa8fbbcc3b18b56aa384cff7c27e869d9961f15b9c9",
+      "size_bytes": 529895,
+      "modified_at": "2026-05-27T14:14:24.781Z",
+      "sha256": "74af3b1749e3dd8f2fed0d2105b6e01973a63011a2102863c4cea873dd0a5514",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
@@ -1504,9 +1504,9 @@
     {
       "path": "AXIOM/apps/launcher/server.js",
       "category": "code",
-      "size_bytes": 35073,
-      "modified_at": "2026-05-18T13:58:15.137Z",
-      "sha256": "83944f2ddd44c8af78f2d0adc4587a5d8f918a7cacbbb7c8eecf250447d31bb8",
+      "size_bytes": 37890,
+      "modified_at": "2026-05-27T14:14:24.691Z",
+      "sha256": "4385e6055fbe9451c107ee5b4f0b4601768a9ecf65940e6d7efa94f9b7bf3985",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
@@ -3432,9 +3432,9 @@
     {
       "path": "brain/context/recent_change_digest.md",
       "category": "doc",
-      "size_bytes": 6783,
-      "modified_at": "2026-05-27T14:10:30.604Z",
-      "sha256": "4d1995881486a41ddb9fba8220587e7c969cfedf3adcd1d9d2c84fbd5ca828dc",
+      "size_bytes": 7199,
+      "modified_at": "2026-05-27T14:14:18.574Z",
+      "sha256": "ea13dfd3636265e3d7897772b351c0835d416ac82341878c11c4ca0cbc8c53a7",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -3451,6 +3451,14 @@
       "size_bytes": 5582,
       "modified_at": "2026-05-15T23:04:07.580Z",
       "sha256": "1b69c58a252ed059aa00247f20560ce9d074838b724d38b49494c4fda122c65a",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/README.md",
+      "category": "doc",
+      "size_bytes": 1473,
+      "modified_at": "2026-05-27T14:11:27.614Z",
+      "sha256": "b1fb631098ac47cffc65ed994d8659308d923e8f5b5310ec0b2224fea1e4bd31",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -5960,9 +5968,9 @@
     {
       "path": "Projects/field-fronts-prototype/debug.log",
       "category": "other",
-      "size_bytes": 33892,
-      "modified_at": "2026-05-27T14:10:14.144Z",
-      "sha256": "9e4d5ddfc30a5f5d39dec9792f373ece4f79a7c7706ed347d513a129888a1cc9",
+      "size_bytes": 34280,
+      "modified_at": "2026-05-27T14:12:16.428Z",
+      "sha256": "521be8184e3ec1720991822ad93c20fbfe1a1ca0a654b787a3d72f594c559526",
       "summary": "Project artifact or experiment outside the ACE core."
     },
     {
@@ -6024,9 +6032,9 @@
     {
       "path": "Projects/field-fronts-prototype/docs/agent-orientation/current-next-slices.md",
       "category": "doc",
-      "size_bytes": 4718,
-      "modified_at": "2026-05-26T14:36:58.807Z",
-      "sha256": "3a341a87b791806b2d4ca689c31eeb925bfd6ffb607bd252ff4670bf075352e9",
+      "size_bytes": 5325,
+      "modified_at": "2026-05-27T14:11:15.436Z",
+      "sha256": "8aaa2a6f0d30809810d2d0508e07979707d7a501dad9d161905128d8a6df1325",
       "summary": "Project artifact or experiment outside the ACE core."
     },
     {
@@ -6632,17 +6640,17 @@
     {
       "path": "Projects/field-fronts-prototype/progress.md",
       "category": "doc",
-      "size_bytes": 82136,
-      "modified_at": "2026-05-26T14:36:58.138Z",
-      "sha256": "35fd20cfba0ccb196ef81f732327d265783064773c5760ed5363a15b79048255",
+      "size_bytes": 84626,
+      "modified_at": "2026-05-27T14:12:47.618Z",
+      "sha256": "3ac9b076275f334995c760a8c294760045fb9a53225ee734359260efa8639297",
       "summary": "Project artifact or experiment outside the ACE core."
     },
     {
       "path": "Projects/field-fronts-prototype/README.md",
       "category": "doc",
-      "size_bytes": 3725,
-      "modified_at": "2026-05-26T14:36:58.143Z",
-      "sha256": "70d2f208d13d61e8d4e184a2ddecbe71e4694391b889530f77fc10c350ea9fb6",
+      "size_bytes": 3998,
+      "modified_at": "2026-05-27T14:11:15.352Z",
+      "sha256": "07696ca42b3c95e9d02ce0458791676c5d93a6f04995d14b1339175a3e6dcc3e",
       "summary": "Project artifact or experiment outside the ACE core."
     },
     {
@@ -8232,9 +8240,9 @@
     {
       "path": "ui/package.json",
       "category": "config",
-      "size_bytes": 731,
-      "modified_at": "2026-04-09T17:40:45.497Z",
-      "sha256": "c7c2f91c07dac8381ceef939ac48dbef6d3379851337b846a3367e8a181ae39f",
+      "size_bytes": 840,
+      "modified_at": "2026-05-27T14:11:27.210Z",
+      "sha256": "f2917b41f144a96f7a4a4f3764c483b4820f4fda04d686dcf9201f34502b3a45",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8734,6 +8742,30 @@
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
+      "path": "ui/scripts/Install-Subconscious-Task.ps1",
+      "category": "code",
+      "size_bytes": 1100,
+      "modified_at": "2026-05-27T14:11:27.384Z",
+      "sha256": "c07d383ba8bc9ec6c40be90efe4f27944642b08ebbac6e1284b9441b4eb24f69",
+      "summary": "Spatial IDE browser/server runtime code."
+    },
+    {
+      "path": "ui/scripts/Remove-Subconscious-Task.ps1",
+      "category": "code",
+      "size_bytes": 363,
+      "modified_at": "2026-05-27T14:11:27.471Z",
+      "sha256": "d80464dadbc62bfe46feba7f21e1a66246c0f40a8b3604df92f81d7729f2645c",
+      "summary": "Spatial IDE browser/server runtime code."
+    },
+    {
+      "path": "ui/scripts/Start-Subconscious-Hidden.ps1",
+      "category": "code",
+      "size_bytes": 312,
+      "modified_at": "2026-05-27T14:11:27.294Z",
+      "sha256": "af4969a2ca83fa4709b6e9b152d8a581a6b928ade4c838a15c62cb59529484d4",
+      "summary": "Spatial IDE browser/server runtime code."
+    },
+    {
       "path": "ui/selfUpgrade.js",
       "category": "code",
       "size_bytes": 8017,
@@ -8792,9 +8824,9 @@
     {
       "path": "ui/subconsciousDaemon.js",
       "category": "code",
-      "size_bytes": 26751,
-      "modified_at": "2026-05-27T14:10:27.078Z",
-      "sha256": "47d6adfaf0aaa56d8facced923142fe10d602784a10a6d413c435a01a99e52a1",
+      "size_bytes": 26927,
+      "modified_at": "2026-05-27T14:11:27.123Z",
+      "sha256": "4cfd3fb7c18a054eb3ed25e7ebc287651d8a08cad3bee09a847d77ff759b76f5",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -9656,9 +9688,9 @@
     {
       "path": "ui/tests/run-ui-tests.mjs",
       "category": "test",
-      "size_bytes": 10704,
-      "modified_at": "2026-04-11T11:43:30.894Z",
-      "sha256": "193f000b377c54b51d679536a696c43ce17a3d9021f427fd47f91beac9ffb4a9",
+      "size_bytes": 10777,
+      "modified_at": "2026-05-27T14:13:35.143Z",
+      "sha256": "2389b6cc803e8494c35a15fc7ad204928bf34cb26d99ab71dfb5569ba65924cd",
       "summary": "UI/runtime test coverage."
     },
     {
@@ -9766,6 +9798,14 @@
       "summary": "UI/runtime test coverage."
     },
     {
+      "path": "ui/tests/subconsciousDaemon.test.mjs",
+      "category": "test",
+      "size_bytes": 4601,
+      "modified_at": "2026-05-27T14:13:35.057Z",
+      "sha256": "c62d8cdbae10b25bef9550e5dd1fa5a953852ccd9a215fc74ab0300427c0ab28",
+      "summary": "UI/runtime test coverage."
+    },
+    {
       "path": "ui/tests/taCandidates.test.mjs",
       "category": "test",
       "size_bytes": 6579,
@@ -9824,9 +9864,9 @@
     {
       "path": "ui/tests/truthKernelAdapter.test.mjs",
       "category": "test",
-      "size_bytes": 13580,
-      "modified_at": "2026-04-14T10:55:00.547Z",
-      "sha256": "ccfade2c759b4a1b8eab1acb91ad52673040b89e17beef29d5969e26d58f04fc",
+      "size_bytes": 14783,
+      "modified_at": "2026-05-27T14:12:52.400Z",
+      "sha256": "15dacec38872812c426cbe4dcba0f74911f65fe78976ff200b767afe95e26ef9",
       "summary": "UI/runtime test coverage."
     },
     {
@@ -9936,9 +9976,9 @@
     {
       "path": "ui/truthKernelAdapter.js",
       "category": "code",
-      "size_bytes": 45899,
-      "modified_at": "2026-04-14T10:51:55.097Z",
-      "sha256": "ff0bd039d3bbebf9d9b54b3268872f3cab9da0be69227120182c97221322932b",
+      "size_bytes": 49070,
+      "modified_at": "2026-05-27T14:12:52.315Z",
+      "sha256": "b1ba5f6b5615cf8e1313d4e18cc0dae03a89daf38f544f56bc03a86654ad7dda",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {

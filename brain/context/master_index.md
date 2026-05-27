@@ -1,8 +1,8 @@
 # Project Master Index
 
-Generated: 2026-05-27T14:10:38.418Z
+Generated: 2026-05-27T14:14:32.442Z
 Root: C:\Users\felix\Desktop\Automated_AI_Pipeline
-Indexed files: 1277
+Indexed files: 1282
 
 Use this file to choose what to read next. It is an orientation map, not canonical truth.
 
@@ -23,9 +23,9 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `package.json` - "name": "ace-qa",
 
 ## Category Counts
-- code: 323
-- doc: 225
-- test: 215
+- code: 326
+- doc: 226
+- test: 216
 - historical: 142
 - other: 129
 - data: 108
@@ -36,8 +36,8 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 ## Top-Level Map
 - `Projects`: 372 files
 - `AXIOM`: 313 files
-- `ui`: 250 files
-- `brain`: 129 files
+- `ui`: 254 files
+- `brain`: 130 files
 - `work`: 31 files
 - `ACE_Local_lightweight`: 30 files
 - `Animation_Embodied_Field_Entity_EFE_Plugin`: 25 files
@@ -82,7 +82,7 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `AXIOM/services` - 8 files, 14.5 KB (code:4, doc:3, config:1)
 - `AXIOM/snippets` - 4 files, 10.4 KB (code:4)
 - `brain` - 3 files, 681.2 KB (archive:1, code:1, doc:1)
-- `brain/context` - 32 files, 118.9 KB (doc:19, data:13)
+- `brain/context` - 33 files, 120.7 KB (doc:20, data:13)
 - `brain/emergence` - 17 files, 119.9 KB (doc:12, data:4, code:1)
 - `brain/Image_refs` - 8 files, 13.5 MB (asset:8)
 - `brain/skills` - 12 files, 38.5 KB (doc:7, other:5)
@@ -119,8 +119,8 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `tools/mcp` - 4 files, 22.7 KB (code:4)
 - `ui` - 66 files, 3.9 MB (code:60, config:2, doc:2, archive:1, asset:1)
 - `ui/public` - 45 files, 3.0 MB (code:44, data:1)
-- `ui/scripts` - 1 files, 2.2 KB (code:1)
-- `ui/tests` - 138 files, 1.0 MB (test:138)
+- `ui/scripts` - 4 files, 3.9 KB (code:4)
+- `ui/tests` - 139 files, 1.0 MB (test:139)
 - `work` - 1 files, 79 B (data:1)
 - `work/hatch-pet` - 21 files, 88.9 KB (doc:10, asset:9, data:2)
 - `work/tasks` - 9 files, 13.7 KB (doc:6, data:2, other:1)
@@ -220,7 +220,7 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `AXIOM/apps/launcher/Install Desktop Shortcut.ps1` [code, 630 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/package-lock.json` [config, 33.6 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/package.json` [config, 197 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
-- `AXIOM/apps/launcher/public/axiom-editor.html` [code, 516.8 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/apps/launcher/public/axiom-editor.html` [code, 517.5 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/public/axiom-sse-client.js` [code, 4.5 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/public/README.txt` [doc, 552 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/public/sse-demo.html` [code, 1.0 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
@@ -228,7 +228,7 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `AXIOM/apps/launcher/README-v0.3-MCP-PATCH.txt` [doc, 1.4 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/README-v1.2-HOTFIX.txt` [doc, 447 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/README.md` [doc, 2.2 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
-- `AXIOM/apps/launcher/server.js` [code, 34.3 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/apps/launcher/server.js` [code, 37.0 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/server/sse.js` [code, 1.0 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/plugin-builder/demo/workflow.js` [code, 978 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/plugin-builder/docs/skills/Architectural Integrity & Maintainability.md` [doc, 7.8 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
@@ -385,9 +385,10 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `brain/context/known_fixes.json` [data, 4.3 KB] - Operational planner-support context artifact.
 - `brain/context/known_fixes.md` [doc, 3.2 KB] - Operational planner-support context artifact.
 - `brain/context/next_slice.md` [doc, 4.5 KB] - Operational planner-support context artifact.
-- `brain/context/recent_change_digest.md` [doc, 6.6 KB] - Operational planner-support context artifact.
+- `brain/context/recent_change_digest.md` [doc, 7.0 KB] - Operational planner-support context artifact.
 - `brain/context/recommended_skills.md` [doc, 3.3 KB] - Operational planner-support context artifact.
 - `brain/context/safe_mode/boot-recovery-daemon.json` [data, 5.5 KB] - Operational planner-support context artifact.
+- `brain/context/subconscious/README.md` [doc, 1.4 KB] - Operational planner-support context artifact.
 - `brain/context/ui_backend_drift.md` [doc, 5.7 KB] - Operational planner-support context artifact.
 - `brain/emergence/ace_engineering_constitution.md` [doc, 22.2 KB] - Canonical ACE brain artifact.
 - `brain/emergence/ace_spatial_field_sketchpad_spec.md` [doc, 7.9 KB] - Canonical ACE brain artifact.
@@ -443,9 +444,8 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `brain/topdown-slice/src/units/energy.js` [code, 3.5 KB] - export const WORKER_MAX_ENERGY = 16;
 - `brain/topdown-slice/src/units/units.js` [code, 1.3 KB] - import { TILE_TYPES, getTileType } from '../world/tilemap.js';
 - `brain/topdown-slice/src/world/coordinates.js` [code, 2.9 KB] - export const GROUND_Z = 0;
-- `brain/topdown-slice/src/world/directorPhases.js` [code, 8.1 KB] - import { createField, getFieldValue, setFieldValue } from './fields.js';
 
-Additional high-signal records omitted from Markdown: 589. Query `brain/context/master_index.json` for the full inventory.
+Additional high-signal records omitted from Markdown: 594. Query `brain/context/master_index.json` for the full inventory.
 
 ## Recent Chat Appendix
 ## 2026-05-27T13:34:59.543Z
