@@ -16,6 +16,8 @@ const PROJECT_ROOT = __dirname;
 const DEFAULT_ACE_BASE_URL = "http://127.0.0.1:3000";
 const DEFAULT_ACE_TIMEOUT_MS = 10000;
 const ACE_BRIDGE_CONTRACT_VERSION = "ace-axiom.bridge.v1";
+const DEFAULT_SUBCONSCIOUS_BASE_URL = "http://127.0.0.1:43171";
+const SUBCONSCIOUS_BRIDGE_CONTRACT_VERSION = "axiom-subconscious.bridge.v1";
 
 let latestSceneState = {
   objectCount: 0,
@@ -158,6 +160,17 @@ const MCP_TOOLS = [
         includeWorkspace: { type: "boolean" },
         includeTruthKernel: { type: "boolean" },
         includeBootStatus: { type: "boolean" },
+        timeoutMs: { type: "number" }
+      }
+    }
+  },
+  {
+    name: "subconscious_status",
+    description: "Read the local AI Pipeline subconscious observer status and latest advisory memory references. Output is derived context, never canonical truth.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        baseUrl: { type: "string", description: "Local subconscious daemon URL. Defaults to http://127.0.0.1:43171." },
         timeoutMs: { type: "number" }
       }
     }
@@ -539,6 +552,20 @@ function resolveAceTimeoutMs(timeoutMs = process.env.ACE_TIMEOUT_MS || DEFAULT_A
   return Math.max(500, Math.min(parsed, 15000));
 }
 
+function resolveSubconsciousBaseUrl(baseUrl = process.env.SUBCONSCIOUS_BASE_URL || DEFAULT_SUBCONSCIOUS_BASE_URL) {
+  const raw = String(baseUrl || DEFAULT_SUBCONSCIOUS_BASE_URL).trim() || DEFAULT_SUBCONSCIOUS_BASE_URL;
+  const parsed = new URL(raw);
+  const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
+  const allowedHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  if (parsed.protocol !== "http:" || !allowedHosts.has(hostname)) {
+    throw new Error("Subconscious bridge only allows local HTTP base URLs");
+  }
+  parsed.pathname = parsed.pathname.replace(/\/+$/, "");
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString().replace(/\/+$/, "");
+}
+
 function asBoolean(value) {
   return value === true || String(value || "").toLowerCase() === "true";
 }
@@ -636,6 +663,50 @@ async function buildAceSnapshot(params = {}) {
       sourceRoutes: Object.fromEntries(routePlan),
       routes,
       createdAt: new Date().toISOString()
+    }
+  };
+}
+
+async function buildSubconsciousStatus(params = {}) {
+  const baseUrl = resolveSubconsciousBaseUrl(params.baseUrl);
+  const timeoutMs = resolveAceTimeoutMs(params.timeoutMs);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let response = null;
+  try {
+    const result = await fetch(`${baseUrl}/api/subconscious/status`, { signal: controller.signal });
+    const data = await result.json();
+    response = {
+      ok: result.ok,
+      status: result.status,
+      route: "/api/subconscious/status",
+      url: `${baseUrl}/api/subconscious/status`,
+      data,
+      checkedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    response = {
+      ok: false,
+      status: "offline",
+      route: "/api/subconscious/status",
+      url: `${baseUrl}/api/subconscious/status`,
+      error: error.name === "AbortError" ? `Subconscious route timed out after ${timeoutMs}ms` : String(error.message || error),
+      checkedAt: new Date().toISOString()
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+  return {
+    ok: true,
+    result: {
+      contractVersion: SUBCONSCIOUS_BRIDGE_CONTRACT_VERSION,
+      mode: "read_only_observation",
+      classification: "derived_advisory",
+      canonical: false,
+      status: response.ok ? (response.data?.status?.state || "online") : "offline",
+      advisoryOwner: "brain/context/subconscious/status.json",
+      axiomRole: "observer",
+      response
     }
   };
 }
@@ -762,6 +833,10 @@ async function callTool(tool, params = {}) {
 
   if (tool === "ace_runtime_snapshot") {
     return buildAceSnapshot(params);
+  }
+
+  if (tool === "subconscious_status") {
+    return buildSubconsciousStatus(params);
   }
 
   if (tool === "ace_submit_intent") {

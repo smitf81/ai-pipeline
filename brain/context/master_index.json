@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-05-27T14:14:32.438Z",
+  "generated_at": "2026-05-27T14:15:41.563Z",
   "root": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline",
   "files_indexed": 1282,
   "appendix_path": "brain/context/chat_appendix.md",
@@ -3432,9 +3432,9 @@
     {
       "path": "brain/context/recent_change_digest.md",
       "category": "doc",
-      "size_bytes": 7199,
-      "modified_at": "2026-05-27T14:14:18.574Z",
-      "sha256": "ea13dfd3636265e3d7897772b351c0835d416ac82341878c11c4ca0cbc8c53a7",
+      "size_bytes": 7247,
+      "modified_at": "2026-05-27T14:15:30.559Z",
+      "sha256": "22eb17ad529490218403cc9006e0f41ab71c36b26b600e05b17253df7c770699",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -9800,9 +9800,9 @@
     {
       "path": "ui/tests/subconsciousDaemon.test.mjs",
       "category": "test",
-      "size_bytes": 4601,
-      "modified_at": "2026-05-27T14:13:35.057Z",
-      "sha256": "c62d8cdbae10b25bef9550e5dd1fa5a953852ccd9a215fc74ab0300427c0ab28",
+      "size_bytes": 5617,
+      "modified_at": "2026-05-27T14:14:49.284Z",
+      "sha256": "73ea9f379c6448c95847fa07e44defd6c42cb6b5d59753b0732537647def69f4",
       "summary": "UI/runtime test coverage."
     },
     {

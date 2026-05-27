@@ -17,7 +17,7 @@ Use it as recent-change context, not as canonical truth.
 - Git-visible untracked candidates fell sharply without deleting local files; the refreshed project index fell from 1,821 to 1,275 entries after confirmed historical and generated paths were excluded.
 - Because this session cannot write the active `.git` metadata, a preservation branch named `codex/repository-recovery-2026-05-27` has been created in the ignored local store `.recovery/repository-recovery.git`, retaining `7882435` as its parent and capturing the reviewed active-source snapshot.
 - An immediate follow-up preservation increment captures the shelter-chain browser verifier strengthening that arrived after the initial snapshot boundary.
-- A late-arriving UI subconscious advisory unit is also preserved: daemon/task wrappers, derived truth-kernel exposure, and focused tests; its own contract explicitly marks the output as advisory rather than canonical truth.
+- A late-arriving subconscious advisory unit is also preserved: daemon/task wrappers, derived truth-kernel and AXIOM bridge exposure, and focused tests; its own contract explicitly marks the output as advisory rather than canonical truth.
 
 ## Why it matters
 
@@ -61,7 +61,7 @@ Use it as recent-change context, not as canonical truth.
 - `.\run.cmd --cwd Projects\field-fronts-prototype test:mouse` passed after the shelter-target grounding updates were incorporated.
 - `.\run.cmd --cwd Projects\field-fronts-prototype test:shelter-route` passed with all five shelter objectives completed.
 - `.\run.cmd --cwd AXIOM\apps\plugin-builder test` passed.
-- Syntax checks passed for `ui/subconsciousDaemon.js` and `ui/truthKernelAdapter.js`; direct runs of `ui/tests/subconsciousDaemon.test.mjs` and `ui/tests/truthKernelAdapter.test.mjs` passed.
+- Syntax checks passed for `ui/subconsciousDaemon.js`, `ui/truthKernelAdapter.js`, and `AXIOM/apps/launcher/server.js`; direct runs of `ui/tests/subconsciousDaemon.test.mjs` and `ui/tests/truthKernelAdapter.test.mjs` passed.
 - `.\run.cmd --cwd ui test` did not complete within 300 seconds after reaching `PASS talentUi`; a direct run of `ui/tests/server.test.mjs` from `ui/` also timed out after 60 seconds during server initialization.
 - `git diff --check` passed for the previously tracked working-tree cleanup, while `git diff --cached --check` on the full preservation snapshot reports inherited whitespace and blank-line-at-EOF warnings across newly captured local files; those are not mass-normalized during recovery capture.
 - Direct checks confirmed ignored output/cache/nested-checkout patterns and the repaired constitution reference.

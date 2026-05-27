@@ -1,6 +1,6 @@
 # Project Master Index
 
-Generated: 2026-05-27T14:14:32.442Z
+Generated: 2026-05-27T14:15:41.567Z
 Root: C:\Users\felix\Desktop\Automated_AI_Pipeline
 Indexed files: 1282
 
@@ -82,7 +82,7 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `AXIOM/services` - 8 files, 14.5 KB (code:4, doc:3, config:1)
 - `AXIOM/snippets` - 4 files, 10.4 KB (code:4)
 - `brain` - 3 files, 681.2 KB (archive:1, code:1, doc:1)
-- `brain/context` - 33 files, 120.7 KB (doc:20, data:13)
+- `brain/context` - 33 files, 120.8 KB (doc:20, data:13)
 - `brain/emergence` - 17 files, 119.9 KB (doc:12, data:4, code:1)
 - `brain/Image_refs` - 8 files, 13.5 MB (asset:8)
 - `brain/skills` - 12 files, 38.5 KB (doc:7, other:5)
@@ -385,7 +385,7 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `brain/context/known_fixes.json` [data, 4.3 KB] - Operational planner-support context artifact.
 - `brain/context/known_fixes.md` [doc, 3.2 KB] - Operational planner-support context artifact.
 - `brain/context/next_slice.md` [doc, 4.5 KB] - Operational planner-support context artifact.
-- `brain/context/recent_change_digest.md` [doc, 7.0 KB] - Operational planner-support context artifact.
+- `brain/context/recent_change_digest.md` [doc, 7.1 KB] - Operational planner-support context artifact.
 - `brain/context/recommended_skills.md` [doc, 3.3 KB] - Operational planner-support context artifact.
 - `brain/context/safe_mode/boot-recovery-daemon.json` [data, 5.5 KB] - Operational planner-support context artifact.
 - `brain/context/subconscious/README.md` [doc, 1.4 KB] - Operational planner-support context artifact.

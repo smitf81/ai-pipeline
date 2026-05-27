@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const {
   advisoryPaths,
+  createDaemonServer,
   DEFAULT_CONFIG,
   readStatus,
   runCycle,
@@ -79,6 +80,33 @@ export default async function runSubconsciousDaemonTests() {
   const paths = advisoryPaths(rootPath);
   assert.match(fs.readFileSync(paths.latestThought, 'utf8'), /Subconscious Observation/);
   assert.match(fs.readFileSync(paths.memory, 'utf8'), /A source observation was generated/);
+
+  let wakeRequests = 0;
+  const statusServer = createDaemonServer({
+    rootPath,
+    config: DEFAULT_CONFIG,
+    requestCycle: () => {
+      wakeRequests += 1;
+    },
+  });
+  await new Promise((resolve) => statusServer.listen(0, '127.0.0.1', resolve));
+  const address = statusServer.address();
+  const daemonBaseUrl = `http://127.0.0.1:${address.port}`;
+  try {
+    const statusResponse = await fetch(`${daemonBaseUrl}/api/subconscious/status`);
+    const statusPayload = await statusResponse.json();
+    assert.equal(statusPayload.status.state, 'live');
+    assert.equal(statusPayload.status.canonical, false);
+    const wakeResponse = await fetch(`${daemonBaseUrl}/api/subconscious/control`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'wake' }),
+    });
+    assert.equal(wakeResponse.status, 202);
+    assert.equal(wakeRequests, 1);
+  } finally {
+    await new Promise((resolve) => statusServer.close(resolve));
+  }
 
   writeFile(rootPath, 'src/example.js', 'export function example() { return false; }\n');
   const pressured = await runCycle({
