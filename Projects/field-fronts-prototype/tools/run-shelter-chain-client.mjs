@@ -10,12 +10,12 @@ const outputDir = resolve(projectRoot, 'output', 'shelter-chain-qa');
 const port = 4197;
 const url = `http://127.0.0.1:${port}/?seed=1`;
 const route = [
-  { targetId: 'shelter_first_trees', purpose: 'first objective shelter' },
-  { targetId: 'shelter_canopy_01', purpose: 'canopy objective shelter' },
-  { targetId: 'shelter_boulders', purpose: 'route-support shelter between distant objectives' },
-  { targetId: 'shelter_bank_hollow', purpose: 'muddy crossing objective shelter' },
-  { targetId: 'shelter_fallen_tree', purpose: 'post-crossing support shelter while the commander catches up' },
-  { targetId: 'shelter_final_cave', purpose: 'final regroup shelter' }
+  { targetId: 'shelter_first_trees', purpose: 'first objective shelter', minimumCompletedBefore: 0, requiredState: 'active' },
+  { targetId: 'shelter_canopy_01', purpose: 'canopy objective shelter', minimumCompletedBefore: 1, requiredState: 'active' },
+  { targetId: 'shelter_boulders', purpose: 'route-support shelter between distant objectives', minimumCompletedBefore: 2, requiredState: 'route_support' },
+  { targetId: 'shelter_bank_hollow', purpose: 'muddy crossing objective shelter', minimumCompletedBefore: 2, requiredState: 'active' },
+  { targetId: 'shelter_fallen_tree', purpose: 'post-crossing support shelter while the commander catches up', minimumCompletedBefore: 3, requiredState: 'route_support' },
+  { targetId: 'shelter_final_cave', purpose: 'final regroup shelter', minimumCompletedBefore: 3, requiredState: 'active' }
 ];
 const tickMs = 750;
 process.env.PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH ?? resolve(workspaceRoot, '.playwright-browsers');
@@ -44,7 +44,7 @@ try {
 
   const receipts = [];
   for (const stop of route) {
-    const offered = await advanceUntilTargetIsOffered(page, stop.targetId);
+    const offered = await advanceUntilTargetIsOffered(page, stop);
     const issued = await page.evaluate((targetId) => window.__fieldFrontsQa.issueSurvivalCommand(targetId), stop.targetId);
     if (!issued.ok || issued.feedback?.status !== 'accepted') {
       throw new Error(`Shelter route command failed for ${stop.targetId}: ${issued.message ?? issued.feedback?.reason ?? issued.reason ?? 'unknown result'}`);
@@ -93,21 +93,21 @@ try {
   server.kill();
 }
 
-async function advanceUntilTargetIsOffered(page, targetId) {
+async function advanceUntilTargetIsOffered(page, stop) {
   for (let tick = 0; tick < 260; tick += 1) {
-    const result = await page.evaluate((requestedTargetId) => ({
+    const result = await page.evaluate(() => ({
       targets: window.__fieldFrontsQa.shelterTargets(),
       progress: window.__fieldFrontsQa.scenarioProgress(),
       tick: JSON.parse(window.render_game_to_text()).game.tick
-    }), targetId);
-    const target = result.targets.find((entry) => entry.id === targetId);
-    if (target) {
+    }));
+    const target = result.targets.find((entry) => entry.id === stop.targetId);
+    if (target && target.objectiveState === stop.requiredState && result.progress.completed >= stop.minimumCompletedBefore) {
       return { target, progress: result.progress, tick: result.tick };
     }
     await advanceTick(page);
   }
   const visible = await page.evaluate(() => window.__fieldFrontsQa.shelterTargets());
-  throw new Error(`Shelter target ${targetId} never became available; offered=${visible.map((entry) => entry.id).join(',')}.`);
+  throw new Error(`Shelter target ${stop.targetId} never became available as ${stop.requiredState}; offered=${visible.map((entry) => `${entry.id}:${entry.objectiveState}`).join(',')}.`);
 }
 
 async function advanceUntil(page, predicate, limit) {

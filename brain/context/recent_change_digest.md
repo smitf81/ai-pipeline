@@ -16,6 +16,7 @@ Use it as recent-change context, not as canonical truth.
 - The project-index scan now excludes the same confirmed generated/historical roots, and the misnamed `brain/skills/game-loop-delta-time-runtime-cadence` skill has been made validator-compatible.
 - Git-visible untracked candidates fell sharply without deleting local files; the refreshed project index fell from 1,821 to 1,275 entries after confirmed historical and generated paths were excluded.
 - Because this session cannot write the active `.git` metadata, a preservation branch named `codex/repository-recovery-2026-05-27` has been created in the ignored local store `.recovery/repository-recovery.git`, retaining `7882435` as its parent and capturing the reviewed active-source snapshot.
+- An immediate follow-up preservation increment captures the shelter-chain browser verifier strengthening that arrived after the initial snapshot boundary.
 
 ## Why it matters
 

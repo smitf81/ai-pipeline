@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-05-27T14:09:35.937Z",
+  "generated_at": "2026-05-27T14:10:38.414Z",
   "root": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline",
-  "files_indexed": 1276,
+  "files_indexed": 1277,
   "appendix_path": "brain/context/chat_appendix.md",
   "records": [
     {
@@ -3432,9 +3432,9 @@
     {
       "path": "brain/context/recent_change_digest.md",
       "category": "doc",
-      "size_bytes": 6627,
-      "modified_at": "2026-05-27T14:09:26.257Z",
-      "sha256": "7ad0f57c9cd9638cd0be780aa217bc4bd4d7dd9b2c0813bc360d5218f13cdd26",
+      "size_bytes": 6783,
+      "modified_at": "2026-05-27T14:10:30.604Z",
+      "sha256": "4d1995881486a41ddb9fba8220587e7c969cfedf3adcd1d9d2c84fbd5ca828dc",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -5960,9 +5960,9 @@
     {
       "path": "Projects/field-fronts-prototype/debug.log",
       "category": "other",
-      "size_bytes": 30625,
-      "modified_at": "2026-05-27T14:02:24.603Z",
-      "sha256": "865abbfc5f0424b388e42ca1b12bf1ba9fbe10a2d764b5caeb9979458eefe781",
+      "size_bytes": 33892,
+      "modified_at": "2026-05-27T14:10:14.144Z",
+      "sha256": "9e4d5ddfc30a5f5d39dec9792f373ece4f79a7c7706ed347d513a129888a1cc9",
       "summary": "Project artifact or experiment outside the ACE core."
     },
     {
@@ -7424,9 +7424,9 @@
     {
       "path": "Projects/field-fronts-prototype/tools/run-shelter-chain-client.mjs",
       "category": "code",
-      "size_bytes": 7263,
-      "modified_at": "2026-05-27T14:03:51.940Z",
-      "sha256": "11d51cbdf28730caac8b8e86946a29b522f55f3f3cb88bc5a8304cf205c23123",
+      "size_bytes": 7721,
+      "modified_at": "2026-05-27T14:10:04.456Z",
+      "sha256": "7209a080379cf7e23c44c614afdad0700233264afd333fb08ad2bebe368a7438",
       "summary": "Project artifact or experiment outside the ACE core."
     },
     {
@@ -8787,6 +8787,14 @@
       "size_bytes": 64501,
       "modified_at": "2026-04-11T11:23:20.897Z",
       "sha256": "4b1a474327f38d4f0377093a2689ac4883e0fb30f88ca86c1cf0e7b5d36369c0",
+      "summary": "Spatial IDE browser/server runtime code."
+    },
+    {
+      "path": "ui/subconsciousDaemon.js",
+      "category": "code",
+      "size_bytes": 26751,
+      "modified_at": "2026-05-27T14:10:27.078Z",
+      "sha256": "47d6adfaf0aaa56d8facced923142fe10d602784a10a6d413c435a01a99e52a1",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
