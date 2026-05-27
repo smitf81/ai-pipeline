@@ -10,11 +10,12 @@ import {
   MOVEMENT_MODEL,
   serializeGameState,
   spawnInfantrySquad,
+  setPlayerEntityPressureStance,
   setPlayerMovementIntent,
   setPlayerPressureStance
 } from '../src/game/gameModel.js';
 import { RESOURCE_DEFINITIONS, RESOURCE_IDS, SUPPLIES_COMPONENT_IDS } from '../src/game/economy.js';
-import { calculateSupplyIncomeTick, canAffordSupplies, spendSupplies, SUPPLY_INCOME_PER_OUTPOST_TICK } from '../src/game/economy.js';
+import { calculateSupplyIncomeTick, canAffordCost, spendCost, OUTPOST_GOLD_INCOME_PER_TICK } from '../src/game/economy.js';
 import { GAME_STATE_CONTRACT_ID, createMapRef } from '../src/game/contracts.js';
 
 export function run() {
@@ -28,10 +29,19 @@ export function run() {
   assert.equal(game.outposts.length, 3);
   assert.equal(game.structures.length, 3);
   assert.equal(RESOURCE_DEFINITIONS[0].id, RESOURCE_IDS.supplies);
-  assert.deepEqual(Object.keys(game.economy.resources), [RESOURCE_IDS.supplies]);
+  assert.deepEqual(Object.keys(game.economy.resources), [RESOURCE_IDS.supplies, RESOURCE_IDS.gold, RESOURCE_IDS.food, RESOURCE_IDS.wood, RESOURCE_IDS.population]);
   assert.deepEqual(Object.keys(game.economy.resources.supplies.components), [...SUPPLIES_COMPONENT_IDS]);
   assert.equal(game.economy.factions.player.stockpiles.supplies.amount, 0);
+  assert.equal(game.economy.factions.player.stockpiles.gold.amount, 115);
+  assert.equal(game.economy.factions.player.stockpiles.food.amount, 36);
+  assert.equal(game.economy.factions.player.stockpiles.wood.amount, 32);
+  assert.equal(game.economy.factions.player.stockpiles.population.amount, 10);
   assert.equal(game.economy.factions.enemy.stockpiles.supplies.amount, 0);
+  assert.equal(game.economy.factions.enemy.stockpiles.gold.amount, 115);
+  assert.equal(game.economy.factions.enemy.stockpiles.food.amount, 36);
+  assert.equal(game.economy.factions.enemy.stockpiles.wood.amount, 32);
+  assert.equal(game.economy.factions.enemy.stockpiles.population.amount, 10);
+  assert.equal(game.economy.factions.player.storage.used, 68);
   assert.equal(game.leaders[0].type, 'leader');
   assert.equal(game.leaders[0].collision.layer, 'unit');
   assert.equal(game.leaders[0].collision.softSeparation, true);
@@ -55,7 +65,7 @@ export function run() {
   const enemyLeader = game.leaders.find((leader) => leader.factionId === 'enemy');
   const contestedOutpost = game.outposts.find((outpost) => outpost.contestable);
   const openingIncome = calculateSupplyIncomeTick(game.outposts);
-  assert.equal(openingIncome.player.amount, SUPPLY_INCOME_PER_OUTPOST_TICK + (SUPPLY_INCOME_PER_OUTPOST_TICK * contestedOutpost.supply * 0.5));
+  assert.equal(openingIncome.player.amount, Math.round((OUTPOST_GOLD_INCOME_PER_TICK + (OUTPOST_GOLD_INCOME_PER_TICK * contestedOutpost.supply * 0.5)) * 1000) / 1000);
   assert.equal(openingIncome.enemy.amount, openingIncome.player.amount);
   const gradientIncome = calculateSupplyIncomeTick([{
     id: 'outpost_gradient_test',
@@ -63,8 +73,8 @@ export function run() {
     supply: 1,
     control: { player: 0.7, enemy: 0.3 }
   }]);
-  assert.equal(gradientIncome.player.amount, 7);
-  assert.equal(gradientIncome.enemy.amount, 3);
+  assert.equal(gradientIncome.player.amount, Math.round(OUTPOST_GOLD_INCOME_PER_TICK * 0.7 * 1000) / 1000);
+  assert.equal(gradientIncome.enemy.amount, Math.round(OUTPOST_GOLD_INCOME_PER_TICK * 0.3 * 1000) / 1000);
   assert.equal(contestedOutpost.factionId, 'neutral');
   assert.equal(contestedOutpost.ownerFactionId, null);
   assert.equal(contestedOutpost.control.player, 0.5);
@@ -88,18 +98,22 @@ export function run() {
 
   advanceGameTick(game, map);
   assert.equal(game.tick, 1);
-  assert.ok(game.economy.factions.player.stockpiles.supplies.amount > SUPPLY_INCOME_PER_OUTPOST_TICK);
-  assert.ok(game.economy.factions.enemy.stockpiles.supplies.amount > SUPPLY_INCOME_PER_OUTPOST_TICK);
-  assert.ok(game.economy.factions.player.lastIncome.supplies.sources.some((source) => source.kind === 'base-outpost'));
-  assert.ok(game.economy.factions.player.lastIncome.supplies.sources.some((source) => source.kind === 'contest-gradient'));
+  assert.ok(game.economy.factions.player.stockpiles.gold.amount > 95 + OUTPOST_GOLD_INCOME_PER_TICK - 0.001);
+  assert.ok(game.economy.factions.enemy.stockpiles.gold.amount > 95 + OUTPOST_GOLD_INCOME_PER_TICK - 0.001);
+  assert.ok(game.economy.factions.player.lastIncome.gold.sources.some((source) => source.kind === 'base-outpost'));
+  assert.ok(game.economy.factions.player.lastIncome.gold.sources.some((source) => source.kind === 'contest-gradient'));
+  assert.ok(game.economy.factions.player.lastIncome.population.sources.some((source) => source.kind === 'base-outpost'));
+  assert.ok(game.economy.factions.player.lastIncome.population.sources.some((source) => source.kind === 'contest-gradient'));
+  assert.ok(game.economy.factions.player.lastIncome.food.sources.some((source) => source.kind === 'outpost-native-trickle'));
+  assert.ok(game.economy.factions.player.lastIncome.wood.sources.some((source) => source.kind === 'outpost-native-trickle'));
   assert.ok(Math.abs(
-    Object.values(game.economy.factions.player.stockpiles.supplies.components).reduce((sum, value) => sum + value, 0)
-    - game.economy.factions.player.stockpiles.supplies.amount
+    Object.values(game.economy.factions.player.stockpiles.gold.components).reduce((sum, value) => sum + value, 0)
+    - game.economy.factions.player.stockpiles.gold.amount
   ) < 0.001);
-  assert.equal(canAffordSupplies(game.economy, 'player', 80), false);
-  const insufficientSpend = spendSupplies(game.economy, 'player', 80);
-  assert.equal(insufficientSpend.ok, false);
-  assert.equal(insufficientSpend.reason, 'insufficient-supplies');
+  assert.equal(canAffordCost(game.economy, 'player', { [RESOURCE_IDS.gold]: 80 }).ok, true);
+  const affordableOpeningSpend = spendCost(game.economy, 'player', { [RESOURCE_IDS.gold]: 80 });
+  assert.equal(affordableOpeningSpend.ok, true);
+  assert.equal(affordableOpeningSpend.economy.factions.player.stockpiles.gold.amount, Math.round((game.economy.factions.player.stockpiles.gold.amount - 80) * 1000) / 1000);
   assert.equal(game.fields.control.width, map.width);
   const movedPlayerLeader = game.leaders.find((leader) => leader.factionId === 'player');
   const tickedEnemyLeader = game.leaders.find((leader) => leader.factionId === 'enemy');
@@ -120,18 +134,26 @@ export function run() {
   const snapshot = createGameStateSnapshot(game, map);
   assert.equal(snapshot.contract, GAME_STATE_CONTRACT_ID);
   assert.equal(snapshot.tick, 1);
-  assert.equal(snapshot.economy.resources.supplies.role, 'aggregate');
+  assert.equal(snapshot.economy.resources.gold.role, 'currency');
+  assert.equal(snapshot.progression.stage, 'tribal_camp');
   assert.equal(snapshot.fields, undefined);
   assert.equal(snapshot.frontline, undefined);
   assert.equal(snapshot.leaders[0].command, undefined);
   assert.equal(snapshot.structures.length, 3);
+  assert.equal(snapshot.battlefieldTrace.footprints.length > 0, true);
 
   const json = serializeGameState(game, map);
   const restored = deserializeGameState(json, map);
   assert.equal(restored.tick, 1);
   assert.deepEqual(Object.keys(restored.economy.factions.player.stockpiles.supplies.components), [...SUPPLIES_COMPONENT_IDS]);
+  assert.deepEqual(Object.keys(restored.economy.factions.player.stockpiles.gold.components), [RESOURCE_IDS.gold]);
+  assert.deepEqual(Object.keys(restored.economy.factions.player.stockpiles.food.components), [RESOURCE_IDS.food]);
+  assert.deepEqual(Object.keys(restored.economy.factions.player.stockpiles.wood.components), [RESOURCE_IDS.wood]);
+  assert.deepEqual(Object.keys(restored.economy.factions.player.stockpiles.population.components), [RESOURCE_IDS.population]);
+  assert.equal(restored.progression.stage, 'tribal_camp');
   assert.equal(restored.leaders.length, 2);
   assert.equal(restored.structures.length, 3);
+  assert.equal(restored.battlefieldTrace.footprints.length, snapshot.battlefieldTrace.footprints.length);
   assert.equal(restored.fields.control.height, map.height);
   assert.ok(restored.frontline.segmentCount > 0);
   assert.equal(restored.leaders[0].command.graph.length, game.leaders[0].command.graph.length);
@@ -140,17 +162,17 @@ export function run() {
 
   const purchaseGame = createInitialGameState(map);
   setPlayerPressureStance(purchaseGame, map, 'commit');
-  for (let index = 0; index < 7; index += 1) {
+  for (let index = 0; index < 21; index += 1) {
     advanceGameTick(purchaseGame, map);
   }
-  const beforeSpend = purchaseGame.economy.factions.player.stockpiles.supplies.amount;
-  assert.equal(canAffordSupplies(purchaseGame.economy, 'player', 80), true);
-  const spend = spendSupplies(purchaseGame.economy, 'player', 80);
+  const beforeSpend = purchaseGame.economy.factions.player.stockpiles.gold.amount;
+  assert.equal(canAffordCost(purchaseGame.economy, 'player', { [RESOURCE_IDS.gold]: 80 }).ok, true);
+  const spend = spendCost(purchaseGame.economy, 'player', { [RESOURCE_IDS.gold]: 80 });
   assert.equal(spend.ok, true);
-  assert.equal(spend.economy.factions.player.stockpiles.supplies.amount, Math.round((beforeSpend - 80) * 1000) / 1000);
+  assert.equal(spend.economy.factions.player.stockpiles.gold.amount, Math.round((beforeSpend - 80) * 1000) / 1000);
   assert.equal(
-    Object.values(spend.economy.factions.player.stockpiles.supplies.components).reduce((sum, value) => Math.round((sum + value) * 1000) / 1000, 0),
-    spend.economy.factions.player.stockpiles.supplies.amount
+    Object.values(spend.economy.factions.player.stockpiles.gold.components).reduce((sum, value) => Math.round((sum + value) * 1000) / 1000, 0),
+    spend.economy.factions.player.stockpiles.gold.amount
   );
 
   const squadGame = createInitialGameState(map);
@@ -170,6 +192,13 @@ export function run() {
   assert.ok(getGameFieldValue(squadGame, 'playerLoS', squad.tile.x, squad.tile.y) > 0.5);
   const squadObjective = squadGame.outposts.find((outpost) => outpost.contestable);
   assert.ok(squadObjective.projectedPressure.player > 0);
+  const squadOverride = setPlayerEntityPressureStance(squadGame, map, squad.id, 'hold');
+  assert.equal(squadOverride.ok, true);
+  assert.equal(squadGame.squads[0].behavior.stance, 'hold');
+  assert.equal(squadGame.leaders.find((leader) => leader.factionId === 'player').behavior.stance, 'commit');
+  const enemyOverride = setPlayerEntityPressureStance(squadGame, map, squadGame.leaders.find((leader) => leader.factionId === 'enemy').id, 'hold');
+  assert.equal(enemyOverride.ok, false);
+  assert.equal(enemyOverride.reason, 'invalid-player-command-target');
   setPlayerMovementIntent(squadGame, map, squad.id, [
     squad.position,
     { x: squad.position.x + 2, y: squad.position.y },

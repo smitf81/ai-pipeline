@@ -1,0 +1,7 @@
+interface:
+  display_name: "AI Pipeline Design"
+  short_description: "Quiet, beautiful, modular UI for AI Pipeline work"
+  default_prompt: "Use $ai-pipeline-design when designing or implementing AI Pipeline UI so the result stays subtle, smooth, scalable, modular, and easy to debug without visual clutter."
+
+policy:
+  allow_implicit_invocation: true

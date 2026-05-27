@@ -1,0 +1,35 @@
+{
+  "contract": "rnd-experiment.v1",
+  "updatedAt": "2026-03-30T12:00:00.000Z",
+  "experiments": [
+    {
+      "id": "RND-0001-JFA-2D",
+      "hypothesis": "A parallel sandbox desk can validate prototype ideas without interfering with delivery throughput.",
+      "lifecycle": "proposed",
+      "scope": [
+        "R&D desk workflow",
+        "sandbox prototype validation",
+        "delivery-adjacent research notes"
+      ],
+      "inputs": [
+        "R&D / Research & Development desk guidance",
+        "canonical studio layout truth",
+        "delivery flow boundaries"
+      ],
+      "expected_output": "A clear research note that captures what was learned and what can be salvaged for delivery review.",
+      "success_criteria": "The experiment stays read-only, produces a concrete finding, and identifies a possible delivery target or follow-up.",
+      "failure_criteria": "The experiment attempts direct shipping, mutates production state, or returns no usable learning.",
+      "salvageable_components": [
+        "summary wording",
+        "prototype validation notes",
+        "delivery-target recommendation"
+      ],
+      "integration_target": "delivery-planning",
+      "what_worked": [],
+      "what_failed": [],
+      "reusable_components": [],
+      "discard_reason": "",
+      "extracted_primitives": []
+    }
+  ]
+}

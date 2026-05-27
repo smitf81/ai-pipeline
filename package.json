@@ -1,0 +1,23 @@
+{
+  "name": "ace-qa",
+  "private": true,
+  "scripts": {
+    "index:project": "node tools/project_index_tool.mjs",
+    "axiom:plugin:check": "node tools/axiom-plugin-slice.mjs --check",
+    "axiom:plugin:build-safe-write": "node tools/axiom-plugin-slice.mjs --build-slice --plugin-id safe-write-project-file --name \"safe_write_project_file\" --gap safe_write_project_file --target-area mcp.project_file_write",
+    "axiom:plugin:map": "node tools/axiom-plugin-slice.mjs --write",
+    "axiom:plugin:repair-bundles": "node tools/axiom-plugin-slice.mjs --repair-bundle-paths",
+    "axiom:plugin:smoke": "node tools/axiom-plugin-slice.mjs --smoke",
+    "qa": "node qa/runCli.js",
+    "smoke:ace": "node tools/ace-smoke.mjs",
+    "smoke:ace:all": "node tools/ace-smoke.mjs --scope all",
+    "smoke:ace:ui": "node tools/ace-smoke.mjs --scope ui",
+    "truth:check": "node tools/canonical-truth-map.mjs --check",
+    "truth:map": "node tools/canonical-truth-map.mjs --write",
+    "validate:project-index-skill": "tools\\skill-validator.cmd brain\\skills\\project-index",
+    "validate:skills": "node tools/ace-smoke.mjs --scope skills"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}

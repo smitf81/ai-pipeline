@@ -1,5 +1,9 @@
 export const RESOURCE_IDS = Object.freeze({
-  supplies: 'supplies'
+  supplies: 'supplies',
+  gold: 'gold',
+  food: 'food',
+  wood: 'wood',
+  population: 'population'
 });
 
 export const SUPPLIES_COMPONENT_IDS = Object.freeze([
@@ -8,20 +12,60 @@ export const SUPPLIES_COMPONENT_IDS = Object.freeze([
   'transit'
 ]);
 
-export const SUPPLY_INCOME_PER_OUTPOST_TICK = 10;
+export const SUPPLY_INCOME_PER_OUTPOST_TICK = 3;
+export const OUTPOST_GOLD_INCOME_PER_TICK = 3;
+export const OUTPOST_POPULATION_INCOME_PER_TICK = 0.06;
+export const DEFAULT_STORAGE_CAPACITY = 0;
 
-export const RESOURCE_DEFINITIONS = Object.freeze([
-  Object.freeze({
+export const RESOURCE_DEFINITIONS = deepFreeze([
+  {
     id: RESOURCE_IDS.supplies,
-    label: 'Supplies',
+    label: 'Logistics',
     role: 'aggregate',
-    description: 'The first player-facing resource pool, assembled from field sustainment components.',
-    components: Object.freeze(SUPPLIES_COMPONENT_IDS.map((id) => Object.freeze({
+    description: 'Abstract logistics pressure retained for compatibility and internal sustainment signals.',
+    components: SUPPLIES_COMPONENT_IDS.map((id) => ({
       id,
       label: toLabel(id),
       weight: 1
-    })))
-  })
+    }))
+  },
+
+  {
+    id: RESOURCE_IDS.gold,
+    label: 'Gold',
+    role: 'currency',
+    description: 'Pay, tribute, and portable wealth used to recruit labour and fighting men.',
+    components: [
+      { id: RESOURCE_IDS.gold, label: 'Gold', weight: 1 }
+    ]
+  },
+  {
+    id: RESOURCE_IDS.food,
+    label: 'Food',
+    role: 'raw',
+    description: 'Local forage, game, and field rations gathered from hunting camps.',
+    components: [
+      { id: RESOURCE_IDS.food, label: 'Food', weight: 1 }
+    ]
+  },
+  {
+    id: RESOURCE_IDS.wood,
+    label: 'Wood',
+    role: 'raw',
+    description: 'Timber hauled from forest tiles by wood gathering posts.',
+    components: [
+      { id: RESOURCE_IDS.wood, label: 'Wood', weight: 1 }
+    ]
+  },
+  {
+    id: RESOURCE_IDS.population,
+    label: 'Population',
+    role: 'people',
+    description: 'Available camp followers, workers, nomads, and recruits who can be assigned to work or war.',
+    components: [
+      { id: RESOURCE_IDS.population, label: 'Population', weight: 1 }
+    ]
+  }
 ]);
 
 export function createInitialEconomy(factionIds = ['player', 'enemy']) {
@@ -63,23 +107,33 @@ export function summarizeEconomy(economy) {
 
 export function applySupplyIncomeTick(economy, outposts, factionIds = ['player', 'enemy']) {
   const normalised = normaliseEconomy(economy, factionIds);
-  const income = calculateSupplyIncomeTick(outposts, factionIds);
+  const income = calculateOutpostIncomeTick(outposts, factionIds);
   return {
     ...normalised,
     factions: Object.fromEntries(factionIds.map((factionId) => {
       const faction = normalised.factions[factionId];
-      const incomeAmount = income[factionId]?.amount ?? 0;
+      let nextStockpiles = { ...faction.stockpiles };
+      let lastIncome = { ...faction.lastIncome };
+      for (const [resourceId, incomeEntry] of Object.entries(income[factionId] ?? {})) {
+        const definition = getResourceDefinition(resourceId);
+        if (!definition) continue;
+        const acceptedAmount = incomeEntry?.amount ?? 0;
+        nextStockpiles = {
+          ...nextStockpiles,
+          [resourceId]: addResourceToStockpile(nextStockpiles[resourceId], definition, acceptedAmount)
+        };
+        lastIncome = {
+          ...lastIncome,
+          [resourceId]: resizeIncomeAmount(incomeEntry ?? createEmptyIncome(resourceId), definition, acceptedAmount)
+        };
+      }
       return [
         factionId,
         {
           ...faction,
-          stockpiles: {
-            ...faction.stockpiles,
-            [RESOURCE_IDS.supplies]: addSupplyToStockpile(faction.stockpiles[RESOURCE_IDS.supplies], incomeAmount)
-          },
-          lastIncome: {
-            [RESOURCE_IDS.supplies]: income[factionId] ?? createEmptyIncome()
-          }
+          stockpiles: nextStockpiles,
+          storage: normaliseStorageState(faction.storage, nextStockpiles),
+          lastIncome
         }
       ];
     }))
@@ -87,47 +141,217 @@ export function applySupplyIncomeTick(economy, outposts, factionIds = ['player',
 }
 
 export function calculateSupplyIncomeTick(outposts = [], factionIds = ['player', 'enemy']) {
-  const income = Object.fromEntries(factionIds.map((factionId) => [factionId, createEmptyIncome()]));
+  return Object.fromEntries(Object.entries(calculateOutpostIncomeTick(outposts, factionIds)).map(([factionId, resources]) => [
+    factionId,
+    resources[RESOURCE_IDS.gold] ?? createEmptyIncome(RESOURCE_IDS.gold)
+  ]));
+}
+
+export function calculateOutpostIncomeTick(outposts = [], factionIds = ['player', 'enemy']) {
+  const income = Object.fromEntries(factionIds.map((factionId) => [
+    factionId,
+    {
+      [RESOURCE_IDS.gold]: createEmptyIncome(RESOURCE_IDS.gold),
+      [RESOURCE_IDS.population]: createEmptyIncome(RESOURCE_IDS.population)
+    }
+  ]));
 
   outposts.forEach((outpost) => {
     const supplyValue = Number.isFinite(outpost?.supply) ? Math.max(0, outpost.supply) : 1;
-    const baseAmount = SUPPLY_INCOME_PER_OUTPOST_TICK * supplyValue;
-    if (baseAmount <= 0) {
-      return;
-    }
+    const goldAmount = OUTPOST_GOLD_INCOME_PER_TICK * supplyValue;
+    const populationAmount = OUTPOST_POPULATION_INCOME_PER_TICK * supplyValue;
+    if (goldAmount <= 0 && populationAmount <= 0) return;
+
+    const addForFaction = (factionId, share = 1) => {
+      if (!income[factionId]) return;
+      addIncome(income[factionId][RESOURCE_IDS.gold], goldAmount * share, outpost);
+      addIncome(income[factionId][RESOURCE_IDS.population], populationAmount * share, outpost);
+    };
 
     if (outpost.contestable) {
-      factionIds.forEach((factionId) => {
-        addIncome(income[factionId], baseAmount * getControlShare(outpost, factionId), outpost);
-      });
+      factionIds.forEach((factionId) => addForFaction(factionId, getControlShare(outpost, factionId)));
       return;
     }
 
-    const owner = outpost.ownerFactionId ?? outpost.factionId;
-    if (income[owner]) {
-      addIncome(income[owner], baseAmount, outpost);
-    }
+    addForFaction(outpost.ownerFactionId ?? outpost.factionId, 1);
   });
 
-  Object.values(income).forEach((entry) => {
-    entry.amount = round3(entry.amount);
-    entry.components = splitSupplyComponents(entry.amount);
+  Object.values(income).forEach((factionIncome) => {
+    Object.values(factionIncome).forEach((entry) => {
+      entry.amount = round3(entry.amount);
+      entry.components = splitResourceComponents(getResourceDefinition(entry.resourceId), entry.amount);
+    });
   });
   return income;
 }
 
-export function canAffordSupplies(economy, factionId, amount) {
+export function applyResourceIncomeTick(economy, incomeByFaction = {}, factionIds = ['player', 'enemy']) {
+  const normalised = normaliseEconomy(economy, factionIds);
+  return {
+    ...normalised,
+    factions: Object.fromEntries(factionIds.map((factionId) => {
+      const faction = normalised.factions[factionId];
+      const incomeEntries = incomeByFaction[factionId] ?? {};
+      let stockpiles = { ...faction.stockpiles };
+      let lastIncome = { ...faction.lastIncome };
+      let remainingStorage = faction.storage.free;
+
+      Object.entries(incomeEntries).forEach(([resourceId, rawIncome]) => {
+        const definition = getResourceDefinition(resourceId);
+        if (!definition) {
+          return;
+        }
+        const income = normaliseIncome(rawIncome, definition);
+        const acceptedAmount = isStorageBoundResource(resourceId)
+          ? Math.min(income.amount, remainingStorage)
+          : income.amount;
+        if (isStorageBoundResource(resourceId)) {
+          remainingStorage = Math.max(0, round3(remainingStorage - acceptedAmount));
+        }
+        stockpiles = {
+          ...stockpiles,
+          [resourceId]: addResourceToStockpile(stockpiles[resourceId], definition, acceptedAmount)
+        };
+        lastIncome = {
+          ...lastIncome,
+          [resourceId]: resizeIncomeAmount(income, definition, acceptedAmount)
+        };
+      });
+
+      return [
+        factionId,
+        {
+          ...faction,
+          stockpiles,
+          storage: normaliseStorageState(faction.storage, stockpiles),
+          lastIncome
+        }
+      ];
+    }))
+  };
+}
+
+export function setFactionStorageCapacity(economy, capacityByFaction = {}, factionIds = ['player', 'enemy']) {
+  const normalised = normaliseEconomy(economy, factionIds);
+  return {
+    ...normalised,
+    factions: Object.fromEntries(factionIds.map((factionId) => {
+      const faction = normalised.factions[factionId];
+      const capacity = Number.isFinite(capacityByFaction[factionId])
+        ? Math.max(0, capacityByFaction[factionId])
+        : faction.storage.capacity;
+      return [
+        factionId,
+        {
+          ...faction,
+          storage: normaliseStorageState({ ...faction.storage, capacity }, faction.stockpiles)
+        }
+      ];
+    }))
+  };
+}
+
+export function normaliseResourceCost(cost = {}) {
+  if (Number.isFinite(cost)) {
+    return normaliseResourceCost({ [RESOURCE_IDS.supplies]: cost });
+  }
+  const rawCost = cost?.resources && typeof cost.resources === 'object' ? cost.resources : cost;
+  return Object.fromEntries(RESOURCE_DEFINITIONS.map((resource) => [
+    resource.id,
+    round3(Math.max(0, Number(rawCost?.[resource.id]) || 0))
+  ]).filter(([, amount]) => amount > 0));
+}
+
+export function scaleResourceCost(cost = {}, multiplier = 1) {
+  const safeMultiplier = Number.isFinite(multiplier) ? Math.max(0, multiplier) : 1;
+  return Object.fromEntries(Object.entries(normaliseResourceCost(cost)).map(([resourceId, amount]) => [
+    resourceId,
+    round3(amount * safeMultiplier)
+  ]).filter(([, amount]) => amount > 0));
+}
+
+export function canAffordCost(economy, factionId, cost = {}) {
   const normalised = normaliseEconomy(economy);
-  const cost = normalisePositiveAmount(amount);
-  const stockpile = normalised.factions?.[factionId]?.stockpiles?.[RESOURCE_IDS.supplies];
-  return Boolean(stockpile && stockpile.amount >= cost);
+  const faction = normalised.factions?.[factionId];
+  const resources = normaliseResourceCost(cost);
+  const missing = Object.entries(resources)
+    .map(([resourceId, required]) => {
+      const available = faction?.stockpiles?.[resourceId]?.amount ?? 0;
+      return { resourceId, required, available, missing: round3(Math.max(0, required - available)) };
+    })
+    .filter((entry) => entry.missing > 0);
+
+  return {
+    ok: Boolean(faction) && missing.length === 0,
+    economy: normalised,
+    factionId,
+    resources,
+    missing,
+    reason: !faction ? 'missing-faction' : missing.length > 0 ? 'insufficient-resources' : null
+  };
+}
+
+export function spendCost(economy, factionId, cost = {}) {
+  const affordability = canAffordCost(economy, factionId, cost);
+  if (!affordability.ok) {
+    return affordability;
+  }
+
+  let nextEconomy = affordability.economy;
+  const spent = {};
+  for (const [resourceId, amount] of Object.entries(affordability.resources)) {
+    const result = spendResource(nextEconomy, factionId, resourceId, amount);
+    if (!result.ok) {
+      return {
+        ok: false,
+        economy: affordability.economy,
+        factionId,
+        resources: affordability.resources,
+        spent,
+        reason: result.reason,
+        resourceId
+      };
+    }
+    nextEconomy = result.economy;
+    spent[resourceId] = amount;
+  }
+
+  return {
+    ok: true,
+    economy: nextEconomy,
+    factionId,
+    resources: affordability.resources,
+    spent
+  };
+}
+
+export function describeResourceCost(cost = {}) {
+  const resources = normaliseResourceCost(cost);
+  const parts = Object.entries(resources).map(([resourceId, amount]) => {
+    const label = getResourceDefinition(resourceId)?.label ?? resourceId;
+    return `${round3(amount)} ${label}`;
+  });
+  return parts.length > 0 ? parts.join(', ') : 'No cost';
+}
+
+export function canAffordSupplies(economy, factionId, amount) {
+  return canAffordCost(economy, factionId, { [RESOURCE_IDS.supplies]: amount }).ok;
 }
 
 export function spendSupplies(economy, factionId, amount) {
+  const result = spendResource(economy, factionId, RESOURCE_IDS.supplies, amount);
+  if (!result.ok && result.reason === 'insufficient-resource') {
+    return { ...result, reason: 'insufficient-supplies' };
+  }
+  return result;
+}
+
+export function spendResource(economy, factionId, resourceId, amount) {
   const normalised = normaliseEconomy(economy);
   const cost = normalisePositiveAmount(amount);
   const faction = normalised.factions?.[factionId];
-  const stockpile = faction?.stockpiles?.[RESOURCE_IDS.supplies];
+  const definition = getResourceDefinition(resourceId);
+  const stockpile = definition ? faction?.stockpiles?.[resourceId] : null;
 
   if (!faction || !stockpile) {
     return {
@@ -143,13 +367,18 @@ export function spendSupplies(economy, factionId, amount) {
     return {
       ok: false,
       economy: normalised,
-      reason: 'insufficient-supplies',
+      reason: 'insufficient-resource',
+      resourceId,
       amount: stockpile.amount,
       cost
     };
   }
 
-  const spentStockpile = subtractSupplyFromStockpile(stockpile, cost);
+  const spentStockpile = subtractResourceFromStockpile(stockpile, definition, cost);
+  const stockpiles = {
+    ...faction.stockpiles,
+    [resourceId]: spentStockpile
+  };
   return {
     ok: true,
     economy: {
@@ -158,13 +387,12 @@ export function spendSupplies(economy, factionId, amount) {
         ...normalised.factions,
         [factionId]: {
           ...faction,
-          stockpiles: {
-            ...faction.stockpiles,
-            [RESOURCE_IDS.supplies]: spentStockpile
-          }
+          stockpiles,
+          storage: normaliseStorageState(faction.storage, stockpiles)
         }
       }
     },
+    resourceId,
     amount: spentStockpile.amount,
     cost
   };
@@ -191,11 +419,13 @@ function createFactionEconomyState() {
 }
 
 function normaliseFactionEconomyState(factionEconomy = {}) {
+  const stockpiles = Object.fromEntries(RESOURCE_DEFINITIONS.map((resource) => [
+    resource.id,
+    normaliseStockpile(factionEconomy.stockpiles?.[resource.id], resource)
+  ]));
   return {
-    stockpiles: Object.fromEntries(RESOURCE_DEFINITIONS.map((resource) => [
-      resource.id,
-      normaliseStockpile(factionEconomy.stockpiles?.[resource.id], resource)
-    ])),
+    stockpiles,
+    storage: normaliseStorageState(factionEconomy.storage, stockpiles),
     lastIncome: Object.fromEntries(RESOURCE_DEFINITIONS.map((resource) => [
       resource.id,
       normaliseIncome(factionEconomy.lastIncome?.[resource.id], resource)
@@ -219,8 +449,21 @@ function normaliseStockpile(stockpile = {}, resource) {
 
   return {
     resourceId: resource.id,
-    amount: Object.values(components).reduce((sum, value) => sum + value, 0),
+    amount: round3(Object.values(components).reduce((sum, value) => sum + value, 0)),
     components
+  };
+}
+
+function normaliseStorageState(storage = {}, stockpiles = {}) {
+  const used = round3(Object.values(stockpiles).reduce((sum, stockpile) => {
+    const resourceId = stockpile?.resourceId;
+    return sum + (isStorageBoundResource(resourceId) ? (Number(stockpile?.amount) || 0) : 0);
+  }, 0));
+  const capacity = Number.isFinite(storage?.capacity) ? Math.max(0, storage.capacity) : DEFAULT_STORAGE_CAPACITY;
+  return {
+    capacity: round3(capacity),
+    used,
+    free: round3(Math.max(0, capacity - used))
   };
 }
 
@@ -234,25 +477,29 @@ function normaliseIncome(income = {}, resource) {
   };
 }
 
-function addSupplyToStockpile(stockpile, amount) {
-  const current = normaliseStockpile(stockpile, RESOURCE_DEFINITIONS[0]);
+function addResourceToStockpile(stockpile, resource, amount) {
+  const current = normaliseStockpile(stockpile, resource);
   const nextAmount = round3(current.amount + Math.max(0, amount));
   return {
     ...current,
     amount: nextAmount,
     components: Object.fromEntries(Object.entries(current.components).map(([componentId, value]) => [
       componentId,
-      round3(value + splitSupplyComponents(amount)[componentId])
+      round3(value + splitResourceComponents(resource, amount)[componentId])
     ]))
   };
 }
 
 function subtractSupplyFromStockpile(stockpile, amount) {
-  const current = normaliseStockpile(stockpile, RESOURCE_DEFINITIONS[0]);
+  return subtractResourceFromStockpile(stockpile, getResourceDefinition(RESOURCE_IDS.supplies), amount);
+}
+
+function subtractResourceFromStockpile(stockpile, resource, amount) {
+  const current = normaliseStockpile(stockpile, resource);
   const cost = Math.min(current.amount, normalisePositiveAmount(amount));
   const nextAmount = round3(current.amount - cost);
   if (nextAmount <= 0) {
-    return normaliseStockpile({ components: splitSupplyComponents(0) }, RESOURCE_DEFINITIONS[0]);
+    return normaliseStockpile({ components: splitResourceComponents(resource, 0) }, resource);
   }
 
   const ratio = nextAmount / current.amount;
@@ -267,9 +514,17 @@ function subtractSupplyFromStockpile(stockpile, amount) {
   }));
 
   return {
-    resourceId: RESOURCE_IDS.supplies,
+    resourceId: resource.id,
     amount: nextAmount,
     components
+  };
+}
+
+function resizeIncomeAmount(income, resource, amount) {
+  return {
+    ...normaliseIncome(income, resource),
+    amount: round3(Math.max(0, amount)),
+    components: splitResourceComponents(resource, amount)
   };
 }
 
@@ -286,17 +541,21 @@ function addIncome(income, amount, outpost) {
   });
 }
 
-function createEmptyIncome() {
+function createEmptyIncome(resourceId = RESOURCE_IDS.supplies) {
+  const resource = getResourceDefinition(resourceId);
   return {
-    resourceId: RESOURCE_IDS.supplies,
+    resourceId,
     amount: 0,
-    components: splitSupplyComponents(0),
+    components: splitResourceComponents(resource, 0),
     sources: []
   };
 }
 
 function splitSupplyComponents(amount) {
-  const resource = RESOURCE_DEFINITIONS[0];
+  return splitResourceComponents(getResourceDefinition(RESOURCE_IDS.supplies), amount);
+}
+
+function splitResourceComponents(resource, amount) {
   const totalWeight = resource.components.reduce((sum, component) => sum + component.weight, 0);
   const roundedAmount = round3(Math.max(0, amount));
   let assigned = 0;
@@ -319,9 +578,32 @@ function normaliseComponentAmounts(components = {}, resource) {
 function normaliseIncomeSource(source = {}) {
   return {
     outpostId: typeof source.outpostId === 'string' ? source.outpostId : 'unknown',
+    structureId: typeof source.structureId === 'string' ? source.structureId : null,
+    workerId: typeof source.workerId === 'string' ? source.workerId : null,
+    tile: source.tile && Number.isFinite(source.tile.x) && Number.isFinite(source.tile.y)
+      ? { x: Math.round(source.tile.x), y: Math.round(source.tile.y) }
+      : null,
     kind: typeof source.kind === 'string' ? source.kind : 'unknown',
     amount: Number.isFinite(source.amount) ? Math.max(0, source.amount) : 0
   };
+}
+
+export function getResourceDefinition(resourceId) {
+  return RESOURCE_DEFINITIONS.find((resource) => resource.id === resourceId) ?? null;
+}
+
+function isStorageBoundResource(resourceId) {
+  const definition = getResourceDefinition(resourceId);
+  return Boolean(definition && definition.role === 'raw');
+}
+
+function deepFreeze(value) {
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  Object.freeze(value);
+  Object.values(value).forEach((entry) => deepFreeze(entry));
+  return value;
 }
 
 function getControlShare(outpost, factionId) {

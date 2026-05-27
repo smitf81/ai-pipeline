@@ -1,0 +1,20 @@
+{
+  "kind": "mcp_tool_contract",
+  "summary": "Exposes a guarded project-file write/patch MCP tool. It is intended for server-side MCP runtime integration, not viewport/editor UI behaviour.",
+  "tool": "safe_write_project_file",
+  "modes": [
+    "documentation",
+    "config_patch",
+    "core_patch"
+  ],
+  "safety": [
+    "Project-root path restriction is mandatory.",
+    "core_patch and config_patch require expected_find and replacement.",
+    "expected_find must occur exactly once.",
+    "dry_run must validate without writing.",
+    "write mode must create a timestamped backup before modification.",
+    "binary files must be refused.",
+    "SHA-256 before/after hashes must be returned in the receipt."
+  ],
+  "activation": "proposal_only_until_server_side_mcp_tool_is_patched_into_runtime"
+}

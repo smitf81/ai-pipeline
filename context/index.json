@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-02-27T09:40:24Z",
+  "version": "1.0.0",
+  "health": {
+    "score": 100,
+    "reasons": [
+      "All validation gates passed."
+    ]
+  },
+  "locking": {
+    "lock_file": "context/.context.lock",
+    "write_mode": "atomic_rename"
+  },
+  "conflict_resolution": {
+    "strategy": "last_writer_wins_timestamp",
+    "tie_breaker": "lexical_actor_id"
+  },
+  "files": [
+    {
+      "path": "context/CONTEXTOPS.md",
+      "sha256": "1f3ef184d132f0858c379a03a5fa3d71ff5fa8660622c457942b9f303064ac56",
+      "updated_at": "2026-02-27T09:40:24Z",
+      "version": "1.0.0"
+    },
+    {
+      "path": "context/broad.ctx.json",
+      "sha256": "63203f7b1d67828d7840f8d95d0970109a32ffde540cb93da1c9942e336a34a3",
+      "updated_at": "2026-02-27T09:40:24Z",
+      "version": "1.0.0"
+    },
+    {
+      "path": "context/full.ctx.bin",
+      "sha256": "67f8f63bbdcd8880b38c52a234115875e84a7b15c1600374c1f9485f0b0bfa36",
+      "updated_at": "2026-02-27T09:40:24Z",
+      "version": "1.0.0"
+    },
+    {
+      "path": "context/narrow.ctx.json",
+      "sha256": "ec4f8ecfdeef291a375385d4683554e04d08bbb137525f76f99b1395223e6ce0",
+      "updated_at": "2026-02-27T09:40:24Z",
+      "version": "1.0.0"
+    },
+    {
+      "path": "context/schemas/broad.schema.json",
+      "sha256": "9803116e44df91fc3c5aeab880b3964bddc1cb5ee1f9affdc56c6de918fcdaaa",
+      "updated_at": "2026-02-27T09:40:24Z",
+      "version": "1.0.0"
+    },
+    {
+      "path": "context/schemas/index.schema.json",
+      "sha256": "5ad0e3c1dd19335fae08744e99034606a23cda835f2456616583503942336956",
+      "updated_at": "2026-02-27T09:40:24Z",
+      "version": "1.0.0"
+    },
+    {
+      "path": "context/schemas/narrow.schema.json",
+      "sha256": "1fe09f01ec4b3a6fd76b67ca58616cc7bbbe66f3726a1fc42dc87660911809bc",
+      "updated_at": "2026-02-27T09:40:24Z",
+      "version": "1.0.0"
+    },
+    {
+      "path": "context/ui-summary.md",
+      "sha256": "7c628fbb01915e93d685626af7662a769b931660d03cee1b2b20570116918237",
+      "updated_at": "2026-02-27T09:40:24Z",
+      "version": "1.0.0"
+    },
+    {
+      "path": "context/updates/2026-02-27T09-40-24Z.md",
+      "sha256": "d6049f3d19e21ab3bdfeb8e88526afc902c81154a2023bf6545f2a2b05a07e2e",
+      "updated_at": "2026-02-27T09:40:24Z",
+      "version": "1.0.0"
+    }
+  ]
+}

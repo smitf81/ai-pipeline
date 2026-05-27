@@ -1,4 +1,355 @@
+# 2026-05-26 - Shelter Intent Contract v1: Mouse's First Finding
+
+Mouse's first live playtest finding is now resolved: a legal `seek_shelter -> light tree cover` command no longer degrades into vague escape movement when the target is valid.
+
+### Landed
+
+- Added a canonical command-wheel shelter target contract carrying target id, label, shelter type, rating, position, visibility/reachability, tags, suitability and fallback reason.
+- Preserved the selected shelter target through Mouse validation, `orders:survival-intent`, command-wheel intent args, AI behaviour packet metadata and unit behaviour response.
+- Updated shelter behaviour context so explicit legal shelter targets are honoured before falling back to local field searches.
+- Light tree cover remains valid partial shelter for the Chapter 1 tutorial instead of being filtered out by a hidden “strong shelter” expectation.
+- Replaced vague shelter degradation with grounded reasons such as `target_below_shelter_threshold`, `target_not_reachable`, `target_not_visible_to_commander`, `no_anchor_position`, or `no_shelter_candidate_near_unit`.
+- Extended Mouse action reporting with target honouring, shelter rating and degradation reason fields.
+
+### Validation
+
+- `node --check` passed for changed runtime/service/test modules.
+- `npm test` passed.
+- `npm run test:mouse` passed.
+- `npm run test:validation` completed; cadence audit passed with 0 findings, runtime performance QA passed, sim frame-budget QA reported WARN at 13.201ms average / 68.676ms p95 in this container.
+- `npm run test:browser` started the local server and skipped browser smoke because the Codex Playwright client path is not present in this container.
+- `npm run test:mouse:live` could not run in this container because Playwright is not installed under `/mnt/data/node_modules/playwright`.
+- Direct local proof: `seek_shelter -> shelter_first_trees` now returns `accepted`, `targetHonoured: true`, `shelterTargetId: shelter_first_trees`, and chosen target `{ x: 18, y: 19 }` for seven band entities.
+
+### Residual
+
+- Live Ollama/Playwright verification still needs to be rerun in Felix's normal Windows project environment where the local model and Playwright client are available.
+- This slice fixes the command contract; it does not yet tune richer shelter offsets, role-specific positioning around the selected shelter, or visual shelter readability.
+
+# 2026-05-26 - Mouse the Playtester v1: Command Wheel Player
+
+Mouse now plays The First Night through the existing commander command-wheel intent path.
+
+### Landed
+
+- Added a thin command-wheel adapter that exposes existing legal wheel actions and only commander-local visible target candidates to Mouse.
+- Changed the local-model loop from commentary-only output to structured thought plus action decisions, with invalid JSON, invented targets, settled-world vocabulary, and incorrect shelter/direction claims rejected before execution.
+- Routed validated Mouse decisions through `orders:survival-intent` with the tribal leader as command source and the band as audience; there is no direct movement or objective mutation path.
+- Extended reports with `actions.jsonl`, `snapshots.jsonl`, latest/recent action receipts, and command response status.
+- Extended the Mouse panel and in-world marker with the current command, target line/bubble, and accepted/executed/degraded outcome visibility.
+
+### Validation
+
+- `npm.cmd test`, `npm.cmd run test:mouse`, `npm.cmd run test:browser`, and `npm.cmd run test:validation` passed.
+- `npm.cmd run test:mouse:live` passed against Ollama at `http://127.0.0.1:11434/api/generate` using `qwen2.5-coder:1.5b`.
+- Live decision: `seek_shelter -> light tree cover`; seven band entities received the intent through the existing command contract while the game continued advancing.
+- Playwright screenshot inspection confirmed the optional panel and in-world action bubble are readable. The in-app browser pane was unavailable during this pass, so the scripted browser capture supplied the visual evidence.
+
+### Residual
+
+- The live `seek_shelter` order is accepted and dispatched, but the current behaviour appraisal reports it as `degraded` with fallback movement for the first light tree cover. This is now surfaced plainly by Mouse and is a candidate for the next gameplay tuning slice.
+
+# 2026-05-26 - Mouse the Playtester v0
+
+Added an opt-in embodied local-model playtester for Chapter 1.
+
+### Landed
+
+- Added `?mouse=1` playtest mode, which launches The First Night with a compact Mouse panel and an in-world marker/thought bubble beside the commander.
+- Added an asynchronous server-owned Mouse service that accepts small cached state snapshots, reuses the workspace Ollama adapter, and never awaits model output inside gameplay/render ticks.
+- Added readable Mouse reports under `playtests/mouse/`, including latest JSON/Markdown status and per-run snapshot/thought logs.
+- Added honest unavailable-model handling, a request retry backoff, prompt limits, and protection against provisional startup FPS becoming a false performance report.
+- Added focused Mouse contract tests and a real local-model browser check through `npm run test:mouse:live`.
+
+### Validation
+
+- `npm.cmd test` passed, including the Mouse contract test.
+- `npm.cmd run test:browser` passed.
+- `npm.cmd run test:validation` passed; cadence audit reported 0 findings and sim frame-budget QA passed.
+- `npm.cmd run test:mouse` passed.
+- `npm.cmd run test:mouse:live` passed against Ollama at `http://127.0.0.1:11434/api/generate` with `qwen2.5-coder:1.5b`.
+- In-app browser inspection confirmed the Mouse panel, in-world marker/thought bubble, and no console errors.
+
+### Residual
+
+- The fast 1.5B local model can still embellish details outside the compact snapshot; reports keep the snapshot and thought together so those slips are inspectable during playtest tuning.
+
+# 2026-05-25 - Cadence Regression Recovery v0
+
+Recovered the previous runtime cadence machinery instead of starting a fresh optimisation pass from scratch.
+
+### Landed
+
+- Confirmed the old movement/pathfinding blocker explosion had not returned. Hard blocker checks stayed low.
+- Fixed `weatherFields` so generic field dirtiness no longer forces every-tick weather recomputation.
+- Fixed `aiAppraisal` so ordinary spawn/movement/structure churn no longer wakes appraisal outside its cadence.
+- Fixed `enemyAI` so decision logic is cadence/bootstrap driven rather than waking from every logistics/combat/economy version bump.
+- Fixed diagnostic `fieldOverlay` ownership so it no longer subscribes to generic `fields` dirtiness.
+- Added cadence diagnostics to the sim frame-budget QA report: dirty states, scheduler run deltas, cadence warnings and weather cadence proof.
+- Added runtime-event regressions locking the restored cadence ownership.
+
+### Validation
+
+- `node --check src/game/runtimeEvents.js` passed.
+- `node --check tools/run-sim-frame-budget-qa.mjs` passed.
+- `node --check tests/runtimeEvents.test.mjs` passed.
+- `node tests/runInProcessTests.mjs` passed.
+- `npm run test:validation` passed with WARN status in the sim report.
+
+### Current state
+
+- Average sim frame proxy is back under the 22ms budget.
+- Weather and AI appraisal no longer run from ordinary world churn during the QA scenario.
+- Remaining performance concern is p95 stress-frame jank, not the previous cadence leak.
+
+### Next
+
+- Add a Cadence Obligation Guard so future slices must declare and prove their update cadence.
+- Then smooth the remaining p95 stress frames around blueprint validation/placement and tick staging.
+
 # Progress
+
+Original prompt: "can you do a pass at the structure joinery and connectors please, the basis is there but it feels very clunky and nowhere near finished let alone polished, we want the relationships between walls, towers etc nice and fluid. we can paint the blueprinnts across the map but they are not fluid or seamless at all."
+
+## 2026-05-21 - Enemy Needs Loop v0
+
+Added a logistics gate to the existing enemy AI director so attacks wait behind basic food, wood, and storage needs.
+
+### Landed
+
+- Added `evaluateEnemyNeeds()` style decision logic inside the enemy director path without replacing the existing state chain.
+- Enemy squads with food demand now queue a Hunting Tent when no food production exists.
+- Enemy construction blocked by Wood now queues a Wood Post when no wood production exists.
+- Enemy storage pressure can queue a Storage Tent before further expansion.
+- Enemy attack orders now require enough fighters that are not all starving; starving attack groups regroup near base using existing AI movement orders.
+- Logistics jobs reuse `placeStructureBuildOrder()` and guard against duplicate in-progress/completed structures.
+- Added enemy-director regressions for food need, wood-blocked construction, duplicate prevention, starving-force attack gating, and eventual attack when logistics blockers are absent.
+
+### Validation
+
+- `node tests/runInProcessTests.mjs` passed.
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed.
+
+## 2026-05-21 - Right-Click Orders + Order Wheel
+
+In progress: adding a right-click movement order path alongside the existing drag-drawn path intent.
+
+### Landed
+
+- Right-click with a selected friendly leader or squad now issues a two-point player-intended MoveTo order through the existing canonical movement command path.
+- Holding right-click opens a hidden-by-default contextual order wheel with MoveTo in the north slot and subdued empty placeholders for future contextual abilities.
+- Right-click hold over structures now labels the wheel with structure context while leaving extra structure actions unimplemented.
+
+### Validation
+
+- `node --check` passed for the touched runtime/UI/test files.
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed.
+- Targeted Playwright right-click probe passed: quick right-click issued a two-point `player-intended` route, held right-click showed the MoveTo wheel, release hid the wheel and preserved the canonical movement order.
+- Reviewed `output/web-game-mapshop/right-click-order-wheel-probe.png`; the contextual wheel is readable and unobtrusive over the map.
+
+## 2026-05-21 - Navigation Arrival Stability Fix
+
+Fixed final-node arrival for movement targets that land inside a tile rather than exactly on the tile centre.
+
+### Landed
+
+- Preserved exact fractional movement targets as the final materialised route node instead of ending paths at the rounded target tile centre.
+- Leaders and squads now snap to the canonical target and report `arrived` with zero remaining distance when the final step enters arrival range.
+- Added a regression for fractional squad targets so units cannot get stranded as `blocked` at the final route node while still short of the true target.
+
+### Validation
+
+- `node --check` passed for changed runtime/test files.
+- `node tests/runInProcessTests.mjs` passed.
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed.
+- Targeted Playwright fractional-arrival probe passed with selected squad `arrived`, distance `0`, and screenshot `output/web-game-mapshop/navigation-arrival-stability-probe.png`.
+
+## 2026-05-21 - Selection UI + Orders Pass
+
+Added a calmer command/selection HUD pass for units and structures.
+
+### Landed
+
+- Reworked the bottom-left Build control into a tabbed command tray with Build and Orders tabs.
+- Restored whole-army Hold / Probe / Commit controls in the Orders tab using the existing canonical army stance path.
+- Added a selected unit/structure bottom dossier with shared resource strip, health/integrity, morale/cohesion, food, combat/arrow readiness, occupancy, and emergency chips.
+- Added per-selection Hold / Probe / Commit override buttons for friendly leaders and squads.
+- Added canonical `setPlayerEntityPressureStance()` so local overrides mutate runtime unit state instead of becoming UI-only truth.
+- Kept the compact economy readout available while also surfacing Supplies/Food/Wood/Storage in the selection/base banner.
+
+### Validation
+
+- `node --check` passed for changed JS/test files.
+- `node tests/runInProcessTests.mjs` passed.
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed.
+- Targeted Playwright orders probe passed: army Commit updated the player leader while selected-squad Hold remained local, with screenshot `output/web-game-mapshop/selection-orders-ui-probe.png`.
+- Narrow viewport probe passed at 390x720 with screenshot `output/web-game-mapshop/selection-orders-mobile-probe.png`.
+
+## 2026-05-21 - Supply Comfort + Day Night Pass
+
+Softened the first logistics balance pass and made squad supply state visible.
+
+### Landed
+
+- Added canonical `GameState.time` with one real hour per in-game day, including day number, clock label, and dawn/day/dusk/night phase.
+- Added a subtle night/dusk canvas tint and compact day/time HUD badge.
+- Spawned infantry now deploy fully rationed instead of arriving already hungry.
+- Squad food drain now uses a per-game-day rate rather than a harsh per-tick amount.
+- Starvation retreat has a longer grace period, so units are not immediately panic-routing the moment food hits zero.
+- Added a selected-squad ration meter in the bottom action panel showing Food, capacity, and supply condition.
+- Expanded storage/supply-line tests to cover full spawn rations, slow food drain, and one-hour day clocking.
+
+### Validation
+
+- `node tests/runInProcessTests.mjs` passed.
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed.
+- Targeted Playwright selected-squad probe passed with `Ready - Food 12.0/12.0`, `D1 06:00`, and screenshot `output/web-game-mapshop/squad-supply-ui-probe.png`.
+
+## 2026-05-20 - Storage + Supply Lines Foundation
+
+Added the first simple storage cap and field logistics loop.
+
+### Landed
+
+- Added a shared Storage capacity per faction; completed outposts provide the initial allowance.
+- Added a buildable Storage Tent that expands shared storage and contributes a transport slot.
+- Added runtime Transport dots sourced from storage-capable structures.
+- Transports now move Wood from stockpile to construction jobs before builders can advance timber-requiring blueprints.
+- Transports now move Food to hungry squads, including squads posted inside occupied structures.
+- Squads consume Food over time; squads without Food stop contributing volleys and return to their outpost after a short starvation grace period.
+- Surfaced Storage usage in the economy drawer and rendered transport dots/cargo on the playfield.
+- Added focused in-process coverage for storage capacity, Storage Tent capacity, no-Wood blueprint blocking, Wood delivery, Food delivery, and starvation retreat.
+
+### Validation
+
+- `node tests/runInProcessTests.mjs` passed.
+
+## 2026-05-20 - Combat Projectiles and Health Foundation
+
+Original combat prompt: "can you make a thorough and fundmentally well thought out, well designed pass at finally implementing our combat mechanic, please"
+
+### Landed
+
+- Added shared health/combat components for leaders and infantry squads.
+- Added deterministic arrow projectiles with capped active counts and a small runtime reuse pool.
+- Combat now checks range, faction, LoS, rate of fire, occupied firing platforms, target cover, armour, and target death.
+- Garrisoned squads fire from their hosting structure position and inherit structure range/accuracy modifiers.
+- Added death events with an `onDeath` action marker so future destruction behavior can hook into more than deletion.
+- Rendered arrows as lightweight foreground strokes and exposed combat state through `render_game_to_text()`.
+- Added focused combat coverage for visible volleys, range gating, garrison origins, death events, and mass-volley projectile bounds.
+- Reconciled live storage/supply-line drift by making delivered construction resources opt-in, preserving the established construction loop.
+
+### Validation
+
+- `node tests/runInProcessTests.mjs` passed.
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed.
+- Targeted Playwright combat probe produced `output/web-game-mapshop/combat-arrows-probe.png` with 8 active projectiles at tick 1.
+
+### Next
+
+- Add explicit attack orders and target selection UI.
+- Add projectile interception against projectile-blocking wall/structure bodies.
+- Add subtle health/morale feedback once the base damage loop has more playtest time.
+
+## 2026-05-20 - Structure Joinery Polish Pass
+
+### Landed
+
+- Added richer path segment orientation metadata and join junction hints for sketched walls/trenches.
+- Added a canvas structure-network underlay so walls, gates, trenches, towers, and forts draw as connected systems before individual glyph details.
+- Reworked path placement preview into a continuous dashed blueprint ribbon with connector/anchor hints instead of only separate tile footprints.
+- Added focused joinery test assertions for junction degree/socket-role metadata.
+- Removed duplicate supply-line function declarations in `gameModel.js` that prevented the module from loading.
+
+### Validation
+
+- `node --check` passed for `src/game/structureJoinery.js`, `src/game/structureRegistry.js`, `src/rendering/canvasRenderer.js`, and `src/game/gameModel.js`.
+- Targeted structure tests passed: `structureJoinery`, `structureRegistry`, and `structureTopology`.
+- `npm.cmd run test:browser` passed and refreshed the web-game smoke artefacts.
+- Browser QA opened `http://127.0.0.1:4184/?seed=1`, entered Skirmish, opened Build, selected Wall Segment, and confirmed the new continuous blueprint ribbon renders without console errors.
+- `npm.cmd test` now runs, with the structure-focused tests passing; remaining failures are in construction/supply completion paths (`construction jobs`, `navigation + construction regression lock`, `player control + enemy director`).
+
+### Next
+
+- Repair the construction/supply completion regressions before treating full `npm.cmd test` as green again.
+- Add a small deterministic visual fixture with completed wall/tower/gate networks so future polish can compare joined structures without relying on live game economy timing.
+
+## 2026-05-20 - Resource Gathering Buildings Foundation
+
+Added old-school RTS resource gathering fundamentals.
+
+### Landed
+
+- Added Food and Wood as canonical economy resources alongside Supplies.
+- Added Hunting Tent and Wood Post structure definitions to the normal build/construction registry.
+- Added runtime resource workers assigned from completed gathering structures.
+- Hunting Tent workers now gather Food from a derived terrain food-resource field.
+- Wood Post workers now route to nearest forest tiles, harvest Wood, return to the post, and deposit into the player stockpile.
+- Added derived food/wood resource fields without persisting them into MapData.
+- Surfaced Food/Wood in the compact economy drawer and rendered gathering workers on the playfield.
+- Added focused in-process coverage for resource fields, worker assignment, Food income, Wood hauling, and snapshot persistence.
+
+### Validation
+
+- `node --check` passed for changed runtime/UI/test files.
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed.
+- Targeted Playwright probe opened Skirmish, opened the Build panel, confirmed Hunting Tent and Wood Post buttons are visible, confirmed Food/Wood are present in `render_game_to_text()`, and found no browser errors.
+- Reviewed `output/web-game-mapshop/shot-1.png` and `output/web-game-mapshop/resource-ui-probe.png`; the game view and build panel remain readable.
+
+## 2026-05-20 - Player Control Boundary + Enemy AI Director v0
+
+Added the first playable faction-control boundary and autonomous enemy director.
+
+### Landed
+
+- Player move commands now route through `issuePlayerMoveCommand()` and reject non-player-controlled units.
+- Play-mode selection uses a player-control-aware helper, so enemy units cannot be selected into the normal command flow.
+- Added `probeMapAt()` as a read-only diagnostic path that does not mutate movement orders.
+- Added deterministic enemy AI state with boot, survey, build-base, gather-force, expand, attack, and rebuild placeholders.
+- Enemy AI can muster infantry, queue enemy construction jobs through the existing construction system, and issue `ai-director` attack routes toward completed friendly structures.
+- Explicit movement orders are now honoured for non-player AI routes without re-opening global player command behaviour.
+- HUD now reports current mode, enemy AI state, and friendly supplies.
+- Added focused in-process coverage for player command filtering, probe immutability, friendly-only player placement, enemy AI construction, enemy builder completion, and enemy attack targeting.
+
+### Validation
+
+- `node tests/runInProcessTests.mjs` passed.
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed.
+- Reviewed `output/web-game-mapshop/shot-1.png`; gameplay canvas remains visible and readable after the HUD/control updates.
+
+### Regression fix
+
+- Stopped enemy attack orders from being rewritten every tick; the AI now maintains existing attack orders until the target changes or a real retarget is needed.
+- Added cooldown after blocked enemy expansion attempts so failed watchtower placement probes cannot run every tick.
+- Changed movement interpolation tick starts back to canonical sim positions instead of feeding the previous visual interpolated position into the next segment.
+- Added tests for idempotent enemy attack orders and canonical tick-start interpolation.
+- A 9-second browser runtime probe held at 60 FPS after the fix.
+- Stabilised construction builder work points so placing player/enemy blueprints does not rerun candidate route previews or wobble builder targets every tick.
+- A browser construction probe with player and enemy blueprints active held at 60 FPS with both builders travelling to stable work points.
+
+## 2026-05-20 - Navigation + Construction Regression Lock
+
+Locked the current movement/construction milestone with explicit regression coverage.
+
+### Landed
+
+- Added a dedicated regression-lock test suite for sea-wall gap routing, coast sliding, builder job progress, blocked builder release, one-time resource spend, and completed structure blocker/nav activation.
+- Browser smoke now fails if it does not produce a usable gameplay screenshot and readable `render_game_to_text` state.
+- Reviewed the latest gameplay screenshot after the browser smoke; the map, units, paths, and HUD render correctly.
+
+### Validation
+
+- `node tests/runInProcessTests.mjs` passed.
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed.
 
 ## 2026-05-20 - Linear Unit Movement Interpolation
 
@@ -660,3 +1011,234 @@ Reduced the mass-unit tick spikes that were causing visible FPS drops.
 
 - If horde-scale cold ticks still hitch on Felix's machine, prewarm shared flow fields when issuing an order or budget route-field builds across frames.
 - Consider replacing the projection-based horde warning with an actual 520-entity probe now that the path is fast enough to run directly.
+
+## 2026-05-21 - Combat Performance and Projectile Smoothness v0
+
+Implemented the next combat stability pass without increasing the 750 ms simulation tick.
+
+### Landed
+
+- Projectile advancement now receives a per-combat-tick `targetById` map instead of rebuilding/scanning damageable targets for every arrow.
+- Projectile blocker checks now use a bucketed spatial index built once per combat tick, with rare rebuilds only when a projectile destroys a structure mid-pass.
+- Combat target selection now shares the same blocker index and uses a per-tick line-of-sight cache keyed by source/target geometry.
+- Runtime frame state now exposes `state.renderClock.alpha` and mirrors it to `state.runtimeStats.interpolationAlpha`.
+- Canvas projectile rendering now lerps the visual arrow endpoint from `previousPosition` to `position` every frame; authoritative projectile positions still update only on sim ticks.
+- Impact flashes now fade inside the frame interval instead of being purely tick-stepped.
+- Runtime QA now guards indexed projectile lookup, blocker spatial indexing, LoS cache presence, and projectile visual interpolation.
+
+### Validation
+
+- `node --check src/game/combatSystem.js`, `src/main.js`, `src/rendering/canvasRenderer.js`, and `tests/runtimePerformanceQa.test.mjs` passed.
+- Focused `combatMechanics.test.mjs` passed.
+- Focused `runtimePerformanceQa.test.mjs` passed.
+- `npm.cmd test` passed all in-process tests.
+- `npm.cmd run test:browser` passed.
+- Targeted browser projectile probe passed with 4 active projectiles and finite `interpolationAlpha`; screenshot written to `output/web-game-mapshop/combat-arrows-interpolation-probe.png`.
+- Reviewed `output/web-game-mapshop/shot-1.png` and `output/web-game-mapshop/combat-arrows-interpolation-probe.png`; the canvas is nonblank, overlays remain off by default, and projectiles render on the live canvas path.
+
+### Known Risk
+
+- Runtime QA still reports the existing medium horde tick warning: 520-squad tick cost remains projected above comfort in the synthetic horde sample. This pass removes the projectile scan multipliers and tick-quantized visuals, but broad recompute/collision/field cost is still the next performance frontier.
+
+## 2026-05-21 - Tick Demotion and Event-Driven Runtime v0
+
+Moved the first expensive runtime decisions behind a small event/dirty/version/scheduler substrate without changing gameplay balance or UI design.
+
+### Landed
+
+- Added runtime coordination state to game state: bounded event queue, dirty flags, version counters, and scheduled system metadata.
+- Build orders now emit economy-spent and construction-job-created events, and completed jobs emit construction-completed plus nav-changed events when blocker topology changes.
+- Enemy AI decisions now run through scheduler/version gates after bootstrap, preserving the opening two-tick behaviour while avoiding per-tick strategic decisions afterward.
+- Idle logistics demand assignment now runs on a scheduled/dirty cadence; active transports still move and deliver on the normal simulation tick.
+- Resource field derivation now uses a map-version/signature cache for recompute and gathering paths.
+- Construction reachability cache keys now include map/nav versions so blueprint access checks are invalidated by topology changes.
+- `summarizeGame()` now exposes runtime dirty/version/scheduler/event state for browser QA and diagnostics.
+- Economy stockpile normalization now rounds aggregate amounts consistently after component recomposition.
+
+### Validation
+
+- `node --check src/game/gameModel.js`, `src/game/economy.js`, `src/qa/runtimePerformanceQa.js`, `tests/runtimePerformanceQa.test.mjs`, and `tests/constructionJobs.test.mjs` passed.
+- Focused construction, runtime QA, enemy director, and navigation construction regression tests passed.
+- `npm.cmd test` passed all in-process tests.
+- `npm.cmd run test:browser` passed through the web-game client at `http://127.0.0.1:4194/`.
+- Reviewed `output/web-game-mapshop/shot-1.png`; the canvas remains nonblank and readable with overlays off by default.
+
+### Known Risk
+
+- This is the coordination layer and first demotion pass, not a full event-driven rewrite. Movement, collision, combat cadence, and broad recompute paths still need additional budgeted/indexed follow-up slices.
+
+### Follow-up hardening
+
+- Centralized structure navigation signature-change emission so construction completion, replacement-style build orders, and combat blocker-state changes all invalidate nav caches and emit `structure:nav_changed`.
+- Added a combat regression where an in-flight projectile ruins a fragile wall and must emit the nav-change event while bumping nav dirty/version state.
+- Re-ran `npm.cmd test` and `npm.cmd run test:browser`; both passed, and `output/web-game-mapshop/shot-1.png` remained nonblank/readable.
+
+## 2026-05-21 - Logistics / Construction Extraction v0
+
+Extracted the construction and logistics runtime detail out of `gameModel.js` without changing gameplay balance, timings, movement, UI, combat, or structure definitions.
+
+### Landed
+
+- Added `src/game/constructionSystem.js` for construction job normalization, builder assignment/progress, construction reachability cache keys, work-point selection, material consumption, job completion events, and construction summaries.
+- Moved single-structure and path build-order execution behind `constructionSystem.js`, leaving `gameModel.js` with public API wrappers.
+- Added `src/game/logisticsSystem.js` for transport normalization, storage transport syncing, dirty-gated idle demand assignment, active transport ticking, construction wood delivery, squad food delivery, field-food consumption, and supply-line summaries.
+- Kept `gameModel.js` as the owner of initial state, tick orchestration, recompute orchestration, runtime coordinator state, enemy AI call sites, and public API wrappers used by UI/tests.
+- Preserved the Tick Demotion runtime coordinator through dependency-injected system calls: job-created, economy-spent, job-completed, nav-changed, logistics scheduler, dirty flags, and map/nav-version construction reachability invalidation remain wired.
+- Updated runtime QA static checks so they inspect the extracted construction/logistics modules instead of assuming every runtime detail lives in `gameModel.js`.
+
+### Validation
+
+- `node --check src/game/gameModel.js`, `src/game/constructionSystem.js`, `src/game/logisticsSystem.js`, and `src/game/economy.js` passed.
+- Focused tests passed: construction jobs, storage supply lines, resource gathering, game model, enemy director, and navigation construction regression.
+- `npm.cmd test` passed all in-process tests.
+- `npm.cmd run test:browser` passed.
+- Reviewed `output/web-game-mapshop/shot-1.png`; the game canvas remains nonblank/readable with overlays off by default.
+
+### Known Remaining Bloat
+
+- Placement validation and structure joinery helpers still live in `gameModel.js`; they are related to construction but also share editor/structure-network concerns and should move in a separate, smaller placement extraction.
+- Resource gathering remains in `gameModel.js`; it shares worker movement and supply-adjacent concepts but was deliberately left untouched for this refactor-only slice.
+- Movement/pathfinding helpers remain in `gameModel.js` by design for this pass, because moving them would violate the no-navigation-refactor constraint.
+
+## 2026-05-22 - Movement & Orders Extraction v0
+
+Extracted shared movement/order execution primitives out of `gameModel.js` without changing pathfinding rules, movement speeds, UI, combat, construction, logistics, or enemy AI decisions.
+
+### Landed
+
+- Added `src/game/movementSystem.js` for movement model constants, order/path normalization, player/faction movement order issuing, path cursor advancement, navigable target fallback, low-level terrain/structure blocking checks, slide-step resolution, arrived/blocked mutation, and movement-path summaries.
+- Rewired `gameModel.js` so leader/squad advancement still owns objective/occupancy orchestration, but delegates route-following and arrived/blocked state transitions to `movementSystem.js`.
+- Kept route generation functions (`buildNavigationFlowField()` and `materialiseFlowRoute()`) in `gameModel.js` for this pass to avoid broad pathfinding/navigation churn.
+- Preserved construction/logistics movement dependencies through the existing dependency-injected wrappers, so builders, workers, and transports continue using the same shared movement helpers.
+- Restored `entityPathMapSignature()` in `gameModel.js` because command/field cadences still use the map-only signature outside movement.
+
+### Validation
+
+- `node --check src/game/gameModel.js`, `src/game/movementSystem.js`, `src/game/constructionSystem.js`, and `src/game/logisticsSystem.js` passed.
+- Focused tests passed: navigation construction regression, enemy director, construction jobs, storage supply lines, game model, and collision authority.
+- `npm.cmd test` passed all in-process tests.
+- `npm.cmd run test:browser` passed.
+- Reviewed `output/web-game-mapshop/shot-1.png`; the game canvas remains nonblank/readable with normal routes and unit positions.
+
+### Known Remaining Bloat
+
+- Pathfinding/flow-field generation still lives in `gameModel.js`; a later pathfinding/navigation extraction should move that into a dedicated route module.
+- Objective pressure, resource gathering, structure placement validation, and occupancy orchestration remain in `gameModel.js`.
+- Leader/squad movement orchestration still starts in `gameModel.js` because it depends on objective, stance, and occupancy state; the low-level movement legwork is now extracted.
+
+## 2026-05-25 - Battlefield Evolution Visual Layer
+
+Added a bounded, persisted battlefield trace pass so the ground visually records movement and violence without changing gameplay authority.
+
+### Landed
+
+- Added `src/game/battlefieldTrace.js` to accumulate footprint stamps, worked-ground churn, blood spatter from damaging impacts, and larger pools from unit deaths.
+- Added bounded `impactEvents` to combat so ranged and melee damage both produce visual evidence from real combat outcomes.
+- Persisted and summarized trace history through game snapshot/import state; old saves normalize to an empty trace.
+- Added a ground render pass below units and structures with low-contrast mud, directional footprints, dark spatter, and irregular settling blood pools.
+- Added focused trace coverage plus combat and save/load regression assertions.
+
+### Validation
+
+- `npm.cmd test` passed.
+- `npm.cmd run test:browser` passed after making its action burst advance at least one full simulation tick.
+- The required web-game Playwright client completed a 1,400-frame gameplay capture in `output/battlefield-trace-qa/`; reviewed `shot-0.png`, with `80` footprints, `16` churn tiles, and `13` visibly muddy tiles.
+- In-app browser live-play inspection reached tick `139` with no console errors and confirmed the toned-down churn styling in a developed battlefield.
+- Fixed the browser smoke action cadence so it deterministically advances beyond one 750 ms simulation tick before checking state.
+- Fixed the simulation frame-budget output path on Windows by converting its module URL through `fileURLToPath()`.
+- `npm.cmd run test:validation` now executes its simulation gate and fails on existing construction/tick budget pressure (`31.908ms` average frame proxy; blueprint validation `61.62ms` p95), outside this visual-history slice.
+## 2026-05-25 - Blank Scenario Authoring And Segmented Command Wheel
+
+- Added persistent `sceneEntity` ownership for per-scenario presentation settings and authored placements. Existing generated Chapter 1 keeps the full current play surface; `New Blank Scene` starts with HUD/build/resources/playtest/cloud visuals hidden.
+- Added scenario maker controls to toggle those surfaces back on and place player/enemy starts, outposts, infantry seeds, cover, beats, triggers and spawner markers on the map.
+- Authored-only scenes now seed runtime actors from placed scene entities, so a blank scene begins with no silently injected bases, commanders or units. Map JSON save/load retains the scene profile and placements.
+- Rebuilt the context command wheel as a fixed eight-segment ring with labelled actionable spokes, muted unused segments and whole-spoke highlighting; a held northeast gesture now clearly highlights `Shelter`.
+- Validation: `npm.cmd test` passed, including new blank scene persistence/runtime tests; `npm.cmd run test:browser` passed; local rendered QA confirmed blank controls off by default, placements present, play HUD hidden, command wheel `Shelter` spoke highlighted, and no console errors. Screenshots are under `output/scenario-authoring-qa/`.
+
+## 2026-05-25 - Stone Distraction And Sensing Debug Slice
+
+- Converted `Distract` into a physical, zero-damage `stone` projectile that uses the existing projectile travel/impact loop and creates attention only when it lands.
+- Added bounded `soundEvents` with tuned hearing profiles for footsteps, stone impacts, arrow impacts and melee strikes; sound attention now paints from explicit audible radius falloff rather than a generic marker radius.
+- Added enemy hearing response: enemies inside a player sound's audible range enter `investigating` perception and receive a `sound-investigation` movement order toward the heard position.
+- Added Sim / Debug toggles for sound/hearing pings and unit field-of-view cones. Stones render as compact pebbles; audible rings and facing cones expose stealth cause-and-effect without cluttering normal play.
+- Persisted sound events through save/load and exposed unit AI/sound summary evidence for QA.
+
+### Validation
+
+- `npm.cmd test` passed; the command-wheel regression now checks stone flight, impact-generated sound and an enemy investigation order inside hearing distance.
+- `npm.cmd run test:browser` passed.
+- Live rendered QA verified the segmented `Distract` release, stone impact/hearing ring and field-of-view cones with no console errors; captures are in `output/stealth-perception-qa/`.
+- In the default Chapter 1 battlefield, commanders begin far outside stone audibility and terrain can intercept a throw; investigation therefore requires approaching or authoring a close stealth setup, as intended by the attenuation model.
+
+## 2026-05-25 - Physical Cover, Visibility, and Audit Round-Up
+
+### Physical cover / visibility landed
+
+- Added canonical field-unit cover state through `src/game/coverSystem.js`.
+- Forest/tall grass, completed cover structures, authored cover placements, garrisoning, and corpse stacks/body walls now feed one stealth state per unit.
+- Quiet Move now maps to crouched mobility with lower speed and lower movement noise.
+- Combat target acquisition now respects hidden targets through the detection dependency hook.
+- Renderer now draws physical cover cues: forest/tall-grass silhouettes, authored low barricades, corpse piles/body walls, and unit hidden/in-cover cues.
+- Enemy hidden units are not drawn for the player unless debug visuals are enabled.
+- Selection HUD exposes Hidden / Cover / Crouched state with a cover meter and source label.
+
+### Audit / organisation pass
+
+- Ran a file-level regression comparison against the previous uploaded package; only intended cover/visibility files, test wiring, and generated QA reports changed.
+- Added extra regression coverage for authored cover, corpse cover, and hidden ranged-target filtering.
+- Moved historical root `APPLY_*.md` files into `docs/apply-history/`.
+- Moved the agent orientation pack into `docs/agent-orientation/` and archived the old zip under `docs/archives/`.
+- Moved historical QA screenshots/reports into `artifacts/qa-output/` and logs into `artifacts/logs/`.
+- Added `docs/INDEX.md`, `docs/PROJECT_ORGANISATION.md`, and `docs/verification/FULL_DEBUG_SWEEP_2026-05-25.md`.
+- Updated `README.md` to describe the current prototype instead of the old early-command-field-only state.
+
+### Validation
+
+- `node --check` over `src`, `tests`, and `tools` passed.
+- `npm.cmd test` passed all in-process tests.
+- Focused isolated regression groups passed for structure, construction, resources, logistics, combat, navigation, enemy director, game model, progression, cover, runtime QA, opening commander/supply, and HUD.
+- `npm.cmd run test:browser` was attempted in the sandbox and skipped because the Codex Playwright client path is unavailable here.
+- `npm.cmd run test:validation` still fails the sim frame-budget proxy: runtime static QA passes, but average frame proxy and p95 jank breach thresholds.
+
+### Known next blocker
+
+- The performance gate is still the next serious target. The failure predates the cover pass and the current report is somewhat improved versus the previous stored report, but it is still a fail. Do not add another heavy simulation layer before a focused tick/frame-budget optimisation pass.
+
+## 2026-05-25 — Cadence Obligation Guard v0
+
+Added a lightweight cadence registry at `src/game/cadenceRegistry.js`, modelled after the truth-registry discipline: scheduled/heavy runtime systems now declare owner, cadence, allowed dirty/version wakes, forbidden generic wakes, budget risk, and proof expectations. Scheduler defaults now derive from this registry, runtime summaries expose the cadence registry, and `npm run test:validation` now includes `npm run test:cadence`.
+
+Validation passed: `npm test`, `npm run test:cadence`, and `npm run test:validation`. Remaining known risk is p95 stress-frame jank, not an active cadence-registry violation.
+
+## 2026-05-26 - Permanent Environmental Footprints And Corpse Piles
+
+- Replaced FIFO/fading footprint stamps with persistent half-tile ground impressions: repeat traversal reuses and deepens an existing impression rather than appending temporary decals.
+- Reduced footprint scale to sit below unit-dot scale and shifted the render tone to muddy brown.
+- Replaced the corpse record cutoff with tile-site compaction: each occupied site stores a durable count and accumulated horror value, retaining body walls after long engagements while stack rendering and collision remain site-based.
+- Saturated corpse-derived field radii once a pile is already substantial so very large persistent body piles do not broaden field-paint work indefinitely.
+- Added regression coverage for durable compact footprints and a 140-body compact persistent corpse pile.
+
+### Validation
+
+- `npm.cmd test` passed all in-process tests.
+- `npm.cmd run test:browser` passed through the required Playwright web-game client.
+- Long deterministic capture in `output/permanent-footprints-qa/` reached tick 35 with 37 persistent footprint impressions, 16 churn tiles, and 13 muddy tiles; reviewed `shot-1.png`.
+- In-app browser live run opened Chapter 1 without console errors; its canvas screenshot transport timed out, so visual QA relied on the successful Playwright capture artifact.
+- `npm.cmd run test:validation` passed, including the cadence obligation audit and sim frame-budget QA (`7.215ms` average, `40.469ms` p95).
+
+## 2026-05-26 - World Asset Lifecycle And Commander Authority v1
+
+- Added an audit-facing world asset lifecycle contract covering static visual terrain/detail, static gameplay objects, dormant/active structures, dynamic units/threats/effects and optional diagnostics.
+- Declared `commander_follow_tactical_leash` for `The First Night`, with commander-centred follow, limited middle-drag tactical pan, local command radius and near/far detail budgets.
+- Restricted opening orders to the tribal leader's local calling reach, while leaving later RTS scenario order reach unchanged.
+- Kept the opening's hidden structure/economy layer genuinely dormant: no enemy director, gathering, supply-line, construction, occupancy or structure-income updates run for its nomadic survival profile.
+- Changed dense terrain/canopy decoration rendering to iterate visible tiles and omit rich detail outside the commander relevance radius without removing authored world data.
+- Fixed outpostless `The First Night` save restoration and added regression coverage for camera metadata, lifecycle counts, dormancy, local command authority and save/load.
+
+### Validation
+
+- `node --check` passed for the changed runtime, world, render, input and test modules.
+- `npm.cmd test` passed all in-process tests.
+- `npm.cmd run test:validation` passed when run uncontended: cadence audit `0` findings; simulation QA `7.350ms` average / `39.054ms` p95.
+- `npm.cmd run test:browser` passed; its runtime snapshot shows nomadic dormancy active, enemy/logistics scheduler run counts at `0`, and bounded terrain detail rendering with `42,738` cull skips.
+- Live in-app browser QA reloaded an older persisted opening map through the camera-authority migration, confirmed the commander-focused view and distant-detail reduction, and found no console errors.

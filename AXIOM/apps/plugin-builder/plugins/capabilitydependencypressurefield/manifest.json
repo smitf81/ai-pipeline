@@ -1,0 +1,109 @@
+{
+  "id": "capabilitydependencypressurefield",
+  "name": "CapabilityDependencyPressureField",
+  "version": "0.1.0",
+  "description": "Implementation-bearing plugin proposal for: create_capability_dependency_pressure_field",
+  "author": {
+    "name": "AXIOM Agent",
+    "source": "axiom-agent"
+  },
+  "entrypoint": "src/index.js",
+  "capabilities": [
+    "ui-command-palette",
+    "event-subscribe"
+  ],
+  "permissions": {
+    "editor": {
+      "commands": [
+        "register"
+      ]
+    },
+    "storage": {
+      "namespaces": [
+        "plugin-local"
+      ]
+    },
+    "input": {
+      "mouse": true,
+      "keyboard": true,
+      "bounded_to": "editor.viewport"
+    }
+  },
+  "mcp_tools": [],
+  "lifecycle_hooks": {
+    "on_load": "onLoad",
+    "on_activate": "onActivate",
+    "on_deactivate": "onDeactivate",
+    "on_unload": "onUnload"
+  },
+  "event_subscriptions": [],
+  "ui_surfaces": [],
+  "axiom_runtime": {
+    "min_version": "1.0.0",
+    "apis": [
+      "scene.getCamera",
+      "scene.getOrbitTarget",
+      "scene.getRendererDomElement",
+      "scene.getSelected",
+      "scene.focusSelected"
+    ]
+  },
+  "lifecycle": {
+    "status": "rejected",
+    "created_at": "2026-05-13T10:23:53.316Z",
+    "implementation_generated_at": "2026-05-13T10:23:53.332Z",
+    "rejected_at": "2026-05-18T13:32:02.456Z"
+  },
+  "safety": {
+    "may_modify_core": false,
+    "sandboxed": true,
+    "timeout_ms": 30000
+  },
+  "provenance": {
+    "request_id": "cfe10b41-7354-4b66-87f1-47a4088204b8",
+    "generated_by": "axiom-plugin-builder",
+    "template_used": "editor",
+    "generated_from": "capability_gap"
+  },
+  "compatibility": {
+    "os": [
+      "any"
+    ],
+    "node_version": ">=18"
+  },
+  "validation_status": {
+    "passed": false,
+    "validator_version": "1.0.0",
+    "schema_version": "1.0.0",
+    "errors": [
+      {
+        "code": "IMPLEMENTATION_MISMATCH",
+        "message": "Generated implementation contains viewport navigation code but requested a capability dependency pressure field; not a real implementation.",
+        "severity": "error"
+      }
+    ],
+    "warnings": [],
+    "checksum": null
+  },
+  "implementation": {
+    "kind": "implementation_bearing_plugin_proposal",
+    "target_area": "editor.viewport",
+    "capability_gap": "create_capability_dependency_pressure_field",
+    "generated_files": [
+      "src/index.js",
+      "tests/plugin.test.js",
+      "README.md",
+      "integration-contract.json"
+    ],
+    "required_runtime_apis": [
+      "scene.getCamera",
+      "scene.getOrbitTarget",
+      "scene.getRendererDomElement",
+      "scene.getSelected",
+      "scene.focusSelected"
+    ],
+    "integration_contract_path": "integration-contract.json",
+    "existing_context": {},
+    "proposal_only": true
+  }
+}

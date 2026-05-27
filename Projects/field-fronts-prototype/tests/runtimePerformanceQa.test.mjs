@@ -20,15 +20,35 @@ const REPORT_PATH = path.join(OUTPUT_DIR, 'report.json');
 export function run() {
   const mainSource = readFileSync(path.resolve('src/main.js'), 'utf8');
   const rendererSource = readFileSync(path.resolve('src/rendering/canvasRenderer.js'), 'utf8');
+  const combatSource = readFileSync(path.resolve('src/game/combatSystem.js'), 'utf8');
+  const gameModelSource = readFileSync(path.resolve('src/game/gameModel.js'), 'utf8');
+  const constructionSource = readFileSync(path.resolve('src/game/constructionSystem.js'), 'utf8');
+  const logisticsSource = readFileSync(path.resolve('src/game/logisticsSystem.js'), 'utf8');
+  const runtimeEventsSource = readFileSync(path.resolve('src/game/runtimeEvents.js'), 'utf8');
+  const fpsGateSource = readFileSync(path.resolve('tools/run-frame-budget-qa.mjs'), 'utf8');
+  const simFrameGateSource = readFileSync(path.resolve('tools/run-sim-frame-budget-qa.mjs'), 'utf8');
+  const packageSource = readFileSync(path.resolve('package.json'), 'utf8');
+  const runtimeSource = `${gameModelSource}\n${constructionSource}\n${logisticsSource}\n${runtimeEventsSource}`;
 
   const cadence = runCadenceAssertions(mainSource);
   const detachment = runVisualDetachmentAssertions(mainSource);
+  const combat = runCombatPerformanceAssertions(combatSource);
+  const runtimeDemotion = runRuntimeDemotionAssertions(runtimeSource);
+  const frameBudget = runFrameBudgetAssertions(mainSource, fpsGateSource, simFrameGateSource, packageSource);
   const horde = runHordeProbe();
   const chokepoint = runChokepointProbe();
   const spatial = runSpatialProbe(chokepoint.game);
   const structureTopology = createStructureTopologyProbe(chokepoint.game);
   const renderer = {
-    hasViewportCulling: /isEntityInView|isInViewport|viewportCull|cullEntity|cullOffscreen/i.test(rendererSource)
+    hasViewportCulling: /isEntityInView|isInViewport|viewportCull|cullEntity|cullOffscreen/i.test(rendererSource),
+    commanderDetailBudget: /commander_follow_tactical_leash/.test(rendererSource)
+      && /function getVisibleTileBounds/.test(rendererSource)
+      && /function shouldRenderWorldDetailAt/.test(rendererSource)
+      && /terrainDetailCullSkips/.test(rendererSource),
+    projectileVisualInterpolation: /getProjectileVisualPosition/.test(rendererSource)
+      && /getProjectileInterpolationAlpha/.test(rendererSource)
+      && /previousPosition/.test(rendererSource)
+      && /state\?\.renderClock\?\.alpha/.test(rendererSource)
   };
 
   const report = buildRuntimeQaReport({
@@ -38,7 +58,10 @@ export function run() {
     chokepoint: chokepoint.metrics,
     spatial,
     structureTopology,
-    renderer
+    renderer,
+    combat,
+    runtimeDemotion,
+    frameBudget
   });
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -48,6 +71,26 @@ export function run() {
   assert.equal(cadence.clampsFrameDelta, true);
   assert.equal(detachment.visualSeparateFromLogical, true);
   assert.equal(detachment.unitInterpolationLinear, true);
+  assert.equal(detachment.interpolationUsesCanonicalTickStart, true);
+  assert.equal(detachment.projectileInterpolationAlphaExposed, true);
+  assert.equal(combat.projectileTargetLookupIndexed, true);
+  assert.equal(combat.projectileBlockerSpatialIndex, true);
+  assert.equal(combat.lineOfSightCache, true);
+  assert.equal(runtimeDemotion.eventQueue, true);
+  assert.equal(runtimeDemotion.dirtyFlags, true);
+  assert.equal(runtimeDemotion.versionCounters, true);
+  assert.equal(runtimeDemotion.scheduledSystems, true);
+  assert.equal(runtimeDemotion.logisticsDemandScheduled, true);
+  assert.equal(runtimeDemotion.resourceFieldsVersionCached, true);
+  assert.equal(runtimeDemotion.constructionEvents, true);
+  assert.equal(runtimeDemotion.runtimeSummary, true);
+  assert.equal(frameBudget.runtimeFrameBudgetStats, true);
+  assert.equal(frameBudget.browserGateScript, true);
+  assert.equal(frameBudget.simFrameGateScript, true);
+  assert.equal(frameBudget.validationScript, true);
+  assert.equal(frameBudget.localValidationScript, true);
+  assert.equal(renderer.commanderDetailBudget, true);
+  assert.equal(renderer.projectileVisualInterpolation, true);
   assert.equal(horde.metrics.entities.squads, 520);
   assert.equal(chokepoint.metrics.entities.squads, 520);
   assert.equal(horde.metrics.collision.collisionBodies > 0, true);
@@ -97,9 +140,90 @@ function runVisualDetachmentAssertions(mainSource) {
     smoothsVisualsOnly: /updateLeaderMotionInterpolation/.test(mainSource) && /leaderPositions/.test(mainSource),
     unitInterpolationLinear: /interpolateLeaderPositions\(state\.renderMotion\.leaderMotions,\s*progress\)/.test(mainSource)
       && !/smoothstep\(progress\)/.test(mainSource),
+    interpolationUsesCanonicalTickStart: /function captureVisibleLeaderPositions\(\)\s*{\s*return Object\.fromEntries\(getMovableEntities\(\)\.map/.test(mainSource)
+      && /clonePosition\(entity\.position \?\? entity\.tile\)/.test(mainSource),
     visualSeparateFromLogical: /leaderPositions/.test(mainSource)
       && /clonePosition/.test(mainSource)
-      && !/state\.game\.(leaders|squads).*=.*leaderPositions/.test(mainSource)
+      && !/state\.game\.(leaders|squads).*=.*leaderPositions/.test(mainSource),
+    projectileInterpolationAlphaExposed: /state\.renderClock/.test(mainSource)
+      && /interpolationAlpha/.test(mainSource)
+      && /tickAccumulatorMs \/ Math\.max\(1, interval\)/.test(mainSource)
+  };
+}
+
+function runCombatPerformanceAssertions(combatSource) {
+  return {
+    testType: 'static',
+    projectileTargetLookupIndexed: /function buildDamageableTargetById/.test(combatSource)
+      && /const targetById = buildDamageableTargetById\(projectileTargets\)/.test(combatSource)
+      && /advanceProjectiles\(game, map, stats, deps, projectileContext\)/.test(combatSource)
+      && !/function findDamageableTargetById\(game,\s*id,\s*deps\)[\s\S]*collectDamageableTargets\(game,\s*deps\)/.test(combatSource),
+    projectileBlockerSpatialIndex: /function buildProjectileBlockerIndex/.test(combatSource)
+      && /function queryProjectileBlockers/.test(combatSource)
+      && /findBlockingProjectileStructure\(blockerIndex, projectile\.position, nextPosition/.test(combatSource),
+    lineOfSightCache: /const lineOfSightCache = new Map\(\)/.test(combatSource)
+      && /function buildLineOfSightCacheKey/.test(combatSource)
+      && /context\.lineOfSightCache/.test(combatSource)
+  };
+}
+
+
+function runFrameBudgetAssertions(mainSource, fpsGateSource, simFrameGateSource, packageSource) {
+  return {
+    testType: 'static+browser-gate-contract',
+    runtimeFrameBudgetStats: /FRAME_BUDGET_HISTORY_LIMIT/.test(mainSource)
+      && /function getRuntimeFrameBudgetSnapshot/.test(mainSource)
+      && /p95FrameMs/.test(mainSource)
+      && /longFrameRatio/.test(mainSource)
+      && /window\.__fieldFrontsQa/.test(mainSource),
+    qaStressScenario: /runFrameStressScenario/.test(mainSource)
+      && /placeBlueprints/.test(mainSource)
+      && /issuePathOrders/.test(mainSource),
+    browserGateScript: /browser-frame-budget-qa/.test(fpsGateSource)
+      && /Runtime\.evaluate/.test(fpsGateSource)
+      && /average_fps_below_budget/.test(fpsGateSource)
+      && /p95_frame_ms_over_budget/.test(fpsGateSource),
+    simFrameGateScript: /sim-frame-budget-qa/.test(simFrameGateSource)
+      && /advanceGameTick/.test(simFrameGateSource)
+      && /validateStructurePlacement/.test(simFrameGateSource)
+      && /issuePlayerMoveCommand/.test(simFrameGateSource)
+      && /sim_p95_frame_ms_over_budget/.test(simFrameGateSource),
+    validationScript: /"test:fps:sim"\s*:\s*"node tools\/run-sim-frame-budget-qa\.mjs"/.test(packageSource)
+      && /"test:cadence"\s*:\s*"node tools\/audit-runtime-cadence\.mjs"/.test(packageSource)
+      && /"test:validation"\s*:\s*"node tests\/runIsolatedTests\.mjs runtimePerformanceQa\.test\.mjs && npm run test:cadence && node tools\/run-sim-frame-budget-qa\.mjs"/.test(packageSource),
+    localValidationScript: /"test:fps:browser"\s*:\s*"node tools\/run-frame-budget-qa\.mjs"/.test(packageSource)
+      && /"test:validation:local"\s*:\s*"node tests\/runIsolatedTests\.mjs runtimePerformanceQa\.test\.mjs && npm run test:cadence && node tools\/run-sim-frame-budget-qa\.mjs && node tools\/run-frame-budget-qa\.mjs"/.test(packageSource)
+  };
+}
+
+function runRuntimeDemotionAssertions(gameModelSource) {
+  return {
+    testType: 'static',
+    eventQueue: /events:\s*\[\]/.test(gameModelSource)
+      && /runtimeEvents:\s*createRuntimeEventState\(\)/.test(gameModelSource)
+      && /function emitRuntimeEvent/.test(gameModelSource)
+      && /function enqueueRuntimeEvent/.test(gameModelSource)
+      && /function drainRuntimeEvents/.test(gameModelSource)
+      && /RUNTIME_EVENT_IMPACTS/.test(gameModelSource),
+    dirtyFlags: /dirty:\s*createRuntimeDirtyState\(\)/.test(gameModelSource)
+      && /function markRuntimeDirty/.test(gameModelSource)
+      && /function clearRuntimeDirty/.test(gameModelSource),
+    versionCounters: /versions:\s*createRuntimeVersions\(map\)/.test(gameModelSource)
+      && /function bumpRuntimeVersions/.test(gameModelSource)
+      && /lastVersions/.test(gameModelSource),
+    scheduledSystems: /function shouldRunScheduledSystem/.test(gameModelSource)
+      && /function completeScheduledSystem/.test(gameModelSource)
+      && /advanceEnemyAIDirector\(game, map\)[\s\S]*shouldRunScheduledSystem\(game, 'enemyAI'\)/.test(gameModelSource),
+    logisticsDemandScheduled: /const assignIdleDemand = (deps\.)?shouldRunScheduledSystem\(game, 'logistics'\)/.test(gameModelSource)
+      && /const demand = assignIdleDemand \? findNearestSupplyDemand\(game, normalisedTransport(, deps)?\) : null/.test(gameModelSource),
+    resourceFieldsVersionCached: /function deriveCachedResourceFields/.test(gameModelSource)
+      && /resourceFields:\s*\{[\s\S]*mapVersion[\s\S]*mapSignature[\s\S]*fields/.test(gameModelSource)
+      && /\.\.\.\(runtimeDormancy\.enabled \? \{\} : deriveCachedResourceFields\(map, game\)\)/.test(gameModelSource),
+    constructionEvents: /type:\s*'construction:job_completed'/.test(gameModelSource)
+      && /structureNavChanged:\s*'structure:nav_changed'/.test(gameModelSource),
+    runtimeSummary: /function summarizeRuntimeCoordinator/.test(gameModelSource)
+      && /const runtime = summarizeRuntimeCoordination\(game\)/.test(gameModelSource)
+      && /runtime:\s*\{[\s\S]*\.\.\.runtime,[\s\S]*runtimeProfile:[\s\S]*dormancy:/.test(gameModelSource)
   };
 }
 

@@ -162,7 +162,10 @@ export function buildRuntimeQaReport({
   chokepoint,
   spatial,
   structureTopology,
-  renderer
+  renderer,
+  combat,
+  runtimeDemotion,
+  frameBudget
 }) {
   const findings = [];
 
@@ -174,6 +177,36 @@ export function buildRuntimeQaReport({
   }
   if (!detachment?.visualSeparateFromLogical) {
     findings.push(finding('high', 'visual_transform_not_detached', 'Visual interpolation appears to mutate or alias authoritative entity position.', 'Keep renderMotion leaderPositions separate from game leaders/squads and assert no shared references.'));
+  }
+  if (combat && !combat.projectileTargetLookupIndexed) {
+    findings.push(finding('high', 'projectile_target_lookup_unindexed', 'Projectile advancement does not prove indexed target lookup.', 'Build damageable target lookup once per combat tick and pass it into projectile advancement.'));
+  }
+  if (combat && !combat.projectileBlockerSpatialIndex) {
+    findings.push(finding('high', 'projectile_blockers_unindexed', 'Projectile blocker checks do not prove a spatial index.', 'Build a projectile blocker index once per combat tick and query only nearby buckets.'));
+  }
+  if (combat && !combat.lineOfSightCache) {
+    findings.push(finding('medium', 'combat_los_uncached', 'Combat line-of-sight checks do not prove a per-tick source/target cache.', 'Cache line-of-sight answers for repeated source/target pairs during one combat tick.'));
+  }
+  if (renderer && !renderer.projectileVisualInterpolation) {
+    findings.push(finding('high', 'projectile_visuals_tick_quantized', 'Projectile rendering does not prove frame-rate interpolation between logical tick positions.', 'Draw projectile endpoints from previousPosition -> position using the runtime interpolation alpha.'));
+  }
+  if (runtimeDemotion && !runtimeDemotion.scheduledSystems) {
+    findings.push(finding('high', 'runtime_systems_not_scheduled', 'Runtime systems do not prove scheduled cadence gates.', 'Gate expensive decision systems behind scheduled cadence/version checks before adding more tick work.'));
+  }
+  if (runtimeDemotion && !runtimeDemotion.resourceFieldsVersionCached) {
+    findings.push(finding('medium', 'resource_fields_not_version_cached', 'Resource-field derivation does not prove a map/version cache.', 'Cache map-only resource fields behind map version/signature checks.'));
+  }
+  if (frameBudget && !frameBudget.runtimeFrameBudgetStats) {
+    findings.push(finding('high', 'runtime_frame_budget_stats_missing', 'Runtime does not expose bounded frame-budget telemetry for browser FPS QA.', 'Expose average FPS, p95/worst frame time, and long-frame ratio from the running browser before validating slices.'));
+  }
+  if (frameBudget && !frameBudget.browserGateScript) {
+    findings.push(finding('high', 'browser_frame_budget_gate_missing', 'No dedicated browser frame-budget gate script is available for validation.', 'Run a real browser stress probe before slice validation, not only in-process simulation metrics.'));
+  }
+  if (frameBudget && !frameBudget.simFrameGateScript) {
+    findings.push(finding('high', 'sim_frame_budget_gate_missing', 'No sandbox-safe simulation frame-budget gate is available for ChatGPT-generated patches.', 'Add a deterministic Node-based stress probe for pathfinding, blueprint placement, ticks, and render-summary generation.'));
+  }
+  if (frameBudget && !frameBudget.localValidationScript) {
+    findings.push(finding('medium', 'local_browser_validation_not_declared', 'Local validation does not explicitly require the real browser FPS gate.', 'Keep browser FPS validation in a local-only script so Codex/Windows can prove real frame behaviour.'));
   }
   const hordeElapsedMs = horde?.projectedElapsedMs ?? horde?.elapsedMs ?? 0;
   if (horde?.entities?.squads >= 500 && hordeElapsedMs > 80) {
@@ -212,7 +245,10 @@ export function buildRuntimeQaReport({
       chokepoint,
       spatial,
       structureTopology,
-      renderer
+      renderer,
+      combat,
+      runtimeDemotion,
+      frameBudget
     },
     findings
   };

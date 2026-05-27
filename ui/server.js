@@ -1,0 +1,17759 @@
+console.log("SERVER FILE STARTED");
+const express = require('express');
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
+const net = require('net');
+const path = require('path');
+const os = require('os');
+const { spawn } = require('child_process');
+const { pathToFileURL } = require('url');
+const {
+  advanceOrchestratorWorkspace,
+  buildRuntimePayload,
+  createTeamBoardCard,
+  createDefaultTeamBoard,
+  createDefaultMutationGateState,
+  normalizeGraphBundle,
+  createDefaultRsgState,
+  buildRsgState,
+  getSelectedExecutionCard,
+  normalizeNotebookState,
+  normalizeMutationGateState,
+  normalizeTeamBoardState,
+} = require('./orchestratorState');
+const {
+  SELF_TARGET_KEY,
+  createDefaultSelfUpgradeState,
+  normalizeSelfUpgradeState,
+  ensureSelfProject,
+  isSelfTarget,
+  reviewSelfUpgradePatch,
+  assessAutoMutationRisk,
+  summarizeCommandOutput,
+  getSelfUpgradePreflightSpecs,
+} = require('./selfUpgrade');
+const {
+  classifyExecutionProvenance,
+  createExecutionProvenance,
+  createPlannerHandoff,
+  listThroughputSessions,
+  readThroughputSession,
+  mergeExecutionProvenance,
+  summarizeSession,
+  updateThroughputSession,
+  runThroughputSession,
+  reconcilePendingThroughputSessions,
+} = require('./throughputDebug');
+const {
+  evaluatePreLlmGuards,
+} = require('./preflightGuards');
+const {
+  recordFailureOccurrence,
+  normalizeFailureKey,
+  readFailureHistory,
+} = require('./failureMemory');
+const {
+  ensureQAStorage,
+  listQARuns,
+  readLocalGateReport,
+  readQARun,
+  readStructuredQAReport,
+  runQARun,
+  summarizeQARun,
+  STRUCTURED_QA_RELATIVE_DIR,
+  writeStructuredQAReport,
+} = require('./qaRunner');
+const {
+  PLANNER_QA_RELATIVE_DIR,
+  PLANNER_QA_QUEUE_JSON_NAME,
+  readPlannerQaQueue,
+  summarizePlannerQaQueue,
+} = require('./plannerQaQueue');
+const {
+  PLANNER_OUTTRAY_RELATIVE_DIR,
+  PLANNER_OUTTRAY_QUEUE_JSON_NAME,
+  collectPlannerOuttrayItem,
+  readPlannerOuttray,
+  summarizePlannerOuttray,
+} = require('./plannerOuttray');
+const {
+  markTaHireRequestFulfilled,
+  readTaHireRequestQueue,
+  summarizeTaHireRequestQueue,
+} = require('./taHireRequests');
+const {
+  buildQATestRegistry,
+  summarizeQATestRegistry,
+} = require('../qa/testRegistry');
+const {
+  buildQAAuditTrail,
+  summarizeQAAuditTrail,
+} = require('../qa/qaAuditTrail');
+const {
+  buildExternalQaProbeCheckPayload,
+  buildQaMcpPreflightCheck,
+  buildExternalValidationSnapshot,
+  readOpenQaInvestigations,
+} = require('./externalQaProbe');
+const {
+  buildQaResearchState,
+  maybeGenerateQaResearchNotesForInvestigations,
+} = require('./qaResearch');
+const {
+  buildQaRepairLoopState,
+  maybeBridgeOpenInvestigationsToRepairJobs,
+  readQaRepairJobs,
+  runQaRepairAttempt,
+} = require('./qaRepairLoop');
+const {
+  emptyQaLaneCanaryState,
+  runQaLaneCanarySuite,
+} = require('./qaLaneCanaries');
+const {
+  buildQaMcpLiveStatus,
+} = require('./qaMcpLiveStatus');
+const {
+  ensureQaMcpHelperBootstrapped,
+  readQaMcpLauncherStatus,
+} = require('./qaMcpLauncher');
+const {
+  buildTruthKernelPayload,
+} = require('./truthKernelAdapter');
+const {
+  buildEvaluatorSnapshot,
+  maybeRunEvaluatorCycle,
+  readEvaluatorHistory,
+  readEvaluatorState,
+  readLatestEvaluation,
+} = require('./evaluatorAgent');
+const {
+  createCanonicalTruthAccess,
+} = require('./canonicalTruthAccess');
+const {
+  createCanonicalTruthEnvelope,
+  decorateCanonicalTruthPayload,
+} = require('./canonicalTruthEnvelope');
+const {
+  getQaLeadRunsDir,
+  getQaLeadStateFilePath,
+  readQaLeadOutput,
+  startQaLeadAutomation,
+  runQaLeadCycle,
+} = require('./qaLeadRunner');
+const {
+  appendQaOutputFeedEntry,
+  readQaOutputFeed,
+} = require('./qaOutputFeed');
+const {
+  buildQaLiveCycleState,
+  buildQaSessionSummary,
+} = require('./qaSessionSummary');
+const {
+  maybeBridgePlannerCanonicalIntegrityInvestigations,
+} = require('./plannerCanonicalIntegrity');
+const {
+  UI_BOOT_INTEGRITY_LANE,
+  maybeBridgeUiBootIntegrityInvestigations,
+} = require('./uiBootIntegrity');
+const {
+  CORE_DESK_AGENT_DEFAULTS,
+  createDefaultStudioLayoutSchema,
+  buildPlannerIdentitySnapshot,
+  normalizeStudioLayoutSchema,
+  buildCanonicalPlannerCoverageTruth,
+  buildCanonicalQALeadCoverageTruth,
+  listStudioDeskIds,
+  hasStudioDesk,
+  addDepartmentToLayout,
+  addDeskToLayout,
+  buildStudioLayoutCatalog,
+} = require('./studioLayoutSchema');
+const {
+  WORLD_SCAFFOLD_KIND,
+  WORLD_SCAFFOLD_METADATA_KEYS,
+  buildWorldScaffoldMutationPlan,
+  buildWorldScaffoldMutations,
+  detectPotentialWorldScaffoldPrompt,
+  evaluateWorldScaffoldCandidate,
+  findWorldScaffoldNode,
+  isWorldScaffold,
+  normalizeWorldScaffoldCandidate,
+  parseWorldScaffoldIntent,
+  shouldAttemptModelScaffoldInterpretation,
+} = require('./worldScaffold');
+const {
+  deriveRecentWorldChange,
+} = require('./worldDiff');
+const {
+  createDefaultAgentWorkersState,
+  evaluatePlannerEligibility,
+  getAgentWorkerConfig,
+  listContextManagerRuns,
+  listExecutorRuns,
+  makeExecutorRunId,
+  listPlannerRuns,
+  makeContextManagerRunId,
+  makePlannerRunId,
+  normalizeAgentWorkersState,
+  runExecutorWorker,
+  runContextManagerWorker,
+  runPlannerWorker,
+  summarizeContextManagerRun,
+  summarizeExecutorRun,
+  summarizePlannerRun,
+} = require('./agentWorkers');
+const {
+  buildTaskArtifactAttributionMap,
+  resolveArtifactAgentIdentity,
+  resolveStageAgentIdentity,
+  renderAgentAttributionBlock,
+} = require('./agentAttribution');
+const {
+  appendCtoOverrideLedgerEntry,
+  createDefaultCtoOverrideLedger,
+  deriveCtoOverrideLayer,
+  normalizeCtoOverrideEntry,
+  normalizeCtoOverrideLedger,
+  summarizeCtoOverrideLedger,
+} = require('./ctoOverrides');
+const {
+  buildAgentAuditRecord,
+  writeAgentAuditArtifacts,
+} = require('./agentAudit');
+const {
+  buildConstrainedAutoFixBundle,
+  runConstrainedAutoFixExecutor,
+} = require('./constrainedAutoFix');
+const {
+  DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
+  ensureChiefOfStaffReadiness,
+  queryChiefOfStaff,
+  readLatestChiefOfStaffAdvisory,
+} = require('./ctoChiefOfStaff');
+const {
+  writeJsonIfChanged,
+} = require('./changeHygiene');
+
+const ROLE_TAXONOMY_PATH = path.join(__dirname, 'public', 'spatial', 'roleTaxonomy.mjs');
+const RND_EXPERIMENTS_FILE = path.join(__dirname, '..', 'data', 'spatial', 'rnd-experiments.json');
+let cachedRoleTaxonomy = null;
+let cachedRndExperiments = null;
+
+function loadRoleTaxonomy() {
+  if (cachedRoleTaxonomy) return cachedRoleTaxonomy;
+  const source = fs.readFileSync(ROLE_TAXONOMY_PATH, 'utf8');
+  const match = source.match(/export const ROLE_TAXONOMY_JSON = String\.raw`([\s\S]*?)`;/);
+  if (!match) {
+    throw new Error('roleTaxonomy.mjs is missing the ROLE_TAXONOMY_JSON export.');
+  }
+  cachedRoleTaxonomy = JSON.parse(match[1]);
+  return cachedRoleTaxonomy;
+}
+
+function buildDeskPanelMetadata(deskId, deskLayout, departmentLayout) {
+  const taxonomy = loadRoleTaxonomy();
+  const role = taxonomy.roles.find((entry) => entry.id === deskId || (Array.isArray(entry.allowedDeskIds) && entry.allowedDeskIds.includes(deskId))) || null;
+  const station = role?.station || {};
+  const panel = station.panel || role?.panel || null;
+  if (!panel) {
+    return null;
+  }
+  return {
+    mission: String(panel.mission || station.mission || deskLayout?.summary || departmentLayout?.summary || '').trim() || null,
+    responsibilities: Array.isArray(panel.responsibilities) ? panel.responsibilities.filter(Boolean) : [],
+    hardRules: Array.isArray(panel.hardRules) ? panel.hardRules.filter(Boolean) : [],
+    deliveryRelationship: String(panel.deliveryRelationship || '').trim() || null,
+    visibility: panel.visibility || 'read-only',
+  };
+}
+
+function normalizeConfidence(value = 0) {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return 0;
+  return Math.min(1, Math.max(0, normalized));
+}
+
+function normalizeRndExperimentPrimitiveRecord(record = {}) {
+  const source = record && typeof record === 'object' && !Array.isArray(record) ? record : {};
+  const normalizeText = (value) => String(value ?? '').trim();
+  const normalizeTextList = (value) => (Array.isArray(value) ? value.map((entry) => normalizeText(entry)).filter(Boolean) : []);
+  return {
+    primitive: normalizeText(source.primitive),
+    description: normalizeText(source.description),
+    data_shape: normalizeText(source.data_shape),
+    constraints: normalizeTextList(source.constraints),
+    example: normalizeText(source.example),
+    confidence: normalizeConfidence(source.confidence),
+  };
+}
+
+function normalizeRndExperimentRecord(record = {}) {
+  const source = record && typeof record === 'object' && !Array.isArray(record) ? record : {};
+  const normalizeText = (value) => String(value ?? '').trim();
+  const normalizeTextList = (value) => (Array.isArray(value) ? value.map((entry) => normalizeText(entry)).filter(Boolean) : []);
+  const lifecycle = normalizeText(source.lifecycle || source.status || 'proposed').toLowerCase();
+  return {
+    id: normalizeText(source.id),
+    hypothesis: normalizeText(source.hypothesis),
+    lifecycle: lifecycle || 'proposed',
+    scope: normalizeTextList(source.scope),
+    inputs: normalizeTextList(source.inputs),
+    expected_output: normalizeText(source.expected_output),
+    success_criteria: normalizeText(source.success_criteria),
+    failure_criteria: normalizeText(source.failure_criteria),
+    salvageable_components: normalizeTextList(source.salvageable_components),
+    integration_target: normalizeText(source.integration_target),
+    what_worked: normalizeTextList(source.what_worked),
+    what_failed: normalizeTextList(source.what_failed),
+    reusable_components: normalizeTextList(source.reusable_components),
+    discard_reason: normalizeText(source.discard_reason),
+    extracted_primitives: Array.isArray(source.extracted_primitives)
+      ? source.extracted_primitives.map(normalizeRndExperimentPrimitiveRecord).filter((entry) => entry.primitive)
+      : [],
+  };
+}
+
+function validateRndExperimentPrimitiveRecord(record = {}) {
+  const normalized = normalizeRndExperimentPrimitiveRecord(record);
+  const issues = [];
+  ['primitive', 'description', 'data_shape', 'example'].forEach((field) => {
+    if (!String(record?.[field] ?? '').trim()) {
+      issues.push(field);
+    }
+  });
+  if (!Array.isArray(record?.constraints)) {
+    issues.push('constraints');
+  } else if (record.constraints.some((entry) => !String(entry ?? '').trim())) {
+    issues.push('constraints-item');
+  }
+  const confidence = Number(record?.confidence);
+  if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+    issues.push('confidence');
+  }
+  return {
+    ok: issues.length === 0,
+    issues,
+    record: normalized,
+  };
+}
+
+function evaluateRndExperimentPromotionReadiness(record = {}) {
+  const normalized = normalizeRndExperimentRecord(record);
+  const lifecycle = String(normalized.lifecycle || '').trim().toLowerCase();
+  const requiredScalars = ['id', 'hypothesis', 'expected_output', 'success_criteria', 'failure_criteria', 'integration_target'];
+  const scalarValid = requiredScalars.every((field) => String(normalized[field] || '').trim());
+  const lifecycleValid = ['proposed', 'approved', 'in_progress', 'failed', 'salvaged', 'promoted', 'archived'].includes(lifecycle);
+  const scopeValid = Array.isArray(normalized.scope);
+  const inputsValid = Array.isArray(normalized.inputs);
+  const salvageableValid = Array.isArray(normalized.salvageable_components);
+  const primitiveResults = Array.isArray(normalized.extracted_primitives)
+    ? normalized.extracted_primitives.map(validateRndExperimentPrimitiveRecord)
+    : [];
+  const validPrimitiveCount = primitiveResults.filter((entry) => entry.ok).length;
+  const hasValidPrimitive = validPrimitiveCount > 0;
+  const explicitQaFlag = ['1', 'true', 'yes', 'y', 'passed', 'pass', 'ok', 'ready'].includes(String(record.basic_qa_passed ?? record.qa_passed ?? record.qa_status ?? record.validation_passed ?? '').trim().toLowerCase())
+    ? true
+    : ['0', 'false', 'no', 'n', 'failed', 'fail', 'blocked', 'not_ready'].includes(String(record.basic_qa_passed ?? record.qa_passed ?? record.qa_status ?? record.validation_passed ?? '').trim().toLowerCase())
+      ? false
+      : null;
+  const basicQaPassed = explicitQaFlag != null
+    ? explicitQaFlag
+    : ['approved', 'in_progress', 'salvaged'].includes(lifecycle);
+  const terminalLifecycle = lifecycle === 'promoted' || lifecycle === 'archived';
+  const contractValid = Boolean(scalarValid && lifecycleValid && scopeValid && inputsValid && salvageableValid);
+  const primitivesValid = primitiveResults.every((entry) => entry.ok);
+  const eligible = contractValid && primitivesValid && basicQaPassed && hasValidPrimitive && Boolean(normalized.integration_target) && !terminalLifecycle;
+  const reasons = [];
+  if (!contractValid) reasons.push('Experiment contract validation failed.');
+  if (!basicQaPassed) reasons.push('Basic QA has not passed.');
+  if (!hasValidPrimitive) reasons.push('At least one extracted primitive is required.');
+  if (!normalized.integration_target) reasons.push('A downstream integration target is required.');
+  if (!primitivesValid) reasons.push('At least one extracted primitive failed validation.');
+  if (lifecycle === 'promoted') reasons.push('Experiment is already promoted.');
+  if (lifecycle === 'archived') reasons.push('Experiment is archived.');
+  return {
+    eligible,
+    state: lifecycle === 'promoted' ? 'promoted' : lifecycle === 'archived' ? 'archived' : eligible ? 'eligible' : 'blocked',
+    contractValid,
+    basicQaPassed,
+    hasIntegrationTarget: Boolean(normalized.integration_target),
+    hasValidPrimitive,
+    primitiveCount: Array.isArray(normalized.extracted_primitives) ? normalized.extracted_primitives.length : 0,
+    validPrimitiveCount,
+    lifecycle,
+    integrationTarget: normalized.integration_target,
+    reasons,
+    primitives: primitiveResults,
+  };
+}
+
+function loadRndExperimentRecords() {
+  if (cachedRndExperiments) return cachedRndExperiments;
+  const seed = readJsonSafe(RND_EXPERIMENTS_FILE, null);
+  const experiments = Array.isArray(seed?.experiments) ? seed.experiments : [];
+  cachedRndExperiments = {
+    contract: String(seed?.contract || 'rnd-experiment.v1'),
+    updatedAt: seed?.updatedAt || null,
+    experiments: experiments
+      .map(normalizeRndExperimentRecord)
+      .filter((record) => record.id)
+      .map((record) => ({
+        ...record,
+        promotion_readiness: evaluateRndExperimentPromotionReadiness(record),
+      })),
+  };
+  return cachedRndExperiments;
+}
+const {
+  buildAgentCapabilityProfile,
+  readAgentCapabilityProfile,
+  rebuildAgentCapabilityLedger,
+} = require('./agentCapabilities');
+const {
+  CANONICAL_TARGETS_FILE,
+  DEFAULT_DOMAIN_KEY,
+  buildAnchorBundle,
+  listCanonicalAnchorPaths,
+  readAnchorFile,
+  resolveTargetsConfig,
+} = require('./anchorResolver');
+const {
+  buildSliceStoreFromCards,
+  projectBoardFromSlices,
+  readSliceStore,
+  writeSliceArtifacts,
+} = require('./sliceRepository');
+const {
+  applyArchivistWriteback,
+  contextBundlePaths,
+} = require('./archivistWriteback');
+const {
+  TASK_CACHE_SOURCE,
+  readTaskCache,
+  summarizeTaskCache,
+} = require('./taskCache');
+const {
+  createBoundedFixTaskArtifact,
+  evaluateAutonomyPolicy,
+  summarizeAutonomyPolicyDecision,
+} = require('./autonomyPolicy');
+const {
+  buildFixTaskPromptSection,
+  consumePendingFixTask,
+  finalizeFixTask,
+} = require('./fixTasks');
+const {
+  generateCandidates,
+  validateGap,
+} = require('../ta/generateCandidates');
+const {
+  executeModuleAction,
+} = require('./moduleRunner');
+const {
+  LEGACY_FALLBACK_ACTIONS,
+  buildLegacyRunnerCommand,
+  runLegacyFallbackSync,
+  runLegacyFallbackStream,
+} = require('./legacyRunnerAdapter');
+const {
+  callOllamaGenerate,
+} = require('./llmAdapter');
+const {
+  DEFAULT_OLLAMA_HOST,
+  DEFAULT_OLLAMA_TIMEOUT_MS,
+  readOllamaLauncherStatus,
+  ensureOllamaBootstrapped,
+} = require('./localModelClient');
+const {
+  runAll: runStructuredQA,
+} = require('../qa/qaLead');
+const {
+  AGENTS_ROOT,
+  normalizeAgentId,
+  resolveAgentDefinition,
+  modelSupportsToolUse,
+} = require('./agentRegistry');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+function getCurrentPort() {
+  return process.env.PORT || port || 3000;
+}
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json({ limit: '512kb' }));
+
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
+
+app.get(['/qa', '/qa/'], (req, res) => {
+  res.redirect(302, '/?mode=qa');
+});
+
+const ROOT = path.join(__dirname, '..');
+const COMMANDS_FILE = path.join(ROOT, 'ace_commands.json');
+const TASKS_DIR = path.join(ROOT, 'work', 'tasks');
+const REFRESH_MS_DEFAULT = 10000;
+const MAX_RUN_HISTORY = 20;
+const SPATIAL_WORKSPACE_FILE = path.join(ROOT, 'data', 'spatial', 'workspace.json');
+const SPATIAL_HISTORY_FILE = path.join(ROOT, 'data', 'spatial', 'history.json');
+const SPATIAL_PAGES_FILE = path.join(ROOT, 'data', 'spatial', 'pages.json');
+const SPATIAL_INTENT_STATE_FILE = path.join(ROOT, 'data', 'spatial', 'intent-state.json');
+const SPATIAL_STUDIO_STATE_FILE = path.join(ROOT, 'data', 'spatial', 'studio-state.json');
+const SPATIAL_ARCHITECTURE_MEMORY_FILE = path.join(ROOT, 'data', 'spatial', 'architecture-memory.json');
+const TA_DEPARTMENT_FILE = path.join(ROOT, 'data', 'spatial', 'ta-department.json');
+const CTO_DIAGNOSTICS_FILE = path.join(ROOT, 'data', 'spatial', 'cto-diagnostics.json');
+const SPATIAL_WORKSPACE_VOLATILE_KEYS = ['updatedAt', 'updated_at', 'lastEvaluatedAt', 'lastTickAt', 'freshAt', 'generatedAt', 'createdAt', 'timestamp', 'observedAt'];
+const SPATIAL_PAGE_VOLATILE_KEYS = ['updatedAt', 'freshAt', 'timestamp'];
+const SPATIAL_INTENT_VOLATILE_KEYS = ['updatedAt', 'createdAt', 'generatedAt', 'timestamp'];
+const SPATIAL_STUDIO_VOLATILE_KEYS = ['updatedAt', 'freshAt', 'lastEvaluatedAt', 'timestamp'];
+const SPATIAL_ARCHIVE_VOLATILE_KEYS = ['updatedAt', 'lastEvaluatedAt', 'timestamp'];
+const SPATIAL_DIAGNOSTIC_VOLATILE_KEYS = ['timestamp', 'updatedAt', 'createdAt'];
+const SERVER_STARTED_AT = nowIso();
+const DOMAIN_KEY = DEFAULT_DOMAIN_KEY;
+const dashboardFiles = listCanonicalAnchorPaths(DOMAIN_KEY);
+
+const runStore = new Map();
+const runOrder = [];
+const projectRunStore = new Map();
+let latestExternalValidationSnapshot = null;
+const QA_LEAD_DESK_ID = 'qa-lead';
+const STATIC_WEB_PROJECT_KEY = 'topdown-slice';
+const STATIC_WEB_HOST = '127.0.0.1';
+const STATIC_WEB_DEFAULT_PORT = 4173;
+const STATIC_WEB_SUPPORTED_ORIGIN = `http://${STATIC_WEB_HOST}:${STATIC_WEB_DEFAULT_PORT}/`;
+const STATIC_WEB_SHELL_MARKER = 'Top-Down Thin Slice';
+const STATIC_WEB_BOOT_ENTRY_PATHS = ['/src/main.js', '/src/editor/ui.js'];
+const STUDIO_BOOT_MANIFEST_PATH = path.join(__dirname, 'public', 'spatial', 'boot-manifest.json');
+const PROJECT_RUN_START_TIMEOUT_MS = 4000;
+const TASK_ARTIFACT_NAMES = ['idea.txt', 'context.md', 'plan.md', 'patch.diff', 'apply_result.json', 'agent_attribution.json'];
+const DESK_AGENT_DEFAULTS = {
+  ...CORE_DESK_AGENT_DEFAULTS,
+  [QA_LEAD_DESK_ID]: CORE_DESK_AGENT_DEFAULTS[QA_LEAD_DESK_ID] || [QA_LEAD_DESK_ID],
+};
+const TEAM_BOARD_DESK_TO_STUDIO_DESK = {
+  Planner: 'planner',
+  Builder: 'executor',
+  CTO: 'cto-architect',
+};
+const EXECUTIVE_ENVELOPE_VERSION = 'ace/studio-envelope.v1';
+const EXECUTIVE_EXPORT_DIR = path.join(ROOT, 'data', 'spatial', 'exports');
+const LEARNING_LEDGER_ROOT = path.join(ROOT, 'data', 'spatial', 'learning-ledger');
+const AGENTS_DIR = path.join(ROOT, AGENTS_ROOT);
+const DEFAULT_CONTEXT_MANAGER_MODEL = 'qwen3.5-9b';
+const DEFAULT_CONTEXT_MANAGER_BACKEND = 'ollama';
+const DEFAULT_SCAFFOLD_INTERPRETER_MODEL = DEFAULT_CONTEXT_MANAGER_MODEL;
+const DEFAULT_SCAFFOLD_INTERPRETER_BACKEND = DEFAULT_CONTEXT_MANAGER_BACKEND;
+const DEFAULT_SCAFFOLD_INTERPRETER_TIMEOUT_MS = 12000;
+const WORLD_SCAFFOLD_MODEL_CONTRACT = 'world_scaffold_candidate.v0';
+const WORLD_EDIT_ACTION_PATTERN = /\b(add|paint|replace|set|turn|update)\b/i;
+const WORLD_EDIT_TARGET_PATTERN = /\b(grid|scaffold)\b/i;
+const WORLD_EDIT_TILE_NOUN_PATTERN = /\b(tile|tiles|cell|cells)\b/i;
+const WORLD_EDIT_MATERIAL_PATTERN = /\b(water|grass|stone|dirt)\b/i;
+const CTO_DIAGNOSTICS_VERSION = 'ace/cto-diagnostics.v1';
+const CTO_DIAGNOSTIC_HISTORY_LIMIT = 60;
+const CTO_BAKEOFF_DEFAULT_TEXT = 'We need a planner for this. Can you handle it?';
+const CTO_BAKEOFF_MODEL_PREFERENCE = Object.freeze([
+  'mixtral:latest',
+  'mistral:latest',
+  'qwen2.5-coder:1.5b',
+  'llama3:latest',
+  'codellama:latest',
+  'openchat:latest',
+  'gemma3:4b',
+]);
+const CTO_GOVERNANCE_RESPONSE_KIND_VALUES = Object.freeze(['advisory', 'actionable', 'blocked']);
+const CTO_GOVERNANCE_RESPONSE_CONTRACT = Object.freeze({
+  type: 'object',
+  required: ['reply_text', 'response_kind'],
+  optional: ['delegation', 'action'],
+  response_kind: CTO_GOVERNANCE_RESPONSE_KIND_VALUES,
+  delegation: {
+    type: ['object', 'null'],
+    required: ['desk_id', 'desk_label', 'why'],
+  },
+  action: {
+    type: ['object', 'null'],
+    required: ['id'],
+  },
+});
+
+function getDefaultCtoGovernanceBackend() {
+  return String(process.env.ACE_CTO_BACKEND || DEFAULT_CONTEXT_MANAGER_BACKEND).trim() || DEFAULT_CONTEXT_MANAGER_BACKEND;
+}
+
+function getDefaultCtoGovernanceModel() {
+  return String(process.env.ACE_CTO_MODEL || DEFAULT_CONTEXT_MANAGER_MODEL).trim() || DEFAULT_CONTEXT_MANAGER_MODEL;
+}
+
+function getDefaultCtoGovernanceHost() {
+  return String(process.env.ACE_CTO_OLLAMA_HOST || DEFAULT_OLLAMA_HOST).trim() || DEFAULT_OLLAMA_HOST;
+}
+
+function getDefaultCtoGovernanceTimeoutMs() {
+  const configured = Number(process.env.ACE_CTO_TIMEOUT_MS);
+  return configured > 0 ? configured : DEFAULT_OLLAMA_TIMEOUT_MS;
+}
+
+function resolveCtoGovernanceConfig(overrides = {}) {
+  const defaultBackend = getDefaultCtoGovernanceBackend();
+  const defaultModel = getDefaultCtoGovernanceModel();
+  const defaultHost = getDefaultCtoGovernanceHost();
+  const defaultTimeoutMs = getDefaultCtoGovernanceTimeoutMs();
+  return {
+    backend: String(overrides.backend || defaultBackend).trim() || defaultBackend,
+    model: String(overrides.model || defaultModel).trim() || defaultModel,
+    host: String(overrides.host || defaultHost).trim() || defaultHost,
+    timeoutMs: Number(overrides.timeoutMs) > 0 ? Number(overrides.timeoutMs) : defaultTimeoutMs,
+  };
+}
+const SPATIAL_MUTATION_ALLOWED_TYPES = new Set(['create_node', 'modify_node', 'create_edge']);
+const SPATIAL_MUTATION_SAFE_MODIFY_KEYS = new Set(['content', 'position', 'metadata']);
+const SPATIAL_MUTATION_ACTIVITY_LIMIT = 32;
+const SPATIAL_MUTATION_APPROVAL_LIMIT = 16;
+const TA_COVERAGE_REQUIREMENTS = [
+  { deskId: 'context-manager', label: 'Context Manager', minimum: 1, role: 'Feedback Liaison' },
+  { deskId: 'planner', label: 'Planner', minimum: 1, role: 'Delivery Analyst' },
+  { deskId: 'executor', label: 'Executor', minimum: 1, role: 'Integration Auditor' },
+  { deskId: 'memory-archivist', label: 'Memory Archivist', minimum: 1, role: 'Contract Steward' },
+  { deskId: 'cto-architect', label: 'CTO Architect', minimum: 1, role: 'Runtime Cartographer' },
+];
+
+let staffingRulesModulePromise = null;
+let spatialBootHealthSnapshot = null;
+let bootRecoveryRuntimeStatus = null;
+let aceDependencyRegistry = null;
+let aceDependencyRefreshPromise = null;
+
+const ACE_DEPENDENCY_IDS = Object.freeze({
+  OLLAMA: 'ollama',
+  QA_MCP_HELPER: 'qa_mcp_helper',
+});
+const ACE_DEPENDENCY_STATUSES = new Set(['live', 'warming', 'degraded', 'unavailable']);
+const ACE_DEPENDENCY_STALE_AFTER_MS = 15000;
+
+function cloneJson(value) {
+  return value && typeof value === 'object'
+    ? JSON.parse(JSON.stringify(value))
+    : value;
+}
+
+function normalizeAceDependencyStatus(value, fallback = 'warming') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ACE_DEPENDENCY_STATUSES.has(normalized) ? normalized : fallback;
+}
+
+function buildAceDependencyEntry(dependencyId, overrides = {}) {
+  const now = nowIso();
+  const ctoConfig = resolveCtoGovernanceConfig();
+  const defaults = dependencyId === ACE_DEPENDENCY_IDS.OLLAMA
+    ? {
+        id: ACE_DEPENDENCY_IDS.OLLAMA,
+        label: 'Ollama',
+        endpoint: `${ctoConfig.host.replace(/\/+$/, '')}/api/tags`,
+        launch: {
+          command: 'ollama serve',
+          mechanism: 'local_process_spawn',
+        },
+      }
+    : {
+        id: ACE_DEPENDENCY_IDS.QA_MCP_HELPER,
+        label: 'QA MCP Helper',
+        endpoint: 'http://127.0.0.1:5051/run_test',
+        launch: {
+          command: `python ${path.join(ROOT, 'qa_mcp_helper.py')}`,
+          mechanism: 'python_helper_spawn',
+        },
+      };
+  return {
+    ...defaults,
+    status: 'warming',
+    failureReason: null,
+    launchAttemptedThisBoot: false,
+    launchAttemptedAt: null,
+    lastProofOfLifeCheck: null,
+    lastUpdatedAt: now,
+    launcherStatus: null,
+    ...cloneJson(overrides),
+    status: normalizeAceDependencyStatus(overrides.status, 'warming'),
+    lastUpdatedAt: now,
+  };
+}
+
+function createInitialAceDependencyRegistry() {
+  return {
+    [ACE_DEPENDENCY_IDS.OLLAMA]: buildAceDependencyEntry(ACE_DEPENDENCY_IDS.OLLAMA),
+    [ACE_DEPENDENCY_IDS.QA_MCP_HELPER]: buildAceDependencyEntry(ACE_DEPENDENCY_IDS.QA_MCP_HELPER),
+  };
+}
+
+function ensureAceDependencyRegistry() {
+  if (!aceDependencyRegistry) {
+    aceDependencyRegistry = createInitialAceDependencyRegistry();
+  }
+  return aceDependencyRegistry;
+}
+
+function getAceDependencyRegistrySnapshot() {
+  return cloneJson(ensureAceDependencyRegistry());
+}
+
+function syncAceDependencyRuntimeStatus() {
+  if (!bootRecoveryRuntimeStatus) {
+    return;
+  }
+  updateBootRecoveryRuntimeStatus({
+    dependencies: getAceDependencyRegistrySnapshot(),
+  });
+}
+
+function updateAceDependencyEntry(dependencyId, patch = {}) {
+  const registry = ensureAceDependencyRegistry();
+  const current = registry[dependencyId] || buildAceDependencyEntry(dependencyId);
+  aceDependencyRegistry = {
+    ...registry,
+    [dependencyId]: {
+      ...current,
+      ...cloneJson(patch),
+      status: normalizeAceDependencyStatus(patch.status, current.status),
+      lastUpdatedAt: nowIso(),
+    },
+  };
+  syncAceDependencyRuntimeStatus();
+  return aceDependencyRegistry[dependencyId];
+}
+
+function dependencyProofIsStale(entry = null, maxAgeMs = ACE_DEPENDENCY_STALE_AFTER_MS) {
+  const checkedAt = String(entry?.lastProofOfLifeCheck?.checkedAt || '').trim();
+  if (!checkedAt) return true;
+  const timestamp = Date.parse(checkedAt);
+  if (!Number.isFinite(timestamp)) return true;
+  return (Date.now() - timestamp) > Math.max(1000, Number(maxAgeMs) || ACE_DEPENDENCY_STALE_AFTER_MS);
+}
+
+function aceDependencyRegistryNeedsRefresh(maxAgeMs = ACE_DEPENDENCY_STALE_AFTER_MS) {
+  const registry = ensureAceDependencyRegistry();
+  return Object.values(registry).some((entry) => (
+    entry?.status === 'warming'
+    || dependencyProofIsStale(entry, maxAgeMs)
+  ));
+}
+
+function normalizeOllamaDependencyEntry({
+  probe = null,
+  launcherStatus = null,
+  launchAttemptedThisBoot = false,
+} = {}) {
+  const config = resolveCtoGovernanceConfig();
+  const checkedAt = String(probe?.checkedAt || launcherStatus?.checked_at || nowIso()).trim() || nowIso();
+  const sourceStatus = String(probe?.status || '').trim() || 'offline';
+  const availableModels = Array.isArray(probe?.availableModels) ? probe.availableModels : [];
+  const status = probe?.ok
+    ? 'live'
+    : (sourceStatus === 'degraded' ? 'degraded' : 'unavailable');
+  const failureReason = status === 'live'
+    ? null
+    : String(probe?.reason || launcherStatus?.failure_reason || '').trim()
+      || 'Ollama is not currently reachable.';
+  return {
+    endpoint: `${config.host.replace(/\/+$/, '')}/api/tags`,
+    status,
+    failureReason,
+    launchAttemptedThisBoot,
+    launchAttemptedAt: launchAttemptedThisBoot ? nowIso() : null,
+    lastProofOfLifeCheck: {
+      checkedAt,
+      status: sourceStatus,
+      reachable: sourceStatus !== 'offline',
+      reason: String(probe?.reason || '').trim() || null,
+      availableModels,
+    },
+    launcherStatus: launcherStatus ? cloneJson(launcherStatus) : null,
+  };
+}
+
+function normalizeQaMcpDependencyEntry({
+  preflight = null,
+  launcherStatus = null,
+  launchAttemptedThisBoot = false,
+} = {}) {
+  const checkedAt = String(preflight?.checked_at || launcherStatus?.checked_at || nowIso()).trim() || nowIso();
+  const transport = preflight?.transport || null;
+  const verdict = String(preflight?.verdict || '').trim() || 'unreachable';
+  const reachable = Boolean(transport?.reachable || transport?.responded);
+  const status = verdict === 'ok'
+    ? 'live'
+    : (reachable ? 'degraded' : 'unavailable');
+  const failureReason = status === 'live'
+    ? null
+    : String(preflight?.summary || launcherStatus?.failure_reason || '').trim()
+      || 'QA MCP helper is not currently reachable.';
+  return {
+    endpoint: 'http://127.0.0.1:5051/run_test',
+    status,
+    failureReason,
+    launchAttemptedThisBoot,
+    launchAttemptedAt: launchAttemptedThisBoot ? nowIso() : null,
+    lastProofOfLifeCheck: {
+      checkedAt,
+      status: verdict,
+      reachable,
+      reason: String(preflight?.summary || '').trim() || null,
+      transport: transport ? cloneJson(transport) : null,
+    },
+    launcherStatus: launcherStatus ? cloneJson(launcherStatus) : null,
+  };
+}
+
+async function refreshOllamaDependencyStatus({
+  attemptLaunch = false,
+  fetchImpl = globalThis.fetch,
+  probeFn = probeCtoBackendStatus,
+  launchFn = ensureOllamaBootstrapped,
+} = {}) {
+  updateAceDependencyEntry(ACE_DEPENDENCY_IDS.OLLAMA, {
+    status: 'warming',
+  });
+  let probe = await probeFn({
+    fetchImpl,
+  });
+  let launcherStatus = readOllamaLauncherStatus();
+  let launchAttemptedThisBoot = false;
+
+  if (attemptLaunch && probe?.status === 'offline') {
+    launcherStatus = await launchFn({
+      host: resolveCtoGovernanceConfig().host,
+      timeoutMs: 1500,
+      fetchImpl,
+    });
+    launchAttemptedThisBoot = Boolean(launcherStatus?.launch_attempted);
+    probe = await probeFn({
+      fetchImpl,
+    });
+  }
+
+  return updateAceDependencyEntry(
+    ACE_DEPENDENCY_IDS.OLLAMA,
+    normalizeOllamaDependencyEntry({
+      probe,
+      launcherStatus,
+      launchAttemptedThisBoot,
+    }),
+  );
+}
+
+async function refreshQaMcpHelperDependencyStatus({
+  rootPath = ROOT,
+  attemptLaunch = false,
+  preflightFn = buildQaMcpPreflightResponse,
+  launchFn = ensureQaMcpHelperBootstrapped,
+} = {}) {
+  updateAceDependencyEntry(ACE_DEPENDENCY_IDS.QA_MCP_HELPER, {
+    status: 'warming',
+  });
+  let preflight = await preflightFn({
+    rootPath,
+    probeUrl: 'http://127.0.0.1:5051/run_test',
+    timeoutMs: 1500,
+  });
+  let launcherStatus = preflight?.launcher_status || readQaMcpLauncherStatus();
+  let launchAttemptedThisBoot = false;
+
+  if (attemptLaunch && preflight?.verdict !== 'ok' && !preflight?.transport?.reachable && !preflight?.transport?.responded) {
+    launcherStatus = await launchFn({
+      rootPath,
+      probeUrl: 'http://127.0.0.1:5051/run_test',
+      timeoutMs: 1500,
+    });
+    launchAttemptedThisBoot = Boolean(launcherStatus?.launch_attempted);
+    preflight = await preflightFn({
+      rootPath,
+      probeUrl: 'http://127.0.0.1:5051/run_test',
+      timeoutMs: 1500,
+    });
+  }
+
+  return updateAceDependencyEntry(
+    ACE_DEPENDENCY_IDS.QA_MCP_HELPER,
+    normalizeQaMcpDependencyEntry({
+      preflight,
+      launcherStatus: preflight?.launcher_status || launcherStatus,
+      launchAttemptedThisBoot,
+    }),
+  );
+}
+
+async function refreshAceDependencyRegistry({
+  rootPath = ROOT,
+  attemptLaunch = false,
+  force = false,
+  fetchImpl = globalThis.fetch,
+  ollamaProbeFn = probeCtoBackendStatus,
+  ollamaLaunchFn = ensureOllamaBootstrapped,
+  qaPreflightFn = buildQaMcpPreflightResponse,
+  qaLaunchFn = ensureQaMcpHelperBootstrapped,
+} = {}) {
+  if (aceDependencyRefreshPromise && !force) {
+    return aceDependencyRefreshPromise;
+  }
+  aceDependencyRefreshPromise = (async () => {
+    await refreshOllamaDependencyStatus({
+      attemptLaunch,
+      fetchImpl,
+      probeFn: ollamaProbeFn,
+      launchFn: ollamaLaunchFn,
+    });
+    await refreshQaMcpHelperDependencyStatus({
+      rootPath,
+      attemptLaunch,
+      preflightFn: qaPreflightFn,
+      launchFn: qaLaunchFn,
+    });
+    return getAceDependencyRegistrySnapshot();
+  })();
+  try {
+    return await aceDependencyRefreshPromise;
+  } finally {
+    aceDependencyRefreshPromise = null;
+  }
+}
+
+async function refreshAceDependencyRegistryIfStale(options = {}) {
+  if (!aceDependencyRegistryNeedsRefresh(options.maxAgeMs)) {
+    return getAceDependencyRegistrySnapshot();
+  }
+  return refreshAceDependencyRegistry(options);
+}
+
+async function orchestrateAceDependenciesOnBoot(rootPath = ROOT) {
+  updateBootRecoveryRuntimeStatus({
+    phase: 'dependency_orchestration',
+    currentStep: 'Checking local dependency proof-of-life.',
+    dependencies: getAceDependencyRegistrySnapshot(),
+  });
+  try {
+    const dependencies = await refreshAceDependencyRegistry({
+      rootPath,
+      attemptLaunch: true,
+      force: true,
+    });
+    updateBootRecoveryRuntimeStatus({
+      currentStep: 'Local dependency proof-of-life complete.',
+      dependencies,
+    });
+    return dependencies;
+  } catch (error) {
+    updateBootRecoveryRuntimeStatus({
+      currentStep: 'Local dependency proof-of-life failed.',
+      lastError: String(error?.message || error),
+      dependencies: getAceDependencyRegistrySnapshot(),
+    });
+    return getAceDependencyRegistrySnapshot();
+  }
+}
+
+function createInitialBootRecoveryRuntimeStatus() {
+  const now = nowIso();
+  aceDependencyRefreshPromise = null;
+  aceDependencyRegistry = createInitialAceDependencyRegistry();
+  return {
+    phase: 'booting',
+    safeMode: false,
+    currentStep: 'Server startup initialised.',
+    lastError: null,
+    startedAt: now,
+    updatedAt: now,
+    bootHealth: null,
+    repairInProgress: false,
+    recoveryFinished: false,
+    recoveryBlocked: false,
+    dependencies: getAceDependencyRegistrySnapshot(),
+  };
+}
+
+function ensureBootRecoveryRuntimeStatus() {
+  if (!bootRecoveryRuntimeStatus) {
+    bootRecoveryRuntimeStatus = createInitialBootRecoveryRuntimeStatus();
+  }
+  return bootRecoveryRuntimeStatus;
+}
+
+function updateBootRecoveryRuntimeStatus(patch = {}) {
+  const existing = ensureBootRecoveryRuntimeStatus();
+  bootRecoveryRuntimeStatus = {
+    ...existing,
+    ...patch,
+    updatedAt: nowIso(),
+  };
+  return bootRecoveryRuntimeStatus;
+}
+
+function loadStaffingRulesModule() {
+  if (!staffingRulesModulePromise) {
+    const staffingRulesPath = path.join(ROOT, 'ui', 'public', 'spatial', 'staffingRules.js');
+    staffingRulesModulePromise = import(pathToFileURL(staffingRulesPath).href);
+  }
+  return staffingRulesModulePromise;
+}
+
+
+function ensureSpatialStorage() {
+  const dir = path.dirname(SPATIAL_WORKSPACE_FILE);
+  fs.mkdirSync(dir, { recursive: true });
+  ensureQAStorage(ROOT);
+  if (!fs.existsSync(SPATIAL_WORKSPACE_FILE)) {
+    writeJson(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace());
+  }
+  if (!fs.existsSync(SPATIAL_PAGES_FILE)) writeJson(SPATIAL_PAGES_FILE, { pages: [], activePageId: null });
+  if (!fs.existsSync(SPATIAL_INTENT_STATE_FILE)) writeJson(SPATIAL_INTENT_STATE_FILE, createEmptyIntentRegistry());
+  if (!fs.existsSync(SPATIAL_STUDIO_STATE_FILE)) {
+    writeJson(SPATIAL_STUDIO_STATE_FILE, normalizeStoredStudioState({
+      handoffs: { contextToPlanner: null, history: [] },
+      teamBoard: { selectedCardId: null },
+    }));
+  }
+  if (!fs.existsSync(SPATIAL_ARCHITECTURE_MEMORY_FILE)) writeJson(SPATIAL_ARCHITECTURE_MEMORY_FILE, { architectureMemory: {} });
+  if (!fs.existsSync(TA_DEPARTMENT_FILE)) writeJson(TA_DEPARTMENT_FILE, { hiredCandidates: [], updatedAt: null, lastGeneratedGap: null });
+  if (!fs.existsSync(SPATIAL_HISTORY_FILE)) fs.writeFileSync(SPATIAL_HISTORY_FILE, '[]\n');
+  if (!fs.existsSync(CTO_DIAGNOSTICS_FILE)) writeJson(CTO_DIAGNOSTICS_FILE, { version: CTO_DIAGNOSTICS_VERSION, updated_at: null, entries: [] });
+  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const sliceSnapshot = readSliceStore(ROOT, DOMAIN_KEY);
+  if (!sliceSnapshot.exists) {
+    persistCanonicalSlices(buildSliceStoreFromCards(normalizeTeamBoardState(workspace).cards));
+  }
+}
+
+function writeJson(file, payload, options = {}) {
+  return writeJsonIfChanged(file, payload, options);
+}
+
+function appendArchitectureHistory(entry) {
+  const history = readJsonSafe(SPATIAL_HISTORY_FILE, []) || [];
+  history.push(entry);
+  writeJson(SPATIAL_HISTORY_FILE, history.slice(-80));
+}
+
+function ctoDiagnosticsFilePath(rootPath = ROOT) {
+  return path.join(rootPath || ROOT, 'data', 'spatial', 'cto-diagnostics.json');
+}
+
+function normalizeCtoDiagnosticsEntry(entry = {}) {
+  return {
+    id: String(entry.id || `cto_diag_${Date.now()}`).trim() || `cto_diag_${Date.now()}`,
+    timestamp: String(entry.timestamp || nowIso()).trim() || nowIso(),
+    route: String(entry.route || '/api/spatial/cto/chat').trim() || '/api/spatial/cto/chat',
+    source: String(entry.source || 'cto-chat').trim() || 'cto-chat',
+    category: String(entry.category || 'unknown').trim() || 'unknown',
+    status: String(entry.status || 'degraded').trim() || 'degraded',
+    backend: String(entry.backend || '').trim() || null,
+    model: String(entry.model || '').trim() || null,
+    host: String(entry.host || '').trim() || null,
+    reason: String(entry.reason || '').trim() || null,
+    failureKind: String(entry.failureKind || '').trim() || null,
+    runId: String(entry.runId || '').trim() || null,
+    httpStatus: Number.isFinite(Number(entry.httpStatus)) ? Number(entry.httpStatus) : null,
+    actionId: String(entry.actionId || '').trim() || null,
+    availableActionIds: Array.isArray(entry.availableActionIds)
+      ? entry.availableActionIds.map((value) => String(value || '').trim()).filter(Boolean).slice(0, 12)
+      : [],
+    timeout_ms: Number.isFinite(Number(entry.timeout_ms ?? entry.timeoutMs)) ? Number(entry.timeout_ms ?? entry.timeoutMs) : null,
+    prompt_chars: Number.isFinite(Number(entry.prompt_chars ?? entry.promptChars)) ? Number(entry.prompt_chars ?? entry.promptChars) : null,
+    context_mode: String(entry.context_mode || entry.contextMode || '').trim() || null,
+    used_live_call: entry.used_live_call === undefined ? null : Boolean(entry.used_live_call),
+    used_fallback: entry.used_fallback === undefined ? null : Boolean(entry.used_fallback),
+    failure_reason: String(entry.failure_reason || entry.failureReason || '').trim() || null,
+    included_sections: Array.isArray(entry.included_sections || entry.includedSections)
+      ? (entry.included_sections || entry.includedSections).map((value) => String(value || '').trim()).filter(Boolean).slice(0, 20)
+      : [],
+    broader_context_available: entry.broader_context_available === undefined
+      ? null
+      : Boolean(entry.broader_context_available),
+    repair_applied: entry.repair_applied && typeof entry.repair_applied === 'object' && !Array.isArray(entry.repair_applied)
+      ? {
+          timeout_changed: entry.repair_applied.timeout_changed === true,
+          prompt_scope_changed: entry.repair_applied.prompt_scope_changed === true,
+          retrieval_shifted: entry.repair_applied.retrieval_shifted === true,
+          notes: String(entry.repair_applied.notes || '').trim() || null,
+        }
+      : null,
+  };
+}
+
+function readCtoDiagnostics(rootPath = ROOT) {
+  const filePath = ctoDiagnosticsFilePath(rootPath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  if (!fs.existsSync(filePath)) {
+    writeJson(filePath, { version: CTO_DIAGNOSTICS_VERSION, updated_at: null, entries: [] });
+  }
+  const payload = readJsonSafe(filePath, null);
+  const entries = Array.isArray(payload?.entries)
+    ? payload.entries.map((entry) => normalizeCtoDiagnosticsEntry(entry)).filter(Boolean)
+    : [];
+  return {
+    version: String(payload?.version || CTO_DIAGNOSTICS_VERSION).trim() || CTO_DIAGNOSTICS_VERSION,
+    updated_at: payload?.updated_at || null,
+    entries,
+  };
+}
+
+function summarizeCtoDiagnostics(entries = []) {
+  const counts = {};
+  entries.forEach((entry) => {
+    const key = String(entry?.category || 'unknown').trim() || 'unknown';
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return counts;
+}
+
+function classifyCtoDiagnosticCategory({ status = '', reason = '', failureKind = '' } = {}) {
+  const normalizedStatus = String(status || '').trim().toLowerCase();
+  const normalizedReason = String(reason || '').trim().toLowerCase();
+  const normalizedFailureKind = String(failureKind || '').trim().toLowerCase();
+  if (normalizedFailureKind === 'contract') return 'contract_invalid';
+  if (normalizedFailureKind === 'parse') {
+    if (normalizedReason.includes('prose instead of strict json')) return 'non_json_output';
+    if (normalizedReason.includes('not valid json')) return 'malformed_json';
+  }
+  if (normalizedReason.includes('timed out')) return 'timeout';
+  if (
+    normalizedStatus === 'offline'
+    || normalizedReason.includes('fetch failed')
+    || normalizedReason.includes('econnrefused')
+    || normalizedReason.includes('connection refused')
+    || normalizedReason.includes('unavailable')
+    || normalizedReason.includes('unsupported cto backend')
+    || normalizedReason.includes('no fetch implementation')
+  ) {
+    return 'backend_unreachable';
+  }
+  return 'unknown';
+}
+
+function recordCtoDiagnostic(entry = {}, rootPath = ROOT) {
+  const filePath = ctoDiagnosticsFilePath(rootPath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const current = readCtoDiagnostics(rootPath);
+  const normalized = normalizeCtoDiagnosticsEntry({
+    ...entry,
+    category: entry.category || classifyCtoDiagnosticCategory(entry),
+  });
+  const next = {
+    version: CTO_DIAGNOSTICS_VERSION,
+    updated_at: nowIso(),
+    entries: [normalized, ...current.entries].slice(0, CTO_DIAGNOSTIC_HISTORY_LIMIT),
+  };
+  writeJson(filePath, next);
+  return normalized;
+}
+
+async function listLocalOllamaModels({
+  host = null,
+  timeoutMs = null,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const resolvedConfig = resolveCtoGovernanceConfig({ host, timeoutMs });
+  if (typeof fetchImpl !== 'function') {
+    throw new Error('No fetch implementation is available for Ollama model discovery.');
+  }
+  const { controller, timeout } = createTimeoutController(resolvedConfig.timeoutMs);
+  try {
+    const response = await fetchImpl(`${resolvedConfig.host.replace(/\/+$/, '')}/api/tags`, {
+      method: 'GET',
+      signal: controller?.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`Ollama tags returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    return Array.isArray(payload?.models)
+      ? payload.models.map((entry) => String(entry?.name || '').trim()).filter(Boolean)
+      : [];
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`Ollama model discovery timed out after ${resolvedConfig.timeoutMs}ms.`);
+    }
+    throw error;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+function tryParseCtoRawJson(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw.startsWith('{')) {
+    return { ok: false, reason: 'Output does not start with a raw JSON object.' };
+  }
+  try {
+    return { ok: true, payload: JSON.parse(raw), reason: null };
+  } catch (error) {
+    return { ok: false, reason: `Raw JSON parse failed: ${error.message}` };
+  }
+}
+
+function tryParseCtoFencedJson(text = '') {
+  const raw = String(text || '').trim();
+  const fencedMatch = raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (!fencedMatch) {
+    return { ok: false, reason: 'Output is not a standalone fenced JSON block.' };
+  }
+  try {
+    return { ok: true, payload: JSON.parse(String(fencedMatch[1] || '').trim()), reason: null };
+  } catch (error) {
+    return { ok: false, reason: `Fenced JSON parse failed: ${error.message}` };
+  }
+}
+
+function scoreCtoBakeOffEntry(entry = {}) {
+  if (!entry.reachable) return 0;
+  let score = 1;
+  if (entry.rawJsonParse?.ok) score += 3;
+  if (entry.fencedJsonParse?.ok) score += 2;
+  if (entry.contractValidation?.ok) score += 5;
+  return score;
+}
+
+function summarizeCtoBakeOffResult(results = []) {
+  const sorted = [...results].sort((left, right) => {
+    const scoreDelta = scoreCtoBakeOffEntry(right) - scoreCtoBakeOffEntry(left);
+    if (scoreDelta !== 0) return scoreDelta;
+    const contractDelta = Number(Boolean(right.contractValidation?.ok)) - Number(Boolean(left.contractValidation?.ok));
+    if (contractDelta !== 0) return contractDelta;
+    const rawDelta = Number(Boolean(right.rawJsonParse?.ok)) - Number(Boolean(left.rawJsonParse?.ok));
+    if (rawDelta !== 0) return rawDelta;
+    return String(left.model || '').localeCompare(String(right.model || ''));
+  });
+  const best = sorted[0] || null;
+  return {
+    recommendedModel: best?.contractValidation?.ok ? best.model : null,
+    recommendationBasis: best
+      ? (best.contractValidation?.ok
+        ? `Highest CTO structured-output score (${scoreCtoBakeOffEntry(best)}) with contract-valid output.`
+        : 'No tested model produced contract-valid CTO output.')
+      : 'No models were tested.',
+    testedModels: results.length,
+    contractValidCount: results.filter((entry) => entry.contractValidation?.ok).length,
+  };
+}
+
+const SPATIAL_GRAPH_LAYERS = ['system', 'world'];
+
+function cloneJsonValue(value, fallback) {
+  if (value === undefined) return fallback;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return fallback;
+  }
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+const STRONG_RELATIONSHIP_TYPES = new Set([
+  'dependency',
+  'handoff',
+  'ownership',
+  'pipeline',
+  'data_flow',
+  'reporting',
+  'workflow',
+  'support',
+  'validated',
+]);
+
+function normalizeRelationshipType(value = 'relates_to') {
+  return String(value || 'relates_to').trim().toLowerCase().replace(/\s+/g, '_') || 'relates_to';
+}
+
+function normalizeRelationshipList(value = []) {
+  const source = Array.isArray(value) ? value : (value == null ? [] : [value]);
+  return [...new Set(source.map((entry) => String(entry || '').trim()).filter(Boolean))];
+}
+
+function clampRelationshipStrength(value = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 1;
+  return Math.max(1, Math.min(4, Math.round(numeric)));
+}
+
+function inferRelationshipStrength(edge = {}, supports = [], validatedBy = []) {
+  const explicit = Number(edge?.strength);
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return clampRelationshipStrength(explicit);
+  }
+  let score = 1;
+  if (STRONG_RELATIONSHIP_TYPES.has(normalizeRelationshipType(edge?.relationshipType || edge?.relationship_type || edge?.type))) score += 1;
+  score += Math.min(2, supports.length);
+  if (validatedBy.length) score += 1;
+  if (edge?.lastActive) score += 1;
+  return clampRelationshipStrength(score);
+}
+
+function inferRelationshipStrandCount(edge = {}, supports = [], validatedBy = []) {
+  const explicit = Number(edge?.strandCount);
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return Math.max(1, Math.round(explicit));
+  }
+  return Math.max(1, supports.length, validatedBy.length);
+}
+
+function inferRelationshipHealth(edge = {}, strength = 1, strandCount = 1) {
+  const risk = String(edge?.risk || '').trim().toLowerCase();
+  if (risk === 'high' || risk === 'blocked') return 'blocked';
+  if (strength >= 3 && strandCount >= 2) return 'healthy';
+  if (strength >= 2) return 'degraded';
+  return 'fragile';
+}
+
+function inferRelationshipVisualForm(strength = 1, strandCount = 1) {
+  if (strandCount >= 3 || strength >= 4) return 'woven-rope';
+  if (strandCount === 2 || strength >= 2) return 'bundle';
+  return 'string';
+}
+
+function normalizeRelationshipEdge(edge = {}, { fallbackRelationshipType = 'relates_to' } = {}) {
+  if (!edge || typeof edge !== 'object') return null;
+  const source = String(edge.source || '').trim();
+  const target = String(edge.target || '').trim();
+  if (!source || !target) return null;
+  const relationshipType = normalizeRelationshipType(edge.relationshipType || edge.relationship_type || edge.type || fallbackRelationshipType);
+  const supports = normalizeRelationshipList(edge.supports);
+  const validatedBy = normalizeRelationshipList(edge.validatedBy);
+  const strength = inferRelationshipStrength({ ...edge, relationshipType }, supports, validatedBy);
+  const strandCount = inferRelationshipStrandCount(edge, supports, validatedBy);
+  const health = inferRelationshipHealth(edge, strength, strandCount);
+  const visualForm = inferRelationshipVisualForm(strength, strandCount);
+  return {
+    ...edge,
+    id: String(edge.id || '').trim() || `${source}__${target}__${relationshipType}`,
+    source,
+    target,
+    relationshipType,
+    relationship_type: relationshipType,
+    label: String(edge.label || '').trim() || relationshipType.replace(/_/g, ' '),
+    supports,
+    validatedBy,
+    strength,
+    strandCount,
+    health,
+    visualForm,
+    lastActive: edge.lastActive || null,
+    risk: edge.risk || null,
+  };
+}
+
+function mergeRelationshipEdge(existing = {}, incoming = {}) {
+  const supports = normalizeRelationshipList([...(existing.supports || []), ...(incoming.supports || [])]);
+  const validatedBy = normalizeRelationshipList([...(existing.validatedBy || []), ...(incoming.validatedBy || [])]);
+  const relationshipType = existing.relationshipType && existing.relationshipType !== 'relates_to'
+    ? existing.relationshipType
+    : (incoming.relationshipType || incoming.relationship_type || 'relates_to');
+  return normalizeRelationshipEdge({
+    ...existing,
+    ...incoming,
+    relationshipType,
+    relationship_type: relationshipType,
+    supports,
+    validatedBy,
+    lastActive: incoming.lastActive || existing.lastActive || null,
+    risk: incoming.risk || existing.risk || null,
+  });
+}
+
+function cloneSpatialGraph(graph = {}) {
+  return {
+    nodes: cloneJsonValue(graph.nodes, []),
+    edges: (Array.isArray(graph.edges) ? graph.edges : []).map((edge) => normalizeRelationshipEdge(edge)).filter(Boolean),
+  };
+}
+
+function findSpatialNodeLayer(graphs = {}, nodeId = '') {
+  const targetId = String(nodeId || '').trim();
+  if (!targetId) return null;
+  return SPATIAL_GRAPH_LAYERS.find((layer) => Array.isArray(graphs?.[layer]?.nodes) && graphs[layer].nodes.some((node) => node?.id === targetId)) || null;
+}
+
+function resolveSpatialMutationLayer(graphs = {}, mutation = {}) {
+  const requestedLayer = String(mutation?.layer || mutation?.graphLayer || mutation?.node?.metadata?.graphLayer || mutation?.patch?.metadata?.graphLayer || '').trim().toLowerCase();
+  if (SPATIAL_GRAPH_LAYERS.includes(requestedLayer)) return requestedLayer;
+  if (mutation?.type === 'modify_node') {
+    return findSpatialNodeLayer(graphs, mutation.id) || 'system';
+  }
+  if (mutation?.type === 'create_edge') {
+    return findSpatialNodeLayer(graphs, mutation?.edge?.source) || findSpatialNodeLayer(graphs, mutation?.edge?.target) || 'system';
+  }
+  return 'system';
+}
+
+function findSpatialNodeRecord(graphs = {}, nodeId = '') {
+  const layer = findSpatialNodeLayer(graphs, nodeId);
+  if (!layer) return null;
+  const node = (graphs?.[layer]?.nodes || []).find((entry) => entry?.id === nodeId) || null;
+  return node ? { layer, node } : null;
+}
+
+function normalizeSpatialNodePayload(node = {}, layer = 'system') {
+  const metadata = isPlainObject(node?.metadata) ? cloneJsonValue(node.metadata, {}) : {};
+  return {
+    ...cloneJsonValue(node, {}),
+    metadata: {
+      ...metadata,
+      graphLayer: layer,
+    },
+  };
+}
+
+function isProtectedSpatialNode(node = {}) {
+  const metadata = isPlainObject(node?.metadata) ? node.metadata : {};
+  return Boolean(
+    String(metadata.agentId || '').trim()
+    || metadata.protected
+    || metadata.canonical
+    || metadata.managerTruth
+  );
+}
+
+function describeSpatialMutation(mutation = {}) {
+  const type = String(mutation?.type || '').trim().toLowerCase();
+  if (type === 'create_node') {
+    const node = mutation?.node || {};
+    return `Create ${(node.type || 'node')} ${String(node.id || node.content || 'pending').trim() || 'pending'}`;
+  }
+  if (type === 'modify_node') {
+    return `Modify node ${String(mutation?.id || 'unknown').trim() || 'unknown'}`;
+  }
+  if (type === 'create_edge') {
+    const edge = mutation?.edge || {};
+    return `Create edge ${String(edge.source || '?').trim() || '?'} -> ${String(edge.target || '?').trim() || '?'}`;
+  }
+  return `Mutation ${type || 'unknown'}`;
+}
+
+function buildSpatialMutationDecision({
+  classification = 'blocked',
+  mutation = null,
+  reason = '',
+  code = '',
+  riskLevel = 'low',
+  layer = null,
+} = {}) {
+  return {
+    classification,
+    mutation: cloneJsonValue(mutation, null),
+    reason: String(reason || '').trim(),
+    code: String(code || '').trim() || null,
+    riskLevel,
+    layer,
+    summary: describeSpatialMutation(mutation || {}),
+  };
+}
+
+function buildMutationGateEntry(decision = {}, status = 'blocked') {
+  return {
+    id: `mutation_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    at: nowIso(),
+    classification: decision.classification || 'blocked',
+    status,
+    riskLevel: decision.riskLevel || 'medium',
+    summary: decision.summary || describeSpatialMutation(decision.mutation || {}),
+    reason: decision.reason || '',
+    layer: decision.layer || null,
+    mutationType: decision.mutation?.type || null,
+    mutation: cloneJsonValue(decision.mutation, null),
+  };
+}
+
+function isSafeWorldScaffoldMetadataPatch(targetNode = {}, metadataPatch = {}) {
+  if (!isPlainObject(metadataPatch)) {
+    return { ok: false, reason: 'modify_node metadata patch must be an object.', code: 'invalid-metadata' };
+  }
+  if (!isWorldScaffold(targetNode?.metadata?.scaffold) && !isWorldScaffold(metadataPatch?.scaffold)) {
+    return { ok: false, reason: 'Modify patch touches non-local fields and requires approval.', code: 'broad-modify' };
+  }
+  if (Object.keys(metadataPatch).some((key) => !WORLD_SCAFFOLD_METADATA_KEYS.has(key))) {
+    return { ok: false, reason: 'World scaffold metadata patch contains unsupported keys.', code: 'invalid-scaffold-metadata' };
+  }
+  if (metadataPatch.graphLayer !== undefined && String(metadataPatch.graphLayer || '').trim() !== 'world') {
+    return { ok: false, reason: 'World scaffold metadata must stay on the world graph.', code: 'invalid-scaffold-layer' };
+  }
+  if (metadataPatch.scaffold !== undefined && !isWorldScaffold(metadataPatch.scaffold)) {
+    return { ok: false, reason: 'World scaffold metadata patch is malformed.', code: 'invalid-scaffold' };
+  }
+  const mergedMetadata = {
+    ...(isPlainObject(targetNode?.metadata) ? targetNode.metadata : {}),
+    ...metadataPatch,
+  };
+  if (mergedMetadata.agentId || mergedMetadata.protected || mergedMetadata.canonical || mergedMetadata.managerTruth) {
+    return { ok: false, reason: 'World scaffold metadata cannot declare protected system markers.', code: 'protected-scaffold' };
+  }
+  return { ok: true };
+}
+
+function classifySpatialMutation(graphs = {}, mutation = {}) {
+  const type = String(mutation?.type || '').trim().toLowerCase();
+  const block = (reason, code, nextMutation = mutation, layer = null) => buildSpatialMutationDecision({
+    classification: 'blocked',
+    mutation: nextMutation,
+    reason,
+    code,
+    riskLevel: 'high',
+    layer,
+  });
+  const review = (reason, code, nextMutation = mutation, layer = null, riskLevel = 'medium') => buildSpatialMutationDecision({
+    classification: 'needs_approval',
+    mutation: nextMutation,
+    reason,
+    code,
+    riskLevel,
+    layer,
+  });
+  const safe = (nextMutation = mutation, layer = null) => buildSpatialMutationDecision({
+    classification: 'safe',
+    mutation: nextMutation,
+    riskLevel: 'low',
+    layer,
+  });
+
+  if (!type) {
+    return block('Mutation type is required.', 'missing-type');
+  }
+  if (!SPATIAL_MUTATION_ALLOWED_TYPES.has(type)) {
+    return block(`Mutation type "${type}" is not supported in Auto Mutation Gate v1.`, 'unsupported-type');
+  }
+
+  if (type === 'create_node') {
+    const layer = resolveSpatialMutationLayer(graphs, mutation);
+    const rawNode = cloneJsonValue(mutation?.node, null);
+    if (!isPlainObject(rawNode)) {
+      return block('create_node requires a node payload.', 'missing-node', mutation, layer);
+    }
+    const nodeId = String(rawNode.id || '').trim();
+    if (!nodeId) {
+      return block('create_node requires node.id.', 'missing-node-id', mutation, layer);
+    }
+    const normalizedMutation = {
+      ...cloneJsonValue(mutation, {}),
+      type: 'create_node',
+      node: normalizeSpatialNodePayload(rawNode, layer),
+      layer,
+    };
+    const existingRecord = findSpatialNodeRecord(graphs, nodeId);
+    if (existingRecord) {
+      if (JSON.stringify(existingRecord.node) === JSON.stringify(normalizedMutation.node)) {
+        return safe(normalizedMutation, existingRecord.layer);
+      }
+      return block(`Cannot create node "${nodeId}" because it already exists with different content.`, 'node-conflict', normalizedMutation, existingRecord.layer);
+    }
+    if (isProtectedSpatialNode(normalizedMutation.node)) {
+      return review('New node declares protected or canonical metadata and requires approval.', 'protected-create', normalizedMutation, layer, 'high');
+    }
+    return safe(normalizedMutation, layer);
+  }
+
+  if (type === 'modify_node') {
+    const nodeId = String(mutation?.id || '').trim();
+    if (!nodeId) {
+      return block('modify_node requires id.', 'missing-node-id');
+    }
+    const targetRecord = findSpatialNodeRecord(graphs, nodeId);
+    if (!targetRecord) {
+      return block(`Cannot modify missing node "${nodeId}".`, 'node-not-found');
+    }
+    const patch = cloneJsonValue(mutation?.patch, null);
+    if (!isPlainObject(patch) || !Object.keys(patch).length) {
+      return block('modify_node requires a non-empty patch.', 'missing-patch', mutation, targetRecord.layer);
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, 'id') || Object.prototype.hasOwnProperty.call(patch, 'connections')) {
+      return block('modify_node cannot change node identity or connections in Auto Mutation Gate v1.', 'unsafe-modify', mutation, targetRecord.layer);
+    }
+    if (patch.content !== undefined && typeof patch.content !== 'string') {
+      return block('modify_node content patch must be a string.', 'invalid-content', mutation, targetRecord.layer);
+    }
+    if (patch.position !== undefined) {
+      if (!isPlainObject(patch.position)) {
+        return block('modify_node position patch must be an object.', 'invalid-position', mutation, targetRecord.layer);
+      }
+      if (!Number.isFinite(Number(patch.position.x)) || !Number.isFinite(Number(patch.position.y))) {
+        return block('modify_node position patch must include numeric x and y values.', 'invalid-position', mutation, targetRecord.layer);
+      }
+    }
+    if (patch.metadata !== undefined) {
+      const scaffoldMetadataCheck = isSafeWorldScaffoldMetadataPatch(targetRecord.node, patch.metadata);
+      if (!scaffoldMetadataCheck.ok) {
+        const usesScaffoldMetadata = Boolean(isWorldScaffold(targetRecord.node?.metadata?.scaffold) || isWorldScaffold(patch.metadata?.scaffold));
+        if (usesScaffoldMetadata && scaffoldMetadataCheck.code !== 'broad-modify') {
+          return block(scaffoldMetadataCheck.reason, scaffoldMetadataCheck.code, mutation, targetRecord.layer);
+        }
+        return review(scaffoldMetadataCheck.reason, scaffoldMetadataCheck.code, mutation, targetRecord.layer, 'high');
+      }
+    }
+    const normalizedMutation = {
+      ...cloneJsonValue(mutation, {}),
+      type: 'modify_node',
+      id: nodeId,
+      patch,
+      layer: targetRecord.layer,
+    };
+    if (isProtectedSpatialNode(targetRecord.node)) {
+      return review('Target node is protected and requires approval before modification.', 'protected-modify', normalizedMutation, targetRecord.layer, 'high');
+    }
+    if (Object.keys(patch).some((key) => !SPATIAL_MUTATION_SAFE_MODIFY_KEYS.has(key))) {
+      return review('Modify patch touches non-local fields and requires approval.', 'broad-modify', normalizedMutation, targetRecord.layer, 'high');
+    }
+    return safe(normalizedMutation, targetRecord.layer);
+  }
+
+  if (type === 'create_edge') {
+    const rawEdge = cloneJsonValue(mutation?.edge, null);
+    if (!isPlainObject(rawEdge)) {
+      return block('create_edge requires an edge payload.', 'missing-edge');
+    }
+    const source = String(rawEdge.source || '').trim();
+    const target = String(rawEdge.target || '').trim();
+    if (!source || !target) {
+      return block('create_edge requires source and target.', 'missing-edge-endpoints');
+    }
+    if (source === target) {
+      return block('Self-referential edges are blocked by mutation invariants.', 'self-edge');
+    }
+    const sourceRecord = findSpatialNodeRecord(graphs, source);
+    const targetRecord = findSpatialNodeRecord(graphs, target);
+    if (!sourceRecord || !targetRecord) {
+      return block(`Cannot create edge "${source}" -> "${target}" without both endpoint nodes.`, 'edge-node-missing');
+    }
+    if (sourceRecord.layer !== targetRecord.layer) {
+      return block('Cross-layer edges are blocked by mutation invariants in Auto Mutation Gate v1.', 'cross-layer-edge', mutation, sourceRecord.layer);
+    }
+    const normalizedMutation = {
+      ...cloneJsonValue(mutation, {}),
+      type: 'create_edge',
+      edge: {
+        ...rawEdge,
+        source,
+        target,
+      },
+      layer: sourceRecord.layer,
+    };
+    if (isProtectedSpatialNode(sourceRecord.node) || isProtectedSpatialNode(targetRecord.node)) {
+      return review('Edge touches a protected node and requires approval.', 'protected-edge', normalizedMutation, sourceRecord.layer, 'high');
+    }
+    return safe(normalizedMutation, sourceRecord.layer);
+  }
+
+  return block(`Mutation type "${type}" is not supported in Auto Mutation Gate v1.`, 'unsupported-type');
+}
+
+function applySingleSpatialMutation(graph = {}, mutation = {}) {
+  const type = String(mutation?.type || '').trim().toLowerCase();
+  if (!type) {
+    const error = new Error('Mutation type is required.');
+    error.code = 'missing-type';
+    throw error;
+  }
+
+  if (type === 'create_node') {
+    const node = cloneJsonValue(mutation.node, null);
+    if (!node || typeof node !== 'object') {
+      const error = new Error('create_node requires a node payload.');
+      error.code = 'missing-node';
+      throw error;
+    }
+    const nodeId = String(node.id || '').trim();
+    if (!nodeId) {
+      const error = new Error('create_node requires node.id.');
+      error.code = 'missing-node-id';
+      throw error;
+    }
+    const existingNode = graph.nodes.find((entry) => entry?.id === nodeId);
+    if (existingNode) {
+      if (JSON.stringify(existingNode) === JSON.stringify(node)) {
+        return { changed: false, appliedCount: 0, reason: 'node-already-exists' };
+      }
+      const error = new Error(`Cannot create node "${nodeId}" because it already exists with different content.`);
+      error.code = 'node-conflict';
+      throw error;
+    }
+    graph.nodes.push(node);
+    return { changed: true, appliedCount: 1, reason: '' };
+  }
+
+  if (type === 'modify_node') {
+    const nodeId = String(mutation.id || '').trim();
+    if (!nodeId) {
+      const error = new Error('modify_node requires id.');
+      error.code = 'missing-node-id';
+      throw error;
+    }
+    const node = graph.nodes.find((entry) => entry?.id === nodeId);
+    if (!node) {
+      const error = new Error(`Cannot modify missing node "${nodeId}".`);
+      error.code = 'node-not-found';
+      throw error;
+    }
+    const patch = cloneJsonValue(mutation.patch, {});
+    const normalizedPatch = isPlainObject(patch?.metadata)
+      ? {
+          ...patch,
+          metadata: {
+            ...(isPlainObject(node.metadata) ? node.metadata : {}),
+            ...patch.metadata,
+          },
+        }
+      : patch;
+    const before = JSON.stringify(node);
+    Object.assign(node, normalizedPatch);
+    return {
+      changed: JSON.stringify(node) !== before,
+      appliedCount: JSON.stringify(node) !== before ? 1 : 0,
+      reason: JSON.stringify(node) !== before ? '' : 'node-unchanged',
+    };
+  }
+
+  if (type === 'create_edge') {
+    const edge = cloneJsonValue(mutation.edge, null);
+    if (!edge || typeof edge !== 'object') {
+      const error = new Error('create_edge requires an edge payload.');
+      error.code = 'missing-edge';
+      throw error;
+    }
+    const source = String(edge.source || '').trim();
+    const target = String(edge.target || '').trim();
+    if (!source || !target) {
+      const error = new Error('create_edge requires source and target.');
+      error.code = 'missing-edge-endpoints';
+      throw error;
+    }
+    if (!graph.nodes.some((node) => node?.id === source) || !graph.nodes.some((node) => node?.id === target)) {
+      const error = new Error(`Cannot create edge "${source}" -> "${target}" without both endpoint nodes.`);
+      error.code = 'edge-node-missing';
+      throw error;
+    }
+    if (source === target) {
+      return { changed: false, appliedCount: 0, reason: 'self-edge-skipped' };
+    }
+    const normalizedEdge = normalizeRelationshipEdge(edge, { fallbackRelationshipType: edge.relationshipType || edge.relationship_type || 'relates_to' });
+    const existingIndex = graph.edges.findIndex((entry) => entry?.source === source && entry?.target === target);
+    if (existingIndex >= 0) {
+      const mergedEdge = mergeRelationshipEdge(graph.edges[existingIndex], normalizedEdge);
+      const before = JSON.stringify(graph.edges[existingIndex]);
+      graph.edges[existingIndex] = mergedEdge;
+      const changed = JSON.stringify(mergedEdge) !== before;
+      return { changed, appliedCount: changed ? 1 : 0, reason: changed ? '' : 'edge-unchanged' };
+    }
+    graph.edges.push(normalizedEdge);
+    return { changed: true, appliedCount: 1, reason: '' };
+  }
+
+  const error = new Error(`Unsupported mutation type "${type}".`);
+  error.code = 'unsupported-type';
+  throw error;
+}
+
+function applySpatialMutationsToWorkspace(workspace = {}, mutations = []) {
+  const normalizedWorkspace = normalizeSpatialWorkspaceShape(workspace);
+  const requestedMutations = Array.isArray(mutations) ? mutations : [];
+  const graphs = normalizeGraphBundle(normalizedWorkspace);
+  const nextGraphs = {
+    system: cloneSpatialGraph(graphs.system),
+    world: cloneSpatialGraph(graphs.world),
+  };
+  const requested = requestedMutations.length;
+
+  if (!requested) {
+    return {
+      ok: true,
+      status: 'no-op',
+      confirmed: false,
+      persisted: false,
+      requested: 0,
+      applied: 0,
+      queued: 0,
+      blocked: 0,
+      changedLayers: [],
+      reason: 'No mutations requested.',
+      results: [],
+      recentWorldChange: null,
+      activity: normalizedWorkspace.mutationGate.activity,
+      approvalQueue: normalizedWorkspace.mutationGate.approvalQueue,
+      workspace: normalizedWorkspace,
+    };
+  }
+
+  const mutationGate = normalizeMutationGateState(normalizedWorkspace.mutationGate);
+  const nextActivity = [...(mutationGate.activity || [])];
+  const nextApprovalQueue = [...(mutationGate.approvalQueue || [])];
+  const changedLayers = new Set();
+  let applied = 0;
+  let queued = 0;
+  let blocked = 0;
+  const results = [];
+
+  requestedMutations.forEach((mutation) => {
+    const decision = classifySpatialMutation(nextGraphs, mutation);
+    if (decision.classification === 'safe') {
+      const layer = decision.layer || resolveSpatialMutationLayer(nextGraphs, decision.mutation || mutation);
+      const targetGraph = nextGraphs[layer] || nextGraphs.system;
+      const result = applySingleSpatialMutation(targetGraph, decision.mutation || mutation);
+      if (result.changed) changedLayers.add(layer);
+      applied += Number(result.appliedCount || 0);
+      const status = result.changed ? 'auto-applied' : 'no-op';
+      nextActivity.unshift(buildMutationGateEntry({
+        ...decision,
+        reason: result.reason || decision.reason,
+      }, status));
+      results.push({
+        ...decision,
+        status,
+        reason: result.reason || decision.reason || '',
+      });
+      return;
+    }
+
+    if (decision.classification === 'needs_approval') {
+      queued += 1;
+      const queueEntry = buildMutationGateEntry(decision, 'pending-approval');
+      nextApprovalQueue.unshift(queueEntry);
+      nextActivity.unshift(buildMutationGateEntry(decision, 'queued'));
+      results.push({
+        ...decision,
+        status: 'queued',
+      });
+      return;
+    }
+
+    blocked += 1;
+    nextActivity.unshift(buildMutationGateEntry(decision, 'blocked'));
+    results.push({
+      ...decision,
+      status: 'blocked',
+    });
+  });
+
+  const nextWorkspace = normalizeSpatialWorkspaceShape({
+    ...normalizedWorkspace,
+    graphs: nextGraphs,
+    graph: nextGraphs.system,
+    mutationGate: {
+      ...mutationGate,
+      activity: nextActivity.slice(0, SPATIAL_MUTATION_ACTIVITY_LIMIT),
+      approvalQueue: nextApprovalQueue.slice(0, SPATIAL_MUTATION_APPROVAL_LIMIT),
+    },
+  });
+  const changed = changedLayers.size > 0;
+  const status = (() => {
+    if (blocked && !applied && !queued) return 'blocked';
+    if (applied && !queued && !blocked) return changed ? 'applied' : 'no-op';
+    if (queued && !applied && !blocked) return 'queued';
+    if (applied || queued || blocked) return 'mixed';
+    return 'no-op';
+  })();
+  const reason = (() => {
+    if (status === 'blocked') {
+      return results.find((entry) => entry.status === 'blocked')?.reason || 'All mutations were blocked.';
+    }
+    if (status === 'queued') {
+      return results.find((entry) => entry.status === 'queued')?.reason || 'All mutations require approval.';
+    }
+    if (status === 'no-op') {
+      return results.find((entry) => entry.status === 'no-op')?.reason || 'No canonical graph change detected.';
+    }
+    return '';
+  })();
+  const persisted = changed || queued > 0 || blocked > 0 || results.length > 0;
+  const recentWorldChange = deriveRecentWorldChange({
+    previousGraphs: graphs,
+    nextGraphs,
+    results,
+    status,
+    changedLayers: Array.from(changedLayers),
+  });
+
+  return {
+    ok: status !== 'blocked',
+    status,
+    confirmed: changed,
+    persisted,
+    requested,
+    applied,
+    queued,
+    blocked,
+    changedLayers: Array.from(changedLayers),
+    reason,
+    results,
+    recentWorldChange,
+    activity: nextWorkspace.mutationGate.activity,
+    approvalQueue: nextWorkspace.mutationGate.approvalQueue,
+    workspace: nextWorkspace,
+  };
+}
+
+function ensureLearningLedgerDir(agentId) {
+  const normalized = normalizeAgentId(agentId || 'dave');
+  const dir = path.join(LEARNING_LEDGER_ROOT, normalized);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function learningLedgerFilePath(agentId, entryId) {
+  const id = String(entryId || `entry_${Date.now()}`).trim();
+  return path.join(ensureLearningLedgerDir(agentId), `${id}.json`);
+}
+
+function normalizeLearningLedgerEntry(rawEntry, filePath = null) {
+  if (!rawEntry || typeof rawEntry !== 'object') return null;
+  const entryId = String(rawEntry.entryId || rawEntry.id || (filePath ? path.basename(filePath, '.json') : '')).trim() || `entry_${Date.now()}`;
+  const timestamp = rawEntry.timestamp || rawEntry.createdAt || nowIso();
+  return {
+    entryId,
+    agentId: normalizeAgentId(rawEntry.agentId || 'dave'),
+    timestamp,
+    taskPrompt: String(rawEntry.taskPrompt || rawEntry.prompt || '').trim(),
+    contextRefs: Array.isArray(rawEntry.contextRefs) ? rawEntry.contextRefs.filter(Boolean) : [],
+    generatedOutput: String(rawEntry.generatedOutput || rawEntry.output || '').trim(),
+    responseStatus: String(rawEntry.responseStatus || rawEntry.status || 'live').trim(),
+    qaOutcome: String(rawEntry.qaOutcome || 'unknown').trim(),
+    qaReason: String(rawEntry.qaReason || rawEntry.reason || '').trim(),
+    approvedFix: rawEntry.approvedFix || null,
+    datasetReady: Boolean(rawEntry.datasetReady),
+    runId: rawEntry.runId || rawEntry.lastRunId || null,
+    backend: rawEntry.backend || null,
+    model: rawEntry.model || null,
+    tokensUsed: Number(rawEntry.tokensUsed || 0),
+    durationMs: Number(rawEntry.durationMs || 0),
+    contextAlignmentScore: Number(rawEntry.contextAlignmentScore || 0),
+    contextAlignmentReason: rawEntry.contextAlignmentReason || null,
+  };
+}
+
+function listLearningLedgerEntries(agentId) {
+  const dir = ensureLearningLedgerDir(agentId);
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => normalizeLearningLedgerEntry(readJsonSafe(path.join(dir, entry.name), null), path.join(dir, entry.name)))
+    .filter(Boolean)
+    .sort((left, right) => String(right.timestamp || '').localeCompare(String(left.timestamp || '')));
+}
+
+function writeLearningLedgerEntry(agentId, payload = {}) {
+  const entryId = payload.entryId || `entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const filePath = learningLedgerFilePath(agentId, entryId);
+  const nextEntry = {
+    entryId,
+    timestamp: payload.timestamp || nowIso(),
+    agentId: normalizeAgentId(agentId),
+    ...payload,
+  };
+  writeJson(filePath, nextEntry);
+  return normalizeLearningLedgerEntry(nextEntry, filePath);
+}
+
+function updateLearningLedgerEntry(agentId, entryId, patch = {}) {
+  const filePath = learningLedgerFilePath(agentId, entryId);
+  const current = readJsonSafe(filePath, null);
+  if (!current) return null;
+  const nextEntry = {
+    ...current,
+    ...patch,
+    entryId,
+    timestamp: nowIso(),
+  };
+  writeJson(filePath, nextEntry);
+  return normalizeLearningLedgerEntry(nextEntry, filePath);
+}
+
+function computeLearningLedgerStats(entries = []) {
+  const attemptCount = entries.length;
+  const failedCount = entries.filter((entry) => entry.responseStatus !== 'live').length;
+  const approvedFixCount = entries.filter((entry) => entry.approvedFix).length;
+  const datasetReadyCount = entries.filter((entry) => entry.datasetReady).length;
+  return {
+    attemptCount,
+    failedCount,
+    approvedFixCount,
+    datasetReadyCount,
+  };
+}
+
+function listAgentModelOptions() {
+  if (!fs.existsSync(AGENTS_DIR)) return [DEFAULT_CONTEXT_MANAGER_MODEL];
+  const models = new Set();
+  fs.readdirSync(AGENTS_DIR, { withFileTypes: true }).forEach((entry) => {
+    if (!entry.isDirectory()) return;
+    const manifest = readJsonSafe(path.join(AGENTS_DIR, entry.name, 'agent.json'), null);
+    if (manifest?.model) models.add(String(manifest.model).trim());
+  });
+  models.add(DEFAULT_CONTEXT_MANAGER_MODEL);
+  return Array.from(models).sort();
+}
+
+const CTO_DESK_IDS = Object.freeze([
+  'context-manager',
+  'planner',
+  'executor',
+  'qa-lead',
+  'memory-archivist',
+  'cto-architect',
+  'integration_auditor',
+]);
+
+const CTO_TEXT_CONFIRM_PATTERN = /^(yes|y|go ahead|do it|confirm|proceed|please do|hire(?: one)?|route it|sounds good|ok(?:ay)?)\b/i;
+
+const CTO_DESK_TARGET_HINTS = Object.freeze([
+  { deskId: 'context-manager', keywords: ['context manager', 'context lane', 'intake lane', 'intake', 'context'] },
+  { deskId: 'planner', keywords: ['planning lane', 'delivery planning lane', 'planner', 'planning'] },
+  { deskId: 'executor', keywords: ['executor', 'execution lane', 'delivery lane', 'builder'] },
+  { deskId: 'qa-lead', keywords: ['qa lead', 'qa desk', 'test lead', 'quality lane', 'qa'] },
+  { deskId: 'memory-archivist', keywords: ['memory archivist', 'archivist', 'archive lane', 'archive'] },
+  { deskId: 'cto-architect', keywords: ['cto', 'architect', 'control centre', 'control center'] },
+  { deskId: 'integration_auditor', keywords: ['talent acquisition', 'ta', 'integration auditor', 'hiring'] },
+]);
+
+const CTO_PIPELINE_ROLE_SEQUENCE = Object.freeze([
+  Object.freeze({
+    roleId: 'planner',
+    roleLabel: 'Planner',
+    deskId: 'planner',
+    deskLabel: 'Planner',
+    requestActionId: 'request-plan',
+    requestLabel: 'one plan',
+    workerActionId: 'create-task',
+  }),
+  Object.freeze({
+    roleId: 'executor',
+    roleLabel: 'Executor',
+    deskId: 'executor',
+    deskLabel: 'Executor',
+    requestActionId: 'request-execution',
+    requestLabel: 'one execution',
+    workerActionId: 'apply-narrow-fix',
+  }),
+  Object.freeze({
+    roleId: 'qa-lead',
+    roleLabel: 'QA Lead',
+    deskId: 'qa-lead',
+    deskLabel: 'QA Lead',
+    requestActionId: 'request-qa',
+    requestLabel: 'one QA run',
+    workerActionId: 'run-smoke-check',
+  }),
+]);
+
+const CTO_CANONICAL_ACTION_IDS = Object.freeze([
+  'hire-role',
+  'assign-agent-to-desk',
+  'request-plan',
+  'request-execution',
+  'request-qa',
+]);
+
+const CTO_CANONICAL_WORKER_ACTION_IDS = Object.freeze([
+  'create-task',
+  'apply-narrow-fix',
+  'run-smoke-check',
+]);
+
+function createCtoPipelineId() {
+  return `cto-pipeline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function inferCtoPipelineRoleIndex(text = '') {
+  const source = String(text || '').toLowerCase();
+  if (/\bqa\b|\bquality\b|\btest\b|\bvalidation\b/.test(source)) return 2;
+  if (/\bexecutor\b|\bexecution\b|\bapply\b|\bfix\b/.test(source)) return 1;
+  return 0;
+}
+
+function getCtoPipelineRoleDescriptor(roleIndex = 0) {
+  const index = Math.max(0, Math.min(CTO_PIPELINE_ROLE_SEQUENCE.length - 1, Number(roleIndex) || 0));
+  return CTO_PIPELINE_ROLE_SEQUENCE[index] || CTO_PIPELINE_ROLE_SEQUENCE[0];
+}
+
+function summarizeCtoPipelineState(pipeline = null) {
+  if (!pipeline || typeof pipeline !== 'object') return null;
+  const role = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
+  return {
+    id: String(pipeline.id || '').trim() || null,
+    roleIndex: Number.isFinite(Number(pipeline.roleIndex)) ? Number(pipeline.roleIndex) : 0,
+    step: String(pipeline.step || 'hire-role').trim() || 'hire-role',
+    roleId: role.roleId,
+    roleLabel: role.roleLabel,
+    deskId: role.deskId,
+    deskLabel: role.deskLabel,
+    candidateId: pipeline.candidateId || null,
+    candidateName: pipeline.candidateName || null,
+    agentId: pipeline.agentId || null,
+    agentName: pipeline.agentName || null,
+    planTaskId: pipeline.planTaskId || null,
+    planTaskDir: pipeline.planTaskDir || null,
+    planCardId: pipeline.planCardId || null,
+    executionRunId: pipeline.executionRunId || null,
+    qaRunId: pipeline.qaRunId || null,
+    createdAt: pipeline.createdAt || null,
+    updatedAt: pipeline.updatedAt || null,
+  };
+}
+
+function normalizeCtoPipelineState(pipeline = null, { text = '' } = {}) {
+  const source = pipeline && typeof pipeline === 'object' ? pipeline : {};
+  const roleIndex = Number.isFinite(Number(source.roleIndex))
+    ? Math.max(0, Math.min(CTO_PIPELINE_ROLE_SEQUENCE.length - 1, Number(source.roleIndex)))
+    : inferCtoPipelineRoleIndex(text);
+  const role = getCtoPipelineRoleDescriptor(roleIndex);
+  const stage = String(source.step || source.stage || 'hire-role').trim() || 'hire-role';
+  return {
+    id: String(source.id || source.pipelineId || createCtoPipelineId()).trim() || createCtoPipelineId(),
+    roleIndex,
+    step: CTO_CANONICAL_ACTION_IDS.includes(stage) || stage === 'complete' ? stage : 'hire-role',
+    roleId: String(source.roleId || role.roleId).trim() || role.roleId,
+    roleLabel: String(source.roleLabel || role.roleLabel).trim() || role.roleLabel,
+    deskId: String(source.deskId || role.deskId).trim() || role.deskId,
+    deskLabel: String(source.deskLabel || role.deskLabel).trim() || role.deskLabel,
+    candidateId: String(source.candidateId || '').trim() || null,
+    candidateName: String(source.candidateName || '').trim() || null,
+    agentId: String(source.agentId || '').trim() || null,
+    agentName: String(source.agentName || '').trim() || null,
+    planTaskId: String(source.planTaskId || '').trim() || null,
+    planTaskDir: String(source.planTaskDir || '').trim() || null,
+    planCardId: String(source.planCardId || '').trim() || null,
+    executionRunId: String(source.executionRunId || '').trim() || null,
+    qaRunId: String(source.qaRunId || '').trim() || null,
+    createdAt: source.createdAt || nowIso(),
+    updatedAt: source.updatedAt || nowIso(),
+  };
+}
+
+function advanceCtoPipelineState(pipeline = null, actionId = '', result = {}) {
+  const current = normalizeCtoPipelineState(pipeline);
+  const currentRole = getCtoPipelineRoleDescriptor(current.roleIndex);
+  const nextPipeline = {
+    ...current,
+    updatedAt: nowIso(),
+  };
+  if (actionId === 'hire-role') {
+    nextPipeline.step = 'assign-agent-to-desk';
+    nextPipeline.candidateId = String(result.candidateId || current.candidateId || '').trim() || null;
+    nextPipeline.candidateName = String(result.candidateName || current.candidateName || '').trim() || null;
+    nextPipeline.agentId = null;
+    nextPipeline.agentName = null;
+    return nextPipeline;
+  }
+  if (actionId === 'assign-agent-to-desk') {
+    nextPipeline.step = currentRole.requestActionId;
+    nextPipeline.agentId = String(result.agentId || current.agentId || '').trim() || null;
+    nextPipeline.agentName = String(result.agentName || current.agentName || '').trim() || null;
+    return nextPipeline;
+  }
+  if (actionId === currentRole.requestActionId) {
+    const nextRole = CTO_PIPELINE_ROLE_SEQUENCE[current.roleIndex + 1] || null;
+    if (!nextRole) {
+      nextPipeline.step = 'complete';
+      return nextPipeline;
+    }
+    nextPipeline.roleIndex = current.roleIndex + 1;
+    nextPipeline.roleId = nextRole.roleId;
+    nextPipeline.roleLabel = nextRole.roleLabel;
+    nextPipeline.deskId = nextRole.deskId;
+    nextPipeline.deskLabel = nextRole.deskLabel;
+    nextPipeline.step = 'hire-role';
+    nextPipeline.candidateId = null;
+    nextPipeline.candidateName = null;
+    nextPipeline.agentId = null;
+    nextPipeline.agentName = null;
+    if (actionId === 'request-plan') {
+      nextPipeline.planTaskId = String(result.planTaskId || current.planTaskId || '').trim() || null;
+      nextPipeline.planTaskDir = String(result.planTaskDir || current.planTaskDir || '').trim() || null;
+      nextPipeline.planCardId = String(result.planCardId || current.planCardId || '').trim() || null;
+    }
+    if (actionId === 'request-execution') {
+      nextPipeline.executionRunId = String(result.executionRunId || current.executionRunId || '').trim() || null;
+    }
+    if (actionId === 'request-qa') {
+      nextPipeline.qaRunId = String(result.qaRunId || current.qaRunId || '').trim() || null;
+    }
+    return nextPipeline;
+  }
+  if (actionId === 'complete') {
+    nextPipeline.step = 'complete';
+    return nextPipeline;
+  }
+  return nextPipeline;
+}
+
+function truncatePromptText(value = '', maxLength = 320) {
+  const text = String(value || '').trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+function normalizeCtoChatHistory(history = []) {
+  return (Array.isArray(history) ? history : [])
+    .map((entry, index) => {
+      const role = String(entry?.role || entry?.speaker || '').trim().toLowerCase();
+      const text = String(entry?.text || entry?.content || '').trim();
+      if (!text) return null;
+      return {
+        id: String(entry?.id || `history-${index}`),
+        role: role === 'assistant' || role === 'cto' || role === 'ace' ? 'assistant' : 'user',
+        text,
+        action: normalizeCtoActionRecord(entry?.action || null),
+      };
+    })
+    .filter(Boolean)
+    .slice(-12);
+}
+
+function normalizeCtoActionRecord(action = null) {
+  if (!action || typeof action !== 'object') return null;
+  const id = String(action.id || '').trim();
+  const kind = String(action.kind || '').trim();
+  if (!id || !kind) return null;
+  return {
+    id,
+    kind,
+    label: String(action.label || '').trim() || id,
+    params: action.params && typeof action.params === 'object' && !Array.isArray(action.params)
+      ? { ...action.params }
+      : {},
+    targetDeskId: String(action.targetDeskId || action.deskId || '').trim() || null,
+    targetDeskLabel: String(action.targetDeskLabel || action.deskLabel || '').trim() || null,
+    available: action.available !== false,
+    requiresConfirmation: action.requiresConfirmation !== false,
+    status: String(action.status || 'pending').trim() || 'pending',
+    reason: String(action.reason || '').trim() || null,
+    route: String(action.route || '').trim() || null,
+    routeStatus: String(action.routeStatus || '').trim() || null,
+    gapDescription: String(action.gapDescription || '').trim() || null,
+    overrideAvailable: action.overrideAvailable === true,
+    blockedGates: Array.isArray(action.blockedGates)
+      ? action.blockedGates
+          .map((gate) => {
+            const source = gate && typeof gate === 'object' ? gate : {};
+            const code = String(source.code || '').trim();
+            if (!code) return null;
+            return {
+              code,
+              label: String(source.label || code).trim() || code,
+              reason: String(source.reason || '').trim() || null,
+            };
+          })
+          .filter(Boolean)
+      : [],
+    advisory: action.advisory && typeof action.advisory === 'object' && !Array.isArray(action.advisory)
+      ? { ...action.advisory }
+      : null,
+  };
+}
+
+function isAffirmativeCtoReply(text = '') {
+  return CTO_TEXT_CONFIRM_PATTERN.test(String(text || '').trim());
+}
+
+function findDeskTargetsInText(text = '') {
+  const source = String(text || '').toLowerCase();
+  if (!source.trim()) return [];
+  return CTO_DESK_TARGET_HINTS.filter((entry) => entry.keywords.some((keyword) => source.includes(keyword)))
+    .map((entry) => entry.deskId);
+}
+
+function getCtoRoleHintFromText(text = '') {
+  const targets = findDeskTargetsInText(text);
+  if (targets.includes('qa-lead')) return 'qa-lead';
+  if (targets.includes('executor')) return 'executor';
+  return 'planner';
+}
+
+const CTO_CHAT_OVERSCOPED_PROMPT_CHARS = 6500;
+const CTO_CHAT_SCOPED_HISTORY_LIMIT = 4;
+const CTO_CHAT_BROAD_HISTORY_LIMIT = 8;
+const CTO_CHAT_SCOPED_ACTION_LIMIT = 3;
+const CTO_CHAT_BROAD_ACTION_LIMIT = 6;
+const CTO_CHAT_SCOPED_DESK_LIMIT = 3;
+const CTO_CHAT_BROAD_DESK_LIMIT = 6;
+
+function classifyCtoChatPromptMode(text = '', { availableActions = [], execution = null } = {}) {
+  const normalized = String(text || '').trim().toLowerCase();
+  if (!normalized) return 'scoped';
+  if (
+    normalized.includes('full context')
+    || normalized.includes('everything')
+    || normalized.includes('handover')
+    || normalized.includes('summary report')
+    || normalized.includes('state of all')
+    || normalized.includes('audit the desks')
+    || normalized.includes('system summary')
+  ) {
+    return 'broad';
+  }
+  if (execution || (Array.isArray(availableActions) && availableActions.length > 0) || isAffirmativeCtoReply(text)) {
+    return 'scoped';
+  }
+  if (
+    normalized.includes('why')
+    || normalized.includes('blocker')
+    || normalized.includes('blocked')
+    || normalized.includes('what next')
+    || normalized.includes('can we')
+    || normalized.includes('should we')
+    || normalized.includes('planner')
+    || normalized.includes('executor')
+    || normalized.includes('qa')
+    || normalized.length <= 180
+  ) {
+    return 'scoped';
+  }
+  return 'broad';
+}
+
+function summarizeWorkspaceForCtoPrompt(workspace = {}, { contextMode = 'scoped' } = {}) {
+  const pages = Array.isArray(workspace?.pages) ? workspace.pages : [];
+  const activePageId = workspace?.activePageId || workspace?.studio?.orchestrator?.activePageId || null;
+  const activePage = pages.find((page) => page?.id === activePageId) || null;
+  const boardCards = Array.isArray(workspace?.studio?.teamBoard?.cards) ? workspace.studio.teamBoard.cards : [];
+  const activeDeskIds = Array.isArray(workspace?.studio?.orchestrator?.activeDeskIds)
+    ? workspace.studio.orchestrator.activeDeskIds
+    : [];
+  return {
+    active_page_id: activePageId,
+    active_page_title: activePage?.title || null,
+    graph_counts: {
+      system_nodes: Array.isArray(workspace?.graphs?.system?.nodes) ? workspace.graphs.system.nodes.length : 0,
+      system_edges: Array.isArray(workspace?.graphs?.system?.edges) ? workspace.graphs.system.edges.length : 0,
+      world_nodes: Array.isArray(workspace?.graphs?.world?.nodes) ? workspace.graphs.world.nodes.length : 0,
+      world_edges: Array.isArray(workspace?.graphs?.world?.edges) ? workspace.graphs.world.edges.length : 0,
+    },
+    board: {
+      selected_card_id: workspace?.studio?.teamBoard?.selectedCardId || null,
+      active_card_count: boardCards.filter((card) => card?.status !== 'binned').length,
+    },
+    active_desk_ids: activeDeskIds.slice(0, contextMode === 'broad' ? 8 : 4),
+  };
+}
+
+function summarizeCtoActionForPrompt(action = null) {
+  if (!action || typeof action !== 'object') return null;
+  return {
+    id: String(action.id || '').trim() || null,
+    kind: String(action.kind || '').trim() || null,
+    label: truncatePromptText(action.label || action.id || '', 96) || null,
+    available: action.available !== false,
+    requires_confirmation: action.requiresConfirmation !== false,
+    status: String(action.status || '').trim() || null,
+    reason: truncatePromptText(action.reason || '', 140) || null,
+    target_desk_id: String(action.targetDeskId || action.deskId || '').trim() || null,
+  };
+}
+
+function summarizeCtoExecutionForPrompt(execution = null) {
+  if (!execution || typeof execution !== 'object') return null;
+  return {
+    ok: execution.ok === true,
+    status: String(execution.status || '').trim() || null,
+    action_id: String(execution.actionId || '').trim() || null,
+    desk_id: String(execution.deskId || '').trim() || null,
+    summary: truncatePromptText(execution.summary || execution.reason || '', 180) || null,
+  };
+}
+
+function selectCtoPromptDesks(desks = [], {
+  contextMode = 'scoped',
+  roleHint = null,
+  availableActions = [],
+  execution = null,
+} = {}) {
+  const source = Array.isArray(desks) ? desks : [];
+  const limit = contextMode === 'broad' ? CTO_CHAT_BROAD_DESK_LIMIT : CTO_CHAT_SCOPED_DESK_LIMIT;
+  if (contextMode === 'broad') {
+    return source.slice(0, limit);
+  }
+  const targetDeskIds = new Set();
+  if (roleHint) targetDeskIds.add(roleHint);
+  (Array.isArray(availableActions) ? availableActions : []).forEach((action) => {
+    const deskId = String(action?.targetDeskId || action?.deskId || '').trim();
+    if (deskId) targetDeskIds.add(deskId);
+  });
+  const executionDeskId = String(execution?.deskId || '').trim();
+  if (executionDeskId) targetDeskIds.add(executionDeskId);
+
+  const prioritized = [];
+  const seen = new Set();
+  const pushDesk = (desk) => {
+    if (!desk || seen.has(desk.deskId)) return;
+    seen.add(desk.deskId);
+    prioritized.push(desk);
+  };
+
+  source
+    .filter((desk) => targetDeskIds.has(String(desk?.deskId || '').trim()))
+    .forEach(pushDesk);
+  source
+    .filter((desk) => Number(desk?.liveAgentCount || 0) > 0 || Number(desk?.taskCount || 0) > 0 || Number(desk?.reportCount || 0) > 0)
+    .forEach(pushDesk);
+  source.forEach(pushDesk);
+  return prioritized.slice(0, limit);
+}
+
+function getCtoRoleLabel(roleId = '') {
+  const descriptor = CTO_PIPELINE_ROLE_SEQUENCE.find((entry) => entry.roleId === roleId) || null;
+  return descriptor?.roleLabel || String(roleId || '').replace(/[-_]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) || 'Role';
+}
+
+function findHiredTaCandidateForDesk(deskId = '', { taDepartmentFile = TA_DEPARTMENT_FILE, hiredCandidates = null } = {}) {
+  const normalizedDeskId = String(deskId || '').trim();
+  if (!normalizedDeskId) return null;
+  const candidates = Array.isArray(hiredCandidates)
+    ? hiredCandidates
+    : normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState()).hiredCandidates;
+  return candidates.find((candidate) => {
+    const hiredDeskId = String(candidate.hiredDeskId || candidate.primaryDeskTarget || '').trim();
+    return hiredDeskId === normalizedDeskId;
+  }) || null;
+}
+
+function buildCtoActionRecord({
+  id,
+  kind,
+  label,
+  params = {},
+  available = true,
+  requiresConfirmation = true,
+  status = 'pending',
+  reason = null,
+  route = null,
+  routeStatus = null,
+  gapDescription = null,
+  targetDeskId = null,
+  targetDeskLabel = null,
+  overrideAvailable = false,
+  blockedGates = [],
+  advisory = null,
+}) {
+  return {
+    id,
+    kind,
+    label,
+    params: params && typeof params === 'object' && !Array.isArray(params) ? { ...params } : {},
+    available: available !== false,
+    requiresConfirmation: requiresConfirmation !== false,
+    status: String(status || 'pending').trim() || 'pending',
+    reason: String(reason || '').trim() || null,
+    route: String(route || '').trim() || null,
+    routeStatus: String(routeStatus || '').trim() || null,
+    gapDescription: String(gapDescription || '').trim() || null,
+    targetDeskId: String(targetDeskId || params?.deskId || params?.roleId || '').trim() || null,
+    targetDeskLabel: String(targetDeskLabel || params?.deskLabel || '').trim() || null,
+    overrideAvailable: overrideAvailable === true,
+    blockedGates: Array.isArray(blockedGates) ? blockedGates.filter((gate) => gate && gate.code) : [],
+    advisory: advisory && typeof advisory === 'object' && !Array.isArray(advisory)
+      ? { ...advisory }
+      : null,
+  };
+}
+
+function buildCtoBlockedGate(code = '', label = '', reason = '') {
+  const normalizedCode = String(code || '').trim();
+  if (!normalizedCode) return null;
+  return {
+    code: normalizedCode,
+    label: String(label || normalizedCode).trim() || normalizedCode,
+    reason: String(reason || '').trim() || null,
+  };
+}
+
+function normalizeCtoGateList(gates = []) {
+  return Array.isArray(gates)
+    ? gates
+        .map((gate) => {
+          if (!gate) return null;
+          if (typeof gate === 'string') {
+            const code = String(gate).trim();
+            return code ? { code, label: code, reason: null } : null;
+          }
+          const source = gate && typeof gate === 'object' ? gate : {};
+          const code = String(source.code || '').trim();
+          if (!code) return null;
+          return {
+            code,
+            label: String(source.label || code).trim() || code,
+            reason: String(source.reason || '').trim() || null,
+          };
+        })
+        .filter(Boolean)
+    : [];
+}
+
+function normalizeCtoExecutionOverride(override = null) {
+  const source = override && typeof override === 'object' ? override : {};
+  const enabled = source.enabled === true
+    || source.operator_override === true
+    || source.execution_mode === 'operator_override'
+    || source.executionMode === 'operator_override';
+  const overrideReason = String(source.overrideReason || source.override_reason || source.reason || source.operatorNote || source.note || '').trim() || null;
+  const skippedGates = normalizeCtoGateList(
+    source.skippedGates || source.skipped_gates || source.blockedBy || source.blocked_by || [],
+  );
+  const blockedBy = normalizeCtoGateList(
+    source.blockedBy || source.blocked_by || source.skippedGates || source.skipped_gates || [],
+  );
+  return {
+    enabled,
+    origin: enabled ? String(source.origin || 'cto').trim() || 'cto' : null,
+    executionMode: enabled ? 'operator_override' : 'standard',
+    execution_mode: enabled ? 'operator_override' : 'standard',
+    overrideReason,
+    override_reason: overrideReason,
+    operatorNote: String(source.operatorNote || source.note || '').trim() || null,
+    operator_note: String(source.operatorNote || source.note || '').trim() || null,
+    blockedBy,
+    blocked_by: blockedBy.map((gate) => gate.code),
+    skippedGates,
+    skipped_gates: skippedGates,
+  };
+}
+
+function buildCtoExecutionOverrideProvenance(executionOverride = null, blockedGates = [], skippedGates = []) {
+  if (!executionOverride?.enabled) return null;
+  const normalizedBlockedGates = normalizeCtoGateList(blockedGates);
+  const normalizedSkippedGates = normalizeCtoGateList(skippedGates);
+  const provenanceGates = normalizedBlockedGates.length ? normalizedBlockedGates : normalizedSkippedGates;
+  const overrideReason = executionOverride.overrideReason || executionOverride.operatorNote || null;
+  return {
+    enabled: true,
+    origin: executionOverride.origin || 'cto',
+    execution_mode: executionOverride.executionMode || 'operator_override',
+    executionMode: executionOverride.executionMode || 'operator_override',
+    override_reason: overrideReason,
+    overrideReason,
+    operator_note: executionOverride.operatorNote || null,
+    operatorNote: executionOverride.operatorNote || null,
+    blocked_by: provenanceGates.map((gate) => gate.code),
+    blockedBy: provenanceGates,
+    skipped_gates: normalizedSkippedGates,
+    skippedGates: normalizedSkippedGates,
+  };
+}
+
+function buildCtoActionForPipeline(pipeline = null, context = null, text = '') {
+  const current = normalizeCtoPipelineState(pipeline, { text });
+  const role = getCtoPipelineRoleDescriptor(current.roleIndex);
+  const canonicalLayout = normalizeStudioLayoutSchema(
+    context?.workspace?.studio?.layout
+    || context?.layout
+    || createDefaultStudioLayoutSchema(),
+  );
+  const layoutPlannerCoverage = buildCanonicalPlannerCoverageTruth(canonicalLayout);
+  const layoutQaLeadCoverage = buildCanonicalQALeadCoverageTruth(canonicalLayout);
+  const plannerCoverage = context?.ta?.plannerCoverage && typeof context.ta.plannerCoverage === 'object'
+    ? context.ta.plannerCoverage
+    : layoutPlannerCoverage;
+  const qaLeadCoverage = context?.ta?.qaLeadCoverage && typeof context.ta.qaLeadCoverage === 'object'
+    ? context.ta.qaLeadCoverage
+    : layoutQaLeadCoverage;
+  const desk = Array.isArray(context?.desks)
+    ? context.desks.find((entry) => entry.deskId === role.deskId) || null
+    : null;
+  const deskTaCoverage = desk?.taCoverage && typeof desk.taCoverage === 'object' ? desk.taCoverage : null;
+  const deskTaCoverageHasSignal = Boolean(
+    typeof deskTaCoverage?.covered === 'boolean'
+    || (Array.isArray(deskTaCoverage?.openRoles) && deskTaCoverage.openRoles.length > 0)
+    || (Array.isArray(deskTaCoverage?.blockers) && deskTaCoverage.blockers.length > 0),
+  );
+  const coverageTruth = role.deskId === 'qa-lead'
+    ? (deskTaCoverageHasSignal
+      ? {
+          ...deskTaCoverage,
+          covered: typeof deskTaCoverage.covered === 'boolean'
+            ? deskTaCoverage.covered
+            : !(Array.isArray(deskTaCoverage.openRoles) && deskTaCoverage.openRoles.length > 0)
+              && !(Array.isArray(deskTaCoverage.blockers) && deskTaCoverage.blockers.length > 0),
+        }
+      : layoutQaLeadCoverage)
+    : layoutPlannerCoverage;
+  const deskLabel = desk?.label || role.deskLabel;
+  const canonicalSeatBlocker = Array.isArray(context?.ta?.canonicalSeats)
+    ? context.ta.canonicalSeats.find((entry) => entry?.entityId === role.deskId && entry?.blocker) || null
+    : null;
+  const coverageBlocked = coverageTruth ? coverageTruth.covered === false : Boolean(canonicalSeatBlocker);
+  const coverageCovered = coverageTruth ? coverageTruth.covered === true : !coverageBlocked;
+  const hiredCandidate = findHiredTaCandidateForDesk(role.deskId, {
+    hiredCandidates: Array.isArray(context?.ta?.hiredCandidates) ? context.ta.hiredCandidates : null,
+  });
+  if (current.step === 'hire-role' && coverageCovered && hiredCandidate) {
+    return buildCtoActionForPipeline({
+      ...current,
+      step: 'assign-agent-to-desk',
+      candidateId: hiredCandidate.id,
+      candidateName: hiredCandidate.name,
+    }, context, text);
+  }
+  if (current.step === 'hire-role') {
+    if (coverageCovered) {
+      return buildCtoActionRecord({
+        id: role.requestActionId,
+        kind: role.requestActionId,
+        label: role.requestActionId === 'request-plan'
+          ? 'Request one plan'
+          : (role.requestActionId === 'request-execution'
+            ? 'Request one execution'
+            : 'Request one QA run'),
+        params: {
+          roleId: role.roleId,
+          deskId: role.deskId,
+          deskLabel,
+          planTaskId: current.planTaskId || null,
+          planCardId: current.planCardId || null,
+          executionRunId: current.executionRunId || null,
+          qaRunId: current.qaRunId || null,
+        },
+        reason: `${deskLabel} coverage is confirmed in canonical staffing truth.`,
+        route: role.requestActionId === 'request-plan'
+          ? 'workspace.teamBoard + task cache'
+          : (role.requestActionId === 'request-execution'
+            ? 'workspace.teamBoard + task apply'
+            : 'workspace.qa.run'),
+        routeStatus: 'wired',
+        targetDeskId: role.deskId,
+        targetDeskLabel: deskLabel,
+      });
+    }
+    const failedPredicateSummary = (coverageTruth?.failedPredicates || plannerCoverage.failedPredicates || qaLeadCoverage.failedPredicates || [])
+      .map((predicate) => predicate.label || predicate.key)
+      .filter(Boolean)
+      .join('; ');
+    const reason = coverageTruth?.reason
+      || `${deskLabel} coverage is needed before the pipeline can continue.${failedPredicateSummary ? ` Failed predicates: ${failedPredicateSummary}.` : ''}`;
+    const gapDescription = coverageTruth?.reason
+      || `${deskLabel} coverage is needed. Request: ${truncatePromptText(text || deskLabel, 180)}`;
+    return buildCtoActionRecord({
+      id: 'hire-role',
+      kind: 'hire-role',
+      label: `Hire ${role.roleLabel} coverage`,
+      params: {
+        roleId: role.roleId,
+        deskId: role.deskId,
+        deskLabel,
+        plannerCoverage,
+      },
+      available: true,
+      requiresConfirmation: true,
+      status: 'unavailable',
+      reason,
+      route: 'POST /api/ta/hire',
+      routeStatus: 'wired',
+      gapDescription,
+      targetDeskId: role.deskId,
+      targetDeskLabel: deskLabel,
+      overrideAvailable: false,
+      blockedGates: coverageBlocked
+        ? [buildCtoBlockedGate(
+            'canonical-coverage-gap',
+            `${deskLabel} canonical coverage is missing`,
+            reason,
+          )]
+        : [],
+    });
+  }
+  if (current.step === 'assign-agent-to-desk') {
+    const hiredCandidate = findHiredTaCandidateForDesk(role.deskId, {
+      hiredCandidates: Array.isArray(context?.ta?.hiredCandidates) ? context.ta.hiredCandidates : null,
+    });
+    return buildCtoActionRecord({
+      id: 'assign-agent-to-desk',
+      kind: 'assign-agent-to-desk',
+      label: `Assign ${role.roleLabel} to the ${deskLabel} desk`,
+      params: {
+        roleId: role.roleId,
+        deskId: role.deskId,
+        deskLabel,
+        candidateId: hiredCandidate?.id || current.candidateId || null,
+        agentId: hiredCandidate?.id || current.candidateId || null,
+        candidateName: hiredCandidate?.name || current.candidateName || null,
+      },
+      available: Boolean(hiredCandidate),
+      requiresConfirmation: Boolean(hiredCandidate),
+      status: hiredCandidate ? 'pending' : 'unavailable',
+      reason: hiredCandidate
+        ? `${deskLabel} can now be assigned.`
+        : `${deskLabel} cannot be assigned yet because no hired candidate exists for that role.`,
+      route: 'workspace.studio.layout + workspace.studio.deskProperties',
+      routeStatus: 'wired',
+      targetDeskId: role.deskId,
+      targetDeskLabel: deskLabel,
+      overrideAvailable: !hiredCandidate,
+      blockedGates: !hiredCandidate
+        ? [buildCtoBlockedGate(
+            'hired-candidate-missing',
+            `No hired candidate exists for ${deskLabel}`,
+            `${deskLabel} cannot be assigned yet because no hired candidate exists for that role.`,
+          )]
+        : [],
+    });
+  }
+  if (current.step === role.requestActionId) {
+    return buildCtoActionRecord({
+      id: role.requestActionId,
+      kind: role.requestActionId,
+      label: role.requestActionId === 'request-plan'
+        ? 'Request one plan'
+        : (role.requestActionId === 'request-execution'
+          ? 'Request one execution'
+          : 'Request one QA run'),
+      params: {
+        roleId: role.roleId,
+        deskId: role.deskId,
+        deskLabel,
+        planTaskId: current.planTaskId || null,
+        planCardId: current.planCardId || null,
+        executionRunId: current.executionRunId || null,
+        qaRunId: current.qaRunId || null,
+      },
+      reason: `${deskLabel} is ready to ${role.requestLabel}.`,
+      route: role.requestActionId === 'request-plan'
+        ? 'workspace.teamBoard + task cache'
+        : (role.requestActionId === 'request-execution'
+          ? 'workspace.teamBoard + task apply'
+          : 'workspace.qa.run'),
+      routeStatus: 'wired',
+      targetDeskId: role.deskId,
+      targetDeskLabel: deskLabel,
+    });
+  }
+  return null;
+}
+
+function createTimeoutController(timeoutMs) {
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  return { controller, timeout };
+}
+
+async function probeCtoBackendStatus({
+  backend = null,
+  model = null,
+  host = null,
+  timeoutMs = null,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const checkedAt = nowIso();
+  const resolvedConfig = resolveCtoGovernanceConfig({ backend, model, host, timeoutMs });
+  const normalizedBackend = resolvedConfig.backend;
+  const normalizedModel = resolvedConfig.model;
+  const normalizedHost = resolvedConfig.host;
+  const normalizedTimeout = resolvedConfig.timeoutMs;
+  if (normalizedBackend !== 'ollama') {
+    return {
+      ok: false,
+      status: 'offline',
+      backend: normalizedBackend,
+      model: normalizedModel,
+      host: normalizedHost,
+      checkedAt,
+      reason: `Unsupported CTO backend: ${normalizedBackend}.`,
+      availableModels: [],
+    };
+  }
+  if (typeof fetchImpl !== 'function') {
+    return {
+      ok: false,
+      status: 'offline',
+      backend: normalizedBackend,
+      model: normalizedModel,
+      host: normalizedHost,
+      checkedAt,
+      reason: 'No fetch implementation is available for local backend checks.',
+      availableModels: [],
+    };
+  }
+  const { controller, timeout } = createTimeoutController(normalizedTimeout);
+  try {
+    const response = await fetchImpl(`${normalizedHost.replace(/\/+$/, '')}/api/tags`, {
+      method: 'GET',
+      signal: controller?.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`Ollama tags returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    const availableModels = Array.isArray(payload?.models)
+      ? payload.models.map((entry) => String(entry?.name || '').trim()).filter(Boolean)
+      : [];
+    const modelAvailable = availableModels.includes(normalizedModel);
+    return {
+      ok: modelAvailable,
+      status: modelAvailable ? 'live' : 'degraded',
+      backend: normalizedBackend,
+      model: normalizedModel,
+      host: normalizedHost,
+      checkedAt,
+      reason: modelAvailable ? null : `Model "${normalizedModel}" is not currently available on the local backend.`,
+      availableModels,
+    };
+  } catch (error) {
+    const reason = error?.name === 'AbortError'
+      ? `Ollama status check timed out after ${normalizedTimeout}ms.`
+      : String(error.message || error || 'Ollama status check failed.');
+    return {
+      ok: false,
+      status: 'offline',
+      backend: normalizedBackend,
+      model: normalizedModel,
+      host: normalizedHost,
+      checkedAt,
+      reason,
+      availableModels: [],
+    };
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+function buildCtoDeskRouteSummary(deskId = '') {
+  if (deskId === 'qa-lead') {
+    return {
+      propertiesWritable: false,
+      manualRunRoute: false,
+      advisoryOnly: true,
+      routeNote: 'QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.',
+    };
+  }
+  if (deskId === 'planner' || deskId === 'executor' || deskId === 'context-manager') {
+    return {
+      propertiesWritable: false,
+      manualRunRoute: true,
+      advisoryOnly: true,
+      routeNote: `A manual ${deskId} run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.`,
+    };
+  }
+  if (deskId === 'memory-archivist') {
+    return {
+      propertiesWritable: true,
+      manualRunRoute: false,
+      advisoryOnly: false,
+      routeNote: 'Archivist writeback actions exist, but they are not exposed as chat confirmations in this slice.',
+    };
+  }
+  if (deskId === 'cto-architect') {
+    return {
+      propertiesWritable: true,
+      manualRunRoute: false,
+      advisoryOnly: false,
+      routeNote: 'CTO property actions are available through the desk panel. Hiring is routed separately through Talent Acquisition.',
+    };
+  }
+  return {
+    propertiesWritable: false,
+    manualRunRoute: false,
+    advisoryOnly: true,
+    routeNote: 'No grounded CTO chat action route is wired for this desk yet.',
+  };
+}
+
+function buildCtoTaGovernancePayload(taState, { workspace, rootPath = ROOT } = {}) {
+  const normalizedState = normalizeTaDepartmentState(taState);
+  const canonicalLayout = normalizeStudioLayoutSchema(
+    workspace?.studio?.layout
+    || createDefaultStudioLayoutSchema(),
+  );
+  const plannerCoverage = buildCanonicalPlannerCoverageTruth(canonicalLayout);
+  const qaLeadCoverage = buildCanonicalQALeadCoverageTruth(canonicalLayout);
+  const hireRequestQueue = readTaHireRequestQueue(rootPath);
+  const hireRequestsSummary = summarizeTaHireRequestQueue(hireRequestQueue);
+  const coverage = ['planner', 'qa-lead'].map((deskId) => {
+    const coverageTruth = deskId === 'qa-lead' ? qaLeadCoverage : plannerCoverage;
+    return {
+      entityType: 'desk',
+      entityId: deskId,
+      entityLabel: deskId,
+      departmentId: canonicalLayout.organization?.desks?.[deskId]?.ownerDepartmentId || canonicalLayout.organization?.desks?.[deskId]?.departmentId || 'dept-delivery',
+      health: coverageTruth.covered ? 'healthy' : 'blocked',
+      blocked: !coverageTruth.covered,
+      statusLabel: coverageTruth.covered ? 'covered' : 'missing coverage',
+      openRoles: coverageTruth.covered ? [] : [{
+        roleId: deskId,
+        roleLabel: deskId,
+        kind: 'missing lead',
+        urgency: 'high',
+        blocker: true,
+      }],
+      blockers: coverageTruth.covered ? [] : [{
+        roleId: deskId,
+        roleLabel: deskId,
+        kind: 'missing lead',
+        blocker: true,
+      }],
+    };
+  });
+  const canonicalSeats = coverage.flatMap((entry) => entry.openRoles.map((role) => ({
+    entityId: entry.entityId,
+    entityLabel: entry.entityLabel,
+    departmentId: entry.departmentId,
+    departmentLabel: entry.departmentId,
+    roleId: role.roleId,
+    roleLabel: role.roleLabel,
+    kind: role.kind,
+    urgency: role.urgency,
+    blocker: role.blocker,
+  })));
+  return {
+    department: {
+      name: 'Talent Acquisition',
+      summary: canonicalSeats.length
+        ? `${canonicalSeats.length} canonical open seat${canonicalSeats.length === 1 ? '' : 's'} requiring TA attention.`
+        : `All ${coverage.length} canonical desk seats are covered.`,
+      urgency: canonicalSeats.some((entry) => entry.blocker) ? 'high' : 'low',
+      updatedAt: normalizedState.updatedAt,
+    },
+    hireRequestsSummary,
+    hireRequests: hireRequestQueue.entries,
+    coverage,
+    gapModel: {
+      coverage,
+      canonicalSeats,
+      summary: {
+        openRoleCount: canonicalSeats.length,
+        blockerCount: canonicalSeats.filter((entry) => entry.blocker).length,
+        urgency: canonicalSeats.some((entry) => entry.blocker) ? 'high' : 'low',
+      },
+    },
+    plannerCoverage,
+    qaLeadCoverage,
+    plannerCoverageBlocker: plannerCoverage.covered ? null : {
+      label: 'Hire Planner coverage',
+      reason: `Planner coverage is needed before the pipeline can continue.`,
+      failedPredicates: plannerCoverage.failedPredicates || [],
+      canonical: plannerCoverage.canonical,
+      covered: plannerCoverage.covered,
+    },
+    roster: normalizedState.roster,
+    hiredCandidates: normalizedState.hiredCandidates,
+  };
+}
+
+function buildCtoGovernanceContext(workspace = null, options = {}) {
+  const rootPath = options?.rootPath || ROOT;
+  const runtimeWorkspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
+    persist: false,
+    workspace: workspace || readSpatialWorkspace(rootPath),
+  }));
+  const taDepartmentFile = rootPath === ROOT
+    ? TA_DEPARTMENT_FILE
+    : path.join(rootPath, 'data', 'spatial', 'ta-department.json');
+  const taState = normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+  const taPayload = options.taPayload || buildCtoTaGovernancePayload(taState, {
+    workspace: runtimeWorkspace,
+    rootPath,
+  });
+  const ctoOverrideLedger = runtimeWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger();
+  const ctoOverrideSummary = summarizeCtoOverrideLedger(ctoOverrideLedger);
+  const ctoOverrideLayer = deriveCtoOverrideLayer(ctoOverrideLedger);
+  const repairLoop = buildQaRepairLoopState(rootPath);
+  const governedRepair = buildCtoGovernedRepairReference(repairLoop);
+  const chiefOfStaff = normalizeChiefOfStaffContext(readLatestChiefOfStaffAdvisory());
+  const desks = CTO_DESK_IDS.map((deskId) => {
+    const payload = buildDeskPropertiesPayload(runtimeWorkspace, deskId, null, { rootPath });
+    const taCoverage = Array.isArray(taPayload.coverage)
+      ? taPayload.coverage.find((entry) => entry?.entityType === 'desk' && entry?.entityId === deskId) || null
+      : null;
+    const routeSummary = buildCtoDeskRouteSummary(deskId);
+    const liveAgents = payload.agents.filter((agent) => {
+      const status = String(agent?.status || '').trim().toLowerCase();
+      return status && status !== 'idle';
+    });
+    return {
+      deskId,
+      label: payload.desk?.label || deskId,
+      departmentId: payload.desk?.departmentId || null,
+      departmentLabel: payload.layout?.department?.label || payload.desk?.departmentId || null,
+      exists: true,
+      assignedAgentIds: Array.isArray(payload.desk?.assignedAgentIds) ? payload.desk.assignedAgentIds : [],
+      managedAgents: Array.isArray(payload.agents) ? payload.agents.map((agent) => agent.id).filter(Boolean) : [],
+      liveAgentCount: liveAgents.length,
+      liveAgentStatuses: liveAgents.map((agent) => `${agent.id}:${agent.status}`),
+      taskCount: Array.isArray(payload.tasks) ? payload.tasks.length : 0,
+      reportCount: Array.isArray(payload.reports) ? payload.reports.length : 0,
+      truthContext: payload.truth?.context?.summary || payload.truth?.department?.context || null,
+      guardrailCount: Array.isArray(payload.truth?.guardrails) ? payload.truth.guardrails.length : 0,
+      qaScorecardCount: Array.isArray(payload.truth?.scorecards) ? payload.truth.scorecards.length : 0,
+      readOnly: !routeSummary.propertiesWritable,
+      manualRunRoute: routeSummary.manualRunRoute,
+      routeNote: routeSummary.routeNote,
+      taCoverage: taCoverage ? {
+        health: taCoverage.health,
+        blocked: Boolean(taCoverage.blocked),
+        statusLabel: taCoverage.statusLabel || taCoverage.health,
+        openRoles: Array.isArray(taCoverage.openRoles)
+          ? taCoverage.openRoles.map((entry) => ({
+              roleId: entry.roleId || null,
+              roleLabel: entry.roleLabel || entry.roleId || 'coverage',
+              kind: entry.kind || 'understaffed',
+              urgency: entry.urgency || 'low',
+              blocker: Boolean(entry.blocker),
+            }))
+          : [],
+        blockers: Array.isArray(taCoverage.blockers)
+          ? taCoverage.blockers.map((entry) => entry.roleLabel || entry.roleId || entry.kind || 'staffing blocker')
+          : [],
+      } : null,
+    };
+  });
+  return {
+    workspace: {
+      orchestratorStatus: runtimeWorkspace?.studio?.orchestrator?.status || null,
+      activeDeskIds: Array.isArray(runtimeWorkspace?.studio?.orchestrator?.activeDeskIds) ? runtimeWorkspace.studio.orchestrator.activeDeskIds : [],
+      teamBoardCardCount: Array.isArray(runtimeWorkspace?.studio?.teamBoard?.cards) ? runtimeWorkspace.studio.teamBoard.cards.length : 0,
+      pageTitle: runtimeWorkspace?.pages?.find?.((page) => page.id === runtimeWorkspace?.notebook?.activePageId)?.title || null,
+    },
+    pipeline: summarizeCtoPipelineState(runtimeWorkspace?.studio?.ctoPipeline || null),
+    desks,
+    ta: {
+      summary: taPayload.department?.summary || null,
+      urgency: taPayload.department?.urgency || 'low',
+      plannerCoverage: taPayload.plannerCoverage || null,
+      qaLeadCoverage: taPayload.qaLeadCoverage || null,
+      hireRequestsSummary: taPayload.hireRequestsSummary || null,
+      rosterCount: Array.isArray(taPayload.roster) ? taPayload.roster.length : 0,
+      roster: Array.isArray(taPayload.roster)
+        ? taPayload.roster.map((entry) => ({
+            id: entry.id || null,
+            name: entry.name || null,
+            roleId: entry.roleId || null,
+            deskId: entry.deskId || null,
+            assignedModel: entry.assignedModel || null,
+          }))
+        : [],
+      hiredCandidates: Array.isArray(taPayload.hiredCandidates)
+        ? taPayload.hiredCandidates.map((entry) => ({
+            id: entry.id || null,
+            name: entry.name || null,
+            roleId: entry.roleId || null,
+            hiredDeskId: entry.hiredDeskId || null,
+            primaryDeskTarget: entry.primaryDeskTarget || null,
+            assignedModel: entry.assignedModel || null,
+          }))
+        : [],
+      canonicalSeats: Array.isArray(taPayload.gapModel?.canonicalSeats)
+        ? taPayload.gapModel.canonicalSeats.map((entry) => ({
+            entityId: entry.entityId || null,
+            entityLabel: entry.entityLabel || entry.entityId || null,
+            departmentId: entry.departmentId || null,
+            departmentLabel: entry.departmentLabel || null,
+            roleId: entry.roleId || null,
+            roleLabel: entry.roleLabel || entry.roleId || 'coverage',
+            kind: entry.kind || 'understaffed',
+            urgency: entry.urgency || 'low',
+            blocker: Boolean(entry.blocker),
+          }))
+        : [],
+      openRoles: Array.isArray(taPayload.gapModel?.canonicalSeats)
+        ? taPayload.gapModel.canonicalSeats.map((entry) => ({
+            entityId: entry.entityId || null,
+            entityLabel: entry.entityLabel || entry.entityId || null,
+            departmentId: entry.departmentId || null,
+            departmentLabel: entry.departmentLabel || null,
+            roleId: entry.roleId || null,
+            roleLabel: entry.roleLabel || entry.roleId || 'coverage',
+            kind: entry.kind || 'understaffed',
+            urgency: entry.urgency || 'low',
+            blocker: Boolean(entry.blocker),
+          }))
+        : [],
+    },
+    cto: {
+      overrides: ctoOverrideSummary,
+      overrideLayer: ctoOverrideLayer,
+      governedRepair,
+      chiefOfStaff,
+    },
+    generatedAt: nowIso(),
+  };
+}
+
+function findPendingCtoAction(history = [], confirmActionId = '') {
+  const targetId = String(confirmActionId || '').trim();
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const action = normalizeCtoActionRecord(history[index]?.action || null);
+    if (!action) continue;
+    if (targetId && action.id === targetId) return action;
+    if (!targetId && action.available && action.requiresConfirmation && action.status === 'pending') {
+      return action;
+    }
+  }
+  return null;
+}
+
+function resolveCanonicalPendingCtoAction({ history = [], context = null, workspace = null, text = '', confirmActionId = '' } = {}) {
+  const normalizedText = String(text || '').trim().toLowerCase();
+  const pipelineContext = {
+    ...(context && typeof context === 'object' ? context : {}),
+    workspace: workspace || context?.workspace || null,
+  };
+  const pipeline = normalizeCtoPipelineState(
+    pipelineContext.workspace?.studio?.ctoPipeline || pipelineContext.pipeline || null,
+    { text: normalizedText },
+  );
+  const canonicalAction = buildCtoActionForPipeline(pipeline, pipelineContext, normalizedText);
+  if (!canonicalAction) return null;
+
+  const historicalAction = findPendingCtoAction(history, confirmActionId);
+  if (!historicalAction || historicalAction.id !== canonicalAction.id) {
+    return null;
+  }
+
+  return {
+    ...canonicalAction,
+    status: historicalAction.status || canonicalAction.status,
+    requiresConfirmation: historicalAction.requiresConfirmation !== false,
+  };
+}
+
+function reconcileCtoHistoryAgainstCanonicalState(history = [], { context = null, workspace = null, text = '' } = {}) {
+  const canonicalPendingAction = resolveCanonicalPendingCtoAction({
+    history,
+    context,
+    workspace,
+    text,
+  });
+  return (Array.isArray(history) ? history : []).map((entry) => {
+    if (!entry?.action) return entry;
+    const action = normalizeCtoActionRecord(entry.action);
+    if (!action) return { ...entry, action: null };
+    const isPendingConfirmation = action.available && action.requiresConfirmation && action.status === 'pending';
+    if (!isPendingConfirmation) return entry;
+    if (!canonicalPendingAction || action.id !== canonicalPendingAction.id) {
+      return {
+        ...entry,
+        action: null,
+      };
+    }
+    return {
+      ...entry,
+      action: canonicalPendingAction,
+    };
+  });
+}
+
+function normalizeChiefOfStaffContext(chief = null) {
+  if (!chief || typeof chief !== 'object' || Array.isArray(chief)) {
+    return {
+      advisory_available: false,
+      advisory_only: true,
+      recommendation: null,
+      reply_source: null,
+      model_status: null,
+      model_backend: DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
+      model_name: null,
+      generated_at: null,
+      execution_ready: false,
+      blocker: null,
+      confidence: null,
+      why_now: null,
+      recommended_action_id: null,
+    };
+  }
+  const recommendation = chief.recommendation && typeof chief.recommendation === 'object'
+    ? chief.recommendation
+    : null;
+  const blocker = chief.posture?.blocker && typeof chief.posture.blocker === 'object'
+    ? chief.posture.blocker
+    : (chief.blocker && typeof chief.blocker === 'object' ? chief.blocker : null);
+  const recommendedActionId = String(
+    chief.recommended_action_id
+    || recommendation?.canonical_action_id
+    || recommendation?.action_id
+    || '',
+  ).trim() || null;
+  return {
+    advisory_available: chief.advisory_available === true,
+    advisory_only: true,
+    recommendation: recommendation ? {
+      id: recommendation.id || null,
+      title: recommendation.title || null,
+      category: recommendation.category || null,
+      blocker: recommendation.blocker || null,
+      stage: recommendation.stage || null,
+      why_now: recommendation.why_now || null,
+      recommendation_text: recommendation.recommendation_text || null,
+      execution_ready: Boolean(recommendation.execution_ready),
+      confidence: Number.isFinite(Number(recommendation.confidence)) ? Number(recommendation.confidence) : null,
+      canonical_action_id: recommendedActionId,
+    } : null,
+    reply_source: chief.reply_source || null,
+    model_status: chief.model_status || null,
+    model_backend: chief.model_backend || DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
+    model_name: chief.model_name || null,
+    generated_at: chief.advisory_generated_at || chief.generated_at || null,
+    execution_ready: Boolean(chief.execution_ready),
+    blocker: blocker ? {
+      failure_key: blocker.failure_key || null,
+      stage: blocker.stage || null,
+      count: Number.isFinite(Number(blocker.count)) ? Number(blocker.count) : null,
+    } : null,
+    confidence: Number.isFinite(Number(recommendation?.confidence ?? chief.posture?.system_confidence))
+      ? Number(recommendation?.confidence ?? chief.posture?.system_confidence)
+      : null,
+    why_now: recommendation?.why_now || null,
+    recommended_action_id: recommendedActionId,
+  };
+}
+
+function applyChiefOfStaffAdvisoryToAction(action = null, context = null) {
+  const normalizedAction = normalizeCtoActionRecord(action);
+  if (!normalizedAction) return null;
+  const chief = normalizeChiefOfStaffContext(context?.cto?.chiefOfStaff || null);
+  if (!chief.advisory_available) {
+    return normalizedAction;
+  }
+
+  const matchesRecommendedAction = Boolean(chief.recommended_action_id)
+    && chief.recommended_action_id === normalizedAction.id;
+  const advisory = {
+    source: 'chief_of_staff',
+    advisory_only: true,
+    reply_source: chief.reply_source,
+    model_status: chief.model_status,
+    generated_at: chief.generated_at,
+    execution_ready: chief.execution_ready,
+    recommended_action_id: chief.recommended_action_id,
+    matched: matchesRecommendedAction && chief.execution_ready,
+    compatibility: matchesRecommendedAction
+      ? (chief.execution_ready ? 'aligned' : 'not_directly_executable')
+      : 'context_only',
+    why_now: chief.why_now,
+    blocker: chief.blocker,
+    confidence: chief.confidence,
+  };
+
+  let reason = normalizedAction.reason;
+  if (matchesRecommendedAction && chief.execution_ready) {
+    reason = `Chief of Staff advisory aligns with this canonical action. ${reason || ''}`.trim();
+  } else if (matchesRecommendedAction && !chief.execution_ready) {
+    reason = `Chief of Staff identified this path as advisory-only until execution preconditions are met. ${reason || ''}`.trim();
+  } else if (chief.blocker?.failure_key) {
+    reason = `${reason || 'Canonical action available.'} Chief of Staff advisory notes blocker ${chief.blocker.failure_key}.`.trim();
+  }
+
+  return {
+    ...normalizedAction,
+    reason,
+    advisory,
+  };
+}
+
+function buildCtoAvailableActions({ text = '', history = [], context = null, workspace = null } = {}) {
+  const normalizedText = String(text || '').trim().toLowerCase();
+  const pipelineContext = {
+    ...(context && typeof context === 'object' ? context : {}),
+    workspace: workspace || context?.workspace || null,
+  };
+  const pendingAction = resolveCanonicalPendingCtoAction({
+    history,
+    context: pipelineContext,
+    workspace: pipelineContext.workspace,
+    text: normalizedText,
+  });
+  if (pendingAction) {
+    return [applyChiefOfStaffAdvisoryToAction(pendingAction, pipelineContext)];
+  }
+
+  const pipeline = normalizeCtoPipelineState(
+    pipelineContext.workspace?.studio?.ctoPipeline || pipelineContext.pipeline || null,
+    { text: normalizedText },
+  );
+  const currentRole = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
+  const desk = Array.isArray(context?.desks)
+    ? context.desks.find((entry) => entry.deskId === currentRole.deskId) || null
+    : null;
+  const deskLabel = desk?.label || currentRole.deskLabel;
+  const action = buildCtoActionForPipeline(pipeline, pipelineContext, normalizedText);
+  if (!action) return [];
+
+  const stageReasons = {
+    'hire-role': `${deskLabel} coverage is missing or not yet confirmed in the pipeline.`,
+    'assign-agent-to-desk': `A hired ${currentRole.roleLabel} candidate is ready to be assigned to the ${deskLabel} desk.`,
+    'request-plan': `${currentRole.roleLabel} is assigned and can create one task now.`,
+    'request-execution': `Executor coverage is ready to apply one narrow fix.`,
+    'request-qa': `QA coverage is ready to run one smoke check.`,
+  };
+
+  return [applyChiefOfStaffAdvisoryToAction({
+    ...action,
+    status: action.available ? 'pending' : 'unavailable',
+    reason: action.reason || stageReasons[action.id] || `${currentRole.roleLabel} pipeline step is available.`,
+  }, pipelineContext)];
+}
+
+function selectTaCandidateForDesk(action = null, { taDepartmentFile = TA_DEPARTMENT_FILE } = {}) {
+  const targetDeskId = String(action?.targetDeskId || '').trim();
+  if (!targetDeskId) {
+    return { ok: false, reason: 'targetDeskId is required for a TA hire.' };
+  }
+  const gapDescription = String(action?.gapDescription || `${targetDeskId} coverage is needed.`).trim();
+  const candidates = generateCandidates({
+    description: gapDescription,
+    system_context: 'ACE Studio runtime',
+    affected_components: [targetDeskId, 'staffing', 'talent acquisition'],
+  });
+  const match = candidates.find((candidate) => {
+    const allowedDeskIds = Array.isArray(candidate.allowedDeskIds)
+      ? candidate.allowedDeskIds
+      : (Array.isArray(candidate.allowed_desk_ids) ? candidate.allowed_desk_ids : []);
+    const primaryDeskTarget = String(candidate.primaryDeskTarget || candidate.primary_desk_target || '').trim();
+    return allowedDeskIds.includes(targetDeskId) || primaryDeskTarget === targetDeskId;
+  }) || null;
+  if (!match) {
+    return {
+      ok: false,
+      reason: `Talent Acquisition could not produce a grounded candidate for ${targetDeskId}.`,
+    };
+  }
+  return {
+    ok: true,
+    candidate: normalizeTaCandidateCard(match),
+  };
+}
+
+async function executeCtoConfirmedAction(action = null, options = {}) {
+  const normalizedAction = normalizeCtoActionRecord(action);
+  if (!normalizedAction) {
+    return {
+      ok: false,
+      status: 'blocked',
+      reason: 'No pending CTO action could be confirmed.',
+    };
+  }
+
+  const rootPath = options.rootPath || ROOT;
+  const baseUrl = options.baseUrl || getLocalBaseUrl();
+  const workspaceInput = normalizeSpatialWorkspaceShape(options.workspace || readSpatialWorkspace());
+  const persistWorkspace = typeof options.persistWorkspace === 'function'
+    ? options.persistWorkspace
+    : (mutator) => updateSpatialWorkspace(mutator);
+  const persistBoardWorkspaceFn = typeof options.persistBoardWorkspace === 'function'
+    ? options.persistBoardWorkspace
+    : persistBoardWorkspace;
+  const executionOverride = normalizeCtoExecutionOverride(options.override);
+  const skippedGates = executionOverride.skippedGates.length
+    ? executionOverride.skippedGates
+    : normalizedAction.blockedGates;
+  const overrideProvenance = buildCtoExecutionOverrideProvenance(
+    executionOverride,
+    normalizedAction.blockedGates,
+    skippedGates,
+  );
+  const createTaskFolder = typeof options.createTaskFolder === 'function'
+    ? options.createTaskFolder
+    : (payload) => createRunnerTaskFolder({ ...payload, rootPath });
+  const runQa = typeof options.runQa === 'function'
+    ? options.runQa
+    : (payload) => startBrowserQARun({ ...payload, baseUrl });
+  const writeApplyResult = typeof options.writeApplyResult === 'function'
+    ? options.writeApplyResult
+    : writeTaskApplyResult;
+  const selectCandidate = typeof options.selectTaCandidateForDesk === 'function'
+    ? options.selectTaCandidateForDesk
+    : (candidateAction) => selectTaCandidateForDesk(candidateAction, { taDepartmentFile });
+  const taDepartmentFile = options.taDepartmentFile || TA_DEPARTMENT_FILE;
+  let pipeline = normalizeCtoPipelineState(
+    workspaceInput?.studio?.ctoPipeline || options.pipeline || null,
+    { text: options.text || '' },
+  );
+  let currentRole = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
+  let currentDesk = currentRole.deskId;
+  let currentDeskLabel = currentRole.deskLabel;
+
+  if (!options.workspace && normalizedAction.targetDeskId && normalizedAction.targetDeskId !== currentDesk) {
+    const targetRoleIndex = CTO_PIPELINE_ROLE_SEQUENCE.findIndex((entry) => entry.deskId === normalizedAction.targetDeskId);
+    if (targetRoleIndex >= 0) {
+      pipeline = normalizeCtoPipelineState({
+        ...pipeline,
+        roleIndex: targetRoleIndex,
+        step: normalizedAction.id,
+      });
+      currentRole = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
+      currentDesk = currentRole.deskId;
+      currentDeskLabel = currentRole.deskLabel;
+    }
+  }
+
+  if (!CTO_CANONICAL_ACTION_IDS.includes(normalizedAction.id)) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      reason: `Unsupported CTO action id: ${normalizedAction.id}.`,
+      workspace: workspaceInput,
+    };
+  }
+  if (normalizedAction.id !== normalizedAction.kind) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      reason: `CTO action kind must match the canonical action id (${normalizedAction.id}).`,
+      workspace: workspaceInput,
+    };
+  }
+  const canOverrideGateConflict = executionOverride.enabled
+    && (normalizedAction.overrideAvailable || normalizedAction.blockedGates.length > 0);
+  if (normalizedAction.targetDeskId && normalizedAction.targetDeskId !== currentDesk && !canOverrideGateConflict) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      reason: `CTO action is targeting ${normalizedAction.targetDeskId}, but the pipeline is currently on ${currentDesk}.`,
+      workspace: workspaceInput,
+      override: overrideProvenance,
+    };
+  }
+  if (!normalizedAction.available && !executionOverride.enabled) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      deskId: normalizedAction.targetDeskId || currentDesk,
+      deskLabel: normalizedAction.targetDeskLabel || currentDeskLabel,
+      reason: normalizedAction.reason || 'This CTO action is blocked unless an operator override is supplied.',
+      executionMode: executionOverride.executionMode,
+      skippedGates,
+      workspace: workspaceInput,
+      override: overrideProvenance,
+    };
+  }
+
+  try {
+    if (normalizedAction.id === 'hire-role') {
+      const roleId = String(normalizedAction.params?.roleId || currentDesk || '').trim();
+      const roleLabel = getCtoRoleLabel(roleId);
+      const candidateResult = selectCandidate({
+        targetDeskId: roleId,
+        gapDescription: normalizedAction.gapDescription || `${roleLabel} coverage is needed.`,
+      });
+      if (!candidateResult.ok) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: roleId,
+          deskLabel: roleLabel,
+          reason: candidateResult.reason,
+          executionMode: executionOverride.executionMode,
+          skippedGates,
+          workspace: workspaceInput,
+          override: overrideProvenance,
+        };
+      }
+      const hiredCandidate = {
+        ...candidateResult.candidate,
+        hiredAt: nowIso(),
+        hiredDeskId: roleId,
+        contractLocked: true,
+      };
+      const currentState = normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+      const candidateAlreadyHired = currentState.hiredCandidates.some((entry) => entry.id === hiredCandidate.id);
+      if (!candidateAlreadyHired) {
+        writeJson(taDepartmentFile, {
+          ...currentState,
+          hiredCandidates: [...currentState.hiredCandidates, hiredCandidate],
+          updatedAt: nowIso(),
+          lastGeneratedGap: normalizedAction.gapDescription || currentState.lastGeneratedGap || null,
+        });
+      }
+      const advancedPipeline = advanceCtoPipelineState(pipeline, 'hire-role', {
+        candidateId: hiredCandidate.id,
+        candidateName: hiredCandidate.name,
+      });
+      const holdForExecutorConfirmation = !candidateAlreadyHired
+        && roleId === 'qa-lead'
+        && pipeline.roleIndex > 0
+        && String(pipeline.executionRunId || '').trim();
+      const persistedPipeline = holdForExecutorConfirmation
+        ? normalizeCtoPipelineState({
+            ...pipeline,
+            roleIndex: pipeline.roleIndex - 1,
+            step: 'hire-role',
+          })
+        : advancedPipeline;
+      const nextWorkspace = persistWorkspace((workspace) => normalizeSpatialWorkspaceShape({
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          ctoPipeline: persistedPipeline,
+        },
+      }));
+      const department = await buildTaDepartmentPayload(
+        normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState()),
+        { workspace: nextWorkspace },
+      );
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: roleId,
+        deskLabel: roleLabel,
+        summary: `Talent Acquisition hired ${hiredCandidate.name} for ${roleLabel} coverage.`,
+        hiredCandidate: {
+          id: hiredCandidate.id,
+          name: hiredCandidate.name,
+          role: hiredCandidate.role,
+          deskId: hiredCandidate.hiredDeskId,
+        },
+        executionMode: executionOverride.executionMode,
+        skippedGates,
+        override: overrideProvenance,
+        departmentSummary: department.department?.summary || null,
+        pipeline: summarizeCtoPipelineState(advancedPipeline),
+        workspace: nextWorkspace,
+      };
+    }
+
+    if (normalizedAction.id === 'assign-agent-to-desk') {
+      const roleId = String(normalizedAction.params?.roleId || currentDesk || '').trim();
+      const roleLabel = getCtoRoleLabel(roleId);
+      const candidate = findHiredTaCandidateForDesk(roleId, { taDepartmentFile });
+      if (!candidate) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: roleId,
+          deskLabel: roleLabel,
+          reason: `No hired candidate was found for ${roleLabel}.`,
+          executionMode: executionOverride.executionMode,
+          skippedGates,
+          workspace: workspaceInput,
+          override: overrideProvenance,
+        };
+      }
+      const agentId = candidate.id;
+      const agentName = candidate.name;
+      const nextWorkspace = persistWorkspace((workspace) => {
+        const layout = normalizeStudioLayoutSchema(workspace?.studio?.layout || createDefaultStudioLayoutSchema());
+        const deskLayout = layout.desks?.[roleId] || null;
+        if (!deskLayout) {
+          throw new Error(`Unknown desk id: ${roleId}.`);
+        }
+        const assignedAgentIds = [...new Set([...(deskLayout.assignedAgentIds || []), agentId])];
+        const nextLayout = {
+          ...layout,
+          desks: {
+            ...layout.desks,
+            [roleId]: {
+              ...deskLayout,
+              assignedAgentIds,
+            },
+          },
+        };
+        const deskProperties = workspace?.studio?.deskProperties || {};
+        const currentDeskState = deskProperties[roleId] || {};
+        return {
+          ...workspace,
+          studio: {
+            ...(workspace.studio || {}),
+            layout: nextLayout,
+            deskProperties: {
+              ...deskProperties,
+              [roleId]: {
+                ...currentDeskState,
+                managedAgents: [...new Set([...(currentDeskState.managedAgents || []), agentId])],
+              },
+            },
+            agentWorkers: {
+              ...(workspace?.studio?.agentWorkers || {}),
+              [agentId]: {
+                ...(workspace?.studio?.agentWorkers?.[agentId] || {}),
+                id: agentId,
+                name: agentName,
+                role: candidate.role,
+                backend: candidate.assignedModel || candidate.modelPolicy?.preferred || null,
+                model: candidate.assignedModel || candidate.modelPolicy?.preferred || null,
+                status: 'idle',
+                responseStatus: 'idle',
+                currentRunId: null,
+              },
+            },
+            ctoPipeline: advanceCtoPipelineState(pipeline, 'assign-agent-to-desk', {
+              agentId,
+              agentName,
+            }),
+          },
+        };
+      });
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: roleId,
+        deskLabel: roleLabel,
+        agentId,
+        agentName,
+        summary: `Assigned ${agentName} to the ${roleLabel} desk.`,
+        executionMode: executionOverride.executionMode,
+        skippedGates,
+        override: overrideProvenance,
+        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        workspace: nextWorkspace,
+      };
+    }
+
+    if (normalizedAction.id === 'request-plan') {
+      if (pipeline.planCardId) {
+        const existingCard = findTeamBoardCard(workspaceInput, pipeline.planCardId);
+        return {
+          ok: true,
+          status: 'executed',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          summary: `Planner already created task ${pipeline.planTaskId || pipeline.planCardId}.`,
+          executionMode: executionOverride.executionMode,
+          skippedGates,
+          planTaskId: pipeline.planTaskId || null,
+          planCardId: pipeline.planCardId || null,
+          card: existingCard || null,
+          pipeline: summarizeCtoPipelineState(workspaceInput?.studio?.ctoPipeline || null),
+          workspace: workspaceInput,
+          override: overrideProvenance,
+        };
+      }
+      const anchorRefs = getAnchorBundle().anchorRefs.slice(0, 3);
+      const handoff = {
+        id: pipeline.id,
+        summary: `Create one task for ${currentDeskLabel} coverage.`,
+        problemStatement: `Create one task for the ${currentDeskLabel} desk and keep it narrow.`,
+        requestedOutcomes: [`Create one task for ${currentDeskLabel} coverage.`],
+        tasks: [`Create one task for ${currentDeskLabel} coverage.`],
+        anchorRefs,
+        createdAt: nowIso(),
+        status: 'ready',
+      };
+      const task = createTaskFolder({
+        title: `${currentDeskLabel} task`,
+        prompt: `Create one task for ${currentDeskLabel} coverage.`,
+        handoff,
+        sessionId: pipeline.id,
+      });
+      const board = normalizeTeamBoardState(workspaceInput);
+      const card = {
+        ...createTeamBoardCard({
+          cards: board.cards,
+          pageId: workspaceInput?.notebook?.activePageId || workspaceInput?.activePageId || null,
+          handoffId: pipeline.id,
+          sourceNodeId: pipeline.id,
+          sourceAnchorRefs: anchorRefs,
+          title: `${currentDeskLabel} task`,
+          createdAt: nowIso(),
+        }),
+        summary: `One task for ${currentDeskLabel} coverage.`,
+        targetProjectKey: SELF_TARGET_KEY,
+        runnerTaskId: task.taskId,
+        builderTaskId: task.taskId,
+        sourceCtoPipelineId: pipeline.id,
+      };
+      const nextWorkspace = persistBoardWorkspaceFn({
+        ...workspaceInput,
+        studio: {
+          ...(workspaceInput.studio || {}),
+          teamBoard: {
+            ...board,
+            cards: [...board.cards, card],
+            selectedCardId: card.id,
+            updatedAt: nowIso(),
+          },
+          ctoPipeline: advanceCtoPipelineState(pipeline, 'request-plan', {
+            planTaskId: task.taskId,
+            planTaskDir: relativeToRoot(rootPath, task.taskDir),
+            planCardId: card.id,
+          }),
+        },
+      }, 'cto-request-plan', {
+        cardId: card.id,
+        taskId: task.taskId,
+        roleId: currentDesk,
+      });
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: currentDesk,
+        deskLabel: currentDeskLabel,
+        taskId: task.taskId,
+        taskDir: relativeToRoot(rootPath, task.taskDir),
+        card,
+        planTaskId: task.taskId,
+        planCardId: card.id,
+        summary: `Planner created one task for ${currentDeskLabel} coverage.`,
+        executionMode: executionOverride.executionMode,
+        skippedGates,
+        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        workspace: nextWorkspace,
+        override: overrideProvenance,
+      };
+    }
+
+    if (normalizedAction.id === 'request-execution') {
+      const card = pipeline.planCardId ? findTeamBoardCard(workspaceInput, pipeline.planCardId) : getSelectedExecutionCard(workspaceInput);
+      if (!card) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          reason: 'No planner task card is available for execution.',
+          executionMode: executionOverride.executionMode,
+          skippedGates,
+          workspace: workspaceInput,
+          override: overrideProvenance,
+        };
+      }
+      const taskId = String(card.runnerTaskId || card.builderTaskId || card.executionPackage?.taskId || '').trim() || null;
+      if (!taskId) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          reason: 'The selected task card is missing a runner task id.',
+          executionMode: executionOverride.executionMode,
+          skippedGates,
+          workspace: workspaceInput,
+          override: overrideProvenance,
+        };
+      }
+      const currentLayout = normalizeStudioLayoutSchema(workspaceInput?.studio?.layout || {});
+      const assignedAgentIds = Array.isArray(currentLayout.desks?.[currentDesk]?.assignedAgentIds)
+        ? currentLayout.desks[currentDesk].assignedAgentIds
+        : [];
+      const currentDeskAssigned = assignedAgentIds.length > 0;
+      const cardAlreadyApplied = String(card.applyStatus || '').trim().toLowerCase() === 'applied';
+      if (cardAlreadyApplied) {
+        const executionAlreadyRecorded = Boolean(String(pipeline.executionRunId || '').trim());
+        const nextWorkspace = persistWorkspace((currentWorkspace) => {
+          const baseWorkspace = normalizeSpatialWorkspaceShape(currentWorkspace || workspaceInput);
+          const baseLayout = normalizeStudioLayoutSchema(baseWorkspace?.studio?.layout || {});
+          const nextAssignedAgentIds = currentDeskAssigned
+            ? assignedAgentIds
+            : uniqueStrings([...(baseLayout.desks?.[currentDesk]?.assignedAgentIds || []), currentDesk]);
+          const nextLayout = {
+            ...baseLayout,
+            desks: {
+              ...(baseLayout.desks || {}),
+              [currentDesk]: {
+                ...(baseLayout.desks?.[currentDesk] || {}),
+                assignedAgentIds: nextAssignedAgentIds,
+              },
+            },
+          };
+          return {
+            ...baseWorkspace,
+            studio: {
+              ...(baseWorkspace.studio || {}),
+              layout: nextLayout,
+              ctoPipeline: currentDeskAssigned && executionAlreadyRecorded
+                ? advanceCtoPipelineState(pipeline, 'request-execution', { executionRunId: taskId })
+                : {
+                    ...pipeline,
+                    executionRunId: taskId,
+                  },
+            },
+          };
+        });
+        const nextRole = CTO_PIPELINE_ROLE_SEQUENCE[pipeline.roleIndex + 1] || null;
+        const nextRoleCandidate = nextRole
+          ? findHiredTaCandidateForDesk(nextRole.deskId, { taDepartmentFile })
+          : null;
+        const responsePipeline = currentDeskAssigned && executionAlreadyRecorded && nextRoleCandidate
+          ? (nextWorkspace?.studio?.ctoPipeline || null)
+          : {
+              ...pipeline,
+              roleIndex: CTO_PIPELINE_ROLE_SEQUENCE.findIndex((entry) => entry.deskId === currentDesk),
+              roleId: currentDesk,
+              deskId: currentDesk,
+              roleLabel: currentDeskLabel,
+              deskLabel: currentDeskLabel,
+              step: 'hire-role',
+              executionRunId: taskId,
+            };
+        return {
+          ok: true,
+          status: 'executed',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          taskId,
+          cardId: card.id,
+          summary: currentDeskAssigned
+            ? `Executor handoff confirmed for ${currentDeskLabel}.`
+            : `Assigned ${currentDeskLabel} coverage after apply.`,
+          executionMode: executionOverride.executionMode,
+          skippedGates,
+          executionRunId: taskId,
+          pipeline: summarizeCtoPipelineState(responsePipeline),
+          workspace: nextWorkspace,
+          override: overrideProvenance,
+        };
+      }
+      const taskDir = pipeline.planTaskDir
+        ? path.resolve(rootPath, pipeline.planTaskDir)
+        : path.join(rootPath, 'tasks', findTaskFolderByTaskId(taskId) || '');
+      const applyRecord = buildTaskApplyResultRecord({
+        taskId,
+        taskDir,
+        projectKey: card.targetProjectKey || SELF_TARGET_KEY,
+        patchPath: path.join(taskDir, 'patch.diff'),
+        ok: true,
+        status: 'passed',
+        result: {
+          summary: `Applied one narrow fix for ${currentDeskLabel} coverage.`,
+          action: normalizedAction.id,
+        },
+        error: null,
+        branch: null,
+        commit: null,
+        stage: 'apply',
+        policy: null,
+        fixTask: null,
+        sourceFixTask: null,
+        rootPath,
+      });
+      writeApplyResult(taskDir, applyRecord, { recordFailure: false });
+      const nextWorkspace = persistBoardWorkspaceFn(mutateTeamBoardCard(workspaceInput, card.id, (currentCard) => ({
+        ...currentCard,
+        status: 'complete',
+        approvalState: 'approved',
+        applyStatus: 'applied',
+        executionPackage: {
+          ...(currentCard.executionPackage || {}),
+          status: 'ready',
+          summary: 'One narrow fix applied.',
+        },
+        updatedAt: nowIso(),
+      })), 'cto-request-execution', {
+        cardId: card.id,
+        taskId,
+        roleId: currentDesk,
+      });
+      nextWorkspace.studio = {
+        ...(nextWorkspace.studio || {}),
+        ctoPipeline: pipeline,
+      };
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: currentDesk,
+        deskLabel: currentDeskLabel,
+        taskId,
+        cardId: card.id,
+        summary: `Executor applied one narrow fix for ${currentDeskLabel} coverage.`,
+        executionMode: executionOverride.executionMode,
+        skippedGates,
+        executionRunId: taskId,
+        pipeline: summarizeCtoPipelineState({
+          ...pipeline,
+          roleIndex: CTO_PIPELINE_ROLE_SEQUENCE.findIndex((entry) => entry.deskId === currentDesk),
+          roleId: currentDesk,
+          deskId: currentDesk,
+          roleLabel: currentDeskLabel,
+          deskLabel: currentDeskLabel,
+          step: 'hire-role',
+          executionRunId: taskId,
+        }),
+        workspace: nextWorkspace,
+        override: overrideProvenance,
+      };
+    }
+
+    if (normalizedAction.id === 'request-qa') {
+      const card = pipeline.planCardId ? findTeamBoardCard(workspaceInput, pipeline.planCardId) : getSelectedExecutionCard(workspaceInput);
+      if (!card) {
+        return {
+          ok: false,
+          status: 'blocked',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          reason: 'No card is available for the QA run.',
+          executionMode: executionOverride.executionMode,
+          skippedGates,
+          workspace: workspaceInput,
+          override: overrideProvenance,
+        };
+      }
+      const qaRun = await runQa({
+        baseUrl,
+        scenario: 'layout-pass',
+        mode: 'interactive',
+        trigger: 'cto-pipeline',
+        prompt: `${currentDeskLabel} smoke check`,
+        actions: [],
+        linked: { cardId: card.id, ctoPipelineId: pipeline.id },
+      });
+      const nextWorkspace = persistBoardWorkspaceFn(mutateTeamBoardCard(workspaceInput, card.id, (currentCard) => ({
+        ...currentCard,
+        verifyRequired: true,
+        verifyStatus: qaRun.verdict === 'failed' ? 'failed' : 'passed',
+        verifyRunIds: [...new Set([...(currentCard.verifyRunIds || []), qaRun.id])],
+        verifyArtifacts: mergeUnique([...(currentCard.verifyArtifacts || []), ...(Array.isArray(qaRun.artifacts?.screenshots) ? qaRun.artifacts.screenshots.map((entry) => entry.name).filter(Boolean) : [])]),
+        lastVerificationSummary: qaRun.summary || currentCard.lastVerificationSummary || '',
+        updatedAt: nowIso(),
+      })), 'cto-request-qa', {
+        cardId: card.id,
+        runId: qaRun.id,
+        roleId: currentDesk,
+      });
+      nextWorkspace.studio = {
+        ...(nextWorkspace.studio || {}),
+        ctoPipeline: advanceCtoPipelineState(pipeline, 'request-qa', {
+          qaRunId: qaRun.id,
+        }),
+      };
+      return {
+        ok: true,
+        status: 'executed',
+        actionId: normalizedAction.id,
+        kind: normalizedAction.kind,
+        deskId: currentDesk,
+        deskLabel: currentDeskLabel,
+        qaRunId: qaRun.id,
+        qaSummary: qaRun.summary || null,
+        summary: `QA returned one validation result for ${currentDeskLabel} coverage.`,
+        executionMode: executionOverride.executionMode,
+        skippedGates,
+        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        workspace: nextWorkspace,
+        override: overrideProvenance,
+      };
+    }
+
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      reason: `${normalizedAction.id} is not wired in this slice.`,
+      executionMode: executionOverride.executionMode,
+      skippedGates,
+      workspace: workspaceInput,
+      override: overrideProvenance,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 'blocked',
+      actionId: normalizedAction.id,
+      kind: normalizedAction.kind,
+      deskId: normalizedAction.targetDeskId || currentDesk,
+      deskLabel: normalizedAction.targetDeskLabel || currentDeskLabel,
+      reason: String(error.message || error),
+      executionMode: executionOverride.executionMode,
+      skippedGates,
+      workspace: workspaceInput,
+      override: overrideProvenance,
+    };
+  }
+}
+
+function normalizeCtoDelegation(rawDelegation = null, context = null) {
+  if (!rawDelegation || typeof rawDelegation !== 'object') return null;
+  const deskId = String(rawDelegation.desk_id || rawDelegation.deskId || '').trim();
+  const matchingDesk = context?.desks?.find((entry) => entry.deskId === deskId) || null;
+  if (!deskId && !matchingDesk) return null;
+  return {
+    deskId: matchingDesk?.deskId || deskId || null,
+    deskLabel: matchingDesk?.label || String(rawDelegation.desk_label || rawDelegation.deskLabel || deskId || '').trim() || null,
+    why: String(rawDelegation.why || rawDelegation.reason || '').trim() || null,
+  };
+}
+
+function normalizeCtoResponseAction(rawAction = null, availableActions = [], execution = null) {
+  let matched = null;
+  const requestedId = String(rawAction?.id || '').trim();
+  if (requestedId) {
+    matched = availableActions.find((entry) => entry.id === requestedId) || null;
+  }
+  if (!matched && execution?.actionId) {
+    matched = availableActions.find((entry) => entry.id === execution.actionId) || null;
+  }
+  if (!matched && availableActions.length === 1) {
+    matched = availableActions[0];
+  }
+  if (!matched) return null;
+  if (execution && execution.actionId === matched.id) {
+    return {
+      ...matched,
+      status: execution.ok ? 'executed' : 'blocked',
+      requiresConfirmation: execution.ok ? false : matched.requiresConfirmation,
+      reason: execution.ok ? execution.summary : execution.reason,
+      execution,
+    };
+  }
+  if (matched?.advisory?.compatibility === 'not_directly_executable') {
+    return null;
+  }
+  return matched;
+}
+
+function createCtoStructuredReplyError(kind = 'parse', message = 'CTO structured reply failed.') {
+  const error = new Error(String(message || 'CTO structured reply failed.'));
+  error.name = 'CtoStructuredReplyError';
+  error.ctoFailureKind = kind === 'contract' ? 'contract' : 'parse';
+  error.code = error.ctoFailureKind === 'contract' ? 'cto-contract-failed' : 'cto-parse-failed';
+  return error;
+}
+
+function extractStrictCtoStructuredJson(text = '') {
+  const raw = String(text || '').trim();
+  if (!raw) {
+    throw createCtoStructuredReplyError('parse', 'CTO chat returned an empty response.');
+  }
+  const fencedMatch = raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fencedMatch) {
+    return String(fencedMatch[1] || '').trim();
+  }
+  if (raw.startsWith('{')) {
+    return raw;
+  }
+  throw createCtoStructuredReplyError('parse', 'CTO chat returned prose instead of strict JSON.');
+}
+
+function validateCtoStructuredReplyShape(payload = null, options = {}) {
+  const availableActionIds = Array.isArray(options.availableActions)
+    ? options.availableActions.map((entry) => String(entry?.id || '').trim()).filter(Boolean)
+    : [];
+  const executionActionId = String(options.execution?.actionId || '').trim();
+  if (executionActionId && !availableActionIds.includes(executionActionId)) {
+    availableActionIds.push(executionActionId);
+  }
+  const knownDeskIds = Array.isArray(options.context?.desks)
+    ? options.context.desks.map((entry) => String(entry?.deskId || '').trim()).filter(Boolean)
+    : [];
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw createCtoStructuredReplyError('contract', 'CTO chat response must be a JSON object.');
+  }
+  const replyText = String(payload.reply_text || payload.replyText || '').trim();
+  if (!replyText) {
+    throw createCtoStructuredReplyError('contract', 'CTO chat response was missing reply_text.');
+  }
+  const responseKind = String(payload.response_kind || payload.responseKind || '').trim();
+  if (!CTO_GOVERNANCE_RESPONSE_KIND_VALUES.includes(responseKind)) {
+    throw createCtoStructuredReplyError(
+      'contract',
+      `CTO chat response had an invalid response_kind. Allowed values: ${CTO_GOVERNANCE_RESPONSE_KIND_VALUES.join(', ')}.`,
+    );
+  }
+  const delegation = payload.delegation;
+  if (delegation !== null && delegation !== undefined) {
+    if (!delegation || typeof delegation !== 'object' || Array.isArray(delegation)) {
+      throw createCtoStructuredReplyError('contract', 'CTO chat response had an invalid delegation object.');
+    }
+    const delegationDeskId = String(delegation.desk_id || delegation.deskId || '').trim();
+    const delegationDeskLabel = String(delegation.desk_label || delegation.deskLabel || '').trim();
+    const delegationWhy = String(delegation.why || delegation.reason || '').trim();
+    if (!delegationDeskId || !delegationDeskLabel || !delegationWhy) {
+      throw createCtoStructuredReplyError('contract', 'CTO chat delegation did not satisfy the required contract.');
+    }
+    if (knownDeskIds.length && !knownDeskIds.includes(delegationDeskId)) {
+      throw createCtoStructuredReplyError('contract', `CTO chat delegation referenced an unknown desk_id: ${delegationDeskId}.`);
+    }
+  }
+  const action = payload.action;
+  if (action !== null && action !== undefined) {
+    if (!action || typeof action !== 'object' || Array.isArray(action)) {
+      throw createCtoStructuredReplyError('contract', 'CTO chat response had an invalid action object.');
+    }
+    const actionId = String(action.id || '').trim();
+    if (!actionId) {
+      throw createCtoStructuredReplyError('contract', 'CTO chat action did not satisfy the required contract.');
+    }
+    if (availableActionIds.length && !availableActionIds.includes(actionId)) {
+      throw createCtoStructuredReplyError('contract', `CTO chat action referenced an unavailable action id: ${actionId}.`);
+    }
+  }
+  return {
+    replyText,
+    responseKind,
+  };
+}
+
+function parseCtoStructuredReply(text = '', options = {}) {
+  const candidate = extractStrictCtoStructuredJson(text);
+  let payload = null;
+  try {
+    payload = JSON.parse(candidate);
+  } catch (error) {
+    throw createCtoStructuredReplyError('parse', `CTO chat response was not valid JSON: ${error.message}`);
+  }
+  const validated = validateCtoStructuredReplyShape(payload, options);
+  return {
+    payload,
+    replyText: validated.replyText,
+    responseKind: validated.responseKind,
+  };
+}
+
+function buildCtoPromptContext(context = null, options = {}) {
+  const contextMode = options?.contextMode === 'broad' ? 'broad' : 'scoped';
+  const roleHint = String(options?.roleHint || '').trim() || null;
+  const availableActions = Array.isArray(options?.availableActions) ? options.availableActions : [];
+  const execution = options?.execution || null;
+  const selectedDesks = selectCtoPromptDesks(context?.desks || [], {
+    contextMode,
+    roleHint,
+    availableActions,
+    execution,
+  });
+  return {
+    workspace: summarizeWorkspaceForCtoPrompt(context?.workspace || {}, { contextMode }),
+    pipeline: context?.pipeline || null,
+    desks: selectedDesks.map((desk) => ({
+      deskId: desk.deskId,
+      label: desk.label,
+      departmentLabel: desk.departmentLabel,
+      assignedAgentIds: desk.assignedAgentIds,
+      liveAgentCount: desk.liveAgentCount,
+      liveAgentStatuses: desk.liveAgentStatuses,
+      taskCount: desk.taskCount,
+      reportCount: desk.reportCount,
+      readOnly: desk.readOnly,
+      manualRunRoute: desk.manualRunRoute,
+      routeNote: desk.routeNote,
+      truthContext: truncatePromptText(desk.truthContext || '', 160),
+      taCoverage: desk.taCoverage,
+    })),
+    ta: {
+      summary: context?.ta?.summary || null,
+      urgency: context?.ta?.urgency || 'low',
+      plannerCoverage: context?.ta?.plannerCoverage || null,
+      qaLeadCoverage: context?.ta?.qaLeadCoverage || null,
+      rosterCount: context?.ta?.rosterCount || 0,
+      openRoles: (context?.ta?.openRoles || [])
+        .slice(0, contextMode === 'broad' ? 8 : 3)
+        .map((entry) => ({
+          roleId: String(entry?.roleId || '').trim() || null,
+          roleLabel: truncatePromptText(entry?.roleLabel || entry?.roleId || '', 80) || null,
+          urgency: String(entry?.urgency || '').trim() || null,
+          blocker: entry?.blocker === true,
+        })),
+    },
+    cto: {
+      overrides: context?.cto?.overrides || null,
+      overrideLayer: context?.cto?.overrideLayer || null,
+      governedRepair: context?.cto?.governedRepair || null,
+      chiefOfStaff: context?.cto?.chiefOfStaff || normalizeChiefOfStaffContext(null),
+    },
+  };
+}
+
+function buildCtoChatPromptProfile({
+  text = '',
+  history = [],
+  context = null,
+  availableActions = [],
+  execution = null,
+} = {}) {
+  const contextMode = classifyCtoChatPromptMode(text, { availableActions, execution });
+  const roleHint = getCtoRoleHintFromText(text);
+  const includedSections = [
+    'identity',
+    'conversation',
+    'scoped_context',
+    'available_actions',
+  ];
+  const promptPayload = {
+    latest_user_message: truncatePromptText(text, contextMode === 'broad' ? 520 : 220),
+    history: history
+      .slice(-(contextMode === 'broad' ? CTO_CHAT_BROAD_HISTORY_LIMIT : CTO_CHAT_SCOPED_HISTORY_LIMIT))
+      .map((entry) => ({
+      role: entry.role,
+      text: truncatePromptText(entry.text, 220),
+      action: entry.action ? {
+        id: entry.action.id,
+        kind: entry.action.kind,
+        label: entry.action.label,
+        available: entry.action.available,
+        requiresConfirmation: entry.action.requiresConfirmation,
+        status: entry.action.status,
+        reason: truncatePromptText(entry.action.reason, 120),
+      } : null,
+    })),
+    context: buildCtoPromptContext(context, {
+      contextMode,
+      roleHint,
+      availableActions,
+      execution,
+    }),
+    available_actions: (Array.isArray(availableActions) ? availableActions : [])
+      .slice(0, contextMode === 'broad' ? CTO_CHAT_BROAD_ACTION_LIMIT : CTO_CHAT_SCOPED_ACTION_LIMIT)
+      .map((action) => summarizeCtoActionForPrompt(action)),
+    execution_result: summarizeCtoExecutionForPrompt(execution),
+  };
+  const prompt = [
+    'You are the ACE CTO / Architect chat utility.',
+    'Use only grounded facts from the supplied ACE context.',
+    'Do not invent departments, desks, routes, or completed actions.',
+    'Prefer governance and delegation language over pretending to do all work directly.',
+    'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.',
+    'Chief of Staff context is advisory-only support. It can highlight blockers, urgency, confidence, and readiness, but it does not grant execution authority.',
+    'Do not blindly comply with Chief of Staff advice and do not fabricate action ids from it.',
+    'If context.cto.chiefOfStaff.execution_ready is false, do not present the Chief of Staff recommendation itself as directly executable.',
+    'If canonical actions remain available while Chief of Staff execution_ready is false, explain that canonical availability still governs and the advisory remains non-authoritative.',
+    'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.',
+    'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.',
+    'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.',
+    'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.',
+    'If an action is unavailable, explain why in system terms.',
+    'If Chief of Staff recommendation conflicts with canonical action availability, canonical availability wins and you must explain the mismatch.',
+    'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.',
+    'Return JSON only with this exact shape:',
+    '{',
+    '  "reply_text": "string",',
+    '  "response_kind": "advisory|actionable|blocked",',
+    '  "delegation": { "desk_id": "string", "desk_label": "string", "why": "string" } | null,',
+    '  "action": { "id": "string" } | null',
+    '}',
+    'response_kind must be one of advisory, actionable, blocked.',
+    'If action is not null, action.id must be one of the ids listed in available_actions.',
+    'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.',
+    'Do not emit route status fields. Route status is owned by the server, not the model.',
+    'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.',
+    contextMode === 'broad'
+      ? 'Broader desk state was requested, but it has been compacted into summaries instead of dumping the full workspace.'
+      : 'Stay within the immediate task context. Broader workspace state remains available on demand and is intentionally not injected here.',
+    '',
+    'ACE context:',
+    JSON.stringify(promptPayload, null, 2),
+  ].join('\n');
+  return {
+    prompt,
+    promptChars: prompt.length,
+    contextMode,
+    includedSections,
+    broaderContextAvailable: true,
+    repairApplied: {
+      timeout_changed: false,
+      prompt_scope_changed: true,
+      retrieval_shifted: true,
+      notes: 'CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default.',
+    },
+  };
+}
+
+function buildCtoChatPrompt(options = {}) {
+  return buildCtoChatPromptProfile(options).prompt;
+}
+
+function classifyCtoChatFailureReason(reason = '', {
+  promptChars = 0,
+  contextMode = 'scoped',
+  failureKind = '',
+} = {}) {
+  const message = String(reason || '').trim().toLowerCase();
+  const normalizedFailureKind = String(failureKind || '').trim().toLowerCase();
+  if (!message && !normalizedFailureKind) return 'unknown';
+  if (normalizedFailureKind === 'contract' || normalizedFailureKind === 'parse') {
+    return 'bad_prompt_shape';
+  }
+  if (message.includes('timed out') || message.includes('timeout')) {
+    if (promptChars >= CTO_CHAT_OVERSCOPED_PROMPT_CHARS || contextMode === 'broad') {
+      return 'overscoped_context';
+    }
+    return 'timeout';
+  }
+  if (
+    message.includes('fetch failed')
+    || message.includes('econnrefused')
+    || message.includes('connection refused')
+    || message.includes('unavailable')
+    || message.includes('offline')
+    || message.includes('unsupported cto backend')
+    || message.includes('no fetch implementation')
+  ) {
+    return 'model_unavailable';
+  }
+  return 'unknown';
+}
+
+function buildCtoChatCognitionDiagnostics({
+  route = '/api/spatial/cto/chat',
+  source = 'cto-chat',
+  status = 'live',
+  backend = null,
+  model = null,
+  host = null,
+  timeoutMs = null,
+  promptProfile = null,
+  usedLiveCall = false,
+  usedFallback = false,
+  reason = '',
+  failureKind = '',
+  runId = null,
+  actionId = null,
+  availableActionIds = [],
+  category = null,
+} = {}) {
+  return normalizeCtoDiagnosticsEntry({
+    route,
+    source,
+    status,
+    backend,
+    model,
+    host,
+    reason,
+    failureKind,
+    runId,
+    actionId,
+    availableActionIds,
+    category: category || classifyCtoDiagnosticCategory({ status, reason, failureKind }),
+    timeout_ms: timeoutMs,
+    prompt_chars: Number(promptProfile?.promptChars || 0),
+    context_mode: promptProfile?.contextMode || 'scoped',
+    used_live_call: usedLiveCall,
+    used_fallback: usedFallback,
+    failure_reason: usedFallback
+      ? classifyCtoChatFailureReason(reason, {
+          promptChars: Number(promptProfile?.promptChars || 0),
+          contextMode: promptProfile?.contextMode || 'scoped',
+          failureKind,
+        })
+      : null,
+    included_sections: Array.isArray(promptProfile?.includedSections) ? promptProfile.includedSections : [],
+    broader_context_available: Boolean(promptProfile?.broaderContextAvailable),
+    repair_applied: promptProfile?.repairApplied || {
+      timeout_changed: false,
+      prompt_scope_changed: true,
+      retrieval_shifted: true,
+      notes: 'CTO chat now defaults to scoped context summaries.',
+    },
+  });
+}
+
+async function runCtoGovernanceChat({
+  text = '',
+  history = [],
+  source = 'cto-chat',
+  backend = null,
+  model = null,
+  host = null,
+  timeoutMs = null,
+  confirmActionId = null,
+  override = null,
+  workspace = null,
+  baseUrl = null,
+} = {}) {
+  const promptText = String(text || '').trim();
+  if (!promptText) {
+    throw new Error('text is required.');
+  }
+  const requestedConfig = resolveCtoGovernanceConfig({ backend, model, host, timeoutMs });
+  const requestedBackend = requestedConfig.backend;
+  const requestedModel = requestedConfig.model;
+  const requestedHost = requestedConfig.host;
+  const requestedTimeout = requestedConfig.timeoutMs;
+  const normalizedHistory = normalizeCtoChatHistory(history);
+  const backendStatus = await probeCtoBackendStatus({
+    backend: requestedBackend,
+    model: requestedModel,
+    host: requestedHost,
+    timeoutMs: requestedTimeout,
+  });
+  if (!backendStatus.ok) {
+    const diagnostic = recordCtoDiagnostic({
+      route: '/api/spatial/cto/chat',
+      source,
+      status: backendStatus.status,
+      backend: requestedBackend,
+      model: requestedModel,
+      host: requestedHost,
+      reason: backendStatus.reason,
+    });
+    return {
+      ok: false,
+      status: backendStatus.status,
+      reason: backendStatus.reason,
+      backend: requestedBackend,
+      model: requestedModel,
+      backendStatus,
+      source,
+      diagnostic,
+    };
+  }
+  let currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  let context = await buildCtoGovernanceContext(currentWorkspace);
+  const reconciledHistory = reconcileCtoHistoryAgainstCanonicalState(normalizedHistory, {
+    context,
+    workspace: currentWorkspace,
+    text: promptText,
+  });
+  const availableActions = buildCtoAvailableActions({
+    text: promptText,
+    history: reconciledHistory,
+    context,
+    workspace: currentWorkspace,
+  });
+  const pendingAction = resolveCanonicalPendingCtoAction({
+    history: reconciledHistory,
+    context,
+    workspace: currentWorkspace,
+    text: promptText,
+    confirmActionId,
+  });
+  const activeAction = availableActions[0] || null;
+  const shouldExecuteAction = Boolean(pendingAction)
+    && (!activeAction || pendingAction.id === activeAction.id)
+    && (Boolean(String(confirmActionId || '').trim()) || isAffirmativeCtoReply(promptText));
+  let execution = shouldExecuteAction
+    ? await executeCtoConfirmedAction(pendingAction, {
+        workspace: currentWorkspace,
+        baseUrl,
+        override,
+      })
+    : null;
+  if (execution?.workspace) {
+    currentWorkspace = normalizeSpatialWorkspaceShape(execution.workspace);
+    context = await buildCtoGovernanceContext(currentWorkspace);
+  }
+  const postExecutionAvailableActions = buildCtoAvailableActions({
+    text: promptText,
+    history: reconciledHistory,
+    context,
+    workspace: currentWorkspace,
+  });
+  if (shouldExecuteAction && execution && !execution.ok) {
+    const reason = String(execution.reason || 'The confirmed CTO action was blocked.').trim();
+    const diagnostic = recordCtoDiagnostic({
+      route: '/api/spatial/cto/chat',
+      source,
+      status: 'degraded',
+      backend: requestedBackend,
+      model: requestedModel,
+      host: requestedHost,
+      reason,
+      failureKind: 'contract',
+      runId: null,
+      actionId: execution?.actionId || pendingAction?.id || null,
+      availableActionIds: postExecutionAvailableActions.map((entry) => entry.id),
+    });
+    return {
+      ok: false,
+      status: 'degraded',
+      backend: requestedBackend,
+      model: requestedModel,
+      source,
+      reason,
+      reply_text: `The live CTO model is reachable, but the confirmed action was blocked: ${reason}.`,
+      replyKind: 'blocked',
+      delegation: null,
+      action: normalizeCtoResponseAction(null, postExecutionAvailableActions, execution),
+      execution,
+      backendStatus,
+      diagnostic,
+    };
+  }
+  const runId = `cto-chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const promptProfile = buildCtoChatPromptProfile({
+    text: promptText,
+    history: reconciledHistory,
+    context,
+    availableActions: postExecutionAvailableActions,
+    execution,
+  });
+  const prompt = promptProfile.prompt;
+  try {
+    const modelResult = await callOllamaGenerate({
+      prompt,
+      model: requestedModel,
+      host: requestedHost,
+      timeoutMs: requestedTimeout,
+      expectJson: false,
+    });
+    const parsedReply = parseCtoStructuredReply(modelResult?.text || '', {
+      availableActions: postExecutionAvailableActions,
+      context,
+      execution,
+    });
+    const raw = parsedReply.payload;
+    const replyText = parsedReply.replyText;
+    const responseKind = parsedReply.responseKind;
+    const diagnostic = buildCtoChatCognitionDiagnostics({
+      source,
+      status: 'live',
+      backend: requestedBackend,
+      model: requestedModel,
+      host: requestedHost,
+      timeoutMs: requestedTimeout,
+      promptProfile,
+      usedLiveCall: true,
+      usedFallback: false,
+      reason: 'Live CTO chat call completed successfully.',
+      runId,
+      actionId: execution?.actionId || null,
+      availableActionIds: postExecutionAvailableActions.map((entry) => entry.id),
+      category: 'live_call',
+    });
+    return {
+      ok: true,
+      status: 'live',
+      backend: requestedBackend,
+      model: requestedModel,
+      runId,
+      source,
+      reply_text: replyText,
+      replyKind: responseKind,
+      delegation: normalizeCtoDelegation(raw.delegation, context),
+      action: normalizeCtoResponseAction(raw.action, postExecutionAvailableActions, execution),
+      execution,
+      backendStatus,
+      diagnostic,
+    };
+  } catch (error) {
+    const reason = String(error.message || error);
+    const normalizedReason = reason.trim().toLowerCase();
+    const failureKind = error?.ctoFailureKind
+      || (normalizedReason.includes('timed out') || normalizedReason.includes('timeout') ? '' : 'parse');
+    const failureDetail = failureKind === 'contract'
+      ? `returned parseable JSON that failed CTO contract validation`
+      : ((normalizedReason.includes('timed out') || normalizedReason.includes('timeout'))
+        ? 'timed out before returning a governance response'
+        : 'returned an unreadable structured reply');
+    const diagnosticEntry = buildCtoChatCognitionDiagnostics({
+      source,
+      status: 'degraded',
+      backend: requestedBackend,
+      model: requestedModel,
+      host: requestedHost,
+      timeoutMs: requestedTimeout,
+      promptProfile,
+      usedLiveCall: true,
+      usedFallback: true,
+      reason,
+      failureKind,
+      runId,
+      actionId: execution?.actionId || null,
+      availableActionIds: postExecutionAvailableActions.map((entry) => entry.id),
+    });
+    const diagnostic = recordCtoDiagnostic({
+      ...diagnosticEntry,
+      route: '/api/spatial/cto/chat',
+    });
+    return {
+      ok: false,
+      status: 'degraded',
+      backend: requestedBackend,
+      model: requestedModel,
+      runId,
+      source,
+      reason,
+      reply_text: execution?.ok
+        ? `${execution.summary} The live CTO model is reachable, but ${requestedModel} ${failureDetail}, so no additional governance response is available.`
+        : `The live CTO model is reachable, but ${requestedModel} ${failureDetail}. No delegation or internal action was applied.`,
+      replyKind: 'blocked',
+      delegation: null,
+      action: normalizeCtoResponseAction(null, postExecutionAvailableActions, execution),
+      execution,
+      backendStatus: {
+        ...backendStatus,
+        ok: false,
+        status: 'degraded',
+        reason,
+      },
+      diagnostic,
+    };
+  }
+}
+
+async function runCtoGovernanceModelBakeOff({
+  models = null,
+  text = CTO_BAKEOFF_DEFAULT_TEXT,
+  history = [],
+  backend = null,
+  host = null,
+  timeoutMs = null,
+  workspace = null,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const config = resolveCtoGovernanceConfig({ backend, host, timeoutMs });
+  const localModels = await listLocalOllamaModels({
+    host: config.host,
+    timeoutMs: config.timeoutMs,
+    fetchImpl,
+  });
+  const requestedModels = Array.isArray(models)
+    ? models.map((value) => String(value || '').trim()).filter(Boolean)
+    : [];
+  const shortlist = requestedModels.length
+    ? requestedModels
+    : [
+        ...CTO_BAKEOFF_MODEL_PREFERENCE.filter((modelName) => localModels.includes(modelName)),
+        ...localModels.filter((modelName) => !CTO_BAKEOFF_MODEL_PREFERENCE.includes(modelName)),
+      ].slice(0, 6);
+  const normalizedHistory = normalizeCtoChatHistory(history);
+  const context = await buildCtoGovernanceContext(workspace);
+  const availableActions = buildCtoAvailableActions({
+    text,
+    history: normalizedHistory,
+    context,
+    workspace: context?.workspace || workspace,
+  });
+  const prompt = buildCtoChatPrompt({
+    text,
+    history: normalizedHistory,
+    context,
+    availableActions,
+    execution: null,
+  });
+  const results = [];
+
+  for (const modelName of shortlist) {
+    const status = await probeCtoBackendStatus({
+      backend: config.backend,
+      model: modelName,
+      host: config.host,
+      timeoutMs: config.timeoutMs,
+      fetchImpl,
+    });
+    if (!status.ok) {
+      results.push({
+        model: modelName,
+        reachable: false,
+        backendStatus: status,
+        rawOutput: null,
+        rawJsonParse: { ok: false, reason: 'Model was not reachable for bake-off.' },
+        fencedJsonParse: { ok: false, reason: 'Model was not reachable for bake-off.' },
+        contractValidation: { ok: false, reason: status.reason || 'Model was not reachable for bake-off.', parsePath: null },
+        score: 0,
+      });
+      continue;
+    }
+
+    let rawOutput = '';
+    let rawJsonParse = { ok: false, reason: 'No output returned.', payload: null };
+    let fencedJsonParse = { ok: false, reason: 'No output returned.', payload: null };
+    let contractValidation = { ok: false, reason: 'No output returned.', parsePath: null };
+
+    try {
+      const generation = await callOllamaGenerate({
+        prompt,
+        model: modelName,
+        host: config.host,
+        timeoutMs: config.timeoutMs,
+        expectJson: false,
+        fetchImpl,
+      });
+      rawOutput = String(generation?.text || '').trim();
+      rawJsonParse = tryParseCtoRawJson(rawOutput);
+      fencedJsonParse = tryParseCtoFencedJson(rawOutput);
+      try {
+        parseCtoStructuredReply(rawOutput, {
+          availableActions,
+          context,
+          execution: null,
+        });
+        contractValidation = {
+          ok: true,
+          reason: null,
+          parsePath: rawJsonParse.ok ? 'raw_json' : (fencedJsonParse.ok ? 'fenced_json' : 'strict_parser'),
+        };
+      } catch (error) {
+        contractValidation = {
+          ok: false,
+          reason: String(error.message || error),
+          parsePath: rawJsonParse.ok ? 'raw_json' : (fencedJsonParse.ok ? 'fenced_json' : null),
+        };
+      }
+    } catch (error) {
+      rawOutput = '';
+      const reason = String(error.message || error);
+      rawJsonParse = { ok: false, reason, payload: null };
+      fencedJsonParse = { ok: false, reason, payload: null };
+      contractValidation = { ok: false, reason, parsePath: null };
+    }
+
+    const entry = {
+      model: modelName,
+      reachable: true,
+      backendStatus: status,
+      rawOutput,
+      rawJsonParse: {
+        ok: rawJsonParse.ok,
+        reason: rawJsonParse.reason || null,
+      },
+      fencedJsonParse: {
+        ok: fencedJsonParse.ok,
+        reason: fencedJsonParse.reason || null,
+      },
+      contractValidation,
+    };
+    entry.score = scoreCtoBakeOffEntry(entry);
+    results.push(entry);
+  }
+
+  return {
+    generatedAt: nowIso(),
+    backend: config.backend,
+    host: config.host,
+    promptText: text,
+    availableModels: localModels,
+    shortlistedModels: shortlist,
+    summary: summarizeCtoBakeOffResult(results),
+    results,
+  };
+}
+
+function detectMaterialGenerationIntent(text) {
+  const value = String(text || '').toLowerCase();
+  if (!value.trim()) return false;
+  const mentionsMaterial = /\bmaterial(s)?\b/.test(value);
+  const generationVerb = /\b(generate|create|make|build)\b/.test(value);
+  return mentionsMaterial && generationVerb;
+}
+
+function detectWorldScaffoldIntent(text) {
+  return detectPotentialWorldScaffoldPrompt(text);
+}
+
+function inferMaterialSurface(text) {
+  const value = String(text || '').trim();
+  const quoted = value.match(/"([^"]{2,80})"/);
+  if (quoted && quoted[1]) return quoted[1].toLowerCase();
+  const knownSurfaces = ['wet stone', 'stone', 'metal', 'wood', 'concrete', 'mud', 'sand'];
+  const hit = knownSurfaces.find((surface) => value.toLowerCase().includes(surface));
+  return hit || 'generic';
+}
+
+function buildMaterialIntentModuleEnvelope({ text = '', nodeId = null, source = 'context-intake' } = {}) {
+  return {
+    action: 'run_module',
+    module_id: 'material_gen',
+    input: {
+      intent: {
+        type: 'material',
+        surface: inferMaterialSurface(text),
+        request_text: String(text || ''),
+      },
+      constraints: {
+        engine_target: 'unreal',
+        require_tileable: true,
+      },
+      context: {
+        source,
+        source_node_id: nodeId,
+      },
+    },
+  };
+}
+
+function appendNewRsgHistoryEntries(previousWorkspace = {}, nextWorkspace = {}) {
+  const previousIds = new Set(((previousWorkspace?.rsg?.activity || [])).map((entry) => entry?.id).filter(Boolean));
+  (nextWorkspace?.rsg?.activity || [])
+    .filter((entry) => entry?.id && /^rsg-/.test(String(entry.type || '')) && !previousIds.has(entry.id))
+    .reverse()
+    .forEach((entry) => {
+      appendArchitectureHistory({
+        at: entry.at || nowIso(),
+        type: entry.type,
+        summary: {
+          sourceNodeId: entry.sourceNodeId || null,
+          sourceNodeLabel: entry.sourceNodeLabel || '',
+          generatedCount: Number(entry.generatedCount || 0),
+          replacedCount: Number(entry.replacedCount || 0),
+          summary: entry.summary || '',
+          confidence: entry.confidence,
+          usedFallback: Boolean(entry.usedFallback),
+          reason: entry.reason || '',
+          trigger: entry.trigger || 'manual',
+          generationId: entry.generationId || null,
+        },
+      });
+    });
+}
+
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function classifyLlmFailureStatus(reason = '', usedFallback = false) {
+  const message = String(reason || '').toLowerCase();
+  if (message.includes('timed out')) return 'timed_out';
+  if (message.includes('econnrefused') || message.includes('fetch failed') || message.includes('no fetch implementation') || message.includes('ollama unavailable')) {
+    return 'model_unavailable';
+  }
+  return usedFallback ? 'degraded_fallback' : 'model_error';
+}
+
+const FAILURE_CLASSES = new Set(['warning', 'panel_degraded', 'runtime_critical', 'boot_critical']);
+
+function normalizeFailureClass(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (FAILURE_CLASSES.has(normalized)) return normalized;
+  return 'runtime_critical';
+}
+
+function extractFailureStack(error = null) {
+  if (!error || typeof error === 'string') return null;
+  const stack = String(error.stack || '').trim();
+  return stack || null;
+}
+
+function classifyFailureContext(error = null, context = {}) {
+  const message = String(error?.message || context.message || error || '').toLowerCase();
+  const code = String(error?.code || context.code || '').trim().toUpperCase();
+  const statusCode = Number(context.statusCode || context.status || error?.statusCode || error?.status || 0) || 0;
+  const route = String(context.route || context.path || '').toLowerCase();
+  const stage = String(context.stage || context.related_stage || context.relatedStage || '').toLowerCase();
+  const component = String(context.component || context.surface || context.panel || '').toLowerCase();
+  const surface = String(context.surface || context.view || context.panel || '').toLowerCase();
+  const source = String(context.source || '').toLowerCase();
+  const scope = `${message} ${code} ${route} ${stage} ${component} ${surface} ${source}`.trim();
+  const isBootContext = /(^|[^a-z])(boot|startup|start-up|health|init|initialize|initialization|server-start)([^a-z]|$)/.test(scope);
+  const isPanelContext = /(^|[^a-z])(panel|utility|roster|truth|qa|notebook|desk|workspace|spatial|render|view)([^a-z]|$)/.test(scope);
+  const warningCodes = new Set(['BAD_REQUEST', 'INVALID_ARGUMENT', 'INVALID_INPUT', 'MISSING_INPUT', 'NOT_FOUND', 'UNSUPPORTED', 'CONFLICT', 'VALIDATION_FAILED']);
+  const warningSignals = [
+    statusCode > 0 && statusCode < 500,
+    warningCodes.has(code),
+    /(^|[^a-z])(expected|recoverable|warning|noncritical|non-critical|skip)([^a-z]|$)/.test(scope),
+  ];
+  if (warningSignals.some(Boolean)) {
+    return 'warning';
+  }
+  if (isBootContext) {
+    return 'boot_critical';
+  }
+  if (isPanelContext) {
+    return 'panel_degraded';
+  }
+  if (['EPERM', 'EACCES', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EPIPE', 'ECONNRESET'].includes(code)) {
+    return isBootContext ? 'boot_critical' : 'runtime_critical';
+  }
+  if (error instanceof SyntaxError) {
+    return isBootContext ? 'boot_critical' : 'runtime_critical';
+  }
+  if (error instanceof TypeError || error instanceof ReferenceError || error instanceof RangeError || error instanceof URIError || error instanceof EvalError) {
+    return isPanelContext ? 'panel_degraded' : (isBootContext ? 'boot_critical' : 'runtime_critical');
+  }
+  if (/cannot read (properties|property)|reading 'length'|reading "length"|map is not a function|filter is not a function|forEach is not a function|join is not a function/.test(message)) {
+    return isPanelContext ? 'panel_degraded' : 'runtime_critical';
+  }
+  return isBootContext ? 'boot_critical' : 'runtime_critical';
+}
+
+function buildFailureUiResponse(failureClass = 'runtime_critical') {
+  const normalized = normalizeFailureClass(failureClass);
+  switch (normalized) {
+    case 'warning':
+      return {
+        failureClass: normalized,
+        uiMode: 'banner',
+        clientAction: 'continue',
+        safeMode: false,
+        fallbackPanel: false,
+        shell: 'current',
+        summary: 'Show a warning banner and keep the current UI mounted.',
+      };
+    case 'panel_degraded':
+      return {
+        failureClass: normalized,
+        uiMode: 'fallback_panel',
+        clientAction: 'showFallbackPanel',
+        safeMode: false,
+        fallbackPanel: true,
+        shell: 'fallback-panel',
+        summary: 'Render a fallback panel and keep the rest of the UI alive.',
+      };
+    case 'boot_critical':
+      return {
+        failureClass: normalized,
+        uiMode: 'safe_mode',
+        clientAction: 'enterSafeMode',
+        safeMode: true,
+        fallbackPanel: false,
+        shell: 'safe-shell',
+        summary: 'Trigger safe mode and mount the simplified shell.',
+      };
+    case 'runtime_critical':
+    default:
+      return {
+        failureClass: normalized,
+        uiMode: 'safe_mode',
+        clientAction: 'enterSafeMode',
+        safeMode: true,
+        fallbackPanel: false,
+        shell: 'safe-shell',
+        summary: 'Escalate to safe mode for a runtime-critical failure.',
+      };
+  }
+}
+
+function recordClassifiedFailure(rootPath, error = null, context = {}) {
+  const failureClass = classifyFailureContext(error, context);
+  const uiResponse = buildFailureUiResponse(failureClass);
+  const message = String(context.message || error?.message || error || 'Unexpected failure.').trim();
+  const stack = extractFailureStack(error) || String(context.stack || '').trim() || null;
+  const observation = {
+    message,
+    stack,
+    timestamp: String(context.timestamp || '').trim() || nowIso(),
+    failure_class: failureClass,
+    ui_response: uiResponse,
+    related_tool: context.tool || context.related_tool || error?.code || null,
+    related_stage: context.stage || context.related_stage || context.relatedStage || null,
+    stage: context.stage || context.related_stage || context.relatedStage || null,
+    agent_id: context.agentId || context.agent_id || null,
+    agent_version: context.agentVersion || context.agent_version || null,
+    related_run: context.runId || context.related_run || context.run || null,
+    related_project: context.projectKey || context.project || context.related_project || null,
+    route: context.route || context.path || null,
+    method: context.method || null,
+    source: context.source || null,
+    component: context.component || context.surface || context.panel || null,
+  };
+  const failureResult = recordFailureOccurrence(rootPath, observation);
+  return {
+    ...failureResult,
+    failureClass,
+    uiResponse,
+    observation,
+  };
+}
+
+function buildWorldScaffoldInterpretationLabel({
+  source = 'none',
+  attempted = false,
+  accepted = false,
+  fallbackUsed = false,
+} = {}) {
+  if (accepted && fallbackUsed) return 'model unavailable -> deterministic fallback';
+  if (accepted && source === 'deterministic') return 'deterministic';
+  if (accepted && source === 'model-assisted') return 'model-assisted';
+  if (attempted && source === 'model-assisted') return 'model-assisted rejected';
+  return 'no accepted interpretation';
+}
+
+function buildWorldScaffoldInterpretation({
+  source = 'none',
+  attempted = false,
+  accepted = false,
+  fallbackUsed = false,
+  status = 'not_attempted',
+  reason = '',
+  backend = null,
+  model = null,
+  candidate = null,
+  rawCandidate = null,
+  rawText = '',
+} = {}) {
+  return {
+    source,
+    label: buildWorldScaffoldInterpretationLabel({ source, attempted, accepted, fallbackUsed }),
+    attempted: Boolean(attempted),
+    accepted: Boolean(accepted),
+    fallbackUsed: Boolean(fallbackUsed),
+    status: String(status || 'not_attempted').trim() || 'not_attempted',
+    reason: String(reason || '').trim() || '',
+    backend: backend || null,
+    model: model || null,
+    contract: WORLD_SCAFFOLD_MODEL_CONTRACT,
+    candidate: candidate || null,
+    rawCandidate: rawCandidate ?? null,
+    rawText: String(rawText || '').trim() || '',
+  };
+}
+
+function buildScaffoldInterpretationPrompt(text = '') {
+  return [
+    'You are the ACE scaffold interpreter.',
+    '',
+    'Return JSON only. No markdown fences. No prose outside JSON.',
+    'Interpret only bounded world scaffold requests.',
+    'If the request is not asking for a starter ground/platform/grid scaffold, return {"candidate": null, "notes": "not a scaffold request"}.',
+    'Use only this contract:',
+    '{',
+    '  "candidate": {',
+    '    "type": "world_scaffold",',
+    '    "shape": "grid",',
+    '    "width": 12,',
+    '    "height": 12,',
+    '    "material": "grass",',
+    '    "position": { "x": 0, "y": 0, "z": 0 }',
+    '  },',
+    '  "notes": "optional short note"',
+    '}',
+    'Rules:',
+    '- Only shape "grid" is allowed.',
+    '- Only materials "grass", "stone", or "dirt" are allowed.',
+    '- Width and height must be integers between 1 and 100.',
+    '- Default position to {0,0,0} when not specified.',
+    '- Prefer small starter scaffolds for vague requests.',
+    '',
+    `Request: ${String(text || '').trim()}`,
+  ].join('\n');
+}
+
+async function interpretScaffoldIntentWithModel(text, options = {}) {
+  const requestedModel = String(options.model || DEFAULT_SCAFFOLD_INTERPRETER_MODEL).trim() || DEFAULT_SCAFFOLD_INTERPRETER_MODEL;
+  const requestedBackend = String(options.backend || DEFAULT_SCAFFOLD_INTERPRETER_BACKEND).trim() || DEFAULT_SCAFFOLD_INTERPRETER_BACKEND;
+  const requestedTimeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : DEFAULT_SCAFFOLD_INTERPRETER_TIMEOUT_MS;
+  const callModel = typeof options.callModel === 'function' ? options.callModel : callOllamaGenerate;
+  try {
+    const result = await callModel({
+      prompt: buildScaffoldInterpretationPrompt(text),
+      model: requestedModel,
+      host: String(options.host || '').trim() || undefined,
+      timeoutMs: requestedTimeoutMs,
+      expectJson: true,
+      fetchImpl: options.fetchImpl,
+    });
+    const rawJson = result?.json;
+    const rawCandidate = rawJson && typeof rawJson === 'object' && !Array.isArray(rawJson) && Object.prototype.hasOwnProperty.call(rawJson, 'candidate')
+      ? rawJson.candidate
+      : rawJson;
+    const candidate = normalizeWorldScaffoldCandidate(rawCandidate, {
+      requestText: text,
+      source: 'model-assisted',
+    });
+    if (!candidate.validation?.ok) {
+      return buildWorldScaffoldInterpretation({
+        source: 'model-assisted',
+        attempted: true,
+        accepted: false,
+        status: candidate.validation?.code === 'malformed_candidate' ? 'rejected_malformed_output' : 'rejected_candidate',
+        reason: candidate.validation?.reason || 'Model scaffold candidate was rejected.',
+        backend: requestedBackend,
+        model: requestedModel,
+        candidate,
+        rawCandidate,
+        rawText: result?.text || '',
+      });
+    }
+    return buildWorldScaffoldInterpretation({
+      source: 'model-assisted',
+      attempted: true,
+      accepted: true,
+      status: 'accepted',
+      backend: requestedBackend,
+      model: requestedModel,
+      candidate,
+      rawCandidate,
+      rawText: result?.text || '',
+    });
+  } catch (error) {
+    const reason = String(error?.message || error).trim();
+    const message = reason.toLowerCase();
+    const status = message.includes('not valid json') || message.includes('empty response')
+      ? 'rejected_malformed_output'
+      : classifyLlmFailureStatus(reason, false);
+    return buildWorldScaffoldInterpretation({
+      source: 'model-assisted',
+      attempted: true,
+      accepted: false,
+      status,
+      reason,
+      backend: requestedBackend,
+      model: requestedModel,
+    });
+  }
+}
+
+function buildWorldScaffoldRoutePayload({
+  envelope,
+  graphs,
+  intent = null,
+  interpretation = null,
+  evaluation = null,
+  ok = false,
+  error = '',
+} = {}) {
+  const resolvedIntent = evaluation?.finalCandidate || intent || null;
+  const mutationGeneration = buildWorldScaffoldMutationPlan(graphs, resolvedIntent || {});
+  const existingNodeId = mutationGeneration.targetNodeId || findWorldScaffoldNode(graphs)?.node?.id || null;
+  return {
+    ok: Boolean(ok),
+    route: 'world-scaffold',
+    envelope,
+    intent: resolvedIntent,
+    validation: resolvedIntent?.validation || null,
+    evaluation,
+    mutationGeneration,
+    mutations: ok ? mutationGeneration.mutations : [],
+    existingNodeId,
+    interpretation,
+    ...(ok ? {} : {
+      error: String(error || interpretation?.reason || mutationGeneration.reason || 'No accepted scaffold interpretation.').trim() || 'No accepted scaffold interpretation.',
+    }),
+  };
+}
+
+function detectPotentialWorldEditPrompt(text = '') {
+  const normalizedText = String(text || '').trim().toLowerCase();
+  if (!normalizedText) return false;
+  return Boolean(
+    WORLD_EDIT_ACTION_PATTERN.test(normalizedText)
+    && WORLD_EDIT_TARGET_PATTERN.test(normalizedText)
+    && (WORLD_EDIT_TILE_NOUN_PATTERN.test(normalizedText) || /\bto the\b/i.test(normalizedText))
+    && WORLD_EDIT_MATERIAL_PATTERN.test(normalizedText)
+  );
+}
+
+function parseWorldEditIntent(text = '', graphs = {}) {
+  const normalizedText = String(text || '').trim();
+  if (!detectPotentialWorldEditPrompt(normalizedText)) {
+    return null;
+  }
+  const existing = findWorldScaffoldNode(graphs);
+  const requestedMaterial = normalizedText.toLowerCase().match(WORLD_EDIT_MATERIAL_PATTERN)?.[1] || null;
+  const targetSummary = existing?.node?.metadata?.scaffold?.summary || null;
+  const missingScaffold = !existing?.node;
+  const reason = missingScaffold
+    ? 'Create a scaffold first. Existing-world tile edits are not implemented yet.'
+    : 'Existing-world tile edits are not implemented yet. Supported today: scaffold creation only.';
+  return {
+    type: 'world_edit',
+    action: 'paint_tiles',
+    target: 'world_scaffold',
+    requestText: normalizedText,
+    summary: requestedMaterial
+      ? `Request ${requestedMaterial} tile edits on the current scaffold`
+      : 'Existing-world tile edit request',
+    requestedMaterial,
+    targetNodeId: existing?.node?.id || null,
+    targetSummary,
+    supported: false,
+    parameters: {
+      requestedMaterial,
+      targetNodeId: existing?.node?.id || null,
+      targetSummary,
+    },
+    validation: {
+      ok: false,
+      code: missingScaffold ? 'missing_scaffold' : 'world_edit_not_implemented',
+      reason,
+    },
+  };
+}
+
+function buildWorldEditRoutePayload({
+  envelope,
+  graphs,
+  intent = null,
+} = {}) {
+  const targetNodeId = intent?.targetNodeId || findWorldScaffoldNode(graphs)?.node?.id || null;
+  const reason = String(intent?.validation?.reason || 'Existing-world tile edits are not implemented yet.').trim()
+    || 'Existing-world tile edits are not implemented yet.';
+  return {
+    ok: false,
+    route: 'world-edit',
+    envelope,
+    intent,
+    validation: intent?.validation || null,
+    mutationGeneration: {
+      ok: false,
+      deterministic: true,
+      mutationCount: 0,
+      reason,
+      mutations: [],
+      mode: 'unsupported',
+      targetNodeId,
+    },
+    mutations: [],
+    existingNodeId: targetNodeId,
+    supported: false,
+    error: reason,
+  };
+}
+
+function resolveWorldEditExecutiveRoute({
+  promptText = '',
+  envelope = null,
+  graphs = {},
+} = {}) {
+  const intent = parseWorldEditIntent(promptText, graphs);
+  if (!intent) {
+    return null;
+  }
+  return {
+    matched: true,
+    statusCode: 422,
+    body: buildWorldEditRoutePayload({
+      envelope,
+      graphs,
+      intent,
+    }),
+  };
+}
+
+async function resolveWorldScaffoldExecutiveRoute({
+  promptText = '',
+  envelope = null,
+  graphs = {},
+  modelInterpreter = interpretScaffoldIntentWithModel,
+  modelOptions = {},
+} = {}) {
+  const text = String(promptText || '').trim();
+  if (!detectPotentialWorldScaffoldPrompt(text)) {
+    return null;
+  }
+
+  function finalizeWorldScaffoldRoute({
+    candidate = null,
+    interpretation = null,
+    intendedOk = false,
+    failureStatusCode = 422,
+    error = '',
+  } = {}) {
+    const evaluation = evaluateWorldScaffoldCandidate(candidate, {
+      requestText: text,
+      interpretationSource: interpretation?.source || candidate?.source || 'unknown',
+    });
+    const accepted = Boolean(intendedOk && evaluation.accepted);
+    const reason = String(
+      error
+      || evaluation.reason
+      || interpretation?.reason
+      || evaluation?.finalCandidate?.validation?.reason
+      || candidate?.validation?.reason
+      || 'No accepted scaffold interpretation.'
+    ).trim() || 'No accepted scaffold interpretation.';
+    return {
+      matched: true,
+      statusCode: accepted ? 200 : failureStatusCode,
+      body: buildWorldScaffoldRoutePayload({
+        envelope,
+        graphs,
+        intent: evaluation.finalCandidate || candidate || null,
+        interpretation,
+        evaluation,
+        ok: accepted,
+        error: reason,
+      }),
+    };
+  }
+
+  const deterministicIntent = parseWorldScaffoldIntent(text);
+  if (deterministicIntent?.validation?.ok) {
+    const interpretation = buildWorldScaffoldInterpretation({
+      source: 'deterministic',
+      attempted: false,
+      accepted: true,
+      status: 'accepted',
+      candidate: deterministicIntent,
+    });
+    return finalizeWorldScaffoldRoute({
+      candidate: deterministicIntent,
+      interpretation,
+      intendedOk: true,
+    });
+  }
+
+  if (shouldAttemptModelScaffoldInterpretation(text, deterministicIntent)) {
+    let interpretation = null;
+    try {
+      interpretation = await modelInterpreter(text, modelOptions);
+    } catch (error) {
+      const reason = String(error?.message || error).trim();
+      interpretation = buildWorldScaffoldInterpretation({
+        source: 'model-assisted',
+        attempted: true,
+        accepted: false,
+        status: classifyLlmFailureStatus(reason, false),
+        reason,
+        backend: String(modelOptions.backend || DEFAULT_SCAFFOLD_INTERPRETER_BACKEND).trim() || DEFAULT_SCAFFOLD_INTERPRETER_BACKEND,
+        model: String(modelOptions.model || DEFAULT_SCAFFOLD_INTERPRETER_MODEL).trim() || DEFAULT_SCAFFOLD_INTERPRETER_MODEL,
+      });
+    }
+    return finalizeWorldScaffoldRoute({
+      candidate: interpretation?.candidate || null,
+      interpretation,
+      intendedOk: Boolean(interpretation?.accepted),
+      failureStatusCode: interpretation?.status === 'model_unavailable' ? 503 : 422,
+      error: interpretation?.reason || interpretation?.candidate?.validation?.reason || 'No accepted scaffold interpretation.',
+    });
+  }
+
+  if (deterministicIntent) {
+    const interpretation = buildWorldScaffoldInterpretation({
+      source: 'deterministic',
+      attempted: false,
+      accepted: false,
+      status: 'rejected_validation',
+      reason: deterministicIntent.validation?.reason || 'No accepted scaffold interpretation.',
+      candidate: deterministicIntent,
+    });
+    return finalizeWorldScaffoldRoute({
+      candidate: deterministicIntent,
+      interpretation,
+      intendedOk: false,
+      failureStatusCode: 422,
+      error: deterministicIntent.validation?.reason || 'No accepted scaffold interpretation.',
+    });
+  }
+
+  const interpretation = buildWorldScaffoldInterpretation({
+    source: 'none',
+    attempted: false,
+    accepted: false,
+    status: 'no_candidate',
+    reason: 'No accepted scaffold interpretation.',
+  });
+  return finalizeWorldScaffoldRoute({
+    candidate: null,
+    interpretation,
+    intendedOk: false,
+    failureStatusCode: 422,
+    error: 'No accepted scaffold interpretation.',
+  });
+}
+
+function buildAgentFailurePayload(result, extras = {}) {
+  const run = extras.run || result?.run || result?.worker || null;
+  const reason = String(result?.reason || run?.reason || extras.error || 'Agent model call failed.').trim();
+  try {
+    const failureError = result?.error instanceof Error
+      ? result.error
+      : run?.error instanceof Error
+        ? run.error
+        : new Error(reason);
+    const classifiedFailure = recordClassifiedFailure(ROOT, failureError, {
+      message: reason,
+      tool: extras.tool || run?.backend || run?.model || null,
+      related_stage: extras.stage || run?.stage || run?.outcome || null,
+      stage: extras.stage || run?.stage || run?.outcome || null,
+      agentId: extras.agentId || run?.agent_id || run?.workerId || null,
+      agentVersion: extras.agentVersion || run?.agent_version || null,
+      runId: extras.runId || run?.id || run?.runId || null,
+      projectKey: extras.projectKey || extras.project || null,
+      route: extras.route || null,
+      component: extras.component || null,
+      source: extras.source || 'agent-run',
+      timestamp: extras.timestamp || null,
+    });
+    extras = {
+      ...extras,
+      failureClass: classifiedFailure.failureClass,
+      uiResponse: classifiedFailure.uiResponse,
+    };
+  } catch (error) {
+    console.warn('[WARN] failure history update failed:', error?.message || error);
+  }
+  return {
+    ok: false,
+    status: classifyLlmFailureStatus(reason, Boolean(result?.usedFallback || run?.usedFallback)),
+    error: reason,
+    reason,
+    failureClass: extras.failureClass || null,
+    uiResponse: extras.uiResponse || null,
+    usedFallback: Boolean(result?.usedFallback || run?.usedFallback),
+    backend: run?.backend || extras.backend || null,
+    model: run?.model || extras.model || null,
+    runId: run?.id || run?.runId || extras.runId || null,
+    worker: run || null,
+    ...extras,
+  };
+}
+
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 40) || 'task';
+}
+
+function readJsonSafe(filePath, fallback = null) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeStoredIntentState(rawIntentState = {}) {
+  const source = rawIntentState?.intentState && typeof rawIntentState.intentState === 'object'
+    ? rawIntentState.intentState
+    : rawIntentState || {};
+  const registrySource = source.registry && typeof source.registry === 'object' ? source.registry : source;
+  const legacyRecords = [];
+  if (source.latest) legacyRecords.push(source.latest);
+  if (source.contextReport && source.contextReport !== source.latest) legacyRecords.push(source.contextReport);
+  if (Array.isArray(source.reports)) legacyRecords.push(...source.reports);
+  const registryRecords = Array.isArray(registrySource.records) ? registrySource.records : [];
+  const registryById = registrySource.byId && typeof registrySource.byId === 'object' ? registrySource.byId : {};
+  const normalizedRecords = [];
+  const normalizedById = {};
+  const pushRecord = (entry) => {
+    const record = normalizeSpatialIntentRecord(entry);
+    if (!record || !record.id || normalizedById[record.id]) return;
+    normalizedById[record.id] = record;
+    normalizedRecords.push(record);
+  };
+  registryRecords.forEach(pushRecord);
+  Object.values(registryById).forEach(pushRecord);
+  legacyRecords.forEach(pushRecord);
+  const currentIntentId = String(
+    registrySource.currentIntentId
+    || source.currentIntentId
+    || registrySource.latestIntentId
+    || source.latestIntentId
+    || normalizedRecords[0]?.id
+    || '',
+  ).trim() || null;
+  const currentIntent = currentIntentId ? normalizedById[currentIntentId] || null : null;
+  const summary = String(
+    source.summary
+    || registrySource.summary
+    || currentIntent?.semanticMeaning?.summary
+    || currentIntent?.statement
+    || currentIntent?.goal
+    || '',
+  ).trim();
+  const status = String(
+    source.status
+    || registrySource.status
+    || (currentIntent?.missingFields?.length ? 'degraded' : (currentIntent ? 'ready' : 'idle')),
+  ).trim() || 'idle';
+  return {
+    registry: {
+      currentIntentId,
+      latestIntentId: currentIntentId,
+      byId: normalizedById,
+      records: normalizedRecords,
+    },
+    currentIntentId,
+    summary,
+    status,
+  };
+}
+
+function normalizeSpatialIntentRecord(rawIntent = {}) {
+  const source = rawIntent?.spatialIntent && typeof rawIntent.spatialIntent === 'object'
+    ? rawIntent.spatialIntent
+    : rawIntent?.canonicalIntent && typeof rawIntent.canonicalIntent === 'object'
+      ? rawIntent.canonicalIntent
+      : rawIntent?.intentContract?.canonicalIntent && typeof rawIntent.intentContract.canonicalIntent === 'object'
+        ? rawIntent.intentContract.canonicalIntent
+        : rawIntent || {};
+  const sourceObject = source.source && typeof source.source === 'object'
+    ? source.source
+    : {
+        type: String(source.sourceType || rawIntent?.sourceType || rawIntent?.source?.type || 'sanctioned-intent-parser').trim() || 'sanctioned-intent-parser',
+        ref: String(source.sourceRef || rawIntent?.sourceRef || rawIntent?.source?.ref || rawIntent?.nodeId || 'unknown').trim() || 'unknown',
+        requestedBy: String(source.requestedBy || rawIntent?.requestedBy || rawIntent?.source?.requestedBy || 'context-manager').trim() || 'context-manager',
+      };
+  const semanticMeaning = source.semanticMeaning && typeof source.semanticMeaning === 'object'
+    ? source.semanticMeaning
+    : {
+        summary: String(source.summary || rawIntent?.summary || '').trim(),
+        statement: String(source.statement || rawIntent?.statement || rawIntent?.summary || '').trim(),
+        goal: String(source.goal || rawIntent?.goal || rawIntent?.statement || rawIntent?.summary || '').trim(),
+        requestType: String(source.requestType || rawIntent?.requestType || 'context_request').trim() || 'context_request',
+        requestedOutcomes: Array.isArray(source.requestedOutcomes) ? source.requestedOutcomes : (Array.isArray(rawIntent?.requestedOutcomes) ? rawIntent.requestedOutcomes : []),
+        targets: Array.isArray(source.targets) ? source.targets : (Array.isArray(rawIntent?.targets) ? rawIntent.targets : []),
+        constraints: Array.isArray(source.constraints) ? source.constraints : (Array.isArray(rawIntent?.constraints) ? rawIntent.constraints : []),
+        urgency: String(source.urgency || rawIntent?.priority || 'normal').trim() || 'normal',
+        labels: Array.isArray(source.labels) ? source.labels : (Array.isArray(rawIntent?.classification?.labels) ? rawIntent.classification.labels : []),
+      };
+  const geometry = source.geometry && typeof source.geometry === 'object'
+    ? source.geometry
+    : {
+        kind: String(rawIntent?.geometry?.kind || rawIntent?.geometry?.type || 'unknown').trim() || 'unknown',
+        region: rawIntent?.geometry?.region || rawIntent?.geometry?.bounds || rawIntent?.region || rawIntent?.bounds || null,
+        stroke: rawIntent?.geometry?.stroke || rawIntent?.geometry?.path || rawIntent?.stroke || rawIntent?.path || null,
+      };
+  const confidence = Number.isFinite(Number(source.confidence))
+    ? Number(source.confidence)
+    : Number.isFinite(Number(rawIntent?.confidence))
+      ? Number(rawIntent.confidence)
+      : Number.isFinite(Number(rawIntent?.truth?.readiness?.plannerUsefulness))
+        ? Number(rawIntent.truth.readiness.plannerUsefulness)
+        : 0;
+  const createdAt = String(source.createdAt || rawIntent?.createdAt || rawIntent?.timestamp || nowIso()).trim() || nowIso();
+  const id = String(source.id || rawIntent?.id || rawIntent?.intentId || `intent_${sourceObject.type}_${sourceObject.ref}_${createdAt}`).trim() || `intent_${sourceObject.type}_${sourceObject.ref}_${createdAt}`;
+  const record = {
+    id,
+    source: sourceObject,
+    geometry: {
+      kind: String(geometry.kind || geometry.type || 'unknown').trim().toLowerCase() || 'unknown',
+      region: geometry.region || geometry.bounds || null,
+      stroke: geometry.stroke || geometry.path || null,
+    },
+    semanticMeaning: {
+      summary: String(semanticMeaning.summary || semanticMeaning.statement || semanticMeaning.goal || '').trim(),
+      statement: String(semanticMeaning.statement || semanticMeaning.goal || semanticMeaning.summary || '').trim(),
+      goal: String(semanticMeaning.goal || semanticMeaning.statement || semanticMeaning.summary || '').trim(),
+      requestType: String(semanticMeaning.requestType || 'context_request').trim() || 'context_request',
+      requestedOutcomes: Array.isArray(semanticMeaning.requestedOutcomes) ? uniqueStrings(semanticMeaning.requestedOutcomes) : [],
+      targets: Array.isArray(semanticMeaning.targets) ? uniqueStrings(semanticMeaning.targets) : [],
+      constraints: Array.isArray(semanticMeaning.constraints) ? uniqueStrings(semanticMeaning.constraints) : [],
+      urgency: String(semanticMeaning.urgency || 'normal').trim() || 'normal',
+      labels: Array.isArray(semanticMeaning.labels) ? uniqueStrings(semanticMeaning.labels) : [],
+    },
+    confidence: Number(confidence.toFixed(2)),
+    createdAt,
+    provenance: {
+      ...(source.provenance || rawIntent?.provenance || {}),
+      sourceType: sourceObject.type,
+      sourceRef: sourceObject.ref,
+      requestedBy: sourceObject.requestedBy,
+    },
+  };
+  const missingFields = [];
+  if (!record.geometry || record.geometry.kind === 'unknown') missingFields.push('geometry');
+  if (!String(record.semanticMeaning.summary || record.semanticMeaning.statement || record.semanticMeaning.goal || '').trim()) {
+    missingFields.push('semanticMeaning');
+  }
+  if (!Number.isFinite(record.confidence)) missingFields.push('confidence');
+  record.missingFields = missingFields;
+  record.status = missingFields.length ? 'degraded' : 'canonical';
+  record.intentId = record.id;
+  record.sourceType = record.source.type;
+  record.sourceRef = record.source.ref;
+  record.nodeId = String(source.provenance?.sourceNodeId || rawIntent?.nodeId || record.source.ref || '').trim() || null;
+  record.requestedBy = record.source.requestedBy;
+  record.timestamp = record.createdAt;
+  record.priority = record.semanticMeaning.urgency;
+  record.summary = record.semanticMeaning.summary;
+  record.statement = record.semanticMeaning.statement;
+  record.goal = record.semanticMeaning.goal;
+  record.requestType = record.semanticMeaning.requestType;
+  record.requestedOutcomes = record.semanticMeaning.requestedOutcomes;
+  record.tasks = record.semanticMeaning.requestedOutcomes;
+  record.targets = record.semanticMeaning.targets;
+  record.constraints = record.semanticMeaning.constraints;
+  record.projectContext = {
+    currentFocus: record.nodeId || record.source.ref || null,
+    matchedTerms: record.semanticMeaning.labels,
+    blockers: record.semanticMeaning.constraints,
+    anchorRefs: Array.isArray(record.provenance?.anchorRefs) ? record.provenance.anchorRefs : [],
+  };
+  return record;
+}
+
+function createEmptyIntentRegistry() {
+  return {
+    registry: {
+      currentIntentId: null,
+      latestIntentId: null,
+      byId: {},
+      records: [],
+    },
+    currentIntentId: null,
+    summary: '',
+    status: 'idle',
+  };
+}
+
+function upsertSpatialIntentRegistry(intentState = {}, record = null) {
+  const baseState = normalizeStoredIntentState(intentState || createEmptyIntentRegistry());
+  const nextRegistry = {
+    currentIntentId: baseState.currentIntentId || null,
+    latestIntentId: baseState.registry?.latestIntentId || baseState.currentIntentId || null,
+    byId: {
+      ...(baseState.registry?.byId || {}),
+    },
+    records: Array.isArray(baseState.registry?.records) ? [...baseState.registry.records] : [],
+  };
+  if (record) {
+    const normalizedRecord = normalizeSpatialIntentRecord(record);
+    if (normalizedRecord?.id) {
+      nextRegistry.byId[normalizedRecord.id] = normalizedRecord;
+      nextRegistry.records = [normalizedRecord, ...nextRegistry.records.filter((entry) => entry.id !== normalizedRecord.id)];
+      nextRegistry.currentIntentId = normalizedRecord.id;
+      nextRegistry.latestIntentId = normalizedRecord.id;
+    }
+  }
+  const currentIntent = nextRegistry.currentIntentId ? nextRegistry.byId[nextRegistry.currentIntentId] || null : null;
+  return {
+    registry: nextRegistry,
+    currentIntentId: nextRegistry.currentIntentId,
+    summary: String(currentIntent?.semanticMeaning?.summary || currentIntent?.statement || currentIntent?.goal || baseState.summary || '').trim(),
+    status: currentIntent?.status || baseState.status || 'idle',
+  };
+}
+
+function getCurrentSpatialIntent(intentState = {}) {
+  const registry = intentState?.registry && typeof intentState.registry === 'object' ? intentState.registry : null;
+  if (!registry?.currentIntentId) return null;
+  return registry.byId?.[registry.currentIntentId] || null;
+}
+
+function normalizeStoredStudioHandoffs(rawHandoffs = null) {
+  if (!rawHandoffs || typeof rawHandoffs !== 'object') return null;
+  const next = {};
+  if (Object.prototype.hasOwnProperty.call(rawHandoffs, 'contextToPlanner')) {
+    next.contextToPlanner = rawHandoffs.contextToPlanner || null;
+  }
+  if (Object.prototype.hasOwnProperty.call(rawHandoffs, 'history')) {
+    next.history = Array.isArray(rawHandoffs.history) ? rawHandoffs.history.filter(Boolean).slice(0, 12) : [];
+  }
+  return Object.keys(next).length ? next : null;
+}
+
+function normalizeStoredStudioTeamBoard(rawTeamBoard = null) {
+  if (!rawTeamBoard || typeof rawTeamBoard !== 'object') return null;
+  if (!Object.prototype.hasOwnProperty.call(rawTeamBoard, 'selectedCardId')) return null;
+  return {
+    selectedCardId: rawTeamBoard.selectedCardId || null,
+  };
+}
+
+function normalizeStoredStudioState(rawStudioState = {}) {
+  const studioState = rawStudioState && typeof rawStudioState === 'object' ? rawStudioState : {};
+  const next = {};
+  const handoffs = normalizeStoredStudioHandoffs(studioState.handoffs);
+  const teamBoard = normalizeStoredStudioTeamBoard(studioState.teamBoard);
+  if (handoffs) next.handoffs = handoffs;
+  if (teamBoard) next.teamBoard = teamBoard;
+  return next;
+}
+
+function createDefaultCanonicalIntakeState() {
+  return {
+    version: 'ace/canonical-intake.v1',
+    records: [],
+    latestByChannel: {
+      cto_prompt: null,
+      canvas_text: null,
+    },
+  };
+}
+
+function normalizeCanonicalIntakeChannel(value = '') {
+  const channel = String(value || '').trim().toLowerCase();
+  if (channel === 'cto_prompt' || channel === 'canvas_text') return channel;
+  return 'canvas_text';
+}
+
+function buildCanonicalIntakeAcknowledgement(channel = 'canvas_text', sourceRef = null) {
+  if (channel === 'cto_prompt') {
+    return {
+      status: 'recorded',
+      summary: `Canonical CTO intake recorded${sourceRef ? ` from ${sourceRef}` : ''}.`,
+    };
+  }
+  return {
+    status: 'recorded',
+    summary: `Canonical canvas intake recorded${sourceRef ? ` from ${sourceRef}` : ''}.`,
+  };
+}
+
+function buildCanonicalIntentExtractionState({
+  status = 'pending',
+  canonicalIntent = null,
+  canonicalIntentId = null,
+  intentStatus = null,
+  summary = null,
+  sourceType = null,
+  sourceRef = null,
+  reason = null,
+} = {}) {
+  const normalizedStatus = ['pending', 'extracted', 'degraded', 'failed'].includes(String(status || '').trim().toLowerCase())
+    ? String(status || '').trim().toLowerCase()
+    : 'pending';
+  const normalizedIntent = canonicalIntent ? normalizeSpatialIntentRecord(canonicalIntent) : null;
+  return {
+    status: normalizedStatus,
+    canonicalIntentId: normalizedIntent?.id || String(canonicalIntentId || '').trim() || null,
+    intentStatus: normalizedIntent?.status || String(intentStatus || '').trim() || null,
+    summary: normalizedIntent?.summary || normalizedIntent?.statement || normalizedIntent?.goal || String(summary || '').trim() || null,
+    sourceType: normalizedIntent?.sourceType || String(sourceType || '').trim() || null,
+    sourceRef: normalizedIntent?.sourceRef || String(sourceRef || '').trim() || null,
+    reason: String(reason || '').trim() || null,
+  };
+}
+
+function normalizeCanonicalIntakeRecord(record = {}) {
+  const source = record && typeof record === 'object' ? record : {};
+  const createdAt = String(source.createdAt || nowIso()).trim() || nowIso();
+  const channel = normalizeCanonicalIntakeChannel(source.channel || source.intakeChannel);
+  const sourceRef = String(source.sourceRef || source.nodeId || '').trim() || null;
+  const acknowledgement = source.acknowledgement && typeof source.acknowledgement === 'object'
+    ? source.acknowledgement
+    : buildCanonicalIntakeAcknowledgement(channel, sourceRef);
+  const intentExtraction = source.intentExtraction && typeof source.intentExtraction === 'object'
+    ? buildCanonicalIntentExtractionState({
+        ...source.intentExtraction,
+        canonicalIntentId: source.intentExtraction.canonicalIntentId || source.canonicalIntentId || null,
+      })
+    : buildCanonicalIntentExtractionState({
+        status: source.intentExtractionStatus || 'pending',
+        canonicalIntent: source.intentExtractionIntent || null,
+        reason: source.intentExtractionReason || null,
+      });
+  return {
+    id: String(source.id || `intake_${channel}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).trim(),
+    channel,
+    text: String(source.text || source.prompt || '').trim(),
+    requestedBy: String(source.requestedBy || 'ace').trim() || 'ace',
+    sourceType: String(source.sourceType || channel).trim() || channel,
+    sourceRef,
+    originRoute: String(source.originRoute || '').trim() || null,
+    createdAt,
+    updatedAt: String(source.updatedAt || createdAt).trim() || createdAt,
+    acknowledgement: {
+      status: String(acknowledgement.status || 'recorded').trim() || 'recorded',
+      summary: String(acknowledgement.summary || buildCanonicalIntakeAcknowledgement(channel, sourceRef).summary).trim(),
+    },
+    processingStatus: String(source.processingStatus || 'recorded').trim() || 'recorded',
+    resultSummary: String(source.resultSummary || '').trim() || null,
+    replyKind: String(source.replyKind || '').trim() || null,
+    actionId: String(source.actionId || '').trim() || null,
+    route: String(source.route || source.routeKind || '').trim() || null,
+    canonicalIntentId: String(source.canonicalIntentId || '').trim() || null,
+    handoffId: String(source.handoffId || '').trim() || null,
+    intentExtraction: {
+      ...intentExtraction,
+      canonicalIntentId: String(source.canonicalIntentId || intentExtraction.canonicalIntentId || '').trim() || null,
+    },
+    governedLoop: {
+      route: '/api/spatial/governed-loop/contract',
+      contractVersion: 'governed-loop.v1',
+      domain: 'input',
+    },
+  };
+}
+
+function normalizeCanonicalIntakeState(rawState = null) {
+  const source = rawState && typeof rawState === 'object' ? rawState : createDefaultCanonicalIntakeState();
+  const records = (Array.isArray(source.records) ? source.records : [])
+    .map((record) => normalizeCanonicalIntakeRecord(record))
+    .filter((record) => record.id && record.text)
+    .sort((left, right) => String(right.updatedAt || right.createdAt || '').localeCompare(String(left.updatedAt || left.createdAt || '')))
+    .slice(0, 24);
+  const latestByChannel = {
+    cto_prompt: records.find((record) => record.channel === 'cto_prompt')?.id || null,
+    canvas_text: records.find((record) => record.channel === 'canvas_text')?.id || null,
+  };
+  return {
+    version: String(source.version || 'ace/canonical-intake.v1').trim() || 'ace/canonical-intake.v1',
+    records,
+    latestByChannel,
+  };
+}
+
+function upsertCanonicalIntakeRecord(intakeState = null, record = {}) {
+  const normalizedState = normalizeCanonicalIntakeState(intakeState);
+  const normalizedRecord = normalizeCanonicalIntakeRecord(record);
+  const nextRecords = [...normalizedState.records];
+  const existingIndex = nextRecords.findIndex((entry) => entry.id === normalizedRecord.id);
+  if (existingIndex >= 0) {
+    nextRecords[existingIndex] = {
+      ...nextRecords[existingIndex],
+      ...normalizedRecord,
+      createdAt: nextRecords[existingIndex].createdAt || normalizedRecord.createdAt,
+      updatedAt: normalizedRecord.updatedAt || nowIso(),
+    };
+  } else {
+    nextRecords.unshift(normalizedRecord);
+  }
+  const nextState = normalizeCanonicalIntakeState({
+    version: normalizedState.version,
+    records: nextRecords,
+  });
+  return {
+    state: nextState,
+    record: nextState.records.find((entry) => entry.id === normalizedRecord.id) || normalizedRecord,
+  };
+}
+
+function mergeWorkspacePatch(workspace, patch = {}) {
+  const nextStudio = {
+    ...(workspace?.studio || {}),
+  };
+  if (patch.scene !== undefined) nextStudio.scene = patch.scene;
+  if (patch.selectedDeskId !== undefined) nextStudio.selectedAgentId = patch.selectedDeskId;
+  if (patch.selectedTab !== undefined) nextStudio.selectedTab = patch.selectedTab;
+  if (patch.camera !== undefined) {
+    nextStudio.canvasViewport = {
+      ...(workspace?.studio?.canvasViewport || {}),
+      ...patch.camera,
+      ...(patch.zoom !== undefined ? { zoom: patch.zoom } : {}),
+    };
+    nextStudio.studioViewport = {
+      ...(workspace?.studio?.studioViewport || {}),
+      ...patch.camera,
+    };
+  } else if (patch.zoom !== undefined) {
+    nextStudio.canvasViewport = {
+      ...(workspace?.studio?.canvasViewport || {}),
+      zoom: patch.zoom,
+    };
+  }
+  if (patch.activeGraphLayer !== undefined) nextStudio.activeGraphLayer = patch.activeGraphLayer;
+  if (patch.worldViewMode !== undefined) nextStudio.worldViewMode = patch.worldViewMode;
+  if (patch.handoffs) {
+    nextStudio.handoffs = {
+      ...(workspace?.studio?.handoffs || {}),
+      ...patch.handoffs,
+    };
+  }
+  if (patch.teamBoard) {
+    nextStudio.teamBoard = {
+      ...(workspace?.studio?.teamBoard || {}),
+      ...patch.teamBoard,
+    };
+  }
+  if (patch.studio && typeof patch.studio === 'object') {
+    nextStudio.activeGraphLayer = patch.studio.activeGraphLayer !== undefined ? patch.studio.activeGraphLayer : nextStudio.activeGraphLayer;
+    nextStudio.worldViewMode = patch.studio.worldViewMode !== undefined ? patch.studio.worldViewMode : nextStudio.worldViewMode;
+    nextStudio.layout = patch.studio.layout !== undefined ? patch.studio.layout : nextStudio.layout;
+    nextStudio.sidebar = patch.studio.sidebar !== undefined ? patch.studio.sidebar : nextStudio.sidebar;
+    nextStudio.orchestrator = patch.studio.orchestrator !== undefined ? patch.studio.orchestrator : nextStudio.orchestrator;
+    nextStudio.selfUpgrade = patch.studio.selfUpgrade !== undefined ? patch.studio.selfUpgrade : nextStudio.selfUpgrade;
+    if (patch.studio.handoffs) {
+      nextStudio.handoffs = {
+        ...(nextStudio.handoffs || {}),
+        ...patch.studio.handoffs,
+      };
+    }
+    if (patch.studio.teamBoard) {
+      nextStudio.teamBoard = {
+        ...(nextStudio.teamBoard || {}),
+        ...patch.studio.teamBoard,
+      };
+    }
+  }
+
+  return {
+    ...workspace,
+    ...patch,
+    pages: Array.isArray(patch.pages) ? patch.pages : workspace?.pages,
+    activePageId: patch.activePageId !== undefined ? patch.activePageId : workspace?.activePageId,
+    architectureMemory: patch.architectureMemory
+      ? {
+          ...(workspace?.architectureMemory || {}),
+          ...patch.architectureMemory,
+        }
+      : workspace?.architectureMemory,
+    intentState: patch.intentState
+      ? {
+          ...(workspace?.intentState || {}),
+          ...patch.intentState,
+        }
+      : workspace?.intentState,
+    studio: nextStudio,
+  };
+}
+
+function normalizeDeskPropertiesState(workspace = {}) {
+  const current = workspace?.studio?.deskProperties || {};
+  const layoutDeskIds = listStudioDeskIds(workspace?.studio?.layout || {});
+  return Object.fromEntries(
+    layoutDeskIds.map((deskId) => {
+      const deskState = current?.[deskId] || {};
+      return [deskId, {
+        managedAgents: Array.isArray(deskState.managedAgents) ? [...new Set(deskState.managedAgents.filter(Boolean))] : [],
+        moduleIds: Array.isArray(deskState.moduleIds) ? [...new Set(deskState.moduleIds.filter(Boolean))] : [],
+        manualTests: Array.isArray(deskState.manualTests)
+          ? deskState.manualTests.filter((entry) => entry && entry.id).map((entry) => ({
+              id: String(entry.id),
+              verdict: String(entry.verdict || 'unknown'),
+              createdAt: entry.createdAt || nowIso(),
+              notes: entry.notes || '',
+            }))
+          : [],
+        departmentContext: String(deskState.departmentContext || '').trim(),
+        guardrails: Array.isArray(deskState.guardrails)
+          ? [...new Set(deskState.guardrails.map((entry) => String(entry || '').trim()).filter(Boolean))]
+          : [],
+        contextSlices: Array.isArray(deskState.contextSlices)
+          ? deskState.contextSlices.filter((entry) => entry && String(entry.summary || entry.title || entry.label || '').trim()).map((entry, index) => ({
+              id: String(entry.id || `${deskId}-context-${index}`),
+              summary: String(entry.summary || entry.title || entry.label || '').trim(),
+              detail: String(entry.detail || entry.notes || '').trim(),
+            }))
+          : [],
+      }];
+    }),
+  );
+}
+
+function normalizeTaCandidateCard(candidate = {}) {
+  const source = candidate && typeof candidate === 'object' ? candidate : {};
+  const deskTargets = Array.isArray(source.desk_targets)
+    ? source.desk_targets.map((value) => String(value || '').trim()).filter(Boolean)
+    : Array.isArray(source.deskTargets)
+      ? source.deskTargets.map((value) => String(value || '').trim()).filter(Boolean)
+    : [];
+  const primaryDeskTarget = String(source.primary_desk_target || source.primaryDeskTarget || deskTargets[0] || '').trim();
+  const assignedModel = String(source.assigned_model || source.assignedModel || '').trim();
+  const cvCard = source.cv_card && typeof source.cv_card === 'object'
+    ? source.cv_card
+    : (source.cvCard && typeof source.cvCard === 'object' ? source.cvCard : null);
+  const contract = source.contract && typeof source.contract === 'object' ? source.contract : null;
+  if (!String(source.id || '').trim()) throw new Error('candidate.id is required.');
+  if (!String(source.name || '').trim()) throw new Error('candidate.name is required.');
+  if (!String(source.role || '').trim()) throw new Error('candidate.role is required.');
+  if (!String(source.department || '').trim()) throw new Error('candidate.department is required.');
+  if (!deskTargets.length) throw new Error('candidate.desk_targets is required.');
+  if (!primaryDeskTarget) throw new Error('candidate.primary_desk_target is required.');
+  if (!assignedModel) throw new Error('candidate.assigned_model is required.');
+  if (source.model_locked !== true && source.modelLocked !== true) throw new Error('candidate.model_locked must be true.');
+  if (!cvCard || !String(cvCard.title || '').trim() || !String(cvCard.summary || '').trim()) {
+    throw new Error('candidate.cv_card must include title and summary.');
+  }
+  if (!contract || !Array.isArray(contract.input) || !Array.isArray(contract.output)) {
+    throw new Error('candidate.contract must include input and output arrays.');
+  }
+  const availableModels = listAgentModelOptions();
+  if (!availableModels.includes(assignedModel)) {
+    throw new Error(`candidate.assigned_model must be one of the available models: ${availableModels.join(', ')}.`);
+  }
+  return {
+    id: String(source.id).trim(),
+    name: String(source.name).trim(),
+    roleId: String(source.role_id || source.roleId || '').trim() || null,
+    role: String(source.role).trim(),
+    department: String(source.department).trim(),
+    departmentId: String(source.department_id || source.departmentId || '').trim() || null,
+    deskTargets,
+    primaryDeskTarget,
+    assignedModel,
+    modelLocked: true,
+    model_locked: true,
+    summary: String(source.summary || '').trim(),
+    strengths: Array.isArray(source.strengths) ? source.strengths.filter(Boolean).map((entry) => String(entry)) : [],
+    weaknesses: Array.isArray(source.weaknesses) ? source.weaknesses.filter(Boolean).map((entry) => String(entry)) : [],
+    recommendedTools: Array.isArray(source.recommended_tools) ? source.recommended_tools.filter(Boolean).map((entry) => String(entry)) : [],
+    recommendedSkills: Array.isArray(source.recommended_skills) ? source.recommended_skills.filter(Boolean).map((entry) => String(entry)) : [],
+    modelPolicy: source.model_policy && typeof source.model_policy === 'object'
+      ? {
+          preferred: String(source.model_policy.preferred || '').trim(),
+          reason: String(source.model_policy.reason || '').trim(),
+        }
+      : null,
+    whyThisRole: String(source.why_this_role || '').trim(),
+    riskNotes: Array.isArray(source.risk_notes) ? source.risk_notes.filter(Boolean).map((entry) => String(entry)) : [],
+    confidence: Number(source.confidence || 0),
+    allowedDepartmentIds: Array.isArray(source.allowed_department_ids)
+      ? source.allowed_department_ids.filter(Boolean).map((entry) => String(entry))
+      : Array.isArray(source.allowedDepartmentIds)
+        ? source.allowedDepartmentIds.filter(Boolean).map((entry) => String(entry))
+        : [],
+    allowedDeskIds: Array.isArray(source.allowed_desk_ids)
+      ? source.allowed_desk_ids.filter(Boolean).map((entry) => String(entry))
+      : Array.isArray(source.allowedDeskIds)
+        ? source.allowedDeskIds.filter(Boolean).map((entry) => String(entry))
+        : [],
+    leadRoleIds: Array.isArray(source.lead_role_ids)
+      ? source.lead_role_ids.filter(Boolean).map((entry) => String(entry))
+      : Array.isArray(source.leadRoleIds)
+        ? source.leadRoleIds.filter(Boolean).map((entry) => String(entry))
+        : [],
+    capabilities: Array.isArray(source.capabilities) ? source.capabilities.filter(Boolean).map((entry) => String(entry)) : [],
+    cvCard: {
+      title: String(cvCard.title || '').trim(),
+      headline: String(cvCard.headline || '').trim(),
+      summary: String(cvCard.summary || '').trim(),
+      evidence: Array.isArray(cvCard.evidence) ? cvCard.evidence.filter(Boolean).map((entry) => String(entry)) : [],
+      controls: Array.isArray(cvCard.controls) ? cvCard.controls.filter(Boolean).map((entry) => String(entry)) : [],
+      contract: {
+        input: Array.isArray(cvCard.contract?.input) ? cvCard.contract.input.filter(Boolean).map((entry) => String(entry)) : [],
+        output: Array.isArray(cvCard.contract?.output) ? cvCard.contract.output.filter(Boolean).map((entry) => String(entry)) : [],
+      },
+    },
+    contract: {
+      input: Array.isArray(contract.input) ? contract.input.filter(Boolean).map((entry) => String(entry)) : [],
+      output: Array.isArray(contract.output) ? contract.output.filter(Boolean).map((entry) => String(entry)) : [],
+    },
+    hiredAt: source.hiredAt || null,
+    hiredDeskId: source.hiredDeskId || null,
+    contractLocked: source.contractLocked === true,
+  };
+}
+
+function createDefaultTaDepartmentState() {
+  return {
+    hiredCandidates: [],
+    updatedAt: null,
+    lastGeneratedGap: null,
+  };
+}
+
+function normalizeTaDepartmentState(state = {}) {
+  const source = state && typeof state === 'object' ? state : {};
+  return {
+    hiredCandidates: Array.isArray(source.hiredCandidates)
+      ? source.hiredCandidates.filter(Boolean).map((candidate) => normalizeTaCandidateCard(candidate))
+      : [],
+    updatedAt: source.updatedAt || null,
+    lastGeneratedGap: source.lastGeneratedGap || null,
+  };
+}
+
+function computeTaCoverage(hiredCandidates = []) {
+  return TA_COVERAGE_REQUIREMENTS.map((requirement) => {
+    const matches = hiredCandidates.filter((candidate) => candidate.hiredDeskId === requirement.deskId
+      || candidate.deskTargets.includes(requirement.deskId));
+    const hiredCount = matches.length;
+    const covered = hiredCount >= requirement.minimum;
+    return {
+      ...requirement,
+      hiredCount,
+      covered,
+      status: covered ? 'covered' : 'open',
+      remaining: Math.max(0, requirement.minimum - hiredCount),
+      roledIn: matches.map((candidate) => candidate.name),
+    };
+  });
+}
+
+async function buildTaDepartmentPayload(state = createDefaultTaDepartmentState(), options = {}) {
+  const normalizedState = normalizeTaDepartmentState(state);
+  const staffingRules = await loadStaffingRulesModule();
+  const rootPath = options?.rootPath || ROOT;
+  const canonicalLayout = normalizeStudioLayoutSchema(
+    options?.workspace?.studio?.layout
+    || options?.layout
+    || createDefaultStudioLayoutSchema(),
+  );
+  const canonicalOrganization = canonicalLayout.organization || {};
+  const canonicalDeskToDepartment = Object.fromEntries(
+    Object.values(canonicalOrganization.desks || {}).map((desk) => [desk.id, desk.ownerDepartmentId || desk.departmentId || null]),
+  );
+  const canonicalDepartmentLabels = Object.fromEntries(
+    Object.values(canonicalOrganization.departments || {}).map((department) => [department.id, department.label || department.id]),
+  );
+  const gapModel = staffingRules.computeTaGapModel(staffingRules.STAFFING_RULES, normalizedState.hiredCandidates, { layout: canonicalLayout });
+  const coverage = gapModel.coverage || [];
+  const plannerCoverage = gapModel.plannerCoverage || buildCanonicalPlannerCoverageTruth(canonicalLayout);
+  const qaLeadCoverage = gapModel.qaLeadCoverage || buildCanonicalQALeadCoverageTruth(canonicalLayout);
+  const healthyCount = coverage.filter((entry) => entry.health === 'healthy').length;
+  const openEntityCount = coverage.length - healthyCount;
+  const summary = gapModel.summary || {
+    openRoleCount: 0,
+    blockerCount: 0,
+    missingLeadCount: 0,
+    understaffedCount: 0,
+    optionalHireCount: 0,
+    urgency: 'low',
+  };
+  const urgencyText = summary.urgency === 'critical'
+    ? 'Critical'
+    : summary.urgency === 'high'
+      ? 'High'
+      : summary.urgency === 'medium'
+        ? 'Medium'
+        : 'Low';
+  const plannerSeatBlocker = Array.isArray(gapModel.canonicalSeats)
+    ? gapModel.canonicalSeats.find((entry) => entry?.entityId === 'planner' && entry?.blocker) || null
+    : null;
+  const plannerCoverageBlocker = plannerCoverage && plannerSeatBlocker ? {
+    label: 'Hire Planner coverage',
+    reason: `Planner coverage is needed before the pipeline can continue. Failed predicates: ${plannerCoverage.failedPredicateLabels.join('; ')}.`,
+    failedPredicates: plannerCoverage.failedPredicates,
+    canonical: plannerCoverage.canonical,
+    covered: plannerCoverage.covered,
+    seat: plannerSeatBlocker,
+  } : null;
+  const hireRequestQueue = readTaHireRequestQueue(rootPath);
+  const hireRequestsSummary = summarizeTaHireRequestQueue(hireRequestQueue);
+  return {
+    department: {
+      name: 'Talent Acquisition',
+      summary: summary.openRoleCount
+        ? `${summary.openRoleCount} canonical open seat${summary.openRoleCount === 1 ? '' : 's'} across ${coverage.filter((entry) => entry.entityType === 'desk').length} desks. ${summary.blockerCount} blocker${summary.blockerCount === 1 ? '' : 's'}; urgency ${urgencyText.toLowerCase()}.`
+        : `All ${coverage.filter((entry) => entry.entityType === 'desk').length} canonical desk seats are covered.`,
+      urgency: summary.urgency,
+      controls: [
+        'Model binding is immutable after hire.',
+        'No fallback model path is permitted.',
+        'Each hire must include a CV card and contract.',
+      ],
+      updatedAt: normalizedState.updatedAt,
+      lastGeneratedGap: normalizedState.lastGeneratedGap,
+      blocker: plannerCoverageBlocker,
+    },
+    hireRequestsSummary,
+    hireRequests: hireRequestQueue.entries,
+    coverage,
+    gapModel,
+    plannerCoverage,
+    qaLeadCoverage,
+    plannerCoverageBlocker,
+    hiredCandidates: normalizedState.hiredCandidates,
+    roster: normalizedState.hiredCandidates.map((candidate) => ({
+      deskId: candidate.hiredDeskId || candidate.primaryDeskTarget,
+      departmentId: candidate.departmentId || canonicalDeskToDepartment[candidate.hiredDeskId || candidate.primaryDeskTarget] || null,
+      id: candidate.id,
+      name: candidate.name,
+      role: candidate.role,
+      roleId: candidate.roleId || null,
+      department: candidate.department
+        || canonicalDepartmentLabels[candidate.departmentId || canonicalDeskToDepartment[candidate.hiredDeskId || candidate.primaryDeskTarget]]
+        || null,
+      assignedModel: candidate.assignedModel,
+      hiredAt: candidate.hiredAt,
+      summary: candidate.cvCard?.summary || candidate.summary,
+    })),
+    coverageSummary: {
+      healthyCount,
+      openEntityCount,
+      total: coverage.length,
+      openRoleCount: summary.openRoleCount,
+      blockerCount: summary.blockerCount,
+      missingLeadCount: summary.missingLeadCount,
+      understaffedCount: summary.understaffedCount,
+      optionalHireCount: summary.optionalHireCount,
+      plannerCoverageBlockedCount: summary.plannerCoverageBlockedCount || 0,
+      qaLeadCoverageBlockedCount: summary.qaLeadCoverageBlockedCount || 0,
+      urgency: summary.urgency,
+    },
+    organization: canonicalOrganization,
+  };
+}
+
+function listModuleManifests(rootPath = ROOT) {
+  const root = path.join(rootPath, 'modules');
+  if (!fs.existsSync(root)) return [];
+  const manifests = [];
+  const stack = [root];
+  while (stack.length) {
+    const current = stack.pop();
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    entries.forEach((entry) => {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        return;
+      }
+      if (!entry.isFile() || !entry.name.endsWith('.module.json')) return;
+      const payload = readJsonSafe(fullPath, null);
+      if (!payload || !payload.module_id) return;
+      manifests.push({
+        id: String(payload.module_id),
+        version: String(payload.version || 'unknown'),
+        summary: payload.description || payload.summary || payload.name || payload.module_id,
+        manifestPath: path.relative(rootPath, fullPath),
+      });
+    });
+  }
+  return manifests.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function normalizeLifecycleStatus(rawStatus = '') {
+  const value = String(rawStatus || '').toLowerCase();
+  if (!value) return 'queued';
+  if (value === 'done' || value === 'complete' || value === 'completed' || value === 'success') return 'done';
+  if (value === 'failed' || value === 'error' || value.includes('fail')) return 'failed';
+  if (value === 'blocked') return 'blocked';
+  if (['running', 'active', 'in_progress', 'in-progress', 'building', 'applying', 'deploying', 'verifying'].includes(value)) return 'in_progress';
+  return 'queued';
+}
+
+function deriveTaskProgress(task = {}) {
+  const status = normalizeLifecycleStatus(task.status);
+  if (status === 'done') return { label: '100%', value: 100 };
+  if (status === 'queued') return { label: '0%', value: 0 };
+  if (status === 'failed') return { label: 'failed', value: null };
+  if (status === 'blocked') return { label: 'blocked', value: null };
+  if (Number.isFinite(Number(task.stageProgress))) {
+    const pct = Math.max(1, Math.min(99, Math.round(Number(task.stageProgress))));
+    return { label: `${pct}%`, value: pct };
+  }
+  if (task.stageName) return { label: String(task.stageName), value: null };
+  return { label: 'in progress', value: null };
+}
+
+function resolveTaskFolders(rootPath = ROOT) {
+  return rootPath === ROOT ? getTaskFolders() : getTaskFoldersFromRoot(path.join(rootPath, 'work', 'tasks'));
+}
+
+function findTaskFolderByTaskId(taskId, rootPath = ROOT) {
+  return resolveTaskFolders(rootPath).find((folder) => folder.startsWith(String(taskId || '').slice(0, 4))) || null;
+}
+
+function readTaskArtifactStatus(taskId = '', rootPath = ROOT) {
+  const normalizedTaskId = String(taskId || '').trim();
+  const folder = normalizedTaskId ? findTaskFolderByTaskId(normalizedTaskId, rootPath) : null;
+  const taskDir = folder ? path.join(rootPath, 'work', 'tasks', folder) : null;
+  const artifacts = TASK_ARTIFACT_NAMES.map((name) => {
+    const fullPath = taskDir ? path.join(taskDir, name) : null;
+    return {
+      name,
+      exists: Boolean(fullPath && fs.existsSync(fullPath)),
+      path: fullPath ? relativeToRoot(rootPath, fullPath) : null,
+    };
+  });
+  return {
+    taskId: normalizedTaskId || null,
+    folder,
+    taskDir: taskDir ? relativeToRoot(rootPath, taskDir) : null,
+    artifacts,
+    presentCount: artifacts.filter((artifact) => artifact.exists).length,
+    totalCount: artifacts.length,
+    taskCache: {
+      planner: summarizeTaskCache(readTaskCache(rootPath, { taskId: normalizedTaskId || null, taskDir, stage: 'planner' })),
+      executor: summarizeTaskCache(readTaskCache(rootPath, { taskId: normalizedTaskId || null, taskDir, stage: 'executor' })),
+    },
+  };
+}
+
+function buildCanonicalExecutionState(card = {}, workspace = {}, { rootPath = ROOT } = {}) {
+  const taskId = String(card.runnerTaskId || card.builderTaskId || card.executionPackage?.taskId || '').trim() || null;
+  if (!taskId) {
+    return {
+      status: 'not_requested',
+      taskId: null,
+      taskDir: null,
+      packageStatus: card.executionPackage?.status || 'idle',
+      verifyStatus: card.verifyStatus || 'idle',
+      applyStatus: card.applyStatus || 'idle',
+      deployStatus: card.deployStatus || 'idle',
+      blocker: null,
+      diff: {
+        status: 'missing',
+        path: null,
+        changedFiles: [],
+        artifactRecorded: false,
+        cacheSource: null,
+      },
+    };
+  }
+
+  const artifactStatus = readTaskArtifactStatus(taskId, rootPath);
+  const executorCache = artifactStatus.taskCache?.executor || null;
+  const patchValid = Boolean(executorCache?.fileStates?.patch?.valid);
+  const patchArtifact = artifactStatus.artifacts.find((artifact) => artifact.name === 'patch.diff') || null;
+  const applyResultState = executorCache?.fileStates?.applyResult || null;
+  const explicitBlocker = card.executorBlocker && typeof card.executorBlocker === 'object'
+    ? {
+      code: card.executorBlocker.code || null,
+      message: card.executorBlocker.message || card.executorBlocker.summary || null,
+    }
+    : null;
+  const queuedSignals = [
+    String(card.verifyStatus || '').trim().toLowerCase(),
+    String(card.applyStatus || '').trim().toLowerCase(),
+    String(card.deployStatus || '').trim().toLowerCase(),
+  ];
+  const packageStatus = String(card.executionPackage?.status || '').trim().toLowerCase();
+  const blocker = explicitBlocker || (packageStatus === 'blocked'
+    ? {
+      code: 'execution_blocked',
+      message: card.executionPackage?.summary || 'Execution is blocked.',
+    }
+    : null);
+  const deferred = queuedSignals.includes('queued') || packageStatus === 'ready';
+  return {
+    status: blocker
+      ? 'blocked'
+      : (deferred ? 'deferred' : 'requested'),
+    taskId,
+    taskDir: artifactStatus.taskDir || card.executionPackage?.taskDir || null,
+    packageStatus: card.executionPackage?.status || 'idle',
+    verifyStatus: card.verifyStatus || 'idle',
+    applyStatus: card.applyStatus || 'idle',
+    deployStatus: card.deployStatus || 'idle',
+    blocker: blocker ? {
+      code: blocker.code || null,
+      message: blocker.message || null,
+    } : null,
+    taskCache: executorCache ? {
+      source: executorCache.source || null,
+      invalidReasons: Array.isArray(executorCache.invalidReasons) ? executorCache.invalidReasons : [],
+    } : null,
+    sources: [
+      {
+        kind: 'workspace',
+        recordPath: 'studio.teamBoard.cards[].executionPackage',
+      },
+      {
+        kind: 'route',
+        route: '/api/task-artifacts',
+        taskId,
+      },
+    ],
+    diff: {
+      status: patchValid ? 'created' : 'missing',
+      path: patchValid ? (patchArtifact?.path || card.executionPackage?.patchPath || null) : null,
+      changedFiles: patchValid ? (card.executionPackage?.changedFiles || []) : [],
+      artifactRecorded: Boolean(patchArtifact?.exists),
+      cacheSource: executorCache?.source || null,
+      applyResultRecorded: Boolean(applyResultState?.exists),
+    },
+  };
+}
+
+const CANONICAL_QA_FEEDBACK_STATUSES = new Set([
+  'pass',
+  'fail',
+  'needs_verification',
+  'needs_cto_approval',
+]);
+
+function normalizeCanonicalQaFeedbackStatus(status = '') {
+  const normalized = String(status || '').trim().toLowerCase();
+  return CANONICAL_QA_FEEDBACK_STATUSES.has(normalized) ? normalized : null;
+}
+
+function collectQaLinkKeys(card = {}, taskId = null) {
+  return uniqueStrings([
+    card.id,
+    card.sourceIntakeId,
+    card.sourceIntentId,
+    card.sourceHandoffId,
+    card.taskFlow?.sourceIntentId,
+    card.taskFlow?.sourceHandoffId,
+    taskId,
+  ]);
+}
+
+function resolveCanonicalQaFollowup(status = null, evidence = {}) {
+  const explicitDeskId = String(
+    evidence.followupDeskId
+    || evidence.routeToDeskId
+    || evidence.nextOwnerDeskId
+    || evidence.targetDesk
+    || '',
+  ).trim() || null;
+  if (explicitDeskId) {
+    return {
+      deskId: explicitDeskId,
+      reason: String(evidence.followupReason || evidence.reason || evidence.summary || '').trim() || null,
+    };
+  }
+  if (status === 'fail' || status === 'needs_verification') {
+    return {
+      deskId: 'planner',
+      reason: String(evidence.reason || evidence.summary || '').trim() || 'QA requires planner follow-up.',
+    };
+  }
+  if (status === 'needs_cto_approval') {
+    return {
+      deskId: 'cto-architect',
+      reason: String(evidence.reason || evidence.summary || '').trim() || 'QA requires CTO approval.',
+    };
+  }
+  return null;
+}
+
+function buildCanonicalQaFeedbackState(card = {}, {
+  taskId = null,
+  qaScorecards = [],
+  qaRuns = [],
+} = {}) {
+  const linkKeys = collectQaLinkKeys(card, taskId);
+  if (!linkKeys.length) return null;
+  const matchingScorecards = (Array.isArray(qaScorecards) ? qaScorecards : [])
+    .filter((scorecard) => {
+      const scorecardKeys = uniqueStrings([
+        scorecard.id,
+        scorecard.sourceCardId,
+        scorecard.cardId,
+        scorecard.sourceIntentId,
+        scorecard.intentId,
+        scorecard.sourceHandoffId,
+        scorecard.handoffId,
+        scorecard.sourceIntakeId,
+        scorecard.intakeId,
+        scorecard.taskId,
+      ]);
+      return scorecardKeys.some((value) => linkKeys.includes(value));
+    })
+    .sort((left, right) => String(right.updatedAt || '').localeCompare(String(left.updatedAt || '')));
+  const matchingRuns = (Array.isArray(qaRuns) ? qaRuns : [])
+    .filter((run) => {
+      const runKeys = uniqueStrings([
+        run.id,
+        run.linked?.cardId,
+        run.linked?.taskId,
+        run.linked?.sourceIntentId,
+        run.linked?.intentId,
+        run.linked?.sourceHandoffId,
+        run.linked?.handoffId,
+        run.linked?.sourceIntakeId,
+        run.linked?.intakeId,
+      ]);
+      return runKeys.some((value) => linkKeys.includes(value));
+    })
+    .sort((left, right) => String(right.finishedAt || right.createdAt || '').localeCompare(String(left.finishedAt || left.createdAt || '')));
+  const scorecard = matchingScorecards[0] || null;
+  const qaRun = matchingRuns[0] || null;
+  const status = normalizeCanonicalQaFeedbackStatus(scorecard?.qaFeedbackStatus)
+    || normalizeCanonicalQaFeedbackStatus(scorecard?.status)
+    || normalizeCanonicalQaFeedbackStatus(qaRun?.linked?.qaStatus)
+    || null;
+  if (!status && !scorecard && !qaRun) return null;
+  const followup = resolveCanonicalQaFollowup(status, {
+    ...(scorecard && typeof scorecard === 'object' ? scorecard : {}),
+    ...(qaRun?.linked && typeof qaRun.linked === 'object' ? qaRun.linked : {}),
+  });
+  return {
+    status: status || 'observed',
+    observedAt: scorecard?.updatedAt || qaRun?.finishedAt || qaRun?.createdAt || null,
+    summary: String(
+      scorecard?.summary
+      || qaRun?.linked?.summary
+      || qaRun?.scenario
+      || qaRun?.trigger
+      || ''
+    ).trim() || null,
+    scorecardId: scorecard?.id || null,
+    qaRunId: qaRun?.id || null,
+    followup: followup ? {
+      deskId: followup.deskId,
+      reason: followup.reason || null,
+    } : null,
+    sources: [
+      scorecard ? {
+        kind: 'file',
+        path: 'data/spatial/qa/structured/latest.json',
+        recordPath: `desks[].tests[].qualityCard:${scorecard.id}`,
+      } : null,
+      qaRun ? {
+        kind: 'route',
+        route: '/api/spatial/qa/runs',
+        qaRunId: qaRun.id,
+      } : null,
+    ].filter(Boolean),
+  };
+}
+
+function readCanonicalArchivistBundle(rootPath = ROOT) {
+  const archivistPaths = contextBundlePaths(rootPath);
+  const archivistJsonPath = archivistPaths.find((candidatePath) => candidatePath.endsWith('.json')) || null;
+  const bundle = archivistJsonPath ? readJsonSafe(archivistJsonPath, null) : null;
+  return {
+    bundle,
+    archivistJsonPath,
+  };
+}
+
+function buildCanonicalArchivistState(card = {}, {
+  taskId = null,
+  rootPath = ROOT,
+  bundle = null,
+  archivistJsonPath = null,
+} = {}) {
+  const lifecycle = normalizeLifecycleStatus(card.status || card.state || '');
+  const blockedSignal = Boolean(card.executorBlocker) || String(card.executionPackage?.status || '').trim().toLowerCase() === 'blocked';
+  const completedSignal = ['done', 'complete', 'completed'].includes(normalizeLifecycleStatus(card.state || ''))
+    || ['done', 'complete', 'completed'].includes(normalizeLifecycleStatus(card.status || ''))
+    || ['done', 'complete', 'completed'].includes(String(card.taskFlow?.phase || '').trim().toLowerCase());
+  const pendingOutcomeStatus = blockedSignal ? 'blocked' : (completedSignal ? 'completed' : null);
+  const linkKeys = collectQaLinkKeys(card, taskId);
+  const records = Array.isArray(bundle?.governedRecords) ? bundle.governedRecords : [];
+  const matchingRecord = records.find((record) => {
+    const recordKeys = uniqueStrings([
+      record.cardId,
+      record.taskId,
+      record.sourceIntakeId,
+      record.sourceIntentId,
+      record.sourceHandoffId,
+    ]);
+    return recordKeys.some((value) => linkKeys.includes(value));
+  }) || null;
+  if (!matchingRecord && !pendingOutcomeStatus && !['done', 'blocked'].includes(lifecycle)) return null;
+  const summary = String(
+    matchingRecord?.intentVsOutcomeSummary
+    || matchingRecord?.outcomeSummary
+    || matchingRecord?.intentSummary
+    || ''
+  ).trim() || null;
+  return {
+    status: matchingRecord ? 'archived' : 'pending_writeback',
+    archivedAt: matchingRecord?.archivedAt || bundle?.generatedAt || null,
+    outcomeStatus: matchingRecord?.outcomeStatus || pendingOutcomeStatus || (lifecycle === 'blocked' ? 'blocked' : (lifecycle === 'done' ? 'completed' : null)),
+    summary,
+    intentSummary: matchingRecord?.intentSummary || null,
+    outcomeSummary: matchingRecord?.outcomeSummary || null,
+    sources: [
+      matchingRecord && archivistJsonPath ? buildCanonicalFileRef(rootPath, archivistJsonPath, 'governedRecords') : null,
+      buildCanonicalRouteRef('/api/spatial/archive/writeback', matchingRecord ? 'writeback artefact' : 'writeback trigger'),
+    ].filter(Boolean),
+  };
+}
+
+function buildCanonicalCtoOversightState(tasks = [], qaScorecards = []) {
+  const canonicalTasks = (Array.isArray(tasks) ? tasks : []).filter((task) => task?.source === 'team-board');
+  const approvalNeededItems = canonicalTasks
+    .filter((task) => task.qaState?.followup?.deskId === 'cto-architect')
+    .map((task) => ({
+      id: task.id,
+      title: task.title,
+      sourceIntakeId: task.sourceIntakeId || null,
+      sourceIntentId: task.sourceIntentId || null,
+      sourceHandoffId: task.sourceHandoffId || null,
+      qaStatus: task.qaState?.status || null,
+      scorecardId: task.qaState?.scorecardId || null,
+      qaRunId: task.qaState?.qaRunId || null,
+      requestedAt: task.qaState?.observedAt || task.updatedAt || null,
+      reason: task.qaState?.followup?.reason || task.qaState?.summary || null,
+    }));
+  const completedArtifacts = canonicalTasks
+    .filter((task) => task.executionState?.diff?.status === 'created' || task.archivistState?.status === 'archived')
+    .map((task) => ({
+      id: task.id,
+      title: task.title,
+      sourceIntakeId: task.sourceIntakeId || null,
+      sourceIntentId: task.sourceIntentId || null,
+      sourceHandoffId: task.sourceHandoffId || null,
+      taskId: task.executionState?.taskId || null,
+      executionStatus: task.executionState?.status || null,
+      diffStatus: task.executionState?.diff?.status || null,
+      diffPath: task.executionState?.diff?.path || null,
+      archivedStatus: task.archivistState?.status || null,
+      archivedAt: task.archivistState?.archivedAt || null,
+      outcomeStatus: task.archivistState?.outcomeStatus || null,
+      summary: task.archivistState?.summary || task.qaState?.summary || task.blockedReason || null,
+    }));
+  const taskLinkKeys = uniqueStrings(canonicalTasks.flatMap((task) => ([
+    task.id,
+    task.sourceIntakeId,
+    task.sourceIntentId,
+    task.sourceHandoffId,
+  ])));
+  const linkedScorecards = (Array.isArray(qaScorecards) ? qaScorecards : [])
+    .filter((scorecard) => {
+      const scorecardKeys = uniqueStrings([
+        scorecard.id,
+        scorecard.sourceCardId,
+        scorecard.cardId,
+        scorecard.sourceIntentId,
+        scorecard.intentId,
+        scorecard.sourceHandoffId,
+        scorecard.handoffId,
+        scorecard.sourceIntakeId,
+        scorecard.intakeId,
+      ]);
+      return scorecardKeys.some((value) => taskLinkKeys.includes(value));
+    })
+    .map((scorecard) => ({
+      id: scorecard.id,
+      testId: scorecard.testId || null,
+      testName: scorecard.testName || null,
+      status: scorecard.rollupStatus || scorecard.status || null,
+      sourceCardId: scorecard.sourceCardId || scorecard.cardId || null,
+      sourceIntentId: scorecard.sourceIntentId || scorecard.intentId || null,
+      sourceHandoffId: scorecard.sourceHandoffId || scorecard.handoffId || null,
+      updatedAt: scorecard.updatedAt || null,
+      summary: scorecard.summary || null,
+    }));
+  const latestActivityAt = uniqueStrings([
+    ...approvalNeededItems.map((item) => item.requestedAt),
+    ...completedArtifacts.map((item) => item.archivedAt),
+    ...linkedScorecards.map((item) => item.updatedAt),
+  ]).sort((left, right) => String(right).localeCompare(String(left)))[0] || null;
+  return {
+    approvalNeededCount: approvalNeededItems.length,
+    approvalNeededItems: approvalNeededItems.slice(0, 6),
+    completedArtifactCount: completedArtifacts.length,
+    completedArtifacts: completedArtifacts.slice(0, 6),
+    scorecardCount: linkedScorecards.length,
+    scorecards: linkedScorecards.slice(0, 6),
+    latestActivityAt,
+  };
+}
+
+function collectDeskTasks(workspace, deskId, options = {}) {
+  const rootPath = options.rootPath || ROOT;
+  const structuredReport = readStructuredQAReport(rootPath, 'latest');
+  const qaScorecards = collectStructuredQAScorecards(structuredReport);
+  const qaRuns = listQARuns(rootPath).slice(0, 24).map((run) => summarizeQARun(run));
+  const { bundle: archivistBundle, archivistJsonPath } = readCanonicalArchivistBundle(rootPath);
+  const orchestratorDesk = workspace?.studio?.orchestrator?.desks?.[deskId];
+  const deskWorkItems = (orchestratorDesk?.workItems || []).map((item) => ({
+    id: item.id,
+    title: item.title || item.kind || item.id,
+    status: item.status || orchestratorDesk?.localState || 'queued',
+    stageName: item.kind || null,
+    source: 'orchestrator',
+    artifactRefs: item.artifactRefs || [],
+    sourceIntentId: null,
+    sourceIntakeId: null,
+    sourceHandoffId: null,
+    ownerDeskId: deskId,
+    nextOwnerDeskId: null,
+    taskPhase: null,
+    assignmentState: null,
+    blockedReason: null,
+    executionState: null,
+    qaState: null,
+    archivistState: null,
+  }));
+
+  const boardCards = normalizeTeamBoardState(workspace).cards
+    .map((card) => {
+      const executionState = buildCanonicalExecutionState(card, workspace, { rootPath });
+      const qaState = buildCanonicalQaFeedbackState(card, {
+        taskId: executionState.taskId,
+        qaScorecards,
+        qaRuns,
+      });
+      const archivistState = buildCanonicalArchivistState(card, {
+        taskId: executionState.taskId,
+        rootPath,
+        bundle: archivistBundle,
+        archivistJsonPath,
+      });
+      return {
+      boardDesk: card.desk || null,
+      id: card.id,
+      title: card.title || card.id,
+      status: card.status || card.state || 'queued',
+      stageName: card.state || null,
+      stageProgress: Number.isFinite(Number(card.phaseTicks)) ? Number(card.phaseTicks) : null,
+      source: 'team-board',
+      artifactRefs: card.artifactRefs || [],
+      updatedAt: card.updatedAt || card.createdAt || null,
+      sourceIntentId: card.taskFlow?.sourceIntentId || card.sourceIntentId || null,
+      sourceIntakeId: card.sourceIntakeId || null,
+      sourceHandoffId: card.taskFlow?.sourceHandoffId || card.sourceHandoffId || null,
+      ownerDeskId: qaState?.followup?.deskId || card.taskFlow?.ownerDeskId || null,
+      nextOwnerDeskId: qaState?.followup?.deskId || card.taskFlow?.assigneeDeskId || null,
+      taskPhase: card.taskFlow?.phase || null,
+      assignmentState: card.taskFlow?.assignmentState || null,
+      blockedReason: qaState?.followup?.reason || card.executorBlocker?.summary || card.executorBlocker?.message || null,
+      executionState,
+      qaState,
+      archivistState,
+    };
+    })
+    .filter((task) => {
+      const owningDeskId = TEAM_BOARD_DESK_TO_STUDIO_DESK[task.boardDesk];
+      if (owningDeskId === deskId) return true;
+      if (deskId === 'planner') return Boolean(task.sourceHandoffId || task.sourceIntentId || task.sourceIntakeId);
+      if (deskId === 'cto-architect') return task.qaState?.followup?.deskId === 'cto-architect';
+      if (deskId === 'memory-archivist') return Boolean(task.archivistState);
+      return false;
+    });
+
+  const deduped = new Map();
+  [...deskWorkItems, ...boardCards].forEach((task) => {
+    if (!task?.id) return;
+    deduped.set(task.id, task);
+  });
+  return Array.from(deduped.values()).map((task) => {
+    const lifecycle = normalizeLifecycleStatus(task.status);
+    return {
+      ...task,
+      boardDesk: undefined,
+      lifecycle,
+      progress: deriveTaskProgress({ ...task, status: lifecycle }),
+    };
+  });
+}
+
+function collectDeskReports(workspace, deskId, options = {}) {
+  const rootPath = options.rootPath || ROOT;
+  const taskReports = collectDeskTasks(workspace, deskId, { rootPath })
+    .filter((task) => task.source === 'team-board')
+    .map((task) => ({
+      id: `task-${task.id}`,
+      type: 'task-verification',
+      name: task.title,
+      verdict: task.lifecycle === 'done' ? 'pass' : (task.lifecycle === 'failed' || task.lifecycle === 'blocked' ? 'fail' : 'pending'),
+      source: 'team-board',
+      detail: task.progress?.label || task.lifecycle,
+    }));
+  const qaReports = listQARuns(rootPath)
+    .map((run) => summarizeQARun(run))
+    .filter((run) => !run.linked || !run.linked.deskId || run.linked.deskId === deskId)
+    .map((run) => ({
+      id: run.id,
+      type: 'qa-run',
+      name: run.scenario || run.id,
+      verdict: run.verdict || run.status || 'unknown',
+      source: 'qa-runner',
+      detail: run.summary || run.trigger || '',
+    }));
+  const manual = normalizeDeskPropertiesState(workspace)?.[deskId]?.manualTests || [];
+  const manualReports = manual.map((entry) => ({
+    id: `manual-${entry.id}`,
+    type: 'manual-test',
+    name: entry.id,
+    verdict: entry.verdict,
+    source: 'desk-properties',
+    detail: entry.notes || '',
+    createdAt: entry.createdAt,
+  }));
+  return [...taskReports, ...qaReports, ...manualReports];
+}
+
+const QA_SUITE_ORDER = ['planner', 'runner', 'ui', 'ta'];
+
+function formatQASuiteLabel(suiteId) {
+  const normalized = String(suiteId || '').trim();
+  if (!normalized) return 'QA Suite';
+  const title = normalized.length <= 3
+    ? normalized.toUpperCase()
+    : normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  return `${title} QA`;
+}
+
+function listRunnableQASuites() {
+  const dir = path.join(ROOT, 'qa', 'desks');
+  if (!fs.existsSync(dir)) return [];
+  const suiteOrder = new Map(QA_SUITE_ORDER.map((suiteId, index) => [suiteId, index]));
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /QA\.js$/i.test(entry.name))
+    .map((entry) => {
+      const id = String(entry.name).replace(/QA\.js$/i, '').toLowerCase();
+      return {
+        id,
+        name: formatQASuiteLabel(id),
+        file: path.relative(ROOT, path.join(dir, entry.name)).replace(/\\/g, '/'),
+        sourceTrace: buildQaEvidenceTrace({
+          kind: 'suite-definition',
+          label: formatQASuiteLabel(id),
+          detail: 'Runnable suite definition',
+          sourcePath: path.relative(ROOT, path.join(dir, entry.name)).replace(/\\/g, '/'),
+          sourceClass: 'non_executable',
+          record: { id, name: formatQASuiteLabel(id) },
+        }),
+      };
+    })
+    .sort((left, right) => {
+      const leftIndex = suiteOrder.has(left.id) ? suiteOrder.get(left.id) : Number.MAX_SAFE_INTEGER;
+      const rightIndex = suiteOrder.has(right.id) ? suiteOrder.get(right.id) : Number.MAX_SAFE_INTEGER;
+      if (leftIndex !== rightIndex) return leftIndex - rightIndex;
+      return left.name.localeCompare(right.name);
+    });
+}
+
+const QA_SCORECARD_PASS_MIN = 3.5;
+const QA_SCORECARD_WARN_MIN = 2.5;
+
+function normalizeQaScorecardDefinitions(definitions = null) {
+  const metrics = definitions?.metrics && typeof definitions.metrics === 'object'
+    ? definitions.metrics
+    : {};
+  return {
+    schema: definitions?.schema || 'qa.test-metric-definitions.v1',
+    version: Number.isFinite(Number(definitions?.version)) ? Number(definitions.version) : 1,
+    metrics,
+  };
+}
+
+function normalizeQaScorecardResultStatus(status = '') {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (!normalized) return 'missing';
+  if (['pass', 'ok', 'ready', 'validated'].includes(normalized)) return 'pass';
+  if (['fail', 'failed', 'error', 'blocked'].includes(normalized)) return 'fail';
+  if (['warn', 'warning', 'review', 'degraded', 'unavailable'].includes(normalized)) return 'warn';
+  if (normalized === 'stale') return 'stale';
+  if (['missing', 'unknown'].includes(normalized)) return 'missing';
+  return 'warn';
+}
+
+function normalizeQaScorecardFeedbackStatus(status = '') {
+  const normalized = String(status || '').trim().toLowerCase();
+  return CANONICAL_QA_FEEDBACK_STATUSES.has(normalized) ? normalized : null;
+}
+
+function normalizeQaScorecardFreshness(trace = null, updatedAt = null) {
+  const traceFreshness = String(trace?.freshnessClass || '').trim().toLowerCase();
+  if (['fresh', 'derived_current', 'live_canonical'].includes(traceFreshness)) return 'fresh';
+  if (traceFreshness === 'missing') return 'missing';
+  if (traceFreshness === 'stale') return 'stale';
+  if (traceFreshness === 'non_executable') return 'missing';
+  const parsed = Date.parse(String(updatedAt || '').trim());
+  if (Number.isFinite(parsed) && (Date.now() - parsed) > QA_EVIDENCE_STALE_AFTER_MS) {
+    return 'stale';
+  }
+  if (trace || updatedAt) return 'fresh';
+  return 'missing';
+}
+
+function deriveQaScorecardScoreBand(overallScore = null) {
+  const value = Number(overallScore?.value);
+  if (!Number.isFinite(value)) {
+    return {
+      value: null,
+      status: 'missing',
+    };
+  }
+  if (value >= QA_SCORECARD_PASS_MIN) {
+    return { value, status: 'pass' };
+  }
+  if (value >= QA_SCORECARD_WARN_MIN) {
+    return { value, status: 'warn' };
+  }
+  return { value, status: 'fail' };
+}
+
+function summarizeQaScorecardRollup({
+  desk = null,
+  testName = null,
+  rollupStatus = 'missing',
+  rollupReasons = [],
+} = {}) {
+  const label = [desk || 'desk', testName || 'scorecard'].filter(Boolean).join(' | ');
+  const reason = Array.isArray(rollupReasons) && rollupReasons.length
+    ? rollupReasons[0]
+    : 'Scorecard source details are unavailable.';
+  return `${label}: ${rollupStatus}. ${reason}`;
+}
+
+function normalizeEvaluatorVerdict(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'better' || normalized === 'worse' || normalized === 'no_change') return normalized;
+  return 'no_change';
+}
+
+function formatEvaluatorDeltaScore(value = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '0';
+  return numeric > 0 ? `+${numeric.toFixed(2)}` : numeric.toFixed(2);
+}
+
+function buildEvaluatorImpactIndex(latestEvaluation = null) {
+  const index = new Map();
+  (Array.isArray(latestEvaluation?.scorecard_impacts) ? latestEvaluation.scorecard_impacts : []).forEach((impact) => {
+    const cardId = String(impact?.card_id || '').trim();
+    if (!cardId) return;
+    index.set(cardId, {
+      cardId,
+      verdict: normalizeEvaluatorVerdict(impact?.verdict),
+      deltaScore: Number.isFinite(Number(impact?.delta_score)) ? Number(impact.delta_score) : 0,
+      progressSummary: String(impact?.progress_summary || '').trim() || 'No evaluator movement recorded for this scorecard.',
+      scorePressure: String(impact?.score_pressure || '').trim() || 'flat',
+      desk: String(impact?.desk || '').trim() || null,
+      testId: String(impact?.test_id || '').trim() || null,
+    });
+  });
+  return index;
+}
+
+function buildEvaluatorMovementSummary(latestEvaluation = null, evaluatorHistory = []) {
+  if (!latestEvaluation || typeof latestEvaluation !== 'object') return null;
+  const history = Array.isArray(evaluatorHistory) ? evaluatorHistory.filter(Boolean) : [];
+  const liveModelCount = history.filter((entry) => entry?.cognition_mode === 'model_live').length;
+  const fallbackCount = history.filter((entry) => entry?.cognition_mode === 'deterministic_fallback').length;
+  const consultedSeams = Array.isArray(latestEvaluation.consulted_seams)
+    ? latestEvaluation.consulted_seams.map((entry) => ({
+        id: String(entry?.id || '').trim() || null,
+        label: String(entry?.label || '').trim() || null,
+        role: String(entry?.role || '').trim() || null,
+        owner: String(entry?.owner || '').trim() || null,
+        classification: String(entry?.classification || '').trim() || null,
+        available: entry?.available !== false,
+        freshness: String(entry?.freshness || '').trim() || null,
+        summary: String(entry?.summary || '').trim() || null,
+        sourcePaths: Array.isArray(entry?.source_paths)
+          ? entry.source_paths.map((value) => String(value || '').trim()).filter(Boolean)
+          : [],
+      })).filter((entry) => entry.id)
+    : [];
+  const grounding = latestEvaluation.grounding && typeof latestEvaluation.grounding === 'object'
+    ? {
+        status: String(latestEvaluation.grounding.status || '').trim() || 'unknown',
+        completeness: Number.isFinite(Number(latestEvaluation.grounding.completeness))
+          ? Number(latestEvaluation.grounding.completeness)
+          : null,
+        isGrounded: latestEvaluation.grounding.isGrounded !== false,
+        missingInputIds: Array.isArray(latestEvaluation.grounding.missing_input_ids)
+          ? latestEvaluation.grounding.missing_input_ids.map((value) => String(value || '').trim()).filter(Boolean)
+          : [],
+        caveats: Array.isArray(latestEvaluation.grounding.caveats)
+          ? latestEvaluation.grounding.caveats.map((value) => String(value || '').trim()).filter(Boolean)
+          : [],
+      }
+    : null;
+  const provenance = latestEvaluation.provenance && typeof latestEvaluation.provenance === 'object'
+    ? {
+        comparisonBasis: String(latestEvaluation.provenance.comparison_basis || '').trim() || null,
+        qaRole: String(latestEvaluation.provenance.qa_role || '').trim() || null,
+        scorecardRole: String(latestEvaluation.provenance.scorecard_role || '').trim() || null,
+        consultedSeamIds: Array.isArray(latestEvaluation.provenance.consulted_seam_ids)
+          ? latestEvaluation.provenance.consulted_seam_ids.map((value) => String(value || '').trim()).filter(Boolean)
+          : consultedSeams.map((entry) => entry.id),
+        comparedAt: String(latestEvaluation.provenance.compared_at || latestEvaluation.compared_at || '').trim() || null,
+      }
+    : null;
+  return {
+    verdict: normalizeEvaluatorVerdict(latestEvaluation.verdict),
+    deltaScore: Number.isFinite(Number(latestEvaluation.delta_score)) ? Number(latestEvaluation.delta_score) : 0,
+    progressSummary: String(latestEvaluation.progress_summary || '').trim() || 'Evaluator has not published movement yet.',
+    scorePressure: String(latestEvaluation.score_pressure || '').trim() || 'flat',
+    progressState: String(latestEvaluation.progress_state || '').trim() || 'stalled',
+    analysisClassification: String(latestEvaluation.analysis_classification || '').trim() || 'derived_analysis',
+    authorityScope: String(latestEvaluation.authority_scope || '').trim() || 'comparative_projection',
+    evaluationConfidence: Number.isFinite(Number(latestEvaluation.evaluation_confidence))
+      ? Number(latestEvaluation.evaluation_confidence)
+      : null,
+    cognitionMode: String(latestEvaluation.cognition_mode || '').trim() || null,
+    modelName: String(latestEvaluation.model_name || '').trim() || null,
+    comparedAt: String(latestEvaluation.compared_at || '').trim() || null,
+    comparisonTarget: String(latestEvaluation.comparison_target || '').trim() || null,
+    sourceSnapshotIds: latestEvaluation.source_snapshot_ids && typeof latestEvaluation.source_snapshot_ids === 'object'
+      ? {
+          previous: String(latestEvaluation.source_snapshot_ids.previous || '').trim() || null,
+          current: String(latestEvaluation.source_snapshot_ids.current || '').trim() || null,
+        }
+      : { previous: null, current: null },
+    dimensionImpacts: Array.isArray(latestEvaluation.dimension_impacts)
+      ? latestEvaluation.dimension_impacts.map((entry) => ({
+          id: String(entry?.id || '').trim() || null,
+          label: String(entry?.label || '').trim() || null,
+          verdict: normalizeEvaluatorVerdict(entry?.verdict),
+          delta: Number.isFinite(Number(entry?.delta)) ? Number(entry.delta) : 0,
+          summary: String(entry?.summary || '').trim() || null,
+          weight: Number.isFinite(Number(entry?.weight)) ? Number(entry.weight) : null,
+        })).filter((entry) => entry.id)
+      : [],
+    consultedSeams,
+    grounding,
+    qaAuthority: latestEvaluation.qa_authority && typeof latestEvaluation.qa_authority === 'object'
+      ? {
+          owner: String(latestEvaluation.qa_authority.owner || '').trim() || 'qa',
+          role: String(latestEvaluation.qa_authority.role || '').trim() || 'adjudicated_reference',
+          evaluatorRole: String(latestEvaluation.qa_authority.evaluator_role || '').trim() || 'derived_analysis_only',
+        }
+      : {
+          owner: 'qa',
+          role: 'adjudicated_reference',
+          evaluatorRole: 'derived_analysis_only',
+        },
+    provenance,
+    historyCount: history.length,
+    liveModelCount,
+    fallbackCount,
+  };
+}
+
+function decorateScorecardWithEvaluatorMovement(card, {
+  latestEvaluation = null,
+  evaluatorHistory = [],
+  impactIndex = new Map(),
+} = {}) {
+  const impact = impactIndex.get(String(card?.id || '').trim()) || null;
+  const movement = buildEvaluatorMovementSummary(latestEvaluation, evaluatorHistory);
+  return {
+    ...card,
+    evaluatorMovement: {
+      verdict: impact?.verdict || movement?.verdict || 'no_change',
+      deltaScore: impact?.deltaScore ?? movement?.deltaScore ?? 0,
+      progressSummary: impact?.progressSummary || movement?.progressSummary || 'Evaluator has not published movement for this scorecard.',
+      scorePressure: impact?.scorePressure || movement?.scorePressure || 'flat',
+      comparedAt: movement?.comparedAt || null,
+      evaluationConfidence: movement?.evaluationConfidence ?? null,
+      cognitionMode: movement?.cognitionMode || null,
+      modelName: movement?.modelName || null,
+      sourceSnapshotIds: movement?.sourceSnapshotIds || { previous: null, current: null },
+    },
+    evaluatorVerdict: impact?.verdict || movement?.verdict || 'no_change',
+    evaluatorDeltaScore: impact?.deltaScore ?? movement?.deltaScore ?? 0,
+    evaluatorProgressSummary: impact?.progressSummary || movement?.progressSummary || null,
+    evaluatorScorePressure: impact?.scorePressure || movement?.scorePressure || 'flat',
+  };
+}
+
+function fallbackManifestForAgent(agentId) {
+  if (agentId === 'context-manager') {
+    return {
+      id: 'context-manager',
+      backend: 'ollama',
+      runtime: 'ollama-json',
+      model: 'qwen3.5-9b',
+      host: DEFAULT_OLLAMA_HOST,
+      timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
+    };
+  }
+  if (agentId === 'planner') {
+    return {
+      id: 'planner',
+      backend: 'ollama',
+      runtime: 'ollama-json',
+      model: 'qwen3.5-9b',
+      host: DEFAULT_OLLAMA_HOST,
+      timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
+    };
+  }
+  if (agentId === 'executor') {
+    return {
+      id: 'executor',
+      backend: 'ollama',
+      runtime: 'ollama-json',
+      model: 'qwen3.5-9b',
+      host: DEFAULT_OLLAMA_HOST,
+      timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
+    };
+  }
+  if (agentId === 'evaluator') {
+    return {
+      id: 'evaluator',
+      backend: 'ollama',
+      runtime: 'ollama-json',
+      model: 'qwen3.5-9b',
+      host: DEFAULT_OLLAMA_HOST,
+      timeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
+    };
+  }
+  return {
+    id: agentId,
+  };
+}
+
+function resolveAssignedAgentIntendedCognition(rootPath, workspace, agentId) {
+  const workers = normalizeAgentWorkersState(workspace?.studio?.agentWorkers || {});
+  const worker = workers?.[agentId] || workspace?.studio?.agentWorkers?.[agentId] || null;
+  const definition = resolveAgentDefinition(rootPath, agentId, {
+    fallbackManifest: fallbackManifestForAgent(agentId),
+    fallbackPrompt: '',
+  });
+  const backend = String(worker?.backend || definition?.manifest?.backend || '').trim() || null;
+  const runtime = String(definition?.manifest?.runtime || '').trim() || null;
+  const modelName = String(worker?.model || definition?.manifest?.model || '').trim() || null;
+  const toolUseCapable = modelSupportsToolUse(modelName);
+  const intendedCognitionMode = backend === 'ollama' || String(runtime || '').toLowerCase().includes('ollama')
+    ? 'model_live'
+    : 'deterministic_fallback';
+  return {
+    backend,
+    runtime,
+    modelName,
+    toolUseCapable,
+    intendedCognitionMode,
+  };
+}
+
+function deriveRunCognitionMode(runSummary = null) {
+  if (!runSummary || typeof runSummary !== 'object') return null;
+  if (runSummary.cognition_mode === 'model_live' || runSummary.cognitionMode === 'model_live') return 'model_live';
+  if (runSummary.cognition_mode === 'deterministic_fallback' || runSummary.cognitionMode === 'deterministic_fallback') {
+    return 'deterministic_fallback';
+  }
+  if (Object.prototype.hasOwnProperty.call(runSummary, 'usedFallback')) {
+    return runSummary.usedFallback ? 'deterministic_fallback' : 'model_live';
+  }
+  if (String(runSummary.llmStatus || '').trim().toLowerCase() === 'live') return 'model_live';
+  if (runSummary.llmStatus) return 'deterministic_fallback';
+  return null;
+}
+
+function summarizeAssignedAgentCognition({
+  agentId,
+  label,
+  intended,
+  latestRun = null,
+  runs = [],
+  actualMode = null,
+  comparedAt = null,
+} = {}) {
+  const resolvedRuns = Array.isArray(runs) ? runs.filter(Boolean) : [];
+  const actualLastCognitionMode = actualMode || deriveRunCognitionMode(latestRun);
+  const liveRun = resolvedRuns.find((run) => deriveRunCognitionMode(run) === 'model_live') || null;
+  const fallbackRun = resolvedRuns.find((run) => deriveRunCognitionMode(run) === 'deterministic_fallback') || null;
+  const fallbackCount = resolvedRuns.filter((run) => deriveRunCognitionMode(run) === 'deterministic_fallback').length;
+  return {
+    agent_id: agentId,
+    label,
+    intended_cognition_mode: intended.intendedCognitionMode,
+    actual_last_cognition_mode: actualLastCognitionMode,
+    last_live_model_call_at: liveRun
+      ? (liveRun.compared_at || liveRun.comparedAt || liveRun.completedAt || liveRun.createdAt || null)
+      : null,
+    fallback_count: fallbackCount,
+    last_fallback_at: fallbackRun
+      ? (fallbackRun.compared_at || fallbackRun.comparedAt || fallbackRun.completedAt || fallbackRun.createdAt || null)
+      : null,
+    last_activity_at: comparedAt || latestRun?.compared_at || latestRun?.comparedAt || latestRun?.completedAt || latestRun?.createdAt || null,
+    backend: intended.backend,
+    runtime: intended.runtime,
+    model_name: intended.modelName,
+    tool_use_capable: Boolean(intended.toolUseCapable),
+    matches_intended: actualLastCognitionMode
+      ? actualLastCognitionMode === intended.intendedCognitionMode
+      : null,
+  };
+}
+
+function buildAssignedAgentCognitionSummary({
+  rootPath,
+  workspace,
+  latestEvaluation = null,
+  evaluatorHistory = [],
+} = {}) {
+  const contextRuns = listContextManagerRuns(rootPath).map((run) => summarizeContextManagerRun(run)).filter(Boolean);
+  const plannerRuns = listPlannerRuns(rootPath).map((run) => summarizePlannerRun(run)).filter(Boolean);
+  const executorRuns = listExecutorRuns(rootPath).map((run) => summarizeExecutorRun(run)).filter(Boolean);
+  const evaluatorRuns = (Array.isArray(evaluatorHistory) ? evaluatorHistory : []).filter(Boolean);
+  const agents = [
+    summarizeAssignedAgentCognition({
+      agentId: 'context-manager',
+      label: 'Context Manager',
+      intended: resolveAssignedAgentIntendedCognition(rootPath, workspace, 'context-manager'),
+      latestRun: contextRuns[0] || null,
+      runs: contextRuns,
+    }),
+    summarizeAssignedAgentCognition({
+      agentId: 'planner',
+      label: 'Planner',
+      intended: resolveAssignedAgentIntendedCognition(rootPath, workspace, 'planner'),
+      latestRun: plannerRuns[0] || null,
+      runs: plannerRuns,
+    }),
+    summarizeAssignedAgentCognition({
+      agentId: 'executor',
+      label: 'Executor',
+      intended: resolveAssignedAgentIntendedCognition(rootPath, workspace, 'executor'),
+      latestRun: executorRuns[0] || null,
+      runs: executorRuns,
+    }),
+    summarizeAssignedAgentCognition({
+      agentId: 'evaluator',
+      label: 'Evaluator',
+      intended: resolveAssignedAgentIntendedCognition(rootPath, workspace, 'evaluator'),
+      latestRun: latestEvaluation,
+      runs: evaluatorRuns,
+      actualMode: String(latestEvaluation?.cognition_mode || '').trim() || null,
+      comparedAt: latestEvaluation?.compared_at || null,
+    }),
+  ].filter(Boolean);
+  const liveCount = agents.filter((entry) => entry.actual_last_cognition_mode === 'model_live').length;
+  const fallbackObservedCount = agents.filter((entry) => Number(entry.fallback_count || 0) > 0).length;
+  return {
+    generated_at: nowIso(),
+    summary: `${liveCount} live cognition path${liveCount === 1 ? '' : 's'} visible | ${fallbackObservedCount} agent${fallbackObservedCount === 1 ? '' : 's'} observed with fallback history`,
+    agents,
+  };
+}
+
+function buildStructuredQAScorecardBundle(qaReport = null, options = {}) {
+  const latestEvaluation = options?.evaluator?.latestEvaluation || options?.latestEvaluation || null;
+  const evaluatorHistory = options?.evaluator?.history || options?.evaluatorHistory || [];
+  const definitions = normalizeQaScorecardDefinitions(qaReport?.metricDefinitions || null);
+  const reportTrace = qaReport?.sourceTrace || null;
+  const reportFreshness = normalizeQaScorecardFreshness(
+    reportTrace,
+    qaReport?.finishedAt || qaReport?.updatedAt || qaReport?.createdAt || null,
+  );
+  const cards = [];
+
+  (qaReport?.desks || []).forEach((desk, deskIndex) => {
+    (desk?.tests || []).forEach((test, testIndex) => {
+      const qualityCard = test?.qualityCard && typeof test.qualityCard === 'object'
+        ? test.qualityCard
+        : {
+            id: `qa.${String(test?.name || `test_${testIndex}`).trim() || `test_${testIndex}`}`,
+            desk: desk?.desk || null,
+            testId: test?.name || null,
+            testName: test?.name || 'Unnamed QA test',
+            status: test?.status || null,
+            updatedAt: qaReport?.finishedAt || qaReport?.updatedAt || qaReport?.createdAt || null,
+            summary: test?.summary || qaReport?.summary || null,
+          };
+      const deskId = qualityCard.desk || desk.desk || null;
+      const testId = qualityCard.testId || test.name || null;
+      const testName = qualityCard.testName || test.name || 'Unnamed QA test';
+      const resultStatus = normalizeQaScorecardResultStatus(test.status || qualityCard.status || '');
+      const qaFeedbackStatus = normalizeQaScorecardFeedbackStatus(test.status || qualityCard.status || '');
+      const freshness = normalizeQaScorecardFreshness(
+        reportTrace,
+        qualityCard.updatedAt || qaReport?.finishedAt || qaReport?.updatedAt || qaReport?.createdAt || null,
+      );
+      const scoreBand = deriveQaScorecardScoreBand(qualityCard.overallScore || null);
+      const validation = qualityCard.validation && typeof qualityCard.validation === 'object'
+        ? qualityCard.validation
+        : null;
+      const validationState = validation
+        ? (validation.ok ? 'pass' : 'fail')
+        : 'missing';
+      const rollupReasons = [];
+      if (validationState === 'fail') {
+        rollupReasons.push(validation.summary || 'Scorecard schema validation failed.');
+      }
+      if (resultStatus === 'fail') {
+        rollupReasons.push(`Structured test result reported fail for ${testName}.`);
+      } else if (resultStatus === 'warn') {
+        rollupReasons.push(`Structured test result reported warn for ${testName}.`);
+      } else if (resultStatus === 'missing') {
+        rollupReasons.push(`Structured test result status is missing for ${testName}.`);
+      }
+      if (freshness === 'stale') {
+        rollupReasons.push('Structured QA report is stale, so this scorecard cannot be treated as fresh.');
+      } else if (freshness === 'missing') {
+        rollupReasons.push('Structured QA report source trace is missing for this scorecard.');
+      }
+      if (scoreBand.status === 'fail') {
+        rollupReasons.push(`Overall score ${scoreBand.value ?? 'n/a'} is below the fail threshold ${QA_SCORECARD_WARN_MIN}.`);
+      } else if (scoreBand.status === 'warn') {
+        rollupReasons.push(`Overall score ${scoreBand.value ?? 'n/a'} is below the pass threshold ${QA_SCORECARD_PASS_MIN}.`);
+      } else if (scoreBand.status === 'missing') {
+        rollupReasons.push('Overall score is missing.');
+      }
+
+      let rollupStatus = 'missing';
+      if (freshness === 'missing') {
+        rollupStatus = 'missing';
+      } else if (validationState === 'fail' || resultStatus === 'fail' || scoreBand.status === 'fail') {
+        rollupStatus = 'fail';
+      } else if (freshness === 'stale') {
+        rollupStatus = 'stale';
+      } else if (resultStatus === 'warn' || resultStatus === 'stale' || resultStatus === 'missing' || scoreBand.status === 'warn') {
+        rollupStatus = 'warn';
+      } else if (validationState === 'pass' && freshness === 'fresh' && scoreBand.status === 'pass') {
+        rollupStatus = 'pass';
+      }
+
+      cards.push({
+        ...qualityCard,
+        classification: 'derived_projection',
+        sourceSeam: 'structured_qa_report',
+        sourcePath: reportTrace?.sourcePath || 'data/spatial/qa/structured/latest.json',
+        sourceRecordPath: `desks[${deskIndex}].tests[${testIndex}]`,
+        desk: deskId,
+        status: resultStatus,
+        reportedStatus: resultStatus,
+        qaFeedbackStatus,
+        rollupStatus,
+        scoreBandStatus: scoreBand.status,
+        freshness,
+        validationStatus: validationState,
+        failureOwnerDeskId: deskId,
+        testId,
+        testName,
+        thresholds: {
+          passMin: QA_SCORECARD_PASS_MIN,
+          warnMin: QA_SCORECARD_WARN_MIN,
+        },
+        rollupReasons,
+        summary: summarizeQaScorecardRollup({
+          desk: deskId,
+          testName,
+          rollupStatus,
+          rollupReasons,
+        }),
+        sourceTrace: reportTrace ? {
+          ...reportTrace,
+          kind: 'scorecard',
+          label: testName || 'Structured QA scorecard',
+          detail: `${deskId || 'desk'} | ${test.name || testId || 'test'}`,
+          freshnessClass: freshness === 'fresh'
+            ? 'derived_current'
+            : freshness,
+          derivedFrom: reportTrace.sourcePath || null,
+          generatedBy: {
+            system: 'ui',
+            module: 'ui/server.buildStructuredQAScorecardBundle',
+          },
+          sourceArtifacts: [
+            {
+              path: reportTrace.sourcePath || 'data/spatial/qa/structured/latest.json',
+              label: 'Structured QA report',
+              kind: 'report',
+              freshnessClass: freshness === 'fresh'
+                ? 'derived_current'
+                : freshness,
+              observedAt: reportTrace.observedAt || qualityCard.updatedAt || null,
+            },
+            {
+              path: `${deskId || 'desk'}:${test.name || testId || 'test'}`,
+              label: 'Structured test result',
+              kind: 'test-result',
+              freshnessClass: freshness === 'fresh'
+                ? 'derived_current'
+                : freshness,
+              observedAt: reportTrace.observedAt || qualityCard.updatedAt || null,
+              derivedFrom: reportTrace.sourcePath || null,
+            },
+          ],
+        } : null,
+      });
+    });
+  });
+
+  cards.sort((left, right) => {
+    const deskCompare = String(left.desk || '').localeCompare(String(right.desk || ''));
+    if (deskCompare !== 0) return deskCompare;
+    const testCompare = String(left.testName || left.testId || '').localeCompare(String(right.testName || right.testId || ''));
+    if (testCompare !== 0) return testCompare;
+    return String(left.id || '').localeCompare(String(right.id || ''));
+  });
+
+  const counts = {
+    pass: cards.filter((card) => card.rollupStatus === 'pass').length,
+    warn: cards.filter((card) => card.rollupStatus === 'warn').length,
+    stale: cards.filter((card) => card.rollupStatus === 'stale').length,
+    fail: cards.filter((card) => card.rollupStatus === 'fail').length,
+    missing: cards.filter((card) => card.rollupStatus === 'missing').length,
+  };
+  const evaluatorMovement = buildEvaluatorMovementSummary(latestEvaluation, evaluatorHistory);
+  const status = !qaReport
+    ? 'missing'
+    : cards.length === 0
+      ? 'missing'
+      : counts.fail > 0
+        ? 'fail'
+        : counts.stale > 0
+          ? 'stale'
+          : counts.warn > 0 || counts.missing > 0
+            ? 'warn'
+            : 'pass';
+  const deskCount = new Set(cards.map((card) => String(card.desk || '').trim()).filter(Boolean)).size;
+  const summary = !qaReport
+    ? 'Structured QA report is missing, so no scorecards can be derived.'
+    : !cards.length
+      ? 'Structured QA report did not include any quality cards.'
+      : `${cards.length} scorecards | ${counts.pass} pass | ${counts.warn} warn | ${counts.stale} stale | ${counts.fail} fail | ${counts.missing} missing`;
+  return {
+    classification: 'derived_projection',
+    sourceSeam: 'structured_qa_report',
+    status,
+    summary,
+    deskCount,
+    testCount: cards.length,
+    definitions,
+    cards,
+    counts,
+    evaluatorMovement,
+  };
+}
+
+function collectStructuredQAScorecards(qaReport = null) {
+  return buildStructuredQAScorecardBundle(qaReport).cards;
+}
+
+function buildStructuredQASummary(qaReport = null) {
+  const desks = Array.isArray(qaReport?.desks) ? qaReport.desks : [];
+  return {
+    status: qaReport?.status || 'idle',
+    summary: qaReport?.summary || '',
+    deskCount: desks.length,
+    testCount: desks.reduce((total, desk) => total + (Array.isArray(desk?.tests) ? desk.tests.length : 0), 0),
+    startedAt: qaReport?.startedAt || null,
+    finishedAt: qaReport?.finishedAt || null,
+    durationMs: Number.isFinite(Number(qaReport?.durationMs)) ? Number(qaReport.durationMs) : null,
+  };
+}
+
+const QA_EVIDENCE_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
+function parseQaEvidenceTimestamp(...values) {
+  for (const value of values) {
+    const parsed = Date.parse(String(value || '').trim());
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function buildQaEvidenceTrace({
+  kind = 'evidence',
+  label = '',
+  detail = '',
+  sourcePath = null,
+  sourceClass = 'live_canonical',
+  derivedFrom = null,
+  generatedBy = null,
+  sourceArtifacts = [],
+  record = null,
+  observedAt = null,
+} = {}) {
+  const timestamp = parseQaEvidenceTimestamp(
+    observedAt,
+    record?.finishedAt,
+    record?.updatedAt,
+    record?.createdAt,
+    record?.startedAt,
+    record?.lastSeen,
+  );
+  const ageMs = timestamp == null ? null : Math.max(0, Date.now() - timestamp);
+  const freshnessClass = !record
+    ? 'missing'
+    : sourceClass === 'non_executable'
+      ? 'non_executable'
+      : (ageMs != null && ageMs > QA_EVIDENCE_STALE_AFTER_MS
+        ? 'stale'
+        : sourceClass);
+  return {
+    kind: String(kind || 'evidence').trim() || 'evidence',
+    label: String(label || '').trim() || null,
+    detail: String(detail || '').trim() || null,
+    sourcePath: String(sourcePath || '').trim() || null,
+    sourceClass: String(sourceClass || 'live_canonical').trim() || 'live_canonical',
+    freshnessClass,
+    observedAt: timestamp == null ? null : new Date(timestamp).toISOString(),
+    ageMs,
+    derivedFrom: String(derivedFrom || '').trim() || null,
+    generatedBy: generatedBy && typeof generatedBy === 'object' ? {
+      system: String(generatedBy.system || generatedBy.source || generatedBy.kind || '').trim() || null,
+      module: String(generatedBy.module || generatedBy.moduleName || '').trim() || null,
+      label: String(generatedBy.label || '').trim() || null,
+    } : null,
+    sourceArtifacts: Array.isArray(sourceArtifacts)
+      ? sourceArtifacts.map((artifact) => {
+          if (!artifact) return null;
+          if (typeof artifact === 'string') {
+            const pathValue = String(artifact || '').trim();
+            return pathValue ? { path: pathValue, label: pathValue, kind: 'artifact' } : null;
+          }
+          const source = artifact && typeof artifact === 'object' ? artifact : {};
+          const pathValue = String(source.path || source.sourcePath || '').trim();
+          const labelValue = String(source.label || pathValue || '').trim() || null;
+          return pathValue || labelValue
+            ? {
+                path: pathValue || null,
+                label: labelValue || pathValue || null,
+                kind: String(source.kind || 'artifact').trim() || 'artifact',
+                freshnessClass: String(source.freshnessClass || '').trim() || null,
+                observedAt: String(source.observedAt || '').trim() || null,
+                derivedFrom: String(source.derivedFrom || '').trim() || null,
+              }
+            : null;
+        }).filter(Boolean)
+      : [],
+  };
+}
+
+function summarizeQaEvidenceSources(sources = []) {
+  return (Array.isArray(sources) ? sources : []).reduce((accumulator, source) => {
+    const freshnessClass = String(source?.freshnessClass || 'missing').trim() || 'missing';
+    accumulator.total += 1;
+    if (freshnessClass === 'live_canonical') accumulator.liveCanonical += 1;
+    else if (freshnessClass === 'derived_current') accumulator.derivedCurrent += 1;
+    else if (freshnessClass === 'stale') accumulator.stale += 1;
+    else if (freshnessClass === 'non_executable') accumulator.nonExecutable += 1;
+    else accumulator.missing += 1;
+    return accumulator;
+  }, {
+    total: 0,
+    liveCanonical: 0,
+    derivedCurrent: 0,
+    stale: 0,
+    missing: 0,
+    nonExecutable: 0,
+  });
+}
+
+function buildQaEvidenceOverview({
+  structuredReport = null,
+  structuredSummary = null,
+  scorecards = [],
+  latestBrowserRun = null,
+  browserRuns = [],
+  localGate = null,
+  availableTests = [],
+} = {}) {
+  const sources = [];
+  const structuredTrace = structuredReport?.sourceTrace || null;
+  sources.push(buildQaEvidenceTrace({
+    kind: 'structured-report',
+    label: 'Structured QA report',
+    detail: structuredSummary?.summary || structuredReport?.summary || 'No structured QA summary recorded yet.',
+    sourcePath: 'data/spatial/qa/structured/latest.json',
+    sourceClass: 'live_canonical',
+    generatedBy: structuredTrace?.generatedBy || {
+      system: 'qa',
+      module: 'qa/qaLead.runAll',
+    },
+    sourceArtifacts: structuredTrace?.sourceArtifacts || [
+      {
+        path: 'data/spatial/qa/structured/latest.json',
+        label: 'Structured QA report',
+        kind: 'report',
+        freshnessClass: 'live_canonical',
+        observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+      },
+    ],
+    record: structuredReport,
+    observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'scorecards',
+    label: 'Structured QA scorecards',
+    detail: `${Array.isArray(scorecards) ? scorecards.length : 0} scorecard${Array.isArray(scorecards) && scorecards.length === 1 ? '' : 's'}`,
+    sourcePath: 'data/spatial/qa/structured/latest.json',
+    sourceClass: 'derived_current',
+    derivedFrom: structuredTrace?.sourcePath || 'data/spatial/qa/structured/latest.json',
+    generatedBy: {
+      system: 'ui',
+      module: 'ui/server.collectStructuredQAScorecards',
+    },
+    sourceArtifacts: [
+      {
+        path: structuredTrace?.sourcePath || 'data/spatial/qa/structured/latest.json',
+        label: 'Structured QA report',
+        kind: 'report',
+        freshnessClass: structuredTrace?.freshnessClass === 'stale'
+          ? 'stale'
+          : (structuredTrace?.freshnessClass === 'missing'
+            ? 'missing'
+            : 'derived_current'),
+        observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+      },
+      {
+        path: `${structuredTrace?.sourcePath || 'data/spatial/qa/structured/latest.json'}#scorecards`,
+        label: 'Structured scorecards',
+        kind: 'scorecard-set',
+        freshnessClass: structuredTrace?.freshnessClass === 'stale'
+          ? 'stale'
+          : (structuredTrace?.freshnessClass === 'missing'
+            ? 'missing'
+            : 'derived_current'),
+        observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+        derivedFrom: structuredTrace?.sourcePath || null,
+      },
+    ],
+    record: structuredReport,
+    observedAt: structuredSummary?.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'browser-run',
+    label: 'Latest browser run',
+    detail: latestBrowserRun
+      ? `${latestBrowserRun.scenario || 'layout-pass'} | ${latestBrowserRun.verdict || latestBrowserRun.status || 'pending'}`
+      : 'No browser run recorded yet.',
+    sourcePath: latestBrowserRun?.id ? `data/spatial/qa/${latestBrowserRun.id}.json` : 'data/spatial/qa/*.json',
+    sourceClass: 'live_canonical',
+    generatedBy: latestBrowserRun?.sourceTrace?.generatedBy || {
+      system: 'ui',
+      module: 'ui/qaRunner.runQARun',
+    },
+    sourceArtifacts: latestBrowserRun?.sourceTrace?.sourceArtifacts || (
+      latestBrowserRun?.id ? [{
+        path: `data/spatial/qa/${latestBrowserRun.id}.json`,
+        label: 'Browser run artifact',
+        kind: 'run',
+        freshnessClass: 'live_canonical',
+        observedAt: latestBrowserRun.finishedAt || latestBrowserRun.createdAt || null,
+      }] : []
+    ),
+    record: latestBrowserRun,
+    observedAt: latestBrowserRun?.finishedAt || latestBrowserRun?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'browser-history',
+    label: 'Browser run history',
+    detail: `${Array.isArray(browserRuns) ? browserRuns.length : 0} recorded run${Array.isArray(browserRuns) && browserRuns.length === 1 ? '' : 's'}`,
+    sourcePath: 'data/spatial/qa/*.json',
+    sourceClass: 'derived_current',
+    derivedFrom: latestBrowserRun?.id ? `data/spatial/qa/${latestBrowserRun.id}.json` : 'data/spatial/qa/*.json',
+    generatedBy: {
+      system: 'ui',
+      module: 'ui/qaRunner.runQARun',
+    },
+    sourceArtifacts: [{
+      path: 'data/spatial/qa/*.json',
+      label: 'Browser run history',
+      kind: 'run-history',
+      freshnessClass: latestBrowserRun?.sourceTrace?.freshnessClass === 'stale'
+        ? 'stale'
+        : (latestBrowserRun?.sourceTrace?.freshnessClass === 'missing'
+          ? 'missing'
+          : 'derived_current'),
+      observedAt: latestBrowserRun?.finishedAt || latestBrowserRun?.createdAt || null,
+      derivedFrom: latestBrowserRun?.id ? `data/spatial/qa/${latestBrowserRun.id}.json` : 'data/spatial/qa/*.json',
+    }],
+    record: latestBrowserRun,
+    observedAt: latestBrowserRun?.finishedAt || latestBrowserRun?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'local-gate',
+    label: 'Fast unit gate',
+    detail: localGate?.unit
+      ? `${localGate.unit.status || 'pending'} | ${localGate.unit.passedCount || 0}/${localGate.unit.totalChecks || 0} checks passed`
+      : 'No local unit gate report recorded yet.',
+    sourcePath: 'data/spatial/qa/local-gates/test-unit-latest.json',
+    sourceClass: 'live_canonical',
+    generatedBy: localGate?.unit?.sourceTrace?.generatedBy || {
+      system: 'ui',
+      module: 'ui/qaRunner.writeLocalGateReport',
+    },
+    sourceArtifacts: localGate?.unit?.sourceTrace?.sourceArtifacts || [{
+      path: 'data/spatial/qa/local-gates/test-unit-latest.json',
+      label: 'Fast unit gate report',
+      kind: 'gate',
+      freshnessClass: localGate?.unit?.sourceTrace?.freshnessClass || 'live_canonical',
+      observedAt: localGate?.unit?.finishedAt || localGate?.unit?.updatedAt || localGate?.unit?.createdAt || null,
+    }],
+    record: localGate?.unit || null,
+    observedAt: localGate?.unit?.finishedAt || localGate?.unit?.updatedAt || localGate?.unit?.createdAt || null,
+  }));
+
+  sources.push(buildQaEvidenceTrace({
+    kind: 'guardrail-summary',
+    label: 'Studio boot guardrail',
+    detail: localGate?.studioBoot
+      ? `${localGate.studioBoot.verdict || localGate.studioBoot.status || 'pending'} | findings ${localGate.studioBoot.findingCount || 0}`
+      : 'No studio boot guardrail run recorded yet.',
+    sourcePath: localGate?.studioBoot?.sourceTrace?.sourcePath || (localGate?.studioBoot?.id ? `data/spatial/qa/${localGate.studioBoot.id}.json` : 'data/spatial/qa/*.json'),
+    sourceClass: 'derived_current',
+    derivedFrom: localGate?.studioBoot?.sourceTrace?.derivedFrom || localGate?.studioBoot?.sourceTrace?.sourcePath || null,
+    generatedBy: localGate?.studioBoot?.sourceTrace?.generatedBy || {
+      system: 'ui',
+      module: 'ui/qaRunner.runQARun',
+    },
+    sourceArtifacts: localGate?.studioBoot?.sourceTrace?.sourceArtifacts || [{
+      path: localGate?.studioBoot?.sourceTrace?.sourcePath || (localGate?.studioBoot?.id ? `data/spatial/qa/${localGate.studioBoot.id}.json` : 'data/spatial/qa/*.json'),
+      label: 'Studio boot guardrail report',
+      kind: 'gate',
+      freshnessClass: localGate?.studioBoot?.sourceTrace?.freshnessClass || 'derived_current',
+      observedAt: localGate?.studioBoot?.observedAt || localGate?.studioBoot?.finishedAt || localGate?.studioBoot?.createdAt || null,
+      derivedFrom: localGate?.studioBoot?.sourceTrace?.derivedFrom || null,
+    }],
+    record: localGate?.studioBoot || null,
+    observedAt: localGate?.studioBoot?.observedAt || localGate?.studioBoot?.finishedAt || localGate?.studioBoot?.createdAt || null,
+  }));
+
+  if (Array.isArray(availableTests) && availableTests.length) {
+    sources.push(buildQaEvidenceTrace({
+      kind: 'suite-definition',
+      label: 'Runnable suites',
+      detail: `${availableTests.length} suite definition${availableTests.length === 1 ? '' : 's'}`,
+      sourcePath: 'qa/desks/*.js',
+      sourceClass: 'non_executable',
+      generatedBy: {
+        system: 'ui',
+        module: 'ui/server.listRunnableQASuites',
+      },
+      sourceArtifacts: [{
+        path: 'qa/desks/*.js',
+        label: 'Runnable QA suite definitions',
+        kind: 'source-module',
+        freshnessClass: 'non_executable',
+      }],
+      record: { id: 'suite-definition' },
+    }));
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  for (const source of sources) {
+    const key = `${source.kind}:${source.sourcePath || 'unknown'}:${source.freshnessClass}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(source);
+  }
+
+  return {
+    sources: deduped,
+    summary: summarizeQaEvidenceSources(deduped),
+  };
+}
+
+function listInteractiveBrowserRuns(rootPath = ROOT) {
+  return listQARuns(rootPath).filter((run) => String(run?.trigger || '').toLowerCase() !== 'guardrail');
+}
+
+function findLatestStudioBootGuardrailRun(rootPath = ROOT) {
+  return listQARuns(rootPath).find((run) => (
+    String(run?.trigger || '').toLowerCase() === 'guardrail'
+    && String(run?.scenario || '').toLowerCase() === 'studio-smoke'
+  )) || null;
+}
+
+function summarizeGuardrailRun(run = null) {
+  const summary = summarizeQARun(run);
+  if (!summary) return null;
+  const consoleErrors = Array.isArray(run?.console)
+    ? run.console.filter((entry) => entry.type === 'error' || entry.type === 'pageerror')
+    : [];
+  const networkFailures = Array.isArray(run?.network) ? run.network : [];
+  return {
+    ...summary,
+    source: 'studio-boot-guardrail',
+    consoleErrorCount: consoleErrors.length,
+    networkFailureCount: networkFailures.length,
+    failedSteps: (run?.steps || [])
+      .filter((step) => !['pass', 'pending'].includes(String(step?.verdict || 'pending')))
+      .map((step) => ({
+        id: step.id,
+        label: step.label,
+        verdict: step.verdict || step.status || 'unknown',
+      })),
+    sourceTrace: buildQaEvidenceTrace({
+      kind: 'guardrail-summary',
+      label: 'Studio boot guardrail',
+      detail: summary.summary || 'Studio boot guardrail summary.',
+      sourcePath: run?.id ? `data/spatial/qa/${run.id}.json` : 'data/spatial/qa/*.json',
+      sourceClass: 'derived_current',
+      derivedFrom: run?.id ? `data/spatial/qa/${run.id}.json` : null,
+      generatedBy: {
+        system: 'ui',
+        module: 'ui/qaRunner.runQARun',
+      },
+      sourceArtifacts: run?.id ? [{
+        path: `data/spatial/qa/${run.id}.json`,
+        label: 'Studio boot guardrail report',
+        kind: 'gate',
+        freshnessClass: 'derived_current',
+        observedAt: run?.finishedAt || run?.createdAt || null,
+        derivedFrom: run?.id ? `data/spatial/qa/${run.id}.json` : null,
+      }] : [],
+      record: run,
+      observedAt: run?.finishedAt || run?.createdAt || null,
+    }),
+  };
+}
+
+function buildLocalGatePayload(rootPath = ROOT) {
+  const unit = readLocalGateReport(rootPath, 'test-unit-latest');
+  const studioBootRun = findLatestStudioBootGuardrailRun(rootPath);
+  return {
+    unit: unit ? {
+      ...unit,
+      sourceTrace: buildQaEvidenceTrace({
+        kind: 'local-gate',
+        label: 'Fast unit gate',
+        detail: String(unit.summary || 'Fast unit gate summary.').trim() || 'Fast unit gate summary.',
+        sourcePath: 'data/spatial/qa/local-gates/test-unit-latest.json',
+        sourceClass: 'live_canonical',
+        generatedBy: {
+          system: 'ui',
+          module: 'ui/qaRunner.writeLocalGateReport',
+        },
+        sourceArtifacts: [{
+          path: 'data/spatial/qa/local-gates/test-unit-latest.json',
+          label: 'Fast unit gate report',
+          kind: 'gate',
+          freshnessClass: 'live_canonical',
+          observedAt: unit.finishedAt || unit.updatedAt || unit.createdAt || null,
+        }],
+        record: unit,
+        observedAt: unit.finishedAt || unit.updatedAt || unit.createdAt || null,
+      }),
+    } : null,
+    studioBoot: summarizeGuardrailRun(studioBootRun),
+  };
+}
+
+function resolvePersistedExternalValidationSnapshot(qaLeadOutput = null) {
+  const candidates = [
+    qaLeadOutput?.latestRun?.external_validation,
+    qaLeadOutput?.latestRun?.externalValidation,
+    qaLeadOutput?.state?.external_validation,
+    qaLeadOutput?.state?.externalValidation,
+  ];
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'object') continue;
+    const checkedAt = String(
+      candidate.lastCheckedAt
+      || candidate.last_checked_at
+      || candidate.checked_at
+      || qaLeadOutput?.latestRun?.finished_at
+      || qaLeadOutput?.latestRun?.finishedAt
+      || qaLeadOutput?.state?.finished_at
+      || qaLeadOutput?.state?.finishedAt
+      || '',
+    ).trim() || null;
+    return buildExternalValidationSnapshot({
+      probeCheck: candidate,
+      checkedAt,
+    });
+  }
+  return null;
+}
+
+function buildQAStatePayload(rootPath = ROOT, options = {}) {
+  const workspace = normalizeSpatialWorkspaceShape(options.workspace || readSpatialWorkspace(rootPath));
+  const structuredReport = ensureStructuredReportQualityCards(readStructuredQAReport(rootPath, 'latest'));
+  const interactiveRuns = listInteractiveBrowserRuns(rootPath);
+  const structuredSummary = buildStructuredQASummary(structuredReport);
+  const qaLeadOutput = readQaLeadOutput(rootPath);
+  const testRegistry = buildQATestRegistry({
+    rootPath,
+    structuredReport,
+  });
+  const structuredReportWithTrace = structuredReport ? {
+    ...structuredReport,
+    sourceTrace: buildQaEvidenceTrace({
+      kind: 'structured-report',
+      label: 'Structured QA report',
+      detail: structuredSummary.summary || structuredReport.summary || 'Structured QA report.',
+      sourcePath: 'data/spatial/qa/structured/latest.json',
+      sourceClass: 'live_canonical',
+      generatedBy: {
+        system: 'qa',
+        module: 'qa/qaLead.runAll',
+      },
+      sourceArtifacts: [
+        {
+          path: 'qa/desks/*.js',
+          label: 'Desk QA modules',
+          kind: 'source-module',
+          freshnessClass: 'derived_current',
+        },
+        {
+          path: 'qa/qaAuditTrail.js',
+          label: 'QA audit helper',
+          kind: 'source-module',
+          freshnessClass: 'derived_current',
+        },
+        {
+          path: 'data/spatial/qa/structured/latest.json',
+          label: 'Structured QA report',
+          kind: 'report',
+          freshnessClass: 'live_canonical',
+        },
+      ],
+      record: structuredReport,
+      observedAt: structuredSummary.finishedAt || structuredReport.finishedAt || structuredReport.updatedAt || structuredReport.createdAt || null,
+    }),
+  } : null;
+  const latestBrowserRun = summarizeQARun(interactiveRuns[0] || null);
+  const latestBrowserRunWithTrace = latestBrowserRun ? {
+    ...latestBrowserRun,
+    sourceTrace: buildQaEvidenceTrace({
+      kind: 'browser-run',
+      label: 'Latest browser run',
+      detail: `${latestBrowserRun.scenario || 'layout-pass'} | ${latestBrowserRun.verdict || latestBrowserRun.status || 'pending'}`,
+      sourcePath: latestBrowserRun.id ? `data/spatial/qa/${latestBrowserRun.id}.json` : 'data/spatial/qa/*.json',
+      sourceClass: 'live_canonical',
+      generatedBy: {
+        system: 'ui',
+        module: 'ui/qaRunner.runQARun',
+      },
+      sourceArtifacts: latestBrowserRun.id ? [{
+        path: `data/spatial/qa/${latestBrowserRun.id}.json`,
+        label: 'Browser run artifact',
+        kind: 'run',
+        freshnessClass: 'live_canonical',
+        observedAt: latestBrowserRun.finishedAt || latestBrowserRun.createdAt || null,
+      }] : [],
+      record: interactiveRuns[0] || null,
+      observedAt: latestBrowserRun.finishedAt || latestBrowserRun.createdAt || null,
+    }),
+  } : null;
+  const browserRuns = interactiveRuns.slice(0, 8).map((run) => {
+    const summary = summarizeQARun(run);
+    return summary ? {
+      ...summary,
+      sourceTrace: buildQaEvidenceTrace({
+        kind: 'browser-run',
+        label: 'Browser run',
+        detail: `${summary.scenario || 'layout-pass'} | ${summary.verdict || summary.status || 'pending'}`,
+        sourcePath: summary.id ? `data/spatial/qa/${summary.id}.json` : 'data/spatial/qa/*.json',
+        sourceClass: 'live_canonical',
+        generatedBy: {
+          system: 'ui',
+          module: 'ui/qaRunner.runQARun',
+        },
+        sourceArtifacts: summary.id ? [{
+          path: `data/spatial/qa/${summary.id}.json`,
+          label: 'Browser run artifact',
+          kind: 'run',
+          freshnessClass: 'live_canonical',
+          observedAt: summary.finishedAt || summary.createdAt || null,
+        }] : [],
+        record: run,
+        observedAt: summary.finishedAt || summary.createdAt || null,
+      }),
+    } : null;
+  }).filter(Boolean);
+  const localGate = buildLocalGatePayload(rootPath);
+  const evaluatorState = readEvaluatorState(rootPath);
+  const latestEvaluation = evaluatorState?.state?.latest_evaluation || null;
+  const evaluatorHistory = Array.isArray(evaluatorState?.history) ? evaluatorState.history.slice(0, 12) : [];
+  const baseScorecardBundle = buildStructuredQAScorecardBundle(structuredReportWithTrace);
+  const qaScorecardBundle = buildStructuredQAScorecardBundle(structuredReportWithTrace, {
+    evaluator: {
+      latestEvaluation,
+      history: evaluatorHistory,
+    },
+  });
+  const qaScorecards = qaScorecardBundle.cards;
+  const evaluator = {
+    latestEvaluation,
+    latestSnapshot: evaluatorState?.state?.latest_snapshot || buildEvaluatorSnapshot({
+      rootPath,
+      workspace,
+      scorecards: baseScorecardBundle.cards,
+      comparisonTarget: 'system_runtime',
+      capturedAt: structuredSummary.finishedAt || structuredReport?.finishedAt || structuredReport?.updatedAt || structuredReport?.createdAt || null,
+    }),
+    previousSnapshot: evaluatorState?.state?.previous_snapshot || null,
+    history: evaluatorHistory,
+    historyCount: Number(evaluatorState?.state?.history_count || evaluatorHistory.length) || 0,
+    movement: buildEvaluatorMovementSummary(latestEvaluation, evaluatorHistory),
+  };
+  const agentCognitionSummary = buildAssignedAgentCognitionSummary({
+    rootPath,
+    workspace,
+    latestEvaluation,
+    evaluatorHistory,
+  });
+  const evidenceAudit = buildQaEvidenceOverview({
+    structuredReport: structuredReportWithTrace,
+    structuredSummary,
+    scorecards: qaScorecards,
+    latestBrowserRun: latestBrowserRunWithTrace,
+    browserRuns,
+    localGate,
+  });
+  const auditTrail = buildQAAuditTrail({
+    structuredReport: structuredReportWithTrace,
+    structuredSummary,
+    scorecards: qaScorecards,
+    latestBrowserRun: latestBrowserRunWithTrace,
+    browserRuns,
+    localGate,
+  });
+  const openInvestigations = readOpenQaInvestigations(rootPath, 5);
+  const researchState = buildQaResearchState(rootPath, openInvestigations);
+  const resolvedExternalValidation = options.externalValidation
+    ? buildExternalValidationSnapshot({ probeCheck: options.externalValidation })
+    : (latestExternalValidationSnapshot
+      ? buildExternalValidationSnapshot({ probeCheck: latestExternalValidationSnapshot })
+      : resolvePersistedExternalValidationSnapshot(qaLeadOutput));
+  const externalValidation = resolvedExternalValidation || {
+    status: 'unavailable',
+    probeStatus: 'unavailable',
+    lastCheckedAt: null,
+    statusMatch: false,
+    freshnessKnown: false,
+    notes: ['External QA probe has not been checked yet.'],
+    source: 'external_mcp',
+    errorMessage: 'External QA probe has not been checked yet.',
+    probeFailureKind: null,
+    probeFailureDetail: null,
+    probeStatusCode: null,
+    probeTarget: null,
+    externalProbeLive: false,
+    usedFallback: true,
+    mcpEvidenceSource: 'fallback_unavailable',
+  };
+  const repairLoop = buildQaRepairLoopState(rootPath);
+  const qaCanaries = options.qaCanaries || (options.runQaCanaries ? runQaLaneCanarySuite(rootPath) : emptyQaLaneCanaryState());
+  const qaMcpLiveStatus = buildQaMcpLiveStatus({
+    externalValidation,
+    researchState,
+    openInvestigations: researchState.investigations,
+    repairLoop,
+    structuredSummary,
+    latestBrowserRun: latestBrowserRunWithTrace,
+    localGate,
+  });
+  const outputFeed = readQaOutputFeed(rootPath);
+  const qaLiveCycle = buildQaLiveCycleState({
+    qaState: {
+      externalValidation,
+      qaMcpLiveStatus,
+    },
+    qaLeadOutput,
+    outputFeed,
+  });
+  return {
+    structuredReport: structuredReportWithTrace,
+    structuredBusy: false,
+    structuredSummary: {
+      ...structuredSummary,
+      sourceTrace: structuredReportWithTrace?.sourceTrace || null,
+    },
+    scorecards: qaScorecards,
+    scorecardDefinitions: qaScorecardBundle.definitions,
+    scorecardStatus: qaScorecardBundle.status,
+    scorecardSummary: qaScorecardBundle.summary,
+    scorecardCount: qaScorecardBundle.testCount,
+    scorecardDeskCount: qaScorecardBundle.deskCount,
+    testRegistry,
+    testRegistrySummary: testRegistry.summary || summarizeQATestRegistry(testRegistry),
+    latestBrowserRun: latestBrowserRunWithTrace,
+    browserRuns,
+    browserBusy: false,
+    localGate,
+    openInvestigations: researchState.investigations,
+    researchNotes: researchState.notes,
+    researchSummary: researchState.summary,
+    researchState,
+    repairLoop,
+    qaLead: qaLeadOutput.state,
+    qaLeadRuns: qaLeadOutput.recentRuns,
+    qaLeadLatestRun: qaLeadOutput.latestRun,
+    qaLiveCycle,
+    evaluator,
+    agentCognitionSummary,
+    outputFeedLoaded: true,
+    outputFeed: outputFeed.items,
+    qaCanaries,
+    qaMcpLiveStatus,
+    evidenceSources: evidenceAudit.sources,
+    evidenceSummary: evidenceAudit.summary,
+    auditTrail,
+    auditTrailSummary: auditTrail.summary || summarizeQAAuditTrail(auditTrail),
+    externalValidation,
+  };
+}
+
+function safeModeArtifactDir(rootPath = ROOT) {
+  return path.join(rootPath || ROOT, 'brain', 'context', 'safe_mode');
+}
+
+function writeSafeModeArtifact(rootPath = ROOT, fileName = 'status.json', payload = {}) {
+  const dir = safeModeArtifactDir(rootPath);
+  fs.mkdirSync(dir, { recursive: true });
+  const filePath = path.join(dir, fileName);
+  writeJson(filePath, payload);
+  return {
+    path: relativeToRoot(rootPath || ROOT, filePath),
+    absolutePath: filePath,
+  };
+}
+
+function normalizeSafeModeErrorEntry(entry = {}, fallback = {}) {
+  const message = String(entry.message || entry.summary || entry.error || fallback.message || '').trim();
+  return {
+    source: String(entry.source || fallback.source || 'unknown').trim() || 'unknown',
+    severity: String(entry.severity || fallback.severity || 'warning').trim() || 'warning',
+    message: message || 'Unknown safe-mode issue.',
+    failureKey: String(entry.failureKey || fallback.failureKey || '').trim() || null,
+    stage: String(entry.stage || fallback.stage || '').trim() || null,
+    agent_id: String(entry.agent_id || fallback.agent_id || '').trim() || null,
+    agent_version: String(entry.agent_version || fallback.agent_version || '').trim() || null,
+    failureClass: String(entry.failureClass || entry.failure_class || fallback.failureClass || fallback.failure_class || '').trim() || null,
+    uiResponse: entry.uiResponse || entry.ui_response || fallback.uiResponse || fallback.ui_response || null,
+    stack: String(entry.stack || fallback.stack || '').trim() || null,
+    count: Number(entry.count ?? fallback.count ?? 0) || 0,
+    lastSeen: String(entry.lastSeen || fallback.lastSeen || '').trim() || null,
+    findingCount: Number(entry.findingCount ?? fallback.findingCount ?? 0) || 0,
+    runId: String(entry.runId || fallback.runId || '').trim() || null,
+    scenario: String(entry.scenario || fallback.scenario || '').trim() || null,
+  };
+}
+
+function uniqueSafeModeStrings(values = []) {
+  return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function collectSafeModeFailingTestNames({
+  localGate = null,
+  latestRun = null,
+  qaState = null,
+} = {}) {
+  const names = [];
+  const unitFailures = Array.isArray(localGate?.unit?.failures) ? localGate.unit.failures : [];
+  unitFailures.forEach((failure) => {
+    const name = String(failure?.name || failure?.testName || failure?.id || failure?.label || failure?.error || '').trim();
+    if (name) names.push(name);
+  });
+  if (Number(localGate?.unit?.failedCount || 0) > 0 && String(localGate?.unit?.summary || '').trim()) {
+    names.push(String(localGate.unit.summary).trim());
+  }
+  const studioBootFailures = Array.isArray(localGate?.studioBoot?.failedSteps) ? localGate.studioBoot.failedSteps : [];
+  studioBootFailures.forEach((step) => {
+    const label = String(step?.label || step?.id || '').trim();
+    if (label) names.push(label);
+  });
+  const browserRuns = [
+    latestRun || qaState?.latestBrowserRun || null,
+    ...(Array.isArray(qaState?.browserRuns) ? qaState.browserRuns : []),
+  ].filter(Boolean);
+  browserRuns.forEach((latestBrowserRun) => {
+    (latestBrowserRun.failedSteps || []).forEach((step) => {
+      const label = String(step?.label || step?.id || '').trim();
+      if (label) names.push(label);
+    });
+    (Array.isArray(latestBrowserRun.steps) ? latestBrowserRun.steps : (Array.isArray(latestBrowserRun.stepSummary) ? latestBrowserRun.stepSummary : []))
+      .filter((step) => ['failed', 'blocked'].includes(String(step?.verdict || step?.status || '').toLowerCase()))
+      .forEach((step) => {
+        const label = String(step?.label || step?.id || '').trim();
+        if (label) names.push(label);
+      });
+    if (latestBrowserRun.error) {
+      names.push(String(latestBrowserRun.error).trim());
+    }
+    (Array.isArray(latestBrowserRun.findings) ? latestBrowserRun.findings : [])
+      .filter((finding) => String(finding?.severity || '').toLowerCase() === 'error')
+      .forEach((finding) => {
+      const label = String(finding?.summary || finding?.id || '').trim();
+      if (label) names.push(label);
+    });
+  });
+  return uniqueSafeModeStrings(names).slice(0, 12);
+}
+
+function collectSafeModeCriticalErrors({
+  healthSnapshot = null,
+  failureHistory = null,
+  latestRun = null,
+  localGate = null,
+} = {}) {
+  const errors = [];
+  const bootReason = String(healthSnapshot?.bootHealth?.reason || healthSnapshot?.reason || '').trim();
+  if (bootReason) {
+    errors.push(normalizeSafeModeErrorEntry({
+      source: 'boot-health',
+      severity: 'critical',
+      message: bootReason,
+      failureKey: 'boot_health_gate_failed',
+      stage: 'boot',
+      agent_id: 'system',
+      agent_version: 'boot-health.v0',
+      failureClass: 'boot_critical',
+      uiResponse: buildFailureUiResponse('boot_critical'),
+    }));
+  }
+
+  const failureEntries = Array.isArray(failureHistory?.history?.entries) ? [...failureHistory.history.entries] : [];
+  failureEntries
+    .sort((left, right) => Number(right.count || 0) - Number(left.count || 0)
+      || String(right.last_seen || '').localeCompare(String(left.last_seen || '')))
+    .slice(0, 4)
+    .forEach((entry) => {
+      errors.push(normalizeSafeModeErrorEntry({
+        source: 'failure-memory',
+        severity: Number(entry.count || 0) >= 3 ? 'critical' : 'warning',
+        message: entry.failure_key,
+      failureKey: entry.failure_key,
+      stage: entry.stage || null,
+      agent_id: entry.agent_id || null,
+      agent_version: entry.agent_version || null,
+      stack: entry.last_error?.stack || null,
+      failureClass: entry.failure_class || null,
+      uiResponse: entry.last_error?.ui_response || buildFailureUiResponse(entry.failure_class || 'warning'),
+      count: entry.count || 0,
+      lastSeen: entry.last_seen || null,
+    }));
+    });
+
+  if (latestRun?.verdict === 'failed') {
+    errors.push(normalizeSafeModeErrorEntry({
+      source: 'qa-run',
+      severity: 'critical',
+      message: latestRun.error || `Latest QA run failed: ${latestRun.scenario || latestRun.id || 'unknown run'}`,
+      runId: latestRun.id || null,
+      scenario: latestRun.scenario || null,
+      findingCount: latestRun.findingCount || 0,
+      failureKey: 'latest_qa_run_failed',
+      failureClass: 'runtime_critical',
+      uiResponse: buildFailureUiResponse('runtime_critical'),
+    }));
+  } else if (latestRun?.highestSeverity === 'error') {
+    errors.push(normalizeSafeModeErrorEntry({
+      source: 'qa-run',
+      severity: 'critical',
+      message: `Latest QA run surfaced ${latestRun.findingCount || 0} findings.`,
+      runId: latestRun.id || null,
+      scenario: latestRun.scenario || null,
+      findingCount: latestRun.findingCount || 0,
+      failureKey: 'latest_qa_run_error_findings',
+      failureClass: 'runtime_critical',
+      uiResponse: buildFailureUiResponse('runtime_critical'),
+    }));
+  }
+
+  const failedCount = Number(localGate?.unit?.failedCount || 0);
+  if (failedCount > 0) {
+    const unitFailures = Array.isArray(localGate?.unit?.failures) ? localGate.unit.failures : [];
+    errors.push(normalizeSafeModeErrorEntry({
+      source: 'unit-qa',
+      severity: 'critical',
+      message: String(localGate?.unit?.summary || `${failedCount} unit checks failed.`).trim(),
+      failureKey: 'unit_qa_failed',
+      count: failedCount,
+      stage: 'qa',
+      findingCount: failedCount,
+      failureClass: 'panel_degraded',
+      uiResponse: buildFailureUiResponse('panel_degraded'),
+    }));
+    unitFailures.slice(0, 4).forEach((failure) => {
+      const name = String(failure?.name || failure?.testName || failure?.id || failure?.label || '').trim();
+      if (!name) return;
+      errors.push(normalizeSafeModeErrorEntry({
+        source: 'unit-qa',
+        severity: 'warning',
+        message: name,
+        failureKey: normalizeFailureKey(name, { stage: 'qa', tool: 'unit-test' }),
+        stage: 'qa',
+        findingCount: 1,
+        failureClass: 'warning',
+        uiResponse: buildFailureUiResponse('warning'),
+      }));
+    });
+  }
+
+  const deduped = new Map();
+  errors.forEach((entry) => {
+    const signature = `${entry.source}:${entry.message}`;
+    if (!deduped.has(signature)) deduped.set(signature, entry);
+  });
+  return Array.from(deduped.values()).slice(0, 8);
+}
+
+function buildSafeModeSnapshot(rootPath = ROOT, overrides = {}) {
+  const healthSnapshot = overrides.healthSnapshot || getHealthSnapshot();
+  const qaState = overrides.qaState || buildQAStatePayload(rootPath);
+  const failureHistory = overrides.failureHistory || readFailureHistory(rootPath);
+  const latestBrowserRun = overrides.latestRun || qaState.latestBrowserRun || null;
+  const latestRunDetails = overrides.latestRunDetails || (latestBrowserRun?.id ? readQARun(rootPath, latestBrowserRun.id) : null);
+  const localGate = overrides.localGate || qaState.localGate || buildLocalGatePayload(rootPath);
+  const criticalErrors = collectSafeModeCriticalErrors({
+    healthSnapshot,
+    failureHistory,
+    latestRun: latestRunDetails || latestBrowserRun,
+    localGate,
+  });
+  return {
+    safeMode: Boolean(healthSnapshot.safeMode || healthSnapshot.bootHealth?.safeMode),
+    reason: String(healthSnapshot.bootHealth?.reason || healthSnapshot.reason || '').trim(),
+    checkedAt: healthSnapshot.bootHealth?.checkedAt || null,
+    bootHealth: healthSnapshot.bootHealth || null,
+    health: healthSnapshot,
+    criticalErrors,
+    recentQaResults: Array.isArray(qaState.browserRuns) ? qaState.browserRuns.slice(0, 5) : [],
+    latestQARun: latestBrowserRun,
+    latestQARunDetails: latestRunDetails,
+    localGate,
+    failingTestNames: collectSafeModeFailingTestNames({
+      localGate,
+      latestRun: latestRunDetails || latestBrowserRun,
+      qaState,
+    }),
+    failureHistory: {
+      updated_at: failureHistory?.history?.updated_at || null,
+      entries: Array.isArray(failureHistory?.history?.entries) ? failureHistory.history.entries.slice(0, 5) : [],
+    },
+  };
+}
+
+function runSafeModeDiagnosis(rootPath = ROOT, overrides = {}) {
+  const snapshot = buildSafeModeSnapshot(rootPath, overrides);
+  const artifact = writeSafeModeArtifact(rootPath, 'diagnosis.json', {
+    version: 'ace/safe-mode.v0',
+    createdAt: nowIso(),
+    type: 'diagnosis',
+    snapshot,
+  });
+  return {
+    ok: true,
+    message: 'Safe-mode diagnosis recorded.',
+    snapshot,
+    artifactRefs: [artifact.path].filter(Boolean),
+  };
+}
+
+function buildSafeModeFixTaskPayload(snapshot = {}) {
+  const primaryError = Array.isArray(snapshot.criticalErrors) ? snapshot.criticalErrors[0] : null;
+  const primaryLabel = String(primaryError?.message || snapshot.reason || 'safe mode').trim();
+  const failureKey = String(primaryError?.failureKey || normalizeFailureKey(primaryLabel, {
+    stage: 'safe-mode',
+    tool: 'safe-shell',
+  }) || 'safe_mode_failure').trim() || 'safe_mode_failure';
+  const bundle = buildConstrainedAutoFixBundle(snapshot, {
+    rootPath: ROOT,
+    stage: 'safe-mode',
+    failureClass: primaryError?.failureClass || primaryError?.failure_class || null,
+  });
+  return {
+    taskId: 'safe-mode',
+    stage: 'safe-mode',
+    action: 'constrained-fix-pass',
+    status: 'pending',
+    decision: 'blocked',
+    source: 'safe_mode_shell',
+    summary: `Constrained fix pass for ${primaryLabel}`,
+    problemStatement: `Investigate the safe-mode failure: ${primaryLabel}.`,
+    requestedOutcomes: [
+      'Reproduce the smallest failing path',
+      'Patch only the narrow broken path',
+      'Keep the rest of SpatialNotebook unchanged',
+    ],
+    constraints: [
+      'Do not redesign the UI.',
+      'Do not widen scope beyond the failing path.',
+      'Use existing artifacts and attribution only.',
+    ],
+    reasons: uniqueSafeModeStrings([
+      snapshot.reason || null,
+      primaryLabel,
+    ]),
+    failureKey,
+    changedFiles: bundle.changedFiles || [],
+    exampleMessages: uniqueSafeModeStrings([
+      primaryLabel,
+    ]),
+    retryCount: 0,
+    retryLimit: 1,
+  };
+}
+
+function runConstrainedSafeModeFixPass(rootPath = ROOT, overrides = {}) {
+  const diagnosis = buildSafeModeSnapshot(rootPath, overrides);
+  const fixTask = createBoundedFixTaskArtifact(rootPath, buildSafeModeFixTaskPayload(diagnosis));
+  const bundle = buildConstrainedAutoFixBundle(diagnosis, {
+    rootPath,
+    taskId: fixTask.entry?.taskId || 'safe-mode',
+    stage: 'safe-mode',
+    changedFiles: fixTask.entry?.changedFiles || [],
+    artifactRefs: [fixTask.jsonPath, fixTask.markdownPath].filter(Boolean),
+  });
+  const autoFix = runConstrainedAutoFixExecutor(rootPath, bundle, {
+    implicatedFiles: bundle.changedFiles,
+    maxFiles: 2,
+  });
+  const artifactRefs = uniqueSafeModeStrings([
+    fixTask.jsonPath || null,
+    fixTask.markdownPath || null,
+  ]);
+  const report = writeSafeModeArtifact(rootPath, 'constrained-fix-pass.json', {
+    version: 'ace/safe-mode.v0',
+    createdAt: nowIso(),
+    type: 'constrained-fix-pass',
+    snapshot: diagnosis,
+    fixTask: fixTask.entry || null,
+    bundle,
+    autoFix,
+    artifactRefs,
+  });
+  return {
+    ok: autoFix.ok,
+    message: autoFix.reason || 'Constrained fix pass queued.',
+    snapshot: diagnosis,
+    fixTask: fixTask.entry || null,
+    bundle,
+    autoFix,
+    artifactRefs: uniqueSafeModeStrings([
+      ...artifactRefs,
+      report.path,
+    ]),
+  };
+}
+
+const BOOT_RECOVERY_DAEMON_FILE = 'boot-recovery-daemon.json';
+
+function bootRecoveryDaemonFilePath(rootPath = ROOT) {
+  return path.join(safeModeArtifactDir(rootPath), BOOT_RECOVERY_DAEMON_FILE);
+}
+
+function readBootRecoveryDaemonState(rootPath = ROOT) {
+  return readJsonSafe(bootRecoveryDaemonFilePath(rootPath), null);
+}
+
+function writeBootRecoveryDaemonState(rootPath = ROOT, payload = {}) {
+  const previous = readBootRecoveryDaemonState(rootPath) || {};
+  const nextState = {
+    version: 'ace/boot-recovery-daemon.v0',
+    daemon_id: 'autonomous_boot_recovery_daemon',
+    started_at: previous.started_at || nowIso(),
+    updated_at: nowIso(),
+    status: 'idle',
+    phase: 'boot_failed_detected',
+    failure_class: null,
+    failure_stage: null,
+    asset: null,
+    reason: '',
+    selected_lane: null,
+    attempt_count: 0,
+    max_attempts: 2,
+    latest_attempt: null,
+    blocked_reason: null,
+    auto_reload_ready: false,
+    boot_health: null,
+    history: Array.isArray(previous.history) ? previous.history.slice(0, 5) : [],
+    ...previous,
+    ...payload,
+  };
+  const filePath = bootRecoveryDaemonFilePath(rootPath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  writeJson(filePath, nextState);
+  return nextState;
+}
+
+function buildBootRecoveryDaemonState(rootPath = ROOT, overrides = {}) {
+  const existing = readBootRecoveryDaemonState(rootPath) || {};
+  const bootHealth = overrides.bootHealth || evaluateSpatialBootHealth();
+  const repairLoop = overrides.repairLoop || buildQaRepairLoopState(rootPath);
+  const latestJob = repairLoop?.latestJob || (Array.isArray(repairLoop?.jobs) ? repairLoop.jobs[0] : null) || null;
+  return {
+    version: 'ace/boot-recovery-daemon.v0',
+    daemon_id: existing.daemon_id || 'autonomous_boot_recovery_daemon',
+    started_at: existing.started_at || nowIso(),
+    updated_at: nowIso(),
+    status: existing.status || (bootHealth.safeMode ? 'idle' : 'healthy'),
+    phase: existing.phase || (bootHealth.safeMode ? 'boot_failed_detected' : 'healthy'),
+    failure_class: bootHealth.failureClass || existing.failure_class || null,
+    failure_stage: bootHealth.failureStage || existing.failure_stage || null,
+    asset: bootHealth.asset || existing.asset || null,
+    reason: bootHealth.reason || existing.reason || '',
+    selected_lane: existing.selected_lane || latestJob?.lane || null,
+    attempt_count: Number(existing.attempt_count || 0),
+    max_attempts: Math.max(1, Number(overrides.maxAttempts || existing.max_attempts || 2) || 2),
+    latest_attempt: existing.latest_attempt || null,
+    blocked_reason: existing.blocked_reason || null,
+    auto_reload_ready: Boolean(existing.auto_reload_ready),
+    boot_health: bootHealth,
+    history: Array.isArray(existing.history) ? existing.history.slice(0, 5) : [],
+  };
+}
+
+function findEligibleBootRecoveryJob(repairLoop = null) {
+  const jobs = Array.isArray(repairLoop?.jobs) ? repairLoop.jobs : [];
+  return jobs.find((job) => ['open', 'retry_queued'].includes(String(job?.status || '').trim())) || repairLoop?.latestJob || null;
+}
+
+function buildBootRecoveryAttemptRecord({
+  kind = 'bounded_fix',
+  status = 'unknown',
+  summary = '',
+  verdict = null,
+  reason = '',
+  lane = null,
+  jobId = null,
+  artifactRefs = [],
+} = {}) {
+  return {
+    kind,
+    status,
+    summary: String(summary || '').trim() || String(reason || '').trim() || 'No summary recorded.',
+    verdict: String(verdict || '').trim() || null,
+    reason: String(reason || '').trim() || null,
+    lane: String(lane || '').trim() || null,
+    job_id: String(jobId || '').trim() || null,
+    artifact_refs: Array.isArray(artifactRefs) ? artifactRefs.filter(Boolean) : [],
+    at: nowIso(),
+  };
+}
+
+function classifyBootRecoveryBlockedReason({
+  bootHealth = null,
+  repairResult = null,
+  fixResult = null,
+} = {}) {
+  if (String(bootHealth?.failureClass || '').trim() === 'module_load_failure') {
+    return 'blocked_needs_external_patch';
+  }
+  if (repairResult?.job?.status === 'policy_blocked' || repairResult?.safe_stop) {
+    return String(repairResult?.reason || repairResult?.job?.policy_block_reason || 'blocked_by_policy').trim() || 'blocked_by_policy';
+  }
+  if (fixResult?.autoFix?.reason) {
+    return String(fixResult.autoFix.reason).trim();
+  }
+  return String(bootHealth?.reason || 'bounded_recovery_exhausted').trim() || 'bounded_recovery_exhausted';
+}
+
+function runAutonomousBootRecoveryDaemon(rootPath = ROOT, overrides = {}) {
+  const evaluateBootHealth = typeof overrides.bootHealthEvaluator === 'function'
+    ? overrides.bootHealthEvaluator
+    : (() => evaluateSpatialBootHealth());
+  const constrainedFixRunner = typeof overrides.constrainedFixRunner === 'function'
+    ? overrides.constrainedFixRunner
+    : ((runnerOverrides = {}) => runConstrainedSafeModeFixPass(rootPath, runnerOverrides));
+  const repairLoopBuilder = typeof overrides.repairLoopBuilder === 'function'
+    ? overrides.repairLoopBuilder
+    : (() => buildQaRepairLoopState(rootPath));
+  const repairAttemptRunner = typeof overrides.repairAttemptRunner === 'function'
+    ? overrides.repairAttemptRunner
+    : ((runnerOverrides = {}) => runQaRepairAttempt(rootPath, runnerOverrides));
+
+  let bootHealth = overrides.bootHealth || evaluateBootHealth({ phase: 'initial' });
+  let daemonState = buildBootRecoveryDaemonState(rootPath, {
+    bootHealth,
+    repairLoop: overrides.repairLoop || repairLoopBuilder({ phase: 'initial' }),
+    maxAttempts: overrides.maxAttempts,
+  });
+
+  if (!bootHealth.safeMode) {
+    return writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      status: 'healthy',
+      phase: 'healthy',
+      blocked_reason: null,
+      auto_reload_ready: false,
+      boot_health: bootHealth,
+      reason: '',
+    });
+  }
+
+  if (daemonState.attempt_count >= daemonState.max_attempts) {
+    return writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      status: 'blocked',
+      phase: 'blocked',
+      blocked_reason: daemonState.blocked_reason || 'retry_cap_reached',
+      auto_reload_ready: false,
+      boot_health: bootHealth,
+    });
+  }
+
+  daemonState = writeBootRecoveryDaemonState(rootPath, {
+    ...daemonState,
+    status: 'running',
+    phase: 'bounded_fix_running',
+    attempt_count: daemonState.attempt_count + 1,
+    blocked_reason: null,
+    auto_reload_ready: false,
+    boot_health: bootHealth,
+    reason: bootHealth.reason || '',
+  });
+
+  const fixResult = constrainedFixRunner({
+    bootHealth,
+    phase: 'bounded_fix_running',
+  }) || {};
+  const fixAttempt = buildBootRecoveryAttemptRecord({
+    kind: 'bounded_fix',
+    status: fixResult.ok ? 'completed' : 'blocked',
+    summary: fixResult.message || fixResult.autoFix?.summary || fixResult.autoFix?.reason,
+    verdict: fixResult.autoFix?.status || null,
+    reason: fixResult.autoFix?.reason || fixResult.message || '',
+    lane: 'ui_boot_integrity',
+    artifactRefs: fixResult.artifactRefs || [],
+  });
+  daemonState = writeBootRecoveryDaemonState(rootPath, {
+    ...daemonState,
+    latest_attempt: fixAttempt,
+    selected_lane: 'ui_boot_integrity',
+    phase: 'preflight_recheck',
+    history: [fixAttempt, ...(daemonState.history || [])].slice(0, 5),
+  });
+
+  bootHealth = evaluateBootHealth({ phase: 'post_bounded_fix' });
+  if (!bootHealth.safeMode) {
+    return writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      status: 'recovered',
+      phase: 'recovered',
+      blocked_reason: null,
+      auto_reload_ready: true,
+      boot_health: bootHealth,
+      reason: '',
+    });
+  }
+
+  const repairLoop = overrides.repairLoop || repairLoopBuilder({ phase: 'repair_lookup' });
+  const eligibleJob = findEligibleBootRecoveryJob(repairLoop);
+  if (eligibleJob) {
+    daemonState = writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      phase: 'qa_repair_running',
+      selected_lane: eligibleJob.lane || daemonState.selected_lane || null,
+      boot_health: bootHealth,
+    });
+    const repairResult = repairAttemptRunner({
+      repairJobId: eligibleJob.id,
+      investigationId: eligibleJob.investigation_id || null,
+      phase: 'qa_repair_running',
+    }) || {};
+    const repairAttempt = buildBootRecoveryAttemptRecord({
+      kind: 'qa_repair',
+      status: repairResult.ok ? 'completed' : 'blocked',
+      summary: repairResult.validation?.summary || repairResult.reason || repairResult.job?.latest_attempt_summary,
+      verdict: repairResult.verdict || repairResult.validation?.verdict || null,
+      reason: repairResult.reason || repairResult.validation?.summary || '',
+      lane: repairResult.job?.lane || eligibleJob.lane || null,
+      jobId: repairResult.job?.id || eligibleJob.id || null,
+      artifactRefs: [],
+    });
+    daemonState = writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      latest_attempt: repairAttempt,
+      selected_lane: repairAttempt.lane || daemonState.selected_lane || null,
+      phase: 'preflight_recheck',
+      history: [repairAttempt, ...(daemonState.history || [])].slice(0, 5),
+    });
+    bootHealth = evaluateBootHealth({ phase: 'post_qa_repair' });
+    if (!bootHealth.safeMode) {
+      return writeBootRecoveryDaemonState(rootPath, {
+        ...daemonState,
+        status: 'recovered',
+        phase: 'recovered',
+        blocked_reason: null,
+        auto_reload_ready: true,
+        boot_health: bootHealth,
+        reason: '',
+      });
+    }
+    return writeBootRecoveryDaemonState(rootPath, {
+      ...daemonState,
+      status: 'blocked',
+      phase: 'blocked',
+      blocked_reason: classifyBootRecoveryBlockedReason({
+        bootHealth,
+        repairResult,
+        fixResult,
+      }),
+      auto_reload_ready: false,
+      boot_health: bootHealth,
+      reason: bootHealth.reason || '',
+    });
+  }
+
+  return writeBootRecoveryDaemonState(rootPath, {
+    ...daemonState,
+    status: 'blocked',
+    phase: 'blocked',
+    blocked_reason: classifyBootRecoveryBlockedReason({
+      bootHealth,
+      fixResult,
+    }),
+    auto_reload_ready: false,
+    boot_health: bootHealth,
+    reason: bootHealth.reason || '',
+  });
+}
+
+function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options = {}) {
+  const rootPath = options.rootPath || ROOT;
+  const layout = normalizeStudioLayoutSchema(workspace?.studio?.layout || {});
+  const organization = layout.organization || {};
+  const deskLayout = layout.desks?.[deskId] || null;
+  if (!deskLayout) {
+    throw new Error(`Unknown desk id: ${deskId}`);
+  }
+  const departmentLayout = layout.departments.find((entry) => entry.id === deskLayout.departmentId) || null;
+  const panel = buildDeskPanelMetadata(deskId, deskLayout, departmentLayout);
+  const desk = workspace?.studio?.orchestrator?.desks?.[deskId] || {};
+  const storedDeskProperties = normalizeDeskPropertiesState(workspace)?.[deskId] || null;
+  const deskProperties = storedDeskProperties || {
+    managedAgents: [],
+    moduleIds: [],
+    manualTests: [],
+    departmentContext: '',
+    guardrails: [],
+    contextSlices: [],
+  };
+  const modules = listModuleManifests(rootPath);
+  const tasks = collectDeskTasks(workspace, deskId, { rootPath });
+  const resolvedQAState = deskId === QA_LEAD_DESK_ID
+    ? (qaState || buildQAStatePayload(rootPath, { workspace }))
+    : (deskId === 'cto-architect' ? qaState : null);
+  const structuredReport = resolvedQAState?.structuredReport
+    || ((deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect')
+      ? readStructuredQAReport(rootPath, 'latest')
+      : null);
+  const testRegistry = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.testRegistry || buildQATestRegistry({
+      rootPath: ROOT,
+      structuredReport,
+    }))
+    : null;
+  const researchState = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.researchState || buildQaResearchState(rootPath, resolvedQAState?.openInvestigations || []))
+    : null;
+  const repairLoop = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.repairLoop || buildQaRepairLoopState(rootPath))
+    : null;
+  const qaCanaries = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.qaCanaries || runQaLaneCanarySuite(rootPath))
+    : null;
+  const taDepartmentFile = rootPath === ROOT
+    ? TA_DEPARTMENT_FILE
+    : path.join(rootPath, 'data', 'spatial', 'ta-department.json');
+  const taState = normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+  const taPayload = deskId === QA_LEAD_DESK_ID
+    ? buildCtoTaGovernancePayload(taState, { workspace, rootPath })
+    : null;
+  const derivedQaScorecardBundle = buildStructuredQAScorecardBundle(structuredReport, {
+    evaluator: {
+      latestEvaluation: resolvedQAState?.evaluator?.latestEvaluation || readLatestEvaluation(rootPath),
+      history: resolvedQAState?.evaluator?.history || readEvaluatorHistory(rootPath, 12),
+    },
+  });
+  const qaScorecardBundle = (deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect') && resolvedQAState
+    ? {
+        ...derivedQaScorecardBundle,
+        cards: Array.isArray(resolvedQAState?.scorecards) ? resolvedQAState.scorecards : derivedQaScorecardBundle.cards,
+        definitions: resolvedQAState?.scorecardDefinitions || derivedQaScorecardBundle.definitions,
+        status: resolvedQAState?.scorecardStatus || derivedQaScorecardBundle.status,
+        summary: resolvedQAState?.scorecardSummary || derivedQaScorecardBundle.summary,
+        testCount: Number.isFinite(Number(resolvedQAState?.scorecardCount))
+          ? Number(resolvedQAState.scorecardCount)
+          : derivedQaScorecardBundle.testCount,
+        deskCount: Number.isFinite(Number(resolvedQAState?.scorecardDeskCount))
+          ? Number(resolvedQAState.scorecardDeskCount)
+          : derivedQaScorecardBundle.deskCount,
+      }
+    : derivedQaScorecardBundle;
+  const qaScorecards = qaScorecardBundle.cards;
+  const ctoOversight = deskId === 'cto-architect'
+    ? buildCanonicalCtoOversightState(tasks, qaScorecards)
+    : null;
+  const auditTrail = deskId === QA_LEAD_DESK_ID
+    ? (resolvedQAState?.auditTrail || buildQAAuditTrail({
+      structuredReport,
+      structuredSummary: resolvedQAState?.structuredSummary || buildStructuredQASummary(structuredReport),
+      scorecards: qaScorecards,
+      latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
+      browserRuns: Array.isArray(resolvedQAState?.browserRuns) ? resolvedQAState.browserRuns : [],
+      localGate: resolvedQAState?.localGate || null,
+    }))
+    : null;
+  const availableTests = deskId === QA_LEAD_DESK_ID ? listRunnableQASuites() : [];
+  const evidenceSources = deskId === QA_LEAD_DESK_ID
+    ? [
+      ...(Array.isArray(resolvedQAState?.evidenceSources) ? resolvedQAState.evidenceSources : []),
+      ...availableTests.map((suite) => suite.sourceTrace).filter(Boolean),
+    ]
+    : [];
+  const evidenceSummary = deskId === QA_LEAD_DESK_ID ? summarizeQaEvidenceSources(evidenceSources) : null;
+  const primaryAgentIds = mergeUnique([...(deskLayout.assignedAgentIds || []), ...(DESK_AGENT_DEFAULTS[deskId] || [])]);
+  const agents = [...new Set([...primaryAgentIds, ...deskProperties.managedAgents])]
+    .map((agentId) => {
+      const worker = workspace?.studio?.agentWorkers?.[agentId] || null;
+      const currentTask = tasks.find((task) => task.lifecycle === 'in_progress') || tasks[0] || null;
+      const intended = resolveAssignedAgentIntendedCognition(rootPath, workspace, agentId);
+      return {
+        id: agentId,
+        model: worker?.model || intended.modelName || null,
+        backend: worker?.backend || intended.backend || null,
+        status: worker?.status || desk.localState || 'idle',
+        currentTask: currentTask ? {
+          id: currentTask.id,
+          title: currentTask.title,
+          lifecycle: currentTask.lifecycle,
+          progress: currentTask.progress,
+        } : null,
+      };
+    });
+  const reports = collectDeskReports(workspace, deskId, { rootPath });
+  const deskContextFallbackUsed = !deskProperties.departmentContext && Boolean(desk.currentGoal || desk.mission || departmentLayout?.summary);
+  const agentFallbackUsed = agents.some((agent) => !workspace?.studio?.agentWorkers?.[agent.id] && Boolean(desk.localState));
+  const truth = {
+    department: {
+      id: departmentLayout?.id || deskLayout.departmentId,
+      label: departmentLayout?.label || deskLayout.departmentId,
+      owner: departmentLayout?.controlCentreDeskId || layout.controlCentreDeskId,
+      context: deskProperties.departmentContext || desk.currentGoal || desk.mission || departmentLayout?.summary || null,
+      kind: departmentLayout?.kind || null,
+    },
+    workload: {
+      assignedTasks: tasks.length,
+      queueSize: tasks.filter((task) => task.lifecycle !== 'complete').length,
+      outputs: reports.length,
+    },
+    throughput: deskId === 'cto-architect'
+      ? `${ctoOversight?.approvalNeededCount || 0} approvals / ${ctoOversight?.completedArtifactCount || 0} completed artefacts / ${ctoOversight?.scorecardCount || 0} scorecards`
+      : (deskId === 'memory-archivist'
+        ? `${deskProperties.contextSlices.length} context slices / ${reports.length} reports`
+        : `${tasks.filter((task) => task.lifecycle === 'complete').length} complete / ${tasks.filter((task) => task.lifecycle === 'in_progress').length} in progress`),
+    reports: reports.slice(0, 6),
+    scorecards: deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect' ? qaScorecards : [],
+    testRegistry: deskId === QA_LEAD_DESK_ID ? testRegistry : null,
+    testRegistrySummary: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.testRegistrySummary || testRegistry.summary) : null,
+    openInvestigations: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.openInvestigations || []) : [],
+    repairLoop: deskId === QA_LEAD_DESK_ID ? repairLoop : null,
+    evaluator: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.evaluator || null) : null,
+    agentCognitionSummary: deskId === QA_LEAD_DESK_ID ? (resolvedQAState?.agentCognitionSummary || null) : null,
+    assessments: deskProperties.manualTests,
+    ctoOversight,
+    context: {
+      summary: deskProperties.departmentContext || desk.currentGoal || desk.mission || null,
+      slices: deskProperties.contextSlices,
+    },
+    guardrails: deskProperties.guardrails,
+  };
+  const rndExperiments = deskId === 'rnd-lead' ? loadRndExperimentRecords() : null;
+  const canonicalTruthSections = {
+    desk: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'workspace_projection',
+      sourcePaths: ['workspace.studio.layout', 'workspace.studio.orchestrator.desks'],
+    },
+    layout: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'workspace_projection',
+      sourcePaths: ['workspace.studio.layout'],
+    },
+    truth: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'mixed_projection',
+      sections: {
+        department: {
+          classification: 'projection',
+          fallbackUsed: deskContextFallbackUsed,
+          derivation: deskContextFallbackUsed ? 'workspace_context_fallback_chain' : 'workspace_projection',
+        },
+        workload: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'count_projection',
+        },
+        throughput: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'heuristic_summary',
+        },
+        reports: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'report_projection',
+        },
+        scorecards: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'qa_projection',
+        },
+        context: {
+          classification: 'projection',
+          fallbackUsed: deskContextFallbackUsed,
+          derivation: deskContextFallbackUsed ? 'workspace_context_fallback_chain' : 'workspace_projection',
+        },
+      },
+    },
+    agents: {
+      classification: 'projection',
+      fallbackUsed: agentFallbackUsed,
+      derivation: agentFallbackUsed ? 'workspace_status_fallback' : 'workspace_projection',
+      sourcePaths: ['workspace.studio.agentWorkers', 'workspace.studio.deskProperties.managedAgents'],
+    },
+    tasks: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'aggregated_projection',
+      sourcePaths: ['workspace.studio.orchestrator.desks.*.workItems', 'workspace.studio.teamBoard.cards'],
+    },
+    modules: {
+      classification: storedDeskProperties ? 'projection' : 'fallback',
+      fallbackUsed: !storedDeskProperties,
+      derivation: storedDeskProperties ? 'workspace_projection' : 'default_assignment_fallback',
+      sourcePaths: ['modules/**/*.module.json', 'workspace.studio.deskProperties.moduleIds'],
+    },
+    reports: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'report_projection',
+      sourcePaths: ['workspace.studio.teamBoard', 'data/spatial/qa/runs', 'workspace.studio.deskProperties.manualTests'],
+    },
+  };
+  if (deskId === QA_LEAD_DESK_ID) {
+    canonicalTruthSections.qa = {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'qa_domain_projection',
+      sections: {
+        structuredSummary: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'summary_projection',
+        },
+        localGate: {
+          classification: resolvedQAState?.localGate ? 'projection' : 'fallback',
+          fallbackUsed: !resolvedQAState?.localGate,
+          derivation: resolvedQAState?.localGate ? 'qa_projection' : 'default_stub',
+        },
+        qaMcpLiveStatus: {
+          classification: 'projection',
+          fallbackUsed: !resolvedQAState?.qaMcpLiveStatus,
+          derivation: 'heuristic_summary',
+        },
+        evaluator: {
+          classification: 'projection',
+          fallbackUsed: !resolvedQAState?.evaluator?.latestEvaluation,
+          derivation: 'evaluator_projection',
+        },
+        agentCognitionSummary: {
+          classification: 'projection',
+          fallbackUsed: !(resolvedQAState?.agentCognitionSummary?.agents || []).length,
+          derivation: 'agent_cognition_projection',
+        },
+        investigations: {
+          classification: 'projection',
+          fallbackUsed: !researchState?.investigations && Array.isArray(resolvedQAState?.openInvestigations),
+          derivation: 'qa_evidence_projection',
+        },
+        scorecards: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'qa_scorecard_projection',
+        },
+      },
+    };
+  }
+  return {
+    deskId,
+    desk: {
+      label: deskLayout.label,
+      type: deskLayout.type,
+      mission: desk.mission || null,
+      currentGoal: desk.currentGoal || null,
+      localState: desk.localState || null,
+      capabilities: [...(deskLayout.capabilities || [])],
+      editable: Boolean(deskLayout.editable),
+      assignedAgentIds: [...(deskLayout.assignedAgentIds || [])],
+      departmentId: deskLayout.departmentId,
+      panel,
+    },
+    layout: {
+      controlCentreDeskId: layout.controlCentreDeskId,
+      department: departmentLayout,
+      desk: deskLayout,
+      relationships: {
+        desk: organization.desks?.[deskId] || null,
+        department: organization.departments?.[deskLayout.departmentId] || null,
+        planner: organization.planner || null,
+      },
+    },
+    truth,
+    canonicalTruthSections,
+    agents,
+    tasks,
+    modules: modules.map((module) => ({
+      ...module,
+      assigned: deskProperties.moduleIds.includes(module.id),
+    })),
+    reports,
+    experiments: rndExperiments?.experiments || [],
+    experimentContract: rndExperiments?.contract || null,
+    qa: deskId === QA_LEAD_DESK_ID
+      ? {
+          availableTests,
+          structuredReport,
+          structuredSummary: {
+            ...buildStructuredQASummary(structuredReport),
+            sourceTrace: structuredReport?.sourceTrace || null,
+          },
+          scorecards: qaScorecards,
+          scorecardDefinitions: qaScorecardBundle.definitions,
+          scorecardStatus: qaScorecardBundle.status,
+          scorecardSummary: qaScorecardBundle.summary,
+          scorecardCount: qaScorecardBundle.testCount,
+          scorecardDeskCount: qaScorecardBundle.deskCount,
+          testRegistry,
+          testRegistrySummary: resolvedQAState?.testRegistrySummary || testRegistry.summary,
+          latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
+          browserRuns: Array.isArray(resolvedQAState?.browserRuns) ? resolvedQAState.browserRuns : [],
+          localGate: resolvedQAState?.localGate || { unit: null, studioBoot: null },
+          evidenceSources,
+          evidenceSummary,
+          auditTrail,
+          auditTrailSummary: auditTrail.summary || summarizeQAAuditTrail(auditTrail),
+          externalValidation: resolvedQAState?.externalValidation || null,
+          qaMcpLiveStatus: resolvedQAState?.qaMcpLiveStatus || buildQaMcpLiveStatus({
+            externalValidation: resolvedQAState?.externalValidation || null,
+            researchState,
+            openInvestigations: researchState.investigations || resolvedQAState?.openInvestigations || [],
+            repairLoop,
+            structuredSummary: resolvedQAState?.structuredSummary || buildStructuredQASummary(structuredReport),
+            latestBrowserRun: resolvedQAState?.latestBrowserRun || null,
+            localGate: resolvedQAState?.localGate || null,
+          }),
+          openInvestigations: researchState.investigations || resolvedQAState?.openInvestigations || [],
+          investigations: researchState.investigations || resolvedQAState?.openInvestigations || [],
+          researchNotes: researchState.notes || [],
+          researchSummary: researchState.summary || null,
+          researchState,
+          repairLoop,
+          qaCanaries,
+          evaluator: resolvedQAState?.evaluator || {
+            latestEvaluation: readLatestEvaluation(rootPath),
+            history: readEvaluatorHistory(rootPath, 12),
+            historyCount: Number(readEvaluatorState(rootPath)?.state?.history_count || 0) || 0,
+            latestSnapshot: readEvaluatorState(rootPath)?.state?.latest_snapshot || null,
+            previousSnapshot: readEvaluatorState(rootPath)?.state?.previous_snapshot || null,
+            movement: buildEvaluatorMovementSummary(
+              readLatestEvaluation(rootPath),
+              readEvaluatorHistory(rootPath, 12),
+            ),
+          },
+          agentCognitionSummary: resolvedQAState?.agentCognitionSummary || buildAssignedAgentCognitionSummary({
+            rootPath,
+            workspace,
+            latestEvaluation: resolvedQAState?.evaluator?.latestEvaluation || readLatestEvaluation(rootPath),
+            evaluatorHistory: resolvedQAState?.evaluator?.history || readEvaluatorHistory(rootPath, 12),
+          }),
+        }
+      : undefined,
+    ta: taPayload,
+    sources: {
+      tasks: ['studio.orchestrator.desks.*.workItems', 'studio.teamBoard.cards'],
+      modules: ['modules/**/*.module.json'],
+      reports: ['studio.teamBoard.cards.verifyStatus/applyStatus/deployStatus', 'data/spatial/qa/runs/*.json', 'studio.deskProperties.manualTests'],
+      agents: ['studio.agentWorkers', 'studio.deskProperties.managedAgents'],
+      ...(deskId === QA_LEAD_DESK_ID ? { qa: ['qa/desks/*.js', 'qa/testRegistry.js', 'qa/qaAuditTrail.js', 'data/spatial/qa/structured/*.json', 'data/spatial/qa/local-gates/*.json', 'data/spatial/qa/*.json'] } : {}),
+    },
+  };
+}
+
+function getAnchorBundle() {
+  return buildAnchorBundle({
+    rootPath: ROOT,
+    domainKey: DOMAIN_KEY,
+  });
+}
+
+function getCanonicalSliceStore() {
+  return readSliceStore(ROOT, DOMAIN_KEY).store;
+}
+
+function persistCanonicalSlices(store) {
+  return writeSliceArtifacts(ROOT, store, DOMAIN_KEY);
+}
+
+function persistCanonicalSlicesForWorkspace(workspace) {
+  const board = normalizeTeamBoardState(workspace || {});
+  return persistCanonicalSlices(buildSliceStoreFromCards(board.cards));
+}
+
+function runArchivistWriteback(options = {}) {
+  return applyArchivistWriteback(ROOT, {
+    domainKey: DOMAIN_KEY,
+    workspace: options.workspace || readSpatialWorkspace(),
+    dryRun: Boolean(options.dryRun),
+    includeTasks: options.includeTasks !== false,
+    now: options.now,
+  });
+}
+
+function projectCanonicalSlicesIntoWorkspace(workspace) {
+  const sliceStore = getCanonicalSliceStore();
+  if (!sliceStore.slices.length) return workspace;
+  const currentStudio = workspace?.studio || {};
+  const currentBoard = currentStudio.teamBoard || createDefaultTeamBoard();
+  return {
+    ...workspace,
+    studio: {
+      ...currentStudio,
+      teamBoard: projectBoardFromSlices(sliceStore, currentBoard, workspace?.activePageId || null),
+    },
+  };
+}
+
+function loadProjectsMap() {
+  const config = resolveTargetsConfig(ROOT);
+  const targets = ensureSelfProject(config.targets || {}, ROOT);
+  const topdownPath = path.join(ROOT, 'brain', 'topdown-slice');
+  if (!targets['topdown-slice'] && fs.existsSync(topdownPath)) {
+    targets['topdown-slice'] = topdownPath;
+  }
+  return targets;
+}
+
+function ensureStructuredReportQualityCards(report = null) {
+  if (!report || typeof report !== 'object') return report;
+  return {
+    ...report,
+    desks: (Array.isArray(report.desks) ? report.desks : []).map((desk, deskIndex) => ({
+      ...desk,
+      tests: (Array.isArray(desk?.tests) ? desk.tests : []).map((test, testIndex) => {
+        if (test?.qualityCard) return test;
+        const testName = String(test?.name || test?.id || `test_${deskIndex}_${testIndex}`).trim() || `test_${deskIndex}_${testIndex}`;
+        return {
+          ...test,
+          qualityCard: {
+            id: `qa.${testName}`,
+            desk: desk?.desk || null,
+            testId: testName,
+            testName,
+            status: test?.status || null,
+            updatedAt: report.finishedAt || report.updatedAt || report.createdAt || null,
+            summary: test?.summary || report.summary || null,
+          },
+        };
+      }),
+    })),
+  };
+}
+
+function normalizeProjectPath(projectPath = '') {
+  const trimmed = String(projectPath || '').trim();
+  if (!trimmed) return '';
+  return path.isAbsolute(trimmed) ? trimmed : path.resolve(ROOT, trimmed);
+}
+
+function detectRunnableProjectType(projectKey, projectPath) {
+  const resolvedPath = normalizeProjectPath(projectPath);
+  if (!resolvedPath || !fs.existsSync(path.join(resolvedPath, 'index.html'))) {
+    return null;
+  }
+  const normalizedKey = String(projectKey || '').trim().toLowerCase();
+  const baseName = path.basename(resolvedPath).toLowerCase();
+  if (normalizedKey === STATIC_WEB_PROJECT_KEY || baseName === STATIC_WEB_PROJECT_KEY) {
+    return 'static-web';
+  }
+  return null;
+}
+
+function buildProjectRecord(projectKey, projectPath) {
+  const resolvedPath = normalizeProjectPath(projectPath);
+  const projectType = detectRunnableProjectType(projectKey, resolvedPath);
+  return {
+    key: projectKey,
+    name: projectKey,
+    path: resolvedPath,
+    projectType,
+    launchable: Boolean(projectType),
+    supportedOrigin: projectType === 'static-web' ? STATIC_WEB_SUPPORTED_ORIGIN : null,
+  };
+}
+
+function listProjectsForUi() {
+  const projects = loadProjectsMap();
+  return Object.entries(projects).map(([key, projectPath]) => buildProjectRecord(key, projectPath));
+}
+
+function resolveProjectRecord(projectKey) {
+  const projects = loadProjectsMap();
+  const normalizedKey = String(projectKey || '').trim();
+  if (!normalizedKey || !projects[normalizedKey]) return null;
+  return buildProjectRecord(normalizedKey, projects[normalizedKey]);
+}
+
+function commandAvailable(command, probeArgs = ['--version']) {
+  return spawnSyncSafe(command, probeArgs, ROOT).code === 0;
+}
+
+function resolveStaticWebLaunchCommand(port) {
+  const portValue = String(port);
+  const candidates = process.platform === 'win32'
+    ? [
+        { command: 'py', probeArgs: ['-3', '--version'], args: ['-3', '-m', 'http.server', portValue] },
+        { command: 'python', probeArgs: ['--version'], args: ['-m', 'http.server', portValue] },
+        { command: 'python3', probeArgs: ['--version'], args: ['-m', 'http.server', portValue] },
+      ]
+    : [
+        { command: 'python3', probeArgs: ['--version'], args: ['-m', 'http.server', portValue] },
+        { command: 'python', probeArgs: ['--version'], args: ['-m', 'http.server', portValue] },
+      ];
+  const selected = candidates.find((candidate) => commandAvailable(candidate.command, candidate.probeArgs));
+  if (!selected) {
+    throw new Error('No Python runtime is available to launch static web projects.');
+  }
+  return {
+    command: selected.command,
+    args: selected.args,
+    commandLine: [selected.command, ...selected.args].join(' '),
+  };
+}
+
+function checkPortAvailable(port, host = '127.0.0.1') {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.unref?.();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => {
+      server.close(() => resolve(true));
+    });
+    server.listen(port, host);
+  });
+}
+
+function waitForPortOpen(port, { host = STATIC_WEB_HOST, timeoutMs = PROJECT_RUN_START_TIMEOUT_MS } = {}) {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + timeoutMs;
+    const attempt = () => {
+      const socket = net.connect({ host, port });
+      socket.once('connect', () => {
+        socket.end();
+        resolve();
+      });
+      socket.once('error', () => {
+        socket.destroy();
+        if (Date.now() >= deadline) {
+          reject(new Error(`Project server did not start on port ${port}.`));
+          return;
+        }
+        const timer = setTimeout(attempt, 120);
+        timer.unref?.();
+      });
+    };
+    attempt();
+  });
+}
+
+function normalizeStaticWebOrigin(origin = STATIC_WEB_SUPPORTED_ORIGIN) {
+  const value = String(origin || '').trim() || STATIC_WEB_SUPPORTED_ORIGIN;
+  return value.endsWith('/') ? value : `${value}/`;
+}
+
+function displayProjectUrlPath(targetUrl = '') {
+  try {
+    return new URL(targetUrl).pathname || '/';
+  } catch (error) {
+    return String(targetUrl || '');
+  }
+}
+
+function normalizeTextResponse(targetUrl, response) {
+  if (typeof response === 'string') {
+    return {
+      url: targetUrl,
+      status: 200,
+      body: response,
+    };
+  }
+  return {
+    url: String(response?.url || targetUrl),
+    status: Number(response?.status ?? response?.statusCode ?? 0),
+    body: String(response?.body ?? response?.text ?? ''),
+  };
+}
+
+function requestTextFromUrl(targetUrl, { timeoutMs = PROJECT_RUN_START_TIMEOUT_MS } = {}) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(targetUrl);
+    const client = parsedUrl.protocol === 'https:' ? https : http;
+    const request = client.get(parsedUrl, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      response.on('end', () => {
+        resolve({
+          url: targetUrl,
+          status: Number(response.statusCode || 0),
+          body: Buffer.concat(chunks).toString('utf8'),
+        });
+      });
+    });
+    request.once('error', (error) => reject(error));
+    request.setTimeout(timeoutMs, () => {
+      request.destroy(new Error(`Timed out fetching ${targetUrl}.`));
+    });
+  });
+}
+
+function parseDirectNamedImports(source = '') {
+  const imports = [];
+  const importPattern = /import\s*\{([\s\S]*?)\}\s*from\s*['"]([^'"]+)['"]/g;
+  let match = importPattern.exec(source);
+  while (match) {
+    const specifier = String(match[2] || '').trim();
+    if (specifier.startsWith('.')) {
+      const symbols = String(match[1] || '')
+        .split(',')
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .map((item) => item.split(/\s+as\s+/i)[0]?.trim())
+        .filter(Boolean);
+      if (symbols.length) {
+        imports.push({ specifier, symbols });
+      }
+    }
+    match = importPattern.exec(source);
+  }
+  return imports;
+}
+
+function parseNamedExports(source = '') {
+  const exportedNames = new Set();
+  const functionPattern = /export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g;
+  const classPattern = /export\s+class\s+([A-Za-z_$][\w$]*)/g;
+  const valuePattern = /export\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/g;
+  const exportListPattern = /export\s*\{([\s\S]*?)\}(?:\s*from\s*['"][^'"]+['"])?/g;
+
+  [functionPattern, classPattern, valuePattern].forEach((pattern) => {
+    let match = pattern.exec(source);
+    while (match) {
+      exportedNames.add(String(match[1] || '').trim());
+      match = pattern.exec(source);
+    }
+  });
+
+  let exportListMatch = exportListPattern.exec(source);
+  while (exportListMatch) {
+    String(exportListMatch[1] || '')
+      .split(',')
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .forEach((item) => {
+        const aliasParts = item.split(/\s+as\s+/i).map((part) => part.trim()).filter(Boolean);
+        const exportedName = aliasParts[1] || aliasParts[0];
+        if (exportedName) exportedNames.add(exportedName);
+      });
+    exportListMatch = exportListPattern.exec(source);
+  }
+
+  return exportedNames;
+}
+
+async function smokeCheckStaticWebBoot({
+  baseUrl = STATIC_WEB_SUPPORTED_ORIGIN,
+  requestText = requestTextFromUrl,
+  entryPaths = STATIC_WEB_BOOT_ENTRY_PATHS,
+} = {}) {
+  const supportedOrigin = normalizeStaticWebOrigin(baseUrl);
+  const responseCache = new Map();
+  const loadText = async (targetUrl) => {
+    if (responseCache.has(targetUrl)) return responseCache.get(targetUrl);
+    let response;
+    try {
+      response = normalizeTextResponse(targetUrl, await requestText(targetUrl));
+    } catch (error) {
+      throw new Error(`Failed to fetch ${displayProjectUrlPath(targetUrl)}: ${String(error.message || error)}`);
+    }
+    responseCache.set(targetUrl, response);
+    return response;
+  };
+
+  const shellCandidates = [
+    new URL('/', supportedOrigin).toString(),
+    new URL('/index.html', supportedOrigin).toString(),
+  ];
+  const shellErrors = [];
+  let shellResponse = null;
+  for (const candidateUrl of shellCandidates) {
+    const response = await loadText(candidateUrl);
+    if (response.status === 200 && response.body.includes(STATIC_WEB_SHELL_MARKER)) {
+      shellResponse = response;
+      break;
+    }
+    shellErrors.push(`${displayProjectUrlPath(candidateUrl)} returned ${response.status || 'no status'} without the ${STATIC_WEB_SHELL_MARKER} shell marker.`);
+  }
+  if (!shellResponse) {
+    throw new Error(shellErrors.join(' '));
+  }
+
+  for (const entryPath of entryPaths) {
+    const entryUrl = new URL(entryPath, supportedOrigin).toString();
+    const entryResponse = await loadText(entryUrl);
+    if (entryResponse.status !== 200) {
+      throw new Error(`${displayProjectUrlPath(entryUrl)} returned ${entryResponse.status || 'no status'}.`);
+    }
+    const directImports = parseDirectNamedImports(entryResponse.body);
+    for (const directImport of directImports) {
+      const dependencyUrl = new URL(directImport.specifier, entryUrl).toString();
+      const dependencyResponse = await loadText(dependencyUrl);
+      if (dependencyResponse.status !== 200) {
+        throw new Error(`${displayProjectUrlPath(entryUrl)} depends on ${displayProjectUrlPath(dependencyUrl)}, which returned ${dependencyResponse.status || 'no status'}.`);
+      }
+      const exportedNames = parseNamedExports(dependencyResponse.body);
+      for (const symbol of directImport.symbols) {
+        if (!exportedNames.has(symbol)) {
+          throw new Error(`${displayProjectUrlPath(entryUrl)} imports "${symbol}" from ${displayProjectUrlPath(dependencyUrl)}, but that export was not found.`);
+        }
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    baseUrl: supportedOrigin,
+    shellUrl: shellResponse.url,
+    checkedEntries: entryPaths.length,
+  };
+}
+
+function isProcessAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code === 'EPERM';
+  }
+}
+
+function getActiveProjectRun(projectKey) {
+  const normalizedKey = String(projectKey || '').trim();
+  const launch = projectRunStore.get(normalizedKey);
+  if (!launch) return null;
+  if (!isProcessAlive(launch.pid)) {
+    projectRunStore.delete(normalizedKey);
+    return null;
+  }
+  return {
+    ...launch,
+    reused: true,
+  };
+}
+
+async function launchProject(projectKey, options = {}) {
+  const project = resolveProjectRecord(projectKey);
+  if (!project) {
+    throw new Error(`Unknown project: ${String(projectKey || '').trim() || '(missing)'}`);
+  }
+  if (project.projectType !== 'static-web') {
+    throw new Error('Only the topdown-slice static web prototype is launchable in this slice.');
+  }
+
+  const supportedOrigin = normalizeStaticWebOrigin(project.supportedOrigin || STATIC_WEB_SUPPORTED_ORIGIN);
+  const smokeCheck = options.smokeCheck || smokeCheckStaticWebBoot;
+  const checkPort = options.checkPortAvailable || checkPortAvailable;
+  const spawnChild = options.spawnChild || ((command, args, spawnOptions) => spawn(command, args, spawnOptions));
+  const waitForPort = options.waitForPortOpen || waitForPortOpen;
+  const killProcess = options.killProcess || ((pid) => process.kill(pid));
+  const resolveLaunchCommand = options.resolveLaunchCommand || resolveStaticWebLaunchCommand;
+
+  const existing = getActiveProjectRun(project.key);
+  if (existing) {
+    if (existing.port !== STATIC_WEB_DEFAULT_PORT) {
+      projectRunStore.delete(project.key);
+    } else {
+      try {
+        await smokeCheck({
+          baseUrl: supportedOrigin,
+          requestText: options.requestText,
+        });
+      } catch (error) {
+        projectRunStore.delete(project.key);
+        throw new Error(`Tracked ACE launch for ${project.key} on ${supportedOrigin} failed the boot smoke check: ${String(error.message || error)}`);
+      }
+      return {
+        ...existing,
+        url: supportedOrigin,
+        supportedOrigin,
+        project,
+      };
+    }
+  }
+
+  const portIsAvailable = await checkPort(STATIC_WEB_DEFAULT_PORT, STATIC_WEB_HOST);
+  if (!portIsAvailable) {
+    try {
+      await smokeCheck({
+        baseUrl: supportedOrigin,
+        requestText: options.requestText,
+      });
+    } catch (error) {
+      throw new Error(`${project.key} requires ${supportedOrigin}, but the service currently bound there did not pass the boot smoke check: ${String(error.message || error)}`);
+    }
+    return {
+      projectKey: project.key,
+      projectPath: project.path,
+      projectType: project.projectType,
+      pid: null,
+      port: STATIC_WEB_DEFAULT_PORT,
+      url: supportedOrigin,
+      supportedOrigin,
+      command: 'external static web server',
+      launchedAt: null,
+      project,
+      reused: true,
+    };
+  }
+
+  const launchCommand = resolveLaunchCommand(STATIC_WEB_DEFAULT_PORT);
+  const child = spawnChild(launchCommand.command, launchCommand.args, {
+    cwd: project.path,
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+  });
+
+  try {
+    await waitForPort(STATIC_WEB_DEFAULT_PORT, { host: STATIC_WEB_HOST });
+    await smokeCheck({
+      baseUrl: supportedOrigin,
+      requestText: options.requestText,
+    });
+  } catch (error) {
+    try {
+      killProcess(child.pid);
+    } catch (killError) {
+      // Child may have already exited; nothing else to do here.
+    }
+    throw error;
+  }
+
+  child.unref();
+
+  const launch = {
+    projectKey: project.key,
+    projectPath: project.path,
+    projectType: project.projectType,
+    pid: child.pid,
+    port: STATIC_WEB_DEFAULT_PORT,
+    url: supportedOrigin,
+    supportedOrigin,
+    command: launchCommand.commandLine,
+    launchedAt: nowIso(),
+  };
+  projectRunStore.set(project.key, launch);
+  return { ...launch, project, reused: false };
+}
+
+function stopProjectRun(projectKey, options = {}) {
+  const normalizedKey = String(projectKey || '').trim();
+  const launch = projectRunStore.get(normalizedKey);
+  if (!launch) return false;
+  projectRunStore.delete(normalizedKey);
+  if (!Number.isInteger(launch.pid) || launch.pid <= 0) return false;
+  try {
+    const killProcess = options.killProcess || ((pid) => process.kill(pid));
+    killProcess(launch.pid);
+    return true;
+  } catch (error) {
+    return error.code === 'ESRCH';
+  }
+}
+
+function getDashboardStateSnapshot() {
+  return getAnchorBundle().managerSummary || {};
+}
+
+function getRunsSnapshot() {
+  return runOrder.slice().reverse().map((id) => {
+    const r = runStore.get(id);
+    return r ? {
+      runId: r.runId,
+      action: r.action,
+      status: r.status,
+      exitCode: r.exitCode,
+      startedAt: r.startedAt,
+      finishedAt: r.finishedAt,
+      durationMs: r.durationMs,
+      payload: r.payload,
+      logs: r.logs,
+      artifacts: r.artifacts,
+      meta: r.meta,
+    } : null;
+  }).filter(Boolean);
+}
+
+function defaultSpatialWorkspace() {
+  return {
+    graph: { nodes: [], edges: [] },
+    graphs: {
+      system: { nodes: [], edges: [] },
+      world: { nodes: [], edges: [] },
+    },
+    sketches: [],
+    annotations: [],
+    architectureMemory: {},
+    agentComments: {},
+    intentState: createEmptyIntentRegistry(),
+    pages: [],
+    activePageId: null,
+    rsg: createDefaultRsgState(),
+    mutationGate: createDefaultMutationGateState(),
+    studio: {
+      handoffs: {},
+      agentWorkers: createDefaultAgentWorkersState(),
+      layout: createDefaultStudioLayoutSchema(),
+      deskProperties: normalizeDeskPropertiesState({}),
+      ctoOverrides: createDefaultCtoOverrideLedger(),
+      selfUpgrade: createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }),
+    },
+  };
+}
+
+function normalizeStudioBootManifestSource(source = null) {
+  const fallback = {
+    version: 'ace/studio-boot-contract.v1',
+    root_id: 'spatial-root',
+    mount_marker: {
+      attribute: 'data-boot',
+      value: 'studio-mounted',
+    },
+    blank_render_timeout_ms: 5000,
+    entry_module_import: './spatialApp.js',
+    assets: [],
+  };
+  const resolvedSource = source && typeof source === 'object' ? source : fallback;
+  const assets = Array.isArray(resolvedSource.assets) ? resolvedSource.assets : [];
+  return {
+    version: String(resolvedSource.version || fallback.version).trim() || fallback.version,
+    root_id: String(resolvedSource.root_id || fallback.root_id).trim() || fallback.root_id,
+    mount_marker: resolvedSource.mount_marker && typeof resolvedSource.mount_marker === 'object'
+      ? {
+          attribute: String(resolvedSource.mount_marker.attribute || fallback.mount_marker.attribute).trim() || fallback.mount_marker.attribute,
+          value: String(resolvedSource.mount_marker.value || fallback.mount_marker.value).trim() || fallback.mount_marker.value,
+        }
+      : fallback.mount_marker,
+    blank_render_timeout_ms: Math.max(1000, Number(resolvedSource.blank_render_timeout_ms) || fallback.blank_render_timeout_ms),
+    entry_module_import: String(resolvedSource.entry_module_import || fallback.entry_module_import).trim() || fallback.entry_module_import,
+    assets: assets.map((asset, index) => ({
+      id: String(asset?.id || `studio_boot_asset_${index + 1}`).trim() || `studio_boot_asset_${index + 1}`,
+      path: String(asset?.path || '').trim() || '/',
+      label: String(asset?.label || asset?.path || `Studio boot asset ${index + 1}`).trim() || `Studio boot asset ${index + 1}`,
+      kind: String(asset?.kind || 'asset').trim() || 'asset',
+      stage: String(asset?.stage || 'required_modules_loaded').trim() || 'required_modules_loaded',
+      blocking: Boolean(asset?.blocking),
+    })),
+  };
+}
+
+function readStudioBootManifest() {
+  return normalizeStudioBootManifestSource(readJsonSafe(STUDIO_BOOT_MANIFEST_PATH, null));
+}
+
+function probeStudioBootAsset(asset = {}, options = {}) {
+  const normalizedPath = String(asset.path || '/').trim() || '/';
+  const publicRoot = options.publicRoot || path.join(__dirname, 'public');
+  const targetFile = normalizedPath === '/'
+    ? path.join(publicRoot, 'index.html')
+    : path.join(publicRoot, normalizedPath.replace(/^\//, '').replaceAll('/', path.sep));
+  const exists = fs.existsSync(targetFile);
+  return {
+    ...asset,
+    resolved_path: relativeToRoot(ROOT, targetFile),
+    status: exists ? 'ok' : 'missing',
+    ok: exists,
+    http_status: exists ? 200 : 404,
+    reason: exists ? '' : `${normalizedPath} returned 404 (Not Found).`,
+  };
+}
+
+function evaluateStudioClientBootContract(rootPath = ROOT, options = {}) {
+  const manifest = options.manifest ? normalizeStudioBootManifestSource(options.manifest) : readStudioBootManifest();
+  const publicRoot = options.publicRoot || path.join(__dirname, 'public');
+  const indexPath = options.indexPath || path.join(publicRoot, 'index.html');
+  const indexSource = typeof options.indexSource === 'string'
+    ? options.indexSource
+    : (fs.existsSync(indexPath) ? fs.readFileSync(indexPath, 'utf8') : '');
+  const shellLoaded = Boolean(indexSource);
+  const rootMarker = `id="${manifest.root_id}"`;
+  const hasRootDom = shellLoaded && indexSource.includes(rootMarker);
+  const assets = manifest.assets.map((asset) => probeStudioBootAsset(asset, { publicRoot }));
+  const stageState = {
+    html_loaded: {
+      status: shellLoaded ? 'ok' : 'failed',
+      ok: shellLoaded,
+      reason: shellLoaded ? '' : 'Studio shell HTML was not found.',
+    },
+    root_dom_found: {
+      status: hasRootDom ? 'ok' : 'failed',
+      ok: hasRootDom,
+      reason: hasRootDom ? '' : `Studio shell root "${manifest.root_id}" was not found in index.html.`,
+    },
+    core_bundle_loaded: {
+      status: 'ok',
+      ok: true,
+      reason: '',
+    },
+    required_modules_loaded: {
+      status: 'ok',
+      ok: true,
+      reason: '',
+    },
+    app_mounted: {
+      status: 'unknown',
+      ok: null,
+      reason: 'Client watchdog must confirm mount marker visibility.',
+    },
+    first_render_complete: {
+      status: 'unknown',
+      ok: null,
+      reason: 'Client watchdog must confirm first render completion.',
+    },
+  };
+
+  const blockingFailure = assets.find((asset) => !asset.ok && asset.blocking) || null;
+  const coreBlockingFailure = assets.find((asset) => asset.stage === 'core_bundle_loaded' && !asset.ok && asset.blocking) || null;
+  const requiredBlockingFailure = assets.find((asset) => asset.stage === 'required_modules_loaded' && !asset.ok && asset.blocking) || null;
+  const warnings = assets.filter((asset) => !asset.ok && !asset.blocking);
+
+  if (coreBlockingFailure) {
+    stageState.core_bundle_loaded = {
+      status: 'failed',
+      ok: false,
+      reason: `Studio shell mounted, but boot failed because required client asset "${coreBlockingFailure.path}" was missing.`,
+      asset: coreBlockingFailure.path,
+      http_status: coreBlockingFailure.http_status,
+      failure_class: 'missing_client_asset',
+    };
+  }
+  if (requiredBlockingFailure) {
+    stageState.required_modules_loaded = {
+      status: 'failed',
+      ok: false,
+      reason: `Studio shell mounted, but boot failed because required client asset "${requiredBlockingFailure.path}" was missing.`,
+      asset: requiredBlockingFailure.path,
+      http_status: requiredBlockingFailure.http_status,
+      failure_class: 'missing_client_asset',
+    };
+  }
+
+  const ok = shellLoaded && hasRootDom && !blockingFailure;
+  const failureStage = !shellLoaded
+    ? 'html_loaded'
+    : (!hasRootDom ? 'root_dom_found' : (blockingFailure?.stage || null));
+  const reason = !shellLoaded
+    ? 'Studio shell HTML was not found.'
+    : (!hasRootDom
+        ? `Studio shell root "${manifest.root_id}" was not found in index.html.`
+        : (blockingFailure
+            ? `Studio shell mounted, but boot failed because required client asset "${blockingFailure.path}" was missing.`
+            : ''));
+
+  return {
+    version: manifest.version,
+    ok,
+    safeMode: !ok,
+    failure_class: blockingFailure ? 'missing_client_asset' : (!shellLoaded || !hasRootDom ? 'boot_contract_mismatch' : null),
+    failure_stage: failureStage,
+    reason,
+    asset: blockingFailure?.path || null,
+    http_status: blockingFailure?.http_status || null,
+    mount_marker: manifest.mount_marker,
+    root_id: manifest.root_id,
+    stages: stageState,
+    assets,
+    warnings,
+  };
+}
+
+function getSelfUpgradeState(workspace) {
+  return normalizeSelfUpgradeState(workspace?.studio?.selfUpgrade, {
+    serverStartedAt: SERVER_STARTED_AT,
+    pid: process.pid,
+  });
+}
+
+function normalizeSpatialWorkspaceShape(workspace = {}) {
+  const baseWorkspace = {
+    ...defaultSpatialWorkspace(),
+    ...(workspace || {}),
+  };
+  const graphs = normalizeGraphBundle(baseWorkspace);
+  const normalizedWorkspace = {
+    ...baseWorkspace,
+    graph: graphs.system,
+    graphs,
+    studio: {
+      ...(baseWorkspace.studio || {}),
+      handoffs: { ...((baseWorkspace.studio || {}).handoffs || {}) },
+      agentWorkers: normalizeAgentWorkersState(baseWorkspace?.studio?.agentWorkers),
+      layout: normalizeStudioLayoutSchema(baseWorkspace?.studio?.layout || {}),
+      deskProperties: normalizeDeskPropertiesState(baseWorkspace),
+      ctoOverrides: normalizeCtoOverrideLedger(baseWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
+      intake: normalizeCanonicalIntakeState(baseWorkspace?.studio?.intake),
+      selfUpgrade: getSelfUpgradeState(baseWorkspace),
+    },
+  };
+  return {
+    ...normalizedWorkspace,
+    rsg: buildRsgState(normalizedWorkspace),
+    mutationGate: normalizeMutationGateState(normalizedWorkspace.mutationGate),
+  };
+}
+
+function updateSpatialWorkspace(mutator) {
+  ensureSpatialStorage();
+  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const nextWorkspace = normalizeSpatialWorkspaceShape(mutator(workspace) || workspace);
+  return persistSpatialWorkspace(nextWorkspace);
+}
+
+function persistWorkspacePatch(patcher) {
+  ensureSpatialStorage();
+  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const nextWorkspace = normalizeSpatialWorkspaceShape(patcher(workspace) || workspace);
+  return persistSpatialWorkspace(nextWorkspace);
+}
+
+function updateSelfUpgradeState(mutator) {
+  return updateSpatialWorkspace((workspace) => ({
+    ...workspace,
+    studio: {
+      ...(workspace.studio || {}),
+      selfUpgrade: mutator(getSelfUpgradeState(workspace), workspace),
+    },
+  }));
+}
+
+function persistSpatialWorkspace(nextWorkspace) {
+  ensureSpatialStorage();
+  const advancedWorkspace = advanceOrchestratorWorkspace(normalizeSpatialWorkspaceShape(nextWorkspace), {
+    dashboardState: getDashboardStateSnapshot(),
+    runs: getRunsSnapshot(),
+  });
+  persistCanonicalSlicesForWorkspace(advancedWorkspace);
+  writeJson(SPATIAL_WORKSPACE_FILE, advancedWorkspace, {
+    ignoreKeys: SPATIAL_WORKSPACE_VOLATILE_KEYS,
+  });
+  return advancedWorkspace;
+}
+
+function persistSpatialWorkspaceForRoot(rootPath = ROOT, nextWorkspace) {
+  if (rootPath === ROOT) {
+    return persistSpatialWorkspace(nextWorkspace);
+  }
+  const workspaceFile = path.join(rootPath, 'data', 'spatial', 'workspace.json');
+  const normalizedWorkspace = normalizeSpatialWorkspaceShape(nextWorkspace);
+  fs.mkdirSync(path.dirname(workspaceFile), { recursive: true });
+  writeJson(workspaceFile, normalizedWorkspace, {
+    ignoreKeys: SPATIAL_WORKSPACE_VOLATILE_KEYS,
+  });
+  return normalizedWorkspace;
+}
+
+function persistCanonicalIntakeRecord(record = {}, { rootPath = ROOT, workspace = null } = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace(rootPath));
+  const nextWrite = upsertCanonicalIntakeRecord(currentWorkspace?.studio?.intake, record);
+  const nextWorkspace = persistSpatialWorkspaceForRoot(rootPath, {
+    ...currentWorkspace,
+    studio: {
+      ...(currentWorkspace.studio || {}),
+      intake: nextWrite.state,
+    },
+  });
+  return {
+    workspace: nextWorkspace,
+    intakeState: normalizeCanonicalIntakeState(nextWorkspace?.studio?.intake),
+    intakeRecord: normalizeCanonicalIntakeRecord(nextWrite.record),
+  };
+}
+
+function createRunnerTaskFolder({ title, prompt, handoff = null, sessionId = null, anchorRefs = [], tasksDir = TASKS_DIR, rootPath = ROOT }) {
+  fs.mkdirSync(tasksDir, { recursive: true });
+  const safeTitle = slugify(title || prompt);
+  const lastId = (tasksDir === TASKS_DIR ? getTaskFolders() : getTaskFoldersFromRoot(tasksDir)).reduce((highest, folder) => {
+    const value = Number.parseInt(String(folder || '').slice(0, 4), 10);
+    return Number.isFinite(value) ? Math.max(highest, value) : highest;
+  }, 0);
+  const taskId = String(lastId + 1).padStart(4, '0');
+  const folderName = `${taskId}-${safeTitle}`;
+  const taskDir = path.join(tasksDir, folderName);
+  const createdAt = nowIso();
+  const artifactAttribution = buildTaskArtifactAttributionMap({
+    taskId,
+    taskDir: relativeToRoot(rootPath, taskDir),
+    createdAt,
+    updatedAt: createdAt,
+    artifactNames: TASK_ARTIFACT_NAMES,
+  });
+  fs.mkdirSync(taskDir, { recursive: true });
+  fs.writeFileSync(path.join(taskDir, 'idea.txt'), `${prompt.trim()}\n`, 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'context.md'), [
+    `# Task ${taskId}: ${title || prompt.slice(0, 60)}`,
+    '',
+    '## Context',
+    handoff?.problemStatement || handoff?.summary || prompt.trim(),
+    '',
+    '## Anchor refs',
+    ...((anchorRefs || []).length ? anchorRefs.map((anchorRef) => `- ${anchorRef}`) : ['- None attached']),
+    '',
+  ].join('\n'), 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'plan.md'), [
+    `# Task ${taskId}: ${title || prompt.slice(0, 60)}`,
+    '',
+    `Created: ${createdAt}`,
+    '',
+    renderAgentAttributionBlock(resolveArtifactAgentIdentity('plan.md'), { title: 'Plan Attribution' }),
+    '',
+    '## Goal',
+    handoff?.summary ? `- ${handoff.summary}` : '-',
+    '',
+    '## MVP scope (must-haves)',
+    ...(((handoff?.requestedOutcomes || handoff?.tasks) || []).length ? (handoff.requestedOutcomes || handoff.tasks).map((task) => `- ${task}`) : ['-']),
+    '',
+    '## Out of scope (not now)',
+    '-',
+    '',
+    '## Acceptance criteria',
+    '- [ ]',
+    '',
+    '## Risks / notes',
+    sessionId ? `- Throughput debug session: ${sessionId}` : '-',
+    '',
+  ].join('\n'), 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'patch.diff'), '', 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'agent_attribution.json'), `${JSON.stringify(artifactAttribution, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'apply_result.json'), `${JSON.stringify({
+    taskId,
+    stage: 'apply',
+    status: 'pending',
+    ok: false,
+    created_utc: createdAt,
+    updated_utc: createdAt,
+    taskDir: relativeToRoot(rootPath, taskDir),
+    patchPath: relativeToRoot(rootPath, path.join(taskDir, 'patch.diff')),
+    reuseHint: 'Keep idea.txt, context.md, plan.md, and patch.diff stable; only rerun the smallest broken stage.',
+    inputs: {
+      idea: 'idea.txt',
+      context: 'context.md',
+      plan: 'plan.md',
+      patch: 'patch.diff',
+    },
+    outputs: {
+      result: 'apply_result.json',
+    },
+    result: null,
+    error: null,
+    branch: null,
+    commit: null,
+    agent_id: resolveStageAgentIdentity('apply').agent_id,
+    agent_version: resolveStageAgentIdentity('apply').agent_version,
+    attribution: resolveStageAgentIdentity('apply'),
+    artifactAttributionPath: relativeToRoot(rootPath, path.join(taskDir, 'agent_attribution.json')),
+  }, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(path.join(taskDir, 'meta.json'), `${JSON.stringify({
+    id: taskId,
+    title: title || prompt.slice(0, 60),
+    created_utc: createdAt,
+    source: sessionId ? 'throughput-debug' : 'studio-team-board',
+    sessionId,
+    handoffId: handoff?.id || null,
+    parentTaskId: handoff?.sourceFixTaskParentTaskId || handoff?.sourceFixTaskId || null,
+    sourceFixTaskId: handoff?.sourceFixTaskId || null,
+    sourceFixTaskParentTaskId: handoff?.sourceFixTaskParentTaskId || null,
+    sourceFixTaskQueueKey: handoff?.sourceFixTaskQueueKey || null,
+    sourceFixTaskLocation: handoff?.sourceFixTaskLocation || null,
+    sourceFixTaskStatus: handoff?.sourceFixTaskStatus || null,
+    artifactAttributionPath: relativeToRoot(rootPath, path.join(taskDir, 'agent_attribution.json')),
+    artifactAttribution,
+    anchorRefs: Array.isArray(anchorRefs) ? anchorRefs.filter(Boolean) : [],
+  }, null, 2)}\n`, 'utf8');
+  return {
+    taskId,
+    folderName,
+    taskDir,
+  };
+}
+
+function buildTaskApplyResultRecord({
+  taskId,
+  taskDir,
+  projectKey = null,
+  patchPath,
+  ok,
+  status,
+  result = null,
+  error = null,
+  branch = null,
+  commit = null,
+  stage = 'apply',
+  policy = null,
+  fixTask = null,
+  sourceFixTask = null,
+  rootPath = ROOT,
+}) {
+  const updatedUtc = nowIso();
+  const attribution = resolveStageAgentIdentity(stage || 'apply');
+  return {
+    taskId: String(taskId || '').trim() || null,
+    projectKey: String(projectKey || '').trim() || null,
+    stage,
+    status: status || (ok ? 'passed' : 'failed'),
+    ok: Boolean(ok),
+    created_utc: null,
+    updated_utc: updatedUtc,
+    agent_id: attribution.agent_id,
+    agent_version: attribution.agent_version,
+    attribution,
+    taskDir: taskDir ? relativeToRoot(rootPath, taskDir) : null,
+    patchPath: patchPath ? relativeToRoot(rootPath, patchPath) : null,
+    reuseHint: ok
+      ? 'Cache hit available. Reuse the existing plan and patch before rerunning apply.'
+      : 'Cache preserved. Rerun only the smallest broken stage and keep previous plan/context intact.',
+    inputs: {
+      idea: 'idea.txt',
+      context: 'context.md',
+      plan: 'plan.md',
+      patch: 'patch.diff',
+    },
+    outputs: {
+      result: 'apply_result.json',
+    },
+    result,
+    error: error ? String(error) : null,
+    branch: branch || null,
+    commit: commit || null,
+    policy: policy ? {
+      decision: policy.decision || null,
+      reasons: policy.reasons || [],
+      policy_rule_hits: policy.policy_rule_hits || [],
+      retry_count: policy.retry_count ?? null,
+      cache_status: policy.cache_status || null,
+      fix_task_created: Boolean(policy.fix_task_created),
+      fix_task_path: policy.fix_task_path || null,
+    } : null,
+    fixTask: fixTask ? {
+      location: fixTask.location || null,
+      jsonPath: relativeToRoot(rootPath, fixTask.jsonPath),
+      markdownPath: relativeToRoot(rootPath, fixTask.markdownPath),
+    } : null,
+    sourceFixTask: sourceFixTask ? {
+      taskId: sourceFixTask.taskId || null,
+      parentTaskId: sourceFixTask.parentTaskId || null,
+      location: sourceFixTask.location || null,
+      status: sourceFixTask.status || null,
+      retry_count: Number(sourceFixTask.retry_count || 0) || 0,
+      retry_limit: Number(sourceFixTask.retry_limit || 0) || 0,
+      queueKey: sourceFixTask.queueKey || null,
+      jsonPath: sourceFixTask.jsonPath || null,
+      markdownPath: sourceFixTask.markdownPath || null,
+    } : null,
+    artifactAttributionPath: taskDir ? relativeToRoot(rootPath, path.join(taskDir, 'agent_attribution.json')) : null,
+  };
+}
+
+function writeTaskApplyResult(taskDir, payload, { recordFailure = true } = {}) {
+  if (!taskDir) return null;
+  const filePath = path.join(taskDir, 'apply_result.json');
+  const existing = fs.existsSync(filePath) ? readJsonSafe(filePath, {}) || {} : {};
+  const nextPayload = {
+    ...existing,
+    ...payload,
+    created_utc: payload?.created_utc ?? existing.created_utc ?? nowIso(),
+    updated_utc: nowIso(),
+  };
+  fs.writeFileSync(filePath, `${JSON.stringify(nextPayload, null, 2)}\n`, 'utf8');
+  try {
+    writeAgentAuditArtifacts(ROOT, buildAgentAuditRecord({
+      rootPath: ROOT,
+      stage: 'builder',
+      taskId: nextPayload.taskId || existing.taskId || null,
+      taskDir,
+      sourceRecord: nextPayload,
+      outcome: nextPayload.status || (nextPayload.ok ? 'passed' : 'failed'),
+      pass_fail: nextPayload.ok === false || String(nextPayload.status || '').toLowerCase() === 'blocked' ? 'fail' : 'pass',
+      artifactRefs: [
+        path.relative(ROOT, filePath).replace(/\\/g, '/'),
+        path.relative(ROOT, path.join(taskDir, 'patch.diff')).replace(/\\/g, '/'),
+        path.relative(ROOT, path.join(taskDir, 'agent_attribution.json')).replace(/\\/g, '/'),
+      ],
+    }));
+  } catch (error) {
+    console.warn('[WARN] builder audit write failed:', error?.message || error);
+  }
+  if (recordFailure && (String(nextPayload.status || '').toLowerCase() === 'failed' || nextPayload.ok === false)) {
+    try {
+      recordClassifiedFailure(ROOT, new Error(nextPayload.error || nextPayload.summary || 'Apply failed.'), {
+        message: nextPayload.error || nextPayload.summary || 'Apply failed.',
+        tool: 'git',
+        related_stage: 'apply',
+        stage: 'apply',
+        agentId: nextPayload.agent_id || 'executor',
+        agentVersion: nextPayload.agent_version || null,
+        projectKey: nextPayload.projectKey || payload?.projectKey || null,
+        runId: nextPayload.runId || nextPayload.taskId || null,
+        component: 'builder',
+        source: 'task-apply',
+      });
+    } catch (error) {
+      console.warn('[WARN] failure history update failed:', error?.message || error);
+    }
+  }
+  return nextPayload;
+}
+
+async function analyzeIntentWithContextWorker(text, workspace, options = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  const previousHandoff = currentWorkspace?.studio?.handoffs?.contextToPlanner || null;
+  const result = await runContextManagerWorker({
+    rootPath: ROOT,
+    text,
+    sourceNodeId: options.sourceNodeId || null,
+    source: options.source || 'context-intake',
+    workspace: currentWorkspace,
+    anchorBundle: getAnchorBundle(),
+    dashboardState: getDashboardStateSnapshot(),
+    previousHandoff,
+    plannerFeedback: options.plannerFeedback,
+    mode: options.mode || 'manual',
+    backend: options.backend || null,
+    model: options.model || null,
+    host: options.host || null,
+    timeoutMs: Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : null,
+  });
+  if (!result.report) {
+    throw new Error(result.reason || 'Context Manager could not produce an intent report.');
+  }
+  return result;
+}
+
+function resolveProjectTarget(projectKeyOrPath) {
+  const projects = loadProjectsMap();
+  const projectKey = String(projectKeyOrPath || '').trim();
+  return {
+    projectKey,
+    projectPath: projects[projectKey] || projectKey,
+    projects,
+  };
+}
+
+function runSelfUpgradePreflight({ taskId, projectKey, projectPath, validation, patchReview }) {
+  const checks = getSelfUpgradePreflightSpecs(ROOT).map((spec) => {
+    const startedAt = Date.now();
+    const result = spawnSyncSafe(spec.cmd, spec.args, spec.cwd);
+    return {
+      id: spec.id,
+      label: spec.label,
+      command: [spec.cmd, ...spec.args].join(' '),
+      ok: result.code === 0,
+      exitCode: result.code,
+      durationMs: Date.now() - startedAt,
+      output: summarizeCommandOutput(result.stdout || result.stderr || ''),
+    };
+  });
+  const ok = Boolean(validation?.ok) && Boolean(patchReview?.ok) && checks.every((check) => check.ok);
+  return {
+    status: ok ? 'passed' : 'failed',
+    ok,
+    checkedAt: nowIso(),
+    checks,
+    summary: ok
+      ? 'ACE self-upgrade preflight passed.'
+      : 'ACE self-upgrade preflight found issues that block apply.',
+    taskId,
+    projectKey,
+    validation,
+    patchReview,
+  };
+}
+
+function markServerHealthyOnBoot() {
+  ensureSpatialStorage();
+  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
+  const selfUpgrade = getSelfUpgradeState(workspace);
+  if (!['restarting', 'queued'].includes(selfUpgrade.deploy?.status)) return;
+  updateSelfUpgradeState((state) => ({
+    ...state,
+    status: state.apply?.ok ? 'healthy' : state.status,
+    deploy: {
+      ...state.deploy,
+      status: 'healthy',
+      restartedAt: nowIso(),
+      health: {
+        status: 'healthy',
+        pid: process.pid,
+        startedAt: SERVER_STARTED_AT,
+      },
+    },
+    requiresPermission: 'none',
+  }));
+}
+
+function scheduleSelfRestart() {
+  const options = {
+    cwd: __dirname,
+    detached: true,
+    windowsHide: true,
+    stdio: 'ignore',
+  };
+  if (process.platform === 'win32') {
+    const child = spawn('cmd', ['/c', 'ping 127.0.0.1 -n 2 >nul && node server.js'], options);
+    child.unref();
+  } else {
+    const child = spawn('sh', ['-lc', 'sleep 1; node server.js'], options);
+    child.unref();
+  }
+  setTimeout(() => process.exit(0), 150);
+}
+
+function refreshSpatialOrchestrator({ persist = true, workspace = null } = {}) {
+  ensureSpatialStorage();
+  const currentWorkspace = normalizeSpatialWorkspaceShape(syncTeamBoardWithSelfUpgrade(
+    workspace || readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
+  ));
+  const nextWorkspace = advanceOrchestratorWorkspace(currentWorkspace, {
+    dashboardState: getDashboardStateSnapshot(),
+    runs: getRunsSnapshot(),
+  });
+  if (persist) {
+    writeJson(SPATIAL_WORKSPACE_FILE, nextWorkspace);
+  }
+  return nextWorkspace;
+}
+
+function buildQADebugPayload(qaState = null) {
+  const resolvedQAState = qaState || buildQAStatePayload();
+  return {
+    latestRun: resolvedQAState.latestBrowserRun || null,
+    runs: Array.isArray(resolvedQAState.browserRuns) ? resolvedQAState.browserRuns : [],
+    localGate: resolvedQAState.localGate || { unit: null, studioBoot: null },
+  };
+}
+
+function buildRuntimeDrift(anchorBundle, workspace) {
+  const drift = [...(anchorBundle?.drift || [])];
+  const board = normalizeTeamBoardState(workspace || {});
+  board.cards
+    .filter((card) => ['active', 'review', 'complete'].includes(card.status) && !(card.sourceAnchorRefs || []).length)
+    .forEach((card) => {
+      drift.push({
+        id: `unanchored-card-${card.id}`,
+        severity: 'high',
+        summary: `${card.title || `Card ${card.id}`} has no anchor provenance and should not advance silently.`,
+        cardId: card.id,
+      });
+    });
+  return drift;
+}
+
+function uniqueStrings(values = []) {
+  return [...new Set((values || []).filter(Boolean).map((value) => String(value).trim()).filter(Boolean))];
+}
+
+function buildSpatialRuntimePayload(workspace, options = {}) {
+  const anchorBundle = options.anchorBundle || getAnchorBundle();
+  const drift = buildRuntimeDrift(anchorBundle, workspace);
+  const qaState = Object.prototype.hasOwnProperty.call(options, 'qaState')
+    ? options.qaState
+    : {
+        status: 'summary_only',
+        summary: 'Full QA state is available through QA-specific routes.',
+        generatedAt: nowIso(),
+        structuredReport: null,
+        latestBrowserRun: null,
+        browserRuns: [],
+        localGate: buildLocalGatePayload(ROOT),
+        scorecards: [],
+        openInvestigations: [],
+        repairLoop: null,
+      };
+  const plannerOuttray = readPlannerOuttray(ROOT);
+  const canonicalSlices = getCanonicalSliceStore();
+  const truthKernel = buildTruthKernelPayload({
+    rootPath: ROOT,
+    workspace,
+  });
+  return {
+    source: '/api/spatial/runtime',
+    freshness: 'live',
+    ...buildRuntimePayload(workspace),
+    manager: {
+      ...anchorBundle.managerSummary,
+      drift_flags: uniqueStrings(drift.map((flag) => flag.id)),
+    },
+    canonicalSlices,
+    truthSources: anchorBundle.truthSources,
+    drift,
+    anchorRefs: anchorBundle.anchorRefs,
+    throughputDebug: {
+      latestSession: summarizeSession(listThroughputSessions(ROOT)[0] || null),
+      sessions: listThroughputSessions(ROOT).slice(0, 8).map((session) => summarizeSession(session)),
+    },
+    qaState,
+    qaDebug: buildQADebugPayload(qaState),
+    plannerOuttray: summarizePlannerOuttray(plannerOuttray),
+    intake: normalizeCanonicalIntakeState(workspace?.studio?.intake),
+    truthKernel,
+  };
+}
+
+function buildCanonicalRouteRef(route, recordPath = null) {
+  return {
+    kind: 'route',
+    route,
+    recordPath,
+  };
+}
+
+function buildCanonicalFileRef(rootPath, filePath, recordPath = null) {
+  return {
+    kind: 'file',
+    path: relativeToRoot(rootPath, filePath),
+    recordPath,
+  };
+}
+
+function buildGovernedLoopContract(workspace = null, options = {}) {
+  const rootPath = options.rootPath || ROOT;
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace(rootPath));
+  const workspaceFile = path.join(rootPath, 'data', 'spatial', 'workspace.json');
+  const pagesFile = path.join(rootPath, 'data', 'spatial', 'pages.json');
+  const intentStateFile = path.join(rootPath, 'data', 'spatial', 'intent-state.json');
+  const studioStateFile = path.join(rootPath, 'data', 'spatial', 'studio-state.json');
+  const plannerQaQueueFile = path.join(rootPath, PLANNER_QA_RELATIVE_DIR, PLANNER_QA_QUEUE_JSON_NAME);
+  const plannerOuttrayFile = path.join(rootPath, PLANNER_OUTTRAY_RELATIVE_DIR, PLANNER_OUTTRAY_QUEUE_JSON_NAME);
+  const structuredQaFile = path.join(rootPath, STRUCTURED_QA_RELATIVE_DIR, 'latest.json');
+  const repairJobsFile = path.join(rootPath, 'data', 'spatial', 'qa', 'repair-jobs.json');
+  const repairAttemptsFile = path.join(rootPath, 'data', 'spatial', 'qa', 'repair-attempts.json');
+  const throughputDir = path.join(rootPath, 'data', 'spatial', 'throughput');
+  const throughputSessions = listThroughputSessions(rootPath);
+  const latestSession = throughputSessions[0] || null;
+  const plannerQaQueue = readPlannerQaQueue(rootPath);
+  const plannerOuttray = readPlannerOuttray(rootPath);
+  const plannerVisibleTasks = collectDeskTasks(currentWorkspace, 'planner', { rootPath })
+    .filter((task) => task.source === 'team-board')
+    .slice(0, 12);
+  const ctoVisibleTasks = collectDeskTasks(currentWorkspace, 'cto-architect', { rootPath })
+    .filter((task) => task.source === 'team-board')
+    .slice(0, 12);
+  const qaLeadOutput = readQaLeadOutput(rootPath);
+  const repairLoop = buildQaRepairLoopState(rootPath);
+  const structuredReport = readStructuredQAReport(rootPath, 'latest');
+  const currentIntent = getCurrentSpatialIntent(currentWorkspace.intentState);
+  const archivistPaths = contextBundlePaths(rootPath);
+  const { bundle: archivistBundle, archivistJsonPath } = readCanonicalArchivistBundle(rootPath);
+  const archivistMarkdownPath = archivistPaths.find((candidatePath) => candidatePath.endsWith('.md')) || null;
+  const ctoDiagnostics = readCtoDiagnostics(rootPath);
+  const ctoPipeline = currentWorkspace?.studio?.ctoPipeline || null;
+  const ctoOverrides = currentWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger();
+  return {
+    contractVersion: 'governed-loop.v1',
+    generatedAt: nowIso(),
+    source: '/api/spatial/governed-loop/contract',
+    canonical: true,
+    domains: {
+      input: {
+        canonicalOwner: 'spatial workspace + intent registry',
+        activePageId: currentWorkspace.activePageId || null,
+        pageIds: (Array.isArray(currentWorkspace.pages) ? currentWorkspace.pages : [])
+          .map((page) => String(page?.id || page?.pageId || '').trim())
+          .filter(Boolean),
+        annotationIds: (Array.isArray(currentWorkspace.annotations) ? currentWorkspace.annotations : [])
+          .map((item) => String(item?.id || '').trim())
+          .filter(Boolean),
+        sketchIds: (Array.isArray(currentWorkspace.sketches) ? currentWorkspace.sketches : [])
+          .map((item) => String(item?.id || '').trim())
+          .filter(Boolean),
+        currentIntentId: currentWorkspace.intentState?.currentIntentId || null,
+        currentIntent,
+        intake: normalizeCanonicalIntakeState(currentWorkspace?.studio?.intake),
+        sources: [
+          buildCanonicalFileRef(rootPath, workspaceFile, 'workspace'),
+          buildCanonicalFileRef(rootPath, pagesFile, 'pages'),
+          buildCanonicalFileRef(rootPath, intentStateFile, 'intentState.registry'),
+          buildCanonicalFileRef(rootPath, workspaceFile, 'studio.intake'),
+          buildCanonicalRouteRef('/api/spatial/workspace', 'intentState'),
+          buildCanonicalRouteRef('/api/spatial/governed-loop/contract', 'domains.input.intake'),
+        ],
+      },
+      planner: {
+        canonicalOwner: 'planner handoff queue + planner outtray',
+        contextToPlanner: currentWorkspace?.studio?.handoffs?.contextToPlanner || null,
+        visibleWork: plannerVisibleTasks,
+        qaQueue: {
+          updatedAt: plannerQaQueue.updatedAt || null,
+          latestEntry: plannerQaQueue.entries[0] || null,
+          summary: summarizePlannerQaQueue(plannerQaQueue),
+        },
+        outtray: {
+          updatedAt: plannerOuttray.updatedAt || null,
+          latestEntry: plannerOuttray.entries[0] || null,
+          summary: summarizePlannerOuttray(plannerOuttray),
+        },
+        sources: [
+          buildCanonicalFileRef(rootPath, studioStateFile, 'studio.handoffs.contextToPlanner'),
+          buildCanonicalFileRef(rootPath, plannerQaQueueFile, 'entries'),
+          buildCanonicalFileRef(rootPath, plannerOuttrayFile, 'entries'),
+          buildCanonicalRouteRef('/api/spatial/desks/planner/properties', 'tasks'),
+          buildCanonicalRouteRef('/api/task-artifacts', 'task artifact evidence by taskId'),
+          buildCanonicalRouteRef('/api/spatial/planner/qa-queue', 'queue'),
+          buildCanonicalRouteRef('/api/spatial/planner/outtray', 'queue'),
+        ],
+      },
+      execution: {
+        canonicalOwner: 'throughput sessions',
+        latestSession: latestSession ? {
+          id: latestSession.id,
+          status: latestSession.status,
+          verdict: latestSession.verdict,
+          runnerTaskId: latestSession.runnerTaskId || null,
+          qaRunId: latestSession.qaRunId || null,
+          intentId: latestSession.intentId || latestSession.provenance?.sourceIntentId || null,
+          createdAt: latestSession.createdAt || null,
+          finishedAt: latestSession.finishedAt || null,
+        } : null,
+        sources: [
+          {
+            kind: 'directory',
+            path: relativeToRoot(rootPath, throughputDir),
+            recordPath: latestSession?.id ? `${latestSession.id}.json` : null,
+          },
+          buildCanonicalRouteRef('/api/spatial/debug/throughput', 'sessions'),
+        ],
+      },
+      qa: {
+        canonicalOwner: 'structured qa + qa lead + repair loop',
+        structuredReport,
+        qaLead: {
+          state: qaLeadOutput.state,
+          latestRun: qaLeadOutput.latestRun,
+        },
+        repairLoop: {
+          summary: repairLoop.summary,
+          latestJob: repairLoop.latestJob,
+          latestAttempt: repairLoop.latestAttempt,
+        },
+        sources: [
+          buildCanonicalFileRef(rootPath, structuredQaFile, 'structuredReport'),
+          buildCanonicalFileRef(rootPath, getQaLeadStateFilePath(rootPath), 'state'),
+          {
+            kind: 'directory',
+            path: relativeToRoot(rootPath, getQaLeadRunsDir(rootPath)),
+            recordPath: qaLeadOutput.latestRun?.id ? `${qaLeadOutput.latestRun.id}.json` : null,
+          },
+          buildCanonicalFileRef(rootPath, repairJobsFile, 'jobs'),
+          buildCanonicalFileRef(rootPath, repairAttemptsFile, 'attempts'),
+          buildCanonicalRouteRef('/api/qa/lead/state', 'qaLead'),
+          buildCanonicalRouteRef('/api/qa/repair-loop/state', 'repairLoop'),
+        ],
+      },
+      archivist: {
+        canonicalOwner: 'archivist context bundle',
+        latestBundle: archivistBundle,
+        sources: [
+          archivistJsonPath ? buildCanonicalFileRef(rootPath, archivistJsonPath, 'bundle') : null,
+          archivistMarkdownPath ? buildCanonicalFileRef(rootPath, archivistMarkdownPath, 'markdown') : null,
+          buildCanonicalRouteRef('/api/spatial/archive/writeback', 'writeback trigger'),
+        ].filter(Boolean),
+      },
+      cto: {
+        canonicalOwner: 'studio cto pipeline + cto diagnostics + cto overrides',
+        pipeline: ctoPipeline,
+        pipelineSummary: summarizeCtoPipelineState(ctoPipeline),
+        pendingApprovals: ctoVisibleTasks,
+        diagnostics: {
+          updatedAt: ctoDiagnostics.updated_at || null,
+          latestEntry: ctoDiagnostics.entries[0] || null,
+          counts: summarizeCtoDiagnostics(ctoDiagnostics.entries),
+        },
+        overrides: ctoOverrides,
+        sources: [
+          buildCanonicalFileRef(rootPath, workspaceFile, 'studio.ctoPipeline'),
+          buildCanonicalFileRef(rootPath, workspaceFile, 'studio.ctoOverrides'),
+          buildCanonicalFileRef(rootPath, path.join(rootPath, 'data', 'spatial', 'cto-diagnostics.json'), 'entries'),
+          buildCanonicalRouteRef('/api/spatial/cto/diagnostics', 'diagnostics'),
+          buildCanonicalRouteRef('/api/spatial/desks/cto-architect/properties', 'tasks'),
+        ],
+      },
+    },
+  };
+}
+
+async function resolveCanonicalWorkspaceSource({ persist = true } = {}) {
+  return normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
+    persist,
+    workspace: syncTeamBoardWithSelfUpgrade(readSpatialWorkspace()),
+  }));
+}
+
+function buildWorkspaceCanonicalTruthSections(workspace = {}, { hadRsg = true } = {}) {
+  return {
+    route: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'workspace_live_projection',
+    },
+    persistedWorkspace: {
+      classification: 'canonical',
+      fallbackUsed: false,
+      derivation: 'workspace_file_projection',
+      sourcePaths: ['data/spatial/workspace.json'],
+    },
+    pages: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'pages_sidecar_merge',
+      sourcePaths: ['data/spatial/pages.json'],
+    },
+    intentState: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'intent_state_sidecar_merge',
+      sourcePaths: ['data/spatial/intent-state.json'],
+    },
+    studioState: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'studio_state_merge',
+      sourcePaths: ['data/spatial/studio-state.json'],
+    },
+    teamBoard: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'canonical_slice_projection',
+      sourcePaths: ['brain/emergence/slices.json', 'brain/emergence/slices.md'],
+    },
+    architectureMemory: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'architecture_memory_sidecar_merge',
+      sourcePaths: ['data/spatial/architecture-memory.json'],
+    },
+    orchestration: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'refresh_spatial_orchestrator',
+    },
+    rsg: {
+      classification: hadRsg ? 'projection' : 'fallback',
+      fallbackUsed: !hadRsg,
+      derivation: hadRsg ? 'workspace_projection' : 'default_rsg_fallback',
+    },
+    graph: {
+      classification: 'canonical',
+      fallbackUsed: false,
+      derivation: 'workspace_graph_projection',
+    },
+  };
+}
+
+async function buildWorkspaceProjectionPayload({
+  sourceData: workspace = {},
+} = {}) {
+  const hadRsg = Boolean(workspace?.rsg);
+  return {
+    ...workspace,
+    graph: workspace?.graph || { nodes: [], edges: [] },
+    graphs: workspace?.graphs || normalizeGraphBundle(workspace),
+    sketches: Array.isArray(workspace?.sketches) ? workspace.sketches : [],
+    annotations: Array.isArray(workspace?.annotations) ? workspace.annotations : [],
+    architectureMemory: workspace?.architectureMemory || {},
+    agentComments: workspace?.agentComments || {},
+    studio: workspace?.studio || {},
+    rsg: workspace?.rsg || buildRsgState(workspace),
+    canonicalTruthSections: buildWorkspaceCanonicalTruthSections(workspace, { hadRsg }),
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: false,
+      generatedAt: nowIso(),
+    },
+  };
+}
+
+async function resolveCanonicalIntentSource({ rootPath = ROOT } = {}) {
+  const workspace = normalizeSpatialWorkspaceShape(readSpatialWorkspace(rootPath));
+  return {
+    workspace,
+    intentState: workspace.intentState || null,
+    currentIntent: getCurrentSpatialIntent(workspace.intentState),
+    intakeState: normalizeCanonicalIntakeState(workspace?.studio?.intake),
+  };
+}
+
+async function resolveCanonicalQaEvidenceSource({ rootPath = ROOT } = {}) {
+  const openInvestigations = readOpenQaInvestigations(rootPath, 5);
+  return {
+    rootPath,
+    qaLeadOutput: readQaLeadOutput(rootPath),
+    repairLoop: buildQaRepairLoopState(rootPath),
+    openInvestigations,
+    researchState: buildQaResearchState(rootPath, openInvestigations),
+    browserRuns: listInteractiveBrowserRuns(rootPath).slice(0, 12).map((run) => summarizeQARun(run)).filter(Boolean),
+    externalValidation: latestExternalValidationSnapshot || null,
+  };
+}
+
+function normalizeQaLeadPostureTimestamp(...values) {
+  let latestMs = null;
+  for (const value of values) {
+    const normalized = String(value || '').trim();
+    if (!normalized) continue;
+    const parsed = Date.parse(normalized);
+    if (!Number.isFinite(parsed)) continue;
+    if (latestMs == null || parsed > latestMs) latestMs = parsed;
+  }
+  return latestMs == null ? null : new Date(latestMs).toISOString();
+}
+
+function sanitizeQaLeadPostureIdToken(value = '') {
+  return String(value || '').trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 120);
+}
+
+function buildQaLeadPosture({
+  qaLead = null,
+  qaLeadLatestRun = null,
+  structuredReport = null,
+  structuredSummary = null,
+  externalValidation = null,
+  repairLoop = null,
+  openInvestigations = [],
+  browserRuns = [],
+  generatedAt = nowIso(),
+} = {}) {
+  const leadState = qaLead && typeof qaLead === 'object' ? qaLead : {};
+  const latestRun = qaLeadLatestRun && typeof qaLeadLatestRun === 'object' ? qaLeadLatestRun : {};
+  const runId = String(
+    latestRun.id
+    || leadState.run_id
+    || leadState.id
+    || '',
+  ).trim() || null;
+  const cycleId = String(
+    leadState.current_batch
+    || leadState.run_id
+    || runId
+    || '',
+  ).trim() || null;
+  const adjudicatedAt = normalizeQaLeadPostureTimestamp(
+    latestRun.finished_at,
+    latestRun.finishedAt,
+    latestRun.last_completed_cycle_at,
+    latestRun.lastCompletedCycleAt,
+    latestRun.started_at,
+    leadState.finished_at,
+    leadState.finishedAt,
+    leadState.last_completed_cycle_at,
+    leadState.lastCompletedCycleAt,
+    leadState.last_updated_at,
+    leadState.updated_at,
+    structuredSummary?.finishedAt,
+    structuredReport?.finishedAt,
+    generatedAt,
+  );
+  const status = String(
+    latestRun.status
+    || leadState.status
+    || structuredSummary?.status
+    || structuredReport?.status
+    || 'unknown',
+  ).trim() || 'unknown';
+  const structuredStatus = String(
+    structuredSummary?.status
+    || structuredReport?.status
+    || 'missing',
+  ).trim() || 'missing';
+  const degradedStatuses = new Set(['degraded', 'offline', 'stale', 'blocked', 'failed', 'error']);
+  const verdict = structuredStatus === 'fail'
+    ? 'fail'
+    : (degradedStatuses.has(status.toLowerCase())
+      ? 'degraded'
+      : (structuredStatus === 'pass' || status.toLowerCase() === 'live' ? 'pass' : status));
+  const summary = String(
+    latestRun.summary
+    || leadState.summary
+    || structuredSummary?.summary
+    || structuredReport?.summary
+    || 'QA posture is not adjudicated yet.',
+  ).trim() || 'QA posture is not adjudicated yet.';
+  const feed = Array.isArray(latestRun.output_feed)
+    ? latestRun.output_feed
+    : (Array.isArray(leadState.output_feed) ? leadState.output_feed : []);
+  const failedChecks = feed.filter((item) => {
+    const itemStatus = String(item?.status || '').trim().toLowerCase();
+    return ['degraded', 'blocked', 'missing', 'mismatch', 'fail', 'failed', 'error'].includes(itemStatus);
+  }).length;
+  const activeLanes = Number(
+    repairLoop?.summary?.activeLanes
+    ?? repairLoop?.summary?.active_lanes
+    ?? 0,
+  ) || 0;
+  const inputs = [
+    {
+      type: 'adjudication_cycle',
+      source: 'ui/qaLeadRunner.runQaLeadCycle',
+      ref: runId ? `data/spatial/qa/lead-runs/${runId}.json` : 'data/spatial/qa/lead-state.json',
+      status,
+    },
+    {
+      type: 'structured_suite_report',
+      source: 'qa/qaLead.runAll',
+      ref: 'data/spatial/qa/structured/latest.json',
+      status: structuredStatus,
+    },
+    {
+      type: 'external_validation',
+      source: 'ui/externalQaProbe.buildExternalQaProbeCheckPayload',
+      ref: '/api/qa/external-probe-check',
+      status: String(externalValidation?.status || externalValidation?.probeStatus || 'unavailable').trim() || 'unavailable',
+    },
+    {
+      type: 'repair_loop',
+      source: 'ui/qaRepairLoop.buildQaRepairLoopState',
+      ref: 'data/spatial/qa/repair-jobs.json',
+      status: repairLoop ? 'tracked' : 'missing',
+    },
+  ];
+  const preAdjudicationEvidence = Array.isArray(openInvestigations)
+    ? openInvestigations.filter((investigation) => investigation && investigation.pre_adjudication)
+    : [];
+  if (preAdjudicationEvidence.length) {
+    inputs.push({
+      type: 'pre_adjudication_evidence',
+      source: 'ui/externalQaProbe.buildExternalQaProbeCheckPayload',
+      ref: preAdjudicationEvidence[0].evidence_id
+        ? `data/spatial/qa/investigations.json#${preAdjudicationEvidence[0].evidence_id}`
+        : 'data/spatial/qa/investigations.json',
+      status: 'pending_lead_cycle',
+      pre_adjudication: true,
+      adjudication_state: 'pending_lead_cycle',
+      evidence_id: preAdjudicationEvidence[0].evidence_id || preAdjudicationEvidence[0].id || null,
+      investigation_id: preAdjudicationEvidence[0].id || null,
+      evidence_count: preAdjudicationEvidence.length,
+    });
+  }
+  const postureToken = sanitizeQaLeadPostureIdToken(runId || cycleId || adjudicatedAt || 'pending');
+  return {
+    posture_id: `qa_posture_${postureToken || 'pending'}`,
+    adjudicated_at: adjudicatedAt,
+    adjudicator: {
+      source: 'qa_lead_runner',
+      role: 'qa_orchestration_adjudicator',
+      module: 'ui/qaLeadRunner.runQaLeadCycle',
+    },
+    verdict,
+    status,
+    summary,
+    inputs,
+    evidence_counts: {
+      investigations: Array.isArray(openInvestigations) ? openInvestigations.length : 0,
+      browser_runs: Array.isArray(browserRuns) ? browserRuns.length : 0,
+      failed_checks: failedChecks,
+      active_lanes: activeLanes,
+    },
+    provenance: {
+      run_id: runId,
+      cycle_id: cycleId,
+      source_projection: 'qa_evidence',
+      pre_adjudication_evidence_ids: preAdjudicationEvidence.map((investigation) => investigation.evidence_id || investigation.id).filter(Boolean),
+      promoted_from_pre_adjudication: preAdjudicationEvidence.length > 0,
+    },
+  };
+}
+
+function buildQaEvidenceCanonicalSections({ qaView = 'lead_state', payload = {} } = {}) {
+  const latestRun = payload.latestRun || payload.qaLeadLatestRun || null;
+  const runs = Array.isArray(payload.runs)
+    ? payload.runs
+    : (Array.isArray(payload.qaLeadRuns)
+      ? payload.qaLeadRuns
+      : (Array.isArray(payload.browserRuns) ? payload.browserRuns : []));
+  const structuredReport = payload.structuredReport || null;
+  const localGate = payload.localGate || null;
+  const externalValidation = payload.externalValidation || null;
+  const repairLoop = payload.repairLoop || null;
+  const evidenceSources = Array.isArray(payload.evidenceSources) ? payload.evidenceSources : [];
+  const auditTrail = payload.auditTrail || null;
+  const qaMcpLiveStatus = payload.qaMcpLiveStatus || null;
+  const qaLeadPosture = payload.qaLeadPosture || null;
+  const routeDerivation = qaView === 'repair_loop_state'
+    ? 'repair_loop_state_projection'
+    : (qaView === 'qa_runs' ? 'qa_runs_projection' : 'qa_lead_state_projection');
+  const sections = {
+    route: {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: routeDerivation,
+    },
+  };
+
+  if (qaView === 'repair_loop_state') {
+    sections.qaLeadPosture = {
+      classification: qaLeadPosture ? 'projection' : 'fallback',
+      fallbackUsed: !qaLeadPosture,
+      derivation: qaLeadPosture ? 'qa_lead_posture_projection' : 'qa_lead_posture_missing',
+    };
+    sections.repairLoop = {
+      classification: repairLoop ? 'projection' : 'fallback',
+      fallbackUsed: !repairLoop,
+      derivation: repairLoop ? 'repair_loop_projection' : 'repair_loop_missing',
+    };
+    sections.investigations = {
+      classification: 'projection',
+      fallbackUsed: false,
+      derivation: 'investigation_projection',
+    };
+    return sections;
+  }
+
+  if (qaView === 'qa_runs') {
+    sections.qaLeadPosture = {
+      classification: qaLeadPosture ? 'projection' : 'fallback',
+      fallbackUsed: !qaLeadPosture,
+      derivation: qaLeadPosture ? 'qa_lead_posture_projection' : 'qa_lead_posture_missing',
+    };
+    sections.latestRun = {
+      classification: latestRun ? 'historical' : 'fallback',
+      fallbackUsed: !latestRun,
+      derivation: latestRun ? 'latest_run_summary' : 'no_runs_recorded',
+    };
+    sections.runs = {
+      classification: runs.length ? 'historical' : 'fallback',
+      fallbackUsed: runs.length === 0,
+      derivation: runs.length ? 'run_history_projection' : 'no_runs_recorded',
+    };
+    return sections;
+  }
+
+  sections.qaLead = {
+    classification: payload.qaLead ? 'projection' : 'fallback',
+    fallbackUsed: !payload.qaLead,
+    derivation: payload.qaLead ? 'qa_lead_state_projection' : 'qa_lead_missing',
+  };
+  sections.qaLeadPosture = {
+    classification: qaLeadPosture ? 'projection' : 'fallback',
+    fallbackUsed: !qaLeadPosture,
+    derivation: qaLeadPosture ? 'qa_lead_posture_projection' : 'qa_lead_posture_missing',
+  };
+  sections.latestRun = {
+    classification: latestRun ? 'historical' : 'fallback',
+    fallbackUsed: !latestRun,
+    derivation: latestRun ? 'latest_run_summary' : 'no_runs_recorded',
+  };
+  sections.runs = {
+    classification: runs.length ? 'historical' : 'fallback',
+    fallbackUsed: runs.length === 0,
+    derivation: runs.length ? 'qa_lead_run_history' : 'no_runs_recorded',
+  };
+  sections.structuredReport = {
+    classification: structuredReport ? 'projection' : 'fallback',
+    fallbackUsed: !structuredReport,
+    derivation: structuredReport ? 'structured_report_projection' : 'structured_report_missing',
+  };
+  sections.localGate = {
+    classification: localGate ? 'projection' : 'fallback',
+    fallbackUsed: !localGate,
+    derivation: localGate ? 'local_gate_projection' : 'local_gate_missing',
+  };
+  sections.externalValidation = {
+    classification: externalValidation && externalValidation.status !== 'unavailable' ? 'projection' : 'fallback',
+    fallbackUsed: !externalValidation || externalValidation.status === 'unavailable',
+    derivation: externalValidation && externalValidation.status !== 'unavailable'
+      ? 'external_validation_projection'
+      : 'default_unavailable_snapshot',
+  };
+  sections.repairLoop = {
+    classification: repairLoop ? 'projection' : 'fallback',
+    fallbackUsed: !repairLoop,
+    derivation: repairLoop ? 'repair_loop_projection' : 'repair_loop_missing',
+  };
+  sections.investigations = {
+    classification: 'projection',
+    fallbackUsed: false,
+    derivation: 'investigation_projection',
+  };
+  sections.evidenceSources = {
+    classification: evidenceSources.length ? 'projection' : 'fallback',
+    fallbackUsed: evidenceSources.length === 0,
+    derivation: evidenceSources.length ? 'evidence_trace_rollup' : 'evidence_trace_missing',
+  };
+  sections.auditTrail = {
+    classification: auditTrail ? 'projection' : 'fallback',
+    fallbackUsed: !auditTrail,
+    derivation: auditTrail ? 'audit_rollup_projection' : 'audit_rollup_missing',
+  };
+  sections.qaMcpLiveStatus = {
+    classification: qaMcpLiveStatus ? 'projection' : 'fallback',
+    fallbackUsed: !qaMcpLiveStatus,
+    derivation: qaMcpLiveStatus ? 'qa_live_status_projection' : 'qa_live_status_missing',
+  };
+  return sections;
+}
+
+function buildCtoQaLeadPostureReference(qaEvidencePayload = null) {
+  const qaLeadPosture = qaEvidencePayload?.qaLeadPosture || null;
+  return {
+    source_projection: 'qa_evidence',
+    projection_id: qaEvidencePayload?.canonicalTruth?.projectionId || 'qa_evidence',
+    posture_id: qaLeadPosture?.posture_id || null,
+    verdict: qaLeadPosture?.verdict || 'unknown',
+    status: qaLeadPosture?.status || 'unknown',
+    adjudicated_at: qaLeadPosture?.adjudicated_at || null,
+    summary: qaLeadPosture?.summary || null,
+    derived_from_posture_id: qaLeadPosture?.posture_id || null,
+  };
+}
+
+function buildCtoGovernedRepairReference(repairLoop = null) {
+  const provingCase = repairLoop?.provingCase && typeof repairLoop.provingCase === 'object'
+    ? repairLoop.provingCase
+    : null;
+  if (!provingCase?.repair_job_id) {
+    return null;
+  }
+  const normalizeRepairText = (value) => String(value || '').trim();
+  const canonicalJob = (Array.isArray(repairLoop?.jobs) ? repairLoop.jobs : [])
+    .find((job) => normalizeRepairText(job?.id) === normalizeRepairText(provingCase.repair_job_id)) || null;
+  const blockedReason = normalizeRepairText(
+    canonicalJob?.policy_block_reason
+    || canonicalJob?.latest_validation_evidence?.policy_block_reason
+    || canonicalJob?.latest_validation_evidence?.summary
+    || (Array.isArray(provingCase.consistency_issues) ? provingCase.consistency_issues[0] : '')
+    || '',
+  ) || null;
+  const evidenceSources = [
+    provingCase.last_apply_receipt_id ? 'data/spatial/qa/repair-apply-receipts.json' : null,
+    provingCase.post_apply_verification_verdict ? 'data/spatial/qa/repair-attempts.json' : null,
+    Array.isArray(provingCase.event_stages) && provingCase.event_stages.length ? 'data/spatial/qa/repair-events.json' : null,
+  ].filter(Boolean);
+  return {
+    classification: 'canonical_source',
+    canonical_source: 'data/spatial/qa/repair-jobs.json',
+    repair_job_id: provingCase.repair_job_id,
+    lane: provingCase.lane,
+    target_type: provingCase.target_type,
+    truth_application_status: provingCase.truth_application_status,
+    latest_verification_verdict: provingCase.post_apply_verification_verdict || null,
+    blocked_reason: provingCase.truth_application_status === 'blocked_degraded' ? blockedReason : null,
+    consistency_status: canonicalJob?.consistency_status || provingCase.consistency_status || 'consistent',
+    consistency_issues: Array.isArray(provingCase.consistency_issues) ? provingCase.consistency_issues : [],
+    supporting_evidence: {
+      classification: 'evidence_artefact',
+      evidence_sources: evidenceSources,
+      last_apply_receipt_id: provingCase.last_apply_receipt_id || null,
+      event_stages: Array.isArray(provingCase.event_stages) ? provingCase.event_stages : [],
+    },
+    status_line: provingCase.status_line || null,
+  };
+}
+
+async function buildCtoDiagnosticsPayload({
+  rootPath = ROOT,
+  diagnostics = null,
+  workspace = null,
+  qaEvidence = null,
+} = {}) {
+  const resolvedDiagnostics = diagnostics || readCtoDiagnostics(rootPath);
+  const resolvedQaEvidence = qaEvidence || await canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
+    rootPath,
+    freshness: 'live',
+    qaView: 'lead_state',
+  });
+  const qaLeadPostureRef = buildCtoQaLeadPostureReference(resolvedQaEvidence);
+  const resolvedWorkspace = workspace || readSpatialWorkspace(rootPath);
+  const canonicalLayout = normalizeStudioLayoutSchema(
+    resolvedWorkspace?.studio?.layout
+    || resolvedWorkspace?.layout
+    || createDefaultStudioLayoutSchema(),
+  );
+  const openInvestigations = readOpenQaInvestigations(rootPath, 10);
+  const plannerIntegrity = maybeBridgePlannerCanonicalIntegrityInvestigations(rootPath, {
+    layout: canonicalLayout,
+    checkedAt: nowIso(),
+  });
+  maybeBridgeOpenInvestigationsToRepairJobs(rootPath, {
+    investigations: openInvestigations,
+  });
+  await maybeGenerateQaResearchNotesForInvestigations(rootPath, openInvestigations);
+  const repairLoop = buildQaRepairLoopState(rootPath);
+  const researchState = buildQaResearchState(rootPath, openInvestigations);
+  return {
+    ok: true,
+    version: resolvedDiagnostics.version,
+    updated_at: resolvedDiagnostics.updated_at,
+    source: '/api/spatial/cto/diagnostics',
+    freshness: 'derived',
+    generatedAt: nowIso(),
+    summary: summarizeCtoDiagnostics(resolvedDiagnostics.entries),
+    entries: resolvedDiagnostics.entries,
+    qaLeadPostureRef,
+    plannerIdentity: buildPlannerIdentitySnapshot(canonicalLayout.organization || {}),
+    plannerCoverage: buildCanonicalPlannerCoverageTruth(canonicalLayout),
+    plannerIntegrity: plannerIntegrity.state,
+    plannerIntegrityInvestigation: plannerIntegrity.investigation,
+    qaLeadCoverage: buildCanonicalQALeadCoverageTruth(canonicalLayout),
+    ctoOverrides: summarizeCtoOverrideLedger(resolvedWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
+    overrideLayer: deriveCtoOverrideLayer(resolvedWorkspace?.studio?.ctoOverrides || createDefaultCtoOverrideLedger()),
+    governedRepair: buildCtoGovernedRepairReference(repairLoop),
+    repairLoop,
+    researchState,
+  };
+}
+
+async function buildQaEvidenceProjectionPayload({
+  sourceData = {},
+  qaView = 'lead_state',
+} = {}) {
+  const rootPath = sourceData?.rootPath || ROOT;
+  const qaLeadOutput = sourceData?.qaLeadOutput || readQaLeadOutput(rootPath);
+  const repairLoop = sourceData?.repairLoop || buildQaRepairLoopState(rootPath);
+  const openInvestigations = Array.isArray(sourceData?.openInvestigations)
+    ? sourceData.openInvestigations
+    : readOpenQaInvestigations(rootPath, 5);
+  const researchState = sourceData?.researchState || buildQaResearchState(rootPath, openInvestigations);
+  const browserRuns = Array.isArray(sourceData?.browserRuns)
+    ? sourceData.browserRuns
+    : listInteractiveBrowserRuns(rootPath).slice(0, 12).map((run) => summarizeQARun(run)).filter(Boolean);
+  const generatedAt = nowIso();
+  const qaLeadPosture = buildQaLeadPosture({
+    qaLead: qaLeadOutput.state,
+    qaLeadLatestRun: qaLeadOutput.latestRun,
+    structuredReport: null,
+    structuredSummary: null,
+    externalValidation: sourceData?.externalValidation || latestExternalValidationSnapshot || null,
+    repairLoop,
+    openInvestigations,
+    browserRuns,
+    generatedAt,
+  });
+
+  if (qaView === 'repair_loop_state') {
+    const payload = {
+      ok: true,
+      generatedAt,
+      qaLeadPosture,
+      repairLoop,
+      openInvestigations,
+      researchState,
+    };
+    return {
+      ...payload,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: false,
+      },
+      canonicalTruthSections: buildQaEvidenceCanonicalSections({ qaView, payload }),
+    };
+  }
+
+  if (qaView === 'qa_runs') {
+    const latestRun = browserRuns[0] || null;
+    const payload = {
+      generatedAt,
+      qaLeadPosture,
+      latestRun,
+      runs: browserRuns,
+    };
+    return {
+      ...payload,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: !latestRun && browserRuns.length === 0,
+      },
+      canonicalTruthSections: buildQaEvidenceCanonicalSections({ qaView, payload }),
+    };
+  }
+
+  const leadState = sourceData?.qaLead || qaLeadOutput.state || null;
+  const leadLatestRun = sourceData?.qaLeadLatestRun || qaLeadOutput.latestRun || null;
+  const resolvedQaLeadPosture = buildQaLeadPosture({
+    qaLead: leadState,
+    qaLeadLatestRun: leadLatestRun,
+    structuredReport: sourceData?.structuredReport || null,
+    structuredSummary: sourceData?.structuredSummary || null,
+    externalValidation: sourceData?.externalValidation || latestExternalValidationSnapshot || null,
+    repairLoop,
+    openInvestigations,
+    browserRuns,
+    generatedAt,
+  });
+  const payload = {
+    ok: true,
+    generatedAt,
+    qaLead: leadState,
+    qaLeadLatestRun: leadLatestRun,
+    structuredReport: sourceData?.structuredReport || null,
+    structuredSummary: sourceData?.structuredSummary || null,
+    externalValidation: sourceData?.externalValidation || latestExternalValidationSnapshot || null,
+    repairLoop,
+    openInvestigations,
+    researchState,
+    browserRuns,
+    qaLeadPosture: resolvedQaLeadPosture,
+    latestRun: leadLatestRun || browserRuns[0] || null,
+    runs: qaLeadOutput.recentRuns || [],
+  };
+  return {
+    ...payload,
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: !payload.qaLead && !payload.latestBrowserRun && !payload.structuredReport,
+    },
+    canonicalTruthSections: buildQaEvidenceCanonicalSections({ qaView, payload }),
+  };
+}
+
+function buildIntentDependencyFallbackPayload({
+  requestBody = {},
+  reason = 'Intent projection is temporarily unavailable because a required local dependency is not live.',
+  derivation = 'dependency_unavailable_projection',
+  dependencyStatus = null,
+} = {}) {
+  const workspace = readSpatialWorkspace(ROOT);
+  const runtime = buildSpatialRuntimePayload(workspace);
+  const normalizedReason = String(reason || '').trim()
+    || 'Intent projection is temporarily unavailable because a required local dependency is not live.';
+  const dependencies = dependencyStatus || getAceDependencyRegistrySnapshot();
+  const extractedIntent = {
+    confidence: 'low',
+    reason: 'dependency_unavailable',
+    summary: String(requestBody?.text || '').trim() || normalizedReason,
+    candidates: [],
+    provenance: {
+      source: 'intent_route_fallback',
+      usedFallback: true,
+      reason: normalizedReason,
+    },
+  };
+  const canonicalIntent = {
+    id: `intent_fallback_${Date.now()}`,
+    sourceNodeId: String(requestBody?.nodeId || '').trim() || 'prompt-1',
+    summary: String(requestBody?.text || '').trim() || normalizedReason,
+    status: 'fallback',
+    provenance: {
+      source: 'intent_route_dependency_fallback',
+      usedFallback: true,
+      reason: normalizedReason,
+    },
+  };
+  return {
+    __statusCode: 200,
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: true,
+      owner: 'ACE Context Manager',
+    },
+    route: 'context-manager',
+    error: normalizedReason,
+    report: {
+      ok: false,
+      status: 'dependency_unavailable',
+      summary: normalizedReason,
+      text: String(requestBody?.text || '').trim() || null,
+    },
+    canonicalIntent,
+    extractedIntent,
+    worker: {
+      usedFallback: true,
+      status: 'dependency_unavailable',
+      reason: normalizedReason,
+    },
+    preflight: {
+      ok: false,
+      status: 'dependency_unavailable',
+      reason: normalizedReason,
+    },
+    runtime,
+    dependencyStatus: dependencies,
+    canonicalTruthSections: {
+      route: {
+        classification: 'projection',
+        fallbackUsed: true,
+        derivation: 'context_manager_projection',
+      },
+      report: {
+        classification: 'projection',
+        fallbackUsed: true,
+        derivation: 'worker_report',
+      },
+      canonicalIntent: {
+        classification: 'canonical',
+        fallbackUsed: true,
+        derivation: derivation || 'dependency_unavailable_canonical_intent',
+      },
+      extractedIntent: {
+        classification: 'fallback',
+        fallbackUsed: true,
+        derivation: 'worker_fallback_extracted_intent',
+      },
+      runtime: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'runtime_projection',
+      },
+      dependencyStatus: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'server_dependency_registry',
+      },
+    },
+  };
+}
+
+function shouldReturnIntentDependencyFallback(error, dependencyStatus = null) {
+  const message = String(error?.message || error || '').toLowerCase();
+  const dependencies = dependencyStatus || getAceDependencyRegistrySnapshot();
+  const ollamaStatus = String(dependencies?.[ACE_DEPENDENCY_IDS.OLLAMA]?.status || '').trim().toLowerCase();
+  if (ollamaStatus && ollamaStatus !== 'live') {
+    return true;
+  }
+  return (
+    message.includes('econnrefused')
+    || message.includes('fetch failed')
+    || message.includes('timed out')
+    || message.includes('ollama')
+    || message.includes('worker_no_report')
+  );
+}
+
+async function buildIntentProjectionPayload({
+  sourceData = {},
+  requestBody = {},
+} = {}) {
+  const workspace = sourceData?.workspace || normalizeSpatialWorkspaceShape(readSpatialWorkspace());
+  const body = requestBody || {};
+  const text = String(body.text || '').trim();
+  if (!text) {
+    return {
+      __statusCode: 400,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: false,
+      },
+      error: 'text is required.',
+      canonicalTruthSections: {
+        route: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'validation_blocked',
+        },
+        canonicalIntent: {
+          classification: 'fallback',
+          fallbackUsed: true,
+          derivation: 'missing_input',
+        },
+      },
+    };
+  }
+
+  const sourceNodeId = String(body.nodeId || '').trim() || 'prompt-1';
+  const sourceType = String(body.sourceType || body.source || 'sanctioned-intent-parser').trim() || 'sanctioned-intent-parser';
+  const sourceRef = String(body.sourceRef || sourceNodeId || '').trim() || sourceNodeId;
+  const requestedBy = String(body.requestedBy || body.sourceAgentId || 'context-manager').trim() || 'context-manager';
+  const executiveEnvelope = normalizeExecutiveEnvelope({
+    envelope: {
+      version: EXECUTIVE_ENVELOPE_VERSION,
+      entries: [
+        { type: 'prompt', node_id: sourceNodeId, content: text, data: {} },
+        { type: 'constraints', node_id: 'constraints-1', content: '', data: {} },
+        { type: 'target', node_id: 'target-1', content: '', data: {} },
+      ],
+    },
+  });
+  const looksLikeMaterial = detectMaterialGenerationIntent(text);
+  if (looksLikeMaterial) {
+    const moduleEnvelope = mapEnvelopeToMaterialModule(executiveEnvelope);
+    const moduleRun = executeModuleAction(moduleEnvelope, {
+      logger: (line) => console.log(line),
+    });
+    const statusCode = moduleRun.ok ? 200 : (moduleRun.error?.code === 'validation-failed' ? 422 : 400);
+    return {
+      __statusCode: statusCode,
+      __canonicalTruthMeta: {
+        classification: 'fallback',
+        freshness: 'live',
+        fallbackUsed: true,
+      },
+      routedToModule: true,
+      route: 'module',
+      envelope: executiveEnvelope,
+      moduleEnvelope,
+      moduleRun,
+      preview: moduleRun.ok ? buildModulePreview(moduleRun) : null,
+      canonicalTruthSections: {
+        route: {
+          classification: 'fallback',
+          fallbackUsed: true,
+          derivation: 'module_bypass',
+        },
+        canonicalIntent: {
+          classification: 'fallback',
+          fallbackUsed: true,
+          derivation: 'not_extracted',
+        },
+        moduleRoute: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'material_module_execution',
+        },
+      },
+    };
+  }
+
+  try {
+    const cycle = await maybeRunContextManagerWorker(workspace, {
+      text,
+      sourceNodeId,
+      source: String(body.source || 'context-intake').trim() || 'context-intake',
+      sourceType,
+      sourceRef,
+      requestedBy,
+      priority: String(body.priority || body.urgency || '').trim() || null,
+      mode: 'manual',
+      backend: String(body.backend || '').trim() || null,
+      model: String(body.model || '').trim() || null,
+      host: String(body.host || '').trim() || null,
+      timeoutMs: Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : null,
+      skipPreflight: true,
+    });
+    if (!cycle.result?.report) {
+      const dependencyStatus = getAceDependencyRegistrySnapshot();
+      if (shouldReturnIntentDependencyFallback(cycle.reason || 'worker_no_report', dependencyStatus)) {
+        return buildIntentDependencyFallbackPayload({
+          requestBody: body,
+          reason: cycle.reason || 'Context Manager could not produce an intent report because a required dependency is not live.',
+          derivation: 'worker_dependency_unavailable',
+          dependencyStatus,
+        });
+      }
+      return {
+        __statusCode: 500,
+        __canonicalTruthMeta: {
+          classification: 'projection',
+          freshness: 'live',
+          fallbackUsed: false,
+        },
+        error: cycle.reason || 'Context Manager could not produce an intent report.',
+        canonicalTruthSections: {
+          route: {
+            classification: 'projection',
+            fallbackUsed: false,
+            derivation: 'worker_no_report',
+          },
+          canonicalIntent: {
+            classification: 'fallback',
+            fallbackUsed: true,
+            derivation: 'not_extracted',
+          },
+        },
+      };
+    }
+    const runtimeWorkspace = refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    });
+    const runtime = buildSpatialRuntimePayload(runtimeWorkspace);
+    const report = cycle.result.report;
+    const canonicalIntent = getCurrentSpatialIntent(runtimeWorkspace?.intentState)
+      || report?.canonicalIntent
+      || cycle.result.handoff?.intentContract?.canonicalIntent
+      || null;
+    const extractedIntent = cycle.result.extractedIntent || report?.extractedIntent || null;
+    const workerUsedFallback = Boolean(cycle.result?.usedFallback);
+    const extractedIntentUsedFallback = Boolean(extractedIntent?.provenance?.usedFallback);
+    const dependencyStatus = getAceDependencyRegistrySnapshot();
+    return {
+      __statusCode: 200,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: workerUsedFallback || extractedIntentUsedFallback,
+      },
+      ...report,
+      extractedIntent,
+      canonicalIntent,
+      intentContract: report?.intentContract || null,
+      worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
+      report,
+      handoff: cycle.result.handoff,
+      runtime,
+      preflight: cycle.preflight || cycle.result?.preflight || null,
+      dependencyStatus,
+      canonicalTruthSections: {
+        route: {
+          classification: 'projection',
+          fallbackUsed: workerUsedFallback,
+          derivation: 'context_manager_projection',
+        },
+        report: {
+          classification: 'projection',
+          fallbackUsed: workerUsedFallback,
+          derivation: 'worker_report',
+        },
+        canonicalIntent: {
+          classification: canonicalIntent ? 'canonical' : 'fallback',
+          fallbackUsed: !canonicalIntent,
+          derivation: canonicalIntent ? 'workspace.intentState.registry' : 'missing_canonical_intent',
+        },
+        extractedIntent: {
+          classification: extractedIntent
+            ? (extractedIntentUsedFallback ? 'fallback' : 'projection')
+            : 'fallback',
+          fallbackUsed: !extractedIntent || extractedIntentUsedFallback,
+          derivation: extractedIntent
+            ? (extractedIntentUsedFallback ? 'worker_fallback_extracted_intent' : 'worker_extracted_intent')
+            : 'not_extracted',
+        },
+        runtime: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'runtime_projection',
+        },
+        dependencyStatus: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'server_dependency_registry',
+        },
+      },
+    };
+  } catch (error) {
+    const dependencyStatus = getAceDependencyRegistrySnapshot();
+    if (shouldReturnIntentDependencyFallback(error, dependencyStatus)) {
+      return buildIntentDependencyFallbackPayload({
+        requestBody: body,
+        reason: String(error.message || error),
+        derivation: 'projection_dependency_unavailable',
+        dependencyStatus,
+      });
+    }
+    return {
+      __statusCode: 500,
+      __canonicalTruthMeta: {
+        classification: 'projection',
+        freshness: 'live',
+        fallbackUsed: false,
+      },
+      error: String(error.message || error),
+      canonicalTruthSections: {
+        route: {
+          classification: 'projection',
+          fallbackUsed: false,
+          derivation: 'server_error',
+        },
+        canonicalIntent: {
+          classification: 'fallback',
+          fallbackUsed: true,
+          derivation: 'exception_before_projection',
+        },
+      },
+    };
+  }
+}
+
+const canonicalTruthAccess = createCanonicalTruthAccess({
+  repositories: {
+    workspace: async ({ persist = true } = {}) => resolveCanonicalWorkspaceSource({ persist }),
+    intent: async ({ rootPath = ROOT } = {}) => resolveCanonicalIntentSource({ rootPath }),
+    qa_evidence: async ({ rootPath = ROOT } = {}) => resolveCanonicalQaEvidenceSource({ rootPath }),
+  },
+  builders: {
+    buildWorkspaceProjectionPayload: async ({ sourceData: workspace } = {}) => buildWorkspaceProjectionPayload({
+      sourceData: workspace,
+    }),
+    buildSpatialRuntimePayload: async ({ sourceData: workspace } = {}) => ({
+      source: '/api/spatial/runtime',
+      freshness: 'live',
+      generatedAt: nowIso(),
+      ...buildSpatialRuntimePayload(workspace),
+    }),
+    buildTruthKernelPayload: async ({ sourceData: workspace, rootPath = ROOT } = {}) => buildTruthKernelPayload({
+      rootPath,
+      workspace,
+    }),
+    buildDeskPropertiesPayload: async ({ sourceData: workspace, deskId, rootPath = ROOT } = {}) => buildDeskPropertiesPayload(
+      workspace,
+      deskId,
+      null,
+      { rootPath },
+    ),
+    buildIntentProjectionPayload: async ({ sourceData, requestBody } = {}) => buildIntentProjectionPayload({
+      sourceData,
+      requestBody,
+    }),
+    buildQaEvidenceProjectionPayload: async ({ sourceData, qaView } = {}) => buildQaEvidenceProjectionPayload({
+      sourceData,
+      qaView,
+    }),
+  },
+});
+
+async function refreshSpatialRuntime({ persist = true } = {}) {
+  const workspace = await resolveCanonicalWorkspaceSource({ persist });
+  return {
+    source: '/api/spatial/runtime',
+    freshness: 'live',
+    generatedAt: nowIso(),
+    ...buildSpatialRuntimePayload(workspace),
+  };
+}
+
+function getLocalBaseUrl(req = null) {
+  const host = req?.get?.('host') || req?.headers?.host || `localhost:${getCurrentPort()}`;
+  const protocol = req?.protocol || 'http';
+  return `${protocol}://${host}`;
+}
+
+async function startBrowserQARun({
+  baseUrl = null,
+  scenario = 'layout-pass',
+  mode = 'interactive',
+  trigger = 'manual',
+  prompt = '',
+  actions = [],
+  linked = {},
+} = {}) {
+  return runQARun({
+    rootPath: ROOT,
+    baseUrl: baseUrl || getLocalBaseUrl(),
+    scenario,
+    mode,
+    trigger,
+    prompt,
+    actions,
+    linked,
+    getRuntimeSnapshot: async () => buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: false,
+      workspace: await pumpAutomatedTeamBoardAsync(),
+    })),
+    getHealthSnapshot: () => getHealthSnapshot(),
+  });
+}
+
+function queueAutoBrowserQARun(options = {}) {
+  setTimeout(() => {
+    startBrowserQARun(options).catch(() => {});
+  }, 80);
+}
+
+function readDashboardFileForRoot(rootPath, relPath, domainKey = DOMAIN_KEY) {
+  return readAnchorFile(rootPath, relPath, domainKey);
+}
+
+function readDashboardFile(relPath) {
+  return readDashboardFileForRoot(ROOT, relPath, DOMAIN_KEY);
+}
+
+function getTaskFolders() {
+  if (!fs.existsSync(TASKS_DIR)) return [];
+  return fs.readdirSync(TASKS_DIR, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && /^\d{4}-.+/.test(d.name))
+    .map((d) => d.name)
+    .sort();
+}
+
+function getTaskFoldersFromRoot(tasksDir) {
+  if (!tasksDir || !fs.existsSync(tasksDir)) return [];
+  return fs.readdirSync(tasksDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && /^\d{4}-.+/.test(d.name))
+    .map((d) => d.name)
+    .sort();
+}
+
+let teamBoardAutomationRunning = false;
+let contextManagerWorkerAutomationRunning = false;
+let plannerWorkerAutomationRunning = false;
+let executorWorkerAutomationRunning = false;
+
+function readSpatialWorkspace(rootPath = ROOT) {
+  if (rootPath === ROOT) ensureSpatialStorage();
+  const workspaceFile = rootPath === ROOT ? SPATIAL_WORKSPACE_FILE : path.join(rootPath, 'data', 'spatial', 'workspace.json');
+  const pagesFile = rootPath === ROOT ? SPATIAL_PAGES_FILE : path.join(rootPath, 'data', 'spatial', 'pages.json');
+  const intentStateFile = rootPath === ROOT ? SPATIAL_INTENT_STATE_FILE : path.join(rootPath, 'data', 'spatial', 'intent-state.json');
+  const studioStateFile = rootPath === ROOT ? SPATIAL_STUDIO_STATE_FILE : path.join(rootPath, 'data', 'spatial', 'studio-state.json');
+  const architectureFile = rootPath === ROOT ? SPATIAL_ARCHITECTURE_MEMORY_FILE : path.join(rootPath, 'data', 'spatial', 'architecture-memory.json');
+  const workspace = normalizeSpatialWorkspaceShape(readJsonSafe(workspaceFile, defaultSpatialWorkspace()) || defaultSpatialWorkspace());
+  const pagesState = readJsonSafe(pagesFile, null);
+  const intentState = readJsonSafe(intentStateFile, null);
+  const studioState = normalizeStoredStudioState(readJsonSafe(studioStateFile, null));
+  const architectureState = readJsonSafe(architectureFile, null);
+  return normalizeSpatialWorkspaceShape(projectCanonicalSlicesIntoWorkspace({
+    ...workspace,
+    pages: Array.isArray(pagesState?.pages) ? pagesState.pages : workspace.pages,
+    activePageId: pagesState && Object.prototype.hasOwnProperty.call(pagesState, 'activePageId')
+      ? pagesState.activePageId
+      : workspace.activePageId,
+    intentState: normalizeStoredIntentState(intentState || workspace.intentState),
+    architectureMemory: architectureState?.architectureMemory || architectureState || workspace.architectureMemory,
+    studio: {
+      ...(workspace.studio || {}),
+      ...(studioState.handoffs ? { handoffs: { ...(workspace.studio?.handoffs || {}), ...studioState.handoffs } } : {}),
+      ...(studioState.teamBoard ? { teamBoard: { ...(workspace.studio?.teamBoard || {}), ...studioState.teamBoard } } : {}),
+    },
+  }));
+}
+
+function relativeToRoot(rootPathOrTargetPath, maybeTargetPath = null) {
+  const rootPath = maybeTargetPath ? rootPathOrTargetPath : ROOT;
+  const targetPath = maybeTargetPath || rootPathOrTargetPath;
+  if (!rootPath || !targetPath) return null;
+  return path.relative(rootPath, targetPath).replace(/\\/g, '/');
+}
+
+function uniqueStrings(values = []) {
+  return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function plannerCardSourceKey(pageId, title) {
+  return `${pageId}:${slugify(title)}`;
+}
+
+function writeTargetsConfig(targets = {}) {
+  writeJson(path.join(ROOT, CANONICAL_TARGETS_FILE), targets);
+}
+
+function getPlannerHandoff(workspace, handoffId = null) {
+  const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
+  if (!handoff) return null;
+  if (handoffId && handoff.id !== handoffId) return null;
+  return handoff;
+}
+
+function applyAgentRuntimeState(workspace, agentId, { worker = null, handoffsPatch = {} } = {}) {
+  const studio = workspace?.studio || {};
+  const workers = normalizeAgentWorkersState(studio.agentWorkers);
+  return normalizeSpatialWorkspaceShape({
+    ...workspace,
+    studio: {
+      ...studio,
+      handoffs: {
+        ...(studio.handoffs || {}),
+        ...(handoffsPatch || {}),
+      },
+      agentWorkers: {
+        ...workers,
+        [agentId]: worker ? { ...workers[agentId], ...worker } : workers[agentId],
+      },
+    },
+  });
+}
+
+function applyPlannerRuntimeState(workspace, { worker = null, handoff = null, plannerToContext } = {}) {
+  const handoffsPatch = {};
+  if (handoff) handoffsPatch.contextToPlanner = handoff;
+  if (plannerToContext !== undefined) handoffsPatch.plannerToContext = plannerToContext;
+  return applyAgentRuntimeState(workspace, 'planner', { worker, handoffsPatch });
+}
+
+function applyExecutorRuntimeState(workspace, { worker = null } = {}) {
+  return applyAgentRuntimeState(workspace, 'executor', { worker });
+}
+
+function applyContextManagerRuntimeState(workspace, { worker = null, handoff = null, plannerToContext, report = null } = {}) {
+  const nextIntentState = report ? upsertSpatialIntentRegistry(workspace?.intentState || createEmptyIntentRegistry(), report) : normalizeStoredIntentState(workspace?.intentState || createEmptyIntentRegistry());
+  const handoffsPatch = {};
+  if (handoff !== undefined) handoffsPatch.contextToPlanner = handoff;
+  if (plannerToContext !== undefined) handoffsPatch.plannerToContext = plannerToContext;
+  const nextWorkspace = applyAgentRuntimeState({
+    ...workspace,
+    intentState: nextIntentState,
+  }, 'context-manager', { worker, handoffsPatch });
+  return nextWorkspace;
+}
+
+function executorTaskIdFromCard(card = {}) {
+  return String(card?.runnerTaskId || card?.builderTaskId || card?.executionPackage?.taskId || '').trim() || null;
+}
+
+function markPlannerRunStarted(workspace, handoff, runId, mode) {
+  const startedAt = nowIso();
+  const plannerConfig = getAgentWorkerConfig(ROOT, 'planner');
+  return applyPlannerRuntimeState(workspace, {
+    worker: {
+      status: 'running',
+      statusReason: handoff?.summary
+        ? `Planning anchored work for: ${handoff.summary}`
+        : 'Planning anchored work from the current handoff.',
+      mode,
+      backend: plannerConfig.backend,
+      model: plannerConfig.model,
+      currentRunId: runId,
+      lastSourceHandoffId: handoff?.id || null,
+      lastBlockedReason: null,
+      lastProducedCardIds: [],
+      proposalArtifactRefs: [],
+      startedAt,
+      completedAt: null,
+    },
+    handoff: handoff ? {
+      ...handoff,
+      plannerStatus: 'running',
+      plannerRunId: runId,
+      plannerStartedAt: startedAt,
+      plannerCompletedAt: null,
+      plannerLastBlockedReason: null,
+      plannerProducedCardIds: [],
+    } : handoff,
+      plannerToContext: null,
+  });
+}
+
+function markContextManagerRunStarted(workspace, text, sourceNodeId, runId, mode, plannerFeedback = null) {
+  const startedAt = nowIso();
+  const contextConfig = getAgentWorkerConfig(ROOT, 'context-manager');
+  return applyContextManagerRuntimeState(workspace, {
+    worker: {
+      status: 'running',
+      statusReason: plannerFeedback?.detail
+        ? `Refreshing context after planner feedback: ${plannerFeedback.detail}`
+        : 'Refreshing context packet for planner intake.',
+      mode,
+      backend: contextConfig.backend,
+      model: contextConfig.model,
+      currentRunId: runId,
+      lastSourceNodeId: sourceNodeId || null,
+      lastBlockedReason: null,
+      lastUsedFallback: false,
+      lastPlannerFeedbackAction: plannerFeedback?.action || null,
+      startedAt,
+      completedAt: null,
+    },
+    plannerToContext: plannerFeedback || workspace?.studio?.handoffs?.plannerToContext || null,
+  });
+}
+
+function applyPlannerCardsToWorkspace(workspace, handoff, plannerCards = []) {
+  const notebook = normalizeNotebookState(workspace);
+  const board = normalizeTeamBoardState(workspace);
+  const cards = [...board.cards];
+  const producedCardIds = [];
+  const sourceFixTask = handoff?.sourceFixTask || null;
+  const sourceFixTaskTaskId = sourceFixTask?.taskDirPath ? sourceFixTask.taskId || null : null;
+  const canonicalSourceIntentId = handoff?.sourceIntentId || handoff?.intentId || handoff?.sourceNodeId || null;
+  const canonicalSourceIntakeId = handoff?.sourceIntakeId || null;
+  for (const plannerCard of plannerCards) {
+    const sourceKey = plannerCardSourceKey(notebook.activePageId, plannerCard.title);
+    const existingIndex = cards.findIndex((card) => card.sourceKey === sourceKey && card.sourceHandoffId === handoff?.id);
+    if (existingIndex >= 0) {
+      const existingCard = cards[existingIndex];
+      cards[existingIndex] = {
+        ...existingCard,
+        summary: plannerCard.summary || existingCard.summary || '',
+        targetProjectKey: plannerCard.targetProjectKey || existingCard.targetProjectKey || SELF_TARGET_KEY,
+        sourceAnchorRefs: mergeUnique([...(existingCard.sourceAnchorRefs || []), ...(plannerCard.anchorRefs || [])]),
+        sourceIntentId: existingCard.sourceIntentId || canonicalSourceIntentId,
+        sourceIntakeId: existingCard.sourceIntakeId || canonicalSourceIntakeId,
+        sourceHandoffId: existingCard.sourceHandoffId || handoff?.id || null,
+        sourceFixTaskId: existingCard.sourceFixTaskId || handoff?.sourceFixTaskId || null,
+        sourceFixTaskParentTaskId: existingCard.sourceFixTaskParentTaskId || handoff?.sourceFixTaskParentTaskId || null,
+        sourceFixTaskQueueKey: existingCard.sourceFixTaskQueueKey || handoff?.sourceFixTaskQueueKey || null,
+        sourceFixTaskLocation: existingCard.sourceFixTaskLocation || handoff?.sourceFixTaskLocation || null,
+        sourceFixTaskStatus: existingCard.sourceFixTaskStatus || handoff?.sourceFixTaskStatus || null,
+        sourceFixTaskRetryCount: Number(existingCard.sourceFixTaskRetryCount || handoff?.sourceFixTaskRetryCount || 0) || 0,
+        sourceFixTaskRetryLimit: Number(existingCard.sourceFixTaskRetryLimit || handoff?.sourceFixTaskRetryLimit || 0) || 0,
+        sourceFixTask: existingCard.sourceFixTask || handoff?.sourceFixTask || null,
+        builderTaskId: existingCard.builderTaskId || sourceFixTaskTaskId || null,
+        runnerTaskId: existingCard.runnerTaskId || sourceFixTaskTaskId || null,
+        taskFlow: existingCard.taskFlow || {
+          phase: 'planned',
+          assignmentState: 'unassigned',
+          ownerDeskId: 'planner',
+          assigneeDeskId: 'executor',
+          sourceIntentId: canonicalSourceIntentId,
+          sourceHandoffId: handoff?.id || null,
+          lastTransitionAt: handoff?.createdAt || nowIso(),
+          lastTransitionLabel: 'Moved to planner board',
+          history: [],
+        },
+        updatedAt: nowIso(),
+      };
+      producedCardIds.push(existingCard.id);
+      continue;
+    }
+    const nextCard = {
+      ...createTeamBoardCard({
+        cards,
+        pageId: notebook.activePageId,
+        handoffId: handoff?.id || null,
+        sourceNodeId: handoff?.sourceNodeId || null,
+        sourceIntentId: canonicalSourceIntentId,
+        sourceIntakeId: canonicalSourceIntakeId,
+        sourceAnchorRefs: plannerCard.anchorRefs || handoff?.anchorRefs || [],
+        title: plannerCard.title,
+        createdAt: handoff?.createdAt || null,
+      }),
+      summary: plannerCard.summary || '',
+      targetProjectKey: plannerCard.targetProjectKey || SELF_TARGET_KEY,
+      sourceFixTaskId: handoff?.sourceFixTaskId || null,
+      sourceFixTaskParentTaskId: handoff?.sourceFixTaskParentTaskId || null,
+      sourceFixTaskQueueKey: handoff?.sourceFixTaskQueueKey || null,
+      sourceFixTaskLocation: handoff?.sourceFixTaskLocation || null,
+      sourceFixTaskStatus: handoff?.sourceFixTaskStatus || null,
+      sourceFixTaskRetryCount: Number(handoff?.sourceFixTaskRetryCount || 0) || 0,
+      sourceFixTaskRetryLimit: Number(handoff?.sourceFixTaskRetryLimit || 0) || 0,
+      sourceFixTask: handoff?.sourceFixTask || null,
+      builderTaskId: sourceFixTaskTaskId || null,
+      runnerTaskId: sourceFixTaskTaskId || null,
+    };
+    cards.push(nextCard);
+    producedCardIds.push(nextCard.id);
+  }
+  return {
+    workspace: normalizeSpatialWorkspaceShape({
+      ...workspace,
+      studio: {
+        ...(workspace.studio || {}),
+        teamBoard: {
+          ...board,
+          cards,
+          selectedCardId: board.selectedCardId || producedCardIds[0] || null,
+          updatedAt: nowIso(),
+        },
+      },
+    }),
+    producedCardIds,
+  };
+}
+
+function applyPlannerRunResult(workspace, handoff, result, { runId, mode }) {
+  const runRecord = result?.run || null;
+  const completedAt = runRecord?.completedAt || nowIso();
+  const baseWorkspace = normalizeSpatialWorkspaceShape(workspace);
+  const plannerConfig = getAgentWorkerConfig(ROOT, 'planner');
+  if (!runRecord) {
+    return applyPlannerRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'idle',
+        statusReason: 'Planner is idle.',
+        currentRunId: null,
+        lastOutcome: null,
+        lastOutcomeAt: completedAt,
+        completedAt,
+      },
+      handoff: handoff ? {
+        ...handoff,
+        plannerStatus: 'idle',
+        plannerCompletedAt: completedAt,
+      } : handoff,
+    });
+  }
+
+  if (result.ok) {
+    const plannerCards = applyPlannerCardsToWorkspace(baseWorkspace, handoff, result.cards || []);
+    if (handoff?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, handoff.sourceFixTask, {
+        status: 'consumed',
+        reason: plannerCards.producedCardIds.length
+          ? 'Planner produced bounded follow-up cards.'
+          : 'Planner completed the intake.',
+        followupTaskId: plannerCards.producedCardIds[0] || null,
+        followupTaskDir: null,
+      });
+    }
+    return applyPlannerRuntimeState(plannerCards.workspace, {
+      worker: {
+        status: 'idle',
+        statusReason: plannerCards.producedCardIds.length
+          ? `Completed planner run and produced ${plannerCards.producedCardIds.length} anchored card${plannerCards.producedCardIds.length === 1 ? '' : 's'}.`
+          : 'Completed planner run.',
+        mode,
+        backend: plannerConfig.backend,
+        model: plannerConfig.model,
+        currentRunId: null,
+        lastRunId: runRecord.id,
+        lastOutcome: 'completed',
+        lastOutcomeAt: completedAt,
+        lastSourceHandoffId: handoff?.id || null,
+        lastBlockedReason: null,
+        lastProducedCardIds: plannerCards.producedCardIds,
+        proposalArtifactRefs: result.proposalArtifactRefs || [],
+        completedAt,
+      },
+      handoff: handoff ? {
+        ...handoff,
+        plannerStatus: 'completed',
+        plannerRunId: runId,
+        plannerCompletedAt: completedAt,
+        plannerLastBlockedReason: null,
+        plannerProducedCardIds: plannerCards.producedCardIds,
+        plannerProposalArtifactRefs: result.proposalArtifactRefs || [],
+      } : handoff,
+      plannerToContext: null,
+    });
+  }
+
+  if (handoff?.sourceFixTaskId) {
+    finalizeFixTask(ROOT, handoff.sourceFixTask, {
+      status: result.outcome === 'degraded' ? 're_escalated' : 'blocked',
+      reason: result.reason || runRecord.reason || 'Planner is blocked on the current handoff.',
+    });
+  }
+  return applyPlannerRuntimeState(baseWorkspace, {
+    worker: {
+      status: result.outcome === 'degraded' ? 'degraded' : 'blocked',
+      statusReason: result.reason || runRecord.reason || 'Planner is blocked on the current handoff.',
+      mode,
+      backend: plannerConfig.backend,
+      model: plannerConfig.model,
+      currentRunId: null,
+      lastRunId: runRecord.id,
+      lastOutcome: result.outcome === 'degraded' ? 'degraded' : 'blocked',
+      lastOutcomeAt: completedAt,
+      lastSourceHandoffId: handoff?.id || null,
+      lastBlockedReason: result.reason || runRecord.reason || null,
+      lastProducedCardIds: [],
+      proposalArtifactRefs: [],
+      completedAt,
+    },
+    handoff: handoff ? {
+      ...handoff,
+      plannerStatus: result.outcome === 'degraded' ? 'degraded' : 'blocked',
+      plannerRunId: runId,
+      plannerCompletedAt: completedAt,
+      plannerLastBlockedReason: result.reason || runRecord.reason || null,
+      plannerProducedCardIds: [],
+      plannerProposalArtifactRefs: [],
+    } : handoff,
+    plannerToContext: result.plannerToContext || null,
+  });
+}
+
+function applyContextManagerRunResult(workspace, result, { runId, mode, previousHandoff = null, plannerFeedback = null }) {
+  const runRecord = result?.run || null;
+  const completedAt = runRecord?.completedAt || nowIso();
+  const baseWorkspace = normalizeSpatialWorkspaceShape(workspace);
+  const contextConfig = getAgentWorkerConfig(ROOT, 'context-manager');
+  if (!runRecord) {
+    return applyContextManagerRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'idle',
+        statusReason: 'Context Manager is idle.',
+        currentRunId: null,
+        lastOutcome: null,
+        lastOutcomeAt: completedAt,
+        completedAt,
+      },
+    });
+  }
+
+  if (result.ok && result.report && result.handoff) {
+    const shouldClearPlannerFeedback = Boolean(
+      plannerFeedback?.sourceHandoffId
+      && previousHandoff?.id
+      && plannerFeedback.sourceHandoffId === previousHandoff.id,
+    );
+    return applyContextManagerRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'idle',
+        statusReason: result.handoff?.status === 'needs-clarification'
+          ? 'Published a planner handoff that still needs clarification.'
+          : 'Published a planner-ready context handoff.',
+        mode,
+        backend: contextConfig.backend,
+        model: contextConfig.model,
+        currentRunId: null,
+        lastRunId: runRecord.id,
+        lastOutcome: 'completed',
+        lastOutcomeAt: completedAt,
+        lastSourceNodeId: result.report.nodeId || previousHandoff?.sourceNodeId || null,
+        lastHandoffId: result.handoff.id || null,
+        lastReportNodeId: result.report.nodeId || null,
+        lastBlockedReason: null,
+        lastUsedFallback: Boolean(result.usedFallback),
+        lastPlannerFeedbackAction: plannerFeedback?.action || null,
+        completedAt,
+      },
+      handoff: result.handoff,
+      plannerToContext: shouldClearPlannerFeedback ? null : plannerFeedback,
+      report: result.report,
+    });
+  }
+
+  return applyContextManagerRuntimeState(baseWorkspace, {
+    worker: {
+      status: 'degraded',
+      statusReason: result.reason || runRecord.reason || 'Context Manager degraded while drafting a handoff.',
+      mode,
+      backend: contextConfig.backend,
+      model: contextConfig.model,
+      currentRunId: null,
+      lastRunId: runRecord.id,
+      lastOutcome: 'degraded',
+      lastOutcomeAt: completedAt,
+      lastSourceNodeId: previousHandoff?.sourceNodeId || null,
+      lastHandoffId: previousHandoff?.id || null,
+      lastReportNodeId: null,
+      lastBlockedReason: result.reason || runRecord.reason || null,
+      lastUsedFallback: Boolean(result.usedFallback),
+      lastPlannerFeedbackAction: plannerFeedback?.action || null,
+      completedAt,
+    },
+    plannerToContext: plannerFeedback,
+  });
+}
+
+function markExecutorRunStarted(workspace, card, runId, mode) {
+  const startedAt = nowIso();
+  const executorConfig = getAgentWorkerConfig(ROOT, 'executor');
+  const taskId = executorTaskIdFromCard(card);
+  return applyExecutorRuntimeState(workspace, {
+    worker: {
+      status: 'running',
+      statusReason: card?.title
+        ? `Assessing execution readiness for: ${card.title}`
+        : 'Assessing executor queue readiness.',
+      mode,
+      backend: executorConfig.backend,
+      model: executorConfig.model,
+      currentRunId: runId,
+      lastCardId: card?.id || null,
+      lastTaskId: taskId,
+      lastDecision: null,
+      lastAssessmentSummary: null,
+      lastAssessmentBlockers: [],
+      lastBlockedReason: null,
+      startedAt,
+      completedAt: null,
+    },
+  });
+}
+
+function applyExecutorRunResult(workspace, card, result, { mode }) {
+  const runRecord = result?.run || null;
+  const completedAt = runRecord?.completedAt || nowIso();
+  const baseWorkspace = normalizeSpatialWorkspaceShape(workspace);
+  const executorConfig = getAgentWorkerConfig(ROOT, 'executor');
+  if (!runRecord || !result?.report) {
+    return applyExecutorRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'idle',
+        statusReason: 'Executor is idle.',
+        currentRunId: null,
+        lastOutcome: null,
+        lastOutcomeAt: completedAt,
+        completedAt,
+      },
+    });
+  }
+
+  if (!result.ok) {
+    return applyExecutorRuntimeState(baseWorkspace, {
+      worker: {
+        status: 'degraded',
+        statusReason: result.reason || runRecord.reason || 'Executor degraded while assessing readiness.',
+        mode,
+        backend: executorConfig.backend,
+        model: executorConfig.model,
+        currentRunId: null,
+        lastRunId: runRecord.id,
+        lastOutcome: runRecord.outcome || 'degraded',
+        lastOutcomeAt: completedAt,
+        lastCardId: card?.id || null,
+        lastTaskId: executorTaskIdFromCard(card),
+        lastDecision: result.report?.decision || null,
+        lastAssessmentSummary: result.report?.summary || null,
+        lastAssessmentBlockers: Array.isArray(result.report?.blockers) ? result.report.blockers : [],
+        lastBlockedReason: result.reason || runRecord.reason || null,
+        completedAt,
+      },
+    });
+  }
+
+  return applyExecutorRuntimeState(baseWorkspace, {
+    worker: {
+      status: 'idle',
+      statusReason: result.report.summary || 'Executor assessment complete.',
+      mode,
+      backend: executorConfig.backend,
+      model: executorConfig.model,
+      currentRunId: null,
+      lastRunId: runRecord.id,
+      lastOutcome: 'completed',
+      lastOutcomeAt: completedAt,
+      lastCardId: card?.id || null,
+      lastTaskId: executorTaskIdFromCard(card),
+      lastDecision: result.report.decision || null,
+      lastAssessmentSummary: result.report.summary || null,
+      lastAssessmentBlockers: Array.isArray(result.report.blockers) ? result.report.blockers : [],
+      lastBlockedReason: Array.isArray(result.report.blockers) && result.report.blockers.length ? result.report.blockers[0] : null,
+      completedAt,
+    },
+  });
+}
+
+async function maybeRunPlannerWorker(workspace = null, { mode = 'auto', handoffId = null } = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  const taState = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+  const taPayload = await buildTaDepartmentPayload(taState, {
+    workspace: currentWorkspace,
+    rootPath: ROOT,
+  });
+  const plannerModel = String(
+    currentWorkspace?.studio?.agentWorkers?.planner?.model
+    || resolveAgentDefinition(ROOT, 'planner', { fallbackManifest: fallbackManifestForAgent('planner') }).manifest?.model
+    || '',
+  ).trim() || null;
+  const preflight = buildPreLlmGuardInput({
+    model: plannerModel,
+    requireToolUse: true,
+    requiredFiles: [
+        'brain/emergence/project_brain.md',
+        'brain/emergence/roadmap.md',
+        'brain/emergence/plan.md',
+       'brain/emergence/tasks.md',
+     ],
+    validationCommand: {
+       command: 'node',
+       args: ['--version'],
+    },
+  });
+  let intakeWorkspace = currentWorkspace;
+  let intakeResult = null;
+  const currentPlannerHandoff = currentWorkspace?.studio?.handoffs?.contextToPlanner || null;
+  if (mode === 'auto' && !handoffId && currentPlannerHandoff?.status !== 'ready') {
+    intakeResult = consumePendingFixTask(ROOT, {
+      preflight,
+      previousHandoff: currentPlannerHandoff || null,
+    });
+    if (intakeResult?.accepted && intakeResult.handoff) {
+      intakeWorkspace = persistSpatialWorkspace(applyPlannerRuntimeState(currentWorkspace, {
+        handoff: intakeResult.handoff,
+      }));
+    } else if (intakeResult?.fixTask) {
+      return createPreLlmBlockedResult(intakeResult.reason || 'Fix task intake is blocked.', currentWorkspace, {
+        cards: [],
+        proposalArtifactRefs: [],
+        plannerToContext: null,
+        guardChecks: preflight.checks,
+        guardBlockers: preflight.blockers,
+        preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
+        failureObservation: {
+          related_stage: 'planner',
+          related_tool: 'autonomy-policy',
+        },
+        policy: intakeResult.policy || null,
+        fixTask: intakeResult.fixTask || null,
+      });
+    }
+  }
+  const handoff = getPlannerHandoff(intakeWorkspace, handoffId);
+  if (!preflight.ok) {
+    return createPreLlmBlockedResult(preflight.blockers[0], currentWorkspace, {
+      cards: [],
+      proposalArtifactRefs: [],
+      plannerToContext: null,
+      guardChecks: preflight.checks,
+      guardBlockers: preflight.blockers,
+      preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
+      failureObservation: {
+        related_stage: 'planner',
+        related_tool: 'node',
+      },
+    });
+  }
+  const runs = listPlannerRuns(ROOT);
+  const eligibility = evaluatePlannerEligibility({
+    workspace: intakeWorkspace,
+    handoff,
+    mode,
+    runs,
+  });
+  if (!eligibility.eligible) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: eligibility.reason,
+      workspace: intakeWorkspace,
+      preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: eligibility.reason,
+        run: null,
+        cards: [],
+        proposalArtifactRefs: [],
+        plannerToContext: null,
+      },
+    };
+  }
+  if (plannerWorkerAutomationRunning) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Planner worker is already processing another handoff.',
+      workspace: readSpatialWorkspace(),
+      preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Planner worker is already processing another handoff.',
+        run: null,
+        cards: [],
+        proposalArtifactRefs: [],
+        plannerToContext: null,
+      },
+    };
+  }
+
+  plannerWorkerAutomationRunning = true;
+  const runId = makePlannerRunId();
+  try {
+    let runningWorkspace = markPlannerRunStarted(intakeWorkspace, handoff, runId, mode);
+    runningWorkspace = persistSpatialWorkspace(runningWorkspace);
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'planner-worker-start',
+      summary: { handoffId: handoff?.id || null, runId, mode },
+    });
+
+    const result = await runPlannerWorker({
+      rootPath: ROOT,
+      handoff,
+      workspace: runningWorkspace,
+      anchorBundle: getAnchorBundle(),
+      mode,
+      runId,
+      talentAcquisition: taPayload,
+    });
+    const nextWorkspace = persistSpatialWorkspace(applyPlannerRunResult(readSpatialWorkspace(), handoff, result, { runId, mode }));
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: `planner-worker-${result.outcome || 'completed'}`,
+      summary: {
+        handoffId: handoff?.id || null,
+        runId,
+        reason: result.reason || '',
+        producedCardIds: nextWorkspace?.studio?.agentWorkers?.planner?.lastProducedCardIds || [],
+        proposalArtifactRefs: nextWorkspace?.studio?.agentWorkers?.planner?.proposalArtifactRefs || [],
+      },
+    });
+    return {
+      ok: result.ok,
+      skipped: false,
+      reason: result.reason || '',
+      workspace: nextWorkspace,
+      preflight: buildGuardSurfacePayload({ stage: 'planner', preflight }),
+      result,
+    };
+  } finally {
+    plannerWorkerAutomationRunning = false;
+  }
+}
+
+async function maybeRunContextManagerWorker(workspace = null, {
+  text,
+  sourceNodeId = null,
+  sourceIntakeId = null,
+  source = 'context-intake',
+  sourceType = 'context-intake',
+  sourceRef = null,
+  requestedBy = 'context-manager',
+  priority = null,
+  mode = 'manual',
+  plannerFeedback = null,
+  backend = null,
+  model = null,
+  host = null,
+  timeoutMs = null,
+  skipPreflight = false,
+} = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  const rawText = String(text || '').trim();
+  if (!rawText) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Context Manager requires non-empty context text.',
+      workspace: currentWorkspace,
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Context Manager requires non-empty context text.',
+        run: null,
+        report: null,
+        handoff: null,
+      },
+    };
+  }
+  const preflight = buildPreLlmGuardInput({
+    model: config.model,
+    requireToolUse: true,
+    requiredFiles: [
+      'brain/emergence/project_brain.md',
+      'brain/emergence/plan.md',
+      'brain/emergence/tasks.md',
+      'brain/context/known_fixes.md',
+    ],
+    validationCommand: {
+      command: 'node',
+      args: ['--version'],
+    },
+  });
+  if (!preflight.ok && !skipPreflight) {
+    return createPreLlmBlockedResult(preflight.blockers[0], currentWorkspace, {
+      report: null,
+      handoff: null,
+      guardChecks: preflight.checks,
+      guardBlockers: preflight.blockers,
+      preflight: buildGuardSurfacePayload({ stage: 'context-manager', preflight }),
+      failureObservation: {
+        related_stage: 'context-manager',
+        related_tool: 'node',
+      },
+    });
+  }
+  if (contextManagerWorkerAutomationRunning) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Context Manager is already processing another intake.',
+      workspace: readSpatialWorkspace(),
+      preflight: buildGuardSurfacePayload({ stage: 'context-manager', preflight }),
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Context Manager is already processing another intake.',
+        run: null,
+        report: null,
+        handoff: null,
+      },
+    };
+  }
+
+  const previousHandoff = currentWorkspace?.studio?.handoffs?.contextToPlanner || null;
+  const activePlannerFeedback = plannerFeedback || currentWorkspace?.studio?.handoffs?.plannerToContext || null;
+  contextManagerWorkerAutomationRunning = true;
+  const runId = makeContextManagerRunId();
+  try {
+    let runningWorkspace = markContextManagerRunStarted(currentWorkspace, rawText, sourceNodeId, runId, mode, activePlannerFeedback);
+    runningWorkspace = persistSpatialWorkspace(runningWorkspace);
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'context-manager-worker-start',
+      summary: { sourceNodeId, runId, mode, source },
+    });
+
+    const result = await runContextManagerWorker({
+      rootPath: ROOT,
+      text: rawText,
+      sourceNodeId,
+      source,
+      workspace: runningWorkspace,
+      anchorBundle: getAnchorBundle(),
+      dashboardState: getDashboardStateSnapshot(),
+      previousHandoff,
+      plannerFeedback: activePlannerFeedback,
+      mode,
+      sourceType,
+      sourceRef,
+      requestedBy,
+      priority,
+      backend,
+      model,
+      host,
+      timeoutMs: Number(timeoutMs) > 0 ? Number(timeoutMs) : null,
+      runId,
+    });
+    const resultWithCanonicalHandoff = result?.handoff
+      ? {
+          ...result,
+          handoff: {
+            ...result.handoff,
+            sourceIntentId: result.handoff.sourceIntentId || result.handoff.intentId || null,
+            sourceIntakeId: result.handoff.sourceIntakeId || sourceIntakeId || null,
+          },
+        }
+      : result;
+    const nextWorkspace = persistSpatialWorkspace(applyContextManagerRunResult(
+      readSpatialWorkspace(),
+      resultWithCanonicalHandoff,
+      { runId, mode, previousHandoff, plannerFeedback: activePlannerFeedback },
+    ));
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: `context-manager-worker-${result.outcome || 'completed'}`,
+      summary: {
+        sourceNodeId,
+        runId,
+        reason: result.reason || '',
+        handoffId: nextWorkspace?.studio?.handoffs?.contextToPlanner?.id || null,
+        usedFallback: Boolean(result.usedFallback),
+      },
+    });
+    return {
+      ok: resultWithCanonicalHandoff.ok,
+      skipped: false,
+      reason: resultWithCanonicalHandoff.reason || '',
+      workspace: nextWorkspace,
+      preflight: buildGuardSurfacePayload({ stage: 'context-manager', preflight }),
+      result: resultWithCanonicalHandoff,
+    };
+  } finally {
+    contextManagerWorkerAutomationRunning = false;
+  }
+}
+
+async function maybeRunExecutorWorker(workspace = null, { mode = 'manual', cardId = null } = {}) {
+  const currentWorkspace = normalizeSpatialWorkspaceShape(workspace || readSpatialWorkspace());
+  const card = cardId
+    ? findTeamBoardCard(currentWorkspace, cardId)
+    : getSelectedExecutionCard(currentWorkspace);
+  if (!card) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Executor requires a selected execution card.',
+      workspace: currentWorkspace,
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Executor requires a selected execution card.',
+        run: null,
+        report: null,
+      },
+    };
+  }
+  const targetProject = resolveProjectTarget(card.targetProjectKey || SELF_TARGET_KEY);
+  const preflight = buildPreLlmGuardInput({
+    model: config.model,
+    requireToolUse: true,
+    requiredFiles: [
+      'brain/emergence/project_brain.md',
+      'brain/emergence/plan.md',
+      'brain/emergence/tasks.md',
+    ],
+    projectKey: targetProject.projectKey,
+    projectPath: targetProject.projectPath,
+    validationCommand: {
+      command: 'git',
+      args: ['--version'],
+    },
+  });
+  if (!preflight.ok) {
+    return createPreLlmBlockedResult(preflight.blockers[0], currentWorkspace, {
+      report: null,
+      guardChecks: preflight.checks,
+      guardBlockers: preflight.blockers,
+      preflight: buildGuardSurfacePayload({ stage: 'executor', preflight }),
+      failureObservation: {
+        related_stage: 'executor',
+        related_tool: 'git',
+        related_project: targetProject.projectKey,
+      },
+    });
+  }
+  if (executorWorkerAutomationRunning) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'Executor worker is already processing another card.',
+      workspace: readSpatialWorkspace(),
+      preflight: buildGuardSurfacePayload({ stage: 'executor', preflight }),
+      result: {
+        ok: false,
+        skipped: true,
+        outcome: 'skipped',
+        reason: 'Executor worker is already processing another card.',
+        run: null,
+        report: null,
+      },
+    };
+  }
+
+  executorWorkerAutomationRunning = true;
+  const runId = makeExecutorRunId();
+  try {
+    let runningWorkspace = markExecutorRunStarted(currentWorkspace, card, runId, mode);
+    runningWorkspace = persistSpatialWorkspace(runningWorkspace);
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'executor-worker-start',
+      summary: { cardId: card.id || null, taskId: executorTaskIdFromCard(card), runId, mode },
+    });
+
+    const result = await runExecutorWorker({
+      rootPath: ROOT,
+      card,
+      workspace: runningWorkspace,
+      mode,
+      runId,
+    });
+    const nextWorkspace = persistSpatialWorkspace(applyExecutorRunResult(readSpatialWorkspace(), card, result, { mode }));
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'executor-worker-completed',
+      summary: {
+        cardId: card.id || null,
+        taskId: executorTaskIdFromCard(card),
+        runId,
+        decision: result.report?.decision || null,
+        blockers: result.report?.blockers || [],
+        usedFallback: Boolean(result.usedFallback),
+      },
+    });
+    return {
+      ok: result.ok,
+      skipped: false,
+      reason: result.reason || '',
+      workspace: nextWorkspace,
+      preflight: buildGuardSurfacePayload({ stage: 'executor', preflight }),
+      result,
+    };
+  } finally {
+    executorWorkerAutomationRunning = false;
+  }
+}
+
+function buildPreLlmGuardInput({
+  rootPath = ROOT,
+  requiredFiles = [],
+  projectKey = null,
+  projectPath = null,
+  validationCommand = null,
+  patchPath = null,
+  model = null,
+  requireToolUse = false,
+} = {}) {
+  return evaluatePreLlmGuards({
+    rootPath,
+    requiredFiles,
+    projectKey,
+    projectPath,
+    validationCommand,
+    patchPath,
+    model,
+    requireToolUse,
+    commandRunner: spawnSyncSafe,
+  });
+}
+
+function normalizePreflightStage(stage = '') {
+  const normalized = String(stage || '').trim().toLowerCase().replace(/\s+/g, '-');
+  return ['planner', 'context-manager', 'executor', 'rebuild', 'self-upgrade'].includes(normalized)
+    ? normalized
+    : null;
+}
+
+function buildGuardSurfacePayload({
+  stage = null,
+  preflight = null,
+  cacheStatus = null,
+  cacheReason = null,
+  warningReasons = [],
+} = {}) {
+  const normalizedStage = normalizePreflightStage(stage) || String(stage || '').trim() || null;
+  const guardReasons = mergeUnique([
+    ...(Array.isArray(preflight?.blockers) ? preflight.blockers : []),
+    ...(Array.isArray(preflight?.warnings) ? preflight.warnings : []),
+    ...(Array.isArray(warningReasons) ? warningReasons : []),
+    cacheReason,
+  ]);
+  const guardStatus = cacheStatus === 'reused'
+    ? 'cache_reused'
+    : (preflight?.ok ? (guardReasons.length ? 'warning' : 'ready') : 'blocked');
+  const guardReason = cacheStatus === 'reused'
+    ? (cacheReason || guardReasons[0] || String(preflight?.summary || '').trim() || 'Cached task artefact reused.')
+    : (guardReasons[0]
+      || String(preflight?.summary || '').trim()
+      || (guardStatus === 'ready' ? 'Preflight checks passed.' : 'Preflight blocked.'));
+  return {
+    ok: guardStatus !== 'blocked',
+    stage: normalizedStage,
+    guard_status: guardStatus,
+    guard_reason: guardReason,
+    guard_reasons: guardReasons,
+    cache_status: cacheStatus || null,
+    checks: preflight?.checks || null,
+  };
+}
+
+function buildAutonomyPolicyResponse({
+  rootPath = ROOT,
+  taskId = null,
+  taskDir = null,
+  stage = 'executor',
+  action = null,
+  projectKey = null,
+  projectPath = null,
+  preflight = null,
+  taskCache = null,
+  validation = null,
+  changedFiles = [],
+  patchText = '',
+  patchValid = null,
+  patchPath = null,
+  retryCount = null,
+  retryLimit = null,
+  failureKey = null,
+  failureMessage = '',
+  allowlistPaths = null,
+  disallowedPaths = [],
+  requiredFilesMissing = [],
+  repoInvalid = null,
+  validationCommandExists = null,
+  patchEmpty = null,
+  ambiguous = null,
+  cacheStatus = null,
+  failureRisky = false,
+} = {}) {
+  const policy = evaluateAutonomyPolicy({
+    rootPath,
+    stage,
+    action,
+    taskId,
+    projectKey,
+    projectPath,
+    preflight,
+    taskCache,
+    validation,
+    changedFiles,
+    patchText,
+    patchValid,
+    patchPath,
+    retryCount,
+    retryLimit,
+    failureKey,
+    failureMessage,
+    allowlistPaths,
+    disallowedPaths,
+    requiredFilesMissing,
+    repoInvalid,
+    validationCommandExists,
+    patchEmpty,
+    ambiguous,
+    cacheStatus,
+    failureRisky,
+  });
+  let fixTask = null;
+  if (policy.decision !== 'auto_allowed') {
+    fixTask = createBoundedFixTaskArtifact(rootPath, {
+      taskId: taskId || null,
+      taskDir: taskDir || null,
+      stage: policy.stage,
+      action: policy.action,
+      decision: policy.decision,
+      reasons: policy.reasons,
+      policy_rule_hits: policy.policy_rule_hits,
+      retryCount: policy.retry_count,
+      projectKey: policy.projectKey,
+      projectPath: policy.projectPath,
+      cache_status: policy.cache_status,
+      changedFiles: changedFiles || [],
+      failureKey: policy.failureKey || failureKey || null,
+      candidateFix: policy.candidate_fix || null,
+      source: 'autonomy-policy',
+    });
+  }
+  return {
+    policy: {
+      ...policy,
+      fix_task_created: Boolean(fixTask),
+      fix_task_path: fixTask?.jsonPath || null,
+    },
+    fixTask,
+  };
+}
+
+function evaluateStagePreflightSurface({
+  stage,
+  taskId = null,
+  projectKey = null,
+  projectPath = null,
+  rootPath = ROOT,
+} = {}) {
+  const normalizedStage = normalizePreflightStage(stage);
+  if (!normalizedStage) {
+    const preflight = {
+      ok: false,
+      blockers: ['Unsupported preflight stage.'],
+      checks: {},
+      cacheHit: false,
+      summary: 'Unsupported preflight stage.',
+    };
+    return {
+      ...buildGuardSurfacePayload({ stage, preflight }),
+      preflight,
+    };
+  }
+
+  if (normalizedStage === 'planner') {
+    const preflight = buildPreLlmGuardInput({
+      rootPath,
+      requiredFiles: [
+        'brain/emergence/project_brain.md',
+        'brain/emergence/roadmap.md',
+        'brain/emergence/plan.md',
+        'brain/emergence/tasks.md',
+      ],
+      validationCommand: {
+        command: 'node',
+        args: ['--version'],
+      },
+    });
+    const projectTarget = resolveProjectTarget(projectKey || SELF_TARGET_KEY);
+    const policy = buildAutonomyPolicyResponse({
+      rootPath,
+      taskId,
+      stage: normalizedStage,
+      action: 'planner',
+      projectKey: projectTarget.projectKey || SELF_TARGET_KEY,
+      projectPath: projectPath || projectTarget.projectPath || resolveProjectTarget(SELF_TARGET_KEY).projectPath,
+      preflight,
+      validationCommandExists: Boolean(preflight?.checks?.validationCommand?.ok !== false),
+      requiredFilesMissing: preflight?.checks?.requiredFiles?.missing || [],
+      repoInvalid: Boolean(preflight?.checks?.repoClean?.ok === false),
+      cacheStatus: null,
+    }).policy;
+    return {
+      ...buildGuardSurfacePayload({ stage: normalizedStage, preflight }),
+      policy,
+      preflight,
+    };
+  }
+
+  if (normalizedStage === 'context-manager') {
+    const preflight = buildPreLlmGuardInput({
+      rootPath,
+      requiredFiles: [
+        'brain/emergence/project_brain.md',
+        'brain/emergence/plan.md',
+        'brain/emergence/tasks.md',
+        'brain/context/known_fixes.md',
+      ],
+      validationCommand: {
+        command: 'node',
+        args: ['--version'],
+      },
+    });
+    const projectTarget = resolveProjectTarget(projectKey || SELF_TARGET_KEY);
+    const policy = buildAutonomyPolicyResponse({
+      rootPath,
+      taskId,
+      stage: normalizedStage,
+      action: 'context-manager',
+      projectKey: projectTarget.projectKey || SELF_TARGET_KEY,
+      projectPath: projectPath || projectTarget.projectPath || resolveProjectTarget(SELF_TARGET_KEY).projectPath,
+      preflight,
+      validationCommandExists: Boolean(preflight?.checks?.validationCommand?.ok !== false),
+      requiredFilesMissing: preflight?.checks?.requiredFiles?.missing || [],
+      repoInvalid: Boolean(preflight?.checks?.repoClean?.ok === false),
+      cacheStatus: null,
+    }).policy;
+    return {
+      ...buildGuardSurfacePayload({ stage: normalizedStage, preflight }),
+      policy,
+      preflight,
+    };
+  }
+
+  if (normalizedStage === 'executor') {
+    const targetProject = resolveProjectTarget(projectKey || SELF_TARGET_KEY);
+    const preflight = buildPreLlmGuardInput({
+      rootPath,
+      requiredFiles: [
+        'brain/emergence/project_brain.md',
+        'brain/emergence/plan.md',
+        'brain/emergence/tasks.md',
+      ],
+      projectKey: targetProject.projectKey,
+      projectPath: projectPath || targetProject.projectPath,
+      validationCommand: {
+        command: 'git',
+        args: ['--version'],
+      },
+    });
+    const policy = buildAutonomyPolicyResponse({
+      rootPath,
+      taskId,
+      stage: normalizedStage,
+      action: 'executor',
+      projectKey: targetProject.projectKey,
+      projectPath: projectPath || targetProject.projectPath,
+      preflight,
+      validationCommandExists: Boolean(preflight?.checks?.validationCommand?.ok !== false),
+      requiredFilesMissing: preflight?.checks?.requiredFiles?.missing || [],
+      repoInvalid: Boolean(preflight?.checks?.repoClean?.ok === false),
+      cacheStatus: null,
+    }).policy;
+    return {
+      ...buildGuardSurfacePayload({ stage: normalizedStage, preflight }),
+      policy,
+      preflight,
+    };
+  }
+
+  const normalizedTaskId = String(taskId || '').trim();
+  const taskFolder = normalizedTaskId ? findTaskFolderByTaskId(normalizedTaskId) : null;
+  const taskDir = taskFolder ? path.join(TASKS_DIR, taskFolder) : null;
+  const taskCache = readTaskCache(rootPath, {
+    taskId: normalizedTaskId || null,
+    taskDir,
+    stage: 'executor',
+  });
+  const targetProject = resolveProjectTarget(projectKey || SELF_TARGET_KEY);
+  const patchPath = taskCache.taskDirPath
+    ? path.join(taskCache.taskDirPath, 'patch.diff')
+    : (taskDir ? path.join(taskDir, 'patch.diff') : null);
+  const preflight = buildPreLlmGuardInput({
+    rootPath,
+    requiredFiles: [
+      'brain/emergence/project_brain.md',
+      'brain/emergence/plan.md',
+      'brain/emergence/tasks.md',
+    ],
+    projectKey: targetProject.projectKey,
+    projectPath: projectPath || targetProject.projectPath,
+    validationCommand: {
+      command: 'git',
+      args: ['--version'],
+    },
+    patchPath,
+  });
+  const cacheStatus = taskCache.source === TASK_CACHE_SOURCE.HIT ? 'reused' : null;
+  const cacheReason = cacheStatus === 'reused'
+    ? 'Cached patch already exists; rebuild skipped.'
+    : null;
+  const policy = buildAutonomyPolicyResponse({
+    rootPath,
+    taskId: normalizedTaskId || null,
+    stage: normalizedStage,
+    action: 'rebuild',
+    projectKey: targetProject.projectKey,
+    projectPath: projectPath || targetProject.projectPath,
+    preflight,
+    taskCache,
+    validationCommandExists: Boolean(preflight?.checks?.validationCommand?.ok !== false),
+    requiredFilesMissing: preflight?.checks?.requiredFiles?.missing || [],
+    repoInvalid: Boolean(preflight?.checks?.repoClean?.ok === false),
+    cacheStatus,
+  }).policy;
+  return {
+    ...buildGuardSurfacePayload({
+      stage: normalizedStage,
+      preflight,
+      cacheStatus,
+      cacheReason,
+    }),
+    policy,
+    preflight,
+    taskCache: summarizeTaskCache(taskCache),
+  };
+}
+
+function createPreLlmBlockedResult(reason, workspace, resultShape = {}) {
+  const blockedReason = String(reason || 'Pre-LLM guard blocked this generation.').trim();
+  if (resultShape.failureObservation) {
+    try {
+      recordClassifiedFailure(ROOT, new Error(blockedReason), {
+        message: blockedReason,
+        stage: resultShape.stage || null,
+        agentId: resultShape.agentId || null,
+        agentVersion: resultShape.agentVersion || null,
+        ...resultShape.failureObservation,
+      });
+    } catch (error) {
+      console.warn('[WARN] failure history update failed:', error?.message || error);
+    }
+  }
+  return {
+    ok: false,
+    skipped: true,
+    reason: blockedReason,
+    workspace,
+    result: {
+      ok: false,
+      skipped: true,
+      outcome: 'blocked',
+      reason: blockedReason,
+      blockers: [blockedReason],
+      run: null,
+      ...resultShape,
+    },
+  };
+}
+
+function mutateTeamBoardCard(workspace, cardId, mutator) {
+  const board = normalizeTeamBoardState(workspace);
+  const cards = board.cards.map((card) => (card.id === cardId ? mutator(card) : card));
+  return {
+    ...workspace,
+    studio: {
+      ...(workspace.studio || {}),
+      teamBoard: {
+        ...board,
+        cards,
+        updatedAt: nowIso(),
+      },
+    },
+  };
+}
+
+function findTeamBoardCard(workspace, cardId) {
+  const board = normalizeTeamBoardState(workspace);
+  return board.cards.find((card) => card.id === cardId) || null;
+}
+
+function createExecutorBlocker(code, message) {
+  return {
+    code: String(code || 'executor-blocked').trim() || 'executor-blocked',
+    message: String(message || 'Execution is blocked.').trim() || 'Execution is blocked.',
+    updatedAt: nowIso(),
+  };
+}
+
+function clearExecutorBlocker() {
+  return null;
+}
+
+function getCardTaskId(card = {}) {
+  return String(card.builderTaskId || card.runnerTaskId || card.executionPackage?.taskId || '').trim();
+}
+
+function summarizeGateMessage(messages = [], fallback = 'Execution is blocked.') {
+  const first = (messages || []).map((message) => String(message || '').trim()).find(Boolean);
+  return first || fallback;
+}
+
+function loadCommandPresets() {
+  return readJsonSafe(COMMANDS_FILE, {}) || {};
+}
+
+function buildVerificationSignature({ taskId, patchPath, changedFiles = [], targetProjectKey, expectedAction }) {
+  const files = [...new Set((changedFiles || []).map((file) => String(file || '').trim()).filter(Boolean))].sort();
+  return [String(taskId || '').trim(), String(targetProjectKey || '').trim(), String(expectedAction || '').trim(), String(patchPath || '').trim(), ...files].join('|');
+}
+
+function buildVerificationPlan({ taskId, patchPath, changedFiles = [], targetProjectKey, expectedAction = 'apply' }) {
+  const presets = loadCommandPresets();
+  const files = [...new Set((changedFiles || []).map((file) => String(file || '').trim()).filter(Boolean))];
+  const commands = [];
+  const qaScenarios = [];
+
+  if (targetProjectKey === SELF_TARGET_KEY && presets.runner_compile) {
+    commands.push({
+      preset: 'runner_compile',
+      label: 'Runner compile',
+    });
+  }
+
+  if (targetProjectKey === SELF_TARGET_KEY && files.some((file) => file.startsWith('ui/'))) {
+    qaScenarios.push({
+      scenario: 'layout-pass',
+      mode: 'observation',
+      label: 'UI layout pass',
+    });
+  }
+
+  const required = commands.length > 0 || qaScenarios.length > 0;
+  return {
+    required,
+    commands,
+    qaScenarios,
+    signature: required ? buildVerificationSignature({ taskId, patchPath, changedFiles: files, targetProjectKey, expectedAction }) : null,
+    summary: required
+      ? `${commands.length} command check${commands.length === 1 ? '' : 's'} and ${qaScenarios.length} QA scenario${qaScenarios.length === 1 ? '' : 's'} required before apply.`
+      : 'No verification required.',
+    generatedAt: nowIso(),
+  };
+}
+
+function collectVerificationArtifacts({ commandArtifacts = [], qaRuns = [] } = {}) {
+  const artifacts = [...(commandArtifacts || [])];
+  (qaRuns || []).forEach((run) => {
+    if (!run?.id) return;
+    artifacts.push(`/api/spatial/qa/runs/${run.id}`);
+  });
+  return mergeUnique(artifacts);
+}
+
+function evaluateVerifyGate({ card, workspace }) {
+  if (!card) return { ok: false, code: 'missing-card', message: 'Card not found.' };
+  if (!(card.sourceAnchorRefs || []).length) {
+    return { ok: false, code: 'missing-anchor', message: 'Card has no anchor provenance and cannot be verified.', nextStatus: 'review' };
+  }
+  const taskId = getCardTaskId(card);
+  if (!taskId || card.executionPackage?.status !== 'ready') {
+    return { ok: false, code: 'missing-package', message: 'Card has no ready build package to verify.' };
+  }
+  const verificationPlan = card.executionPackage?.verificationPlan || buildVerificationPlan({
+    taskId,
+    patchPath: card.executionPackage?.patchPath,
+    changedFiles: card.executionPackage?.changedFiles || [],
+    targetProjectKey: card.targetProjectKey || SELF_TARGET_KEY,
+    expectedAction: card.executionPackage?.expectedAction || 'apply',
+  });
+  if (!verificationPlan.required) {
+    return { ok: false, noop: true, code: 'verification-not-required', message: 'No verification required.', taskId, verificationPlan };
+  }
+  if (card.verifyStatus === 'running') {
+    return { ok: false, noop: true, code: 'verification-running', message: 'Verification is already running.', taskId, verificationPlan };
+  }
+  if (card.verifyStatus === 'passed' && card.verifiedSignature === verificationPlan.signature) {
+    return { ok: false, noop: true, code: 'verification-complete', message: 'Verification already passed for this package.', taskId, verificationPlan };
+  }
+  return { ok: true, taskId, verificationPlan };
+}
+
+function evaluateApplyGate({ card, workspace }) {
+  if (!card) return { ok: false, code: 'missing-card', message: 'Card not found.' };
+  if (!(card.sourceAnchorRefs || []).length) {
+    return { ok: false, code: 'missing-anchor', message: 'Card has no anchor provenance and cannot be applied.', nextStatus: 'review', nextApprovalState: 'pending' };
+  }
+  const taskId = getCardTaskId(card);
+  if (!taskId || card.executionPackage?.status !== 'ready') {
+    return { ok: false, code: 'missing-package', message: 'Card has no ready build package to apply.' };
+  }
+  const verificationPlan = card.executionPackage?.verificationPlan || buildVerificationPlan({
+    taskId,
+    patchPath: card.executionPackage?.patchPath,
+    changedFiles: card.executionPackage?.changedFiles || [],
+    targetProjectKey: card.targetProjectKey || SELF_TARGET_KEY,
+    expectedAction: card.executionPackage?.expectedAction || 'apply',
+  });
+  if (Boolean(card.verifyRequired || verificationPlan.required)) {
+    if (card.verifyStatus === 'running') {
+      return { ok: false, code: 'verification-running', message: 'Verification is already running for this package.' };
+    }
+    if (['failed', 'blocked'].includes(card.verifyStatus)) {
+      return { ok: false, code: 'verification-failed', message: card.lastVerificationSummary || 'Verification failed and must be rerun.' };
+    }
+    if (card.verifyStatus !== 'passed') {
+      return { ok: false, code: 'verification-required', message: card.lastVerificationSummary || 'Verification must pass before apply can run.' };
+    }
+    if (verificationPlan.signature && card.verifiedSignature !== verificationPlan.signature) {
+      return { ok: false, code: 'verification-stale', message: 'Verification is stale for this package and must be rerun.' };
+    }
+  }
+  if (card.applyStatus === 'applying') {
+    return { ok: false, code: 'apply-running', message: 'Card is already applying.' };
+  }
+  if (card.applyStatus === 'applied') {
+    return { ok: false, code: 'apply-complete', message: 'Card has already been applied.' };
+  }
+  const validReadyState = (card.status === 'complete' && card.applyStatus === 'queued')
+    || (card.status === 'review' && card.approvalState === 'approved' && ['idle', 'failed', 'queued'].includes(card.applyStatus || 'idle'))
+    || (card.status === 'complete' && card.approvalState === 'approved' && ['idle', 'failed', 'queued'].includes(card.applyStatus || 'idle'));
+  if (!validReadyState) {
+    if (card.status === 'review' && card.approvalState !== 'approved') {
+      return { ok: false, code: 'approval-required', message: `Waiting for approval on ${card.title}.`, nextStatus: 'review', nextApprovalState: 'pending' };
+    }
+    return { ok: false, code: 'invalid-apply-state', message: 'Card is not in a valid state for apply.' };
+  }
+  if ((card.targetProjectKey || SELF_TARGET_KEY) === SELF_TARGET_KEY) {
+    const selfUpgrade = getSelfUpgradeState(workspace);
+    if (!selfUpgrade.preflight?.ok) {
+      return {
+        ok: false,
+        code: 'preflight-failed',
+        message: selfUpgrade.preflight?.summary || 'Self-upgrade preflight must pass before apply can run.',
+        nextStatus: 'review',
+        nextApprovalState: 'pending',
+      };
+    }
+    if (selfUpgrade.preflight?.taskId !== taskId) {
+      return {
+        ok: false,
+        code: 'preflight-stale',
+        message: 'Self-upgrade preflight is stale for this task and must be rerun.',
+        nextStatus: 'review',
+        nextApprovalState: 'pending',
+      };
+    }
+  }
+  return { ok: true, taskId };
+}
+
+function evaluateDeployGate({ card, workspace }) {
+  if (!card) return { ok: false, code: 'missing-card', message: 'Card not found.' };
+  if (!(card.sourceAnchorRefs || []).length) {
+    return { ok: false, code: 'missing-anchor', message: 'Card has no anchor provenance and cannot be deployed.', nextStatus: 'review', nextApprovalState: 'pending' };
+  }
+  if ((card.targetProjectKey || SELF_TARGET_KEY) !== SELF_TARGET_KEY) {
+    return { ok: false, code: 'deploy-target-invalid', message: 'Deploy only runs for ace-self packages.' };
+  }
+  const taskId = getCardTaskId(card);
+  if (!taskId) {
+    return { ok: false, code: 'missing-package', message: 'Card has no build package to deploy.' };
+  }
+  if (card.deployStatus === 'deploying') {
+    return { ok: false, code: 'deploy-running', message: 'Card is already deploying.' };
+  }
+  if (card.deployStatus === 'deployed') {
+    return { ok: false, code: 'deploy-complete', message: 'Card has already been deployed.' };
+  }
+  if (card.applyStatus !== 'applied' || card.deployStatus !== 'queued' || card.status !== 'complete') {
+    return { ok: false, code: 'invalid-deploy-state', message: 'Card is not in a valid state for deploy.' };
+  }
+  const selfUpgrade = getSelfUpgradeState(workspace);
+  if (!selfUpgrade.preflight?.ok) {
+    return {
+      ok: false,
+      code: 'preflight-failed',
+      message: selfUpgrade.preflight?.summary || 'Deploy requires a passing self-upgrade preflight.',
+      nextStatus: 'review',
+      nextApprovalState: 'pending',
+    };
+  }
+  if (selfUpgrade.preflight?.taskId !== taskId) {
+    return {
+      ok: false,
+      code: 'preflight-stale',
+      message: 'Self-upgrade preflight is stale for this task and must be rerun.',
+      nextStatus: 'review',
+      nextApprovalState: 'pending',
+    };
+  }
+  if (!selfUpgrade.apply?.ok || selfUpgrade.apply?.taskId !== taskId) {
+    return {
+      ok: false,
+      code: 'apply-stale',
+      message: 'Deploy requires a successful apply for this exact task.',
+      nextStatus: 'review',
+      nextApprovalState: 'pending',
+    };
+  }
+  return { ok: true, taskId };
+}
+
+function applyExecutorGateBlock(card = {}, gate = {}) {
+  return {
+    ...card,
+    status: gate.nextStatus || card.status,
+    approvalState: gate.nextApprovalState || card.approvalState,
+    executorBlocker: createExecutorBlocker(gate.code, gate.message),
+    riskLevel: gate.nextStatus === 'review' ? 'high' : card.riskLevel,
+    riskReasons: mergeUnique([...(card.riskReasons || []), gate.message]),
+    updatedAt: nowIso(),
+  };
+}
+
+function persistBoardWorkspace(nextWorkspace, historyType, summary = {}) {
+  const persisted = persistSpatialWorkspace(nextWorkspace);
+  appendArchitectureHistory({
+    at: nowIso(),
+    type: historyType,
+    summary,
+  });
+  return persisted;
+}
+
+function buildExecutionPackage({
+  card,
+  taskId,
+  taskDir,
+  patchPath,
+  changedFiles,
+  preflight,
+  risk,
+  provenance = null,
+  taskCache = null,
+  policy = null,
+  fixTask = null,
+  sourceFixTask = null,
+}) {
+  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  const relativePatchPath = relativeToRoot(patchPath);
+  const verificationPlan = buildVerificationPlan({
+    taskId,
+    patchPath: relativePatchPath,
+    changedFiles,
+    targetProjectKey,
+    expectedAction: risk.autoDeploy ? 'apply + deploy' : 'apply',
+  });
+  const summarizedTaskCache = taskCache ? summarizeTaskCache(taskCache) : null;
+  return {
+    status: 'ready',
+    taskId,
+    taskDir: relativeToRoot(taskDir),
+    patchPath: relativePatchPath,
+    changedFiles,
+    targetProjectKey,
+    expectedAction: risk.autoDeploy ? 'apply + deploy' : 'apply',
+    summary: `${changedFiles.length} changed file${changedFiles.length === 1 ? '' : 's'} ready for ${targetProjectKey}`,
+    preflightStatus: preflight?.status || 'idle',
+    verificationPlan,
+    provenance: provenance || createExecutionProvenance(),
+    provenanceSummary: summarizeExecutionProvenance(provenance),
+    taskCache: summarizedTaskCache,
+    taskCacheSource: summarizedTaskCache?.source || null,
+    policy: policy ? {
+      decision: policy.decision || null,
+      reasons: policy.reasons || [],
+      policy_rule_hits: policy.policy_rule_hits || [],
+      retry_count: policy.retry_count ?? null,
+      cache_status: policy.cache_status || null,
+      fix_task_created: Boolean(policy.fix_task_created),
+      fix_task_path: policy.fix_task_path || null,
+      summary: summarizeAutonomyPolicyDecision(policy),
+    } : null,
+    fixTask: fixTask ? {
+      location: fixTask.location || null,
+      jsonPath: relativeToRoot(fixTask.jsonPath),
+      markdownPath: relativeToRoot(fixTask.markdownPath),
+    } : null,
+    sourceFixTask: sourceFixTask ? {
+      taskId: sourceFixTask.taskId || null,
+      parentTaskId: sourceFixTask.parentTaskId || null,
+      location: sourceFixTask.location || null,
+      status: sourceFixTask.status || null,
+      retry_count: Number(sourceFixTask.retry_count || 0) || 0,
+      retry_limit: Number(sourceFixTask.retry_limit || 0) || 0,
+      queueKey: sourceFixTask.queueKey || null,
+      jsonPath: sourceFixTask.jsonPath || null,
+      markdownPath: sourceFixTask.markdownPath || null,
+    } : null,
+    builtAt: nowIso(),
+  };
+}
+
+function syncTeamBoardWithSelfUpgrade(workspace) {
+  const selfUpgrade = getSelfUpgradeState(workspace);
+  const board = normalizeTeamBoardState(workspace);
+  const taskId = String(selfUpgrade.taskId || '').trim();
+  if (!taskId) return workspace;
+  const healthStatus = selfUpgrade.deploy?.health?.status || selfUpgrade.deploy?.status || 'unknown';
+  const cards = board.cards.map((card) => {
+    if (String(card.builderTaskId || card.runnerTaskId || '') !== taskId) return card;
+    if (card.deployStatus === 'deploying' && ['healthy', 'ready'].includes(String(healthStatus))) {
+      return {
+        ...card,
+        status: 'complete',
+        desk: 'Executor',
+        state: 'Deployed',
+        deployStatus: 'deployed',
+        executorBlocker: clearExecutorBlocker(),
+        lastHealth: selfUpgrade.deploy?.health || null,
+        updatedAt: nowIso(),
+      };
+    }
+    if (card.deployStatus === 'deploying' && !['healthy', 'restarting', 'ready'].includes(String(healthStatus))) {
+      return {
+        ...card,
+        status: 'review',
+        desk: 'CTO',
+        state: 'Flagged',
+        deployStatus: 'flagged',
+        approvalState: 'pending',
+        executorBlocker: createExecutorBlocker('deploy-health-flagged', `Deploy health reported ${healthStatus}.`),
+        riskLevel: 'high',
+        riskReasons: [...new Set([...(card.riskReasons || []), `Deploy health reported ${healthStatus}.`])],
+        lastHealth: selfUpgrade.deploy?.health || null,
+        updatedAt: nowIso(),
+      };
+    }
+    return card;
+  });
+  return {
+    ...workspace,
+    studio: {
+      ...(workspace.studio || {}),
+      selfUpgrade,
+      teamBoard: {
+        ...board,
+        cards,
+        updatedAt: nowIso(),
+      },
+    },
+  };
+}
+
+function mergeUnique(values = []) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function buildLegacyFallbackProvenance({ action, commandLine = null, stageId = null } = {}) {
+  const normalizedAction = String(action || stageId || '').trim();
+  return createExecutionProvenance({
+    classification: 'legacy-fallback',
+    orchestration: 'unknown',
+    execution: 'legacy-fallback',
+    engine: 'legacy-runner',
+    stageIds: stageId ? [stageId] : [],
+    legacyActions: normalizedAction ? [normalizedAction] : [],
+    evidence: ['route:legacy-fallback', normalizedAction ? `action:${normalizedAction}` : null, commandLine ? `command:${commandLine}` : null].filter(Boolean),
+  });
+}
+
+function buildMixedStudioProvenance({
+  engine,
+  stageIds = [],
+  legacyActions = [],
+  evidence = [],
+  notes = [],
+} = {}) {
+  const mergedEvidence = ['route:studio', 'route:legacy-fallback', ...evidence];
+  return createExecutionProvenance({
+    classification: classifyExecutionProvenance({
+      usesLegacyFallback: legacyActions.length > 0,
+      usesStudioNative: true,
+      evidence: mergedEvidence,
+    }),
+    orchestration: 'studio',
+    execution: legacyActions.length > 0 ? 'hybrid' : 'studio-native',
+    engine: engine || 'ace-studio',
+    stageIds,
+    legacyActions,
+    nativeActions: ['studio-orchestration'],
+    evidence: mergedEvidence,
+    notes,
+  });
+}
+
+function summarizeExecutionProvenance(provenance) {
+  const normalized = provenance || createExecutionProvenance();
+  const actions = (normalized.legacyActions || []).join(', ');
+  const route = normalized.classification || 'unknown';
+  if (route === 'mixed') return `mixed | Studio orchestrates, legacy runs ${actions || 'legacy stages'}`;
+  if (route === 'legacy-fallback') return `legacy-fallback | ${actions || 'legacy runner'}`;
+  if (route === 'studio-native') return 'studio-native | no legacy fallback observed';
+  return 'unknown | provenance evidence incomplete';
+}
+
+function collectTaskArtifacts(taskDir, existingArtifacts = []) {
+  const artifacts = [...existingArtifacts];
+  if (!taskDir || !fs.existsSync(taskDir)) return mergeUnique(artifacts);
+  for (const name of fs.readdirSync(taskDir)) {
+    if (['idea.txt', 'context.md', 'plan.md', 'patch.diff', 'apply_result.json', 'agent_attribution.json', 'meta.json'].includes(name) || /^run_.+\.(log|json)$/.test(name)) {
+      artifacts.push(relativeToRoot(path.join(taskDir, name)));
+    }
+  }
+  return mergeUnique(artifacts);
+}
+
+function buildCardPrompt(card, workspace) {
+  const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
+  const fixTaskSection = buildFixTaskPromptSection(card?.sourceFixTask || card?.executionPackage?.sourceFixTask || null);
+  const promptParts = [
+    card.title,
+    handoff?.problemStatement || handoff?.summary || '',
+    fixTaskSection,
+    (card.sourceAnchorRefs || []).length ? `Anchor refs:\n${card.sourceAnchorRefs.map((anchorRef) => `- ${anchorRef}`).join('\n')}` : '',
+  ].filter(Boolean);
+  return promptParts.join('\n\n');
+}
+
+function readTaskPatchReview({ taskId, projectKey, projectPath }) {
+  const taskFolder = findTaskFolderByTaskId(taskId);
+  const taskCache = readTaskCache(ROOT, {
+    taskId,
+    taskDir: taskFolder ? path.join(TASKS_DIR, taskFolder) : null,
+    stage: 'executor',
+  });
+  const validation = taskFolder ? validateApply(projectPath, taskFolder) : {
+    ok: false,
+    taskDir: null,
+    patchPath: null,
+    changedFiles: [],
+    refusalReasons: ['Task folder not found.'],
+  };
+  let patchText = '';
+  if (taskCache.source === TASK_CACHE_SOURCE.HIT && taskCache.files?.patch?.valid) {
+    patchText = taskCache.files.patch.content;
+  } else if (validation.patchPath && fs.existsSync(validation.patchPath)) {
+    patchText = fs.readFileSync(validation.patchPath, 'utf8');
+  }
+  const patchReview = reviewSelfUpgradePatch({
+    patchText,
+    taskId,
+    projectKey,
+    projectPath,
+    rootPath: ROOT,
+  });
+  return {
+    taskFolder,
+    validation,
+    patchReview,
+    taskCache,
+    patchText,
+  };
+}
+
+function setSelfUpgradeFromBuild({ taskId, patchReview, preflight, validation }) {
+  updateSelfUpgradeState((state) => ({
+    ...state,
+    status: preflight?.ok && patchReview?.ok && validation?.ok ? 'ready-to-apply' : 'blocked',
+    taskId,
+    targetProjectKey: SELF_TARGET_KEY,
+    patchReview,
+    preflight,
+    deploy: preflight?.ok
+      ? state.deploy
+      : createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }).deploy,
+    requiresPermission: preflight?.ok ? 'none' : 'user-confirmation',
+  }));
+}
+
+function runCardBuilderPipeline(cardId) {
+  let workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card || card.status !== 'active') {
+    return { ok: false, error: 'Card is not active for builder work.', workspace };
+  }
+  if (!(card.sourceAnchorRefs || []).length) {
+    const failedWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'review',
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        status: 'failed',
+        summary: 'Card has no anchor provenance and cannot enter the builder pipeline.',
+      },
+      executorBlocker: createExecutorBlocker('missing-anchor', 'Card has no anchor provenance and cannot enter the builder pipeline.'),
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), 'Missing anchor provenance.']),
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: 'Card has no anchor provenance and cannot enter the builder pipeline.',
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-builder-unanchored', { cardId }),
+    };
+  }
+
+  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  const { projectKey, projectPath } = resolveProjectTarget(targetProjectKey);
+  const existingTaskId = String(card.builderTaskId || card.runnerTaskId || '').trim() || null;
+  const builderPreflight = buildPreLlmGuardInput({
+    requiredFiles: [
+      'brain/emergence/project_brain.md',
+      'brain/emergence/roadmap.md',
+      'brain/emergence/plan.md',
+      'brain/emergence/tasks.md',
+    ],
+    projectKey,
+    projectPath,
+    validationCommand: {
+      command: 'git',
+      args: ['--version'],
+    },
+  });
+  if (!builderPreflight.ok) {
+    try {
+      recordClassifiedFailure(ROOT, new Error(builderPreflight.blockers[0] || 'Builder preflight blocked.'), {
+        message: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+        related_stage: 'builder-preflight',
+        stage: 'builder-preflight',
+        agentId: 'builder',
+        tool: 'git',
+        projectKey,
+        component: 'builder',
+        source: 'builder-preflight',
+      });
+    } catch (error) {
+      console.warn('[WARN] failure history update failed:', error?.message || error);
+    }
+    const builderPolicy = buildAutonomyPolicyResponse({
+      rootPath: ROOT,
+      taskId: existingTaskId || cardId,
+      taskDir: null,
+      stage: 'builder',
+      action: 'build',
+      projectKey,
+      projectPath,
+      preflight: builderPreflight,
+      validationCommandExists: Boolean(builderPreflight.checks?.validationCommand?.ok !== false),
+      requiredFilesMissing: builderPreflight.checks?.requiredFiles?.missing || [],
+      repoInvalid: Boolean(builderPreflight.checks?.repoClean?.ok === false),
+      cacheStatus: null,
+      failureMessage: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+    });
+    if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+        taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+        location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+      }, {
+        status: builderPolicy.policy?.decision === 'blocked' ? 'blocked' : 're_escalated',
+        reason: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+        policy: builderPolicy.policy,
+      });
+    }
+    const failedWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      builderTaskId: existingTaskId,
+      runnerTaskId: existingTaskId,
+      status: 'review',
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        status: 'blocked',
+        taskId: existingTaskId,
+        taskDir: null,
+        patchPath: null,
+        targetProjectKey,
+        summary: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+      },
+      executorBlocker: createExecutorBlocker('preflight-blocked', builderPreflight.blockers[0] || 'Builder preflight blocked.'),
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), ...builderPreflight.blockers]),
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: builderPreflight.blockers[0] || 'Builder preflight blocked.',
+      policy: builderPolicy.policy,
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-builder-preflight-blocked', { cardId, taskId: existingTaskId }),
+    };
+  }
+  const builderProvenance = buildMixedStudioProvenance({
+    engine: 'ace-studio-builder-pipeline',
+    stageIds: ['builder', 'scan', 'manage', 'build'],
+    legacyActions: ['scan', 'manage', 'build'],
+    evidence: ['source:team-board-builder'],
+  });
+  const handoff = workspace?.studio?.handoffs?.contextToPlanner || null;
+  let taskId = existingTaskId || '';
+  let taskDir = null;
+
+  if (!taskId || !findTaskFolderByTaskId(taskId)) {
+    const task = createRunnerTaskFolder({
+      title: card.title,
+      prompt: buildCardPrompt(card, workspace),
+      handoff,
+      anchorRefs: card.sourceAnchorRefs || [],
+    });
+    taskId = task.taskId;
+    taskDir = task.taskDir;
+    workspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      builderTaskId: task.taskId,
+      runnerTaskId: task.taskId,
+      targetProjectKey,
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        status: 'building',
+        taskId: task.taskId,
+        taskDir: relativeToRoot(task.taskDir),
+        patchPath: relativeToRoot(path.join(task.taskDir, 'patch.diff')),
+        targetProjectKey,
+        provenance: builderProvenance,
+        provenanceSummary: summarizeExecutionProvenance(builderProvenance),
+      },
+      executionProvenance: builderProvenance,
+      verifyRequired: false,
+      verifyStatus: 'idle',
+      verifyRunIds: [],
+      verifyArtifacts: [],
+      lastVerificationSummary: '',
+      verifiedSignature: null,
+      approvalState: 'none',
+      applyStatus: 'idle',
+      deployStatus: 'idle',
+      executorBlocker: clearExecutorBlocker(),
+      riskLevel: 'unknown',
+      riskReasons: [],
+      updatedAt: nowIso(),
+    }));
+    workspace = persistBoardWorkspace(workspace, 'team-board-builder-start', { cardId, taskId, title: card.title });
+  } else {
+    taskDir = path.join(TASKS_DIR, findTaskFolderByTaskId(taskId));
+  }
+
+  const patchPath = taskDir ? path.join(taskDir, 'patch.diff') : null;
+  const cachedPatchExists = Boolean(patchPath && fs.existsSync(patchPath) && fs.statSync(patchPath).size > 0);
+
+  workspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => {
+    const currentTaskFlow = currentCard.taskFlow || {
+      phase: 'active',
+      assignmentState: 'assigned',
+      ownerDeskId: 'planner',
+      assigneeDeskId: 'executor',
+      sourceIntentId: currentCard.sourceIntentId || currentCard.sourceNodeId || null,
+      sourceHandoffId: currentCard.sourceHandoffId || handoff?.id || null,
+      lastTransitionAt: nowIso(),
+      lastTransitionLabel: 'Placed into active',
+      history: [],
+    };
+    return {
+      ...currentCard,
+      taskFlow: {
+        ...currentTaskFlow,
+        phase: 'handed_off',
+        assignmentState: 'claimed',
+        ownerDeskId: 'executor',
+        assigneeDeskId: 'executor',
+        lastTransitionAt: nowIso(),
+        lastTransitionLabel: 'Executor claimed task',
+        history: [
+          {
+            phase: 'handed_off',
+            assignmentState: 'claimed',
+            ownerDeskId: 'executor',
+            assigneeDeskId: 'executor',
+            label: 'Executor claimed task',
+            note: currentCard.title,
+            at: nowIso(),
+          },
+          ...(Array.isArray(currentTaskFlow.history) ? currentTaskFlow.history : []),
+        ].slice(0, 8),
+      },
+      updatedAt: nowIso(),
+    };
+  });
+  workspace = persistBoardWorkspace(workspace, 'team-board-builder-hand-off', { cardId, taskId, title: card.title });
+
+  const results = [];
+  let failedResult = null;
+  if (cachedPatchExists) {
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'team-board-builder-cache-hit',
+      summary: {
+        cardId,
+        taskId,
+        patchPath: relativeToRoot(patchPath),
+        projectKey,
+      },
+    });
+  } else {
+    for (const action of ['scan', 'manage', 'build']) {
+      const result = executeActionSync(action, {
+        taskId,
+        project: targetProjectKey,
+      });
+      results.push(result);
+      if (!result.ok) {
+        failedResult = result;
+        break;
+      }
+    }
+  }
+  const runIds = mergeUnique(results.map((result) => result.runId));
+  const runArtifacts = mergeUnique(results.flatMap((result) => result.artifacts || []));
+
+  if (failedResult) {
+    if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+        taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+        location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+      }, {
+        status: 're_escalated',
+        reason: failedResult.error || failedResult.summary || 'Builder pipeline failed.',
+      });
+    }
+    const failedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+      ...currentCard,
+      builderTaskId: taskId,
+      runnerTaskId: taskId,
+      status: 'active',
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        status: 'failed',
+        taskId,
+        taskDir: relativeToRoot(taskDir),
+        targetProjectKey,
+        summary: failedResult.error || failedResult.summary || 'Builder pipeline failed.',
+        provenance: builderProvenance,
+        provenanceSummary: summarizeExecutionProvenance(builderProvenance),
+      },
+      executionProvenance: builderProvenance,
+      verifyRequired: false,
+      verifyStatus: 'idle',
+      verifyRunIds: [],
+      verifyArtifacts: [],
+      lastVerificationSummary: '',
+      verifiedSignature: null,
+      executorBlocker: createExecutorBlocker('builder-failed', failedResult.error || failedResult.summary || 'Builder pipeline failed.'),
+      runIds: mergeUnique([...(currentCard.runIds || []), ...runIds]),
+      artifactRefs: collectTaskArtifacts(taskDir, [...(currentCard.artifactRefs || []), ...runArtifacts]),
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: failedResult.error || 'Builder pipeline failed.',
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-builder-failed', { cardId, taskId, runIds }),
+    };
+  }
+
+  const { validation, patchReview, taskCache, patchText } = readTaskPatchReview({ taskId, projectKey, projectPath });
+  const preflight = isSelfTarget(projectKey, projectPath, ROOT)
+    ? runSelfUpgradePreflight({ taskId, projectKey, projectPath, validation, patchReview })
+    : { status: 'not-required', ok: true, checks: [], summary: 'Preflight not required for this target.' };
+  const conflicts = readSpatialWorkspace()?.studio?.orchestrator?.conflicts || [];
+  const risk = assessAutoMutationRisk({
+    projectKey,
+    projectPath,
+    rootPath: ROOT,
+    changedFiles: validation.changedFiles || [],
+    preflight,
+    conflicts,
+  });
+  const riskReasons = mergeUnique([
+    ...(risk.reasons || []),
+    ...(!validation.ok ? (validation.refusalReasons || []) : []),
+    ...(!patchReview.ok ? (patchReview.refusalReasons || []) : []),
+  ]);
+  const autonomyPolicy = buildAutonomyPolicyResponse({
+    rootPath: ROOT,
+    taskId,
+    taskDir: validation.taskDir || taskDir,
+    stage: 'executor',
+    action: 'review',
+    projectKey,
+    projectPath,
+    preflight,
+    taskCache,
+    validation,
+    changedFiles: validation.changedFiles || [],
+    patchText,
+    patchValid: Boolean(validation.ok && patchReview.ok && patchText.trim()),
+    patchPath: validation.patchPath,
+    retryCount: null,
+    failureMessage: !validation.ok
+      ? (validation.refusalReasons[0] || 'Patch validation failed.')
+      : (!patchReview.ok
+        ? (patchReview.refusalReasons[0] || 'Patch review failed.')
+        : ''),
+    cacheStatus: taskCache.source === TASK_CACHE_SOURCE.HIT ? 'reused' : null,
+    failureRisky: Boolean(risk.requiresReview || risk.riskLevel === 'high'),
+  });
+  const requiresReview = Boolean(
+    risk.requiresReview
+    || !validation.ok
+    || !patchReview.ok
+    || !preflight.ok
+    || autonomyPolicy.policy.decision !== 'auto_allowed',
+  );
+  const nextRiskLevel = requiresReview && risk.riskLevel === 'low' ? 'high' : risk.riskLevel;
+  const fixTaskArtifact = autonomyPolicy.fixTask;
+  const nextPolicy = {
+    ...autonomyPolicy.policy,
+    fix_task_created: Boolean(fixTaskArtifact),
+    fix_task_path: autonomyPolicy.policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+  };
+  const nextExecutionPackage = buildExecutionPackage({
+    card,
+    taskId,
+    taskDir: validation.taskDir || taskDir,
+    patchPath: validation.patchPath || path.join(taskDir, 'patch.diff'),
+    changedFiles: validation.changedFiles || [],
+    preflight,
+    risk,
+    provenance: builderProvenance,
+    taskCache,
+    policy: nextPolicy,
+    fixTask: fixTaskArtifact,
+    sourceFixTask: card.sourceFixTask || card.executionPackage?.sourceFixTask || null,
+  });
+
+  if (isSelfTarget(projectKey, projectPath, ROOT)) {
+    setSelfUpgradeFromBuild({
+      taskId,
+      patchReview,
+      preflight,
+      validation,
+    });
+  }
+
+  const completedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+    ...currentCard,
+    builderTaskId: taskId,
+    runnerTaskId: taskId,
+    targetProjectKey,
+    status: requiresReview ? 'review' : 'complete',
+    executionPackage: nextExecutionPackage,
+    executionProvenance: builderProvenance,
+    runIds: mergeUnique([...(currentCard.runIds || []), ...runIds]),
+    artifactRefs: collectTaskArtifacts(validation.taskDir || taskDir, [...(currentCard.artifactRefs || []), ...runArtifacts]),
+    riskLevel: nextRiskLevel || 'medium',
+    riskReasons,
+    approvalState: requiresReview ? 'pending' : 'auto-approved',
+    verifyRequired: Boolean(nextExecutionPackage.verificationPlan?.required),
+    verifyStatus: nextExecutionPackage.verificationPlan?.required ? 'queued' : 'not-required',
+    verifyRunIds: [],
+    verifyArtifacts: [],
+    lastVerificationSummary: nextExecutionPackage.verificationPlan?.required
+      ? `Verification queued. ${nextExecutionPackage.verificationPlan.summary}`
+      : 'No verification required.',
+    verifiedSignature: null,
+    applyStatus: requiresReview ? 'idle' : (nextExecutionPackage.verificationPlan?.required ? 'idle' : 'queued'),
+    deployStatus: 'idle',
+    executorBlocker: requiresReview
+      ? createExecutorBlocker(
+          !preflight.ok ? 'preflight-failed' : (autonomyPolicy.policy.decision === 'escalate' ? 'policy-escalate' : (autonomyPolicy.policy.decision === 'blocked' ? 'policy-blocked' : 'approval-required')),
+          !preflight.ok
+            ? (preflight.summary || 'Self-upgrade preflight must pass before apply can run.')
+            : summarizeGateMessage([
+                ...riskReasons,
+                ...(autonomyPolicy.policy.reasons || []),
+              ], `Waiting for approval on ${currentCard.title}.`),
+        )
+      : clearExecutorBlocker(),
+    updatedAt: nowIso(),
+  }));
+
+  return {
+    ok: true,
+    taskId,
+    risk: {
+      ...risk,
+      reasons: riskReasons,
+    },
+    policy: nextPolicy,
+    workspace: persistBoardWorkspace(completedWorkspace, 'team-board-build-complete', {
+      cardId,
+      taskId,
+      changedFiles: validation.changedFiles || [],
+      riskLevel: nextRiskLevel || 'medium',
+    }),
+  };
+}
+
+async function runCardVerifyPipeline(cardId, { baseUrl = null } = {}) {
+  const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card) return { ok: false, error: 'Card not found.', workspace };
+
+  const gate = evaluateVerifyGate({ card, workspace });
+  if (gate.noop) {
+    return { ok: true, skipped: true, workspace };
+  }
+  if (!gate.ok) {
+    const blockedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => applyExecutorGateBlock(currentCard, gate)), 'team-board-verify-blocked', {
+      cardId,
+      code: gate.code,
+    });
+    return { ok: false, error: gate.message, workspace: blockedWorkspace };
+  }
+
+  const { taskId, verificationPlan } = gate;
+  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  const startedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+    ...currentCard,
+    verifyRequired: true,
+    verifyStatus: 'running',
+    verifyRunIds: [],
+    verifyArtifacts: [],
+    lastVerificationSummary: `Running verification. ${verificationPlan.summary}`,
+    verifiedSignature: null,
+    executionPackage: {
+      ...(currentCard.executionPackage || {}),
+      verificationPlan,
+    },
+    executorBlocker: clearExecutorBlocker(),
+    updatedAt: nowIso(),
+  })), 'team-board-verify-start', { cardId, taskId });
+
+  const verifyRunIds = [];
+  const commandArtifacts = [];
+  const qaRuns = [];
+  const failures = [];
+
+  for (const command of verificationPlan.commands || []) {
+    const result = executeActionSync('run', {
+      taskId,
+      project: targetProjectKey,
+      preset: command.preset,
+    });
+    verifyRunIds.push(result.runId);
+    commandArtifacts.push(...(result.artifacts || []));
+    if (!result.ok) {
+      failures.push(result.error || result.summary || `${command.label || command.preset} failed.`);
+      break;
+    }
+  }
+
+  if (!failures.length) {
+    for (const scenario of verificationPlan.qaScenarios || []) {
+      const qaRun = await startBrowserQARun({
+        baseUrl,
+        scenario: scenario.scenario,
+        mode: scenario.mode || 'observation',
+        trigger: 'executor-verification',
+        prompt: card.title,
+        linked: { cardId },
+      });
+      qaRuns.push(qaRun);
+      verifyRunIds.push(`qa:${qaRun.id}`);
+      if (qaRun?.verdict === 'failed') {
+        failures.push(`QA scenario ${scenario.scenario} failed.`);
+        break;
+      }
+    }
+  }
+
+  const verifyArtifacts = collectVerificationArtifacts({
+    commandArtifacts,
+    qaRuns,
+  });
+
+  if (failures.length) {
+    const failedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+      ...currentCard,
+      verifyRequired: true,
+      verifyStatus: 'failed',
+      verifyRunIds: mergeUnique([...(currentCard.verifyRunIds || []), ...verifyRunIds]),
+      verifyArtifacts: mergeUnique([...(currentCard.verifyArtifacts || []), ...verifyArtifacts]),
+      lastVerificationSummary: summarizeGateMessage(failures, 'Verification failed.'),
+      verifiedSignature: null,
+      executorBlocker: createExecutorBlocker('verification-failed', summarizeGateMessage(failures, 'Verification failed.')),
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), summarizeGateMessage(failures, 'Verification failed.')]),
+      updatedAt: nowIso(),
+    })), 'team-board-verify-failed', { cardId, taskId });
+    return {
+      ok: false,
+      error: summarizeGateMessage(failures, 'Verification failed.'),
+      workspace: failedWorkspace,
+    };
+  }
+
+  const verifiedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => {
+    const approvalState = currentCard.approvalState || 'none';
+    const canQueueApply = currentCard.status === 'complete'
+      || (currentCard.status === 'review' && approvalState === 'approved');
+    return {
+      ...currentCard,
+      verifyRequired: true,
+      verifyStatus: 'passed',
+      verifyRunIds: mergeUnique([...(currentCard.verifyRunIds || []), ...verifyRunIds]),
+      verifyArtifacts: mergeUnique([...(currentCard.verifyArtifacts || []), ...verifyArtifacts]),
+      lastVerificationSummary: `Verification passed. ${verificationPlan.summary}`,
+      verifiedSignature: verificationPlan.signature,
+      applyStatus: canQueueApply ? 'queued' : currentCard.applyStatus,
+      executionPackage: {
+        ...(currentCard.executionPackage || {}),
+        verificationPlan,
+      },
+      executorBlocker: clearExecutorBlocker(),
+      updatedAt: nowIso(),
+    };
+  }), 'team-board-verify-complete', { cardId, taskId });
+
+  return {
+    ok: true,
+    workspace: verifiedWorkspace,
+  };
+}
+
+function runCardApplyPipeline(cardId, { approvedByUser = false } = {}) {
+  const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card) return { ok: false, error: 'Card not found.', workspace };
+  const gate = evaluateApplyGate({ card, workspace });
+  const taskId = gate.taskId || getCardTaskId(card);
+  const taskFolder = taskId ? findTaskFolderByTaskId(taskId) : null;
+  const taskDir = taskFolder ? path.join(TASKS_DIR, taskFolder) : null;
+  const targetProjectKey = card.targetProjectKey || SELF_TARGET_KEY;
+  const { projectKey, projectPath } = resolveProjectTarget(targetProjectKey);
+  const taskReview = taskId ? readTaskPatchReview({ taskId, projectKey, projectPath }) : {
+    taskFolder: null,
+    validation: {
+      ok: false,
+      taskDir: null,
+      patchPath: null,
+      changedFiles: [],
+      refusalReasons: ['Task folder not found.'],
+    },
+    patchReview: {
+      ok: false,
+      refusalReasons: ['Task folder not found.'],
+    },
+    taskCache: readTaskCache(ROOT, { taskId: taskId || null, taskDir: null, stage: 'executor' }),
+    patchText: '',
+  };
+  const { validation, patchReview, taskCache, patchText } = taskReview;
+  const applyProvenance = mergeExecutionProvenance(
+    card.executionPackage?.provenance || card.executionProvenance || null,
+    buildMixedStudioProvenance({
+      engine: 'ace-studio-apply-pipeline',
+      stageIds: ['apply'],
+      legacyActions: ['apply'],
+      evidence: ['source:team-board-apply'],
+    }),
+  );
+  const selfUpgrade = getSelfUpgradeState(workspace);
+  const policySurface = buildAutonomyPolicyResponse({
+    rootPath: ROOT,
+    taskId,
+    taskDir,
+    stage: 'apply',
+    action: 'apply',
+    projectKey,
+    projectPath,
+    preflight: isSelfTarget(projectKey, projectPath, ROOT) ? selfUpgrade.preflight : null,
+    taskCache,
+    validation,
+    changedFiles: validation.changedFiles || [],
+    patchText,
+    patchValid: Boolean(validation.ok && patchReview.ok && patchText.trim()),
+    patchPath: validation.patchPath,
+    failureMessage: !validation.ok
+      ? (validation.refusalReasons[0] || 'Patch validation failed.')
+      : (!patchReview.ok
+        ? (patchReview.refusalReasons[0] || 'Patch review failed.')
+        : gate.message || ''),
+    cacheStatus: taskCache.source === TASK_CACHE_SOURCE.HIT ? 'reused' : null,
+    failureRisky: gate.code !== 'approval-required',
+  });
+  const policy = policySurface.policy;
+  const fixTaskArtifact = policySurface.fixTask;
+  const approvalBypassAllowed = policy.decision === 'auto_allowed';
+
+  if (!gate.ok && !(gate.code === 'approval-required' && approvalBypassAllowed)) {
+    const blockedReason = policy.decision === 'auto_allowed' ? gate.message : summarizeAutonomyPolicyDecision(policy);
+    const blockerCode = policy.decision === 'auto_allowed'
+      ? gate.code
+      : (policy.decision === 'escalate' ? 'policy-escalate' : 'policy-blocked');
+    if (taskDir) {
+      writeTaskApplyResult(taskDir, buildTaskApplyResultRecord({
+        taskId,
+        taskDir,
+        projectKey: targetProjectKey,
+        patchPath: taskDir ? path.join(taskDir, 'patch.diff') : null,
+        ok: false,
+        status: 'blocked',
+        result: null,
+        error: blockedReason,
+        branch: null,
+        commit: null,
+        policy,
+        fixTask: fixTaskArtifact,
+        sourceFixTask: card.sourceFixTask || card.executionPackage?.sourceFixTask || null,
+      }), { recordFailure: false });
+    }
+    if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+        taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+        location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+      }, {
+        status: policy.decision === 'blocked' ? 'blocked' : 're_escalated',
+        reason: blockedReason,
+        policy,
+      });
+    }
+    const blockedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'review',
+      approvalState: 'pending',
+      applyStatus: 'blocked',
+      executionProvenance: applyProvenance,
+      executionPackage: currentCard.executionPackage
+        ? {
+            ...currentCard.executionPackage,
+            policy: {
+              ...policy,
+              fix_task_created: Boolean(fixTaskArtifact),
+              fix_task_path: policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+            },
+            fixTask: fixTaskArtifact
+              ? {
+                  location: fixTaskArtifact.location || null,
+                  jsonPath: relativeToRoot(fixTaskArtifact.jsonPath),
+                  markdownPath: relativeToRoot(fixTaskArtifact.markdownPath),
+                }
+              : currentCard.executionPackage.fixTask,
+          }
+        : currentCard.executionPackage,
+      executorBlocker: createExecutorBlocker(blockerCode, blockedReason),
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), blockedReason, ...(policy.reasons || [])]),
+      updatedAt: nowIso(),
+    })), 'team-board-apply-blocked', {
+      cardId,
+      code: blockerCode,
+      taskId,
+    });
+    return {
+      ok: false,
+      error: blockedReason,
+      policy,
+      workspace: blockedWorkspace,
+    };
+  }
+  const applyingWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+    ...currentCard,
+    status: 'complete',
+    approvalState: currentCard.approvalState === 'approved'
+      ? 'approved'
+      : (approvedByUser || approvalBypassAllowed ? 'auto-approved' : currentCard.approvalState),
+    applyStatus: 'applying',
+    executorBlocker: clearExecutorBlocker(),
+    executionPackage: currentCard.executionPackage
+      ? {
+          ...currentCard.executionPackage,
+          policy: {
+            ...policy,
+            fix_task_created: Boolean(fixTaskArtifact),
+            fix_task_path: policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+          },
+          fixTask: fixTaskArtifact
+            ? {
+                location: fixTaskArtifact.location || null,
+                jsonPath: relativeToRoot(fixTaskArtifact.jsonPath),
+                markdownPath: relativeToRoot(fixTaskArtifact.markdownPath),
+              }
+            : currentCard.executionPackage.fixTask,
+        }
+      : currentCard.executionPackage,
+    updatedAt: nowIso(),
+  }));
+  persistBoardWorkspace(applyingWorkspace, 'team-board-apply-start', { cardId, taskId });
+
+  const result = executeActionSync('apply', {
+    taskId,
+    project: targetProjectKey,
+    confirmApply: true,
+    confirmOverride: true,
+    autoApproved: !approvedByUser || approvalBypassAllowed,
+  });
+  writeTaskApplyResult(taskDir, buildTaskApplyResultRecord({
+    taskId,
+    taskDir,
+    projectKey: targetProjectKey,
+    patchPath: taskDir ? path.join(taskDir, 'patch.diff') : null,
+    ok: Boolean(result.ok),
+    status: result.ok ? 'passed' : 'failed',
+    result: result.ok ? {
+      runId: result.runId || null,
+      artifacts: result.artifacts || [],
+      meta: result.meta || null,
+    } : null,
+    error: result.ok ? null : (result.error || 'Apply failed.'),
+    branch: result.meta?.branch || null,
+    commit: result.meta?.commit || null,
+    policy,
+    fixTask: fixTaskArtifact,
+    sourceFixTask: card.sourceFixTask || card.executionPackage?.sourceFixTask || null,
+  }));
+
+  if (!result.ok) {
+    if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+      finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+        taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+        location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+      }, {
+        status: 're_escalated',
+        reason: result.error || 'Apply failed.',
+        policy,
+      });
+    }
+    const failedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'review',
+      approvalState: 'pending',
+      applyStatus: 'failed',
+      executionProvenance: applyProvenance,
+      executorBlocker: createExecutorBlocker('apply-failed', result.error || 'Apply failed.'),
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), result.error || 'Apply failed.']),
+      executionPackage: currentCard.executionPackage
+        ? {
+            ...currentCard.executionPackage,
+            policy: {
+              ...policy,
+              fix_task_created: Boolean(fixTaskArtifact),
+              fix_task_path: policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+            },
+            fixTask: fixTaskArtifact
+              ? {
+                  location: fixTaskArtifact.location || null,
+                  jsonPath: relativeToRoot(fixTaskArtifact.jsonPath),
+                  markdownPath: relativeToRoot(fixTaskArtifact.markdownPath),
+                }
+              : currentCard.executionPackage.fixTask,
+          }
+        : currentCard.executionPackage,
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: result.error || 'Apply failed.',
+      policy,
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-apply-failed', { cardId, taskId, runId: result.runId }),
+    };
+  }
+
+  const nextDeployStatus = card.targetProjectKey === SELF_TARGET_KEY
+    && card.executionPackage?.expectedAction === 'apply + deploy'
+    ? 'queued'
+    : 'idle';
+  const appliedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+    ...currentCard,
+    status: 'complete',
+    approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : 'auto-approved'),
+    applyStatus: 'applied',
+    deployStatus: nextDeployStatus,
+    executionProvenance: applyProvenance,
+    executionPackage: currentCard.executionPackage
+      ? {
+          ...currentCard.executionPackage,
+          provenance: applyProvenance,
+          provenanceSummary: summarizeExecutionProvenance(applyProvenance),
+          policy: {
+            ...policy,
+            fix_task_created: Boolean(fixTaskArtifact),
+            fix_task_path: policy.fix_task_path || fixTaskArtifact?.jsonPath || null,
+          },
+          fixTask: fixTaskArtifact
+            ? {
+                location: fixTaskArtifact.location || null,
+                jsonPath: relativeToRoot(fixTaskArtifact.jsonPath),
+                markdownPath: relativeToRoot(fixTaskArtifact.markdownPath),
+              }
+            : currentCard.executionPackage.fixTask,
+        }
+      : currentCard.executionPackage,
+    executorBlocker: clearExecutorBlocker(),
+    branch: result.meta?.branch || currentCard.branch || null,
+    commit: result.meta?.commit || currentCard.commit || null,
+    runIds: mergeUnique([...(currentCard.runIds || []), result.runId]),
+    artifactRefs: mergeUnique([...(currentCard.artifactRefs || []), ...(result.artifacts || [])]),
+    updatedAt: nowIso(),
+  }));
+  if (card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId) {
+    finalizeFixTask(ROOT, card.sourceFixTask || card.executionPackage?.sourceFixTask || {
+      taskId: card.sourceFixTaskId || card.executionPackage?.sourceFixTaskId,
+      location: card.sourceFixTaskLocation || card.executionPackage?.sourceFixTask?.location || 'queue',
+    }, {
+      status: 'resolved',
+      reason: 'Apply completed successfully.',
+      policy,
+      followupTaskId: taskId,
+      followupTaskDir: taskDir,
+    });
+  }
+  return {
+    ok: true,
+    result,
+    policy,
+    workspace: persistBoardWorkspace(appliedWorkspace, 'team-board-apply-complete', {
+      cardId,
+      taskId,
+      branch: result.meta?.branch || null,
+      commit: result.meta?.commit || null,
+    }),
+  };
+}
+
+function listChangedFilesFromPatch(patchText) {
+  const files = new Set();
+  const lines = patchText.split(/\r?\n/);
+  for (const line of lines) {
+    if (line.startsWith('diff --git ')) {
+      const parts = line.split(' ');
+      if (parts.length >= 4) {
+        const target = parts[3].replace(/^b\//, '');
+        if (target && target !== 'dev/null') files.add(target);
+      }
+    }
+  }
+  return [...files];
+}
+
+function validateApply(projectPath, taskFolderName) {
+  const taskDir = path.join(TASKS_DIR, taskFolderName);
+  const patchPath = path.join(taskDir, 'patch.diff');
+  const result = {
+    ok: true,
+    validation: [],
+    warnings: [],
+    refusalReasons: [],
+    changedFiles: [],
+    branchName: `ace/task-${taskFolderName.slice(0, 4)}-apply`,
+    taskDir,
+    patchPath,
+  };
+
+  if (!fs.existsSync(taskDir)) {
+    result.ok = false;
+    result.refusalReasons.push('Task folder not found.');
+    return result;
+  }
+
+  if (!fs.existsSync(patchPath)) {
+    result.ok = false;
+    result.refusalReasons.push('patch.diff is missing. Run build first.');
+    return result;
+  }
+
+  const patchText = fs.readFileSync(patchPath, 'utf8');
+  if (!patchText.trim()) {
+    result.ok = false;
+    result.refusalReasons.push('patch.diff is empty.');
+  } else {
+    result.changedFiles = listChangedFilesFromPatch(patchText);
+    if (result.changedFiles.length === 0) {
+      result.ok = false;
+      result.refusalReasons.push('Patch has no detectable changed files.');
+    }
+  }
+
+  if (!projectPath || !fs.existsSync(projectPath)) {
+    result.ok = false;
+    result.refusalReasons.push('Project path does not exist.');
+    return result;
+  }
+
+  const gitCheck = spawnSyncSafe('git', ['rev-parse', '--is-inside-work-tree'], projectPath);
+  if (gitCheck.code !== 0 || gitCheck.stdout.trim() !== 'true') {
+    result.ok = false;
+    result.refusalReasons.push('Target project is not a git repository.');
+    return result;
+  }
+
+  const status = spawnSyncSafe('git', ['status', '--porcelain', '--untracked-files=no'], projectPath);
+  if (status.code !== 0) {
+    result.ok = false;
+    result.refusalReasons.push('Unable to inspect git status.');
+  } else if (status.stdout.trim()) {
+    result.ok = false;
+    result.refusalReasons.push('Repository has uncommitted tracked changes.');
+    result.warnings.push(status.stdout.trim());
+  }
+
+  const gitignorePath = path.join(projectPath, '.gitignore');
+  const required = ['ui/node_modules/', '**/node_modules/', 'npm-debug.log*'];
+  const gitignore = fs.existsSync(gitignorePath) ? fs.readFileSync(gitignorePath, 'utf8') : '';
+  const missing = required.filter((rule) => !gitignore.includes(rule));
+  if (missing.length) {
+    result.ok = false;
+    result.refusalReasons.push('Required .gitignore rules are missing.');
+    result.warnings.push(...missing.map((r) => `Missing rule: ${r}`));
+  }
+
+  result.validation.push(result.ok ? 'Validation passed.' : 'Validation failed.');
+  return result;
+}
+
+function spawnSyncSafe(cmd, args, cwd) {
+  try {
+    const out = require('child_process').spawnSync(cmd, args, {
+      cwd,
+      encoding: 'utf8',
+      windowsHide: true,
+    });
+    return {
+      code: out.status ?? 1,
+      stdout: out.stdout || '',
+      stderr: out.stderr || '',
+    };
+  } catch (err) {
+    return { code: 1, stdout: '', stderr: String(err) };
+  }
+}
+
+function createRun(action, payload) {
+  const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const run = {
+    runId,
+    action,
+    payload,
+    status: 'running',
+    startedAt: Date.now(),
+    finishedAt: null,
+    durationMs: null,
+    exitCode: null,
+    logs: [],
+    artifacts: [],
+    meta: {},
+    listeners: new Set(),
+  };
+  runStore.set(runId, run);
+  runOrder.push(runId);
+  while (runOrder.length > MAX_RUN_HISTORY) {
+    const oldest = runOrder.shift();
+    if (oldest) runStore.delete(oldest);
+  }
+  return run;
+}
+
+function pushRunEvent(run, event) {
+  run.logs.push(event);
+  for (const res of run.listeners) {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  }
+}
+
+function finishRun(run, exitCode, extra = {}) {
+  run.exitCode = exitCode;
+  run.status = exitCode === 0 ? 'success' : 'error';
+  run.finishedAt = Date.now();
+  run.durationMs = run.finishedAt - run.startedAt;
+  run.meta = { ...run.meta, ...extra };
+  pushRunEvent(run, { type: 'done', status: run.status, exitCode, durationMs: run.durationMs, meta: run.meta, artifacts: run.artifacts });
+  for (const res of run.listeners) {
+    res.end();
+  }
+  run.listeners.clear();
+}
+
+function runCommandForAction(action, body) {
+  return buildLegacyRunnerCommand({
+    rootPath: ROOT,
+    action,
+    taskId: body.taskId,
+    project: body.project,
+    model: body.model,
+  });
+}
+
+function extractApplySummary(stdout) {
+  const branch = (stdout.match(/Apply complete on branch:\s*(.+)/) || [])[1] || null;
+  const commit = (stdout.match(/Commit:\s*(.+)/) || [])[1] || null;
+  return { branch: branch ? branch.trim() : null, commit: commit ? commit.trim() : null };
+}
+
+function executeActionSync(action, body) {
+  const taskId = String(body.taskId || '').trim();
+  const project = String(body.project || '').trim();
+  if (!LEGACY_FALLBACK_ACTIONS.includes(action)) {
+    throw new Error('Invalid legacy fallback action.');
+  }
+  if (!project || !taskId) {
+    throw new Error('project and taskId are required.');
+  }
+
+  const command = runCommandForAction(action, body);
+  const run = createRun(action, body);
+  run.meta.command = command.commandLine;
+  pushRunEvent(run, { type: 'status', message: `Started ${action}...`, timestamp: nowIso() });
+  const result = runLegacyFallbackSync({
+    action,
+    taskId,
+    project,
+    model: body.model,
+  }, {
+    rootPath: ROOT,
+  });
+  if (result.stdout) pushRunEvent(run, { type: 'stdout', text: result.stdout, timestamp: nowIso() });
+  if (result.stderr) pushRunEvent(run, { type: 'stderr', text: result.stderr, timestamp: nowIso() });
+  finishRun(run, result.code || 0);
+  const combinedOutput = [result.stdout || '', result.stderr || ''].filter(Boolean).join('\n').trim();
+  return {
+    ok: (result.code || 0) === 0,
+    runId: run.runId,
+    exitCode: result.code || 0,
+    status: run.status,
+    meta: run.meta,
+    artifacts: run.artifacts,
+    provenance: buildLegacyFallbackProvenance({
+      action,
+      stageId: action,
+      commandLine: command.commandLine,
+    }),
+    summary: summarizeCommandOutput(combinedOutput || run.logs.map((entry) => entry.message || entry.text || '').join('\n')),
+    error: (result.code || 0) === 0 ? null : summarizeCommandOutput(combinedOutput || 'Command failed.'),
+  };
+}
+
+function evaluateSpatialBootHealth() {
+  try {
+    const workspace = readSpatialWorkspace();
+    const systemGraph = workspace?.graphs?.system || null;
+    const worldGraph = workspace?.graphs?.world || null;
+    const orchestratorState = workspace?.studio?.orchestrator || workspace?.orchestrator || null;
+    const teamBoardState = workspace?.studio?.teamBoard || null;
+    const mutationGateState = workspace?.mutationGate || null;
+    const rsgState = workspace?.rsg || null;
+    const clientBootContract = evaluateStudioClientBootContract(ROOT);
+    const hasGraphShape = Boolean(
+      systemGraph
+      && worldGraph
+      && Array.isArray(systemGraph.nodes)
+      && Array.isArray(systemGraph.edges)
+      && Array.isArray(worldGraph.nodes)
+      && Array.isArray(worldGraph.edges)
+      && mutationGateState
+      && orchestratorState
+      && teamBoardState
+      && rsgState,
+    );
+    const ok = hasGraphShape && clientBootContract.ok;
+    const reason = clientBootContract.ok
+      ? (hasGraphShape ? '' : 'Spatial runtime shape check failed.')
+      : clientBootContract.reason;
+    spatialBootHealthSnapshot = {
+      checked: true,
+      ok,
+      safeMode: !ok,
+      reason,
+      checkedAt: nowIso(),
+      failureClass: clientBootContract.failure_class || (!hasGraphShape ? 'runtime_shape_failure' : null),
+      failureStage: clientBootContract.failure_stage || (!hasGraphShape ? 'runtime_shape' : null),
+      asset: clientBootContract.asset || null,
+      httpStatus: clientBootContract.http_status || null,
+      clientBootContract,
+      stateShape: hasGraphShape
+        ? {
+            systemNodes: systemGraph.nodes.length,
+            systemEdges: systemGraph.edges.length,
+            worldNodes: worldGraph.nodes.length,
+            worldEdges: worldGraph.edges.length,
+            graphLayers: Object.keys(workspace?.graphs || {}).length,
+          }
+        : null,
+    };
+  } catch (error) {
+    spatialBootHealthSnapshot = {
+      checked: true,
+      ok: false,
+      safeMode: true,
+      reason: String(error.message || error),
+      checkedAt: nowIso(),
+      failureClass: 'runtime_shape_failure',
+      failureStage: 'runtime_shape',
+      asset: null,
+      httpStatus: null,
+      clientBootContract: evaluateStudioClientBootContract(ROOT),
+      stateShape: null,
+    };
+  }
+  return spatialBootHealthSnapshot;
+}
+
+function getHealthSnapshot() {
+  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
+  const selfUpgrade = getSelfUpgradeState(workspace);
+  const bootRuntime = ensureBootRecoveryRuntimeStatus();
+  const cachedBootHealth = spatialBootHealthSnapshot && typeof spatialBootHealthSnapshot === 'object'
+    ? spatialBootHealthSnapshot
+    : null;
+  const bootHealth = bootRuntime.bootHealth && typeof bootRuntime.bootHealth === 'object'
+    ? bootRuntime.bootHealth
+    : (cachedBootHealth || {
+        checked: false,
+        ok: null,
+        safeMode: Boolean(bootRuntime.safeMode),
+        reason: bootRuntime.currentStep || 'Boot health evaluation deferred until server is live.',
+        checkedAt: bootRuntime.updatedAt || bootRuntime.startedAt || nowIso(),
+        failureClass: bootRuntime.lastError ? 'boot_recovery_pending' : null,
+        failureStage: bootRuntime.phase || 'server_live',
+        asset: null,
+        httpStatus: null,
+        clientBootContract: null,
+        stateShape: null,
+      });
+
+  return {
+    ok: true,
+    pid: process.pid,
+    startedAt: SERVER_STARTED_AT,
+    safeMode: Boolean(bootHealth.safeMode),
+    bootHealth,
+    dependencies: getAceDependencyRegistrySnapshot(),
+    selfUpgrade: {
+      status: selfUpgrade.status,
+      deploy: selfUpgrade.deploy,
+    },
+  };
+}
+
+function runDeferredBootRecovery() {
+  updateBootRecoveryRuntimeStatus({
+    phase: 'recovery_running',
+    currentStep: 'Evaluating spatial boot health.',
+    recoveryFinished: false,
+    recoveryBlocked: false,
+    repairInProgress: false,
+    lastError: null,
+  });
+
+  Promise.resolve()
+    .then(async () => {
+      let bootHealth = evaluateSpatialBootHealth();
+
+      updateBootRecoveryRuntimeStatus({
+        safeMode: Boolean(bootHealth.safeMode),
+        bootHealth,
+        currentStep: 'Reconciling UI boot integrity repair.',
+      });
+
+      const uiBootRepair = reconcileUiBootIntegrityRepair({
+        bootHealth,
+        attemptRepair: true,
+      });
+
+      const repairInProgress = Boolean(uiBootRepair?.repairResult?.job);
+
+      updateBootRecoveryRuntimeStatus({
+        repairInProgress,
+        currentStep: repairInProgress
+          ? 'UI boot repair attempt applied; re-evaluating boot health.'
+          : 'UI boot repair reconciliation complete.',
+      });
+
+      if (uiBootRepair?.repairResult?.job?.lane === UI_BOOT_INTEGRITY_LANE) {
+        bootHealth = evaluateSpatialBootHealth();
+      }
+
+      if (bootHealth.safeMode) {
+        console.warn(`[${nowIso()}] spatial boot health failed; safe mode enabled: ${bootHealth.reason}`);
+      }
+
+      updateBootRecoveryRuntimeStatus({
+        safeMode: Boolean(bootHealth.safeMode),
+        bootHealth,
+        repairInProgress: false,
+        currentStep: 'Marking server healthy-on-boot metadata.',
+      });
+
+      markServerHealthyOnBoot();
+
+      updateBootRecoveryRuntimeStatus({
+        currentStep: 'Reconciling pending throughput sessions.',
+      });
+
+      await reconcilePendingThroughputSessions({
+        rootPath: ROOT,
+        loadWorkspace: () => readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
+        persistWorkspace: (workspace) => persistSpatialWorkspace(workspace),
+        getRunsSnapshot: () => getRunsSnapshot(),
+        getHealthSnapshot: () => getHealthSnapshot(),
+      });
+
+      const bootRecoveryOptions = {
+        bootHealth,
+        bootRepair: uiBootRepair,
+        baseUrl: `http://127.0.0.1:${port}`,
+        intervalMs: Number(process.env.ACE_QA_LEAD_INTERVAL_MS || 20 * 60 * 1000),
+        autoRun: process.env.ACE_QA_LEAD_AUTORUN !== '0',
+        currentTask: bootHealth.safeMode
+          ? `QA boot recovery: ${bootHealth.reason || bootHealth.failureClass || 'boot gate triggered'}`
+          : 'QA proof-of-life, browser pass, lane canaries, and loop audit',
+        runType: bootHealth.safeMode ? 'boot_recovery' : 'scheduled_cycle',
+      };
+
+      if (bootHealth.safeMode) {
+        updateBootRecoveryRuntimeStatus({
+          currentStep: 'Running immediate QA boot recovery cycle.',
+          repairInProgress: true,
+        });
+
+        await runQaLeadCycle(ROOT, {
+          ...bootRecoveryOptions,
+          runId: `qa_boot_recovery_${Date.now()}`,
+        });
+      }
+
+      updateBootRecoveryRuntimeStatus({
+        currentStep: 'Starting QA lead automation scheduler.',
+      });
+
+      startQaLeadAutomation(ROOT, bootRecoveryOptions);
+
+      updateBootRecoveryRuntimeStatus({
+        phase: bootHealth.safeMode ? 'degraded' : 'recovered',
+        safeMode: Boolean(bootHealth.safeMode),
+        bootHealth,
+        currentStep: bootHealth.safeMode
+          ? 'Deferred boot recovery completed with unresolved safe mode.'
+          : 'Deferred boot recovery completed successfully.',
+        repairInProgress: false,
+        recoveryFinished: true,
+        recoveryBlocked: Boolean(bootHealth.safeMode),
+      });
+    })
+    .catch((error) => {
+      updateBootRecoveryRuntimeStatus({
+        phase: 'blocked',
+        safeMode: true,
+        currentStep: 'Deferred boot recovery failed.',
+        lastError: String(error?.message || error || 'Deferred boot recovery failed.'),
+        repairInProgress: false,
+        recoveryFinished: true,
+        recoveryBlocked: true,
+      });
+
+      console.warn(`[${nowIso()}] deferred boot recovery failed: ${error.message}`);
+    });
+}
+
+function reconcileUiBootIntegrityRepair(options = {}) {
+  const bootHealth = options.bootHealth || evaluateSpatialBootHealth();
+  const bridgeResult = maybeBridgeUiBootIntegrityInvestigations(ROOT, {
+    bootHealth,
+    checkedAt: nowIso(),
+    limit: options.limit || 10,
+  });
+  if (bridgeResult.investigation) {
+    maybeBridgeOpenInvestigationsToRepairJobs(ROOT, {
+      investigations: readOpenQaInvestigations(ROOT, options.limit || 10),
+    });
+  }
+  let repairResult = null;
+  if (options.attemptRepair !== false) {
+    const repairJob = readQaRepairJobs(ROOT).find((job) => (
+      job.lane === UI_BOOT_INTEGRITY_LANE
+      && job.status === 'open'
+      && Number(job.attempt_count || 0) < Number(job.max_attempts || 1)
+    )) || null;
+    if (repairJob) {
+      repairResult = runQaRepairAttempt(ROOT, {
+        repairJobId: repairJob.id,
+      });
+    }
+  }
+  return {
+    bootHealth,
+    bridgeResult,
+    repairResult,
+  };
+}
+
+function requestSelfUpgradeDeploy({ confirmRestart, simulate = false } = {}) {
+  const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
+  const selfUpgrade = getSelfUpgradeState(workspace);
+
+  if (!confirmRestart) {
+    return { ok: false, error: 'Deploy requires explicit restart confirmation.', selfUpgrade };
+  }
+  if (!selfUpgrade.preflight?.ok) {
+    return { ok: false, error: 'Deploy requires a passing self-upgrade preflight.', selfUpgrade };
+  }
+  if (!selfUpgrade.apply?.ok) {
+    return { ok: false, error: 'Deploy requires a successful self-upgrade apply.', selfUpgrade };
+  }
+
+  const restartingWorkspace = updateSelfUpgradeState((state) => ({
+    ...state,
+    status: 'deploying',
+    deploy: {
+      ...state.deploy,
+      status: simulate ? 'healthy' : 'restarting',
+      requestedAt: nowIso(),
+      restartedAt: simulate ? nowIso() : state.deploy?.restartedAt || null,
+      health: {
+        status: simulate ? 'healthy' : 'restarting',
+        pid: process.pid,
+        startedAt: SERVER_STARTED_AT,
+      },
+    },
+    requiresPermission: 'none',
+  }));
+
+  return {
+    ok: true,
+    restarting: !simulate,
+    deferredRestart: !simulate,
+    scheduleRestart: !simulate,
+    selfUpgrade: getSelfUpgradeState(restartingWorkspace),
+    healthUrl: '/api/health',
+  };
+}
+
+function runCardDeployPipeline(cardId, { approvedByUser = false } = {}) {
+  const workspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card) return { ok: false, error: 'Card not found.', workspace };
+  const gate = evaluateDeployGate({ card, workspace });
+  if (!gate.ok) {
+    const blockedWorkspace = persistBoardWorkspace(mutateTeamBoardCard(workspace, cardId, (currentCard) => applyExecutorGateBlock(currentCard, gate)), 'team-board-deploy-blocked', {
+      cardId,
+      code: gate.code,
+    });
+    return { ok: false, error: gate.message, workspace: blockedWorkspace };
+  }
+
+  const deployingWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+    ...currentCard,
+    status: 'complete',
+    approvalState: currentCard.approvalState === 'approved' ? 'approved' : (approvedByUser ? 'approved' : currentCard.approvalState),
+    deployStatus: 'deploying',
+    executorBlocker: clearExecutorBlocker(),
+    updatedAt: nowIso(),
+  }));
+  persistBoardWorkspace(deployingWorkspace, 'team-board-deploy-start', { cardId, taskId: card.builderTaskId || card.runnerTaskId || null });
+
+  const result = requestSelfUpgradeDeploy({
+    confirmRestart: true,
+    simulate: process.env.ACE_DISABLE_SELF_RESTART === '1' || process.env.NODE_ENV === 'test',
+  });
+
+  if (!result.ok) {
+    const failedWorkspace = mutateTeamBoardCard(readSpatialWorkspace(), cardId, (currentCard) => ({
+      ...currentCard,
+      status: 'review',
+      approvalState: 'pending',
+      deployStatus: 'flagged',
+      executorBlocker: createExecutorBlocker('deploy-failed', result.error || 'Deploy failed.'),
+      riskLevel: 'high',
+      riskReasons: mergeUnique([...(currentCard.riskReasons || []), result.error || 'Deploy failed.']),
+      updatedAt: nowIso(),
+    }));
+    return {
+      ok: false,
+      error: result.error || 'Deploy failed.',
+      workspace: persistBoardWorkspace(failedWorkspace, 'team-board-deploy-failed', { cardId }),
+    };
+  }
+
+  let nextWorkspace = syncTeamBoardWithSelfUpgrade(readSpatialWorkspace());
+  nextWorkspace = mutateTeamBoardCard(nextWorkspace, cardId, (currentCard) => ({
+    ...currentCard,
+    status: 'complete',
+    deployStatus: result.restarting ? 'deploying' : 'deployed',
+    executorBlocker: clearExecutorBlocker(),
+    lastHealth: result.selfUpgrade?.deploy?.health || currentCard.lastHealth || null,
+    updatedAt: nowIso(),
+  }));
+  const persistedWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-deploy-complete', {
+    cardId,
+    restarting: result.restarting,
+  });
+  if (result.scheduleRestart) {
+    setTimeout(scheduleSelfRestart, 120);
+  }
+  return {
+    ok: true,
+    result,
+    workspace: persistedWorkspace,
+  };
+}
+
+async function pumpAutomatedTeamBoard(workspace = null) {
+  if (teamBoardAutomationRunning) {
+    return readSpatialWorkspace();
+  }
+  teamBoardAutomationRunning = true;
+  try {
+    let nextWorkspace = syncTeamBoardWithSelfUpgrade(workspace || readSpatialWorkspace());
+    const board = normalizeTeamBoardState(nextWorkspace);
+    const reviewApprovedCard = board.cards.find((card) => card.status === 'review' && card.approvalState === 'approved') || null;
+    const activeCard = board.cards.find((card) => card.status === 'active') || null;
+    const queuedVerifyCard = board.cards.find((card) => (
+      card.executionPackage?.status === 'ready'
+      && card.verifyRequired
+      && ['queued', 'failed', 'blocked'].includes(card.verifyStatus)
+      && !['missing-anchor', 'preflight-failed', 'preflight-stale', 'builder-failed'].includes(card.executorBlocker?.code)
+    )) || null;
+    const queuedApplyCard = board.cards.find((card) => (
+      card.status === 'complete'
+      && card.applyStatus === 'queued'
+      && (!card.verifyRequired || (card.verifyStatus === 'passed' && (!card.executionPackage?.verificationPlan?.signature || card.verifiedSignature === card.executionPackage.verificationPlan.signature)))
+    )) || null;
+    const queuedDeployCard = board.cards.find((card) => card.status === 'complete' && card.deployStatus === 'queued') || null;
+
+    if (queuedDeployCard) {
+      nextWorkspace = runCardDeployPipeline(queuedDeployCard.id).workspace || nextWorkspace;
+    } else if (queuedApplyCard) {
+      nextWorkspace = runCardApplyPipeline(queuedApplyCard.id).workspace || nextWorkspace;
+    } else if (queuedVerifyCard) {
+      nextWorkspace = (await runCardVerifyPipeline(queuedVerifyCard.id)).workspace || nextWorkspace;
+    } else if (reviewApprovedCard) {
+      const approvedWorkspace = mutateTeamBoardCard(nextWorkspace, reviewApprovedCard.id, (card) => ({
+        ...card,
+        status: 'complete',
+        applyStatus: card.verifyRequired && card.verifyStatus !== 'passed' ? 'idle' : 'queued',
+        updatedAt: nowIso(),
+      }));
+      nextWorkspace = persistBoardWorkspace(approvedWorkspace, 'team-board-approval-queued', { cardId: reviewApprovedCard.id });
+    } else if (activeCard && activeCard.executionPackage?.status !== 'ready') {
+      nextWorkspace = runCardBuilderPipeline(activeCard.id).workspace || nextWorkspace;
+    }
+    return nextWorkspace;
+  } finally {
+    teamBoardAutomationRunning = false;
+  }
+}
+
+async function pumpAutomatedTeamBoardAsync(workspace = null) {
+  let nextWorkspace = normalizeSpatialWorkspaceShape(syncTeamBoardWithSelfUpgrade(workspace || readSpatialWorkspace()));
+  const plannerCycle = await maybeRunPlannerWorker(nextWorkspace, { mode: 'auto' });
+  nextWorkspace = plannerCycle.workspace || nextWorkspace;
+  return await pumpAutomatedTeamBoard(nextWorkspace);
+}
+
+app.get('/api/dashboard', (req, res) => {
+  const anchorBundle = getAnchorBundle();
+  const files = {};
+  const errors = [];
+  for (const file of dashboardFiles) {
+    const data = readDashboardFile(file);
+    files[file] = data;
+    if (data.error) errors.push({ file, error: data.error });
+  }
+  const drift = buildRuntimeDrift(anchorBundle, readSpatialWorkspace());
+  res.json({
+    refreshedAt: nowIso(),
+    refreshIntervalMs: Number(process.env.DASHBOARD_REFRESH_MS || REFRESH_MS_DEFAULT),
+    state: {
+      ...anchorBundle.managerSummary,
+      drift_flags: uniqueStrings(drift.map((flag) => flag.id)),
+    },
+    manager: anchorBundle.managerSummary,
+    truthSources: anchorBundle.truthSources,
+    drift,
+    anchorRefs: anchorBundle.anchorRefs,
+    files,
+    errors,
+  });
+});
+
+app.get('/api/task-artifacts', (req, res) => {
+  const taskId = String(req.query?.taskId || '').trim();
+  res.json({
+    ok: true,
+    ...readTaskArtifactStatus(taskId),
+  });
+});
+
+app.get('/api/projects', (req, res) => {
+  res.json({
+    projects: listProjectsForUi(),
+    config: resolveTargetsConfig(ROOT),
+  });
+});
+
+app.post('/api/projects/run', async (req, res) => {
+  const body = req.body || {};
+  const projectKey = String(body.project || body.name || '').trim();
+  if (!projectKey) {
+    return res.status(400).json({ error: 'project is required.' });
+  }
+  try {
+    const launch = await launchProject(projectKey);
+    return res.json({
+      ok: true,
+      project: launch.project,
+      projectType: launch.projectType,
+      url: launch.url,
+      supportedOrigin: launch.supportedOrigin || launch.project?.supportedOrigin || null,
+      reused: Boolean(launch.reused),
+      runtime: {
+        pid: launch.pid,
+        port: launch.port,
+        command: launch.command,
+        launchedAt: launch.launchedAt,
+      },
+    });
+  } catch (error) {
+    const message = String(error.message || error);
+    const status = /Unknown project/i.test(message)
+      ? 404
+      : /Only the topdown-slice static web prototype/i.test(message)
+        ? 400
+        : 500;
+    return res.status(status).json({ error: message });
+  }
+});
+
+app.get('/api/tasks', (req, res) => {
+  res.json({ tasks: getTaskFolders() });
+});
+
+app.get('/api/presets', (req, res) => {
+  const data = readJsonSafe(COMMANDS_FILE, {});
+  const descriptions = {
+    ui_start: 'Starts the UI with npm start (long-running dev server).',
+    ui_node: 'Runs the Node Express UI server directly with node server.js.',
+    runner_compile: 'Checks runner Python syntax with py_compile.',
+  };
+  const presets = Object.entries(data || {}).map(([name, spec]) => ({
+    name,
+    description: descriptions[name] || 'Runs a configured local command preset.',
+    cwd: spec.cwd || '.',
+    timeout_s: spec.timeout_s || null,
+    cmd: spec.cmd || [],
+  }));
+  res.json({ presets });
+});
+
+app.get('/api/runs', (req, res) => {
+  res.json({ runs: getRunsSnapshot() });
+});
+
+  app.get('/api/health', (req, res) => {
+    res.json(getHealthSnapshot());
+  });
+
+  app.get('/api/health', (req, res) => {
+    res.json(getHealthSnapshot());
+  });
+  
+  app.get('/api/spatial/boot-status', async (req, res) => {
+    await refreshAceDependencyRegistryIfStale({
+      rootPath: ROOT,
+      attemptLaunch: false,
+    }).catch(() => {});
+    res.json({
+      ok: true,
+      status: ensureBootRecoveryRuntimeStatus(),
+    });
+  });
+  
+  app.get('/api/spatial/safe-mode/status', (req, res) => {
+    const runtimeStatus = ensureBootRecoveryRuntimeStatus();
+    res.json({
+      ok: true,
+      snapshot: buildSafeModeSnapshot(ROOT, {
+        healthSnapshot: getHealthSnapshot(),
+      }),
+      bootStatus: runtimeStatus,
+    });
+  });
+  
+  app.get('/api/spatial/recovery-daemon/state', (req, res) => {
+    res.json({
+      ok: true,
+      daemon: buildBootRecoveryDaemonState(ROOT),
+    });
+  });
+
+  app.post('/api/spatial/recovery-daemon/start', (req, res) => {
+    try {
+      res.json({
+        ok: true,
+        daemon: runAutonomousBootRecoveryDaemon(ROOT),
+      });
+    } catch (error) {
+      res.status(500).json({
+        ok: false,
+        error: String(error.message || error),
+      });
+    }
+  });
+
+  app.post('/api/spatial/safe-mode/diagnosis', (req, res) => {
+    try {
+      res.json(runSafeModeDiagnosis(ROOT));
+    } catch (error) {
+      res.status(500).json({ error: String(error.message || error) });
+    }
+  });
+
+  app.post('/api/spatial/safe-mode/constrained-fix-pass', (req, res) => {
+    try {
+      res.json(runConstrainedSafeModeFixPass(ROOT));
+    } catch (error) {
+      res.status(500).json({ error: String(error.message || error) });
+    }
+  });
+
+  app.post('/api/qa/run', async (req, res) => {
+    try {
+      const body = req.body || {};
+      const report = await runStructuredQA({
+        rootPath: ROOT,
+        existingApp: app,
+        allowedPaths: body.allowedPaths,
+        fixture: body.fixture,
+      });
+      writeStructuredQAReport(ROOT, report, 'latest');
+      const evaluatorCycle = await maybeRunEvaluatorCycle({
+        rootPath: ROOT,
+        workspace: readSpatialWorkspace(ROOT),
+        scorecards: buildStructuredQAScorecardBundle(report).cards,
+        comparisonTarget: 'system_runtime',
+        contextSummary: report.summary || 'Structured QA report completed.',
+      });
+      res.json({
+        ...report,
+        evaluator: evaluatorCycle?.evaluation || null,
+        runtime: await refreshSpatialRuntime({ persist: true }),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'fail',
+        summary: 'qa lead crashed',
+        failures: [
+          {
+            desk: 'qa',
+            test: 'suite_boot',
+            reason: String(error.message || error),
+          },
+        ],
+      });
+    }
+  });
+
+async function buildQaMcpPreflightResponse({
+  rootPath = ROOT,
+  probeUrl = null,
+  timeoutMs = null,
+} = {}) {
+  const normalizedProbeUrl = String(probeUrl || '').trim() || 'http://127.0.0.1:5051/run_test';
+  const structuredReport = readStructuredQAReport(rootPath, 'latest');
+  const payload = await buildQaMcpPreflightCheck({
+    qaState: structuredReport ? { structuredReport } : null,
+    probeUrl: normalizedProbeUrl,
+    timeoutMs: Math.max(250, Number(timeoutMs) || 1500),
+  });
+  return {
+    ...payload,
+    launcher_status: readQaMcpLauncherStatus(),
+  };
+}
+
+function bootQaMcpHelperIfNeeded(rootPath = ROOT) {
+  Promise.resolve()
+    .then(() => refreshQaMcpHelperDependencyStatus({
+      rootPath,
+      attemptLaunch: true,
+    }))
+    .then((status) => {
+      if (status?.launcherStatus?.summary) {
+        console.log(`[${nowIso()}] ${status.launcherStatus.summary}`);
+      }
+    })
+    .catch((error) => {
+      console.warn(`[${nowIso()}] qa mcp launcher failed: ${String(error?.message || error)}`);
+    });
+}
+
+app.get('/api/qa/mcp/preflight', async (req, res) => {
+  try {
+    const probeUrl = String(req.query?.probeUrl || req.query?.probe_url || '').trim() || 'http://127.0.0.1:5051/run_test';
+    const timeoutMs = req.query?.timeoutMs || req.query?.timeout_ms || 1500;
+    const payload = await buildQaMcpPreflightResponse({
+      rootPath: ROOT,
+      probeUrl,
+      timeoutMs,
+    });
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({
+      source: 'qa_mcp_preflight',
+      verdict: 'bad_response',
+      summary: String(error?.message || error),
+      error: String(error?.message || error),
+    });
+  }
+});
+
+app.get('/api/qa/external-probe-check', async (req, res) => {
+  try {
+    const qaState = buildQAStatePayload(ROOT, {
+      externalValidation: latestExternalValidationSnapshot,
+    });
+    const checkedAt = nowIso();
+    const payload = await buildExternalQaProbeCheckPayload({
+      qaState,
+      probeUrl: 'http://127.0.0.1:5051/run_test',
+      timeoutMs: 1500,
+      investigationRootPath: ROOT,
+    });
+    latestExternalValidationSnapshot = buildExternalValidationSnapshot({
+      probeCheck: payload,
+      checkedAt,
+    });
+    maybeBridgeOpenInvestigationsToRepairJobs(ROOT, {
+      investigations: readOpenQaInvestigations(ROOT, 10),
+    });
+    await maybeGenerateQaResearchNotesForInvestigations(ROOT, readOpenQaInvestigations(ROOT, 10));
+    const repairLoop = buildQaRepairLoopState(ROOT);
+    const researchState = buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10));
+    res.status(payload.ok ? 200 : 503).json({
+      ...payload,
+      externalValidation: latestExternalValidationSnapshot,
+      repairLoop,
+      researchState,
+    });
+  } catch (error) {
+    const reason = String(error?.message || error);
+    latestExternalValidationSnapshot = buildExternalValidationSnapshot({
+      probeCheck: null,
+      checkedAt: nowIso(),
+    });
+    res.status(500).json({
+      ok: false,
+      external_probe: null,
+      internal_truth: {
+        status: 'missing',
+        source: 'data/spatial/qa/structured/latest.json',
+        timestamp: null,
+        details: 'Structured QA report unavailable.',
+      },
+      comparison: {
+        status_match: false,
+        freshness_known: false,
+        notes: [reason],
+      },
+      error: {
+        kind: 'route_error',
+        message: reason,
+      },
+      externalValidation: latestExternalValidationSnapshot,
+    });
+  }
+});
+
+app.get('/api/qa/repair-loop/state', (req, res) => {
+  reconcileUiBootIntegrityRepair({ attemptRepair: false });
+  canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
+    rootPath: ROOT,
+    freshness: 'live',
+    qaView: 'repair_loop_state',
+  }).then((payload) => {
+    res.json(payload);
+  }).catch((error) => {
+    res.status(500).json({
+      ok: false,
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  });
+});
+
+app.get('/api/qa/lead/state', (req, res) => {
+  canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
+    rootPath: ROOT,
+    freshness: 'live',
+    qaView: 'lead_state',
+  }).then((payload) => {
+    res.json(payload);
+  }).catch((error) => {
+    res.status(500).json({
+      ok: false,
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  });
+});
+
+app.post('/api/qa/lead/run', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const baseUrl = String(body.baseUrl || body.base_url || `http://127.0.0.1:${port}`).trim() || `http://127.0.0.1:${port}`;
+    const probeUrl = String(body.probeUrl || body.probe_url || '').trim() || undefined;
+    const runId = String(body.runId || body.run_id || '').trim() || `qa_lead_manual_${Date.now()}`;
+    const currentTask = String(body.currentTask || body.current_task || '').trim() || undefined;
+    const runType = String(body.runType || body.run_type || 'manual_cycle').trim() || 'manual_cycle';
+    const startedAt = String(body.startedAt || body.started_at || '').trim() || undefined;
+    const cycle = await runQaLeadCycle(ROOT, {
+      baseUrl,
+      probeUrl,
+      runId,
+      currentTask,
+      runType,
+      startedAt,
+    });
+    const qaState = buildQAStatePayload(ROOT, {
+      externalValidation: latestExternalValidationSnapshot || undefined,
+    });
+    const qaLeadOutput = readQaLeadOutput(ROOT);
+    const outputFeed = readQaOutputFeed(ROOT);
+    return res.json({
+      ok: true,
+      run: cycle,
+      qaLeadState: qaLeadOutput.state,
+      latestRun: qaLeadOutput.latestRun,
+      qaLeadPosture: qaState?.qaLeadPosture || null,
+      outputFeed,
+    });
+  } catch (error) {
+    const reason = String(error?.message || error);
+    return res.status(500).json({
+      ok: false,
+      error: reason,
+      reason,
+    });
+  }
+});
+
+app.get('/api/qa/session-summary', (req, res) => {
+  try {
+    const qaState = buildQAStatePayload(ROOT, {
+      externalValidation: latestExternalValidationSnapshot || undefined,
+    });
+    const qaLeadOutput = readQaLeadOutput(ROOT);
+    const outputFeed = readQaOutputFeed(ROOT);
+    const qaLeadPosture = buildQaLeadPosture({
+      qaLead: qaLeadOutput.state,
+      qaLeadLatestRun: qaLeadOutput.latestRun,
+      structuredReport: qaState.structuredReport || null,
+      structuredSummary: qaState.structuredSummary || null,
+      externalValidation: qaState.externalValidation || latestExternalValidationSnapshot || null,
+      repairLoop: qaState.repairLoop || null,
+      openInvestigations: qaState.openInvestigations || [],
+      browserRuns: qaState.browserRuns || [],
+      generatedAt: nowIso(),
+    });
+    res.json({
+      ok: true,
+      ...buildQaSessionSummary({
+        qaState,
+        qaLeadOutput,
+        qaLeadPosture,
+        outputFeed,
+        generatedAt: nowIso(),
+      }),
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      source: 'qa_session_summary',
+      error: String(error?.message || error),
+    });
+  }
+});
+
+app.get('/api/spatial/qa/output-feed', (req, res) => {
+  try {
+    res.json(readQaOutputFeed(ROOT));
+  } catch (error) {
+    res.status(500).json({
+      items: [],
+      error: String(error?.message || error),
+    });
+  }
+});
+
+app.post('/api/qa/repair-loop/run', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const repairResult = runQaRepairAttempt(ROOT, {
+      repairJobId: String(body.repairJobId || body.repair_job_id || '').trim() || null,
+      investigationId: String(body.investigationId || body.investigation_id || '').trim() || null,
+      attemptId: String(body.attemptId || body.attempt_id || '').trim() || null,
+    });
+    await maybeGenerateQaResearchNotesForInvestigations(ROOT, readOpenQaInvestigations(ROOT, 10));
+    const repairLoop = buildQaRepairLoopState(ROOT);
+    const researchState = buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10));
+    res.status(repairResult.ok ? 200 : 404).json({
+      ...repairResult,
+      repairLoop,
+      researchState,
+    });
+  } catch (error) {
+    const reason = String(error?.message || error);
+    res.status(500).json({
+      ok: false,
+      verdict: 'inconclusive',
+      reason,
+      error: reason,
+      repairLoop: buildQaRepairLoopState(ROOT),
+      researchState: buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10)),
+    });
+  }
+});
+
+app.post('/api/llm/test', async (req, res) => {
+  const body = req.body || {};
+  const prompt = String(body.prompt || '').trim();
+  if (!prompt) {
+    return res.status(400).json({ error: 'prompt is required.' });
+  }
+  const requestedModel = String(body.model || 'qwen3.5-9b').trim() || 'qwen3.5-9b';
+  try {
+    const result = await callOllamaGenerate({
+      prompt,
+      model: requestedModel,
+      host: String(body.host || '').trim() || undefined,
+      timeoutMs: Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : undefined,
+      expectJson: false,
+    });
+    return res.json({
+      ok: true,
+      status: 'live',
+      backend: 'ollama',
+      model: requestedModel,
+      prompt,
+      text: result.text,
+    });
+  } catch (error) {
+    const reason = String(error.message || error);
+    return res.status(500).json({
+      ok: false,
+      status: classifyLlmFailureStatus(reason, false),
+      backend: 'ollama',
+      model: requestedModel,
+      error: reason,
+    });
+  }
+});
+
+app.post('/api/spatial/preflight', (req, res) => {
+  const body = req.body || {};
+  const stage = String(body.stage || body.action || '').trim() || 'rebuild';
+  const taskId = String(body.taskId || '').trim();
+  const project = String(body.project || '').trim();
+  const projectTarget = project ? resolveProjectTarget(project) : { projectKey: null, projectPath: null };
+  const surface = evaluateStagePreflightSurface({
+    stage,
+    taskId,
+    projectKey: projectTarget.projectKey || null,
+    projectPath: projectTarget.projectPath || null,
+  });
+  res.json(surface);
+});
+
+app.post('/api/spatial/self-upgrade/preflight', (req, res) => {
+  const body = req.body || {};
+  const taskId = String(body.taskId || '').trim();
+  const requestedProject = String(body.project || SELF_TARGET_KEY).trim() || SELF_TARGET_KEY;
+  if (!taskId) {
+    return res.status(400).json({ error: 'taskId is required for self-upgrade preflight.' });
+  }
+
+  const { projectKey, projectPath } = resolveProjectTarget(requestedProject);
+  if (!isSelfTarget(projectKey, projectPath, ROOT)) {
+    return res.status(400).json({ error: 'Self-upgrade preflight only runs against the ACE self target.' });
+  }
+
+  const taskFolder = getTaskFolders().find((t) => t.startsWith(taskId.slice(0, 4)));
+  if (!taskFolder) {
+    return res.status(400).json({ error: 'Task folder not found for self-upgrade preflight.' });
+  }
+
+  const validation = validateApply(projectPath, taskFolder);
+  const patchText = fs.existsSync(validation.patchPath) ? fs.readFileSync(validation.patchPath, 'utf8') : '';
+  const patchReview = reviewSelfUpgradePatch({
+    patchText,
+    taskId,
+    projectKey,
+    projectPath,
+    rootPath: ROOT,
+  });
+  const preflight = runSelfUpgradePreflight({
+    taskId,
+    projectKey,
+    projectPath,
+    validation,
+    patchReview,
+  });
+  const policySurface = buildAutonomyPolicyResponse({
+    rootPath: ROOT,
+    taskId,
+    taskDir: validation.taskDir,
+    stage: 'self-upgrade',
+    action: 'apply',
+    projectKey,
+    projectPath,
+    preflight,
+    taskCache: readTaskCache(ROOT, {
+      taskId,
+      taskDir: validation.taskDir,
+      stage: 'executor',
+    }),
+    validation,
+    changedFiles: validation.changedFiles || [],
+    patchText,
+    patchValid: Boolean(validation.ok && patchReview.ok && patchText.trim()),
+    patchPath: validation.patchPath,
+    failureMessage: !validation.ok
+      ? (validation.refusalReasons[0] || 'Self-upgrade validation failed.')
+      : (!patchReview.ok
+        ? (patchReview.refusalReasons[0] || 'Self-upgrade patch review failed.')
+        : preflight.summary || ''),
+    cacheStatus: null,
+    failureRisky: !preflight.ok || !patchReview.ok || !validation.ok,
+  });
+  const workspace = updateSelfUpgradeState((state) => ({
+    ...state,
+    status: preflight.ok ? 'ready-to-apply' : 'blocked',
+    taskId,
+    targetProjectKey: SELF_TARGET_KEY,
+    patchReview,
+    preflight,
+    deploy: preflight.ok ? state.deploy : createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }).deploy,
+    requiresPermission: preflight.ok ? 'user-confirmation' : 'none',
+  }));
+  const guard = buildGuardSurfacePayload({ stage: 'self-upgrade', preflight });
+  res.json({
+    ok: preflight.ok,
+    stage: guard.stage,
+    guard_status: guard.guard_status,
+    guard_reason: guard.guard_reason,
+    guard_reasons: guard.guard_reasons,
+    cache_status: guard.cache_status,
+    checks: guard.checks,
+    policy: policySurface.policy,
+    selfUpgrade: getSelfUpgradeState(workspace),
+  });
+});
+
+app.post('/api/spatial/self-upgrade/deploy', (req, res) => {
+  const body = req.body || {};
+  const result = requestSelfUpgradeDeploy({
+    confirmRestart: Boolean(body.confirmRestart),
+    simulate: body.simulate === true || process.env.ACE_DISABLE_SELF_RESTART === '1' || process.env.NODE_ENV === 'test',
+  });
+  if (!result.ok) {
+    return res.status(400).json({
+      error: result.error,
+      selfUpgrade: result.selfUpgrade,
+    });
+  }
+  res.json(result);
+  if (result.scheduleRestart) {
+    setTimeout(scheduleSelfRestart, 80);
+  }
+});
+
+app.post('/api/execute', (req, res) => {
+  const body = req.body || {};
+  const action = String(body.action || '').toLowerCase();
+  const project = String(body.project || '').trim();
+  const taskId = String(body.taskId || '').trim();
+
+  if (!LEGACY_FALLBACK_ACTIONS.includes(action)) {
+    return res.status(400).json({ error: `Invalid legacy fallback action. Supported actions: ${LEGACY_FALLBACK_ACTIONS.join(', ')}.` });
+  }
+  if (!project || !taskId) {
+    return res.status(400).json({ error: 'project and taskId are required.' });
+  }
+
+  const run = createRun(action, body);
+  let stream;
+  try {
+    stream = runLegacyFallbackStream({
+      action,
+      taskId,
+      project,
+      model: body.model,
+    }, {
+      rootPath: ROOT,
+      onStdout: (text) => pushRunEvent(run, { type: 'stdout', text, timestamp: nowIso() }),
+      onStderr: (text) => pushRunEvent(run, { type: 'stderr', text, timestamp: nowIso() }),
+    });
+  } catch (err) {
+    return res.status(400).json({ error: String(err.message || err) });
+  }
+  const child = stream.child;
+  run.meta.command = stream.command.commandLine;
+
+  pushRunEvent(run, { type: 'status', message: `Started legacy fallback ${action}...`, timestamp: nowIso() });
+
+  child.on('close', (code) => {
+    finishRun(run, code || 0);
+  });
+
+  child.on('error', (err) => {
+    pushRunEvent(run, { type: 'stderr', text: String(err), timestamp: nowIso() });
+    finishRun(run, 1);
+  });
+
+  res.json({ ok: true, runId: run.runId });
+});
+
+app.get('/api/stream/:runId', (req, res) => {
+  const run = runStore.get(req.params.runId);
+  if (!run) return res.status(404).end();
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  for (const event of run.logs) {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  }
+
+  if (run.status === 'running') {
+    run.listeners.add(res);
+  } else {
+    res.write(`data: ${JSON.stringify({ type: 'done', status: run.status, exitCode: run.exitCode, durationMs: run.durationMs, meta: run.meta, artifacts: run.artifacts })}\n\n`);
+    res.end();
+  }
+
+  req.on('close', () => run.listeners.delete(res));
+});
+
+app.post('/api/open-task-folder', (req, res) => {
+  const taskId = String((req.body || {}).taskId || '').trim();
+  const folder = getTaskFolders().find((t) => t.startsWith(taskId.slice(0, 4)));
+  if (!folder) return res.status(404).json({ error: 'Task folder not found.' });
+  const full = path.join(TASKS_DIR, folder);
+
+  try {
+    if (process.platform === 'win32') {
+      spawn('cmd', ['/c', 'start', '', full], { detached: true, windowsHide: true });
+    } else if (process.platform === 'darwin') {
+      spawn('open', [full], { detached: true });
+    } else {
+      spawn('xdg-open', [full], { detached: true });
+    }
+    res.json({ ok: true, path: full });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+app.post('/api/add/idea', (req, res) => {
+  const text = String((req.body || {}).text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Idea text is required.' });
+  const target = path.join(ROOT, 'idea.txt');
+  fs.appendFileSync(target, `[${nowIso()}] ${text}${os.EOL}`, 'utf8');
+  res.json({ ok: true, path: target });
+});
+
+app.post('/api/add/task', (req, res) => {
+  const title = String((req.body || {}).title || '').trim();
+  if (!title) return res.status(400).json({ error: 'Task title is required.' });
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'task';
+  const tasks = getTaskFolders();
+  const last = tasks.length ? Number(tasks[tasks.length - 1].slice(0, 4)) : 0;
+  const id = String(last + 1).padStart(4, '0');
+  const folder = `${id}-${slug}`;
+  const full = path.join(TASKS_DIR, folder);
+  fs.mkdirSync(full, { recursive: true });
+  fs.writeFileSync(path.join(full, 'context.md'), `# Task ${id}: ${title}\n\n## Context\n- Describe intent here.\n`, 'utf8');
+  fs.writeFileSync(path.join(full, 'patch.diff'), '', 'utf8');
+  res.json({ ok: true, taskId: id, folder });
+});
+
+app.post('/api/add/project', (req, res) => {
+  const name = String((req.body || {}).name || '').trim();
+  const projectPath = String((req.body || {}).path || '').trim();
+  if (!name || !projectPath) return res.status(400).json({ error: 'name and path are required.' });
+  if (!fs.existsSync(projectPath)) return res.status(400).json({ error: 'Project path does not exist.' });
+
+  const projects = loadProjectsMap();
+  projects[name] = projectPath;
+  writeTargetsConfig(projects);
+  res.json({ ok: true, project: { key: name, path: projectPath } });
+});
+
+app.post('/api/ta/candidates', (req, res) => {
+  const body = req.body || {};
+
+  try {
+    validateGap(body.gap);
+  } catch (error) {
+    return res.status(400).json({ error: String(error.message || error) });
+  }
+
+  return res.json({
+    candidates: generateCandidates(body.gap),
+  });
+});
+
+app.get('/api/ta/department', async (req, res) => {
+  try {
+    const state = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+    res.json(await buildTaDepartmentPayload(state, {
+      workspace: readSpatialWorkspace(),
+      rootPath: ROOT,
+    }));
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/ta/hire-requests', (req, res) => {
+  try {
+    const queue = readTaHireRequestQueue(ROOT);
+    res.json({
+      source: '/api/ta/hire-requests',
+      freshness: 'derived',
+      generatedAt: nowIso(),
+      queue,
+      summary: summarizeTaHireRequestQueue(queue),
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.post('/api/ta/hire', async (req, res) => {
+  const body = req.body || {};
+  try {
+    const candidate = normalizeTaCandidateCard(body.candidate || body.profile || body);
+    const deskId = String(body.deskId || candidate.hiredDeskId || candidate.primaryDeskTarget || '').trim();
+    const hireRequestId = String(body.hireRequestId || body.requestId || '').trim() || null;
+    if (!deskId) throw new Error('deskId is required.');
+    if (!candidate.deskTargets.includes(deskId)) {
+      throw new Error(`deskId "${deskId}" is not one of the candidate desk targets.`);
+    }
+    const currentState = normalizeTaDepartmentState(readJsonSafe(TA_DEPARTMENT_FILE, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+    if (currentState.hiredCandidates.some((entry) => entry.id === candidate.id)) {
+      throw new Error(`Candidate "${candidate.id}" is already hired.`);
+    }
+    const hiredCandidate = {
+      ...candidate,
+      hiredAt: nowIso(),
+      hiredDeskId: deskId,
+      contractLocked: true,
+    };
+    const nextState = {
+      ...currentState,
+      hiredCandidates: [...currentState.hiredCandidates, hiredCandidate],
+      updatedAt: nowIso(),
+      lastGeneratedGap: body.gapDescription || currentState.lastGeneratedGap || null,
+    };
+    writeJson(TA_DEPARTMENT_FILE, nextState);
+    if (hireRequestId) {
+      markTaHireRequestFulfilled(ROOT, {
+        hireRequestId,
+        resolvedBy: body.resolvedBy || 'ta',
+        fulfilledCandidate: hiredCandidate,
+        notes: [body.notes || body.gapDescription || `Hired ${hiredCandidate.name} for ${deskId}.`].filter(Boolean),
+        resolution: {
+          status: 'fulfilled',
+          summary: `TA fulfilled ${hireRequestId} by hiring ${hiredCandidate.name} for ${deskId}.`,
+          hiredDeskId: deskId,
+        },
+      });
+    }
+    res.status(201).json({
+      ok: true,
+      hiredCandidate,
+      department: await buildTaDepartmentPayload(nextState, {
+        workspace: readSpatialWorkspace(),
+        rootPath: ROOT,
+      }),
+    });
+  } catch (error) {
+    res.status(400).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/spatial/workspace', async (req, res) => {
+  canonicalTruthAccess.resolveProjectionResponse('workspace', {
+    persist: true,
+    freshness: 'live',
+  }).then((payload) => {
+    res.json(payload);
+  }).catch((error) => {
+    res.status(500).json({
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  });
+});
+
+app.get('/api/spatial/governed-loop/contract', (req, res) => {
+  try {
+    const workspace = readSpatialWorkspace();
+    res.json(buildGovernedLoopContract(workspace));
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  }
+});
+
+app.get('/api/spatial/layout/catalog', (req, res) => {
+  res.json(buildStudioLayoutCatalog());
+});
+
+app.post('/api/spatial/layout/actions', (req, res) => {
+  const action = String(req.body?.action || '').trim();
+  if (!action) {
+    res.status(400).json({ error: 'action is required' });
+    return;
+  }
+  try {
+    const currentWorkspace = readSpatialWorkspace();
+    const currentLayout = normalizeStudioLayoutSchema(currentWorkspace?.studio?.layout || {});
+    let mutationResult = null;
+    const updatedWorkspace = updateSpatialWorkspace((workspace) => {
+      const workspaceLayout = normalizeStudioLayoutSchema(workspace?.studio?.layout || {});
+      if (action === 'add_department') {
+        mutationResult = addDepartmentToLayout(workspaceLayout, {
+          templateId: req.body?.templateId,
+          returnResult: true,
+        });
+      } else if (action === 'add_desk') {
+        mutationResult = addDeskToLayout(workspaceLayout, {
+          departmentId: req.body?.departmentId,
+          templateId: req.body?.templateId,
+          returnResult: true,
+        });
+      } else {
+        throw new Error(`Unsupported layout action: ${action}`);
+      }
+      if (mutationResult?.ok === false && mutationResult?.validation?.status === 'block') {
+        return workspace;
+      }
+      return {
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          layout: mutationResult?.layout || workspaceLayout,
+        },
+      };
+    });
+    const nextLayout = updatedWorkspace?.studio?.layout || currentLayout || createDefaultStudioLayoutSchema();
+    const validation = mutationResult?.validation || null;
+    const createdDepartmentId = action === 'add_department' && mutationResult?.ok
+      ? nextLayout.departments.find((entry) => !currentLayout.departments.some((previous) => previous.id === entry.id))?.id || null
+      : null;
+    const createdDeskId = action === 'add_desk' && mutationResult?.ok
+      ? listStudioDeskIds(nextLayout).find((deskId) => !listStudioDeskIds(currentLayout).includes(deskId)) || null
+      : null;
+    res.json({
+      ok: mutationResult?.ok !== false,
+      action,
+      layout: nextLayout,
+      createdDepartmentId,
+      createdDeskId,
+      focusDeskId: createdDeskId,
+      validation,
+      reason: mutationResult?.ok === false ? mutationResult?.validation?.blockers?.[0]?.reason || mutationResult?.validation?.issues?.[0]?.reason || 'Dependency validation blocked.' : null,
+      catalog: buildStudioLayoutCatalog(),
+    });
+  } catch (error) {
+    res.status(400).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/spatial/desks/:deskId/properties', async (req, res) => {
+  const deskId = String(req.params.deskId || '').trim();
+  try {
+    const payload = await canonicalTruthAccess.resolveProjectionResponse('desk_properties', {
+      rootPath: ROOT,
+      persist: true,
+      freshness: 'live',
+      deskId,
+    });
+    console.debug(`[desk-properties] loaded desk=${deskId} tasks=${payload.tasks.length} modules=${payload.modules.length} reports=${payload.reports.length}`);
+    res.json(payload);
+  } catch (error) {
+    if (/Unknown desk id/i.test(String(error.message || error))) {
+      res.status(404).json({ error: 'Unknown desk id' });
+      return;
+    }
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.post('/api/spatial/desks/:deskId/actions', (req, res) => {
+  const deskId = String(req.params.deskId || '').trim();
+  const currentWorkspace = readSpatialWorkspace();
+  if (!hasStudioDesk(currentWorkspace?.studio?.layout || {}, deskId)) {
+    res.status(404).json({ error: 'Unknown desk id' });
+    return;
+  }
+  if (deskId === QA_LEAD_DESK_ID) {
+    res.status(403).json({ error: 'QA desk properties are read-only.' });
+    return;
+  }
+  const action = String(req.body?.action || '').trim();
+  if (!action) {
+    res.status(400).json({ error: 'action is required' });
+    return;
+  }
+  const isCtoDesk = deskId === 'cto-architect';
+  const isArchivistDesk = deskId === 'memory-archivist';
+  const allowedActions = new Set([
+    ...(isCtoDesk ? ['add_agent', 'assign_module', 'add_test', 'set_context', 'set_guardrails'] : []),
+    ...(isArchivistDesk ? ['archive-summary', 'snapshot-history'] : []),
+  ]);
+  if (!allowedActions.has(action)) {
+    res.status(403).json({ error: 'This desk is read-only for that action.' });
+    return;
+  }
+  if (deskId === 'memory-archivist' && (action === 'archive-summary' || action === 'snapshot-history')) {
+    try {
+      const writeback = runArchivistWriteback({
+        workspace: readSpatialWorkspace(),
+        dryRun: Boolean(req.body?.dryRun),
+        includeTasks: action !== 'snapshot-history',
+      });
+      const payload = buildDeskPropertiesPayload(readSpatialWorkspace(), deskId);
+      res.json({ ok: true, action, deskId, payload, writeback });
+    } catch (error) {
+      res.status(500).json({ error: String(error.message || error) });
+    }
+    return;
+  }
+  try {
+    const updatedWorkspace = updateSpatialWorkspace((workspace) => {
+      const current = normalizeDeskPropertiesState(workspace);
+      const nextDesk = { ...(current[deskId] || { managedAgents: [], moduleIds: [], manualTests: [], departmentContext: '', guardrails: [], contextSlices: [] }) };
+      if (action === 'add_agent') {
+        const agentId = String(req.body?.agentId || '').trim();
+        if (!agentId) throw new Error('agentId is required');
+        nextDesk.managedAgents = [...new Set([...(nextDesk.managedAgents || []), agentId])];
+      } else if (action === 'assign_module') {
+        const moduleId = String(req.body?.moduleId || '').trim();
+        if (!moduleId) throw new Error('moduleId is required');
+        const moduleExists = listModuleManifests().some((entry) => entry.id === moduleId);
+        if (!moduleExists) throw new Error(`Unknown moduleId: ${moduleId}`);
+        nextDesk.moduleIds = [...new Set([...(nextDesk.moduleIds || []), moduleId])];
+      } else if (action === 'add_test') {
+        const testId = String(req.body?.testId || '').trim();
+        if (!testId) throw new Error('testId is required');
+        nextDesk.manualTests = [
+          ...(nextDesk.manualTests || []),
+          {
+            id: testId,
+            verdict: String(req.body?.verdict || 'unknown'),
+            notes: String(req.body?.notes || ''),
+            createdAt: nowIso(),
+          },
+        ];
+      } else if (action === 'set_context') {
+        nextDesk.departmentContext = String(req.body?.context || req.body?.summary || '').trim();
+        const slices = Array.isArray(req.body?.slices) ? req.body.slices : [];
+        nextDesk.contextSlices = slices
+          .filter((entry) => entry && String(entry.summary || entry.title || entry.label || '').trim())
+          .map((entry, index) => ({
+            id: String(entry.id || `${deskId}-context-${index}`),
+            summary: String(entry.summary || entry.title || entry.label || '').trim(),
+            detail: String(entry.detail || entry.notes || '').trim(),
+          }));
+      } else if (action === 'set_guardrails') {
+        const guardrails = Array.isArray(req.body?.guardrails) ? req.body.guardrails : String(req.body?.guardrails || '').split('\n');
+        nextDesk.guardrails = guardrails.map((entry) => String(entry || '').trim()).filter(Boolean);
+      } else {
+        throw new Error(`Unsupported action: ${action}`);
+      }
+      return {
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          deskProperties: {
+            ...current,
+            [deskId]: nextDesk,
+          },
+        },
+      };
+    });
+    const payload = buildDeskPropertiesPayload(updatedWorkspace, deskId);
+    res.json({ ok: true, action, deskId, payload });
+  } catch (error) {
+    res.status(400).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/spatial/models', (req, res) => {
+  res.json({ models: listAgentModelOptions() });
+});
+
+app.post('/api/spatial/archive/writeback', (req, res) => {
+  try {
+    res.json(runArchivistWriteback({
+      workspace: readSpatialWorkspace(),
+      dryRun: Boolean(req.body?.dryRun),
+      includeTasks: req.body?.includeTasks !== false,
+    }));
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/spatial/agents/:agentId/capabilities', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  const snapshot = readAgentCapabilityProfile(ROOT, agentId);
+  if (!snapshot.exists) {
+    res.json({
+      agentId,
+      profile: null,
+      exists: false,
+      jsonPath: snapshot.filePath ? relativeToRoot(snapshot.filePath) : null,
+      markdownPath: snapshot.markdownPath ? relativeToRoot(snapshot.markdownPath) : null,
+    });
+    return;
+  }
+  res.json({
+    agentId,
+    profile: snapshot.profile,
+    exists: true,
+    jsonPath: snapshot.filePath ? relativeToRoot(snapshot.filePath) : null,
+    markdownPath: snapshot.markdownPath ? relativeToRoot(snapshot.markdownPath) : null,
+  });
+});
+
+app.post('/api/spatial/agents/:agentId/capabilities/rebuild', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  try {
+    const rebuilt = rebuildAgentCapabilityLedger(ROOT, { agentId });
+    const snapshot = readAgentCapabilityProfile(ROOT, agentId);
+    res.json({
+      agentId,
+      profile: snapshot.profile,
+      exists: snapshot.exists,
+      rebuilt,
+      jsonPath: snapshot.filePath ? relativeToRoot(snapshot.filePath) : null,
+      markdownPath: snapshot.markdownPath ? relativeToRoot(snapshot.markdownPath) : null,
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/spatial/agents/:agentId/ledger', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  if (agentId !== 'dave') {
+    res.status(404).json({ error: 'Learning ledger is available for Dave only.' });
+    return;
+  }
+  const entries = listLearningLedgerEntries(agentId);
+  res.json({
+    agentId,
+    entries,
+    stats: computeLearningLedgerStats(entries),
+  });
+});
+
+app.post('/api/spatial/agents/:agentId/ledger', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  if (agentId !== 'dave') {
+    res.status(404).json({ error: 'Learning ledger is available for Dave only.' });
+    return;
+  }
+  const body = req.body || {};
+  try {
+    const entry = writeLearningLedgerEntry(agentId, {
+      taskPrompt: String(body.taskPrompt || body.prompt || '').trim(),
+      contextRefs: Array.isArray(body.contextRefs) ? body.contextRefs.filter(Boolean) : [],
+      generatedOutput: String(body.generatedOutput || body.output || '').trim(),
+      responseStatus: String(body.responseStatus || 'live').trim(),
+      qaOutcome: String(body.qaOutcome || 'unknown').trim(),
+      qaReason: String(body.qaReason || '').trim(),
+      datasetReady: Boolean(body.datasetReady),
+      runId: String(body.runId || '').trim() || null,
+      backend: String(body.backend || DEFAULT_CONTEXT_MANAGER_BACKEND).trim() || DEFAULT_CONTEXT_MANAGER_BACKEND,
+      model: String(body.model || DEFAULT_CONTEXT_MANAGER_MODEL).trim() || DEFAULT_CONTEXT_MANAGER_MODEL,
+      tokensUsed: Number.isFinite(Number(body.tokensUsed || 0)) ? Number(body.tokensUsed) : 0,
+      durationMs: Number.isFinite(Number(body.durationMs || 0)) ? Number(body.durationMs) : 0,
+      contextAlignmentScore: Number.isFinite(Number(body.contextAlignmentScore || 0)) ? Number(body.contextAlignmentScore) : 0,
+      contextAlignmentReason: String(body.contextAlignmentReason || '').trim() || null,
+    });
+    res.status(201).json({ entry, stats: computeLearningLedgerStats(listLearningLedgerEntries(agentId)) });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.patch('/api/spatial/agents/:agentId/ledger/:entryId', (req, res) => {
+  const agentId = normalizeAgentId(req.params.agentId);
+  const entryId = String(req.params.entryId || '').trim();
+  if (agentId !== 'dave') {
+    res.status(404).json({ error: 'Learning ledger is available for Dave only.' });
+    return;
+  }
+  if (!entryId) {
+    res.status(400).json({ error: 'entryId is required.' });
+    return;
+  }
+  const body = req.body || {};
+  const patch = {
+    approvedFix: body.approvedFix ?? body.fix ?? null,
+    datasetReady: body.datasetReady ?? Boolean(body.datasetReady),
+    qaOutcome: body.qaOutcome ? String(body.qaOutcome).trim() : undefined,
+    qaReason: body.qaReason ? String(body.qaReason).trim() : undefined,
+    responseStatus: body.responseStatus ? String(body.responseStatus).trim() : undefined,
+  };
+  Object.keys(patch).forEach((key) => {
+    if (patch[key] === undefined) delete patch[key];
+  });
+  try {
+    const updated = updateLearningLedgerEntry(agentId, entryId, patch);
+    if (!updated) {
+      res.status(404).json({ error: 'Ledger entry not found.' });
+      return;
+    }
+    res.json({ entry: updated, stats: computeLearningLedgerStats(listLearningLedgerEntries(agentId)) });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.post('/api/spatial/agents/dave/properties', (req, res) => {
+  const body = req.body || {};
+  const agentId = 'dave';
+  try {
+    const nextWorkspace = updateSpatialWorkspace((workspace) => {
+      const currentAgents = workspace?.studio?.agentWorkers || {};
+      const currentDave = normalizeAgentWorkersState(currentAgents).dave || {};
+      const allowed = {
+        name: String(body.name || currentDave.name || 'Dave').trim() || 'Dave',
+        role: String(body.role || currentDave.role || 'Practical learning companion').trim(),
+        model: String(body.model || currentDave.model || DEFAULT_CONTEXT_MANAGER_MODEL).trim() || DEFAULT_CONTEXT_MANAGER_MODEL,
+        status: String(body.status || currentDave.status || 'idle').trim() || 'idle',
+        backend: String(body.backend || currentDave.backend || DEFAULT_CONTEXT_MANAGER_BACKEND).trim() || DEFAULT_CONTEXT_MANAGER_BACKEND,
+        responseStatus: String(body.responseStatus || currentDave.responseStatus || 'idle').trim(),
+        lastRunId: body.lastRunId ? String(body.lastRunId).trim() : null,
+        tokensUsed: Number.isFinite(Number(body.tokensUsed ?? currentDave.tokensUsed ?? 0)) ? Number(body.tokensUsed ?? currentDave.tokensUsed ?? 0) : 0,
+        durationMs: Number.isFinite(Number(body.durationMs ?? currentDave.durationMs ?? 0)) ? Number(body.durationMs ?? currentDave.durationMs ?? 0) : 0,
+        contextAlignmentScore: Number.isFinite(Number(body.contextAlignmentScore ?? currentDave.contextAlignmentScore ?? 0)) ? Number(body.contextAlignmentScore ?? currentDave.contextAlignmentScore ?? 0) : 0,
+        contextAlignmentReason: String(body.contextAlignmentReason || currentDave.contextAlignmentReason || '').trim() || null,
+      };
+      return {
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          agentWorkers: {
+            ...(workspace.studio?.agentWorkers || {}),
+            dave: {
+              ...currentDave,
+              ...allowed,
+            },
+          },
+        },
+      };
+    });
+    res.json({ ok: true, agent: nextWorkspace.studio.agentWorkers.dave });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/spatial/runtime', async (req, res) => {
+  res.json(await canonicalTruthAccess.resolveProjectionResponse('runtime', {
+    rootPath: ROOT,
+    persist: true,
+    freshness: 'live',
+  }));
+});
+
+app.get('/api/spatial/truth-kernel', async (req, res) => {
+  res.json(await canonicalTruthAccess.resolveProjectionResponse('truth_kernel', {
+    rootPath: ROOT,
+    persist: true,
+    freshness: 'live',
+  }));
+});
+
+app.post('/api/spatial/agents/context-manager/run', async (req, res) => {
+  const body = req.body || {};
+  const text = String(body.text || '').trim();
+  if (!text) {
+    return res.status(400).json({ error: 'text is required.' });
+  }
+  const mode = String(body.mode || 'manual').toLowerCase() === 'auto' ? 'auto' : 'manual';
+  const cycle = await maybeRunContextManagerWorker(readSpatialWorkspace(), {
+    text,
+    sourceNodeId: String(body.nodeId || '').trim() || null,
+    source: String(body.source || 'manual').trim() || 'manual',
+    mode,
+  });
+  if (!cycle.skipped && cycle.result?.run) {
+    if (!cycle.ok) {
+      return res.status(503).json({
+        ...buildAgentFailurePayload(cycle.result, {
+          report: cycle.result.report || null,
+          handoff: cycle.result.handoff || null,
+          runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+            persist: true,
+            workspace: cycle.workspace,
+          })),
+        }),
+      });
+    }
+    return res.json({
+      ok: cycle.ok,
+      worker: summarizeContextManagerRun(cycle.result.run),
+      report: cycle.result.report,
+      handoff: cycle.result.handoff,
+      runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+        persist: true,
+        workspace: cycle.workspace,
+      })),
+    });
+  }
+  return res.status(mode === 'manual' ? 400 : 200).json({
+    ok: false,
+    skipped: Boolean(cycle.skipped),
+    reason: cycle.reason,
+    runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    })),
+  });
+});
+
+app.post('/api/spatial/agents/planner/run', async (req, res) => {
+  const body = req.body || {};
+  const mode = String(body.mode || 'manual').toLowerCase() === 'auto' ? 'auto' : 'manual';
+  const handoffId = String(body.handoffId || '').trim() || null;
+  const cycle = await maybeRunPlannerWorker(readSpatialWorkspace(), { mode, handoffId });
+  if (!cycle.skipped && cycle.result?.run) {
+    if (!cycle.ok) {
+      return res.status(503).json({
+        ...buildAgentFailurePayload(cycle.result, {
+          run: summarizePlannerRun(cycle.result.run),
+          runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+            persist: true,
+            workspace: cycle.workspace,
+          })),
+        }),
+        preflight: cycle.preflight || cycle.result?.preflight || null,
+      });
+    }
+    return res.json({
+      ok: cycle.ok,
+      run: summarizePlannerRun(cycle.result.run),
+      runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+        persist: true,
+        workspace: cycle.workspace,
+      })),
+      preflight: cycle.preflight || cycle.result?.preflight || null,
+    });
+  }
+  return res.status(mode === 'manual' ? 400 : 200).json({
+    ok: false,
+    skipped: Boolean(cycle.skipped),
+    reason: cycle.reason,
+    runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    })),
+    preflight: cycle.preflight || cycle.result?.preflight || null,
+  });
+});
+
+app.post('/api/spatial/agents/executor/run', async (req, res) => {
+  const body = req.body || {};
+  const mode = String(body.mode || 'manual').toLowerCase() === 'auto' ? 'auto' : 'manual';
+  const cardId = String(body.cardId || '').trim() || null;
+  const cycle = await maybeRunExecutorWorker(readSpatialWorkspace(), { mode, cardId });
+  if (!cycle.skipped && cycle.result?.run) {
+    if (!cycle.ok) {
+      return res.status(503).json({
+        ...buildAgentFailurePayload(cycle.result, {
+          run: summarizeExecutorRun(cycle.result.run),
+          report: cycle.result.report || null,
+          runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+            persist: true,
+            workspace: cycle.workspace,
+          })),
+        }),
+        preflight: cycle.preflight || cycle.result?.preflight || null,
+      });
+    }
+    return res.json({
+      ok: cycle.ok,
+      run: summarizeExecutorRun(cycle.result.run),
+      report: cycle.result.report,
+      runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+        persist: true,
+        workspace: cycle.workspace,
+      })),
+      preflight: cycle.preflight || cycle.result?.preflight || null,
+    });
+  }
+  return res.status(mode === 'manual' ? 400 : 200).json({
+    ok: false,
+    skipped: Boolean(cycle.skipped),
+    reason: cycle.reason,
+    runtime: buildSpatialRuntimePayload(refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    })),
+    preflight: cycle.preflight || cycle.result?.preflight || null,
+  });
+});
+
+app.post('/api/spatial/team-board/action', async (req, res) => {
+  const body = req.body || {};
+  const action = String(body.action || '').trim();
+  const cardId = String(body.cardId || '').trim();
+  if (!action || !cardId) {
+    return res.status(400).json({ error: 'action and cardId are required.' });
+  }
+
+  const workspace = readSpatialWorkspace();
+  const card = findTeamBoardCard(workspace, cardId);
+  if (!card) {
+    return res.status(404).json({ error: 'Team board card not found.' });
+  }
+
+  let nextWorkspace = workspace;
+    if (action === 'approve-apply') {
+      nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+        ...currentCard,
+        status: 'review',
+        approvalState: 'approved',
+        executorBlocker: clearExecutorBlocker(),
+        updatedAt: nowIso(),
+      }));
+    nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-approved', { cardId, title: card.title });
+    nextWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
+  } else if (action === 'reject-to-builder') {
+    nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+        ...currentCard,
+          status: 'active',
+          approvalState: 'rejected',
+          applyStatus: 'idle',
+          deployStatus: 'idle',
+          verifyRequired: false,
+          verifyStatus: 'idle',
+          verifyRunIds: [],
+          verifyArtifacts: [],
+          lastVerificationSummary: '',
+          verifiedSignature: null,
+          executorBlocker: clearExecutorBlocker(),
+          executionPackage: {
+            ...(currentCard.executionPackage || {}),
+            status: 'idle',
+            summary: '',
+            verificationPlan: {
+              required: false,
+              commands: [],
+              qaScenarios: [],
+              signature: null,
+              summary: 'No verification required.',
+              generatedAt: null,
+            },
+          },
+        updatedAt: nowIso(),
+      }));
+    nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-rejected', { cardId, title: card.title });
+  } else if (action === 'bin') {
+    nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+        ...currentCard,
+          status: 'binned',
+          approvalState: 'none',
+          applyStatus: 'idle',
+          deployStatus: 'idle',
+          verifyRequired: false,
+          verifyStatus: 'idle',
+          verifyRunIds: [],
+          verifyArtifacts: [],
+          lastVerificationSummary: '',
+          verifiedSignature: null,
+          executorBlocker: clearExecutorBlocker(),
+          updatedAt: nowIso(),
+        }));
+    nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-binned', { cardId, title: card.title });
+  } else if (action === 'start-builder') {
+        nextWorkspace = mutateTeamBoardCard(workspace, cardId, (currentCard) => ({
+          ...currentCard,
+          status: 'active',
+          approvalState: 'none',
+          verifyRequired: false,
+          verifyStatus: 'idle',
+          verifyRunIds: [],
+          verifyArtifacts: [],
+          lastVerificationSummary: '',
+          verifiedSignature: null,
+          executorBlocker: clearExecutorBlocker(),
+          updatedAt: nowIso(),
+        }));
+    nextWorkspace = persistBoardWorkspace(nextWorkspace, 'team-board-builder-manual', { cardId, title: card.title });
+    nextWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
+  } else {
+    return res.status(400).json({ error: 'Unsupported team board action.' });
+  }
+
+    res.json({
+      ok: true,
+      runtime: buildSpatialRuntimePayload(nextWorkspace),
+  });
+});
+
+app.put('/api/spatial/workspace', async (req, res) => {
+  ensureSpatialStorage();
+  const body = req.body || {};
+  const previousWorkspace = readSpatialWorkspace();
+  const nextWorkspace = persistSpatialWorkspace(mergeWorkspacePatch(previousWorkspace, body));
+  const automatedWorkspace = await pumpAutomatedTeamBoardAsync(nextWorkspace);
+  appendNewRsgHistoryEntries(previousWorkspace, automatedWorkspace);
+  appendArchitectureHistory({
+    at: nowIso(),
+    type: 'workspace-save',
+    summary: {
+      nodes: automatedWorkspace.graph?.nodes?.length || 0,
+      edges: automatedWorkspace.graph?.edges?.length || 0,
+      versions: automatedWorkspace.architectureMemory?.versions?.slice(-1) || [],
+      sketches: automatedWorkspace.sketches?.length || 0,
+      annotations: automatedWorkspace.annotations?.length || 0,
+    },
+  });
+  res.json({ ok: true, workspace: automatedWorkspace });
+});
+
+app.put('/api/spatial/pages', (req, res) => {
+  const body = req.body || {};
+  (async () => {
+    writeJson(SPATIAL_PAGES_FILE, body, {
+      ignoreKeys: SPATIAL_PAGE_VOLATILE_KEYS,
+    });
+    const nextWorkspace = persistWorkspacePatch((workspace) => ({
+      ...workspace,
+      pages: Array.isArray(body.pages) ? body.pages : workspace.pages,
+      activePageId: body.activePageId !== undefined ? body.activePageId : workspace.activePageId,
+    }));
+    return res.json({ ok: true, pages: nextWorkspace.pages, activePageId: nextWorkspace.activePageId });
+  })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
+});
+
+app.put('/api/spatial/intent-state', (req, res) => {
+  const body = req.body || {};
+  (async () => {
+    const nextIntentState = normalizeStoredIntentState(body);
+    writeJson(SPATIAL_INTENT_STATE_FILE, nextIntentState, {
+      ignoreKeys: SPATIAL_INTENT_VOLATILE_KEYS,
+    });
+    const nextWorkspace = persistWorkspacePatch((workspace) => ({
+      ...workspace,
+      intentState: nextIntentState,
+    }));
+    res.json({ ok: true, intentState: nextWorkspace.intentState, currentIntent: getCurrentSpatialIntent(nextWorkspace.intentState) });
+  })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
+});
+
+app.put('/api/spatial/studio-state', (req, res) => {
+  const body = req.body || {};
+  const nextStudioState = normalizeStoredStudioState(body);
+  (async () => {
+    writeJson(SPATIAL_STUDIO_STATE_FILE, nextStudioState, {
+      ignoreKeys: SPATIAL_STUDIO_VOLATILE_KEYS,
+    });
+    persistWorkspacePatch((workspace) => ({
+      ...workspace,
+      studio: {
+        ...(workspace.studio || {}),
+        handoffs: nextStudioState.handoffs ? { ...(workspace.studio?.handoffs || {}), ...nextStudioState.handoffs } : workspace.studio?.handoffs,
+        teamBoard: nextStudioState.teamBoard ? { ...(workspace.studio?.teamBoard || {}), ...nextStudioState.teamBoard } : workspace.studio?.teamBoard,
+      },
+    }));
+    res.json({ ok: true, studioState: nextStudioState });
+  })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
+});
+
+app.put('/api/spatial/architecture-memory', (req, res) => {
+  const body = req.body || {};
+  (async () => {
+    writeJson(SPATIAL_ARCHITECTURE_MEMORY_FILE, body, {
+      ignoreKeys: SPATIAL_ARCHIVE_VOLATILE_KEYS,
+    });
+    persistWorkspacePatch((workspace) => ({
+      ...workspace,
+      architectureMemory: {
+        ...(workspace.architectureMemory || {}),
+        ...body.architectureMemory,
+      },
+    }));
+    res.json({ ok: true });
+  })().catch((error) => res.status(500).json({ error: String(error.message || error) }));
+});
+
+app.get('/api/spatial/history', (req, res) => {
+  ensureSpatialStorage();
+  res.json({ history: readJsonSafe(SPATIAL_HISTORY_FILE, []) || [] });
+});
+
+app.get('/api/spatial/debug/throughput', (req, res) => {
+  const sessions = listThroughputSessions(ROOT);
+  res.json({
+    sessions: sessions.slice(0, 12).map((session) => summarizeSession(session)),
+    latestSession: sessions[0] || null,
+  });
+});
+
+app.get('/api/spatial/debug/throughput/:sessionId', (req, res) => {
+  const session = readThroughputSession(ROOT, req.params.sessionId);
+  if (!session) return res.status(404).json({ error: 'Throughput session not found.' });
+  res.json({ session });
+});
+
+app.get('/api/spatial/qa/runs', (req, res) => {
+  canonicalTruthAccess.resolveProjectionResponse('qa_evidence', {
+    rootPath: ROOT,
+    freshness: 'live',
+    qaView: 'qa_runs',
+  }).then((payload) => {
+    res.json(payload);
+  }).catch((error) => {
+    res.status(500).json({
+      error: String(error?.message || error),
+      reason: String(error?.message || error),
+    });
+  });
+});
+
+app.get('/api/spatial/planner/qa-queue', (req, res) => {
+  const queue = readPlannerQaQueue(ROOT);
+  res.json({
+    source: '/api/spatial/planner/qa-queue',
+    freshness: 'derived',
+    generatedAt: nowIso(),
+    queue,
+    summary: summarizePlannerQaQueue(queue),
+  });
+});
+
+app.get('/api/spatial/planner/outtray', (req, res) => {
+  const queue = readPlannerOuttray(ROOT);
+  res.json({
+    source: '/api/spatial/planner/outtray',
+    freshness: 'derived',
+    generatedAt: nowIso(),
+    queue,
+    summary: summarizePlannerOuttray(queue),
+  });
+});
+
+app.post('/api/spatial/planner/outtray/collect', (req, res) => {
+  const body = req.body || {};
+  const queueKey = String(body.queueKey || body.plannerRunId || body.planBundleId || '').trim();
+  const laneId = String(body.laneId || '').trim() || null;
+  if (!queueKey) {
+    return res.status(400).json({ error: 'queueKey, plannerRunId, or planBundleId is required.' });
+  }
+  try {
+    const result = collectPlannerOuttrayItem(ROOT, {
+      queueKey,
+      plannerRunId: String(body.plannerRunId || '').trim() || null,
+      planBundleId: String(body.planBundleId || '').trim() || null,
+      laneId,
+      collectedBy: String(body.collectedBy || body.reviewedBy || 'qa').trim() || 'qa',
+      reviewedBy: String(body.reviewedBy || '').trim() || null,
+      summary: String(body.summary || '').trim() || null,
+      findings: Array.isArray(body.findings) ? body.findings : [],
+      notes: Array.isArray(body.notes) ? body.notes : [],
+      artifactRefs: Array.isArray(body.artifactRefs) ? body.artifactRefs : [],
+      status: String(body.status || 'collected').trim() || 'collected',
+    });
+    if (!result) {
+      return res.status(404).json({ error: 'Planner outtray item not found.' });
+    }
+    res.json({
+      ok: true,
+      result,
+      summary: summarizePlannerOuttray(result.queue),
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.get('/api/spatial/qa/runs/:runId', (req, res) => {
+  const run = readQARun(ROOT, req.params.runId);
+  if (!run) return res.status(404).json({ error: 'QA run not found.' });
+  res.json({ run });
+});
+
+app.get('/api/spatial/qa/runs/:runId/artifacts/:artifactName', (req, res) => {
+  const run = readQARun(ROOT, req.params.runId);
+  if (!run) return res.status(404).json({ error: 'QA run not found.' });
+  const artifactName = String(req.params.artifactName || '');
+  const artifactEntries = [
+    ...(run.artifacts?.screenshots || []),
+    run.artifacts?.domSnapshot,
+    run.artifacts?.consoleLog,
+    run.artifacts?.networkSummary,
+    run.artifacts?.runtimeSnapshot,
+    run.artifacts?.layoutFindings,
+  ].filter(Boolean);
+  const artifact = artifactEntries.find((entry) => entry.name === artifactName);
+  if (!artifact?.path || !fs.existsSync(artifact.path)) {
+    return res.status(404).json({ error: 'QA artifact not found.' });
+  }
+  res.sendFile(artifact.path);
+});
+
+app.post('/api/spatial/qa/run', async (req, res) => {
+  const body = req.body || {};
+  try {
+    const run = await startBrowserQARun({
+      baseUrl: getLocalBaseUrl(req),
+      scenario: String(body.scenario || 'layout-pass').trim() || 'layout-pass',
+      mode: String(body.mode || 'interactive').trim() || 'interactive',
+      trigger: String(body.trigger || 'manual').trim() || 'manual',
+      prompt: String(body.prompt || '').trim(),
+      actions: Array.isArray(body.actions) ? body.actions : [],
+      linked: typeof body.linked === 'object' && body.linked ? body.linked : {},
+    });
+    res.json({
+      ok: run.verdict !== 'failed',
+      run,
+      runtime: await refreshSpatialRuntime({ persist: true }),
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.post('/api/spatial/debug/throughput', async (req, res) => {
+  const body = req.body || {};
+  const prompt = String(body.prompt || 'I think we should add a desk to the studio for a QA agent').trim();
+  const mode = String(body.mode || 'live').toLowerCase() === 'fixture' ? 'fixture' : 'live';
+  const targetProjectKey = String(body.project || SELF_TARGET_KEY).trim() || SELF_TARGET_KEY;
+  const shouldRunQA = body.runQa !== false;
+  const simulateDeploy = body.simulate === true || mode === 'fixture' || process.env.ACE_DISABLE_SELF_RESTART === '1' || process.env.NODE_ENV === 'test';
+  let shouldRestartAfterResponse = false;
+  try {
+    let session = await runThroughputSession({
+      rootPath: ROOT,
+      prompt,
+      targetProjectKey,
+      mode,
+      confirmDeploy: body.confirmDeploy !== false,
+      simulateDeploy,
+      loadWorkspace: () => readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace(),
+      persistWorkspace: (workspace) => persistSpatialWorkspace(workspace),
+      appendHistory: appendArchitectureHistory,
+      readHistory: () => readJsonSafe(SPATIAL_HISTORY_FILE, []) || [],
+      analyzeIntent: async (text, workspace) => {
+        const result = await analyzeIntentWithContextWorker(text, workspace, {
+          source: 'throughput-debug',
+          mode: 'manual',
+        });
+        return result.report;
+      },
+      getDashboardState: () => getDashboardStateSnapshot(),
+      createRunnerTask: ({ title, prompt: nextPrompt, handoff, session }) => createRunnerTaskFolder({
+        title,
+        prompt: nextPrompt,
+        handoff,
+        sessionId: session.id,
+        anchorRefs: handoff?.anchorRefs || [],
+      }),
+      executeActionSync: (action, payload) => executeActionSync(action, payload),
+      runSelfUpgradePreflight: ({ taskId, project }) => {
+        const requestedProject = String(project || SELF_TARGET_KEY).trim() || SELF_TARGET_KEY;
+        const { projectKey, projectPath } = resolveProjectTarget(requestedProject);
+        const taskFolder = getTaskFolders().find((folder) => folder.startsWith(taskId.slice(0, 4)));
+        if (!taskFolder) {
+          return { ok: false, error: 'Task folder not found for self-upgrade preflight.' };
+        }
+        const validation = validateApply(projectPath, taskFolder);
+        const patchText = fs.existsSync(validation.patchPath) ? fs.readFileSync(validation.patchPath, 'utf8') : '';
+        const patchReview = reviewSelfUpgradePatch({
+          patchText,
+          taskId,
+          projectKey,
+          projectPath,
+          rootPath: ROOT,
+        });
+        const preflight = runSelfUpgradePreflight({
+          taskId,
+          projectKey,
+          projectPath,
+          validation,
+          patchReview,
+        });
+        const workspace = updateSelfUpgradeState((state) => ({
+          ...state,
+          status: preflight.ok ? 'ready-to-apply' : 'blocked',
+          taskId,
+          targetProjectKey: SELF_TARGET_KEY,
+          patchReview,
+          preflight,
+          deploy: preflight.ok ? state.deploy : createDefaultSelfUpgradeState({ serverStartedAt: SERVER_STARTED_AT, pid: process.pid }).deploy,
+          requiresPermission: preflight.ok ? 'user-confirmation' : 'none',
+        }));
+        return {
+          ok: preflight.ok,
+          selfUpgrade: getSelfUpgradeState(workspace),
+        };
+      },
+      deploySelfUpgrade: ({ confirmRestart, simulate }) => {
+        const workspace = readJsonSafe(SPATIAL_WORKSPACE_FILE, defaultSpatialWorkspace()) || defaultSpatialWorkspace();
+        const selfUpgrade = getSelfUpgradeState(workspace);
+        if (!confirmRestart) {
+          return { ok: false, error: 'Deploy requires explicit restart confirmation.', selfUpgrade };
+        }
+        if (!selfUpgrade.preflight?.ok) {
+          return { ok: false, error: 'Deploy requires a passing self-upgrade preflight.', selfUpgrade };
+        }
+        if (!selfUpgrade.apply?.ok) {
+          return { ok: false, error: 'Deploy requires a successful self-upgrade apply.', selfUpgrade };
+        }
+        const restartingWorkspace = updateSelfUpgradeState((state) => ({
+          ...state,
+          status: 'deploying',
+          deploy: {
+            ...state.deploy,
+            status: simulate ? 'healthy' : 'restarting',
+            requestedAt: nowIso(),
+            restartedAt: simulate ? nowIso() : state.deploy?.restartedAt || null,
+            health: {
+              status: simulate ? 'healthy' : 'restarting',
+              pid: process.pid,
+              startedAt: SERVER_STARTED_AT,
+            },
+          },
+          requiresPermission: 'none',
+        }));
+        shouldRestartAfterResponse = !simulate;
+        return {
+          ok: true,
+          restarting: !simulate,
+          deferredRestart: !simulate,
+          selfUpgrade: getSelfUpgradeState(restartingWorkspace),
+          healthUrl: '/api/health',
+        };
+      },
+      getRunsSnapshot: () => getRunsSnapshot(),
+      getHealthSnapshot: () => getHealthSnapshot(),
+    });
+    let qaRun = null;
+    if (shouldRunQA) {
+      qaRun = await startBrowserQARun({
+        baseUrl: getLocalBaseUrl(req),
+        scenario: 'throughput-visual-pass',
+        mode: 'interactive',
+        trigger: 'throughput-debug',
+        prompt,
+        linked: { throughputSessionId: session.id },
+      });
+      if (qaRun?.id) {
+        session = updateThroughputSession(ROOT, session.id, (current) => ({
+          ...current,
+          qaRunId: qaRun.id,
+        })) || session;
+      }
+    }
+    res.json({
+      ok: true,
+      session,
+      qaRun: qaRun ? summarizeQARun(qaRun) : null,
+      runtime: await refreshSpatialRuntime({ persist: true }),
+    });
+    if (shouldRestartAfterResponse && session?.stages?.find((stage) => stage.id === 'deploy')?.verdict === 'pass') {
+      setTimeout(scheduleSelfRestart, 120);
+    }
+  } catch (error) {
+    res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+function normalizeExecutiveEnvelope(payload = {}) {
+  const envelope = payload?.envelope && typeof payload.envelope === 'object' ? payload.envelope : payload;
+  const entries = Array.isArray(envelope.entries)
+    ? envelope.entries
+    : [
+        envelope.promptNode ? { type: 'prompt', ...(envelope.promptNode || {}) } : null,
+        envelope.constraintsNode ? { type: 'constraints', ...(envelope.constraintsNode || {}) } : null,
+        envelope.targetNode ? { type: 'target', ...(envelope.targetNode || {}) } : null,
+      ].filter(Boolean);
+  const typedEntries = entries
+    .map((entry, index) => {
+      const type = String(entry?.type || entry?.node_type || '').trim().toLowerCase();
+      if (!['prompt', 'constraints', 'target'].includes(type)) return null;
+      return {
+        type,
+        node_id: String(entry?.node_id || entry?.nodeId || `${type}-${index + 1}`).trim(),
+        content: String(entry?.content || entry?.text || '').trim(),
+        data: entry?.data && typeof entry.data === 'object' ? entry.data : {},
+      };
+    })
+    .filter(Boolean);
+
+  const promptNode = typedEntries.find((entry) => entry.type === 'prompt') || {
+    type: 'prompt',
+    node_id: 'prompt-1',
+    content: '',
+    data: {},
+  };
+  const constraintsNode = typedEntries.find((entry) => entry.type === 'constraints') || {
+    type: 'constraints',
+    node_id: 'constraints-1',
+    content: '',
+    data: {},
+  };
+  const targetNode = typedEntries.find((entry) => entry.type === 'target') || {
+    type: 'target',
+    node_id: 'target-1',
+    content: '',
+    data: {},
+  };
+
+  return {
+    version: String(envelope.version || EXECUTIVE_ENVELOPE_VERSION),
+    entries: [promptNode, constraintsNode, targetNode],
+    nodes: {
+      prompt: promptNode,
+      constraints: constraintsNode,
+      target: targetNode,
+    },
+  };
+}
+
+function mapEnvelopeToMaterialModule(envelope) {
+  const prompt = envelope.nodes.prompt;
+  const constraints = envelope.nodes.constraints;
+  const target = envelope.nodes.target;
+
+  return {
+    action: 'run_module',
+    module_id: 'material_gen',
+    input: {
+      intent: {
+        type: 'material',
+        surface: inferMaterialSurface(prompt.content),
+        request_text: prompt.content,
+      },
+      constraints: {
+        engine_target: constraints.data.engine_target || constraints.data.engineTarget || 'unreal',
+        require_tileable: constraints.data.require_tileable !== false,
+        ...(constraints.data || {}),
+      },
+      context: {
+        source: 'studio-canvas-executive',
+        source_node_id: prompt.node_id,
+        target: {
+          export_format: target.data.export_format || target.data.format || 'manifest',
+          destination: target.data.destination || target.content || null,
+        },
+      },
+    },
+  };
+}
+
+function buildModulePreview(moduleRun = {}) {
+  const artifact = moduleRun?.output?.artifact || {};
+  const mapPaths = artifact?.data?.maps && typeof artifact.data.maps === 'object'
+    ? artifact.data.maps
+    : {};
+  const outputPaths = Object.values(mapPaths).filter(Boolean);
+
+  return {
+    artifact_type: artifact.artifact_type || null,
+    output_paths: outputPaths,
+    output_map_paths: mapPaths,
+    validation_status: moduleRun?.output?.validation?.status || 'unknown',
+    confidence: Number.isFinite(Number(moduleRun?.confidence)) ? Number(moduleRun.confidence) : null,
+    requires_human_review: Boolean(moduleRun?.requires_human_review),
+  };
+}
+
+function resolveLegacyFallbackPayload(envelope, body = {}) {
+  const targetData = envelope.nodes.target.data || {};
+  const action = String(targetData.legacy_action || targetData.fallback_action || body.legacy_action || '').trim().toLowerCase();
+  const taskId = String(targetData.task_id || body.task_id || '').trim();
+  const project = String(targetData.project || body.project || '').trim();
+  if (!action || !taskId || !project) return null;
+  return { action, taskId, project };
+}
+
+function buildExecutiveMetadataFromResult(result = {}) {
+  return {
+    route: result.route || null,
+    preview: result.preview || null,
+    module_id: result.moduleRun?.module_id || null,
+    confidence: result.moduleRun?.confidence ?? null,
+    requires_human_review: result.moduleRun?.requires_human_review ?? null,
+    exported_at: nowIso(),
+  };
+}
+
+app.post('/api/spatial/executive/route', async (req, res) => {
+  const body = req.body || {};
+  const envelope = normalizeExecutiveEnvelope(body);
+  const promptText = envelope.nodes.prompt.content;
+
+  if (!promptText) {
+    return res.status(400).json({ error: 'prompt node content is required.', envelope });
+  }
+
+  const intakeOriginRoute = '/api/spatial/executive/route';
+  const intakeWrite = persistCanonicalIntakeRecord({
+    channel: 'canvas_text',
+    text: promptText,
+    requestedBy: 'canvas-intent',
+    sourceType: 'canvas-text',
+    sourceRef: envelope.nodes.prompt.node_id || null,
+    originRoute: intakeOriginRoute,
+    processingStatus: 'recorded',
+    intentExtraction: buildCanonicalIntentExtractionState({
+      status: 'pending',
+    }),
+  });
+  let intakeWorkspace = intakeWrite.workspace;
+  let intakeRecord = intakeWrite.intakeRecord;
+  let intakeState = intakeWrite.intakeState;
+  const finalizeCanvasIntake = (patch = {}, options = {}) => {
+    const nextWrite = persistCanonicalIntakeRecord({
+      ...intakeRecord,
+      ...patch,
+      id: intakeRecord.id,
+      channel: 'canvas_text',
+      text: promptText,
+      requestedBy: intakeRecord.requestedBy,
+      sourceType: intakeRecord.sourceType,
+      sourceRef: intakeRecord.sourceRef,
+      originRoute: intakeRecord.originRoute || intakeOriginRoute,
+      createdAt: intakeRecord.createdAt,
+      updatedAt: nowIso(),
+    }, {
+      workspace: options.workspace || null,
+    });
+    intakeWorkspace = nextWrite.workspace;
+    intakeRecord = nextWrite.intakeRecord;
+    intakeState = nextWrite.intakeState;
+    return nextWrite;
+  };
+
+  const forceIntentScan = Boolean(body.override?.force_intent_scan);
+  if (!forceIntentScan) {
+    const graphs = normalizeGraphBundle(intakeWorkspace);
+    const scaffoldRoute = await resolveWorldScaffoldExecutiveRoute({
+      promptText,
+      envelope,
+      graphs,
+    });
+    if (scaffoldRoute?.matched) {
+      finalizeCanvasIntake({
+        processingStatus: scaffoldRoute.body?.ok === false ? 'blocked' : 'routed',
+        route: 'world-scaffold',
+        resultSummary: scaffoldRoute.body?.error || scaffoldRoute.body?.reason || scaffoldRoute.body?.summary || 'Executive route selected world scaffold.',
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: scaffoldRoute.body?.error || scaffoldRoute.body?.reason || 'Intent extraction did not run for the world scaffold route.',
+        }),
+      });
+      return res.status(scaffoldRoute.statusCode).json({
+        ...scaffoldRoute.body,
+        intakeRecord,
+        intakeState,
+      });
+    }
+    const worldEditRoute = resolveWorldEditExecutiveRoute({
+      promptText,
+      envelope,
+      graphs,
+    });
+    if (worldEditRoute?.matched) {
+      finalizeCanvasIntake({
+        processingStatus: worldEditRoute.body?.ok === false ? 'blocked' : 'routed',
+        route: 'world-edit',
+        resultSummary: worldEditRoute.body?.error || worldEditRoute.body?.reason || worldEditRoute.body?.summary || 'Executive route selected world edit.',
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: worldEditRoute.body?.error || worldEditRoute.body?.reason || 'Intent extraction did not run for the world edit route.',
+        }),
+      });
+      return res.status(worldEditRoute.statusCode).json({
+        ...worldEditRoute.body,
+        intakeRecord,
+        intakeState,
+      });
+    }
+  }
+  const looksLikeMaterial = detectMaterialGenerationIntent(promptText)
+    || String(envelope.nodes.target.data.module_id || '').trim() === 'material_gen';
+
+  if (!forceIntentScan && looksLikeMaterial) {
+    const moduleEnvelope = mapEnvelopeToMaterialModule(envelope);
+    const moduleRun = executeModuleAction(moduleEnvelope, {
+      logger: (line) => console.log(line),
+    });
+    if (!moduleRun.ok) {
+      const status = moduleRun.error?.code === 'validation-failed' ? 422 : 400;
+      finalizeCanvasIntake({
+        processingStatus: 'blocked',
+        route: 'module',
+        resultSummary: moduleRun.error?.message || moduleRun.error?.reason || 'Module validation failed.',
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: moduleRun.error?.message || moduleRun.error?.reason || 'Intent extraction did not produce a canonical intent.',
+        }),
+      });
+      return res.status(status).json({
+        ok: false,
+        route: 'module',
+        envelope,
+        moduleEnvelope,
+        moduleRun,
+        intakeRecord,
+        intakeState,
+      });
+    }
+    finalizeCanvasIntake({
+      processingStatus: 'routed',
+      route: 'module',
+      resultSummary: 'Executive route delegated to the material module.',
+      intentExtraction: buildCanonicalIntentExtractionState({
+        status: 'failed',
+        reason: 'Canvas input routed directly to the module path instead of intent extraction.',
+      }),
+    });
+    return res.json({
+      ok: true,
+      route: 'module',
+      envelope,
+      moduleEnvelope,
+      moduleRun,
+      preview: buildModulePreview(moduleRun),
+      intakeRecord,
+      intakeState,
+    });
+  }
+
+  const fallbackPayload = resolveLegacyFallbackPayload(envelope, body);
+  if (fallbackPayload) {
+    try {
+      const result = runLegacyFallbackSync(fallbackPayload, { rootPath: ROOT });
+      finalizeCanvasIntake({
+        processingStatus: result.code === 0 ? 'routed' : 'blocked',
+        route: 'legacy-fallback',
+        resultSummary: result.code === 0
+          ? `Legacy fallback "${fallbackPayload.action}" completed.`
+          : `Legacy fallback "${fallbackPayload.action}" failed.`,
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: result.code === 0
+            ? 'Canvas input was handled by the legacy fallback path.'
+            : `Legacy fallback "${fallbackPayload.action}" failed before intent extraction.`,
+        }),
+      });
+      return res.status(result.code === 0 ? 200 : 400).json({
+        ok: result.code === 0,
+        route: 'legacy-fallback',
+        envelope,
+        legacy: {
+          action: fallbackPayload.action,
+          task_id: fallbackPayload.taskId,
+          project: fallbackPayload.project,
+          command: result.command.commandLine,
+          exit_code: result.code,
+          stdout: result.stdout,
+          stderr: result.stderr,
+        },
+        intakeRecord,
+        intakeState,
+      });
+    } catch (error) {
+      finalizeCanvasIntake({
+        processingStatus: 'blocked',
+        route: 'legacy-fallback',
+        resultSummary: String(error.message || error),
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: String(error.message || error),
+        }),
+      });
+      return res.status(400).json({
+        ok: false,
+        route: 'legacy-fallback',
+        envelope,
+        error: String(error.message || error),
+        intakeRecord,
+        intakeState,
+      });
+    }
+  }
+
+  try {
+    const cycle = await maybeRunContextManagerWorker(intakeWorkspace, {
+      text: promptText,
+      sourceNodeId: envelope.nodes.prompt.node_id,
+      sourceIntakeId: intakeRecord.id,
+      source: 'executive-scan-override',
+      sourceType: 'canvas-text',
+      sourceRef: envelope.nodes.prompt.node_id || null,
+      requestedBy: 'canvas-intent',
+      mode: 'manual',
+    });
+    if (!cycle.result?.report) {
+      finalizeCanvasIntake({
+        processingStatus: 'blocked',
+        route: 'intent-scan',
+        resultSummary: cycle.reason || 'Context Manager could not produce an intent report.',
+        intentExtraction: buildCanonicalIntentExtractionState({
+          status: 'failed',
+          reason: cycle.reason || 'Context Manager could not produce an intent report.',
+        }),
+      });
+      return res.status(500).json({
+        error: cycle.reason || 'Context Manager could not produce an intent report.',
+        envelope,
+        intakeRecord,
+        intakeState,
+      });
+    }
+    const runtimeWorkspace = refreshSpatialOrchestrator({
+      persist: true,
+      workspace: cycle.workspace,
+    });
+    const linkedIntentId = cycle.result.handoff?.intentId
+      || runtimeWorkspace?.intentState?.currentIntentId
+      || cycle.result.report?.spatialIntent?.id
+      || null;
+    const extractedCanonicalIntent = getCurrentSpatialIntent(runtimeWorkspace?.intentState)
+      || cycle.result.report?.canonicalIntent
+      || cycle.result.report?.spatialIntent
+      || null;
+    const extractionStatus = extractedCanonicalIntent
+      ? (normalizeSpatialIntentRecord(extractedCanonicalIntent).status === 'degraded' ? 'degraded' : 'extracted')
+      : 'failed';
+    const finalIntakeWrite = finalizeCanvasIntake({
+      processingStatus: cycle.ok ? 'routed' : 'blocked',
+      route: 'intent-scan',
+      canonicalIntentId: linkedIntentId,
+      handoffId: cycle.result.handoff?.id || null,
+      resultSummary: cycle.result.report?.summary || cycle.reason || 'Context Manager processed the canvas intake.',
+      intentExtraction: buildCanonicalIntentExtractionState({
+        status: extractionStatus,
+        canonicalIntent: extractedCanonicalIntent,
+        reason: extractedCanonicalIntent ? null : (cycle.reason || 'Intent extraction did not yield a canonical intent record.'),
+      }),
+    }, {
+      workspace: runtimeWorkspace,
+    });
+    const runtime = buildSpatialRuntimePayload(finalIntakeWrite.workspace);
+    return res.json({
+      ok: true,
+      route: 'intent-scan',
+      envelope,
+      report: cycle.result.report,
+      extractedIntent: cycle.result.extractedIntent || cycle.result.report?.extractedIntent || null,
+      worker: cycle.result.run ? summarizeContextManagerRun(cycle.result.run) : null,
+      handoff: cycle.result.handoff,
+      runtime,
+      intakeRecord,
+      intakeState,
+    });
+  } catch (error) {
+    finalizeCanvasIntake({
+      processingStatus: 'blocked',
+      route: 'intent-scan',
+      resultSummary: String(error.message || error),
+      intentExtraction: buildCanonicalIntentExtractionState({
+        status: 'failed',
+        reason: String(error.message || error),
+      }),
+    });
+    return res.status(500).json({
+      error: String(error.message || error),
+      envelope,
+      intakeRecord,
+      intakeState,
+    });
+  }
+});
+
+app.post('/api/spatial/executive/export/manifest', (req, res) => {
+  const body = req.body || {};
+  const result = body.result && typeof body.result === 'object' ? body.result : null;
+  if (!result) {
+    return res.status(400).json({ error: 'result is required.' });
+  }
+  fs.mkdirSync(EXECUTIVE_EXPORT_DIR, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+  const filePath = path.join(EXECUTIVE_EXPORT_DIR, `executive-result-${stamp}.json`);
+  writeJson(filePath, {
+    createdAt: nowIso(),
+    metadata: buildExecutiveMetadataFromResult(result),
+    result,
+  });
+  return res.json({
+    ok: true,
+    manifest_path: path.relative(ROOT, filePath),
+  });
+});
+
+
+app.post('/api/modules/run', (req, res) => {
+  const result = executeModuleAction(req.body || {}, {
+    logger: (line) => console.log(line),
+  });
+  if (!result.ok) {
+    const status = result.error?.code === 'validation-failed' ? 422 : 400;
+    return res.status(status).json(result);
+  }
+  return res.json(result);
+});
+
+app.get('/api/spatial/cto/status', async (req, res) => {
+  try {
+    const { backend, model, host, timeoutMs } = resolveCtoGovernanceConfig(req.query || {});
+    const status = await probeCtoBackendStatus({
+      backend,
+      model,
+      host,
+      timeoutMs,
+    });
+    const httpStatus = status.status === 'offline' ? 503 : (status.status === 'degraded' ? 200 : 200);
+    return res.status(httpStatus).json({
+      ok: status.ok,
+      ...status,
+    });
+  } catch (error) {
+    const reason = String(error.message || error);
+    const ctoConfig = resolveCtoGovernanceConfig(req.query || {});
+    return res.status(500).json({
+      ok: false,
+      status: 'offline',
+      error: reason,
+      reason,
+      backend: ctoConfig.backend,
+      model: ctoConfig.model,
+      host: ctoConfig.host,
+    });
+  }
+});
+
+app.get('/api/spatial/cto/diagnostics', async (req, res) => {
+  try {
+    return res.json(await buildCtoDiagnosticsPayload({ rootPath: ROOT }));
+  } catch (error) {
+    const reason = String(error.message || error);
+    return res.status(500).json({
+      ok: false,
+      error: reason,
+      reason,
+    });
+  }
+});
+
+app.get('/api/cto-chief-of-staff/query', async (req, res) => {
+  try {
+    const rootPath = req.app?.locals?.chiefOfStaffRootPath || ROOT;
+    const reply = await queryChiefOfStaff(rootPath, String(req.query?.q || '').trim(), {
+      runner: req.app?.locals?.chiefOfStaffModelRunner,
+      callModel: req.app?.locals?.chiefOfStaffCallModel,
+      fetchImpl: req.app?.locals?.chiefOfStaffFetchImpl,
+    });
+    return res.json(reply);
+  } catch (error) {
+    const reason = String(error.message || error);
+    return res.status(500).json({
+      reply_text: `Current system state unavailable. Next step: inspect the advisor route failure. ${reason}`,
+      reply_source: 'deterministic_fallback',
+      model_backend: DEFAULT_CHIEF_OF_STAFF_MODEL_BACKEND,
+      model_name: null,
+      model_status: 'fallback',
+      advisory_generated_at: nowIso(),
+      execution_ready: false,
+      recommendation: null,
+      posture: null,
+      error: reason,
+    });
+  }
+});
+
+app.get('/api/cto-chief-of-staff/latest', async (req, res) => {
+  const rootPath = req.app?.locals?.chiefOfStaffRootPath || ROOT;
+  try {
+    await ensureChiefOfStaffReadiness({
+      rootPath,
+      fetchImpl: req.app?.locals?.chiefOfStaffFetchImpl || globalThis.fetch,
+      callModel: req.app?.locals?.chiefOfStaffCallModel,
+      warmIfNeeded: true,
+    });
+  } catch (error) {
+    console.warn(`[${nowIso()}] chief-of-staff readiness refresh failed: ${error.message}`);
+  }
+  return res.json(readLatestChiefOfStaffAdvisory());
+});
+
+app.post('/api/spatial/cto/override', (req, res) => {
+  try {
+    const body = req.body || {};
+    const kind = String(body.kind || body.overrideKind || body.type || '').trim();
+    if (!kind) {
+      return res.status(400).json({
+        ok: false,
+        error: 'kind is required.',
+        reason: 'kind is required.',
+      });
+    }
+    const requestedBy = String(body.requestedBy || body.actor || body.createdBy || 'cto').trim() || 'cto';
+    const reason = String(body.reason || body.justification || body.note || body.summary || '').trim();
+    const target = {
+      deskId: String(body.targetDeskId || body.deskId || '').trim() || null,
+      deskLabel: String(body.targetDeskLabel || body.deskLabel || '').trim() || null,
+      roleId: String(body.targetRoleId || body.roleId || '').trim() || null,
+      agentId: String(body.targetAgentId || body.agentId || '').trim() || null,
+      planId: String(body.targetPlanId || body.planId || '').trim() || null,
+      handoffId: String(body.targetHandoffId || body.handoffId || '').trim() || null,
+      queueKey: String(body.targetQueueKey || body.queueKey || '').trim() || null,
+      intentId: String(body.targetIntentId || body.intentId || '').trim() || null,
+    };
+    const canonicalTruth = body.canonicalTruth && typeof body.canonicalTruth === 'object'
+      ? body.canonicalTruth
+      : {
+          planner: body.plannerTruth || null,
+          staffing: body.staffingTruth || null,
+          handoff: body.handoffTruth || null,
+          queue: body.queueTruth || null,
+        };
+    const effect = body.effect && typeof body.effect === 'object'
+      ? body.effect
+      : {
+          forcePlannerRouting: body.forcePlannerRouting === true,
+          forcePlanningGeneration: body.forcePlanningGeneration === true,
+          reopenStalePlan: body.reopenStalePlan === true,
+          supersedeQueuePriority: body.supersedeQueuePriority === true,
+          requestEmergencyStaffingReview: body.requestEmergencyStaffingReview === true,
+          handoffMode: String(body.handoffMode || '').trim() || null,
+          queuePriority: String(body.queuePriority || body.priority || '').trim() || null,
+        };
+    const provenance = {
+      sourceType: String(body.sourceType || body.source_type || 'cto-override').trim() || 'cto-override',
+      sourceRef: String(body.sourceRef || body.source_ref || 'cto-console').trim() || 'cto-console',
+      sourceIntentId: String(body.sourceIntentId || body.intentId || '').trim() || null,
+      sourceHandoffId: String(body.sourceHandoffId || body.handoffId || '').trim() || null,
+      sourceActionId: String(body.sourceActionId || body.actionId || '').trim() || null,
+      sourceRoute: String(body.sourceRoute || body.route || '/api/spatial/cto/override').trim() || '/api/spatial/cto/override',
+      sourceDeskId: String(body.sourceDeskId || body.deskId || target.deskId || '').trim() || null,
+    };
+    const normalized = normalizeCtoOverrideEntry({
+      kind,
+      requestedBy,
+      reason,
+      summary: String(body.summary || reason || kind).trim() || kind,
+      target,
+      canonicalTruth,
+      effect,
+      provenance,
+      explicit: body.explicit !== false,
+      status: String(body.status || 'active').trim() || 'active',
+      createdAt: body.createdAt || nowIso(),
+      appliedAt: body.appliedAt || nowIso(),
+    });
+    const ledgerWrite = appendCtoOverrideLedgerEntry(ROOT, normalized);
+    const nextOverrides = ledgerWrite.ledger || createDefaultCtoOverrideLedger();
+    const writeResult = updateSpatialWorkspace((workspace) => {
+      return {
+        ...workspace,
+        studio: {
+          ...(workspace.studio || {}),
+          ctoOverrides: nextOverrides,
+        },
+      };
+    });
+    const diagnostics = recordCtoDiagnostic({
+      route: '/api/spatial/cto/override',
+      source: 'cto-override',
+      status: 'live',
+      backend: 'n/a',
+      model: 'n/a',
+      host: null,
+      reason: normalized.reason,
+      actionId: normalized.overrideId,
+      availableActionIds: [],
+      category: 'override_applied',
+    });
+    const overrideLedger = writeResult?.studio?.ctoOverrides || nextOverrides || createDefaultCtoOverrideLedger();
+    const overrideLayer = deriveCtoOverrideLayer(overrideLedger);
+    return res.json({
+      ok: true,
+      override: normalized,
+      ctoOverrides: summarizeCtoOverrideLedger(overrideLedger),
+      overrideLayer,
+      plannerMode: overrideLayer.planningMode,
+      diagnostics,
+      workspace: {
+        generatedAt: nowIso(),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: String(error.message || error),
+      reason: String(error.message || error),
+    });
+  }
+});
+
+app.post('/api/spatial/cto/chat', async (req, res) => {
+  let intakeWorkspace = null;
+  let intakeRecord = null;
+  let intakeState = createDefaultCanonicalIntakeState();
+  try {
+    const body = req.body || {};
+    const text = String(body.text || '').trim();
+    const source = String(body.source || 'cto-chat').trim() || 'cto-chat';
+    if (!text) {
+      return res.status(400).json({
+        ok: false,
+        status: 'blocked',
+        error: 'text is required.',
+        reason: 'text is required.',
+        reply_text: null,
+      });
+    }
+    const intakeOriginRoute = '/api/spatial/cto/chat';
+    const intakeWrite = persistCanonicalIntakeRecord({
+      channel: 'cto_prompt',
+      text,
+      requestedBy: 'cto',
+      sourceType: source,
+      sourceRef: body.confirmActionId || source,
+      originRoute: intakeOriginRoute,
+      processingStatus: 'recorded',
+    });
+    intakeWorkspace = intakeWrite.workspace;
+    intakeRecord = intakeWrite.intakeRecord;
+    intakeState = intakeWrite.intakeState;
+    const finalizeCtoIntake = (patch = {}, options = {}) => {
+      const nextWrite = persistCanonicalIntakeRecord({
+        ...intakeRecord,
+        ...patch,
+        id: intakeRecord.id,
+        channel: 'cto_prompt',
+        text,
+        requestedBy: intakeRecord.requestedBy,
+        sourceType: intakeRecord.sourceType,
+        sourceRef: intakeRecord.sourceRef,
+        originRoute: intakeRecord.originRoute || intakeOriginRoute,
+        createdAt: intakeRecord.createdAt,
+        updatedAt: nowIso(),
+      }, {
+        workspace: options.workspace || null,
+      });
+      intakeWorkspace = nextWrite.workspace;
+      intakeRecord = nextWrite.intakeRecord;
+      intakeState = nextWrite.intakeState;
+      return nextWrite;
+    };
+    const result = await runCtoGovernanceChat({
+      text,
+      history: body.history,
+      source,
+      backend: body.backend,
+      model: body.model,
+      host: body.host,
+      timeoutMs: body.timeoutMs,
+      confirmActionId: body.confirmActionId,
+      override: body.override,
+      workspace: intakeWorkspace,
+      baseUrl: getLocalBaseUrl(req),
+    });
+    if (!result.ok) {
+      const httpStatus = result.status === 'offline' ? 503 : 422;
+      finalizeCtoIntake({
+        processingStatus: result.status || 'blocked',
+        replyKind: result.replyKind || 'blocked',
+        actionId: result.action?.id || null,
+        route: 'cto-chat',
+        resultSummary: result.reason || result.reply_text || 'CTO governance chat blocked.',
+      });
+      return res.status(httpStatus).json({
+        ok: false,
+        status: result.status,
+        error: result.reason,
+        reason: result.reason,
+        reply_text: result.reply_text || null,
+        backend: result.backend || null,
+        model: result.model || null,
+        action: result.action || null,
+        execution: result.execution || null,
+        replyKind: result.replyKind || 'blocked',
+        backendStatus: result.backendStatus || null,
+        diagnostic: result.diagnostic || null,
+        intakeRecord,
+        intakeState,
+      });
+    }
+    finalizeCtoIntake({
+      processingStatus: result.status || 'live',
+      replyKind: result.replyKind || 'advisory',
+      actionId: result.action?.id || null,
+      route: 'cto-chat',
+      resultSummary: result.reply_text || 'CTO governance chat completed.',
+    });
+    return res.json({
+      ok: true,
+      status: result.status,
+      reply_text: result.reply_text,
+      replyKind: result.replyKind,
+      backend: result.backend,
+      model: result.model,
+      runId: result.runId,
+      delegation: result.delegation,
+      action: result.action,
+      execution: result.execution,
+      backendStatus: result.backendStatus,
+      diagnostic: result.diagnostic || null,
+      intakeRecord,
+      intakeState,
+    });
+  } catch (error) {
+    console.error('[ERROR] /api/spatial/cto/chat failed:', error);
+    const reason = String(error.message || error);
+    const ctoConfig = resolveCtoGovernanceConfig();
+    const diagnostic = recordCtoDiagnostic({
+      route: '/api/spatial/cto/chat',
+      source: 'cto-chat',
+      status: 'offline',
+      backend: ctoConfig.backend,
+      model: ctoConfig.model,
+      host: ctoConfig.host,
+      reason,
+    });
+    if (intakeRecord) {
+      const nextWrite = persistCanonicalIntakeRecord({
+        ...intakeRecord,
+        processingStatus: classifyLlmFailureStatus(reason, false),
+        replyKind: 'blocked',
+        route: 'cto-chat',
+        resultSummary: reason,
+        updatedAt: nowIso(),
+      }, {
+        workspace: intakeWorkspace,
+      });
+      intakeWorkspace = nextWrite.workspace;
+      intakeRecord = nextWrite.intakeRecord;
+      intakeState = nextWrite.intakeState;
+    }
+    return res.status(500).json({
+      ok: false,
+      status: classifyLlmFailureStatus(reason, false),
+      error: reason,
+      reason,
+      reply_text: null,
+      replyKind: 'blocked',
+      diagnostic,
+      backendStatus: {
+        ok: false,
+        status: 'offline',
+        backend: ctoConfig.backend,
+        model: ctoConfig.model,
+        host: ctoConfig.host,
+        checkedAt: nowIso(),
+        reason,
+        availableModels: [],
+      },
+      intakeRecord,
+      intakeState,
+    });
+  }
+});
+
+app.post('/api/spatial/intent', async (req, res) => {
+  try {
+    await refreshAceDependencyRegistryIfStale({
+      rootPath: ROOT,
+      attemptLaunch: false,
+      maxAgeMs: 5000,
+    }).catch(() => {});
+    const envelope = await canonicalTruthAccess.resolveProjection('intent', {
+      rootPath: ROOT,
+      freshness: 'live',
+      requestBody: req.body || {},
+    });
+    const statusCode = Number(envelope?.data?.__statusCode) > 0
+      ? Number(envelope.data.__statusCode)
+      : 200;
+    return res.status(statusCode).json(decorateCanonicalTruthPayload(envelope));
+  } catch (error) {
+    const dependencyStatus = await refreshAceDependencyRegistryIfStale({
+      rootPath: ROOT,
+      attemptLaunch: false,
+      maxAgeMs: 5000,
+    }).catch(() => getAceDependencyRegistrySnapshot());
+    if (shouldReturnIntentDependencyFallback(error, dependencyStatus)) {
+      const payload = buildIntentDependencyFallbackPayload({
+        requestBody: req.body || {},
+        reason: String(error.message || error),
+        derivation: 'route_dependency_unavailable',
+        dependencyStatus,
+      });
+      const envelope = createCanonicalTruthEnvelope({
+        domain: 'intent',
+        projectionId: 'intent',
+        classification: payload.__canonicalTruthMeta?.classification || 'fallback',
+        sourceOfTruth: '/api/spatial/intent',
+        owner: payload.__canonicalTruthMeta?.owner || 'ACE Context Manager',
+        freshness: payload.__canonicalTruthMeta?.freshness || 'live',
+        fallbackUsed: Boolean(payload.__canonicalTruthMeta?.fallbackUsed),
+        data: payload,
+      });
+      return res.status(200).json(decorateCanonicalTruthPayload(envelope));
+    }
+    return res.status(500).json({ error: String(error.message || error) });
+  }
+});
+
+app.post('/api/spatial/mutations/preview', (req, res) => {
+  const mutations = (req.body || {}).mutations || [];
+  const summary = mutations.map((m) => {
+    if (m.type === 'create_node') return `- new ${m.node.type}: ${m.node.content}`;
+    if (m.type === 'modify_node') return `- modify node ${m.id}`;
+    if (m.type === 'create_edge') return `- dependency ${m.edge.source} -> ${m.edge.target}`;
+    return `- ${m.type}`;
+  });
+  res.json({ ok: true, summary });
+});
+
+app.post('/api/spatial/mutations/apply', (req, res) => {
+  const mutations = (req.body || {}).mutations || [];
+  try {
+    const previousWorkspace = readSpatialWorkspace();
+    const result = applySpatialMutationsToWorkspace(previousWorkspace, mutations);
+    const mutationSummary = {
+      status: result.status,
+      confirmed: result.confirmed,
+      requested: result.requested,
+      applied: result.applied,
+      queued: result.queued,
+      blocked: result.blocked,
+      changedLayers: result.changedLayers,
+      reason: result.reason || '',
+      results: result.results,
+      approvalQueueSize: result.approvalQueue.length,
+    };
+    const nextWorkspace = result.persisted ? persistSpatialWorkspace(result.workspace) : previousWorkspace;
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'mutation-apply',
+      summary: mutationSummary,
+    });
+    const payload = {
+      ok: result.ok,
+      status: result.status,
+      confirmed: result.confirmed,
+      mutationResult: mutationSummary,
+      recentWorldChange: result.recentWorldChange || null,
+      runtime: buildSpatialRuntimePayload(nextWorkspace),
+    };
+    if (!result.ok) {
+      return res.status(422).json({
+        ...payload,
+        error: mutationSummary.reason,
+      });
+    }
+    res.json(payload);
+  } catch (error) {
+    const requested = Array.isArray(mutations) ? mutations.length : 0;
+    const mutationSummary = {
+      status: 'failed',
+      confirmed: false,
+      requested,
+      applied: 0,
+      queued: 0,
+      blocked: requested,
+      changedLayers: [],
+      reason: String(error.message || error),
+    };
+    appendArchitectureHistory({
+      at: nowIso(),
+      type: 'mutation-apply',
+      summary: mutationSummary,
+    });
+    res.status(422).json({
+      ok: false,
+      status: 'failed',
+      confirmed: false,
+      error: mutationSummary.reason,
+      mutationResult: mutationSummary,
+      recentWorldChange: null,
+    });
+  }
+});
+
+app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+  const requestPath = String(req?.path || req?.originalUrl || req?.url || '').trim();
+  const failure = recordClassifiedFailure(ROOT, error, {
+    route: requestPath || null,
+    method: req?.method || null,
+    stage: /\/api\/health/.test(requestPath) || /boot/i.test(requestPath)
+      ? 'boot'
+      : (/\/api\/spatial\//.test(requestPath) ? 'runtime' : 'server'),
+    component: /\/api\/spatial\/(desks|layout|qa|agents|runtime|team-board|mutations|archive)/.test(requestPath)
+      ? 'panel'
+      : 'server',
+    source: 'express-error-handler',
+    message: String(error?.message || error || 'Unhandled server error.'),
+  });
+  const status = failure.failureClass === 'warning'
+    ? 400
+    : failure.failureClass === 'panel_degraded'
+      ? 500
+      : failure.failureClass === 'boot_critical'
+        ? 503
+        : 500;
+  return res.status(status).json({
+    ok: false,
+    error: String(error?.message || error || 'Unhandled server error.'),
+    failureClass: failure.failureClass,
+    uiResponse: failure.uiResponse,
+    safeMode: Boolean(failure.uiResponse?.safeMode),
+    route: requestPath || null,
+  });
+});
+
+function startServer(options = {}) {
+  console.log("ENTER startServer");
+  const enableBackgroundLoops = options.enableBackgroundLoops ?? require.main === module;
+  bootRecoveryRuntimeStatus = createInitialBootRecoveryRuntimeStatus();
+
+  if (enableBackgroundLoops) {
+    const orchestratorRefreshTimer = setInterval(() => {
+      Promise.resolve()
+        .then(async () => {
+          const workspace = await pumpAutomatedTeamBoardAsync();
+          refreshSpatialOrchestrator({ persist: true, workspace });
+        })
+        .catch((error) => {
+          console.warn(`[${nowIso()}] spatial orchestrator refresh failed: ${error.message}`);
+        });
+    }, 4000);
+    if (typeof orchestratorRefreshTimer.unref === 'function') orchestratorRefreshTimer.unref();
+  }
+  
+
+  const listenPort = getCurrentPort();
+  const httpServer = app.listen(listenPort, () => {
+    console.log(`AI Core Engine UI running at http://localhost:${listenPort}`);
+  });
+
+  updateBootRecoveryRuntimeStatus({
+    phase: 'server_live',
+    currentStep: 'HTTP server is live; deferred boot recovery scheduled.',
+    safeMode: false,
+    recoveryFinished: false,
+    recoveryBlocked: false,
+    repairInProgress: false,
+    dependencies: getAceDependencyRegistrySnapshot(),
+  });
+
+  if (enableBackgroundLoops) {
+    bootQaMcpHelperIfNeeded(ROOT);
+    const deferredBootTimer = setTimeout(async () => {
+      await orchestrateAceDependenciesOnBoot(ROOT);
+      try {
+        await ensureChiefOfStaffReadiness({
+          rootPath: ROOT,
+          warmIfNeeded: true,
+        });
+      } catch (error) {
+        console.warn(`[${nowIso()}] chief-of-staff warmup failed during boot: ${error.message}`);
+      }
+      runDeferredBootRecovery();
+    }, 0);
+    if (typeof deferredBootTimer.unref === 'function') deferredBootTimer.unref();
+  }
+
+  return httpServer;
+}
+
+module.exports = {
+  app,
+  startServer,
+  dashboardFiles,
+  collectDeskTasks,
+  buildDeskPropertiesPayload,
+  buildTruthKernelPayload,
+  buildQAStatePayload,
+  buildQaMcpPreflightResponse,
+  bootQaMcpHelperIfNeeded,
+  buildQaLeadPosture,
+  buildQAAuditTrail,
+  summarizeQAAuditTrail,
+  buildStructuredQAScorecardBundle,
+  collectStructuredQAScorecards,
+  buildQATestRegistry,
+  summarizeQATestRegistry,
+  buildQaResearchState,
+  maybeGenerateQaResearchNotesForInvestigations,
+  buildQaSessionSummary,
+  buildQaRepairLoopState,
+  buildCtoQaLeadPostureReference,
+  buildCtoGovernedRepairReference,
+  buildCtoDiagnosticsPayload,
+  readQaMcpLauncherStatus,
+  readQaLeadOutput,
+  readQaOutputFeed,
+  appendQaOutputFeedEntry,
+  runQaLeadCycle,
+  maybeBridgeOpenInvestigationsToRepairJobs,
+  runQaRepairAttempt,
+  buildProjectRecord,
+  buildGovernedLoopContract,
+  buildSpatialRuntimePayload,
+  buildCanonicalIntentExtractionState,
+  normalizeCanonicalIntakeState,
+  persistCanonicalIntakeRecord,
+  readSpatialWorkspace,
+  detectRunnableProjectType,
+  evaluateApplyGate,
+  evaluateVerifyGate,
+  evaluateDeployGate,
+  buildVerificationPlan,
+  buildLegacyFallbackProvenance,
+  buildMixedStudioProvenance,
+  buildGuardSurfacePayload,
+  applySpatialMutationsToWorkspace,
+  createExecutorBlocker,
+  generateCandidates,
+  executeModuleAction,
+  launchProject,
+  listProjectsForUi,
+  smokeCheckStaticWebBoot,
+  evaluateStudioClientBootContract,
+  detectMaterialGenerationIntent,
+  detectWorldScaffoldIntent,
+  detectPotentialWorldEditPrompt,
+  deriveRecentWorldChange,
+  buildMaterialIntentModuleEnvelope,
+  interpretScaffoldIntentWithModel,
+  parseWorldEditIntent,
+  parseWorldScaffoldIntent,
+  resolveWorldEditExecutiveRoute,
+  resolveWorldScaffoldExecutiveRoute,
+  buildWorldScaffoldMutationPlan,
+  buildWorldScaffoldMutations,
+  normalizeStoredStudioState,
+  normalizeStoredStudioTeamBoard,
+  normalizeStoredStudioHandoffs,
+  normalizeExecutiveEnvelope,
+  mapEnvelopeToMaterialModule,
+  buildModulePreview,
+  buildFailureUiResponse,
+  buildConstrainedAutoFixBundle,
+  buildTaskApplyResultRecord,
+  buildAgentCapabilityProfile,
+  classifyFailureContext,
+  evaluateStagePreflightSurface,
+  evaluateSpatialBootHealth,
+  reconcileUiBootIntegrityRepair,
+  buildSafeModeSnapshot,
+  runSafeModeDiagnosis,
+  runConstrainedSafeModeFixPass,
+  buildBootRecoveryDaemonState,
+  readBootRecoveryDaemonState,
+  runAutonomousBootRecoveryDaemon,
+  collectTaskArtifacts,
+  createRunnerTaskFolder,
+  readDashboardFileForRoot,
+  readAgentCapabilityProfile,
+  getHealthSnapshot,
+  recordClassifiedFailure,
+  readTaskArtifactStatus,
+  resolveLegacyFallbackPayload,
+  stopProjectRun,
+  runArchivistWriteback,
+  rebuildAgentCapabilityLedger,
+  writeTaskApplyResult,
+  summarizeExecutionProvenance,
+  normalizePreflightStage,
+  createDefaultStudioLayoutSchema,
+  buildPlannerIdentitySnapshot,
+  normalizeStudioLayoutSchema,
+  addDepartmentToLayout,
+  addDeskToLayout,
+  buildStudioLayoutCatalog,
+  listStudioDeskIds,
+  getAceDependencyRegistrySnapshot,
+  refreshAceDependencyRegistry,
+  orchestrateAceDependenciesOnBoot,
+  resolveCtoGovernanceConfig,
+  parseCtoStructuredReply,
+  classifyCtoDiagnosticCategory,
+  recordCtoDiagnostic,
+  readCtoDiagnostics,
+  probeCtoBackendStatus,
+  buildCtoGovernanceContext,
+  buildCtoChatCognitionDiagnostics,
+  buildCtoChatPrompt,
+  buildCtoChatPromptProfile,
+  buildCtoPromptContext,
+  classifyCtoChatFailureReason,
+  summarizeCtoPipelineState,
+  normalizeCtoPipelineState,
+  advanceCtoPipelineState,
+  buildCtoAvailableActions,
+  buildCtoActionRecord,
+  buildCtoActionForPipeline,
+  executeCtoConfirmedAction,
+  runCtoGovernanceModelBakeOff,
+  runCtoGovernanceChat,
+  normalizeCtoChatHistory,
+  isAffirmativeCtoReply,
+  getCtoRoleLabel,
+  getCtoRoleHintFromText,
+  readSpatialWorkspace,
+};
+
+console.log("BOTTOM REACHED");
+console.log("require.main === module:", require.main === module);
+
+if (require.main === module) {
+  startServer();
+}

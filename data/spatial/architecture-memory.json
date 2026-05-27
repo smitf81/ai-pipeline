@@ -1,0 +1,36 @@
+{
+  "architectureMemory": {
+    "adapters": [],
+    "layers": {
+      "execution": [
+        "Code Generator",
+        "Test Generator"
+      ],
+      "intelligence": [
+        "Intent Engine",
+        "Task Planner"
+      ],
+      "interface": [
+        "Spatial IDE Interface Layer"
+      ]
+    },
+    "modules": [],
+    "proposals": [],
+    "rules": [
+      "modular architecture",
+      "no circular dependencies",
+      "stateless services"
+    ],
+    "subsystems": [],
+    "system": "ACE",
+    "versions": [],
+    "world": {
+      "constraints": [],
+      "domain": "gameplay-systems",
+      "items": [],
+      "mechanics": [],
+      "quests": [],
+      "systems": []
+    }
+  }
+}

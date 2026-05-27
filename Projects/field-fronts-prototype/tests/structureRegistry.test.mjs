@@ -29,15 +29,23 @@ export function run() {
   assert.deepEqual(STRUCTURE_TYPE_IDS, [
     'outpost',
     'watchtower',
+    'hunting_tent',
+    'wood_gathering_post',
+    'builder_lodge',
+    'storage_tent',
     'wall_segment',
     'gate',
     'trench_segment',
     'fort'
   ]);
-  assert.equal(listStructureDefinitions().length, 6);
+  assert.equal(listStructureDefinitions().length, 10);
 
   const outpostDefinition = getStructureDefinition('outpost');
   const watchtowerDefinition = getStructureDefinition('watchtower');
+  const huntingTentDefinition = getStructureDefinition('hunting_tent');
+  const woodPostDefinition = getStructureDefinition('wood_gathering_post');
+  const builderLodgeDefinition = getStructureDefinition('builder_lodge');
+  const storageTentDefinition = getStructureDefinition('storage_tent');
   const wallDefinition = getStructureDefinition('wall_segment');
   const gateDefinition = getStructureDefinition('gate');
   const trenchDefinition = getStructureDefinition('trench_segment');
@@ -53,15 +61,46 @@ export function run() {
   assert.equal(outpostDefinition.occupancy.capacitySquads, 2);
   assert.equal(outpostDefinition.footprint.blocksGroundMovement, true);
   assert.equal(outpostDefinition.influence.controlRadius > 0, true);
+  assert.equal(outpostDefinition.gathering.enabled, true);
+  assert.equal(outpostDefinition.gathering.mode, 'outpost-native');
+  assert.equal(outpostDefinition.gathering.assignedWorkers, 1);
 
   assert.equal(watchtowerDefinition.occupancy.capacitySquads, 1);
   assert.equal(watchtowerDefinition.influence.visionRadius > outpostDefinition.influence.visionRadius, true);
   assert.equal(watchtowerDefinition.combat.heightAdvantage > outpostDefinition.combat.heightAdvantage, true);
   assert.equal(watchtowerDefinition.integrity.maxHealth < outpostDefinition.integrity.maxHealth, true);
 
+  assert.equal(huntingTentDefinition.gathering.enabled, true);
+  assert.equal(huntingTentDefinition.gathering.resourceId, 'food');
+  assert.equal(huntingTentDefinition.gathering.assignedWorkers, 2);
+  assert.equal(huntingTentDefinition.gathering.requiresReturn, false);
+
+  assert.equal(woodPostDefinition.gathering.enabled, true);
+  assert.equal(woodPostDefinition.gathering.resourceId, 'wood');
+  assert.equal(woodPostDefinition.gathering.assignedWorkers, 2);
+  assert.equal(woodPostDefinition.gathering.requiresReturn, true);
+  assert.deepEqual(woodPostDefinition.gathering.sourceTerrain, ['forest']);
+  assert.equal(woodPostDefinition.construction.materials.timber ?? 0, 0);
+
+  assert.equal(outpostDefinition.workforce.enabled, true);
+  assert.equal(outpostDefinition.workforce.canTrainBuilders, true);
+  assert.equal(outpostDefinition.workforce.builderCapacityBonus, 2);
+  assert.equal(outpostDefinition.workforce.initialBuilderCrews, 1);
+
+  assert.equal(builderLodgeDefinition.workforce.enabled, true);
+  assert.equal(builderLodgeDefinition.workforce.canTrainBuilders, true);
+  assert.equal(builderLodgeDefinition.workforce.builderCapacityBonus, 2);
+  assert.equal(builderLodgeDefinition.workforce.initialBuilderCrews, 0);
+  assert.equal(builderLodgeDefinition.occupancy.capacitySquads, 0);
+
+  assert.equal(storageTentDefinition.storage.enabled, true);
+  assert.equal(storageTentDefinition.storage.capacityBonus > 0, true);
+  assert.equal(storageTentDefinition.storage.transportSlots, 1);
+
   assert.equal(wallDefinition.footprint.blocksGroundMovement, true);
   assert.equal(wallDefinition.occupancy.mode, 'wall_top');
-  assert.equal(wallDefinition.occupancy.enabled, false);
+  assert.equal(wallDefinition.occupancy.enabled, true);
+  assert.equal(wallDefinition.occupancy.capacitySquads, 1);
 
   assert.equal(gateDefinition.nav.allowsFriendlyPassage, true);
   assert.equal(gateDefinition.nav.allowsEnemyPassage, false);

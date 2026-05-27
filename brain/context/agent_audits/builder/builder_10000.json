@@ -1,0 +1,25 @@
+{
+  "version": "ace/agent-audit.v0",
+  "audit_id": "builder_10000",
+  "created_at": "2026-04-02T10:45:56.171Z",
+  "updated_at": "2026-04-02T10:45:56.171Z",
+  "agent_id": "executor",
+  "agent_version": "ace/agent-attribution.v0",
+  "task_id": "10000",
+  "stage": "builder",
+  "artifact_refs": [
+    "work/tasks/10000-planner-task/agent_attribution.json",
+    "work/tasks/10000-planner-task/apply_result.json",
+    "work/tasks/10000-planner-task/meta.json",
+    "work/tasks/10000-planner-task/patch.diff"
+  ],
+  "outcome": "passed",
+  "pass_fail": "pass",
+  "scope_discipline_score": 90,
+  "architecture_respect_score": 78,
+  "output_clarity_score": 94,
+  "recovery_burden_score": 94,
+  "validation_rigour_score": 98,
+  "review_summary": "Strong builder run: clean pass, known failure: git_apply_check_failed.",
+  "recommended_followup": "Address the known avoidable failure (git_apply_check_failed) before retrying this path."
+}

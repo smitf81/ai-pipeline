@@ -1,0 +1,192 @@
+{
+  "version": "ace/boot-recovery-daemon.v0",
+  "daemon_id": "autonomous_boot_recovery_daemon",
+  "started_at": "2026-04-08T07:08:10.890Z",
+  "updated_at": "2026-05-15T23:04:07.578Z",
+  "status": "healthy",
+  "phase": "healthy",
+  "failure_class": null,
+  "failure_stage": null,
+  "asset": null,
+  "reason": "",
+  "selected_lane": "validation_seam",
+  "attempt_count": 0,
+  "max_attempts": 2,
+  "latest_attempt": null,
+  "blocked_reason": null,
+  "auto_reload_ready": false,
+  "boot_health": {
+    "checked": true,
+    "ok": true,
+    "safeMode": false,
+    "reason": "",
+    "checkedAt": "2026-05-15T23:04:07.497Z",
+    "failureClass": null,
+    "failureStage": null,
+    "asset": null,
+    "httpStatus": null,
+    "clientBootContract": {
+      "version": "ace/studio-boot-contract.v1",
+      "ok": true,
+      "safeMode": false,
+      "failure_class": null,
+      "failure_stage": null,
+      "reason": "",
+      "asset": null,
+      "http_status": null,
+      "mount_marker": {
+        "attribute": "data-boot",
+        "value": "studio-mounted"
+      },
+      "root_id": "spatial-root",
+      "stages": {
+        "html_loaded": {
+          "status": "ok",
+          "ok": true,
+          "reason": ""
+        },
+        "root_dom_found": {
+          "status": "ok",
+          "ok": true,
+          "reason": ""
+        },
+        "core_bundle_loaded": {
+          "status": "ok",
+          "ok": true,
+          "reason": ""
+        },
+        "required_modules_loaded": {
+          "status": "ok",
+          "ok": true,
+          "reason": ""
+        },
+        "app_mounted": {
+          "status": "unknown",
+          "ok": null,
+          "reason": "Client watchdog must confirm mount marker visibility."
+        },
+        "first_render_complete": {
+          "status": "unknown",
+          "ok": null,
+          "reason": "Client watchdog must confirm first render completion."
+        }
+      },
+      "assets": [
+        {
+          "id": "studio_boot_asset_1",
+          "path": "/vendor/react.development.js",
+          "label": "Local React runtime",
+          "kind": "core_runtime",
+          "stage": "core_bundle_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/vendor/react.development.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_2",
+          "path": "/vendor/react-dom.development.js",
+          "label": "Local React DOM runtime",
+          "kind": "core_runtime",
+          "stage": "core_bundle_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/vendor/react-dom.development.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_3",
+          "path": "/spatial/spatialBootstrap.js",
+          "label": "Studio bootstrap entry",
+          "kind": "boot_entry",
+          "stage": "core_bundle_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/spatial/spatialBootstrap.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_4",
+          "path": "/spatial/spatialApp.js",
+          "label": "Spatial app entry module",
+          "kind": "app_entry",
+          "stage": "required_modules_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/spatial/spatialApp.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_5",
+          "path": "/spatial/intentContract.browser.js",
+          "label": "Browser intent contract helper",
+          "kind": "required_module",
+          "stage": "required_modules_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/spatial/intentContract.browser.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_6",
+          "path": "/spatial/spatialSeamContract.js",
+          "label": "Spatial seam contract",
+          "kind": "required_module",
+          "stage": "required_modules_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/spatial/spatialSeamContract.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_7",
+          "path": "/favicon.ico",
+          "label": "Favicon",
+          "kind": "favicon",
+          "stage": "required_modules_loaded",
+          "blocking": false,
+          "resolved_path": "ui/public/favicon.ico",
+          "status": "missing",
+          "ok": false,
+          "http_status": 404,
+          "reason": "/favicon.ico returned 404 (Not Found)."
+        }
+      ],
+      "warnings": [
+        {
+          "id": "studio_boot_asset_7",
+          "path": "/favicon.ico",
+          "label": "Favicon",
+          "kind": "favicon",
+          "stage": "required_modules_loaded",
+          "blocking": false,
+          "resolved_path": "ui/public/favicon.ico",
+          "status": "missing",
+          "ok": false,
+          "http_status": 404,
+          "reason": "/favicon.ico returned 404 (Not Found)."
+        }
+      ]
+    },
+    "stateShape": {
+      "systemNodes": 0,
+      "systemEdges": 0,
+      "worldNodes": 0,
+      "worldEdges": 0,
+      "graphLayers": 2
+    }
+  },
+  "history": []
+}

@@ -1,17 +1,23 @@
 import { FIELD_OVERLAYS, TERRAIN_ORDER, getTerrain } from '../config/terrain.js';
+import { EXPERIENCE_MODES } from '../core/appModes.js';
 import { BRUSH_SHAPES } from '../editor/brush.js';
-import { exportEditorMap, exportGameState, importEditorMap, importGameState, redo, resetMap, undo } from '../editor/editorState.js';
+import { activateScenario, exportEditorMap, exportGameState, importEditorMap, importGameState, redo, replaceMap, resetMap, undo } from '../editor/editorState.js';
 import { GAME_OVERLAYS, MOVEMENT_MODEL, PRESSURE_STANCES, getSelectedGameEntity, resetGameForMap, setPlayerPressureStance, summarizeStructureTopology } from '../game/gameModel.js';
 import { RESOURCE_IDS } from '../game/economy.js';
 import { getElevation, getTile } from '../world/mapModel.js';
+import { MAP_GENERATION_PRESETS, createFirstNightMap, createRandomMapSeed, createSeededMap } from '../world/mapGenerator.js';
+import { SCENARIO_CAMERA_MODES, SCENARIO_STORY_PRESETS, createRandomScenarioSeed, createScenarioLayerForMap, normaliseScenarioCameraRig, normaliseScenarioLayer, summarizeScenarioLayer, updateScenarioCameraRig } from '../world/scenarioLayer.js';
+import { createDefaultScenarioSpine, normaliseScenarioRuntime, summarizeScenarioSpine, validateScenarioSpine } from '../world/scenarioSpine.js';
+import { ensureScenarioCatalogueForMap, getScenarioSelectionSlots, summarizeScenarioCatalogue } from '../world/scenarioCatalogue.js';
+import { SCENE_PLACEMENT_TOOLS, createBlankSceneEntity, ensureSceneEntityForMap, getScenePresentation, isNomadicSurvivalScene, placeSceneEntity, summarizeSceneEntity, updateScenePresentation } from '../world/sceneEntity.js';
 import { getFieldValue } from '../world/fields.js';
 
 export function mountModeControls(root, state, bus) {
-  const section = createSection('Prototype Mode');
+  const section = createSection('Sim / Debug');
   const row = document.createElement('div');
   row.className = 'button-row';
-  const playButton = button('Play Loop');
-  const editButton = button('Edit Map');
+  const playButton = button('Run Sim');
+  const editButton = button('Map Maker');
   row.append(playButton, editButton);
   const hint = document.createElement('p');
   hint.className = 'status-line';
@@ -19,22 +25,28 @@ export function mountModeControls(root, state, bus) {
   root.append(section);
 
   playButton.addEventListener('click', () => {
+    state.experienceMode = EXPERIENCE_MODES.SIM_DEBUG;
     state.mode = 'play';
-    state.status = 'Play loop active: click leaders/outposts to inspect command';
+    state.status = 'Sim / Debug active: tick tools and command inspectors unlocked';
     bus.emit('render');
   });
   editButton.addEventListener('click', () => {
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     state.mode = 'edit';
-    state.status = 'Edit mode active: paint terrain, then return to play loop';
+    state.gameOverlay = 'none';
+    state.showCommandRadii = false;
+    state.showNoisePings = false;
+    state.showFieldOfView = false;
+    state.status = 'Map Maker active: paint terrain, lighting and field overlays';
     bus.emit('render');
   });
 
   function render() {
     playButton.setAttribute('aria-pressed', String(state.mode === 'play'));
     editButton.setAttribute('aria-pressed', String(state.mode === 'edit'));
-    hint.textContent = state.mode === 'play'
-      ? 'Play: select command units and read their influence graph.'
-      : 'Edit: terrain changes immediately alter derived command pressure.';
+    hint.textContent = state.experienceMode === EXPERIENCE_MODES.SIM_DEBUG
+      ? 'Sim: inspect ticks, command graphs and tactical overlays.'
+      : 'Map Maker: terrain changes rebuild derived fields.';
   }
 
   bus.on('render', render);
@@ -60,6 +72,7 @@ export function mountTerrainPalette(root, state, bus) {
       terrainButton.addEventListener('click', () => {
         state.brush.tool = 'terrain';
         state.brush.terrainId = id;
+        state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
         state.mode = 'edit';
         state.status = `${terrain.label} brush selected`;
         bus.emit('render');
@@ -79,7 +92,7 @@ export function mountBrushControls(root, state, bus) {
   const terrainTool = button('Terrain');
   const raiseTool = button('Raise');
   const lowerTool = button('Lower');
-  toolRow.append(terrainTool, raiseTool);
+  toolRow.append(terrainTool, raiseTool, lowerTool);
 
   const radiusRow = createControlRow('Size');
   const radius = document.createElement('input');
@@ -98,9 +111,7 @@ export function mountBrushControls(root, state, bus) {
     shape.append(option);
   });
 
-  const shapeLabel = document.createElement('label');
-  shapeLabel.className = 'field-label';
-  shapeLabel.textContent = 'Shape';
+  const shapeRow = createControlRow('Shape');
 
   const heightRow = createControlRow('Height step');
   const heightDelta = document.createElement('input');
@@ -115,11 +126,13 @@ export function mountBrushControls(root, state, bus) {
   lowerHint.className = 'status-line';
   lowerHint.textContent = 'Ctrl-drag lowers while painting height.';
 
-  section.append(toolRow, lowerTool, radiusRow, shapeLabel, shape, heightRow, lowerHint);
+  shapeRow.append(shape);
+  section.append(toolRow, radiusRow, shapeRow, heightRow, lowerHint);
   root.append(section);
 
   terrainTool.addEventListener('click', () => {
     state.brush.tool = 'terrain';
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     state.mode = 'edit';
     state.status = 'Terrain brush active';
     bus.emit('render');
@@ -128,6 +141,7 @@ export function mountBrushControls(root, state, bus) {
     state.brush.tool = 'height';
     state.brush.heightDirection = 'raise';
     state.activeField = 'height';
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     state.mode = 'edit';
     state.status = 'Height brush active: drag to raise terrain';
     bus.emit('render');
@@ -136,24 +150,31 @@ export function mountBrushControls(root, state, bus) {
     state.brush.tool = 'height';
     state.brush.heightDirection = 'lower';
     state.activeField = 'height';
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     state.mode = 'edit';
     state.status = 'Height brush active: drag to lower terrain';
     bus.emit('render');
   });
   radius.addEventListener('input', () => {
     state.brush.radius = Number(radius.value);
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     state.mode = 'edit';
     bus.emit('render');
   });
   shape.addEventListener('change', () => {
     state.brush.shape = shape.value;
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     state.mode = 'edit';
     bus.emit('render');
   });
   heightDelta.addEventListener('input', () => {
     state.brush.heightDelta = Number(heightDelta.value);
-    state.brush.tool = 'height';
-    state.activeField = 'height';
+    // Only activate height tool if we are already in height mode. This preserves
+    // the current raise/lower direction and avoids hijacking a terrain-paint session.
+    if (state.brush.tool === 'height') {
+      state.activeField = 'height';
+    }
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     state.mode = 'edit';
     bus.emit('render');
   });
@@ -212,18 +233,21 @@ export function mountFieldControls(root, state, bus) {
   root.append(section);
 
   select.addEventListener('change', () => {
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     state.activeField = select.value;
     state.status = state.activeField === 'none' ? 'Terrain overlay cleared' : `${FIELD_OVERLAYS[state.activeField].label} terrain overlay`;
     bus.emit('render');
   });
 
   lightingToggle.addEventListener('change', () => {
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     state.dynamicLighting = lightingToggle.checked;
     state.status = state.dynamicLighting ? 'Dynamic 2D Lighting enabled' : 'Flat shading enabled';
     bus.emit('render');
   });
 
   function downloadBakedTexture(type) {
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
     const originalField = state.activeField;
     state.activeField = type;
     
@@ -281,6 +305,7 @@ export function mountGameControls(root, state, bus) {
     stanceButton.title = stance.description;
     stanceButton.addEventListener('click', () => {
       setPlayerPressureStance(state.game, state.map, stance.id);
+      state.experienceMode = EXPERIENCE_MODES.SIM_DEBUG;
       state.mode = 'play';
       state.gameDirty = true;
       state.status = `Player order: ${stance.label} pressure`;
@@ -344,9 +369,21 @@ export function mountGameControls(root, state, bus) {
   radiiToggle.type = 'checkbox';
   radiiRow.append(radiiToggle, document.createTextNode(' Show command radius'));
 
+  const noiseRow = document.createElement('label');
+  noiseRow.className = 'checkbox-row';
+  const noiseToggle = document.createElement('input');
+  noiseToggle.type = 'checkbox';
+  noiseRow.append(noiseToggle, document.createTextNode(' Show sound / hearing pings'));
+
+  const facingRow = document.createElement('label');
+  facingRow.className = 'checkbox-row';
+  const facingToggle = document.createElement('input');
+  facingToggle.type = 'checkbox';
+  facingRow.append(facingToggle, document.createTextNode(' Show field-of-view cones'));
+
   const summary = document.createElement('div');
   summary.className = 'compact-summary';
-  advancedBody.append(tickRow, intervalRow, stateRow, overlayLabel, overlaySelect, radiiRow, summary, stateFileInput);
+  advancedBody.append(tickRow, intervalRow, stateRow, overlayLabel, overlaySelect, radiiRow, noiseRow, facingRow, summary, stateFileInput);
   advanced.append(advancedBody);
   section.append(liveHint, playerOrderLabel, playerOrderRow, quickSummary, advanced);
   root.append(section);
@@ -355,11 +392,13 @@ export function mountGameControls(root, state, bus) {
     bus.emit('game:step-tick');
   });
   resetButton.addEventListener('click', () => {
+    state.experienceMode = EXPERIENCE_MODES.SIM_DEBUG;
     resetGameForMap(state);
     state.renderMotion = null;
     bus.emit('render');
   });
   intervalInput.addEventListener('input', () => {
+    state.experienceMode = EXPERIENCE_MODES.SIM_DEBUG;
     state.simTickIntervalMs = Number(intervalInput.value);
     state.status = `Tick interval: ${state.simTickIntervalMs}ms`;
     bus.emit('render');
@@ -391,18 +430,32 @@ export function mountGameControls(root, state, bus) {
   });
 
   overlaySelect.addEventListener('change', () => {
+    state.experienceMode = EXPERIENCE_MODES.SIM_DEBUG;
     state.gameOverlay = overlaySelect.value;
     state.status = state.gameOverlay === 'none' ? 'Command overlay cleared' : `${GAME_OVERLAYS[state.gameOverlay].label} overlay`;
     bus.emit('render');
   });
   radiiToggle.addEventListener('change', () => {
+    state.experienceMode = EXPERIENCE_MODES.SIM_DEBUG;
     state.showCommandRadii = radiiToggle.checked;
+    bus.emit('render');
+  });
+  noiseToggle.addEventListener('change', () => {
+    state.experienceMode = EXPERIENCE_MODES.SIM_DEBUG;
+    state.showNoisePings = noiseToggle.checked;
+    bus.emit('render');
+  });
+  facingToggle.addEventListener('change', () => {
+    state.experienceMode = EXPERIENCE_MODES.SIM_DEBUG;
+    state.showFieldOfView = facingToggle.checked;
     bus.emit('render');
   });
 
   function render() {
     overlaySelect.value = state.gameOverlay;
     radiiToggle.checked = state.showCommandRadii;
+    noiseToggle.checked = state.showNoisePings;
+    facingToggle.checked = state.showFieldOfView;
     const leaders = state.game.leaders;
     const player = leaders.find((leader) => leader.factionId === 'player');
     const enemy = leaders.find((leader) => leader.factionId === 'enemy');
@@ -422,6 +475,7 @@ export function mountGameControls(root, state, bus) {
       metric('Supplies', formatSupplies(state.game, 'player')),
       metric('Structures', structureTopology.totalStructures),
       metric('Objective', objective?.status ?? 'none'),
+      metric('Weather', formatWeatherSummary(state.game)),
       metric('Control', objective ? `${Math.round(objective.control.player * 100)} / ${Math.round(objective.control.enemy * 100)}` : 'n/a')
     );
     summary.replaceChildren(
@@ -439,6 +493,9 @@ export function mountGameControls(root, state, bus) {
       metric('Trenches', structureTopology.trenchModifiers),
       metric('P Pressure', objective?.projectedPressure?.player?.toFixed?.(2) ?? 'n/a'),
       metric('E Pressure', objective?.projectedPressure?.enemy?.toFixed?.(2) ?? 'n/a'),
+      metric('Weather', formatWeatherSummary(state.game)),
+      metric('Storm Cells', state.game?.weather?.stormCells ?? 0),
+      metric('Rain Cells', state.game?.weather?.rainCells ?? 0),
       metric('Control', objective ? `${Math.round(objective.control.player * 100)} / ${Math.round(objective.control.enemy * 100)}` : 'n/a')
     );
   }
@@ -461,7 +518,39 @@ export function mountMapControls(root, state, bus) {
   fileInput.accept = 'application/json,.json';
   fileInput.className = 'hidden-file';
   row.append(undoButton, redoButton, exportButton, importButton);
-  section.append(row, resetButton, fileInput);
+
+  const generatorLabel = document.createElement('p');
+  generatorLabel.className = 'field-label';
+  generatorLabel.textContent = 'Seeded Generator';
+
+  const seedRow = createControlRow('Seed');
+  const seedInput = document.createElement('input');
+  seedInput.type = 'text';
+  seedInput.placeholder = 'front-...';
+  seedInput.value = state.map.scenario?.generator?.seed ?? createRandomMapSeed();
+  seedRow.append(seedInput);
+
+  const presetRow = createControlRow('Preset');
+  const presetSelect = document.createElement('select');
+  Object.values(MAP_GENERATION_PRESETS).forEach((preset) => {
+    const option = document.createElement('option');
+    option.value = preset.id;
+    option.textContent = `${preset.label} · ${preset.width}x${preset.height} cells · ${preset.targetTextureSize}px bake`;
+    presetSelect.append(option);
+  });
+  presetSelect.value = state.map.scenario?.generator?.preset ?? 'frontier_2k';
+  presetRow.append(presetSelect);
+
+  const generatorRow = document.createElement('div');
+  generatorRow.className = 'button-row';
+  const newSeedButton = button('New Seed');
+  const generateButton = button('Generate Map');
+  generatorRow.append(newSeedButton, generateButton);
+
+  const generatorHint = document.createElement('p');
+  generatorHint.className = 'status-line';
+
+  section.append(row, generatorLabel, seedRow, presetRow, generatorRow, generatorHint, resetButton, fileInput);
   root.append(section);
 
   undoButton.addEventListener('click', () => {
@@ -476,12 +565,33 @@ export function mountMapControls(root, state, bus) {
     resetMap(state);
     bus.emit('render');
   });
+  newSeedButton.addEventListener('click', () => {
+    seedInput.value = createRandomMapSeed();
+    state.status = `New seed ready: ${seedInput.value}`;
+    bus.emit('render');
+  });
+  generateButton.addEventListener('click', () => {
+    const seed = seedInput.value.trim() || createRandomMapSeed();
+    seedInput.value = seed;
+    const preset = presetSelect.value || 'frontier_2k';
+    const nextMap = preset === 'first_night_blockout' ? createFirstNightMap({ seed }) : createSeededMap({ seed, preset });
+    replaceMap(state, nextMap, {
+      status: preset === 'first_night_blockout'
+        ? `Generated The First Night natural shelter blockout (${seed})`
+        : `Generated ${nextMap.width}x${nextMap.height} seeded frontier (${seed}) with ${nextMap.scenario?.neutralOutposts?.length ?? 0} neutral outposts`
+    });
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
+    state.mode = 'edit';
+    bus.emit('render');
+  });
   exportButton.addEventListener('click', () => {
     const blob = new Blob([exportEditorMap(state)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'field-fronts-map.json';
+    anchor.download = state.map.scenario?.generator?.seed
+      ? `field-fronts-map-${state.map.scenario.generator.seed}.json`
+      : 'field-fronts-map.json';
     anchor.click();
     URL.revokeObjectURL(url);
     state.status = 'Map exported';
@@ -501,6 +611,490 @@ export function mountMapControls(root, state, bus) {
     fileInput.value = '';
     bus.emit('render');
   });
+
+  function render() {
+    const generator = state.map.scenario?.generator;
+    if (generator?.seed && document.activeElement !== seedInput) {
+      seedInput.value = generator.seed;
+    }
+    if (generator?.preset && MAP_GENERATION_PRESETS[generator.preset]) {
+      presetSelect.value = generator.preset;
+    }
+    generatorHint.textContent = generator
+      ? `${generator.preset} · ${state.map.width}x${state.map.height} cells · ${generator.targetTextureSize}px bake target · ${state.map.scenario?.neutralOutposts?.length ?? 0} neutral outposts`
+      : 'Generate a deterministic frontier: same seed = same terrain, starts and neutral outposts.';
+    if (generator?.preset === 'first_night_blockout') {
+      generatorHint.textContent = `The First Night blockout - ${state.map.width}x${state.map.height} cells - natural shelter chain`;
+    }
+  }
+
+  bus.on('render', render);
+  render();
+}
+
+
+export function mountScenarioControls(root, state, bus) {
+  const section = createSection('Scenario Spine');
+
+  const modeHint = document.createElement('p');
+  modeHint.className = 'status-line';
+  modeHint.textContent = 'Build the playable spine only: beginning, middle world-events, and ending. No cutscene lock, no dialogue tree swamp.';
+
+  const scenarioRow = createControlRow('Chapter');
+  const scenarioSelect = document.createElement('select');
+  scenarioRow.append(scenarioSelect);
+
+  const seedRow = createControlRow('Scene seed');
+  const seedInput = document.createElement('input');
+  seedInput.type = 'text';
+  seedInput.placeholder = 'scene-...';
+  seedInput.value = state.map.scenario?.scenarioLayer?.seed ?? createRandomScenarioSeed();
+  seedRow.append(seedInput);
+
+  const presetRow = createControlRow('Mood preset');
+  const presetSelect = document.createElement('select');
+  Object.values(SCENARIO_STORY_PRESETS).forEach((preset) => {
+    const option = document.createElement('option');
+    option.value = preset.id;
+    option.textContent = preset.label;
+    presetSelect.append(option);
+  });
+  presetSelect.value = state.map.scenario?.scenarioLayer?.preset ?? 'black_sky_arrival';
+  presetRow.append(presetSelect);
+
+  ensureScenarioCatalogueForMap(state.map);
+  state.activeScenarioId = state.map.scenario?.activeScenarioId ?? state.activeScenarioId ?? 'chapter_001';
+
+  const actionRow = document.createElement('div');
+  actionRow.className = 'button-row';
+  const newSeedButton = button('New Seed');
+  const generateButton = button('Generate Spine');
+  actionRow.append(newSeedButton, generateButton);
+
+  const secondaryRow = document.createElement('div');
+  secondaryRow.className = 'button-row';
+  const activateScenarioButton = button('Use Chapter');
+  const previewOmenButton = button('Preview Omen');
+  secondaryRow.append(activateScenarioButton, previewOmenButton);
+
+  const blankSceneRow = document.createElement('div');
+  blankSceneRow.className = 'button-row';
+  const newBlankSceneButton = button('New Blank Scene');
+  const clearPlacementButton = button('Clear Placement Tool');
+  blankSceneRow.append(newBlankSceneButton, clearPlacementButton);
+
+  const toggleRow = document.createElement('label');
+  toggleRow.className = 'checkbox-row';
+  const showToggle = document.createElement('input');
+  showToggle.type = 'checkbox';
+  toggleRow.append(showToggle, document.createTextNode(' Show diegetic event layer'));
+
+  const presentationHeading = document.createElement('p');
+  presentationHeading.className = 'scenario-tool-heading';
+  presentationHeading.textContent = 'Scene Presentation';
+  const presentationToggles = [
+    ['ui', 'statusBar', 'Status and pause bar'],
+    ['ui', 'playtest', 'Playtest diagnostics'],
+    ['ui', 'build', 'Build and order buttons'],
+    ['ui', 'resources', 'Resource panel'],
+    ['ui', 'selection', 'Selection details'],
+    ['visuals', 'weather', 'Clouds and storm weather']
+  ].map(([group, id, label]) => {
+    const row = document.createElement('label');
+    row.className = 'checkbox-row';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    row.append(input, document.createTextNode(` ${label}`));
+    input.addEventListener('change', () => {
+      updateScenePresentation(state.map, group, id, input.checked);
+      state.map.revision = (state.map.revision ?? 0) + 1;
+      state.dirty = true;
+      state.status = `${label}: ${input.checked ? 'visible' : 'hidden'} in this scene`;
+      bus.emit('render');
+    });
+    return { group, id, row, input };
+  });
+
+  const placementHeading = document.createElement('p');
+  placementHeading.className = 'scenario-tool-heading';
+  placementHeading.textContent = 'Place Scene Entities';
+  const placementHint = document.createElement('p');
+  placementHint.className = 'status-line';
+  placementHint.textContent = 'Choose an object, then click its tile on the map.';
+  const placementGrid = document.createElement('div');
+  placementGrid.className = 'scenario-placement-grid';
+  const placementButtons = SCENE_PLACEMENT_TOOLS.map((tool) => {
+    const toolButton = button(tool.label);
+    toolButton.dataset.sceneTool = tool.id;
+    toolButton.addEventListener('click', () => {
+      state.scenePlacementTool = tool.id;
+      state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
+      state.mode = 'edit';
+      state.status = `${tool.label}: click the map to place`;
+      bus.emit('render');
+    });
+    placementGrid.append(toolButton);
+    return toolButton;
+  });
+  const placementList = document.createElement('div');
+  placementList.className = 'scenario-list';
+
+  const cameraModeRow = createControlRow('Opening camera');
+  const cameraModeSelect = document.createElement('select');
+  ['full_scene', 'commander', 'selected_unit', 'selected_point'].forEach((id) => {
+    const mode = SCENARIO_CAMERA_MODES[id];
+    const option = document.createElement('option');
+    option.value = mode.id;
+    option.textContent = mode.label;
+    cameraModeSelect.append(option);
+  });
+  cameraModeSelect.value = state.scenarioCamera?.mode ?? 'commander';
+  cameraModeRow.append(cameraModeSelect);
+
+  const zoomRow = createControlRow('Opening zoom');
+  const zoomInput = document.createElement('input');
+  zoomInput.type = 'range';
+  zoomInput.min = '1';
+  zoomInput.max = '4';
+  zoomInput.step = '0.25';
+  zoomInput.value = String(state.scenarioCamera?.zoom ?? 1.25);
+  const zoomOutput = document.createElement('output');
+  zoomOutput.textContent = `${Number(zoomInput.value).toFixed(2)}x`;
+  zoomRow.append(zoomInput, zoomOutput);
+
+  const cameraPointRow = document.createElement('div');
+  cameraPointRow.className = 'button-row';
+  const setPointButton = button('Set Point From Tile');
+  const resetCameraButton = button('Reset Full Scene');
+  cameraPointRow.append(setPointButton, resetCameraButton);
+
+  const spineStatus = document.createElement('div');
+  spineStatus.className = 'scenario-spine-status';
+
+  const spineGrid = document.createElement('div');
+  spineGrid.className = 'scenario-spine-grid';
+  const beginningCard = createSpineCard('Beginning');
+  const middleCard = createSpineCard('Middle Events');
+  const endingCard = createSpineCard('Ending');
+  spineGrid.append(beginningCard.card, middleCard.card, endingCard.card);
+
+  const eventList = document.createElement('div');
+  eventList.className = 'scenario-list';
+
+  section.append(
+    modeHint, scenarioRow, seedRow, presetRow, actionRow, secondaryRow, blankSceneRow,
+    presentationHeading, ...presentationToggles.map((entry) => entry.row), toggleRow,
+    placementHeading, placementHint, placementGrid, placementList,
+    cameraModeRow, zoomRow, cameraPointRow, spineStatus, spineGrid, eventList
+  );
+  root.append(section);
+
+  newSeedButton.addEventListener('click', () => {
+    seedInput.value = createRandomScenarioSeed();
+    state.status = `New scenario seed ready: ${seedInput.value}`;
+    bus.emit('render');
+  });
+
+  generateButton.addEventListener('click', () => {
+    const seed = seedInput.value.trim() || createRandomScenarioSeed();
+    seedInput.value = seed;
+    const preset = presetSelect.value || 'black_sky_arrival';
+    const scenarioLayer = createScenarioLayerForMap(state.map, { seed, preset });
+    const scenarioSpine = createDefaultScenarioSpine({
+      ...state.map,
+      scenario: {
+        ...(state.map.scenario ?? {}),
+        scenarioLayer
+      }
+    }, scenarioLayer);
+    state.map.scenario = {
+      ...(state.map.scenario ?? {}),
+      scenarioLayer,
+      scenarioSpine,
+      scenarioRuntime: normaliseScenarioRuntime({}, scenarioSpine)
+    };
+    ensureScenarioCatalogueForMap(state.map, { seed, preset });
+    activateScenario(state, state.map.scenario.activeScenarioId ?? 'chapter_001');
+    state.map.revision = (state.map.revision ?? 0) + 1;
+    state.showScenarioLayer = true;
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
+    state.mode = 'edit';
+    state.dirty = true;
+    state.gameDirty = true;
+    state.scenarioCamera = normaliseScenarioCameraRig(scenarioSpine.beginning.openingCamera, { fallbackPoint: scenarioSpine.beginning.commanderStart });
+    state.status = `Scenario spine generated: beginning, ${scenarioSpine.middle.events.length} middle events, ending gate`;
+    bus.emit('render');
+  });
+
+  activateScenarioButton.addEventListener('click', () => {
+    const result = activateScenario(state, scenarioSelect.value);
+    state.showScenarioLayer = true;
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
+    state.mode = 'edit';
+    state.status = result.ok
+      ? `Scenario spine selected: ${result.scenario.title}`
+      : 'No available scenario selected.';
+    bus.emit('render');
+  });
+
+  newBlankSceneButton.addEventListener('click', () => {
+    const seed = seedInput.value.trim() || createRandomScenarioSeed();
+    const preset = presetSelect.value || 'black_sky_arrival';
+    state.map.scenario = {
+      ...(state.map.scenario ?? {}),
+      sceneEntity: createBlankSceneEntity(),
+      scenarioLayer: normaliseScenarioLayer({
+        seed,
+        preset,
+        status: 'draft',
+        notes: 'Blank scene: add authored beats, entities and presentation options in Map Maker.'
+      }),
+      scenarioSpine: {
+        id: 'chapter_001_spine',
+        chapterId: 'chapter_001',
+        title: 'Chapter 1',
+        designIntent: 'Blank scene awaiting authored beginning, gameplay events and ending.',
+        beginning: { commanderStart: null, openingCamera: { mode: 'full_scene', zoom: 1 }, worldCue: null, silhouette: null },
+        middle: { events: [] },
+        ending: { victory: null, failure: null, nextScenarioId: null }
+      }
+    };
+    ensureSceneEntityForMap(state.map);
+    state.scenePlacementTool = null;
+    state.showScenarioLayer = false;
+    resetGameForMap(state);
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
+    state.mode = 'edit';
+    state.map.revision = (state.map.revision ?? 0) + 1;
+    state.dirty = true;
+    state.gameDirty = true;
+    state.status = 'Blank Chapter 1 scene ready: place starts, units, nodes and story logic';
+    bus.emit('render');
+  });
+
+  clearPlacementButton.addEventListener('click', () => {
+    state.scenePlacementTool = null;
+    state.status = 'Scene placement tool cleared';
+    bus.emit('render');
+  });
+
+  showToggle.addEventListener('change', () => {
+    state.showScenarioLayer = showToggle.checked;
+    updateScenePresentation(state.map, 'visuals', 'scenarioLayer', showToggle.checked);
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
+    state.dirty = true;
+    state.status = state.showScenarioLayer ? 'Scenario spine layer visible' : 'Scenario spine layer hidden';
+    bus.emit('render');
+  });
+
+  bus.on('scenario:place-entity', ({ tile } = {}) => {
+    const tool = SCENE_PLACEMENT_TOOLS.find((candidate) => candidate.id === state.scenePlacementTool);
+    if (!tool || !tile) return;
+    const result = placeSceneEntity(state.map, tool.id, tile);
+    if (!result.ok) {
+      state.status = 'Could not place scene entity on this tile';
+      bus.emit('render');
+      return;
+    }
+    resetGameForMap(state);
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
+    state.mode = 'edit';
+    state.map.revision = (state.map.revision ?? 0) + 1;
+    state.dirty = true;
+    state.gameDirty = true;
+    state.status = `${tool.label} placed at ${tile.x}, ${tile.y}`;
+    bus.emit('render');
+  });
+
+  cameraModeSelect.addEventListener('change', () => {
+    applyOpeningCameraPatch({ mode: cameraModeSelect.value });
+  });
+
+  zoomInput.addEventListener('input', () => {
+    applyOpeningCameraPatch({ zoom: Number(zoomInput.value) });
+  });
+
+  setPointButton.addEventListener('click', () => {
+    const point = state.selectedTile ?? state.hoverTile ?? state.map.scenario?.scenarioSpine?.beginning?.commanderStart ?? null;
+    if (!point) {
+      state.status = 'Select or hover a map tile before setting the opening camera point.';
+      bus.emit('render');
+      return;
+    }
+    applyOpeningCameraPatch({ mode: 'selected_point', point });
+  });
+
+  resetCameraButton.addEventListener('click', () => {
+    applyOpeningCameraPatch({ mode: 'full_scene', zoom: 1, point: state.scenarioCamera?.point ?? null });
+  });
+
+  previewOmenButton.addEventListener('click', () => {
+    const cue = state.map.scenario?.scenarioSpine?.beginning?.worldCue ?? state.map.scenario?.scenarioLayer?.cameraCues?.[0];
+    if (!cue) {
+      state.status = 'Generate a scenario spine before previewing the omen cue.';
+      bus.emit('render');
+      return;
+    }
+    state.showScenarioLayer = true;
+    applyOpeningCameraPatch({ mode: 'selected_point', point: cue.tile, cueId: cue.id }, { silent: true });
+    bus.emit('scenario:camera-shake', { cue: { ...cue, intensity: 0.62, durationMs: 280 } });
+  });
+
+  function applyOpeningCameraPatch(patch, { silent = false } = {}) {
+    const spine = state.map.scenario?.scenarioSpine ?? createDefaultScenarioSpine(state.map, state.map.scenario?.scenarioLayer);
+    const nextCamera = normaliseScenarioCameraRig({
+      ...(spine.beginning?.openingCamera ?? {}),
+      ...(patch ?? {})
+    }, { fallbackPoint: spine.beginning?.commanderStart ?? null });
+    const nextSpine = {
+      ...spine,
+      beginning: {
+        ...spine.beginning,
+        openingCamera: nextCamera
+      }
+    };
+    state.map.scenario = {
+      ...(state.map.scenario ?? {}),
+      scenarioSpine: nextSpine
+    };
+    state.scenarioCamera = nextCamera;
+    state.map.revision = (state.map.revision ?? 0) + 1;
+    state.dirty = true;
+    state.showScenarioLayer = true;
+    state.experienceMode = EXPERIENCE_MODES.MAP_MAKER;
+    if (!silent) {
+      const label = SCENARIO_CAMERA_MODES[nextCamera.mode]?.label ?? nextCamera.mode;
+      state.status = `Opening camera: ${label} @ ${nextCamera.zoom.toFixed(2)}x`;
+    }
+    bus.emit('render');
+  }
+
+  function render() {
+    ensureScenarioCatalogueForMap(state.map);
+    const scene = summarizeSceneEntity(state.map);
+    const presentation = getScenePresentation(state.map);
+    const layer = state.map.scenario?.scenarioLayer ?? null;
+    const spine = state.map.scenario?.scenarioSpine ?? null;
+    const layerSummary = summarizeScenarioLayer(layer);
+    const spineSummary = summarizeScenarioSpine(spine, { map: state.map, runtime: state.scenarioRuntime ?? state.map.scenario?.scenarioRuntime });
+    const validation = validateScenarioSpine(spine, { map: state.map });
+    if (layer?.seed && document.activeElement !== seedInput) {
+      seedInput.value = layer.seed;
+    }
+    if (layer?.preset && SCENARIO_STORY_PRESETS[layer.preset]) {
+      presetSelect.value = layer.preset;
+    }
+    const slots = getScenarioSelectionSlots(state.map, { includeLocked: true });
+    const activeScenarioId = state.map.scenario?.activeScenarioId ?? state.activeScenarioId ?? slots[0]?.id ?? 'chapter_001';
+    const previousScenarioValue = scenarioSelect.value;
+    scenarioSelect.replaceChildren(...slots.map((slot) => {
+      const option = document.createElement('option');
+      option.value = slot.id;
+      option.textContent = slot.locked ? `${slot.title} - locked` : `${slot.title} - spine ${slot.spineStatus ?? 'unknown'}`;
+      option.disabled = Boolean(slot.locked || !slot.available);
+      return option;
+    }));
+    scenarioSelect.value = slots.some((slot) => slot.id === activeScenarioId) ? activeScenarioId : (previousScenarioValue || slots[0]?.id || 'chapter_001');
+    activateScenarioButton.disabled = slots.length === 0 || Boolean(slots.find((slot) => slot.id === scenarioSelect.value)?.locked);
+
+    const cameraRig = normaliseScenarioCameraRig(state.scenarioCamera ?? spine?.beginning?.openingCamera ?? layer?.cameraRig, { fallbackPoint: spine?.beginning?.commanderStart ?? layer?.storyBeats?.[0]?.tile ?? null });
+    if (document.activeElement !== cameraModeSelect) cameraModeSelect.value = cameraRig.mode;
+    if (document.activeElement !== zoomInput) zoomInput.value = String(cameraRig.zoom);
+    zoomOutput.textContent = `${cameraRig.zoom.toFixed(2)}x`;
+    zoomInput.disabled = cameraRig.mode === 'full_scene';
+    resetCameraButton.disabled = cameraRig.mode === 'full_scene' && cameraRig.zoom === 1;
+    showToggle.checked = Boolean(state.showScenarioLayer);
+    presentationToggles.forEach(({ group, id, input }) => {
+      input.checked = Boolean(presentation[group]?.[id]);
+    });
+    placementButtons.forEach((toolButton) => {
+      const tool = SCENE_PLACEMENT_TOOLS.find((candidate) => candidate.id === toolButton.dataset.sceneTool);
+      const allowedInOpening = tool && (
+        tool.kind === 'shelter'
+        || ['player_start', 'hunter_guard', 'scout_forager', 'tribe_members', 'wounded_survivor', 'supply_bundle', 'scene_beat', 'trigger'].includes(tool.id)
+      );
+      toolButton.hidden = isNomadicSurvivalScene(state.map) && !allowedInOpening;
+      toolButton.setAttribute('aria-pressed', String(toolButton.dataset.sceneTool === state.scenePlacementTool));
+    });
+    clearPlacementButton.disabled = !state.scenePlacementTool;
+    placementList.replaceChildren(...Object.entries(scene.placements)
+      .filter(([, count]) => count > 0)
+      .map(([toolId, count]) => {
+        const tool = SCENE_PLACEMENT_TOOLS.find((candidate) => candidate.id === toolId);
+        const row = document.createElement('div');
+        row.className = 'scenario-row';
+        const title = document.createElement('strong');
+        title.textContent = tool?.label ?? toolId;
+        const meta = document.createElement('span');
+        meta.textContent = `${count} placed`;
+        row.append(title, meta);
+        return row;
+      }));
+    if (scene.authoredEntityCount === 0) {
+      placementList.textContent = scene.template === 'blank'
+        ? 'Blank scene. Place a player start or a narrative marker to begin Chapter 1.'
+        : 'Generated chapter uses its existing runtime starts and events.';
+    }
+    previewOmenButton.disabled = !spineSummary.present;
+
+    spineStatus.dataset.status = spineSummary.status;
+    spineStatus.replaceChildren(
+      createSpineStatusLine(`${spineSummary.title ?? 'Chapter 1'} · ${spineSummary.status.toUpperCase()} · ${spineSummary.completionPercent}%`, validation.missing.length ? `Missing: ${validation.missing.join(', ')}` : 'Ready: beginning → events → ending gate')
+    );
+
+    updateSpineCard(beginningCard, validation.beginningReady, 'Start + omen', spine?.beginning?.worldCue?.label ?? 'No opening cue', spine?.beginning?.commanderStart);
+    updateSpineCard(middleCard, validation.middleReady, `${spine?.middle?.events?.length ?? 0} gameplay events`, spine?.middle?.events?.map((event) => event.label).join(' → ') || 'No middle events', null);
+    updateSpineCard(endingCard, validation.endingReady, spine?.ending?.victory?.summary ?? 'No ending condition', `Failure: ${spine?.ending?.failure?.summary ?? 'missing'} · Next: ${spine?.ending?.nextScenarioId ?? 'none'}`, null);
+
+    const runtime = state.scenarioRuntime ?? state.map.scenario?.scenarioRuntime;
+    const triggered = new Set(runtime?.triggeredEventIds ?? []);
+    const events = spine?.middle?.events ?? [];
+    eventList.replaceChildren(...events.map((event) => {
+      const row = document.createElement('div');
+      row.className = 'scenario-row';
+      const title = document.createElement('strong');
+      title.textContent = `${triggered.has(event.id) ? '✓ ' : '◇ '}${event.label}`;
+      const meta = document.createElement('span');
+      meta.textContent = `${event.trigger.type} · ${event.effects.map((effect) => effect.type).join(', ')}`;
+      row.append(title, meta);
+      return row;
+    }));
+    if (events.length === 0) {
+      eventList.textContent = layerSummary.present
+        ? 'Scenario layer exists, but no spine events yet. Generate Spine.'
+        : 'No scenario spine yet. Generate one over the current map seed.';
+    }
+  }
+
+  bus.on('render', render);
+  render();
+}
+
+function createSpineCard(titleText) {
+  const card = document.createElement('div');
+  card.className = 'scenario-spine-card';
+  const title = document.createElement('strong');
+  const body = document.createElement('span');
+  const detail = document.createElement('small');
+  title.textContent = titleText;
+  card.append(title, body, detail);
+  return { card, title, body, detail };
+}
+
+function updateSpineCard(card, ready, bodyText, detailText, tile = null) {
+  card.card.dataset.ready = String(Boolean(ready));
+  card.body.textContent = bodyText;
+  card.detail.textContent = tile ? `${detailText} · tile ${tile.x},${tile.y}` : detailText;
+}
+
+function createSpineStatusLine(headline, detail) {
+  const wrap = document.createElement('div');
+  const head = document.createElement('strong');
+  const small = document.createElement('span');
+  head.textContent = headline;
+  small.textContent = detail;
+  wrap.append(head, small);
+  return wrap;
 }
 
 export function mountInspector(root, state, bus) {
@@ -553,7 +1147,9 @@ export function mountCommandGraph(root, state, bus) {
     if (selected?.type === 'squad') {
       const title = document.createElement('p');
       title.className = 'status-line';
-      title.textContent = `${selected.name}: ${selected.members.length} soldiers, radius ${selected.influenceRadius.toFixed(1)}, LoS ${selected.sightRadius.toFixed(1)}, ${formatMovement(selected)}`;
+      const hp = selected.health ? `, HP ${Math.round(selected.health.health)}/${Math.round(selected.health.maxHealth)}` : '';
+      const combat = selected.combat ? `, arrows ${selected.combat.attackRange.toFixed(1)}t / ${selected.combat.rateOfFireTicks}t` : '';
+      title.textContent = `${selected.name}: ${selected.members.length} soldiers${hp}${combat}, LoS ${selected.sightRadius.toFixed(1)}, ${formatMovement(selected)}`;
       const rows = Object.entries(selected.attributes).map(([key, value]) => {
         const row = document.createElement('div');
         row.className = 'graph-node';
@@ -591,7 +1187,9 @@ export function mountCommandGraph(root, state, bus) {
     const movement = leader.movement?.speedKph
       ? `, foot ${leader.movement.speedKph.toFixed(1)} km/h`
       : '';
-    title.textContent = `${leader.name}: score ${leader.commandScore}, radius ${leader.influenceRadius}${projection}${movement}`;
+    const hp = leader.health ? `, HP ${Math.round(leader.health.health)}/${Math.round(leader.health.maxHealth)}` : '';
+    const combat = leader.combat ? `, arrows ${leader.combat.attackRange.toFixed(1)}t / ${leader.combat.rateOfFireTicks}t` : '';
+    title.textContent = `${leader.name}: score ${leader.commandScore}${hp}${combat}, radius ${leader.influenceRadius}${projection}${movement}`;
 
     const nodes = leader.command.graph.map((node) => {
       const row = document.createElement('div');
@@ -689,6 +1287,21 @@ function formatMovement(leader) {
     return `idle, ${MOVEMENT_MODEL.tileMeters}m tiles`;
   }
   return `${leader.movement.status} ${leader.movement.speedKph.toFixed(1)} km/h`;
+}
+
+
+function formatWeatherSummary(game) {
+  const weather = game?.weather;
+  if (!weather) {
+    return 'initialising';
+  }
+  const dominant = String(weather.dominant ?? 'clear').replaceAll('-', ' ');
+  const cloud = weather.fields?.cloudCover?.average;
+  const rain = weather.fields?.rainfall?.average;
+  if (Number.isFinite(Number(cloud)) && Number.isFinite(Number(rain))) {
+    return `${dominant} · C${Number(cloud).toFixed(2)} R${Number(rain).toFixed(2)}`;
+  }
+  return dominant;
 }
 
 function formatSupplies(game, factionId) {

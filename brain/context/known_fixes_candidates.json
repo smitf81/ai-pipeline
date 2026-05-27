@@ -1,0 +1,88 @@
+{
+  "version": "ace/known-fix-candidates.v1",
+  "updatedAt": "2026-05-27T13:57:04.416Z",
+  "entries": [
+    {
+      "id": "candidate-dirty_repo_blocked",
+      "title": "Keep apply and build stages off dirty repositories",
+      "pattern": "Dirty repo blocked",
+      "when": [
+        "Tracked edits already exist before apply starts.",
+        "The repo cleanliness check blocks the operation."
+      ],
+      "do": [
+        "Clean or isolate the worktree before rebuilding.",
+        "Preserve the current task artifacts and stop early."
+      ],
+      "avoid": [
+        "Applying a new patch on top of unreviewed tracked edits."
+      ],
+      "tags": [
+        "git",
+        "repository",
+        "safety"
+      ],
+      "source": "failure-history",
+      "updatedAt": "2026-05-27T13:57:04.416Z",
+      "status": "candidate",
+      "failureKey": "dirty_repo_blocked",
+      "count": 26320,
+      "firstSeen": "2026-04-13T20:01:18.975Z",
+      "lastSeen": "2026-05-16T22:55:22.032Z",
+      "exampleMessages": [
+        "Repository has uncommitted tracked changes.",
+        "Repository has uncommitted tracked changes.\nM .gitignore\n D README.md\n D projects.json\n D runner/ai.py\n M work/tasks/0001-BlenderUE-import-hygiene/context.md\n M work/tasks/0001-BlenderUE-import-hygiene/meta.json\n M work/tasks/0001-BlenderUE-import-hygiene/plan.md",
+        "blocked | Repository has uncommitted tracked changes.\nM .gitignore\n D README.md\n D projects.json\n D runner/ai.py\n M work/tasks/0001-BlenderUE-import-hygiene/context.md\n M work/tasks/0001-BlenderUE-import-hygiene/meta.json\n M work/tasks/0001-BlenderUE-import-hygiene/plan.md",
+        "Repository has uncommitted tracked changes.\nD README.md\n D projects.json\n D runner/ai.py\n M work/tasks/0001-BlenderUE-import-hygiene/context.md\n M work/tasks/0001-BlenderUE-import-hygiene/meta.json\n M work/tasks/0001-BlenderUE-import-hygiene/plan.md",
+        "blocked | Repository has uncommitted tracked changes.\nD README.md\n D projects.json\n D runner/ai.py\n M work/tasks/0001-BlenderUE-import-hygiene/context.md\n M work/tasks/0001-BlenderUE-import-hygiene/meta.json\n M work/tasks/0001-BlenderUE-import-hygiene/plan.md"
+      ],
+      "relatedTools": [
+        "node",
+        "autonomy-policy",
+        "git"
+      ],
+      "relatedStages": [
+        "planner",
+        "builder-preflight"
+      ]
+    },
+    {
+      "id": "candidate-git_apply_check_failed",
+      "title": "Rebuild or rebase a patch that no longer applies cleanly",
+      "pattern": "Git apply check failed",
+      "when": [
+        "A patch no longer matches the current tree.",
+        "git apply reports check failure or rejected hunks."
+      ],
+      "do": [
+        "Recompute the diff against the current tree.",
+        "Confirm the task folder still matches the target branch.",
+        "Apply only after the patch has been regenerated or refreshed."
+      ],
+      "avoid": [
+        "Retrying the same stale patch without refreshing it."
+      ],
+      "tags": [
+        "git",
+        "patch",
+        "apply"
+      ],
+      "source": "failure-history",
+      "updatedAt": "2026-05-27T13:57:04.416Z",
+      "status": "candidate",
+      "failureKey": "git_apply_check_failed",
+      "count": 5,
+      "firstSeen": "2026-05-15T15:36:25.294Z",
+      "lastSeen": "2026-05-27T13:57:04.414Z",
+      "exampleMessages": [
+        "Apply failed after patch drift."
+      ],
+      "relatedTools": [
+        "git"
+      ],
+      "relatedStages": [
+        "apply"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "context_id": "broad-20260227T094024Z",
+  "generated_at": "2026-02-27T09:40:24Z",
+  "project": {
+    "name": "ai-pipeline",
+    "repository_root": "ai-pipeline/",
+    "summary": "Control repo for local AI and agent-driven tooling."
+  },
+  "token_budget": {
+    "target_soft_max": 30000,
+    "estimated_used": 480
+  },
+  "architecture": {
+    "modules": [
+      {
+        "name": "runner",
+        "path": "runner/",
+        "purpose": "Task orchestration, project binding, and model invocation."
+      },
+      {
+        "name": "work-tasks",
+        "path": "work/tasks/",
+        "purpose": "Task records with ideas, plans, and generated artifacts."
+      },
+      {
+        "name": "context",
+        "path": "context/",
+        "purpose": "Tiered machine/human context memory and validation contracts."
+      }
+    ]
+  },
+  "items": [
+    {
+      "confidence": 0.99,
+      "id": "brd-art-0002",
+      "priority": "P0",
+      "source_refs": [
+        "F:runner/ai.py"
+      ],
+      "summary_compact": "Runner now includes context update executor.",
+      "summary_human": "runner/ai.py exposes a context_update subcommand that ingests, rebuilds, validates, and atomically writes context tiers.",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "artifact",
+        "runner",
+        "contextops"
+      ],
+      "type": "artifact",
+      "valid_from": "2026-02-27T09:40:24Z",
+      "valid_to": null
+    },
+    {
+      "confidence": 0.9,
+      "id": "brd-risk-0002",
+      "priority": "P1",
+      "source_refs": [
+        "F:runner/ai.py",
+        "F:context/index.json"
+      ],
+      "summary_compact": "Health score degrades on failed gates.",
+      "summary_human": "Validation errors reduce health score and abort writes, preventing malformed context publication.",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "risk",
+        "validation"
+      ],
+      "type": "risk",
+      "valid_from": "2026-02-27T09:40:24Z",
+      "valid_to": null
+    }
+  ],
+  "open_decisions": [
+    {
+      "id": "od-0001",
+      "owner": "ContextOps",
+      "question": "Should context_update run automatically before build/manage commands?",
+      "target_date": "2026-02-27",
+      "status": "open"
+    }
+  ],
+  "roadmap": [
+    "Integrate JSON-schema engine for strict schema enforcement.",
+    "Add CI automation to run context_update and compare deterministic outputs.",
+    "Migrate historical task outcomes into full context event log."
+  ]
+}

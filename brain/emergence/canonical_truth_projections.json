@@ -1,0 +1,91 @@
+{
+  "contractVersion": "canonical-truth-projections.v0",
+  "projections": [
+    {
+      "projectionId": "workspace",
+      "sourceDomain": "workspace",
+      "builder": "buildWorkspaceProjectionPayload",
+      "route": "/api/spatial/workspace",
+      "consumers": [
+        "ui/public/spatial/persistence.js::loadWorkspace",
+        "ui/aceRuntimeMcp.js::getWorkspace",
+        "ui/public/spatial/spatialApp.js workspace boot load"
+      ],
+      "classification": "projection",
+      "readOnly": true,
+      "readinessSemantics": "available when the live workspace aggregate resolves from persisted workspace state, sidecar merges, canonical slices, and orchestrator refresh"
+    },
+    {
+      "projectionId": "runtime",
+      "sourceDomain": "workspace",
+      "builder": "buildSpatialRuntimePayload",
+      "route": "/api/spatial/runtime",
+      "consumers": [
+        "ui/public/spatial/aceConnector.js::getSpatialRuntime",
+        "ui/public/spatial/spatialApp.js::refreshFeeds",
+        "ui/server.js embedded runtime responses"
+      ],
+      "classification": "projection",
+      "readOnly": true,
+      "readinessSemantics": "available when refreshed workspace resolves successfully"
+    },
+    {
+      "projectionId": "truth_kernel",
+      "sourceDomain": "workspace",
+      "builder": "buildTruthKernelPayload",
+      "route": "/api/spatial/truth-kernel",
+      "consumers": [
+        "ui/public/spatial/aceConnector.js::getTruthKernel",
+        "ui/public/spatial/spatialApp.js truth boot fetch"
+      ],
+      "classification": "projection",
+      "readOnly": true,
+      "readinessSemantics": "available when refreshed workspace resolves and surfaced entities are projectable"
+    },
+    {
+      "projectionId": "desk_properties",
+      "sourceDomain": "workspace",
+      "builder": "buildDeskPropertiesPayload",
+      "route": "/api/spatial/desks/:deskId/properties",
+      "consumers": [
+        "ui/public/spatial/aceConnector.js::getDeskProperties",
+        "ui/public/spatial/spatialApp.js::loadDeskPanel"
+      ],
+      "classification": "projection",
+      "readOnly": true,
+      "readinessSemantics": "available when refreshed workspace resolves and the requested desk id exists"
+    },
+    {
+      "projectionId": "intent",
+      "sourceDomain": "intent",
+      "builder": "buildIntentProjectionPayload",
+      "route": "/api/spatial/intent",
+      "consumers": [
+        "ui/public/spatial/aceConnector.js::parseIntent",
+        "ui/public/spatial/spatialApp.js::handleNodeContentCommit",
+        "ui/public/spatial/spatialApp.js::runAiProcess"
+      ],
+      "classification": "projection",
+      "readOnly": false,
+      "readinessSemantics": "available when a request includes text and the intent pipeline returns either canonical output or an explicit classified branch"
+    },
+    {
+      "projectionId": "qa_evidence",
+      "sourceDomain": "qa_evidence",
+      "builder": "buildQaEvidenceProjectionPayload",
+      "route": "/api/qa/lead/state",
+      "governedRoutes": [
+        "/api/qa/repair-loop/state",
+        "/api/spatial/qa/runs"
+      ],
+      "consumers": [
+        "ui/server.js::buildSpatialRuntimePayload",
+        "ui/server.js::buildDeskPropertiesPayload",
+        "qa diagnostics and governed QA evidence routes"
+      ],
+      "classification": "projection",
+      "readOnly": true,
+      "readinessSemantics": "available when QA evidence sources can be read, even if individual sections are empty or explicitly degraded"
+    }
+  ]
+}

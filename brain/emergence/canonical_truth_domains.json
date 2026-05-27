@@ -1,0 +1,75 @@
+{
+  "contractVersion": "canonical-truth-domains.v0",
+  "domains": [
+    {
+      "domainId": "workspace",
+      "label": "Spatial Workspace",
+      "classificationDefault": "canonical",
+      "systemOfRecord": "data/spatial/workspace.json + data/spatial/pages.json + data/spatial/intent-state.json + data/spatial/studio-state.json + data/spatial/architecture-memory.json + projectCanonicalSlicesIntoWorkspace + refreshSpatialOrchestrator + pumpAutomatedTeamBoardAsync",
+      "canonicalOwner": "ui/server.js::readSpatialWorkspace + ui/server.js::refreshSpatialOrchestrator",
+      "mutationAuthority": "ui/server.js workspace persistence routes and governed worker flows",
+      "allowedProjections": ["workspace", "runtime", "truth_kernel", "desk_properties", "intent"],
+      "notes": "Primary live workspace backbone plus governed read aggregation over persisted workspace state, sidecars, canonical slice projection, and orchestrator refresh."
+    },
+    {
+      "domainId": "runtime",
+      "label": "Spatial Runtime",
+      "classificationDefault": "projection",
+      "systemOfRecord": "workspace domain projected through buildSpatialRuntimePayload",
+      "canonicalOwner": "ui/server.js::buildSpatialRuntimePayload",
+      "mutationAuthority": "read-only projection from refreshed workspace",
+      "allowedProjections": ["runtime"],
+      "notes": "Operational runtime projection consumed by Studio and automation refresh flows."
+    },
+    {
+      "domainId": "truth_kernel",
+      "label": "Truth Kernel",
+      "classificationDefault": "projection",
+      "systemOfRecord": "workspace domain plus surfaced evidence artifacts projected through buildTruthKernelPayload",
+      "canonicalOwner": "ui/truthKernelAdapter.js::buildTruthKernelPayload",
+      "mutationAuthority": "read-only projection from refreshed workspace and evidence stores",
+      "allowedProjections": ["truth_kernel"],
+      "notes": "Read-only spatial substrate of surfaced ACE entities and immediate relationships."
+    },
+    {
+      "domainId": "intent",
+      "label": "Canonical Intent",
+      "classificationDefault": "canonical",
+      "systemOfRecord": "workspace.intentState.registry + workspace.studio.intake.records",
+      "canonicalOwner": "ui/server.js::maybeRunContextManagerWorker + ui/server.js::getCurrentSpatialIntent",
+      "mutationAuthority": "ui/server.js::maybeRunContextManagerWorker + ui/server.js::persistCanonicalIntakeRecord",
+      "allowedProjections": ["intent"],
+      "notes": "Canonical authored/request intent state surfaced through the live intent route, workspace intent registry, and canonical intake persistence."
+    },
+    {
+      "domainId": "desk_properties",
+      "label": "Desk Properties",
+      "classificationDefault": "projection",
+      "systemOfRecord": "workspace domain projected through buildDeskPropertiesPayload",
+      "canonicalOwner": "ui/server.js::buildDeskPropertiesPayload",
+      "mutationAuthority": "read-only projection from refreshed workspace and QA evidence",
+      "allowedProjections": ["desk_properties"],
+      "notes": "Per-desk truth projection used by Studio desk property surfaces."
+    },
+    {
+      "domainId": "qa_evidence",
+      "label": "QA Evidence",
+      "classificationDefault": "canonical",
+      "systemOfRecord": "data/spatial/qa/structured/latest.json + data/spatial/qa/*.json + data/spatial/qa/local-gates/*.json + qa lead state + QA investigations/repair state",
+      "canonicalOwner": "ui/server.js::buildQAStatePayload + ui/server.js::readQaLeadOutput + ui/server.js::buildQaRepairLoopState",
+      "mutationAuthority": "ui/qaRunner.js + ui/qaLeadRunner.js + ui/qaRepairLoop.js + ui/externalQaProbe.js + ui/qaResearch.js",
+      "allowedProjections": ["qa_evidence"],
+      "notes": "Mixed QA source-of-record domain spanning structured reports, recorded QA runs, local gates, QA lead state, investigations, and repair-loop evidence."
+    },
+    {
+      "domainId": "execution_provenance",
+      "label": "Execution Provenance",
+      "classificationDefault": "canonical",
+      "systemOfRecord": "throughput sessions, planner runs, executor runs, and context-manager run artifacts",
+      "canonicalOwner": "ui/server.js throughput and worker runners",
+      "mutationAuthority": "governed execution flows only",
+      "allowedProjections": ["execution_provenance"],
+      "notes": "Run lineage, timings, and artifact provenance for executions."
+    }
+  ]
+}

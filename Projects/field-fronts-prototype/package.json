@@ -5,6 +5,16 @@
   "scripts": {
     "start": "node tools/static-server.mjs 4184",
     "test:browser": "node tools/run-web-game-client.mjs",
-    "test": "node tests/runInProcessTests.mjs"
+    "test:shelter-route": "node --experimental-loader ./tools/playwright-package-loader.mjs tools/run-shelter-chain-client.mjs",
+    "test:mouse": "node tests/runIsolatedTests.mjs commandWheelAdapter.test.mjs mousePlaytester.test.mjs",
+    "test:mouse:live": "node --experimental-loader ./tools/playwright-package-loader.mjs tools/run-mouse-playtest-client.mjs",
+    "test:isolated": "node tests/runIsolatedTests.mjs",
+    "test": "node tests/runInProcessTests.mjs",
+    "test:fps": "npm run test:fps:browser",
+    "test:validation": "node tests/runIsolatedTests.mjs runtimePerformanceQa.test.mjs && npm run test:cadence && node tools/run-sim-frame-budget-qa.mjs",
+    "test:fps:browser": "node tools/run-frame-budget-qa.mjs",
+    "test:fps:sim": "node tools/run-sim-frame-budget-qa.mjs",
+    "test:validation:local": "node tests/runIsolatedTests.mjs runtimePerformanceQa.test.mjs && npm run test:cadence && node tools/run-sim-frame-budget-qa.mjs && node tools/run-frame-budget-qa.mjs",
+    "test:cadence": "node tools/audit-runtime-cadence.mjs"
   }
 }

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ace.local/schemas/specialized/animation-controller.schema.json",
+  "title": "ACE Animation Controller Artifact",
+  "type": "object",
+  "required": ["artifact_type", "data"],
+  "properties": {
+    "artifact_type": { "const": "animation_controller" },
+    "data": {
+      "type": "object",
+      "required": ["states", "blendspaces", "parameters", "transitions"],
+      "properties": {
+        "states": { "type": "array", "items": { "type": "object" } },
+        "blendspaces": { "type": "array", "items": { "type": "object" } },
+        "parameters": { "type": "array", "items": { "type": "object" } },
+        "transitions": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -2,3 +2,58 @@ __pycache__/
 *.log
 work/logs/
 .venv/
+.python-tools/
+node_modules/
+.npm-cache/
+.playwright-browsers/
+.tmp.driveupload/
+*.zip
+*.tmp
+*.bak
+*.sqlite
+*.db
+coverage/
+dist/
+build/
+.pytest_cache/
+.playwright/
+test-results/
+ui/public/qa-runs/
+AXIOM/apps/launcher/logs/
+.codex/.skill-staging/
+**/.git/
+**/.vs/
+data/spatial/qa/
+data/spatial/agent-runs/
+data/spatial/throughput/
+Projects/*/output/
+Projects/*/qa-output/
+Projects/*/playtests/
+Projects/*/artifacts/
+brain/*/output/
+Animation_Embodied_Field_Entity_EFE_Plugin/.slice1_build/
+Animation_Embodied_Field_Entity_EFE_Plugin/output/
+AXIOM/apps/launcher/runtime/
+AXIOM/apps/launcher/Version history/
+AXIOM/apps/launcher/public/*_DEGRADED.html
+AXIOM/apps/plugin-builder/packages/*.axpkg
+AXIOM/apps/plugin-builder/docs/skills/*.audit.jsonl
+ui/.tmp_*
+ui/**/.tmp_*
+ui/tmp-*
+.tmp-*.png
+runCli_output.json
+tmp_extract.js
+server-boot-log.txt
+
+# Nested historical checkout retained locally for reference only.
+dev/ai-pipeline/
+
+# Local project snapshots retained for comparison, not active source.
+Projects/*_OLD/
+
+# Local Git preservation store used until active metadata is writable.
+.recovery/
+
+# Historical runtime receipts are not archive source.
+legacy/runtime/

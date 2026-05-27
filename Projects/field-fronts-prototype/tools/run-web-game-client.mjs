@@ -1,7 +1,7 @@
 import http from 'node:http';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { spawn } from 'node:child_process';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -14,7 +14,8 @@ const actions = JSON.stringify({
   steps: [
     { buttons: ['left_mouse_button'], frames: 2, mouse_x: 530, mouse_y: 350 },
     { buttons: [], frames: 4 },
-    { buttons: ['left_mouse_button'], frames: 2, mouse_x: 570, mouse_y: 370 }
+    { buttons: ['left_mouse_button'], frames: 2, mouse_x: 570, mouse_y: 370 },
+    { buttons: [], frames: 52 }
   ]
 });
 
@@ -33,10 +34,35 @@ try {
     process.exitCode = 0;
   } else {
     const code = await runClient();
+    if (code === 0) {
+      verifyBrowserSmokeEvidence();
+    }
     process.exitCode = code;
   }
 } finally {
   server.kill();
+}
+
+function verifyBrowserSmokeEvidence() {
+  const shotPath = join(projectRoot, screenshotDir, 'shot-1.png');
+  const statePath = join(projectRoot, screenshotDir, 'state-1.json');
+  if (!existsSync(shotPath) || statSync(shotPath).size < 10000) {
+    throw new Error(`Browser smoke did not produce a usable gameplay screenshot at ${shotPath}`);
+  }
+  if (!existsSync(statePath) || statSync(statePath).size < 1000) {
+    throw new Error(`Browser smoke did not produce readable text state at ${statePath}`);
+  }
+  const state = JSON.parse(readFileSync(statePath, 'utf8'));
+  if (state.runtime?.uiScreen !== 'game') {
+    throw new Error(`Browser smoke did not reach the game HUD; uiScreen=${state.runtime?.uiScreen}`);
+  }
+  if ((state.game?.tick ?? 0) < 1) {
+    throw new Error('Browser smoke did not advance the simulation at least one tick.');
+  }
+  const visibleBand = (state.game?.leaders ?? []).length + (state.game?.squads ?? []).length;
+  if ((state.game?.leaders ?? []).length < 1 || visibleBand < 3 || !state.runtime?.renderer?.renderCount) {
+    throw new Error('Browser smoke state is missing visible gameplay entities or renderer evidence.');
+  }
 }
 
 function runClient() {
@@ -47,8 +73,6 @@ function runClient() {
       client,
       '--url',
       url,
-      '--click-selector',
-      '[data-player-stance="commit"]',
       '--actions-json',
       actions,
       '--iterations',

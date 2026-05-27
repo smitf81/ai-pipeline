@@ -1,0 +1,26 @@
+{
+  "autoRun": false,
+  "backend": "ollama",
+  "deskId": "qa-lead",
+  "host": "http://127.0.0.1:11434",
+  "id": "evaluator",
+  "inputs": [
+    "runtime.agent_states",
+    "runtime.task_progress",
+    "truth_kernel.summary",
+    "qa.posture",
+    "qa.scorecards",
+    "failure_memory.summary",
+    "qa.context_summary"
+  ],
+  "model": "qwen3.5-9b",
+  "name": "Evaluator",
+  "outputs": [
+    "data/spatial/evaluator/runs/*.json",
+    "data/spatial/evaluator/history.json",
+    "data/spatial/evaluator/state.json"
+  ],
+  "runtime": "ollama-json",
+  "timeoutMs": 30000,
+  "writesCanonicalBrain": false
+}

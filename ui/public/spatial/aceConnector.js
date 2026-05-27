@@ -1,0 +1,425 @@
+import { parseActionRequest } from './actionRequestParser.js';
+
+function isRenderObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function normalizeTruthKernelTransportPayload(payload = null, options = {}) {
+  const source = String(options.source || payload?.source || '').trim() || 'truth-kernel';
+  const route = String(options.route || '').trim() || (source === 'runtime-fallback' ? '/api/spatial/runtime' : '/api/spatial/truth-kernel');
+  const kernelPayload = isRenderObject(payload?.truthKernel) ? payload.truthKernel : (isRenderObject(payload) ? payload : {});
+  const canonicalTruth = isRenderObject(kernelPayload.canonicalTruth)
+    ? kernelPayload.canonicalTruth
+    : (isRenderObject(payload?.canonicalTruth) ? payload.canonicalTruth : null);
+  const canonicalTruthSections = isRenderObject(kernelPayload.canonicalTruthSections)
+    ? kernelPayload.canonicalTruthSections
+    : (isRenderObject(payload?.canonicalTruthSections) ? payload.canonicalTruthSections : null);
+  const fallbackUsed = typeof options.fallbackUsed === 'boolean'
+    ? options.fallbackUsed
+    : (source === 'runtime-fallback');
+  const reason = String(options.reason || '').trim() || null;
+  return {
+    ...kernelPayload,
+    source,
+    route,
+    fallbackUsed,
+    canonicalTruth,
+    canonicalTruthSections,
+    meta: {
+      source,
+      route,
+      fallbackUsed,
+      reason,
+    },
+  };
+}
+
+export class AceConnector {
+  async getTruthKernel() {
+    const res = await fetch('/api/spatial/truth-kernel');
+    const payload = await res.json();
+    if (res.ok) {
+      return normalizeTruthKernelTransportPayload(payload, {
+        source: 'truth-kernel',
+        route: '/api/spatial/truth-kernel',
+        fallbackUsed: false,
+      });
+    }
+    if (res.status === 404) {
+      const runtimePayload = await this.getSpatialRuntime();
+      if (runtimePayload?.truthKernel) {
+        return normalizeTruthKernelTransportPayload(runtimePayload, {
+          source: 'runtime-fallback',
+          route: '/api/spatial/runtime',
+          fallbackUsed: true,
+          reason: 'route unavailable',
+        });
+      }
+    }
+    throw new Error(payload.error || 'Truth kernel fetch failed');
+  }
+
+  async getQaOutputFeed() {
+    const res = await fetch('/api/spatial/qa/output-feed');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'QA output feed fetch failed');
+    return payload;
+  }
+
+  async getSpatialRuntime() {
+    const res = await fetch('/api/spatial/runtime');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Spatial runtime fetch failed');
+    return payload;
+  }
+
+  async getProjects() {
+    const res = await fetch('/api/projects');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Project list fetch failed');
+    return payload;
+  }
+
+  async runProject(projectKey) {
+    const key = String(projectKey || '').trim();
+    if (!key) throw new Error('Project key is required');
+    const res = await fetch('/api/projects/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project: key }),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Project launch failed');
+    return payload;
+  }
+
+  async runExecutiveRoute(payload = {}) {
+    const res = await fetch('/api/spatial/executive/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    });
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || 'Executive route failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
+  }
+
+  async exportExecutiveManifest(result) {
+    const res = await fetch('/api/spatial/executive/export/manifest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ result }),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.error || 'Manifest export failed');
+    return response;
+  }
+
+  async parseIntent(input, options = {}) {
+    const payload = typeof input === 'string'
+      ? { text: input, ...(options || {}) }
+      : { ...(input || {}) };
+    const res = await fetch('/api/spatial/intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'Intent parsing failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
+  }
+
+  async parseActionRequest(input, options = {}) {
+    return parseActionRequest(input, options);
+  }
+
+  async askCtoDesk(payload = {}) {
+    const res = await fetch('/api/spatial/cto/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'CTO desk chat failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
+  }
+
+  async getCtoDeskStatus() {
+    const res = await fetch('/api/spatial/cto/status');
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'CTO desk status failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
+  }
+
+  async getChiefOfStaffLatest() {
+    const res = await fetch('/api/cto-chief-of-staff/latest');
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'Chief of Staff latest advisory failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
+  }
+
+  async askChiefOfStaff(query = '') {
+    const prompt = String(query || '').trim();
+    const url = `/api/cto-chief-of-staff/query?q=${encodeURIComponent(prompt)}`;
+    const res = await fetch(url);
+    const response = await res.json();
+    if (!res.ok) {
+      const error = new Error(response.error || response.reason || 'Chief of Staff advisory query failed');
+      error.payload = response;
+      throw error;
+    }
+    return response;
+  }
+
+  async getTaDepartment() {
+    const res = await fetch('/api/ta/department');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load TA department');
+    return payload;
+  }
+
+  async decomposeTask(node) {
+    return this.parseIntent(node.content);
+  }
+
+  async regenerateCode(node) {
+    return {
+      code: `// regenerated by ACE\nexport function ${node.content.replace(/[^a-z0-9_]/gi, '_').toLowerCase()}() {\n  return 'ok';\n}`,
+    };
+  }
+
+  async generateTests(node) {
+    return {
+      tests: `describe('${node.content}', () => {\n  it('works', () => expect(true).toBe(true));\n});`,
+    };
+  }
+
+  async previewMutation(mutations) {
+    const res = await fetch('/api/spatial/mutations/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mutations }),
+    });
+    if (!res.ok) throw new Error('Mutation preview failed');
+    return res.json();
+  }
+
+  async applyMutation(mutations) {
+    const res = await fetch('/api/spatial/mutations/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mutations }),
+    });
+    const payload = await res.json();
+    if (!res.ok || payload?.ok === false) {
+      const error = new Error(payload.error || payload.mutationResult?.reason || 'Mutation apply failed');
+      error.payload = payload;
+      throw error;
+    }
+    return {
+      ...payload,
+      mutationResult: payload.mutationResult || null,
+    };
+  }
+
+  async teamBoardAction(action, cardId) {
+    const res = await fetch('/api/spatial/team-board/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, cardId }),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Team board action failed');
+    return payload;
+  }
+
+  async runAgentWorker(agentId, payload = {}) {
+    const id = String(agentId || '').trim();
+    if (!id) throw new Error('Agent id is required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.error || response.reason || 'Agent run failed');
+    return response;
+  }
+
+  async getAgentLedger(agentId) {
+    const id = String(agentId || '').trim();
+    if (!id) throw new Error('Agent id is required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/ledger`);
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load agent ledger');
+    return payload;
+  }
+
+  async createAgentLedgerEntry(agentId, entry = {}) {
+    const id = String(agentId || '').trim();
+    if (!id) throw new Error('Agent id is required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/ledger`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry || {}),
+    });
+    const payload = await res.json();
+    if (![200, 201].includes(res.status)) throw new Error(payload.error || 'Failed to record learning entry');
+    return payload;
+  }
+
+  async updateAgentLedgerEntry(agentId, entryId, patch = {}) {
+    const id = String(agentId || '').trim();
+    const targetId = String(entryId || '').trim();
+    if (!id || !targetId) throw new Error('Agent id and entry id are required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/ledger/${encodeURIComponent(targetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch || {}),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Failed to update learning entry');
+    return payload;
+  }
+
+  async updateAgentProperties(agentId, properties = {}) {
+    const id = String(agentId || '').trim();
+    if (!id) throw new Error('Agent id is required');
+    const res = await fetch(`/api/spatial/agents/${encodeURIComponent(id)}/properties`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(properties || {}),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Failed to update agent properties');
+    return payload;
+  }
+
+  async listModelOptions() {
+    const res = await fetch('/api/spatial/models');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Model list fetch failed');
+    return payload;
+  }
+
+  async runBrowserPass({ scenario = 'layout-pass', mode = 'interactive', prompt = '', actions = [], linked = {} } = {}) {
+    const res = await fetch('/api/spatial/qa/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scenario,
+        mode,
+        prompt,
+        actions,
+        linked,
+      }),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Browser pass failed');
+    return payload;
+  }
+
+  async runStructuredQA(payload = {}) {
+    const res = await fetch('/api/qa/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.summary || response.error || 'Structured QA failed');
+    return response;
+  }
+
+  async getQARun(runId) {
+    const res = await fetch(`/api/spatial/qa/runs/${encodeURIComponent(runId)}`);
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load QA run');
+    return payload.run;
+  }
+
+  async getDeskProperties(deskId) {
+    const id = String(deskId || '').trim();
+    if (!id) throw new Error('Desk id is required');
+    let externalValidationResponse = null;
+    if (id === 'qa-lead') {
+      try {
+        const validationRes = await fetch('/api/qa/external-probe-check');
+        externalValidationResponse = await validationRes.json();
+      } catch {
+        externalValidationResponse = null;
+      }
+    }
+    const res = await fetch(`/api/spatial/desks/${encodeURIComponent(id)}/properties`);
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load desk properties');
+      if (id === 'qa-lead' && payload && typeof payload === 'object' && payload.qa && typeof payload.qa === 'object') {
+        const externalValidation = externalValidationResponse?.externalValidation || null;
+        payload.qa = {
+          ...payload.qa,
+          externalValidation: externalValidation || payload.qa.externalValidation || null,
+        };
+      }
+    return payload;
+  }
+
+  async updateDeskProperties(deskId, action, payload = {}) {
+    const id = String(deskId || '').trim();
+    if (!id) throw new Error('Desk id is required');
+    const res = await fetch(`/api/spatial/desks/${encodeURIComponent(id)}/actions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...(payload || {}) }),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.error || 'Unable to update desk properties');
+    return response;
+  }
+
+  async getStudioLayoutCatalog() {
+    const res = await fetch('/api/spatial/layout/catalog');
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || 'Unable to load studio layout catalog');
+    return payload;
+  }
+
+  async mutateStudioLayout(action, payload = {}) {
+    const name = String(action || '').trim();
+    if (!name) throw new Error('Layout action is required');
+    const res = await fetch('/api/spatial/layout/actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: name, ...(payload || {}) }),
+    });
+    const response = await res.json();
+    if (!res.ok) throw new Error(response.error || 'Unable to update studio layout');
+    return response;
+  }
+
+  async addDepartment(payload = {}) {
+    return this.mutateStudioLayout('add_department', payload);
+  }
+
+  async addDesk(payload = {}) {
+    return this.mutateStudioLayout('add_desk', payload);
+  }
+}

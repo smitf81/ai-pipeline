@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ace.local/schemas/module-interface.schema.json",
+  "title": "ACE Module Run Interface",
+  "type": "object",
+  "required": ["action", "module_id", "input"],
+  "properties": {
+    "action": {
+      "type": "string",
+      "const": "run_module"
+    },
+    "module_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_\\-]*$"
+    },
+    "input": {
+      "type": "object",
+      "required": ["intent", "constraints"],
+      "properties": {
+        "intent": {},
+        "constraints": { "type": "object" },
+        "context": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

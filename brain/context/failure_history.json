@@ -1,0 +1,155 @@
+{
+  "version": "ace/failure-memory.v1",
+  "updated_at": "2026-05-27T13:57:04.414Z",
+  "entries": [
+    {
+      "failure_key": "git_apply_check_failed",
+      "stage": "apply",
+      "agent_id": "executor",
+      "agent_version": "ace/agent-attribution.v0",
+      "count": 5,
+      "first_seen": "2026-05-15T15:36:25.294Z",
+      "last_seen": "2026-05-27T13:57:04.414Z",
+      "example_messages": [
+        "Apply failed after patch drift."
+      ],
+      "related_tools": [
+        "git"
+      ],
+      "related_stages": [
+        "apply"
+      ],
+      "related_runs": [
+        "0001"
+      ],
+      "related_projects": [],
+      "related_agents": [
+        "executor"
+      ],
+      "source_count": 5,
+      "failure_class": "runtime_critical",
+      "last_error": {
+        "timestamp": "2026-05-27T13:57:04.414Z",
+        "message": "Apply failed after patch drift.",
+        "stack": "Error: Apply failed after patch drift.\n    at writeTaskApplyResult (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\ui\\server.js:9997:37)\n    at Module.runTaskArtifactsTests (file:///C:/Users/felix/Desktop/Automated_AI_Pipeline/ui/tests/taskArtifacts.test.mjs:57:3)\n    at file:///C:/Users/felix/Desktop/Automated_AI_Pipeline/ui/tests/run-ui-tests.mjs:146:25",
+        "failure_class": "runtime_critical",
+        "route": null,
+        "method": null,
+        "stage": "apply",
+        "source": "task-apply",
+        "ui_response": {
+          "failureClass": "runtime_critical",
+          "uiMode": "safe_mode",
+          "clientAction": "enterSafeMode",
+          "safeMode": true,
+          "fallbackPanel": false,
+          "shell": "safe-shell",
+          "summary": "Escalate to safe mode for a runtime-critical failure."
+        }
+      }
+    },
+    {
+      "failure_key": "unknown_failure",
+      "stage": "planner",
+      "agent_id": "planner",
+      "agent_version": "ace/agent-attribution.v0",
+      "count": 55,
+      "first_seen": "2026-05-05T13:21:38.612Z",
+      "last_seen": "2026-05-15T22:47:31.768Z",
+      "example_messages": [
+        "blocked | Project key could not be resolved to a concrete project path.",
+        "createDefaultCtoOverrideLedger is not a function"
+      ],
+      "related_tools": [
+        "autonomy-policy"
+      ],
+      "related_stages": [
+        "planner",
+        "runtime",
+        "boot",
+        "server"
+      ],
+      "related_runs": [],
+      "related_projects": [],
+      "related_agents": [
+        "planner",
+        "dave"
+      ],
+      "source_count": 55,
+      "failure_class": "runtime_critical",
+      "last_error": {
+        "timestamp": "2026-05-15T22:47:31.768Z",
+        "message": "blocked | Project key could not be resolved to a concrete project path.",
+        "stack": "Error: blocked | Project key could not be resolved to a concrete project path.\n    at createPreLlmBlockedResult (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\ui\\server.js:12763:37)\n    at maybeRunPlannerWorker (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\ui\\server.js:12034:14)\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at listOnTimeout (node:internal/timers:549:9)\n    at process.processTimers (node:internal/timers:523:7)\n    at async pumpAutomatedTeamBoardAsync (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\ui\\server.js:14766:24)\n    at async C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\ui\\server.js:17566:29",
+        "failure_class": "runtime_critical",
+        "route": "/api/spatial/runtime",
+        "method": "GET",
+        "stage": "planner",
+        "source": "express-error-handler",
+        "ui_response": {
+          "failureClass": "runtime_critical",
+          "uiMode": "safe_mode",
+          "clientAction": "enterSafeMode",
+          "safeMode": true,
+          "fallbackPanel": false,
+          "shell": "safe-shell",
+          "summary": "Escalate to safe mode for a runtime-critical failure."
+        }
+      }
+    },
+    {
+      "failure_key": "dirty_repo_blocked",
+      "stage": "planner",
+      "agent_id": "planner",
+      "agent_version": "ace/agent-attribution.v0",
+      "count": 26320,
+      "first_seen": "2026-04-13T20:01:18.975Z",
+      "last_seen": "2026-05-16T22:55:22.032Z",
+      "example_messages": [
+        "Repository has uncommitted tracked changes.",
+        "Repository has uncommitted tracked changes.\nM .gitignore\n D README.md\n D projects.json\n D runner/ai.py\n M work/tasks/0001-BlenderUE-import-hygiene/context.md\n M work/tasks/0001-BlenderUE-import-hygiene/meta.json\n M work/tasks/0001-BlenderUE-import-hygiene/plan.md",
+        "blocked | Repository has uncommitted tracked changes.\nM .gitignore\n D README.md\n D projects.json\n D runner/ai.py\n M work/tasks/0001-BlenderUE-import-hygiene/context.md\n M work/tasks/0001-BlenderUE-import-hygiene/meta.json\n M work/tasks/0001-BlenderUE-import-hygiene/plan.md",
+        "Repository has uncommitted tracked changes.\nD README.md\n D projects.json\n D runner/ai.py\n M work/tasks/0001-BlenderUE-import-hygiene/context.md\n M work/tasks/0001-BlenderUE-import-hygiene/meta.json\n M work/tasks/0001-BlenderUE-import-hygiene/plan.md",
+        "blocked | Repository has uncommitted tracked changes.\nD README.md\n D projects.json\n D runner/ai.py\n M work/tasks/0001-BlenderUE-import-hygiene/context.md\n M work/tasks/0001-BlenderUE-import-hygiene/meta.json\n M work/tasks/0001-BlenderUE-import-hygiene/plan.md"
+      ],
+      "related_tools": [
+        "node",
+        "autonomy-policy",
+        "git"
+      ],
+      "related_stages": [
+        "planner",
+        "builder-preflight"
+      ],
+      "related_runs": [],
+      "related_projects": [
+        "ace-self"
+      ],
+      "related_agents": [
+        "planner",
+        "builder"
+      ],
+      "source_count": 26320,
+      "failure_class": "runtime_critical",
+      "last_error": {
+        "timestamp": "2026-05-16T22:55:22.032Z",
+        "message": "Repository has uncommitted tracked changes.",
+        "stack": "Error: Repository has uncommitted tracked changes.\n    at createPreLlmBlockedResult (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\ui\\server.js:12767:37)\n    at maybeRunPlannerWorker (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\ui\\server.js:12056:12)\n    at async pumpAutomatedTeamBoardAsync (C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\ui\\server.js:14770:24)\n    at async C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\ui\\server.js:17570:29",
+        "failure_class": "runtime_critical",
+        "route": null,
+        "method": null,
+        "stage": "planner",
+        "source": "builder-preflight",
+        "ui_response": {
+          "failureClass": "runtime_critical",
+          "uiMode": "safe_mode",
+          "clientAction": "enterSafeMode",
+          "safeMode": true,
+          "fallbackPanel": false,
+          "shell": "safe-shell",
+          "summary": "Escalate to safe mode for a runtime-critical failure."
+        }
+      }
+    }
+  ]
+}

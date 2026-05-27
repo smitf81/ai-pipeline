@@ -1,0 +1,14 @@
+[
+  {
+    "event": "created",
+    "status": "generated",
+    "note": "Created from template editor",
+    "timestamp": "2026-05-14T05:48:47.764Z"
+  },
+  {
+    "event": "rejected_placeholder",
+    "status": "rejected",
+    "reason": "Placeholder editor scaffold did not implement mesh edit or mesh import capability; no integration contract, runtime APIs, validation, package, registration, activation, or persistence evidence.",
+    "timestamp": "2026-05-18T12:58:52.945Z"
+  }
+]

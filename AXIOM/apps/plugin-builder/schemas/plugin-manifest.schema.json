@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.local/schemas/plugin-manifest.schema.json",
+  "title": "AXIOM Plugin Manifest",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "version",
+    "description",
+    "author",
+    "entrypoint",
+    "capabilities",
+    "permissions",
+    "mcp_tools",
+    "lifecycle_hooks",
+    "event_subscriptions",
+    "ui_surfaces",
+    "axiom_runtime",
+    "lifecycle",
+    "safety",
+    "provenance",
+    "compatibility",
+    "validation_status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,62}[a-z0-9]$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 500
+    },
+    "author": {
+      "type": "object",
+      "required": [
+        "name",
+        "source"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "human",
+            "axiom-agent",
+            "external"
+          ]
+        }
+      }
+    },
+    "entrypoint": {
+      "type": "string"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "permissions": {
+      "type": "object"
+    },
+    "mcp_tools": {
+      "type": "array"
+    },
+    "lifecycle_hooks": {
+      "type": "object"
+    },
+    "event_subscriptions": {
+      "type": "array"
+    },
+    "ui_surfaces": {
+      "type": "array"
+    },
+    "axiom_runtime": {
+      "type": "object"
+    },
+    "lifecycle": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "draft",
+            "generated",
+            "validated",
+            "packaged",
+            "registered",
+            "active",
+            "suspended",
+            "rejected"
+          ]
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "properties": {
+        "may_modify_core": {
+          "const": false
+        },
+        "sandboxed": {
+          "const": true
+        },
+        "timeout_ms": {
+          "type": "number"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object"
+    },
+    "compatibility": {
+      "type": "object"
+    },
+    "validation_status": {
+      "type": "object"
+    }
+  }
+}

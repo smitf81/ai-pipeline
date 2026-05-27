@@ -1,0 +1,76 @@
+{
+  "id": "fs-write-bounded",
+  "name": "Viewport Navigation Plugin",
+  "version": "0.1.0",
+  "description": "Implementation-bearing plugin proposal for: bounded file writing tool for saving approved operating documents, skill markdown files, and plugin workspace files inside approved project folders (docs/, docs/skills/, pluginbuilder_workspace/, pluginbuilder_finished/) with safety checks: reject absolute paths outside AXIOM project root, reject ../ traversal, reject edits to server core, node_modules, .env, package files, launcher scripts, require overwrite: true for replacing existing files, return applied:true only after successful write, return before/after existence status, return full receipt with path, bytes_written, timestamp",
+  "author": {
+    "name": "AXIOM Agent",
+    "source": "axiom-agent"
+  },
+  "entrypoint": "src/index.js",
+  "capabilities": [
+    "ui-command-palette",
+    "event-subscribe"
+  ],
+  "permissions": {
+    "editor": {
+      "commands": [
+        "register"
+      ]
+    },
+    "storage": {
+      "namespaces": [
+        "plugin-local"
+      ]
+    }
+  },
+  "mcp_tools": [],
+  "lifecycle_hooks": {
+    "on_load": "onLoad",
+    "on_activate": "onActivate",
+    "on_deactivate": "onDeactivate",
+    "on_unload": "onUnload"
+  },
+  "event_subscriptions": [],
+  "ui_surfaces": [],
+  "axiom_runtime": {
+    "min_version": "1.0.0",
+    "apis": []
+  },
+  "lifecycle": {
+    "status": "rejected",
+    "created_at": "2026-05-11T14:14:43.837Z",
+    "rejected_at": "2026-05-18T12:59:03.304Z"
+  },
+  "safety": {
+    "may_modify_core": false,
+    "sandboxed": true,
+    "timeout_ms": 30000
+  },
+  "provenance": {
+    "request_id": "11c27f76-8da2-43dc-a5b6-c8ad56b4ccae",
+    "generated_by": "axiom-plugin-builder",
+    "template_used": "editor",
+    "generated_from": "capability_gap"
+  },
+  "compatibility": {
+    "os": [
+      "any"
+    ],
+    "node_version": ">=18"
+  },
+  "validation_status": {
+    "passed": false,
+    "validator_version": "1.0.0",
+    "schema_version": "1.0.0",
+    "errors": [
+      {
+        "code": "PLACEHOLDER_ONLY_UNSUPPORTED_GAP",
+        "message": "Placeholder scaffold only; no implementation contract, validation, package, registration, activation, or persistence evidence.",
+        "severity": "error"
+      }
+    ],
+    "warnings": [],
+    "checksum": null
+  }
+}

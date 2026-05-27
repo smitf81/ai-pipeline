@@ -1,4 +1,6 @@
 import { TERRAIN_ORDER, getTerrain, isTerrainId } from '../config/terrain.js';
+import { normaliseScenarioLayer } from './scenarioLayer.js';
+import { normaliseSceneEntity } from './sceneEntity.js';
 
 export const DEFAULT_MAP_SIZE = { width: 48, height: 32 };
 const ELEVATION_VERSION = 1;
@@ -47,7 +49,8 @@ export function cloneMap(map) {
     tiles: map.tiles.map((row) => [...row]),
     elevation: normaliseElevationMap(map).map((row) => [...row]),
     elevationVersion: map.elevationVersion ?? ELEVATION_VERSION,
-    provenance: { ...(map.provenance ?? {}) }
+    provenance: { ...(map.provenance ?? {}) },
+    scenario: cloneScenario(map.scenario)
   };
 }
 
@@ -130,6 +133,7 @@ export function deserializeMap(json) {
     ...(parsed.provenance ?? {}),
     importedAt: new Date().toISOString()
   };
+  map.scenario = cloneScenario(parsed.scenario);
   map.elevation = normaliseElevationMap({ ...map, elevation: parsed.elevation });
   map.elevationVersion = Number.isInteger(parsed.elevationVersion) ? parsed.elevationVersion : ELEVATION_VERSION;
   map.revision = Number.isInteger(parsed.revision) ? parsed.revision : 0;
@@ -181,6 +185,46 @@ export function createElevationMap(map) {
   return Array.from({ length: map.height }, (_, y) =>
     Array.from({ length: map.width }, (_, x) => estimateTileElevation(map, x, y, getTile(map, x, y)))
   );
+}
+
+
+function cloneScenario(scenario) {
+  if (!scenario || typeof scenario !== 'object') {
+    return null;
+  }
+  return {
+    ...(scenario ?? {}),
+    generator: scenario.generator && typeof scenario.generator === 'object'
+      ? { ...scenario.generator }
+      : null,
+    starts: scenario.starts && typeof scenario.starts === 'object'
+      ? {
+        ...(scenario.starts ?? {}),
+        player: cloneTileLike(scenario.starts.player),
+        enemy: cloneTileLike(scenario.starts.enemy)
+      }
+      : null,
+    neutralOutposts: Array.isArray(scenario.neutralOutposts)
+      ? scenario.neutralOutposts.map((outpost, index) => ({
+        id: typeof outpost?.id === 'string' ? outpost.id : `outpost_neutral_${String(index + 1).padStart(2, '0')}`,
+        name: typeof outpost?.name === 'string' ? outpost.name : `Neutral Outpost ${index + 1}`,
+        tile: cloneTileLike(outpost?.tile),
+        supply: Number.isFinite(Number(outpost?.supply)) ? Number(outpost.supply) : 0.62
+      })).filter((outpost) => outpost.tile)
+      : [],
+    scenarioLayer: normaliseScenarioLayer(scenario.scenarioLayer ?? scenario.narrativeLayer),
+    sceneEntity: scenario.sceneEntity ? normaliseSceneEntity(scenario.sceneEntity) : null
+  };
+}
+
+function cloneTileLike(tile) {
+  if (!Number.isFinite(Number(tile?.x)) || !Number.isFinite(Number(tile?.y))) {
+    return null;
+  }
+  return {
+    x: Math.round(Number(tile.x)),
+    y: Math.round(Number(tile.y))
+  };
 }
 
 function estimateTileElevation(map, x, y, terrainId) {

@@ -1,0 +1,2788 @@
+{
+  "graph": {
+    "nodes": [],
+    "edges": []
+  },
+  "graphs": {
+    "system": {
+      "nodes": [],
+      "edges": []
+    },
+    "world": {
+      "nodes": [],
+      "edges": []
+    }
+  },
+  "sketches": [],
+  "annotations": [],
+  "architectureMemory": {
+    "adapters": [],
+    "layers": {
+      "execution": [
+        "Code Generator",
+        "Test Generator"
+      ],
+      "intelligence": [
+        "Intent Engine",
+        "Task Planner"
+      ],
+      "interface": [
+        "Spatial IDE Interface Layer"
+      ]
+    },
+    "modules": [],
+    "proposals": [],
+    "rules": [
+      "modular architecture",
+      "no circular dependencies",
+      "stateless services"
+    ],
+    "subsystems": [],
+    "system": "ACE",
+    "versions": [],
+    "world": {
+      "constraints": [],
+      "domain": "gameplay-systems",
+      "items": [],
+      "mechanics": [],
+      "quests": [],
+      "systems": []
+    }
+  },
+  "agentComments": {},
+  "intentState": {
+    "registry": {
+      "currentIntentId": null,
+      "latestIntentId": null,
+      "byId": {},
+      "records": []
+    },
+    "currentIntentId": null,
+    "summary": "",
+    "status": "idle"
+  },
+  "pages": [
+    {
+      "outputs": [],
+      "handoffs": [
+        {
+          "id": "handoff_1774615405452_2yc7",
+          "sourceAgentId": "context-manager",
+          "targetAgentId": "planner",
+          "createdAt": "2026-03-27T12:39:27.479Z",
+          "sourceNodeId": "node_1774615116734_91jfx",
+          "summary": "Migrate to canonical anchor-based ACE system",
+          "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
+          "anchorRefs": [
+            "brain/emergence/decisions.md",
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/slices.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md"
+          ],
+          "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
+          "requestedOutcomes": [
+            "Update or check the status of RGS nodes"
+          ],
+          "tasks": [
+            "Update or check the status of RGS nodes"
+          ],
+          "constraints": [
+            "Ensure compatibility during migration",
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "confidence": 0.69,
+          "criteria": [
+            {
+              "id": "project-alignment",
+              "label": "Project alignment",
+              "score": 1,
+              "reason": "Matched project terms: canonical, ace, system, context, compatibility"
+            },
+            {
+              "id": "actionability",
+              "label": "Actionability",
+              "score": 0.875,
+              "reason": "Detected 4 implementation/planning verb signals."
+            },
+            {
+              "id": "architecture-fit",
+              "label": "Architecture fit",
+              "score": 0.5555555555555556,
+              "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+            },
+            {
+              "id": "constraint-coverage",
+              "label": "Constraint coverage",
+              "score": 0,
+              "reason": "No clear constraints or review gates were stated."
+            },
+            {
+              "id": "clarity",
+              "label": "Clarity",
+              "score": 1,
+              "reason": "Input includes enough detail to classify intent reliably."
+            }
+          ],
+          "truth": {
+            "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+            "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+            "statement": "Migrate to canonical anchor-based ACE system",
+            "goal": "Migrate to canonical anchor-based ACE system",
+            "intentType": "Constraint / guardrail request",
+            "requestType": "constraint_request",
+            "requestedOutcomes": [
+              "Update or check the status of RGS nodes"
+            ],
+            "tasks": [
+              "Update or check the status of RGS nodes"
+            ],
+            "targets": [
+              "canonical",
+              "ace",
+              "system",
+              "context",
+              "compatibility",
+              "runtime",
+              "anchor",
+              "and"
+            ],
+            "constraints": [
+              "Constraint coverage: No clear constraints or review gates were stated."
+            ],
+            "urgency": "normal",
+            "signals": {
+              "actionSignals": 1,
+              "constraintSignals": 0,
+              "architectureSignals": 0,
+              "executionSignals": 0,
+              "featureSignals": 0,
+              "matchedProjectTerms": 7,
+              "anchorRefs": 7,
+              "lowConfidenceCriteria": 1,
+              "plannerUsefulness": 0.89,
+              "executionReadiness": 0.72,
+              "deployReadiness": 0.19,
+              "labels": [
+                "context",
+                "ux",
+                "governance"
+              ],
+              "role": "constraint",
+              "requestedOutcomeCount": 1
+            },
+            "unresolved": [
+              "Constraint coverage: No clear constraints or review gates were stated."
+            ],
+            "evidence": [
+              "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
+              "Clarity: Input includes enough detail to classify intent reliably.",
+              "Actionability: Detected 4 implementation/planning verb signals."
+            ],
+            "anchorRefs": [
+              "brain/emergence/decisions.md",
+              "brain/emergence/project_brain.md",
+              "brain/emergence/roadmap.md",
+              "brain/emergence/slices.md",
+              "brain/emergence/changelog.md",
+              "brain/emergence/plan.md",
+              "brain/emergence/tasks.md"
+            ],
+            "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
+            "readiness": {
+              "intentConfidence": 0.69,
+              "plannerUsefulness": 0.89,
+              "executionReadiness": 0.72,
+              "deployReadiness": 0.19
+            }
+          },
+          "scores": {
+            "intentConfidence": 0.69,
+            "executionReadiness": 0.72,
+            "plannerUsefulness": 0.89,
+            "deployReadiness": 0.19
+          },
+          "classification": {
+            "role": "constraint",
+            "labels": [
+              "context",
+              "ux",
+              "governance"
+            ]
+          },
+          "requestType": "context_request",
+          "urgency": "normal",
+          "targets": [
+            "canonical",
+            "ace",
+            "system",
+            "context",
+            "compatibility",
+            "runtime",
+            "anchor",
+            "brain/emergence/project_brain.md"
+          ],
+          "signals": {},
+          "status": "needs-clarification"
+        }
+      ],
+      "artifactRefs": [],
+      "createdAt": "2026-03-27T12:43:25.445Z",
+      "id": "page_1774615405445_ect6",
+      "sourceNodeId": "sketch_1775663104107_mxjf",
+      "status": "active",
+      "summary": "Prove planner desk canonical visibility.",
+      "title": "Prove planner desk canonical visibility.",
+      "updatedAt": "2026-05-27T13:56:30.087Z"
+    }
+  ],
+  "activePageId": "page_1774615405445_ect6",
+  "rsg": {
+    "mode": "dual-layer",
+    "worldDomain": "gameplay-systems",
+    "approvalPolicy": {
+      "system-structure": "auto-record",
+      "world-structure": "auto-record",
+      "adapter-translation": "auto-record",
+      "code-runtime-mutation": "risk-gated-review"
+    },
+    "proposals": [
+      {
+        "id": "mutation_0001",
+        "title": "Update or check the status of RGS nodes",
+        "target": "code-runtime-mutation",
+        "sourceLayer": "system",
+        "sourceNodeId": "node_1774615116734_91jfx",
+        "approval": "required",
+        "status": "awaiting-approval"
+      }
+    ],
+    "summary": {
+      "systemStructure": 0,
+      "worldStructure": 0,
+      "adapterTranslation": 0,
+      "codeRuntimeMutation": 1
+    },
+    "activity": [],
+    "lastSourceNodeId": null,
+    "lastGenerationAt": null,
+    "lastStatus": "idle",
+    "lastEvaluatedAt": "2026-05-27T13:56:30.087Z"
+  },
+  "mutationGate": {
+    "activity": [],
+    "approvalQueue": []
+  },
+  "studio": {
+    "activeGraphLayer": "system",
+    "agentWorkers": {
+      "context-manager": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "qwen3.5-9b",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastSourceNodeId": null,
+        "lastHandoffId": null,
+        "lastReportNodeId": null,
+        "lastBlockedReason": null,
+        "lastUsedFallback": false,
+        "lastPlannerFeedbackAction": null,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "evaluator": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "qwen3.5-9b",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastVerdict": null,
+        "lastDeltaScore": 0,
+        "lastCognitionMode": null,
+        "lastLiveModelCallAt": null,
+        "lastFallbackAt": null,
+        "fallbackCount": 0,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "executor": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "qwen3.5-9b",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastBlockedReason": null,
+        "lastCardId": null,
+        "lastTaskId": null,
+        "lastDecision": null,
+        "lastAssessmentSummary": null,
+        "lastAssessmentBlockers": [],
+        "lastVerifiedCardId": null,
+        "lastAppliedCardId": null,
+        "lastDeployCardId": null,
+        "startedAt": null,
+        "completedAt": null
+      },
+      "planner": {
+        "status": "idle",
+        "statusReason": null,
+        "mode": "auto",
+        "backend": "ollama",
+        "model": "mistral:latest",
+        "currentRunId": null,
+        "lastRunId": null,
+        "lastOutcome": null,
+        "lastOutcomeAt": null,
+        "lastSourceHandoffId": null,
+        "lastBlockedReason": null,
+        "lastProducedCardIds": [],
+        "proposalArtifactRefs": [],
+        "startedAt": null,
+        "completedAt": null
+      },
+      "dave": {
+        "name": "Dave",
+        "role": "Practical learning companion",
+        "status": "idle",
+        "statusReason": null,
+        "mode": "manual",
+        "backend": "ollama",
+        "model": "qwen3.5-9b",
+        "currentRunId": null,
+        "lastRunId": null,
+        "tokensUsed": 0,
+        "durationMs": 0,
+        "responseStatus": "idle",
+        "contextAlignmentScore": 0,
+        "contextAlignmentReason": null,
+        "startedAt": null,
+        "completedAt": null
+      }
+    },
+    "canvasViewport": {
+      "x": 24.5,
+      "y": -36.89999999999998,
+      "zoom": 0.92
+    },
+    "ctoOverrides": {
+      "version": "ace/cto-overrides.v1",
+      "generatedAt": "2026-05-16T09:03:37.720Z",
+      "updatedAt": null,
+      "entries": [],
+      "activeOverrides": [],
+      "provenance": {
+        "fallbackUsed": false,
+        "reason": "default empty CTO override ledger",
+        "source": "createDefaultCtoOverrideLedger"
+      }
+    },
+    "deskProperties": {
+      "context-manager": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "planner": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "executor": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "qa-lead": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "memory-archivist": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "rnd-lead": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "cto-chief-of-staff": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "cto-architect": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      },
+      "integration_auditor": {
+        "managedAgents": [],
+        "moduleIds": [],
+        "manualTests": [],
+        "departmentContext": "",
+        "guardrails": [],
+        "contextSlices": []
+      }
+    },
+    "handoffs": {
+      "contextToPlanner": {
+        "id": "handoff_1774615405452_2yc7",
+        "sourceAgentId": "context-manager",
+        "targetAgentId": "planner",
+        "createdAt": "2026-03-27T12:39:27.479Z",
+        "sourceNodeId": "node_1774615116734_91jfx",
+        "summary": "Migrate to canonical anchor-based ACE system",
+        "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
+        "anchorRefs": [
+          "brain/emergence/decisions.md",
+          "brain/emergence/project_brain.md",
+          "brain/emergence/roadmap.md",
+          "brain/emergence/slices.md",
+          "brain/emergence/changelog.md",
+          "brain/emergence/plan.md",
+          "brain/emergence/tasks.md"
+        ],
+        "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
+        "requestedOutcomes": [
+          "Update or check the status of RGS nodes"
+        ],
+        "tasks": [
+          "Update or check the status of RGS nodes"
+        ],
+        "constraints": [
+          "Ensure compatibility during migration",
+          "Constraint coverage: No clear constraints or review gates were stated."
+        ],
+        "confidence": 0.69,
+        "criteria": [
+          {
+            "id": "project-alignment",
+            "label": "Project alignment",
+            "score": 1,
+            "reason": "Matched project terms: canonical, ace, system, context, compatibility"
+          },
+          {
+            "id": "actionability",
+            "label": "Actionability",
+            "score": 0.875,
+            "reason": "Detected 4 implementation/planning verb signals."
+          },
+          {
+            "id": "architecture-fit",
+            "label": "Architecture fit",
+            "score": 0.5555555555555556,
+            "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+          },
+          {
+            "id": "constraint-coverage",
+            "label": "Constraint coverage",
+            "score": 0,
+            "reason": "No clear constraints or review gates were stated."
+          },
+          {
+            "id": "clarity",
+            "label": "Clarity",
+            "score": 1,
+            "reason": "Input includes enough detail to classify intent reliably."
+          }
+        ],
+        "truth": {
+          "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+          "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+          "statement": "Migrate to canonical anchor-based ACE system",
+          "goal": "Migrate to canonical anchor-based ACE system",
+          "intentType": "Constraint / guardrail request",
+          "requestType": "constraint_request",
+          "requestedOutcomes": [
+            "Update or check the status of RGS nodes"
+          ],
+          "tasks": [
+            "Update or check the status of RGS nodes"
+          ],
+          "targets": [
+            "canonical",
+            "ace",
+            "system",
+            "context",
+            "compatibility",
+            "runtime",
+            "anchor",
+            "and"
+          ],
+          "constraints": [
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "urgency": "normal",
+          "signals": {
+            "actionSignals": 1,
+            "constraintSignals": 0,
+            "architectureSignals": 0,
+            "executionSignals": 0,
+            "featureSignals": 0,
+            "matchedProjectTerms": 7,
+            "anchorRefs": 7,
+            "lowConfidenceCriteria": 1,
+            "plannerUsefulness": 0.89,
+            "executionReadiness": 0.72,
+            "deployReadiness": 0.19,
+            "labels": [
+              "context",
+              "ux",
+              "governance"
+            ],
+            "role": "constraint",
+            "requestedOutcomeCount": 1
+          },
+          "unresolved": [
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "evidence": [
+            "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
+            "Clarity: Input includes enough detail to classify intent reliably.",
+            "Actionability: Detected 4 implementation/planning verb signals."
+          ],
+          "anchorRefs": [
+            "brain/emergence/decisions.md",
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/slices.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md"
+          ],
+          "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
+          "readiness": {
+            "intentConfidence": 0.69,
+            "plannerUsefulness": 0.89,
+            "executionReadiness": 0.72,
+            "deployReadiness": 0.19
+          }
+        },
+        "scores": {
+          "intentConfidence": 0.69,
+          "executionReadiness": 0.72,
+          "plannerUsefulness": 0.89,
+          "deployReadiness": 0.19
+        },
+        "classification": {
+          "role": "constraint",
+          "labels": [
+            "context",
+            "ux",
+            "governance"
+          ]
+        },
+        "requestType": "context_request",
+        "urgency": "normal",
+        "targets": [
+          "canonical",
+          "ace",
+          "system",
+          "context",
+          "compatibility",
+          "runtime",
+          "anchor",
+          "brain/emergence/project_brain.md"
+        ],
+        "signals": {},
+        "status": "needs-clarification"
+      },
+      "history": [
+        {
+          "id": "handoff_1774615405452_2yc7",
+          "sourceAgentId": "context-manager",
+          "targetAgentId": "planner",
+          "createdAt": "2026-03-27T12:39:27.479Z",
+          "sourceNodeId": "node_1774615116734_91jfx",
+          "summary": "Migrate to canonical anchor-based ACE system",
+          "problemStatement": "Goal: Migrate to canonical anchor-based ACE system\nRequested outcomes: Update or check the status of RGS nodes.\nWhy ACE believes this: Project alignment 100%, Actionability 88%, Architecture fit 56%.\nConstraints and review signals: Ensure compatibility during migration | Constraint coverage: No clear constraints or review gates were stated..\nStill unclear: Determine if the RGS nodes are part of the external target config or managed by the runtime",
+          "anchorRefs": [
+            "brain/emergence/decisions.md",
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/slices.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md"
+          ],
+          "goal": "The goal is to update the RGS nodes or check if they've become redundant or stale within the context of the ongoing shift towards a canonical anchor-based ACE system.",
+          "requestedOutcomes": [
+            "Update or check the status of RGS nodes"
+          ],
+          "tasks": [
+            "Update or check the status of RGS nodes"
+          ],
+          "constraints": [
+            "Ensure compatibility during migration",
+            "Constraint coverage: No clear constraints or review gates were stated."
+          ],
+          "confidence": 0.69,
+          "criteria": [
+            {
+              "id": "project-alignment",
+              "label": "Project alignment",
+              "score": 1,
+              "reason": "Matched project terms: canonical, ace, system, context, compatibility"
+            },
+            {
+              "id": "actionability",
+              "label": "Actionability",
+              "score": 0.875,
+              "reason": "Detected 4 implementation/planning verb signals."
+            },
+            {
+              "id": "architecture-fit",
+              "label": "Architecture fit",
+              "score": 0.5555555555555556,
+              "reason": "References ACE desks, agents, architecture surfaces, or orchestration flow."
+            },
+            {
+              "id": "constraint-coverage",
+              "label": "Constraint coverage",
+              "score": 0,
+              "reason": "No clear constraints or review gates were stated."
+            },
+            {
+              "id": "clarity",
+              "label": "Clarity",
+              "score": 1,
+              "reason": "Input includes enough detail to classify intent reliably."
+            }
+          ],
+          "truth": {
+            "rawSource": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+            "rawInput": "we want to update our RGS nodes i think, or maybe check if they've become redundant or just stale",
+            "statement": "Migrate to canonical anchor-based ACE system",
+            "goal": "Migrate to canonical anchor-based ACE system",
+            "intentType": "Constraint / guardrail request",
+            "requestType": "constraint_request",
+            "requestedOutcomes": [
+              "Update or check the status of RGS nodes"
+            ],
+            "tasks": [
+              "Update or check the status of RGS nodes"
+            ],
+            "targets": [
+              "canonical",
+              "ace",
+              "system",
+              "context",
+              "compatibility",
+              "runtime",
+              "anchor",
+              "and"
+            ],
+            "constraints": [
+              "Constraint coverage: No clear constraints or review gates were stated."
+            ],
+            "urgency": "normal",
+            "signals": {
+              "actionSignals": 1,
+              "constraintSignals": 0,
+              "architectureSignals": 0,
+              "executionSignals": 0,
+              "featureSignals": 0,
+              "matchedProjectTerms": 7,
+              "anchorRefs": 7,
+              "lowConfidenceCriteria": 1,
+              "plannerUsefulness": 0.89,
+              "executionReadiness": 0.72,
+              "deployReadiness": 0.19,
+              "labels": [
+                "context",
+                "ux",
+                "governance"
+              ],
+              "role": "constraint",
+              "requestedOutcomeCount": 1
+            },
+            "unresolved": [
+              "Constraint coverage: No clear constraints or review gates were stated."
+            ],
+            "evidence": [
+              "Project alignment: Matched project terms: canonical, ace, system, context, compatibility",
+              "Clarity: Input includes enough detail to classify intent reliably.",
+              "Actionability: Detected 4 implementation/planning verb signals."
+            ],
+            "anchorRefs": [
+              "brain/emergence/decisions.md",
+              "brain/emergence/project_brain.md",
+              "brain/emergence/roadmap.md",
+              "brain/emergence/slices.md",
+              "brain/emergence/changelog.md",
+              "brain/emergence/plan.md",
+              "brain/emergence/tasks.md"
+            ],
+            "plannerBrief": "Planner should treat this as: Update or check the status of RGS nodes",
+            "readiness": {
+              "intentConfidence": 0.69,
+              "plannerUsefulness": 0.89,
+              "executionReadiness": 0.72,
+              "deployReadiness": 0.19
+            }
+          },
+          "scores": {
+            "intentConfidence": 0.69,
+            "executionReadiness": 0.72,
+            "plannerUsefulness": 0.89,
+            "deployReadiness": 0.19
+          },
+          "classification": {
+            "role": "constraint",
+            "labels": [
+              "context",
+              "ux",
+              "governance"
+            ]
+          },
+          "requestType": "context_request",
+          "urgency": "normal",
+          "targets": [
+            "canonical",
+            "ace",
+            "system",
+            "context",
+            "compatibility",
+            "runtime",
+            "anchor",
+            "brain/emergence/project_brain.md"
+          ],
+          "signals": {},
+          "status": "needs-clarification"
+        }
+      ]
+    },
+    "intake": {
+      "version": "ace/canonical-intake.v1",
+      "records": [],
+      "latestByChannel": {
+        "cto_prompt": null,
+        "canvas_text": null
+      }
+    },
+    "layout": {
+      "version": "studio-layout.v1",
+      "size": {
+        "width": 1200,
+        "height": 800
+      },
+      "bounds": {
+        "x": 56,
+        "y": 72,
+        "width": 1088,
+        "height": 664,
+        "slotId": null
+      },
+      "whiteboards": {
+        "teamBoard": {
+          "x": 284,
+          "y": 88,
+          "width": 584,
+          "height": 208
+        }
+      },
+      "controlCentreDeskId": "cto-architect",
+      "departments": [
+        {
+          "id": "dept-intake",
+          "label": "Intake",
+          "templateId": "intake",
+          "kind": "intake",
+          "summary": "Frontline intake and interpretation room for incoming work.",
+          "editable": false,
+          "visible": true,
+          "slotId": "intake-bay",
+          "bounds": {
+            "x": 92,
+            "y": 108,
+            "width": 220,
+            "height": 238,
+            "slotId": "intake-bay"
+          },
+          "deskIds": [
+            "context-manager"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "context-manager",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "context-manager"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "context-manager",
+                "deskId": "context-manager",
+                "label": "context manager",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-delivery",
+          "label": "Delivery",
+          "templateId": "delivery",
+          "kind": "delivery",
+          "summary": "Planning and execution room for active build throughput.",
+          "editable": true,
+          "visible": true,
+          "slotId": "delivery-bay",
+          "bounds": {
+            "x": 334,
+            "y": 86,
+            "width": 514,
+            "height": 470,
+            "slotId": "delivery-bay"
+          },
+          "deskIds": [
+            "planner",
+            "executor"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "planner",
+            "minimumActiveSeats": 2,
+            "baselineRoleIds": [
+              "planner",
+              "executor"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "planner",
+                "deskId": "planner",
+                "label": "planner",
+                "seatKind": "lead",
+                "open": true
+              },
+              {
+                "roleId": "executor",
+                "deskId": "executor",
+                "label": "executor",
+                "seatKind": "core",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-quality",
+          "label": "Quality",
+          "templateId": "quality",
+          "kind": "quality",
+          "summary": "Assessment room for QA reports, scorecards, and readiness evidence.",
+          "editable": true,
+          "visible": true,
+          "slotId": "quality-bay",
+          "bounds": {
+            "x": 92,
+            "y": 394,
+            "width": 220,
+            "height": 232,
+            "slotId": "quality-bay"
+          },
+          "deskIds": [
+            "qa-lead"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "qa-lead",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "qa-lead"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "qa-lead",
+                "deskId": "qa-lead",
+                "label": "qa lead",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-archive",
+          "label": "Archive",
+          "templateId": "archive",
+          "kind": "archive",
+          "summary": "Context preservation room owned by the Memory Archivist.",
+          "editable": true,
+          "visible": true,
+          "slotId": "archive-bay",
+          "bounds": {
+            "x": 454,
+            "y": 580,
+            "width": 312,
+            "height": 120,
+            "slotId": "archive-bay"
+          },
+          "deskIds": [
+            "memory-archivist"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "memory-archivist",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "memory-archivist"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "memory-archivist",
+                "deskId": "memory-archivist",
+                "label": "memory archivist",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-research",
+          "label": "R&D / Research & Development",
+          "templateId": "research",
+          "kind": "research",
+          "summary": "Sandbox room for non-delivery research, prototypes, and experiments.",
+          "editable": true,
+          "visible": true,
+          "slotId": "expansion-b",
+          "bounds": {
+            "x": 808,
+            "y": 564,
+            "width": 292,
+            "height": 136,
+            "slotId": "expansion-b"
+          },
+          "deskIds": [
+            "rnd-lead"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "rnd-lead",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "rnd-lead"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "rnd-lead",
+                "deskId": "rnd-lead",
+                "label": "rnd lead",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-control",
+          "label": "Control Centre",
+          "templateId": "control",
+          "kind": "control",
+          "summary": "Canonical oversight room for department relationships and environment controls.",
+          "editable": true,
+          "visible": true,
+          "slotId": "control-bay",
+          "bounds": {
+            "x": 770,
+            "y": 286,
+            "width": 328,
+            "height": 254,
+            "slotId": "control-bay"
+          },
+          "deskIds": [
+            "cto-chief-of-staff",
+            "cto-architect"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "cto-architect",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "cto-chief-of-staff",
+                "deskId": "cto-chief-of-staff",
+                "label": "cto chief of staff",
+                "seatKind": "core",
+                "open": true
+              },
+              {
+                "roleId": "cto-architect",
+                "deskId": "cto-architect",
+                "label": "cto architect",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "dept-talent-acquisition",
+          "label": "Talent Acquisition",
+          "templateId": "talent",
+          "kind": "talent",
+          "summary": "Hiring-demand room for seat coverage, role fit, and open-role planning.",
+          "editable": false,
+          "visible": true,
+          "slotId": "talent-bay",
+          "bounds": {
+            "x": 850,
+            "y": 86,
+            "width": 250,
+            "height": 176,
+            "slotId": "talent-bay"
+          },
+          "deskIds": [
+            "integration_auditor"
+          ],
+          "controlCentreDeskId": "cto-architect",
+          "staffing": {
+            "requiredLeadSeatId": "integration_auditor",
+            "minimumActiveSeats": 1,
+            "baselineRoleIds": [
+              "integration_auditor"
+            ],
+            "openSeatPlaceholders": [
+              {
+                "roleId": "integration_auditor",
+                "deskId": "integration_auditor",
+                "label": "integration auditor",
+                "seatKind": "lead",
+                "open": true
+              }
+            ]
+          }
+        }
+      ],
+      "desks": {
+        "context-manager": {
+          "id": "context-manager",
+          "label": "Context Manager",
+          "templateId": "intake-node",
+          "type": "intake",
+          "capabilities": [
+            "context",
+            "triage",
+            "routing"
+          ],
+          "editable": false,
+          "departmentId": "dept-intake",
+          "position": {
+            "x": 182,
+            "y": 252
+          },
+          "assignedAgentIds": [
+            "context-manager"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "context-manager",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "planner": {
+          "id": "planner",
+          "label": "Planner",
+          "templateId": "delivery-node",
+          "type": "delivery",
+          "capabilities": [
+            "planning",
+            "queue",
+            "throughput"
+          ],
+          "editable": false,
+          "departmentId": "dept-delivery",
+          "position": {
+            "x": 536,
+            "y": 252
+          },
+          "assignedAgentIds": [
+            "planner"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "planner",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "executor": {
+          "id": "executor",
+          "label": "Executor",
+          "templateId": "builder-node",
+          "type": "builder",
+          "capabilities": [
+            "execution",
+            "integration",
+            "output"
+          ],
+          "editable": false,
+          "departmentId": "dept-delivery",
+          "position": {
+            "x": 682,
+            "y": 252
+          },
+          "assignedAgentIds": [
+            "executor"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "executor",
+            "seatKind": "core",
+            "placeholder": true
+          }
+        },
+        "qa-lead": {
+          "id": "qa-lead",
+          "label": "QA Lead",
+          "templateId": "qa-node",
+          "type": "quality",
+          "capabilities": [
+            "testing",
+            "scorecards",
+            "verification"
+          ],
+          "editable": false,
+          "departmentId": "dept-quality",
+          "position": {
+            "x": 182,
+            "y": 510
+          },
+          "assignedAgentIds": [
+            "qa-lead",
+            "evaluator"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "qa-lead",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "memory-archivist": {
+          "id": "memory-archivist",
+          "label": "Memory Archivist",
+          "templateId": "archive-node",
+          "type": "archive",
+          "capabilities": [
+            "context",
+            "history",
+            "traceability"
+          ],
+          "editable": false,
+          "departmentId": "dept-archive",
+          "position": {
+            "x": 620,
+            "y": 642
+          },
+          "assignedAgentIds": [
+            "memory-archivist",
+            "dave"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "memory-archivist",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "rnd-lead": {
+          "id": "rnd-lead",
+          "label": "R&D Lead",
+          "templateId": "support-node",
+          "type": "support",
+          "capabilities": [
+            "ops",
+            "coordination",
+            "handoffs"
+          ],
+          "editable": false,
+          "departmentId": "dept-research",
+          "position": {
+            "x": 954,
+            "y": 640
+          },
+          "assignedAgentIds": [
+            "rnd-lead"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "rnd-lead",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "cto-chief-of-staff": {
+          "id": "cto-chief-of-staff",
+          "label": "Chief of Staff",
+          "templateId": "support-node",
+          "type": "support",
+          "capabilities": [
+            "ops",
+            "coordination",
+            "handoffs"
+          ],
+          "editable": false,
+          "departmentId": "dept-control",
+          "position": {
+            "x": 876,
+            "y": 422
+          },
+          "assignedAgentIds": [
+            "cto-chief-of-staff"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "cto-chief-of-staff",
+            "seatKind": "core",
+            "placeholder": true
+          }
+        },
+        "cto-architect": {
+          "id": "cto-architect",
+          "label": "CTO / Architect",
+          "templateId": "control-node",
+          "type": "control",
+          "capabilities": [
+            "oversight",
+            "guardrails",
+            "assignment"
+          ],
+          "editable": true,
+          "departmentId": "dept-control",
+          "position": {
+            "x": 990,
+            "y": 422
+          },
+          "assignedAgentIds": [
+            "cto-architect"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "cto-architect",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        },
+        "integration_auditor": {
+          "id": "integration_auditor",
+          "label": "Integration Auditor",
+          "templateId": "talent-node",
+          "type": "talent",
+          "capabilities": [
+            "coverage",
+            "hiring-demand",
+            "role-readiness"
+          ],
+          "editable": false,
+          "departmentId": "dept-talent-acquisition",
+          "position": {
+            "x": 986,
+            "y": 174
+          },
+          "assignedAgentIds": [
+            "integration_auditor"
+          ],
+          "reportsToDeskId": "cto-architect",
+          "staffing": {
+            "roleId": "integration_auditor",
+            "seatKind": "lead",
+            "placeholder": true
+          }
+        }
+      },
+      "organization": {
+        "schemaVersion": "studio-relationships.v1",
+        "relationshipTypes": {
+          "parent": "parent",
+          "peer": "peer",
+          "support": "support",
+          "dependency": "dependency"
+        },
+        "departments": {
+          "dept-intake": {
+            "id": "dept-intake",
+            "label": "Intake",
+            "kind": "intake",
+            "templateId": "intake",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "context-manager"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "context-manager",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "context-manager"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "context-manager",
+                  "deskId": "context-manager",
+                  "label": "context manager",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-delivery": {
+            "id": "dept-delivery",
+            "label": "Delivery",
+            "kind": "delivery",
+            "templateId": "delivery",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-quality",
+              "dept-archive",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "planner",
+              "executor"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "planner",
+              "minimumActiveSeats": 2,
+              "baselineRoleIds": [
+                "planner",
+                "executor"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "planner",
+                  "deskId": "planner",
+                  "label": "planner",
+                  "seatKind": "lead",
+                  "open": true
+                },
+                {
+                  "roleId": "executor",
+                  "deskId": "executor",
+                  "label": "executor",
+                  "seatKind": "core",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-quality": {
+            "id": "dept-quality",
+            "label": "Quality",
+            "kind": "quality",
+            "templateId": "quality",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-archive",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-archive",
+              "dept-control"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "memory-archivist",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "planner",
+              "executor",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "qa-lead"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "qa-lead",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "qa-lead"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "qa-lead",
+                  "deskId": "qa-lead",
+                  "label": "qa lead",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-archive": {
+            "id": "dept-archive",
+            "label": "Archive",
+            "kind": "archive",
+            "templateId": "archive",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-quality",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "qa-lead",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "memory-archivist"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "memory-archivist",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "memory-archivist"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "memory-archivist",
+                  "deskId": "memory-archivist",
+                  "label": "memory archivist",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-research": {
+            "id": "dept-research",
+            "label": "R&D / Research & Development",
+            "kind": "research",
+            "templateId": "research",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-delivery"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "rnd-lead"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "rnd-lead",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "rnd-lead"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "rnd-lead",
+                  "deskId": "rnd-lead",
+                  "label": "rnd lead",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-control": {
+            "id": "dept-control",
+            "label": "Control Centre",
+            "kind": "control",
+            "templateId": "control",
+            "parentDepartmentId": null,
+            "peerDepartmentIds": [],
+            "supportDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [],
+            "supportDeskIds": [
+              "context-manager",
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [],
+            "deskIds": [
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "cto-architect",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "cto-chief-of-staff",
+                "cto-architect"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "cto-chief-of-staff",
+                  "deskId": "cto-chief-of-staff",
+                  "label": "cto chief of staff",
+                  "seatKind": "core",
+                  "open": true
+                },
+                {
+                  "roleId": "cto-architect",
+                  "deskId": "cto-architect",
+                  "label": "cto architect",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "dept-talent-acquisition": {
+            "id": "dept-talent-acquisition",
+            "label": "Talent Acquisition",
+            "kind": "talent",
+            "templateId": "talent",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "supportDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "integration_auditor"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "integration_auditor",
+              "minimumActiveSeats": 1,
+              "baselineRoleIds": [
+                "integration_auditor"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "integration_auditor",
+                  "deskId": "integration_auditor",
+                  "label": "integration auditor",
+                  "seatKind": "lead",
+                  "open": true
+                }
+              ]
+            }
+          }
+        },
+        "desks": {
+          "context-manager": {
+            "id": "context-manager",
+            "label": "Context Manager",
+            "departmentId": "dept-intake",
+            "ownerDepartmentId": "dept-intake",
+            "parentDepartmentId": "dept-intake",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "context-manager"
+            ],
+            "staffing": {
+              "roleId": "context-manager",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "planner": {
+            "id": "planner",
+            "label": "Planner",
+            "departmentId": "dept-delivery",
+            "ownerDepartmentId": "dept-delivery",
+            "parentDepartmentId": "dept-delivery",
+            "peerDeskIds": [
+              "executor"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "planner"
+            ],
+            "staffing": {
+              "roleId": "planner",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "executor": {
+            "id": "executor",
+            "label": "Executor",
+            "departmentId": "dept-delivery",
+            "ownerDepartmentId": "dept-delivery",
+            "parentDepartmentId": "dept-delivery",
+            "peerDeskIds": [
+              "planner"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "executor"
+            ],
+            "staffing": {
+              "roleId": "executor",
+              "seatKind": "core",
+              "placeholder": true
+            }
+          },
+          "qa-lead": {
+            "id": "qa-lead",
+            "label": "QA Lead",
+            "departmentId": "dept-quality",
+            "ownerDepartmentId": "dept-quality",
+            "parentDepartmentId": "dept-quality",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-archive",
+              "dept-control"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "memory-archivist",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "planner",
+              "executor",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "qa-lead",
+              "evaluator"
+            ],
+            "staffing": {
+              "roleId": "qa-lead",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "memory-archivist": {
+            "id": "memory-archivist",
+            "label": "Memory Archivist",
+            "departmentId": "dept-archive",
+            "ownerDepartmentId": "dept-archive",
+            "parentDepartmentId": "dept-archive",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-quality",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "qa-lead",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "memory-archivist",
+              "dave"
+            ],
+            "staffing": {
+              "roleId": "memory-archivist",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "rnd-lead": {
+            "id": "rnd-lead",
+            "label": "R&D Lead",
+            "departmentId": "dept-research",
+            "ownerDepartmentId": "dept-research",
+            "parentDepartmentId": "dept-research",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-delivery"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "rnd-lead"
+            ],
+            "staffing": {
+              "roleId": "rnd-lead",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "cto-chief-of-staff": {
+            "id": "cto-chief-of-staff",
+            "label": "Chief of Staff",
+            "departmentId": "dept-control",
+            "ownerDepartmentId": "dept-control",
+            "parentDepartmentId": "dept-control",
+            "peerDeskIds": [
+              "cto-architect"
+            ],
+            "supportDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [],
+            "supportDeskIds": [
+              "context-manager",
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "cto-chief-of-staff"
+            ],
+            "staffing": {
+              "roleId": "cto-chief-of-staff",
+              "seatKind": "core",
+              "placeholder": true
+            }
+          },
+          "cto-architect": {
+            "id": "cto-architect",
+            "label": "CTO / Architect",
+            "departmentId": "dept-control",
+            "ownerDepartmentId": "dept-control",
+            "parentDepartmentId": "dept-control",
+            "peerDeskIds": [
+              "cto-chief-of-staff"
+            ],
+            "supportDepartmentIds": [
+              "dept-intake",
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [],
+            "supportDeskIds": [
+              "context-manager",
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "cto-architect"
+            ],
+            "staffing": {
+              "roleId": "cto-architect",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "integration_auditor": {
+            "id": "integration_auditor",
+            "label": "Integration Auditor",
+            "departmentId": "dept-talent-acquisition",
+            "ownerDepartmentId": "dept-talent-acquisition",
+            "parentDepartmentId": "dept-talent-acquisition",
+            "peerDeskIds": [],
+            "supportDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-archive",
+              "dept-research"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-delivery",
+              "dept-quality",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "memory-archivist",
+              "rnd-lead"
+            ],
+            "dependencyDeskIds": [
+              "planner",
+              "executor",
+              "qa-lead",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "integration_auditor"
+            ],
+            "staffing": {
+              "roleId": "integration_auditor",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          }
+        },
+        "agents": {
+          "context-manager": {
+            "id": "context-manager",
+            "agentId": "context-manager",
+            "roleId": "context-manager",
+            "deskId": "context-manager",
+            "departmentId": "dept-intake",
+            "modelProfileId": "model-profile.default.context-manager"
+          },
+          "planner": {
+            "id": "planner",
+            "agentId": "planner",
+            "roleId": "planner",
+            "deskId": "planner",
+            "departmentId": "dept-delivery",
+            "modelProfileId": "model-profile.planner-default"
+          },
+          "executor": {
+            "id": "executor",
+            "agentId": "executor",
+            "roleId": "executor",
+            "deskId": "executor",
+            "departmentId": "dept-delivery",
+            "modelProfileId": "model-profile.default.executor"
+          },
+          "qa-lead": {
+            "id": "qa-lead",
+            "agentId": "qa-lead",
+            "roleId": "qa-lead",
+            "deskId": "qa-lead",
+            "departmentId": "dept-quality",
+            "modelProfileId": "model-profile.default.qa-lead"
+          },
+          "evaluator": {
+            "id": "evaluator",
+            "agentId": "evaluator",
+            "roleId": "qa-lead",
+            "deskId": "qa-lead",
+            "departmentId": "dept-quality",
+            "modelProfileId": "model-profile.default.evaluator"
+          },
+          "memory-archivist": {
+            "id": "memory-archivist",
+            "agentId": "memory-archivist",
+            "roleId": "memory-archivist",
+            "deskId": "memory-archivist",
+            "departmentId": "dept-archive",
+            "modelProfileId": "model-profile.default.memory-archivist"
+          },
+          "dave": {
+            "id": "dave",
+            "agentId": "dave",
+            "roleId": "memory-archivist",
+            "deskId": "memory-archivist",
+            "departmentId": "dept-archive",
+            "modelProfileId": "model-profile.default.dave"
+          },
+          "rnd-lead": {
+            "id": "rnd-lead",
+            "agentId": "rnd-lead",
+            "roleId": "rnd-lead",
+            "deskId": "rnd-lead",
+            "departmentId": "dept-research",
+            "modelProfileId": "model-profile.default.rnd-lead"
+          },
+          "cto-chief-of-staff": {
+            "id": "cto-chief-of-staff",
+            "agentId": "cto-chief-of-staff",
+            "roleId": "cto-chief-of-staff",
+            "deskId": "cto-chief-of-staff",
+            "departmentId": "dept-control",
+            "modelProfileId": "model-profile.default.cto-chief-of-staff"
+          },
+          "cto-architect": {
+            "id": "cto-architect",
+            "agentId": "cto-architect",
+            "roleId": "cto-architect",
+            "deskId": "cto-architect",
+            "departmentId": "dept-control",
+            "modelProfileId": "model-profile.default.cto-architect"
+          },
+          "integration_auditor": {
+            "id": "integration_auditor",
+            "agentId": "integration_auditor",
+            "roleId": "integration_auditor",
+            "deskId": "integration_auditor",
+            "departmentId": "dept-talent-acquisition",
+            "modelProfileId": "model-profile.default.integration_auditor"
+          }
+        },
+        "planner": {
+          "schemaVersion": "planner-identity.v1",
+          "deskId": "planner",
+          "roleId": "planner",
+          "agentId": "planner",
+          "modelProfileId": "model-profile.planner-default",
+          "departmentId": "dept-delivery",
+          "requiredLeadSeatId": "planner",
+          "assignedAgentIds": [
+            "planner"
+          ],
+          "live": true,
+          "canonical": {
+            "deskId": "planner",
+            "roleId": "planner",
+            "agentId": "planner",
+            "modelProfileId": "model-profile.planner-default",
+            "departmentId": "dept-delivery",
+            "requiredLeadSeatId": "planner"
+          },
+          "desk": {
+            "id": "planner",
+            "label": "Planner",
+            "departmentId": "dept-delivery",
+            "ownerDepartmentId": "dept-delivery",
+            "parentDepartmentId": "dept-delivery",
+            "peerDeskIds": [
+              "executor"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "reportsToDeskId": "cto-architect",
+            "assignedAgentIds": [
+              "planner"
+            ],
+            "staffing": {
+              "roleId": "planner",
+              "seatKind": "lead",
+              "placeholder": true
+            }
+          },
+          "department": {
+            "id": "dept-delivery",
+            "label": "Delivery",
+            "kind": "delivery",
+            "templateId": "delivery",
+            "parentDepartmentId": "dept-control",
+            "peerDepartmentIds": [
+              "dept-intake",
+              "dept-quality",
+              "dept-archive",
+              "dept-research",
+              "dept-talent-acquisition"
+            ],
+            "supportDepartmentIds": [
+              "dept-quality"
+            ],
+            "dependencyDepartmentIds": [
+              "dept-intake",
+              "dept-control"
+            ],
+            "supportDeskIds": [
+              "qa-lead"
+            ],
+            "dependencyDeskIds": [
+              "context-manager",
+              "cto-chief-of-staff",
+              "cto-architect"
+            ],
+            "deskIds": [
+              "planner",
+              "executor"
+            ],
+            "controlCentreDeskId": "cto-architect",
+            "staffing": {
+              "requiredLeadSeatId": "planner",
+              "minimumActiveSeats": 2,
+              "baselineRoleIds": [
+                "planner",
+                "executor"
+              ],
+              "openSeatPlaceholders": [
+                {
+                  "roleId": "planner",
+                  "deskId": "planner",
+                  "label": "planner",
+                  "seatKind": "lead",
+                  "open": true
+                },
+                {
+                  "roleId": "executor",
+                  "deskId": "executor",
+                  "label": "executor",
+                  "seatKind": "core",
+                  "open": true
+                }
+              ]
+            }
+          },
+          "agent": {
+            "id": "planner",
+            "agentId": "planner",
+            "roleId": "planner",
+            "deskId": "planner",
+            "departmentId": "dept-delivery",
+            "modelProfileId": "model-profile.planner-default"
+          },
+          "matches": {
+            "desk": true,
+            "role": true,
+            "agent": true,
+            "department": true,
+            "modelProfile": true,
+            "assignment": true
+          }
+        },
+        "qaLead": {
+          "id": "qa-lead",
+          "agentId": "qa-lead",
+          "roleId": "qa-lead",
+          "deskId": "qa-lead",
+          "departmentId": "dept-quality",
+          "modelProfileId": "model-profile.default.qa-lead"
+        }
+      }
+    },
+    "orchestrator": {
+      "status": "needs-attention",
+      "lastTickAt": "2026-05-27T13:56:30.087Z",
+      "activeDeskIds": [
+        "context-manager",
+        "memory-archivist",
+        "cto-architect"
+      ],
+      "conflicts": [
+        {
+          "id": "low-confidence-context",
+          "kind": "low-confidence-context",
+          "severity": "medium",
+          "desks": [
+            "context-manager",
+            "planner",
+            "executor"
+          ],
+          "summary": "Planner and Executor are sharing work against a low-confidence context packet."
+        },
+        {
+          "id": "parallel-plan-execution",
+          "kind": "parallel-plan-execution",
+          "severity": "low",
+          "desks": [
+            "planner",
+            "executor"
+          ],
+          "summary": "Planner and Executor are active on the same page and must stay within scoped outputs."
+        },
+        {
+          "id": "ready-to-apply-0001",
+          "kind": "ready-to-apply",
+          "severity": "high",
+          "desks": [
+            "executor",
+            "cto-architect"
+          ],
+          "summary": "Update or check the status of RGS nodes is waiting at the apply gate because Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js."
+        }
+      ],
+      "pendingUserActions": [
+        "Clarify the active page goal before execution advances further."
+      ],
+      "desks": {
+        "context-manager": {
+          "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
+          "localState": "ready",
+          "statusLabel": "Clarification needed",
+          "statusDetail": "The current planner handoff still needs clarification before planning can proceed.",
+          "currentGoal": "Migrate to canonical anchor-based ACE system",
+          "allowedActions": [
+            "set-active-page",
+            "slice-context",
+            "publish-handoff",
+            "flag-ambiguity"
+          ],
+          "workItems": [
+            {
+              "id": "handoff_1774615405452_2yc7-context-clarification",
+              "pageId": "page_1774615405445_ect6",
+              "deskId": "context-manager",
+              "kind": "context-clarification",
+              "status": "ready",
+              "dependsOn": [],
+              "conflictTags": [
+                "context",
+                "clarification"
+              ],
+              "artifactRefs": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "anchorRefs": [
+                "brain/emergence/decisions.md",
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md",
+                "brain/emergence/changelog.md",
+                "brain/emergence/plan.md",
+                "brain/emergence/tasks.md"
+              ],
+              "title": "Migrate to canonical anchor-based ACE system"
+            }
+          ],
+          "lastOutput": "Migrate to canonical anchor-based ACE system",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Prove planner desk canonical visibility.",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-05-27T13:56:30.087Z",
+          "thoughtBubble": "Context status: queued. Clarification is needed before planner can continue."
+        },
+        "planner": {
+          "mission": "Translate active context into concrete plans, work items, and dependency-aware handoffs.",
+          "localState": "blocked",
+          "statusLabel": "Needs clarification",
+          "statusDetail": "Planner cannot decompose work until the current handoff is clarified.",
+          "currentGoal": "Migrate to canonical anchor-based ACE system",
+          "allowedActions": [
+            "expand-plan",
+            "prioritise-work",
+            "publish-plan"
+          ],
+          "workItems": [
+            {
+              "id": "handoff_1774615405452_2yc7-planner-awaiting-clarification",
+              "pageId": "page_1774615405445_ect6",
+              "deskId": "planner",
+              "kind": "planner-awaiting-clarification",
+              "status": "blocked",
+              "dependsOn": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "conflictTags": [
+                "plan",
+                "clarification"
+              ],
+              "artifactRefs": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "anchorRefs": [
+                "brain/emergence/decisions.md",
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md",
+                "brain/emergence/changelog.md",
+                "brain/emergence/plan.md",
+                "brain/emergence/tasks.md"
+              ],
+              "title": "Migrate to canonical anchor-based ACE system"
+            }
+          ],
+          "lastOutput": "Migrate to canonical anchor-based ACE system",
+          "blockedReason": "Planner is waiting for Context Manager to clarify the current handoff.",
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Prove planner desk canonical visibility.",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-05-27T13:56:30.087Z",
+          "thoughtBubble": "Planner status: blocked. Waiting for a clarified handoff."
+        },
+        "executor": {
+          "mission": "Apply validated packages, run preflight, and deploy low-risk changes without stalling the flow.",
+          "localState": "blocked",
+          "statusLabel": "Execution gated",
+          "statusDetail": "Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js",
+          "currentGoal": "Awaiting approval: Update or check the status of RGS nodes",
+          "allowedActions": [
+            "apply-package",
+            "run-preflight",
+            "deploy-runtime",
+            "report-blocker"
+          ],
+          "workItems": [
+            {
+              "id": "0001-approval",
+              "pageId": "page_1777958546588_9pm1",
+              "deskId": "executor",
+              "kind": "approval-gated",
+              "status": "waiting",
+              "dependsOn": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "conflictTags": [
+                "execute",
+                "0001"
+              ],
+              "artifactRefs": [],
+              "anchorRefs": [
+                "brain/emergence/decisions.md",
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md",
+                "brain/emergence/changelog.md",
+                "brain/emergence/plan.md",
+                "brain/emergence/tasks.md"
+              ],
+              "blockerMessage": "Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js",
+              "title": "Awaiting approval: Update or check the status of RGS nodes"
+            }
+          ],
+          "lastOutput": "Awaiting approval: Update or check the status of RGS nodes",
+          "blockedReason": "Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js",
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Prove planner desk canonical visibility.",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-05-27T13:56:30.087Z",
+          "thoughtBubble": "Executor status: blocked. Waiting for clearer context."
+        },
+        "memory-archivist": {
+          "mission": "Persist useful summaries, artifact references, and history for active work.",
+          "localState": "running",
+          "statusLabel": "Processing",
+          "statusDetail": "Desk is actively processing work.",
+          "currentGoal": "Capture notes, handoffs, and artifact history",
+          "allowedActions": [
+            "archive-summary",
+            "record-artifact",
+            "snapshot-history"
+          ],
+          "workItems": [
+            {
+              "id": "page_1774615405445_ect6-memory-sync",
+              "pageId": "page_1774615405445_ect6",
+              "deskId": "memory-archivist",
+              "kind": "memory-sync",
+              "status": "running",
+              "dependsOn": [],
+              "conflictTags": [
+                "memory"
+              ],
+              "artifactRefs": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "anchorRefs": [
+                "brain/emergence/decisions.md",
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md",
+                "brain/emergence/changelog.md",
+                "brain/emergence/plan.md",
+                "brain/emergence/tasks.md"
+              ],
+              "title": "Capture notes, handoffs, and artifact history"
+            }
+          ],
+          "lastOutput": "Capture notes, handoffs, and artifact history",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Prove planner desk canonical visibility.",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-05-27T13:56:30.087Z",
+          "thoughtBubble": "Archivist status: running. Logging summaries."
+        },
+        "cto-architect": {
+          "mission": "Monitor guardrails, conflicts, and risk-gated mutation approvals across the desk network.",
+          "localState": "running",
+          "statusLabel": "Governing",
+          "statusDetail": "Governance is monitoring active desks and mutation risk.",
+          "currentGoal": "Review desk overlap, approval state, and guardrails",
+          "allowedActions": [
+            "raise-conflict",
+            "approve-apply",
+            "reject-risky-change"
+          ],
+          "workItems": [
+            {
+              "id": "page_1774615405445_ect6-governance-check",
+              "pageId": "page_1774615405445_ect6",
+              "deskId": "cto-architect",
+              "kind": "governance-check",
+              "status": "running",
+              "dependsOn": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "conflictTags": [
+                "review",
+                "governance"
+              ],
+              "artifactRefs": [
+                "handoff_1774615405452_2yc7"
+              ],
+              "anchorRefs": [
+                "brain/emergence/decisions.md",
+                "brain/emergence/project_brain.md",
+                "brain/emergence/roadmap.md",
+                "brain/emergence/slices.md",
+                "brain/emergence/changelog.md",
+                "brain/emergence/plan.md",
+                "brain/emergence/tasks.md"
+              ],
+              "title": "Review desk overlap, approval state, and guardrails"
+            }
+          ],
+          "lastOutput": "Review desk overlap, approval state, and guardrails",
+          "blockedReason": null,
+          "contextSlice": {
+            "activePageId": "page_1774615405445_ect6",
+            "activePageTitle": "Prove planner desk canonical visibility.",
+            "pageGoal": "Prove planner desk canonical visibility.",
+            "matchedTerms": []
+          },
+          "freshAt": "2026-05-27T13:56:30.087Z",
+          "thoughtBubble": "Governance status: blocked. Reviewing blocker: Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js"
+        }
+      },
+      "activePageId": "page_1774615405445_ect6"
+    },
+    "scene": "studio",
+    "selectedAgentId": null,
+    "selectedTab": "agents",
+    "selfUpgrade": {
+      "status": "idle",
+      "targetProjectKey": "ace-self",
+      "taskId": "",
+      "patchReview": null,
+      "preflight": {
+        "status": "idle",
+        "ok": null,
+        "checkedAt": null,
+        "checks": [],
+        "summary": "Run preflight before applying a self patch."
+      },
+      "apply": {
+        "status": "idle",
+        "ok": null,
+        "appliedAt": null,
+        "branch": null,
+        "commit": null,
+        "taskId": ""
+      },
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": 40328,
+          "startedAt": "2026-05-15T16:27:21.727Z"
+        }
+      },
+      "requiresPermission": "none"
+    },
+    "studioViewport": {
+      "x": 24.5,
+      "y": -36.89999999999998,
+      "zoom": 0.82
+    },
+    "teamBoard": {
+      "cards": [
+        {
+          "applyStatus": "idle",
+          "approvalState": "none",
+          "artifactRefs": [],
+          "auditSessionId": null,
+          "branch": null,
+          "builderTaskId": null,
+          "commit": null,
+          "deployStatus": "idle",
+          "desk": "CTO",
+          "executionPackage": {
+            "status": "blocked",
+            "taskId": null,
+            "taskDir": null,
+            "patchPath": null,
+            "changedFiles": [],
+            "targetProjectKey": "ace-self",
+            "expectedAction": "apply",
+            "summary": "Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js",
+            "verificationPlan": {
+              "required": false,
+              "commands": [],
+              "qaScenarios": [],
+              "signature": null,
+              "summary": "No verification required.",
+              "generatedAt": null
+            }
+          },
+          "executorBlocker": {
+            "code": "preflight-blocked",
+            "message": "Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js",
+            "updatedAt": null
+          },
+          "id": "0001",
+          "lastHealth": null,
+          "lastVerificationSummary": "",
+          "pageId": "page_1777958546588_9pm1",
+          "phaseTicks": 0,
+          "provenance": null,
+          "riskLevel": "high",
+          "riskReasons": [
+            "Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js"
+          ],
+          "runIds": [],
+          "runnerTaskId": null,
+          "sourceAnchorRefs": [
+            "brain/emergence/decisions.md",
+            "brain/emergence/project_brain.md",
+            "brain/emergence/roadmap.md",
+            "brain/emergence/slices.md",
+            "brain/emergence/changelog.md",
+            "brain/emergence/plan.md",
+            "brain/emergence/tasks.md"
+          ],
+          "sourceHandoffId": "handoff_1774615405452_2yc7",
+          "sourceIntakeId": null,
+          "sourceIntentId": "node_1774615116734_91jfx",
+          "sourceKey": "page_1777958546588_9pm1:update-or-check-the-status-of-rgs-nodes",
+          "sourceNodeId": "node_1774615116734_91jfx",
+          "state": "Flagged",
+          "status": "review",
+          "summary": "Update or check the status of RGS nodes",
+          "targetProjectKey": "ace-self",
+          "taskFlow": {
+            "phase": "active",
+            "assignmentState": "assigned",
+            "ownerDeskId": "planner",
+            "assigneeDeskId": "executor",
+            "sourceIntentId": "node_1774615116734_91jfx",
+            "sourceHandoffId": "handoff_1774615405452_2yc7",
+            "lastTransitionAt": "2026-05-05T05:22:32.703Z",
+            "lastTransitionLabel": "Active on planner slab",
+            "history": [
+              {
+                "phase": "active",
+                "assignmentState": "assigned",
+                "ownerDeskId": "planner",
+                "assigneeDeskId": "executor",
+                "label": "Active on planner slab",
+                "note": "Update or check the status of RGS nodes",
+                "at": "2026-05-05T05:22:32.703Z"
+              },
+              {
+                "phase": "active",
+                "assignmentState": "assigned",
+                "ownerDeskId": "planner",
+                "assigneeDeskId": "executor",
+                "label": "Placed into active",
+                "note": "Update or check the status of RGS nodes",
+                "at": "2026-05-05T05:22:32.703Z"
+              },
+              {
+                "phase": "planned",
+                "assignmentState": "unassigned",
+                "ownerDeskId": "planner",
+                "assigneeDeskId": "executor",
+                "label": "Moved to planner board",
+                "note": "Update or check the status of RGS nodes",
+                "at": "2026-03-27T12:39:27.479Z"
+              },
+              {
+                "phase": "captured",
+                "assignmentState": "unassigned",
+                "ownerDeskId": "context-manager",
+                "assigneeDeskId": "planner",
+                "label": "Captured from intent",
+                "note": "Update or check the status of RGS nodes",
+                "at": "2026-03-27T12:39:27.479Z"
+              }
+            ]
+          },
+          "title": "Update or check the status of RGS nodes",
+          "verifiedSignature": null,
+          "verifyArtifacts": [],
+          "verifyRequired": false,
+          "verifyRunIds": [],
+          "verifyStatus": "idle",
+          "createdAt": "2026-05-16T09:03:31.915Z",
+          "updatedAt": "2026-05-27T13:56:30.086Z"
+        }
+      ],
+      "selectedCardId": "0001",
+      "updatedAt": "2026-05-27T13:56:30.086Z",
+      "summary": {
+        "plan": 0,
+        "active": 0,
+        "complete": 0,
+        "review": 1,
+        "assigned": 1,
+        "handedOff": 0,
+        "binned": 0,
+        "idleWorkers": 0
+      }
+    },
+    "worldViewMode": "2d"
+  },
+  "activeGraphLayer": "system",
+  "camera": {
+    "x": 24.5,
+    "y": -36.89999999999998,
+    "zoom": 0.82
+  },
+  "ghostProjections": {
+    "byId": {},
+    "currentProjectionId": null,
+    "latestProjectionId": null,
+    "records": []
+  },
+  "openReportId": null,
+  "openTaskId": "10000",
+  "openTraceId": null,
+  "scene": "studio",
+  "selectedDeskId": null,
+  "selectedTab": "agents",
+  "worldViewMode": "2d",
+  "zoom": 0.92
+}

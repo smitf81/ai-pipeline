@@ -7,7 +7,9 @@ export const ENTITY_TYPES = Object.freeze({
   outpost: 'outpost',
   squad: 'squad',
   structure: 'structure',
-  builder: 'builder'
+  builder: 'builder',
+  resourceWorker: 'resource_worker',
+  transport: 'transport'
 });
 
 export const GAME_PHASES = Object.freeze({
@@ -32,7 +34,7 @@ export const COMMAND_GRAPH_CONTRACT = Object.freeze({
  * maker.
  *
  * GameState is mutable runtime data. It owns tick, phase, selected entity,
- * economy, structures, outposts, leaders, and any future objective/contest state. Derived
+ * time, economy, structures, resource workers, outposts, leaders, combat/death records, battlefield trace history, and any future objective/contest state. Derived
  * fields are rebuilt from MapData + GameState and are intentionally not
  * persisted.
  *
@@ -52,12 +54,24 @@ export const COMMAND_GRAPH_CONTRACT = Object.freeze({
  * Builder extends Entity:
  * { position, baseStructureId, jobId, state, workPerTick, movement, movementPath }
  *
+ * ResourceWorker extends Entity:
+ * { position, homeStructureId, resourceId, state, targetTile, carriedAmount, movement, movementPath }
+ *
+ * Transport extends Entity:
+ * { position, homeStructureId, resourceId, state, targetKind, targetId, carriedAmount, movement, movementPath }
+ *
  * ConstructionJob is runtime-owned construction work, separate from structure
  * metadata and UI placement state.
  * { id, type: "construct_structure", structureId, factionId, position, requiredWork, progress, assignedBuilderIds, maxAssignedBuilders, state, sourceBaseId, createdAtTick, updatedAtTick }
  *
  * Leader extends Entity:
- * { position, qualities, behavior, movement, command, commandScore, influenceRadius, objectiveProjection }
+ * { position, qualities, health, combat, behavior, movement, command, commandScore, influenceRadius, objectiveProjection }
+ *
+ * Squad extends Entity:
+ * { position, members, attributes, health, combat, supply, occupancy, behavior, movement }
+ *
+ * Projectile is transient GameState combat runtime:
+ * { id, weaponId, factionId, sourceId, targetId, origin, position, targetPosition, damage, speedTilesPerTick }
  *
  * CommandGraph is attached to Leader.command.graph and remains inspectable as
  * weighted subinfluence nodes instead of flattening leadership into one number.
@@ -73,6 +87,7 @@ export function createMapRef(map, { id = 'field-fronts-map' } = {}) {
     height: map.height,
     tileSignature: createTileSignature(map),
     elevationSignature: createElevationSignature(map),
+    scenarioSignature: createScenarioSignature(map),
     exportedAt: map.exportedAt ?? null,
     source: map.provenance?.source ?? 'unknown'
   };
@@ -122,8 +137,26 @@ export function assertGameStateContract(game) {
   if (!Number.isInteger(game.tick) || game.tick < 0) {
     throw new Error('GameState contract failed: tick must be a non-negative integer');
   }
-  if (!Array.isArray(game.leaders) || !Array.isArray(game.outposts) || !Array.isArray(game.squads) || !Array.isArray(game.structures) || !Array.isArray(game.builders) || !Array.isArray(game.constructionJobs)) {
-    throw new Error('GameState contract failed: leaders, squads, outposts, structures, builders, and constructionJobs must be arrays');
+  if (!Array.isArray(game.leaders) || !Array.isArray(game.outposts) || !Array.isArray(game.squads) || !Array.isArray(game.structures) || !Array.isArray(game.builders) || !Array.isArray(game.resourceWorkers) || !Array.isArray(game.transports) || !Array.isArray(game.constructionJobs)) {
+    throw new Error('GameState contract failed: leaders, squads, outposts, structures, builders, resourceWorkers, transports, and constructionJobs must be arrays');
+  }
+  if (game.projectiles !== undefined && !Array.isArray(game.projectiles)) {
+    throw new Error('GameState contract failed: projectiles must be an array when present');
+  }
+  if (game.deathEvents !== undefined && !Array.isArray(game.deathEvents)) {
+    throw new Error('GameState contract failed: deathEvents must be an array when present');
+  }
+  if (game.impactEvents !== undefined && !Array.isArray(game.impactEvents)) {
+    throw new Error('GameState contract failed: impactEvents must be an array when present');
+  }
+  if (game.soundEvents !== undefined && !Array.isArray(game.soundEvents)) {
+    throw new Error('GameState contract failed: soundEvents must be an array when present');
+  }
+  if (game.corpses !== undefined && !Array.isArray(game.corpses)) {
+    throw new Error('GameState contract failed: corpses must be an array when present');
+  }
+  if (game.battlefieldTrace !== undefined && (!game.battlefieldTrace || typeof game.battlefieldTrace !== 'object')) {
+    throw new Error('GameState contract failed: battlefieldTrace must be an object when present');
   }
   if (!game.economy || typeof game.economy !== 'object') {
     throw new Error('GameState contract failed: economy must be an object');
@@ -131,6 +164,8 @@ export function assertGameStateContract(game) {
   game.leaders.forEach((leader) => assertEntityContract(leader, ENTITY_TYPES.leader));
   game.squads.forEach((squad) => assertEntityContract(squad, ENTITY_TYPES.squad));
   game.builders.forEach((builder) => assertEntityContract(builder, ENTITY_TYPES.builder));
+  game.resourceWorkers.forEach((worker) => assertEntityContract(worker, ENTITY_TYPES.resourceWorker));
+  game.transports.forEach((transport) => assertEntityContract(transport, ENTITY_TYPES.transport));
   game.outposts.forEach((outpost) => assertEntityContract(outpost, ENTITY_TYPES.outpost));
   game.structures.forEach(assertStructureEntityContract);
   game.constructionJobs.forEach(assertConstructionJobContract);
@@ -162,6 +197,33 @@ export function assertTileContract(tile, prefix = 'Tile contract failed') {
     throw new Error(`${prefix}: tile must contain integer x/y coordinates`);
   }
   return true;
+}
+
+
+export function createScenarioSignature(map) {
+  const scenario = map?.scenario;
+  if (!scenario || typeof scenario !== 'object') {
+    return 'scenario:none';
+  }
+  const starts = scenario.starts ?? {};
+  const neutral = Array.isArray(scenario.neutralOutposts) ? scenario.neutralOutposts : [];
+  const scene = scenario.sceneEntity;
+  const authored = Array.isArray(scene?.authoredEntities) ? scene.authoredEntities : [];
+  return [
+    `seed:${scenario.generator?.seed ?? 'none'}`,
+    `preset:${scenario.generator?.preset ?? 'unknown'}`,
+    `p:${tileSignaturePart(starts.player)}`,
+    `e:${tileSignaturePart(starts.enemy)}`,
+    `n:${neutral.map((outpost) => `${outpost.id ?? 'outpost'}@${tileSignaturePart(outpost.tile)}:${Number(outpost.supply ?? 0).toFixed(2)}`).join('|')}`,
+    `scene:${scene?.id ?? 'none'}:${scene?.runtimeSeedMode ?? 'legacy'}:${authored.map((entity) => `${entity.toolId ?? 'entity'}@${tileSignaturePart(entity.tile)}`).join('|')}`,
+    `presentation:${scene?.presentation?.ui?.build !== false ? 'build' : 'no-build'}:${scene?.presentation?.ui?.resources !== false ? 'resources' : 'no-resources'}:${scene?.presentation?.visuals?.weather !== false ? 'weather' : 'no-weather'}`
+  ].join(';');
+}
+
+function tileSignaturePart(tile) {
+  return Number.isFinite(Number(tile?.x)) && Number.isFinite(Number(tile?.y))
+    ? `${Math.round(Number(tile.x))},${Math.round(Number(tile.y))}`
+    : 'none';
 }
 
 export function createTileSignature(map) {
@@ -201,7 +263,7 @@ export function cloneTile(tile) {
 }
 
 export function getGameEntities(game) {
-  return [...(game?.outposts ?? []), ...(game?.structures ?? []), ...(game?.leaders ?? []), ...(game?.squads ?? []), ...(game?.builders ?? [])];
+  return [...(game?.outposts ?? []), ...(game?.structures ?? []), ...(game?.leaders ?? []), ...(game?.squads ?? []), ...(game?.builders ?? []), ...(game?.resourceWorkers ?? []), ...(game?.transports ?? [])];
 }
 
 export function assertStructureEntityContract(structure) {

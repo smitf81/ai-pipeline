@@ -28,6 +28,16 @@ const UNIT_COLLISION_DEFAULTS = Object.freeze({
     radius: 0.36,
     separationWeight: 0.9,
     priority: 1.4
+  }),
+  resource_worker: Object.freeze({
+    radius: 0.28,
+    separationWeight: 0.42,
+    priority: 0.8
+  }),
+  transport: Object.freeze({
+    radius: 0.24,
+    separationWeight: 0.35,
+    priority: 0.7
   })
 });
 
@@ -74,7 +84,7 @@ export function getMovableCollisionBody(entity) {
 }
 
 export function collectMovableCollisionBodies(game) {
-  return [...(game?.leaders ?? []), ...(game?.squads ?? []), ...(game?.builders ?? [])]
+  return [...(game?.leaders ?? []), ...(game?.squads ?? []), ...(game?.builders ?? []), ...(game?.resourceWorkers ?? []), ...(game?.transports ?? [])]
     .map(getMovableCollisionBody)
     .filter(Boolean);
 }
@@ -145,6 +155,8 @@ export function resolveSoftUnitSeparation(game, map, { isHardBlocked = null } = 
   game.leaders = game.leaders.map((leader) => applySeparationCorrection(leader, corrections.get(leader.id), map, isHardBlocked));
   game.squads = (game.squads ?? []).map((squad) => applySeparationCorrection(squad, corrections.get(squad.id), map, isHardBlocked));
   game.builders = (game.builders ?? []).map((builder) => applySeparationCorrection(builder, corrections.get(builder.id), map, isHardBlocked));
+  game.resourceWorkers = (game.resourceWorkers ?? []).map((worker) => applySeparationCorrection(worker, corrections.get(worker.id), map, isHardBlocked));
+  game.transports = (game.transports ?? []).map((transport) => applySeparationCorrection(transport, corrections.get(transport.id), map, isHardBlocked));
   return stats;
 }
 

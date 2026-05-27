@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AXIOM SSE Bridge Demo</title>
+  <style>
+    body {
+      background: #09090d;
+      color: #f0f0f8;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      padding: 24px;
+    }
+    input {
+      width: 560px;
+      padding: 9px;
+      background: #15151d;
+      border: 1px solid #333347;
+      color: #fff;
+    }
+    button {
+      padding: 9px 14px;
+      background: #7c5cfc;
+      border: 0;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>AXIOM SSE Bridge Demo</h1>
+  <p>Try: <code>Make the northern forest more dangerous but still passable</code></p>
+
+  <input id="intent" value="Make the northern forest more dangerous but still passable" />
+  <button onclick="send()">Send Intent</button>
+
+  <script src="/axiom-sse-client.js"></script>
+  <script>
+    AXIOMSSE.connect();
+
+    async function send() {
+      const text = document.getElementById("intent").value;
+      await AXIOMSSE.sendIntent(text);
+    }
+  </script>
+</body>
+</html>

@@ -23,6 +23,7 @@ export function getStructureCollisionBody(structure) {
       x: Math.round(Number(structure.tile?.x ?? position.x) || 0),
       y: Math.round(Number(structure.tile?.y ?? position.y) || 0)
     },
+    orientation: normaliseOrientation(structure.orientation),
     layer: collision.layer ?? 'building',
     shape: collision.shape === 'rect' ? 'rect' : 'circle',
     width,
@@ -61,6 +62,7 @@ export function collectStructureMovementModifiers(game) {
       factionId: structure.factionId,
       position: { ...structure.position },
       tile: { ...structure.tile },
+      orientation: normaliseOrientation(structure.orientation),
       shape: structure.footprint?.shape ?? 'rect',
       width: Math.max(0, Number(structure.footprint?.width) || 0),
       height: Math.max(0, Number(structure.footprint?.height) || 0),
@@ -80,6 +82,7 @@ export function createStructureBlockerSignature(game) {
       round3(body.position.x),
       round3(body.position.y),
       body.shape,
+      round3(body.orientation.angleRadians),
       round3(body.width),
       round3(body.height),
       round3(body.radius),
@@ -100,6 +103,7 @@ export function createStructureMovementModifierSignature(game) {
       round3(modifier.position.x),
       round3(modifier.position.y),
       modifier.shape,
+      round3(modifier.orientation.angleRadians),
       round3(modifier.width),
       round3(modifier.height),
       round3(modifier.radius),
@@ -229,9 +233,7 @@ function bodyContainsTile(body, tile) {
     const radius = Math.max(0.45, body.radius);
     return Math.hypot(tile.x - body.position.x, tile.y - body.position.y) <= radius;
   }
-  const halfWidth = Math.max(0.45, body.width / 2);
-  const halfHeight = Math.max(0.45, body.height / 2);
-  return Math.abs(tile.x - body.position.x) <= halfWidth && Math.abs(tile.y - body.position.y) <= halfHeight;
+  return orientedRectContainsTile(body, tile);
 }
 
 function modifierContainsTile(modifier, tile) {
@@ -239,13 +241,18 @@ function modifierContainsTile(modifier, tile) {
     const radius = Math.max(0.45, modifier.radius);
     return Math.hypot(tile.x - modifier.position.x, tile.y - modifier.position.y) <= radius;
   }
-  const halfWidth = Math.max(0.45, modifier.width / 2);
-  const halfHeight = Math.max(0.45, modifier.height / 2);
-  return Math.abs(tile.x - modifier.position.x) <= halfWidth && Math.abs(tile.y - modifier.position.y) <= halfHeight;
+  return orientedRectContainsTile(modifier, tile);
+}
+
+function orientedRectContainsTile(body, tile) {
+  const halfWidth = Math.max(0.45, body.width / 2);
+  const halfHeight = Math.max(0.45, body.height / 2);
+  const local = rotatePointAround(tile, body.position, -(body.orientation?.angleRadians ?? 0));
+  return Math.abs(local.x - body.position.x) <= halfWidth && Math.abs(local.y - body.position.y) <= halfHeight;
 }
 
 function bodyBounds(body) {
-  const radius = body.shape === 'circle' ? Math.max(0.45, body.radius) : Math.max(0.45, body.width / 2, body.height / 2);
+  const radius = body.shape === 'circle' ? Math.max(0.45, body.radius) : orientedRectRadius(body);
   return {
     minX: Math.floor(body.position.x - radius),
     maxX: Math.ceil(body.position.x + radius),
@@ -255,12 +262,30 @@ function bodyBounds(body) {
 }
 
 function modifierBounds(modifier) {
-  const radius = modifier.shape === 'circle' ? Math.max(0.45, modifier.radius) : Math.max(0.45, modifier.width / 2, modifier.height / 2);
+  const radius = modifier.shape === 'circle' ? Math.max(0.45, modifier.radius) : orientedRectRadius(modifier);
   return {
     minX: Math.floor(modifier.position.x - radius),
     maxX: Math.ceil(modifier.position.x + radius),
     minY: Math.floor(modifier.position.y - radius),
     maxY: Math.ceil(modifier.position.y + radius)
+  };
+}
+
+function orientedRectRadius(body) {
+  return Math.max(0.45, Math.hypot(body.width / 2, body.height / 2));
+}
+
+function rotatePointAround(point, origin, angleRadians = 0) {
+  if (!Number.isFinite(angleRadians) || Math.abs(angleRadians) < 0.0001) {
+    return point;
+  }
+  const cos = Math.cos(angleRadians);
+  const sin = Math.sin(angleRadians);
+  const dx = point.x - origin.x;
+  const dy = point.y - origin.y;
+  return {
+    x: origin.x + dx * cos - dy * sin,
+    y: origin.y + dx * sin + dy * cos
   };
 }
 
@@ -284,6 +309,18 @@ function createEmptyNavigationIndex() {
     movementModifiers: new Map(),
     blockers: [],
     modifiers: []
+  };
+}
+
+function normaliseOrientation(orientation = {}) {
+  const radians = Number(orientation?.angleRadians);
+  const tangent = orientation?.tangent ?? {};
+  return {
+    angleRadians: Number.isFinite(radians) ? radians : 0,
+    tangent: {
+      x: Number.isFinite(tangent.x) ? Math.sign(tangent.x) : 1,
+      y: Number.isFinite(tangent.y) ? Math.sign(tangent.y) : 0
+    }
   };
 }
 

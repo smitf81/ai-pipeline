@@ -1,0 +1,12 @@
+{
+  "receipt_id": "rcpt_example",
+  "plugin_id": "example-plugin",
+  "operation": "register",
+  "timestamp": "2026-05-11T00:00:00.000Z",
+  "authorized_by": "axiom-plugin-builder",
+  "checksum": "sha256...",
+  "metadata": {
+    "activated": false,
+    "status": "registered"
+  }
+}

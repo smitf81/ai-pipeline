@@ -7,23 +7,33 @@
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <main class="app-shell" data-app>
+    <main class="app-shell" data-app data-tool-panel="hidden" data-experience-mode="menu" data-ui-screen="menu">
       <section class="canvas-stage" aria-label="Field Fronts map canvas">
         <canvas id="map-canvas" width="1280" height="768"></canvas>
       </section>
-      <aside class="tool-panel" aria-label="Field Fronts prototype controls">
+      <aside class="tool-panel" aria-label="Field Fronts contextual tools" data-dev-panel hidden>
         <header class="panel-header">
-          <p class="eyebrow">Field Fronts</p>
-          <h1>Core Loop Prototype</h1>
+          <p class="eyebrow" data-tool-eyebrow>Sim / Debug</p>
+          <h1 data-tool-title>Simulation Tools</h1>
         </header>
-        <div id="mode-controls"></div>
-        <div id="game-controls"></div>
-        <div id="command-graph"></div>
-        <div id="terrain-palette"></div>
-        <div id="brush-controls"></div>
-        <div id="field-controls"></div>
-        <div id="map-controls"></div>
-        <div id="tile-inspector"></div>
+
+        <div class="tool-panel-group" data-panel-group="sim-debug">
+          <div id="mode-controls"></div>
+          <div id="game-controls"></div>
+          <div id="command-graph"></div>
+        </div>
+
+        <div class="tool-panel-group" data-panel-group="map-maker">
+          <div id="terrain-palette"></div>
+          <div id="brush-controls"></div>
+          <div id="field-controls"></div>
+          <div id="map-controls"></div>
+          <div id="scenario-controls"></div>
+        </div>
+
+        <div class="tool-panel-group" data-panel-group="sim-debug map-maker">
+          <div id="tile-inspector"></div>
+        </div>
       </aside>
     </main>
     <script type="module" src="./src/main.js"></script>

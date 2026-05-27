@@ -1,0 +1,31 @@
+{
+  "name": "axiom-plugin-builder",
+  "version": "1.0.0",
+  "description": "MCP-callable governed plugin builder for AXIOM IDE / cognitive OS.",
+  "type": "module",
+  "main": "src/builder/index.js",
+  "bin": {
+    "axiom-plugin-builder": "./src/mcp/server.js"
+  },
+  "scripts": {
+    "start": "node src/mcp/server.js",
+    "start:http": "node src/mcp/server.js --http",
+    "demo": "node demo/workflow.js",
+    "test": "node scripts/smoke-test.js"
+  },
+  "exports": {
+    ".": "./src/builder/index.js",
+    "./validator": "./src/validator.js",
+    "./packager": "./src/packager.js",
+    "./registry": "./src/registry.js",
+    "./templates": "./src/builder/templates.js"
+  },
+  "keywords": [
+    "axiom",
+    "plugin",
+    "mcp",
+    "cognitive-os",
+    "governance"
+  ],
+  "license": "MIT"
+}

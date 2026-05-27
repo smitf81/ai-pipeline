@@ -65,7 +65,7 @@ export function run() {
   const summary = summarizeStructureTopology(game);
   assert.equal(summary.totalStructures, 4);
   assert.equal(summary.completeStructures, 3);
-  assert.equal(summary.occupiableStructures, 3);
+  assert.equal(summary.occupiableStructures, 4);
   assert.equal(summary.blockerStructures, 2);
   assert.equal(summary.trenchModifiers, 1);
   assert.equal(summary.navSignature.includes('structure_wall_test'), true);
@@ -97,6 +97,27 @@ export function run() {
   ];
   assert.equal(isTileBlockedByStructure(gateGame, map, { x: 6, y: 6 }, 'player'), false);
   assert.equal(isTileBlockedByStructure(gateGame, map, { x: 6, y: 6 }, 'enemy'), true);
+
+
+  const orientedGame = createInitialGameState(map);
+  orientedGame.structures = [
+    createStructureInstance('wall_segment', {
+      id: 'structure_vertical_wall',
+      factionId: 'enemy',
+      tile: { x: 8, y: 8 },
+      orientation: {
+        angleRadians: Math.PI / 2,
+        degrees: 90,
+        direction: 's',
+        tangent: { x: 0, y: 1 },
+        role: 'straight'
+      }
+    })
+  ];
+  assert.equal(isTileBlockedByStructure(orientedGame, map, { x: 8, y: 9 }, 'player'), true);
+  assert.equal(isTileBlockedByStructure(orientedGame, map, { x: 9, y: 8 }, 'player'), false);
+  assert.equal(collectCompletedStructureBlockers(orientedGame)[0].orientation.degrees, undefined);
+  assert.equal(collectCompletedStructureBlockers(orientedGame)[0].orientation.angleRadians > 1.5, true);
 
   const routeGame = createInitialGameState(map);
   const spawn = spawnInfantrySquad(routeGame, map, { factionId: 'player' });

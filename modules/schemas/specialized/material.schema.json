@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ace.local/schemas/specialized/material.schema.json",
+  "title": "ACE Material Artifact",
+  "type": "object",
+  "required": ["artifact_type", "data"],
+  "properties": {
+    "artifact_type": { "const": "material" },
+    "data": {
+      "type": "object",
+      "required": ["maps", "tileable"],
+      "properties": {
+        "maps": {
+          "type": "object",
+          "required": ["albedo", "normal", "roughness"],
+          "properties": {
+            "albedo": { "type": "string" },
+            "normal": { "type": "string" },
+            "roughness": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "tileable": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

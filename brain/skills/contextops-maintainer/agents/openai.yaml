@@ -1,0 +1,4 @@
+interface:
+  display_name: "ContextOps Maintainer"
+  short_description: "Maintain ACE context artifacts."
+  default_prompt: "Refresh and audit ACE context artifacts while preserving the boundary between planner support and canonical brain truth."
