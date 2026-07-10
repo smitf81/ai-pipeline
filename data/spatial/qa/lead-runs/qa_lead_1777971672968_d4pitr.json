@@ -1,0 +1,3424 @@
+{
+  "source": "qa_lead_runner",
+  "agent_id": "qa-lead",
+  "id": "qa_lead_1777971672968_d4pitr",
+  "run_type": "scheduled_cycle",
+  "status": "degraded",
+  "current_task": "QA proof-of-life, browser pass, lane canaries, and loop audit",
+  "current_batch": "qa_lead_1777971672968_d4pitr",
+  "base_url": "http://127.0.0.1:3000",
+  "probe_url": "http://127.0.0.1:5051/run_test",
+  "started_at": "2026-05-05T09:01:12.968Z",
+  "finished_at": "2026-05-05T09:01:18.609Z",
+  "last_completed_cycle_at": "2026-05-05T09:01:18.609Z",
+  "active_tools": [
+    "boot_preflight",
+    "ui_boot_repair",
+    "external_probe_check",
+    "qa_research_note",
+    "browser_qa_run",
+    "lane_canary_suite",
+    "loop_audit"
+  ],
+  "live_status": {
+    "source": "qa_mcp_live_status",
+    "status": "live",
+    "usage_state": "active_gating",
+    "freshness": "fresh",
+    "summary": "QA is live and actively gating with MCP-backed evidence.",
+    "heartbeat_at": "2026-05-05T09:01:14.509Z",
+    "last_completed_cycle_at": "2026-05-05T09:01:14.509Z",
+    "mcp_configured": true,
+    "configured_tools": [
+      "external_probe_check",
+      "qa_research_note"
+    ],
+    "mcp_reachable": true,
+    "external_probe_live": true,
+    "last_ping_at": "2026-05-05T09:01:12.976Z",
+    "last_ping_status": "ok",
+    "last_ping_source": "external_mcp",
+    "last_ping_failure_kind": null,
+    "last_ping_failure_detail": null,
+    "last_ping_http_status": null,
+    "last_ping_target": "http://127.0.0.1:5051/run_test",
+    "research_target": "http://127.0.0.1:5052/research_note",
+    "research_last_call_at": null,
+    "research_last_call_status": "unknown",
+    "research_failure_kind": null,
+    "research_failure_detail": null,
+    "last_call_at": "2026-05-05T09:01:12.976Z",
+    "last_call_tool": "external_probe_check",
+    "last_call_status": "ok",
+    "last_call_source": "external_mcp",
+    "last_qa_gate_source": "structured_qa",
+    "using_mcp_for_qa_decisions": true,
+    "last_success_at": "2026-05-05T09:01:12.976Z",
+    "last_failure_at": null,
+    "current_failure_kind": null,
+    "current_failure_tool": null,
+    "recovery_detected": false,
+    "recovered_at": null,
+    "recovered_from_kind": null,
+    "notes": [
+      "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
+      "Latest QA gate source: structured_qa.",
+      "Last MCP ping status: ok.",
+      "Probe target: http://127.0.0.1:5051/run_test.",
+      "Last MCP call: external_probe_check (ok).",
+      "Research target: http://127.0.0.1:5052/research_note."
+    ]
+  },
+  "boot_health": {
+    "checked": true,
+    "ok": true,
+    "safeMode": false,
+    "reason": "",
+    "checkedAt": "2026-05-04T07:48:34.327Z",
+    "failureClass": null,
+    "failureStage": null,
+    "asset": null,
+    "httpStatus": null,
+    "clientBootContract": {
+      "version": "ace/studio-boot-contract.v1",
+      "ok": true,
+      "safeMode": false,
+      "failure_class": null,
+      "failure_stage": null,
+      "reason": "",
+      "asset": null,
+      "http_status": null,
+      "mount_marker": {
+        "attribute": "data-boot",
+        "value": "studio-mounted"
+      },
+      "root_id": "spatial-root",
+      "stages": {
+        "html_loaded": {
+          "status": "ok",
+          "ok": true,
+          "reason": ""
+        },
+        "root_dom_found": {
+          "status": "ok",
+          "ok": true,
+          "reason": ""
+        },
+        "core_bundle_loaded": {
+          "status": "ok",
+          "ok": true,
+          "reason": ""
+        },
+        "required_modules_loaded": {
+          "status": "ok",
+          "ok": true,
+          "reason": ""
+        },
+        "app_mounted": {
+          "status": "unknown",
+          "ok": null,
+          "reason": "Client watchdog must confirm mount marker visibility."
+        },
+        "first_render_complete": {
+          "status": "unknown",
+          "ok": null,
+          "reason": "Client watchdog must confirm first render completion."
+        }
+      },
+      "assets": [
+        {
+          "id": "studio_boot_asset_1",
+          "path": "/vendor/react.development.js",
+          "label": "Local React runtime",
+          "kind": "core_runtime",
+          "stage": "core_bundle_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/vendor/react.development.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_2",
+          "path": "/vendor/react-dom.development.js",
+          "label": "Local React DOM runtime",
+          "kind": "core_runtime",
+          "stage": "core_bundle_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/vendor/react-dom.development.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_3",
+          "path": "/spatial/spatialBootstrap.js",
+          "label": "Studio bootstrap entry",
+          "kind": "boot_entry",
+          "stage": "core_bundle_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/spatial/spatialBootstrap.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_4",
+          "path": "/spatial/spatialApp.js",
+          "label": "Spatial app entry module",
+          "kind": "app_entry",
+          "stage": "required_modules_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/spatial/spatialApp.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_5",
+          "path": "/spatial/intentContract.browser.js",
+          "label": "Browser intent contract helper",
+          "kind": "required_module",
+          "stage": "required_modules_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/spatial/intentContract.browser.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_6",
+          "path": "/spatial/spatialSeamContract.js",
+          "label": "Spatial seam contract",
+          "kind": "required_module",
+          "stage": "required_modules_loaded",
+          "blocking": true,
+          "resolved_path": "ui/public/spatial/spatialSeamContract.js",
+          "status": "ok",
+          "ok": true,
+          "http_status": 200,
+          "reason": ""
+        },
+        {
+          "id": "studio_boot_asset_7",
+          "path": "/favicon.ico",
+          "label": "Favicon",
+          "kind": "favicon",
+          "stage": "required_modules_loaded",
+          "blocking": false,
+          "resolved_path": "ui/public/favicon.ico",
+          "status": "missing",
+          "ok": false,
+          "http_status": 404,
+          "reason": "/favicon.ico returned 404 (Not Found)."
+        }
+      ],
+      "warnings": [
+        {
+          "id": "studio_boot_asset_7",
+          "path": "/favicon.ico",
+          "label": "Favicon",
+          "kind": "favicon",
+          "stage": "required_modules_loaded",
+          "blocking": false,
+          "resolved_path": "ui/public/favicon.ico",
+          "status": "missing",
+          "ok": false,
+          "http_status": 404,
+          "reason": "/favicon.ico returned 404 (Not Found)."
+        }
+      ]
+    },
+    "stateShape": {
+      "systemNodes": 0,
+      "systemEdges": 0,
+      "worldNodes": 0,
+      "worldEdges": 0,
+      "graphLayers": 2
+    }
+  },
+  "boot_repair": {
+    "bootHealth": {
+      "checked": true,
+      "ok": true,
+      "safeMode": false,
+      "reason": "",
+      "checkedAt": "2026-05-04T07:48:34.327Z",
+      "failureClass": null,
+      "failureStage": null,
+      "asset": null,
+      "httpStatus": null,
+      "clientBootContract": {
+        "version": "ace/studio-boot-contract.v1",
+        "ok": true,
+        "safeMode": false,
+        "failure_class": null,
+        "failure_stage": null,
+        "reason": "",
+        "asset": null,
+        "http_status": null,
+        "mount_marker": {
+          "attribute": "data-boot",
+          "value": "studio-mounted"
+        },
+        "root_id": "spatial-root",
+        "stages": {
+          "html_loaded": {
+            "status": "ok",
+            "ok": true,
+            "reason": ""
+          },
+          "root_dom_found": {
+            "status": "ok",
+            "ok": true,
+            "reason": ""
+          },
+          "core_bundle_loaded": {
+            "status": "ok",
+            "ok": true,
+            "reason": ""
+          },
+          "required_modules_loaded": {
+            "status": "ok",
+            "ok": true,
+            "reason": ""
+          },
+          "app_mounted": {
+            "status": "unknown",
+            "ok": null,
+            "reason": "Client watchdog must confirm mount marker visibility."
+          },
+          "first_render_complete": {
+            "status": "unknown",
+            "ok": null,
+            "reason": "Client watchdog must confirm first render completion."
+          }
+        },
+        "assets": [
+          {
+            "id": "studio_boot_asset_1",
+            "path": "/vendor/react.development.js",
+            "label": "Local React runtime",
+            "kind": "core_runtime",
+            "stage": "core_bundle_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/vendor/react.development.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_2",
+            "path": "/vendor/react-dom.development.js",
+            "label": "Local React DOM runtime",
+            "kind": "core_runtime",
+            "stage": "core_bundle_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/vendor/react-dom.development.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_3",
+            "path": "/spatial/spatialBootstrap.js",
+            "label": "Studio bootstrap entry",
+            "kind": "boot_entry",
+            "stage": "core_bundle_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/spatial/spatialBootstrap.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_4",
+            "path": "/spatial/spatialApp.js",
+            "label": "Spatial app entry module",
+            "kind": "app_entry",
+            "stage": "required_modules_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/spatial/spatialApp.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_5",
+            "path": "/spatial/intentContract.browser.js",
+            "label": "Browser intent contract helper",
+            "kind": "required_module",
+            "stage": "required_modules_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/spatial/intentContract.browser.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_6",
+            "path": "/spatial/spatialSeamContract.js",
+            "label": "Spatial seam contract",
+            "kind": "required_module",
+            "stage": "required_modules_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/spatial/spatialSeamContract.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_7",
+            "path": "/favicon.ico",
+            "label": "Favicon",
+            "kind": "favicon",
+            "stage": "required_modules_loaded",
+            "blocking": false,
+            "resolved_path": "ui/public/favicon.ico",
+            "status": "missing",
+            "ok": false,
+            "http_status": 404,
+            "reason": "/favicon.ico returned 404 (Not Found)."
+          }
+        ],
+        "warnings": [
+          {
+            "id": "studio_boot_asset_7",
+            "path": "/favicon.ico",
+            "label": "Favicon",
+            "kind": "favicon",
+            "stage": "required_modules_loaded",
+            "blocking": false,
+            "resolved_path": "ui/public/favicon.ico",
+            "status": "missing",
+            "ok": false,
+            "http_status": 404,
+            "reason": "/favicon.ico returned 404 (Not Found)."
+          }
+        ]
+      },
+      "stateShape": {
+        "systemNodes": 0,
+        "systemEdges": 0,
+        "worldNodes": 0,
+        "worldEdges": 0,
+        "graphLayers": 2
+      }
+    },
+    "bridgeResult": {
+      "ok": true,
+      "created": false,
+      "investigation": null,
+      "state": {
+        "source": "ui_boot_integrity",
+        "checked_at": "2026-05-04T07:48:34.327Z",
+        "covered": true,
+        "status": "healthy",
+        "trigger": null,
+        "failure_class": null,
+        "failure_stage": null,
+        "asset": null,
+        "http_status": 0,
+        "reason": null,
+        "bootHealth": {
+          "checked": true,
+          "ok": true,
+          "safeMode": false,
+          "reason": "",
+          "checkedAt": "2026-05-04T07:48:34.327Z",
+          "failureClass": null,
+          "failureStage": null,
+          "asset": null,
+          "httpStatus": null,
+          "clientBootContract": {
+            "version": "ace/studio-boot-contract.v1",
+            "ok": true,
+            "safeMode": false,
+            "failure_class": null,
+            "failure_stage": null,
+            "reason": "",
+            "asset": null,
+            "http_status": null,
+            "mount_marker": {
+              "attribute": "data-boot",
+              "value": "studio-mounted"
+            },
+            "root_id": "spatial-root",
+            "stages": {
+              "html_loaded": {
+                "status": "ok",
+                "ok": true,
+                "reason": ""
+              },
+              "root_dom_found": {
+                "status": "ok",
+                "ok": true,
+                "reason": ""
+              },
+              "core_bundle_loaded": {
+                "status": "ok",
+                "ok": true,
+                "reason": ""
+              },
+              "required_modules_loaded": {
+                "status": "ok",
+                "ok": true,
+                "reason": ""
+              },
+              "app_mounted": {
+                "status": "unknown",
+                "ok": null,
+                "reason": "Client watchdog must confirm mount marker visibility."
+              },
+              "first_render_complete": {
+                "status": "unknown",
+                "ok": null,
+                "reason": "Client watchdog must confirm first render completion."
+              }
+            },
+            "assets": [
+              {
+                "id": "studio_boot_asset_1",
+                "path": "/vendor/react.development.js",
+                "label": "Local React runtime",
+                "kind": "core_runtime",
+                "stage": "core_bundle_loaded",
+                "blocking": true,
+                "resolved_path": "ui/public/vendor/react.development.js",
+                "status": "ok",
+                "ok": true,
+                "http_status": 200,
+                "reason": ""
+              },
+              {
+                "id": "studio_boot_asset_2",
+                "path": "/vendor/react-dom.development.js",
+                "label": "Local React DOM runtime",
+                "kind": "core_runtime",
+                "stage": "core_bundle_loaded",
+                "blocking": true,
+                "resolved_path": "ui/public/vendor/react-dom.development.js",
+                "status": "ok",
+                "ok": true,
+                "http_status": 200,
+                "reason": ""
+              },
+              {
+                "id": "studio_boot_asset_3",
+                "path": "/spatial/spatialBootstrap.js",
+                "label": "Studio bootstrap entry",
+                "kind": "boot_entry",
+                "stage": "core_bundle_loaded",
+                "blocking": true,
+                "resolved_path": "ui/public/spatial/spatialBootstrap.js",
+                "status": "ok",
+                "ok": true,
+                "http_status": 200,
+                "reason": ""
+              },
+              {
+                "id": "studio_boot_asset_4",
+                "path": "/spatial/spatialApp.js",
+                "label": "Spatial app entry module",
+                "kind": "app_entry",
+                "stage": "required_modules_loaded",
+                "blocking": true,
+                "resolved_path": "ui/public/spatial/spatialApp.js",
+                "status": "ok",
+                "ok": true,
+                "http_status": 200,
+                "reason": ""
+              },
+              {
+                "id": "studio_boot_asset_5",
+                "path": "/spatial/intentContract.browser.js",
+                "label": "Browser intent contract helper",
+                "kind": "required_module",
+                "stage": "required_modules_loaded",
+                "blocking": true,
+                "resolved_path": "ui/public/spatial/intentContract.browser.js",
+                "status": "ok",
+                "ok": true,
+                "http_status": 200,
+                "reason": ""
+              },
+              {
+                "id": "studio_boot_asset_6",
+                "path": "/spatial/spatialSeamContract.js",
+                "label": "Spatial seam contract",
+                "kind": "required_module",
+                "stage": "required_modules_loaded",
+                "blocking": true,
+                "resolved_path": "ui/public/spatial/spatialSeamContract.js",
+                "status": "ok",
+                "ok": true,
+                "http_status": 200,
+                "reason": ""
+              },
+              {
+                "id": "studio_boot_asset_7",
+                "path": "/favicon.ico",
+                "label": "Favicon",
+                "kind": "favicon",
+                "stage": "required_modules_loaded",
+                "blocking": false,
+                "resolved_path": "ui/public/favicon.ico",
+                "status": "missing",
+                "ok": false,
+                "http_status": 404,
+                "reason": "/favicon.ico returned 404 (Not Found)."
+              }
+            ],
+            "warnings": [
+              {
+                "id": "studio_boot_asset_7",
+                "path": "/favicon.ico",
+                "label": "Favicon",
+                "kind": "favicon",
+                "stage": "required_modules_loaded",
+                "blocking": false,
+                "resolved_path": "ui/public/favicon.ico",
+                "status": "missing",
+                "ok": false,
+                "http_status": 404,
+                "reason": "/favicon.ico returned 404 (Not Found)."
+              }
+            ]
+          },
+          "stateShape": {
+            "systemNodes": 0,
+            "systemEdges": 0,
+            "worldNodes": 0,
+            "worldEdges": 0,
+            "graphLayers": 2
+          }
+        },
+        "clientBootContract": {
+          "version": "ace/studio-boot-contract.v1",
+          "ok": true,
+          "safeMode": false,
+          "failure_class": null,
+          "failure_stage": null,
+          "reason": "",
+          "asset": null,
+          "http_status": null,
+          "mount_marker": {
+            "attribute": "data-boot",
+            "value": "studio-mounted"
+          },
+          "root_id": "spatial-root",
+          "stages": {
+            "html_loaded": {
+              "status": "ok",
+              "ok": true,
+              "reason": ""
+            },
+            "root_dom_found": {
+              "status": "ok",
+              "ok": true,
+              "reason": ""
+            },
+            "core_bundle_loaded": {
+              "status": "ok",
+              "ok": true,
+              "reason": ""
+            },
+            "required_modules_loaded": {
+              "status": "ok",
+              "ok": true,
+              "reason": ""
+            },
+            "app_mounted": {
+              "status": "unknown",
+              "ok": null,
+              "reason": "Client watchdog must confirm mount marker visibility."
+            },
+            "first_render_complete": {
+              "status": "unknown",
+              "ok": null,
+              "reason": "Client watchdog must confirm first render completion."
+            }
+          },
+          "assets": [
+            {
+              "id": "studio_boot_asset_1",
+              "path": "/vendor/react.development.js",
+              "label": "Local React runtime",
+              "kind": "core_runtime",
+              "stage": "core_bundle_loaded",
+              "blocking": true,
+              "resolved_path": "ui/public/vendor/react.development.js",
+              "status": "ok",
+              "ok": true,
+              "http_status": 200,
+              "reason": ""
+            },
+            {
+              "id": "studio_boot_asset_2",
+              "path": "/vendor/react-dom.development.js",
+              "label": "Local React DOM runtime",
+              "kind": "core_runtime",
+              "stage": "core_bundle_loaded",
+              "blocking": true,
+              "resolved_path": "ui/public/vendor/react-dom.development.js",
+              "status": "ok",
+              "ok": true,
+              "http_status": 200,
+              "reason": ""
+            },
+            {
+              "id": "studio_boot_asset_3",
+              "path": "/spatial/spatialBootstrap.js",
+              "label": "Studio bootstrap entry",
+              "kind": "boot_entry",
+              "stage": "core_bundle_loaded",
+              "blocking": true,
+              "resolved_path": "ui/public/spatial/spatialBootstrap.js",
+              "status": "ok",
+              "ok": true,
+              "http_status": 200,
+              "reason": ""
+            },
+            {
+              "id": "studio_boot_asset_4",
+              "path": "/spatial/spatialApp.js",
+              "label": "Spatial app entry module",
+              "kind": "app_entry",
+              "stage": "required_modules_loaded",
+              "blocking": true,
+              "resolved_path": "ui/public/spatial/spatialApp.js",
+              "status": "ok",
+              "ok": true,
+              "http_status": 200,
+              "reason": ""
+            },
+            {
+              "id": "studio_boot_asset_5",
+              "path": "/spatial/intentContract.browser.js",
+              "label": "Browser intent contract helper",
+              "kind": "required_module",
+              "stage": "required_modules_loaded",
+              "blocking": true,
+              "resolved_path": "ui/public/spatial/intentContract.browser.js",
+              "status": "ok",
+              "ok": true,
+              "http_status": 200,
+              "reason": ""
+            },
+            {
+              "id": "studio_boot_asset_6",
+              "path": "/spatial/spatialSeamContract.js",
+              "label": "Spatial seam contract",
+              "kind": "required_module",
+              "stage": "required_modules_loaded",
+              "blocking": true,
+              "resolved_path": "ui/public/spatial/spatialSeamContract.js",
+              "status": "ok",
+              "ok": true,
+              "http_status": 200,
+              "reason": ""
+            },
+            {
+              "id": "studio_boot_asset_7",
+              "path": "/favicon.ico",
+              "label": "Favicon",
+              "kind": "favicon",
+              "stage": "required_modules_loaded",
+              "blocking": false,
+              "resolved_path": "ui/public/favicon.ico",
+              "status": "missing",
+              "ok": false,
+              "http_status": 404,
+              "reason": "/favicon.ico returned 404 (Not Found)."
+            }
+          ],
+          "warnings": [
+            {
+              "id": "studio_boot_asset_7",
+              "path": "/favicon.ico",
+              "label": "Favicon",
+              "kind": "favicon",
+              "stage": "required_modules_loaded",
+              "blocking": false,
+              "resolved_path": "ui/public/favicon.ico",
+              "status": "missing",
+              "ok": false,
+              "http_status": 404,
+              "reason": "/favicon.ico returned 404 (Not Found)."
+            }
+          ]
+        },
+        "summary": "UI boot integrity is healthy."
+      },
+      "investigations": [
+        {
+          "id": "qa_inv_001",
+          "type": "qa_investigation",
+          "trigger": "external_mismatch",
+          "severity": "medium",
+          "created_at": "2026-04-09T16:32:50.214Z",
+          "first_seen_at": "2026-04-09T16:32:50.214Z",
+          "last_seen_at": "2026-04-14T20:32:54.588Z",
+          "repeat_count": 185,
+          "status": "open",
+          "summary": "External probe disagrees with internal QA status",
+          "evidence": {
+            "external": {
+              "test_id": "qa_mcp_helper_ping",
+              "status": "pass",
+              "details": "qa_mcp_helper.py is reachable.",
+              "timestamp": "2026-04-14T20:32:54.571485Z",
+              "source": "external_mcp"
+            },
+            "internal": {
+              "status": "fail",
+              "source": "data/spatial/qa/structured/latest.json",
+              "timestamp": "2026-03-28T13:58:44.234Z",
+              "details": "1 of 4 desks failed; 1 of 19 checks failed"
+            },
+            "comparison": {
+              "status_match": false,
+              "freshness_known": true,
+              "notes": [
+                "Status mismatch: external pass vs internal fail."
+              ]
+            }
+          },
+          "latest_evidence": {
+            "seen_at": "2026-04-14T20:32:54.588Z",
+            "trigger": "external_mismatch",
+            "internal_status": "fail",
+            "external_status": "pass",
+            "probe_status": "unreachable",
+            "test_id": "qa_mcp_helper_ping",
+            "pre_adjudication": true,
+            "adjudication_state": "pending_lead_cycle",
+            "evidence_id": "qa_inv_001",
+            "promoted_by_posture_id": null,
+            "promoted_at": null
+          },
+          "evidence_events": [
+            {
+              "seen_at": "2026-04-14T17:32:54.283Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-14T17:52:54.288Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-14T18:12:54.383Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-14T18:32:54.400Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-14T18:52:54.522Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-14T19:12:54.533Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-14T19:32:54.542Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-14T19:52:54.765Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-14T20:12:54.560Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-14T20:32:54.588Z",
+              "trigger": "external_mismatch",
+              "internal_status": "fail",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            }
+          ],
+          "pre_adjudication": true,
+          "adjudication_state": "pending_lead_cycle",
+          "resolved_at": null,
+          "resolution": null,
+          "evidence_id": "qa_inv_001",
+          "promoted_by_posture_id": null,
+          "promoted_at": null
+        },
+        {
+          "id": "qa_inv_001",
+          "type": "qa_investigation",
+          "trigger": "probe_failure",
+          "severity": "medium",
+          "created_at": "2026-04-06T09:18:40.859Z",
+          "first_seen_at": "2026-04-06T09:18:40.859Z",
+          "last_seen_at": "2026-04-13T21:16:29.898Z",
+          "repeat_count": 136,
+          "status": "open",
+          "summary": "External probe disagrees with internal QA status",
+          "evidence": {
+            "external": null,
+            "internal": {
+              "status": "fail",
+              "source": "data/spatial/qa/structured/latest.json",
+              "timestamp": "2026-03-28T13:58:44.234Z",
+              "details": "1 of 4 desks failed; 1 of 19 checks failed"
+            },
+            "comparison": {
+              "status_match": false,
+              "freshness_known": false,
+              "notes": [
+                "External probe status is missing.",
+                "External probe timestamp is missing."
+              ]
+            }
+          },
+          "latest_evidence": {
+            "seen_at": "2026-04-13T21:16:29.898Z",
+            "trigger": "probe_failure",
+            "internal_status": "fail",
+            "external_status": "unavailable",
+            "probe_status": "unreachable",
+            "test_id": "unknown-test",
+            "pre_adjudication": true,
+            "adjudication_state": "pending_lead_cycle",
+            "evidence_id": "qa_inv_001",
+            "promoted_by_posture_id": null,
+            "promoted_at": null
+          },
+          "evidence_events": [
+            {
+              "seen_at": "2026-04-13T19:55:01.001Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T19:56:29.903Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T20:15:01.002Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T20:16:29.900Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T20:35:01.010Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T20:36:29.898Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T20:55:01.009Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T20:56:29.901Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T21:15:01.017Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T21:16:29.898Z",
+              "trigger": "probe_failure",
+              "internal_status": "fail",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            }
+          ],
+          "pre_adjudication": true,
+          "adjudication_state": "pending_lead_cycle",
+          "resolved_at": null,
+          "resolution": null,
+          "evidence_id": "qa_inv_001",
+          "promoted_by_posture_id": null,
+          "promoted_at": null
+        },
+        {
+          "id": "qa_inv_001",
+          "type": "qa_investigation",
+          "trigger": "external_mismatch",
+          "severity": "medium",
+          "created_at": "2026-04-13T09:47:13.884Z",
+          "first_seen_at": "2026-04-13T09:47:13.884Z",
+          "last_seen_at": "2026-04-13T09:59:02.559Z",
+          "repeat_count": 3,
+          "status": "open",
+          "summary": "External probe disagrees with internal QA status",
+          "evidence": {
+            "external": {
+              "test_id": "qa_mcp_helper_ping",
+              "status": "pass",
+              "details": "qa_mcp_helper.py is reachable.",
+              "timestamp": "2026-04-13T09:59:02.551315Z",
+              "source": "external_mcp"
+            },
+            "internal": {
+              "status": "missing",
+              "source": "data/spatial/qa/structured/latest.json",
+              "timestamp": null,
+              "details": "Structured QA report unavailable."
+            },
+            "comparison": {
+              "status_match": false,
+              "freshness_known": false,
+              "notes": [
+                "Status mismatch: external pass vs internal missing.",
+                "Internal QA timestamp is missing."
+              ]
+            }
+          },
+          "latest_evidence": {
+            "seen_at": "2026-04-13T09:59:02.559Z",
+            "trigger": "external_mismatch",
+            "internal_status": "missing",
+            "external_status": "pass",
+            "probe_status": "unreachable",
+            "test_id": "qa_mcp_helper_ping",
+            "pre_adjudication": true,
+            "adjudication_state": "pending_lead_cycle",
+            "evidence_id": "qa_inv_001",
+            "promoted_by_posture_id": null,
+            "promoted_at": null
+          },
+          "evidence_events": [
+            {
+              "seen_at": "2026-04-13T09:47:13.883Z",
+              "trigger": "external_mismatch",
+              "internal_status": "missing",
+              "external_status": "pass",
+              "probe_status": "ok",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": null,
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:54:29.375Z",
+              "trigger": "external_mismatch",
+              "internal_status": "missing",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:59:02.559Z",
+              "trigger": "external_mismatch",
+              "internal_status": "missing",
+              "external_status": "pass",
+              "probe_status": "unreachable",
+              "test_id": "qa_mcp_helper_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            }
+          ],
+          "pre_adjudication": true,
+          "adjudication_state": "pending_lead_cycle",
+          "resolved_at": null,
+          "resolution": null,
+          "evidence_id": "qa_inv_001",
+          "promoted_by_posture_id": null,
+          "promoted_at": null
+        },
+        {
+          "id": "qa_inv_001",
+          "type": "qa_investigation",
+          "trigger": "external_mismatch",
+          "severity": "medium",
+          "created_at": "2026-04-06T01:43:23.729Z",
+          "first_seen_at": "2026-04-06T01:43:23.729Z",
+          "last_seen_at": "2026-04-13T09:53:31.730Z",
+          "repeat_count": 22,
+          "status": "open",
+          "summary": "External probe disagrees with internal QA status",
+          "evidence": {
+            "external": {
+              "test_id": "ollama_ping",
+              "status": "fail",
+              "details": "Ollama unreachable",
+              "timestamp": "2026-04-06T00:00:02.000Z",
+              "source": "external_mcp"
+            },
+            "internal": {
+              "status": "pass",
+              "source": "data/spatial/qa/structured/latest.json",
+              "timestamp": "2026-04-06T00:00:00.000Z",
+              "details": "Structured QA report passed."
+            },
+            "comparison": {
+              "status_match": false,
+              "freshness_known": true,
+              "notes": [
+                "Status mismatch: external fail vs internal pass."
+              ]
+            }
+          },
+          "latest_evidence": {
+            "seen_at": "2026-04-13T09:53:31.730Z",
+            "trigger": "external_mismatch",
+            "internal_status": "pass",
+            "external_status": "fail",
+            "probe_status": "unreachable",
+            "test_id": "ollama_ping",
+            "pre_adjudication": true,
+            "adjudication_state": "pending_lead_cycle",
+            "evidence_id": "qa_inv_001",
+            "promoted_by_posture_id": null,
+            "promoted_at": null
+          },
+          "evidence_events": [
+            {
+              "seen_at": "2026-04-09T14:42:53.694Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-09T15:13:42.716Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-09T15:13:59.144Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-09T15:14:19.994Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-09T15:14:52.427Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-09T15:17:18.374Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-09T15:19:41.860Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-09T15:24:32.339Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.716Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.730Z",
+              "trigger": "external_mismatch",
+              "internal_status": "pass",
+              "external_status": "fail",
+              "probe_status": "unreachable",
+              "test_id": "ollama_ping",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            }
+          ],
+          "pre_adjudication": true,
+          "adjudication_state": "pending_lead_cycle",
+          "resolved_at": null,
+          "resolution": null,
+          "evidence_id": "qa_inv_001",
+          "promoted_by_posture_id": null,
+          "promoted_at": null
+        },
+        {
+          "id": "qa_inv_001",
+          "type": "qa_investigation",
+          "trigger": "probe_failure",
+          "severity": "medium",
+          "created_at": "2026-04-06T01:43:23.728Z",
+          "first_seen_at": "2026-04-06T01:43:23.728Z",
+          "last_seen_at": "2026-04-13T09:53:31.729Z",
+          "repeat_count": 68,
+          "status": "open",
+          "summary": "External probe disagrees with internal QA status",
+          "evidence": {
+            "external": null,
+            "internal": {
+              "status": "pass",
+              "source": "data/spatial/qa/structured/latest.json",
+              "timestamp": "2026-04-06T00:00:00.000Z",
+              "details": "Structured QA report passed."
+            },
+            "comparison": {
+              "status_match": false,
+              "freshness_known": false,
+              "notes": [
+                "External probe status is missing.",
+                "External probe timestamp is missing."
+              ]
+            }
+          },
+          "latest_evidence": {
+            "seen_at": "2026-04-13T09:53:31.729Z",
+            "trigger": "probe_failure",
+            "internal_status": "pass",
+            "external_status": "unavailable",
+            "probe_status": "unreachable",
+            "test_id": "unknown-test",
+            "pre_adjudication": true,
+            "adjudication_state": "pending_lead_cycle",
+            "evidence_id": "qa_inv_001",
+            "promoted_by_posture_id": null,
+            "promoted_at": null
+          },
+          "evidence_events": [
+            {
+              "seen_at": "2026-04-09T15:24:32.337Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-09T15:24:32.338Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.711Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.713Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.714Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.716Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.725Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.727Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.728Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            },
+            {
+              "seen_at": "2026-04-13T09:53:31.729Z",
+              "trigger": "probe_failure",
+              "internal_status": "pass",
+              "external_status": "unavailable",
+              "probe_status": "unreachable",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": "qa_inv_001",
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            }
+          ],
+          "pre_adjudication": true,
+          "adjudication_state": "pending_lead_cycle",
+          "resolved_at": null,
+          "resolution": null,
+          "evidence_id": "qa_inv_001",
+          "promoted_by_posture_id": null,
+          "promoted_at": null
+        },
+        {
+          "id": "qa_inv_001",
+          "type": "qa_investigation",
+          "trigger": "probe_failure",
+          "severity": "medium",
+          "created_at": "2026-04-13T09:40:29.144Z",
+          "first_seen_at": "2026-04-13T09:40:29.144Z",
+          "last_seen_at": "2026-04-13T09:40:29.144Z",
+          "repeat_count": 1,
+          "status": "open",
+          "summary": "External probe disagrees with internal QA status",
+          "evidence": {
+            "external": null,
+            "internal": {
+              "status": "missing",
+              "source": "data/spatial/qa/structured/latest.json",
+              "timestamp": null,
+              "details": "Structured QA report unavailable."
+            },
+            "comparison": {
+              "status_match": false,
+              "freshness_known": false,
+              "notes": [
+                "External probe status is missing.",
+                "External probe timestamp is missing.",
+                "Internal QA timestamp is missing."
+              ]
+            }
+          },
+          "latest_evidence": {
+            "seen_at": "2026-04-13T09:40:29.143Z",
+            "trigger": "probe_failure",
+            "internal_status": "missing",
+            "external_status": "unavailable",
+            "probe_status": "timeout",
+            "test_id": "unknown-test",
+            "pre_adjudication": true,
+            "adjudication_state": "pending_lead_cycle",
+            "evidence_id": "qa_inv_001",
+            "promoted_by_posture_id": null,
+            "promoted_at": null
+          },
+          "evidence_events": [
+            {
+              "seen_at": "2026-04-13T09:40:29.143Z",
+              "trigger": "probe_failure",
+              "internal_status": "missing",
+              "external_status": "unavailable",
+              "probe_status": "timeout",
+              "test_id": "unknown-test",
+              "pre_adjudication": true,
+              "adjudication_state": "pending_lead_cycle",
+              "evidence_id": null,
+              "promoted_by_posture_id": null,
+              "promoted_at": null
+            }
+          ],
+          "pre_adjudication": true,
+          "adjudication_state": "pending_lead_cycle",
+          "resolved_at": null,
+          "resolution": null,
+          "evidence_id": "qa_inv_001",
+          "promoted_by_posture_id": null,
+          "promoted_at": null
+        }
+      ]
+    },
+    "repairResult": null
+  },
+  "external_validation": {
+    "ok": true,
+    "external_probe": {
+      "test_id": "qa_mcp_helper_ping",
+      "status": "pass",
+      "details": "qa_mcp_helper.py is reachable.",
+      "timestamp": "2026-05-05T09:01:12.974281Z",
+      "source": "external_mcp"
+    },
+    "internal_truth": {
+      "status": "missing",
+      "source": "data/spatial/qa/structured/latest.json",
+      "timestamp": null,
+      "details": "Structured QA report unavailable."
+    },
+    "comparison": {
+      "status_match": false,
+      "freshness_known": false,
+      "notes": [
+        "Status mismatch: external pass vs internal missing.",
+        "Internal QA timestamp is missing."
+      ]
+    },
+    "probe_status": "ok",
+    "investigation_would_trigger": true,
+    "investigation_created": true,
+    "investigation_id": "qa_inv_001",
+    "pre_adjudication": true,
+    "adjudication_state": "pending_lead_cycle",
+    "evidence_id": "qa_inv_001",
+    "probe_target": "http://127.0.0.1:5051/run_test",
+    "source_ref": "ui/externalQaProbe.buildExternalQaProbeCheckPayload",
+    "status": "pass",
+    "probeStatus": "ok",
+    "lastCheckedAt": "2026-05-05T09:01:12.976Z",
+    "statusMatch": false,
+    "freshnessKnown": false,
+    "notes": [
+      "Status mismatch: external pass vs internal missing.",
+      "Internal QA timestamp is missing."
+    ],
+    "source": "external_mcp",
+    "errorMessage": null,
+    "probeFailureKind": null,
+    "probeFailureDetail": null,
+    "probeStatusCode": null,
+    "probeTarget": "http://127.0.0.1:5051/run_test",
+    "externalProbeLive": true,
+    "usedFallback": false,
+    "mcpEvidenceSource": "live_helper"
+  },
+  "browser_run": {
+    "id": "qa_1777971672977_yv6n5q",
+    "scenario": "studio-smoke",
+    "mode": "observation",
+    "trigger": "qa_lead_cycle",
+    "prompt": null,
+    "baseUrl": "http://127.0.0.1:3000",
+    "status": "completed",
+    "verdict": "failed",
+    "createdAt": "2026-05-05T09:01:12.977Z",
+    "finishedAt": "2026-05-05T09:01:14.509Z",
+    "linked": {
+      "qaLeadRunId": "qa_lead_1777971672968_d4pitr"
+    },
+    "browser": {
+      "executablePath": null,
+      "engine": "chromium"
+    },
+    "browser_status": "fail",
+    "browser_failure_stage": null,
+    "browser_failure_code": null,
+    "browser_failure_summary": null,
+    "browser_runtime_target": {
+      "attempted": [
+        "chromium"
+      ],
+      "used": "chromium",
+      "fallbackUsed": false
+    },
+    "steps": [
+      {
+        "id": "health",
+        "label": "Wait for ACE runtime",
+        "details": null,
+        "status": "completed",
+        "verdict": "pass",
+        "startedAt": "2026-05-05T09:01:12.979Z",
+        "finishedAt": "2026-05-05T09:01:12.984Z",
+        "error": null
+      },
+      {
+        "id": "launch",
+        "label": "Launch browser",
+        "details": null,
+        "status": "completed",
+        "verdict": "pass",
+        "startedAt": "2026-05-05T09:01:12.985Z",
+        "finishedAt": "2026-05-05T09:01:13.112Z",
+        "error": null
+      },
+      {
+        "id": "open",
+        "label": "Open ACE",
+        "details": null,
+        "status": "completed",
+        "verdict": "pass",
+        "startedAt": "2026-05-05T09:01:13.113Z",
+        "finishedAt": "2026-05-05T09:01:13.775Z",
+        "error": null
+      },
+      {
+        "id": "studio",
+        "label": "Enter ACE Studio",
+        "details": null,
+        "status": "completed",
+        "verdict": "pass",
+        "startedAt": "2026-05-05T09:01:13.776Z",
+        "finishedAt": "2026-05-05T09:01:14.116Z",
+        "error": null
+      },
+      {
+        "id": "scenario",
+        "label": "Run QA scenario actions",
+        "details": null,
+        "status": "completed",
+        "verdict": "pass",
+        "startedAt": "2026-05-05T09:01:14.117Z",
+        "finishedAt": "2026-05-05T09:01:14.484Z",
+        "error": null
+      },
+      {
+        "id": "capture",
+        "label": "Capture artifacts",
+        "details": null,
+        "status": "completed",
+        "verdict": "pass",
+        "startedAt": "2026-05-05T09:01:14.484Z",
+        "finishedAt": "2026-05-05T09:01:14.502Z",
+        "error": null
+      },
+      {
+        "id": "analyze",
+        "label": "Analyze layout and runtime",
+        "details": null,
+        "status": "completed",
+        "verdict": "weak",
+        "startedAt": "2026-05-05T09:01:14.503Z",
+        "finishedAt": "2026-05-05T09:01:14.509Z",
+        "error": null
+      }
+    ],
+    "findings": [
+      {
+        "id": "desk-overlap-cto-chief-of-staff-cto-architect",
+        "severity": "error",
+        "kind": "layout",
+        "relatedDeskIds": [
+          "cto-chief-of-staff",
+          "cto-architect"
+        ],
+        "summary": "Chief of Staff overlaps CTO / Architect.",
+        "details": "Overlap area is 3360px."
+      },
+      {
+        "id": "whiteboard-overlap-teamBoard-planner",
+        "severity": "error",
+        "kind": "layout",
+        "relatedDeskIds": [
+          "planner"
+        ],
+        "relatedWhiteboardIds": [
+          "teamBoard"
+        ],
+        "summary": "Team Board overlaps Planner.",
+        "details": "Overlap area is 24080px."
+      },
+      {
+        "id": "whiteboard-overlap-teamBoard-executor",
+        "severity": "error",
+        "kind": "layout",
+        "relatedDeskIds": [
+          "executor"
+        ],
+        "relatedWhiteboardIds": [
+          "teamBoard"
+        ],
+        "summary": "Team Board overlaps Executor.",
+        "details": "Overlap area is 18920px."
+      },
+      {
+        "id": "control-hidden-recent-saves-select",
+        "severity": "warning",
+        "kind": "visibility",
+        "summary": "Recent Saves is clipped or hidden.",
+        "details": "Required control recent-saves-select was not fully visible in the current browser pass."
+      },
+      {
+        "id": "console-3",
+        "severity": "error",
+        "kind": "console",
+        "summary": "Console errors were captured during the browser pass.",
+        "details": "Failed to load resource: the server responded with a status of 500 (Internal Server Error) | Failed to load resource: the server responded with a status of 500 (Internal Server Error) | Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      }
+    ],
+    "artifacts": {
+      "screenshots": [
+        {
+          "name": "01-initial.png",
+          "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777971672977_yv6n5q\\01-initial.png",
+          "url": "/api/spatial/qa/runs/qa_1777971672977_yv6n5q/artifacts/01-initial.png",
+          "label": "Initial ACE render"
+        },
+        {
+          "name": "02-studio-smoke.png",
+          "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777971672977_yv6n5q\\02-studio-smoke.png",
+          "url": "/api/spatial/qa/runs/qa_1777971672977_yv6n5q/artifacts/02-studio-smoke.png",
+          "label": "Scenario studio-smoke"
+        }
+      ],
+      "domSnapshot": {
+        "name": "dom.html",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777971672977_yv6n5q\\dom.html",
+        "url": "/api/spatial/qa/runs/qa_1777971672977_yv6n5q/artifacts/dom.html"
+      },
+      "consoleLog": {
+        "name": "console.json",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777971672977_yv6n5q\\console.json",
+        "url": "/api/spatial/qa/runs/qa_1777971672977_yv6n5q/artifacts/console.json"
+      },
+      "networkSummary": {
+        "name": "network.json",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777971672977_yv6n5q\\network.json",
+        "url": "/api/spatial/qa/runs/qa_1777971672977_yv6n5q/artifacts/network.json"
+      },
+      "runtimeSnapshot": {
+        "name": "runtime.json",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777971672977_yv6n5q\\runtime.json",
+        "url": "/api/spatial/qa/runs/qa_1777971672977_yv6n5q/artifacts/runtime.json"
+      },
+      "layoutFindings": {
+        "name": "layout-findings.json",
+        "path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777971672977_yv6n5q\\layout-findings.json",
+        "url": "/api/spatial/qa/runs/qa_1777971672977_yv6n5q/artifacts/layout-findings.json"
+      }
+    },
+    "console": [
+      {
+        "type": "info",
+        "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+        "location": {
+          "url": "http://127.0.0.1:3000/vendor/react-dom.development.js",
+          "lineNumber": 29904,
+          "columnNumber": 18
+        }
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "location": {
+          "url": "http://127.0.0.1:3000/api/spatial/runtime",
+          "lineNumber": 0,
+          "columnNumber": 0
+        }
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "location": {
+          "url": "http://127.0.0.1:3000/favicon.ico",
+          "lineNumber": 0,
+          "columnNumber": 0
+        }
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "location": {
+          "url": "http://127.0.0.1:3000/api/spatial/workspace",
+          "lineNumber": 0,
+          "columnNumber": 0
+        }
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "location": {
+          "url": "http://127.0.0.1:3000/api/spatial/runtime",
+          "lineNumber": 0,
+          "columnNumber": 0
+        }
+      }
+    ],
+    "network": [],
+    "error": null
+  },
+  "canaries": {
+    "source": "qa_lane_canaries",
+    "started_at": "2026-05-05T09:01:14.560Z",
+    "last_run_at": "2026-05-05T09:01:18.002Z",
+    "overall_status": "fail",
+    "total_canaries": 3,
+    "passed_count": 0,
+    "failed_count": 3,
+    "failing_canary_ids": [
+      "ui_boot_integrity_missing_asset",
+      "route_contract_health_payload",
+      "planner_canonical_identity_guard"
+    ],
+    "results": [
+      {
+        "canary_id": "ui_boot_integrity_missing_asset",
+        "label": "UI boot missing asset route",
+        "target_lane_id": "ui_boot_integrity",
+        "target_lane_label": "UI Boot Integrity",
+        "owner_department": "QA",
+        "trigger": "missing_client_asset",
+        "checked_at": "2026-05-05T09:01:14.560Z",
+        "expected_lane_selection": "ui_boot_integrity",
+        "selected_lane_id": "ui_boot_integrity",
+        "lane_match": true,
+        "expected_policy_outcome": "auto_apply_allowed",
+        "policy_outcome": "auto_apply_allowed",
+        "policy_match": true,
+        "expected_validation_status": "accepted",
+        "validation_status": "rejected",
+        "validation_match": false,
+        "status": "fail",
+        "trust_level": "high",
+        "trust_reason": "Blocking boot failures can auto-apply only inside browser boot entry and asset scope.",
+        "auto_apply_allowed": true,
+        "scoped_targets_summary": "10 targets | public/index.html | spatial/boot-manifest.json +8 more",
+        "required_validation_gate_ids": [
+          "ui-boot-syntax",
+          "ui-boot-canary"
+        ],
+        "latest_validation_summary": "UI Boot Integrity checks failed.",
+        "summary": "UI boot missing asset route failed its expected lane, policy, or validation contract.",
+        "notes": [
+          "Expected validation accepted, got rejected.",
+          "UI Boot Integrity checks failed."
+        ]
+      },
+      {
+        "canary_id": "route_contract_health_payload",
+        "label": "Route contract payload drift",
+        "target_lane_id": "route_contract_health",
+        "target_lane_label": "Route + Contract Health",
+        "owner_department": "QA",
+        "trigger": "route_contract_mismatch",
+        "checked_at": "2026-05-05T09:01:14.560Z",
+        "expected_lane_selection": "route_contract_health",
+        "selected_lane_id": "route_contract_health",
+        "lane_match": true,
+        "expected_policy_outcome": "auto_apply_allowed",
+        "policy_outcome": "auto_apply_allowed",
+        "policy_match": true,
+        "expected_validation_status": "accepted",
+        "validation_status": "rejected",
+        "validation_match": false,
+        "status": "fail",
+        "trust_level": "medium",
+        "trust_reason": "Route and payload contract repairs may auto-apply only inside explicit backend and desk contract files.",
+        "auto_apply_allowed": true,
+        "scoped_targets_summary": "5 targets | ui/server.js | spatial/spatialApp.js +3 more",
+        "required_validation_gate_ids": [
+          "route-contract-syntax",
+          "route-contract-canary"
+        ],
+        "latest_validation_summary": "Route + Contract Health checks failed.",
+        "summary": "Route contract payload drift failed its expected lane, policy, or validation contract.",
+        "notes": [
+          "Expected validation accepted, got rejected.",
+          "Route + Contract Health checks failed."
+        ]
+      },
+      {
+        "canary_id": "planner_canonical_identity_guard",
+        "label": "Planner canonical identity guard",
+        "target_lane_id": "planner_canonical_integrity",
+        "target_lane_label": "Planner Canonical Integrity",
+        "owner_department": "Delivery",
+        "trigger": "planner_identity_mismatch",
+        "checked_at": "2026-05-05T09:01:14.560Z",
+        "expected_lane_selection": "planner_canonical_integrity",
+        "selected_lane_id": "planner_canonical_integrity",
+        "lane_match": true,
+        "expected_policy_outcome": "guarded_manual_review",
+        "policy_outcome": "guarded_manual_review",
+        "policy_match": true,
+        "expected_validation_status": "accepted",
+        "validation_status": "rejected",
+        "validation_match": false,
+        "status": "fail",
+        "trust_level": "guarded",
+        "trust_reason": "Planner integrity is policy-guarded; executor may inspect and validate, but patches require human review.",
+        "auto_apply_allowed": false,
+        "scoped_targets_summary": "6 targets | ui/server.js | ui/studioLayoutSchema.js +4 more",
+        "required_validation_gate_ids": [
+          "planner-canonical-syntax",
+          "planner-canonical-canary"
+        ],
+        "latest_validation_summary": "Planner Canonical Integrity checks failed.",
+        "summary": "Planner canonical identity guard failed its expected lane, policy, or validation contract.",
+        "notes": [
+          "Expected validation accepted, got rejected.",
+          "Planner Canonical Integrity checks failed."
+        ]
+      }
+    ],
+    "summary": "3 QA lane canaryies failing."
+  },
+  "loop_audit": {
+    "source": "qa_loop_audit",
+    "started_at": "2026-05-05T09:01:18.003Z",
+    "completed_at": "2026-05-05T09:01:18.607Z",
+    "overall_status": "pass",
+    "total_faults": 3,
+    "passed_faults": 3,
+    "failed_faults": 0,
+    "failing_fault_ids": [],
+    "faults": [
+      {
+        "fault_id": "missing_required_asset",
+        "injected_fault": "Missing required asset reference /intentAnalysis.js",
+        "expected_lane": "ui_boot_integrity",
+        "detected": true,
+        "expected_status": "accepted_or_safe_stop",
+        "actual_lane": "ui_boot_integrity",
+        "actual_status": "accepted",
+        "investigation_id": "qa_inv_001",
+        "repair_attempted": true,
+        "policy_decision": "auto_apply_allowed",
+        "repair_decision": "replace_with_browser_safe_helper",
+        "validation_result": "accepted",
+        "final_state": "boot_restored",
+        "qa_surface_result": {
+          "lane_id": "ui_boot_integrity",
+          "label": "UI Boot Integrity",
+          "status": "healthy",
+          "open_investigations": 0,
+          "repair_job_count": 1,
+          "blocked_count": 0,
+          "latest_attempt_verdict": "accepted",
+          "latest_policy_block_reason": null,
+          "trust_level": "high",
+          "trust_reason": "Blocking boot failures can auto-apply only inside browser boot entry and asset scope."
+        },
+        "expected_vs_actual_pass": true,
+        "details": {
+          "before_contract": {
+            "failure_class": "missing_client_asset",
+            "failure_stage": "required_modules_loaded",
+            "asset": "/intentAnalysis.js",
+            "http_status": 404
+          },
+          "after_contract": {
+            "failure_class": null,
+            "failure_stage": null,
+            "asset": null,
+            "http_status": null
+          }
+        }
+      },
+      {
+        "fault_id": "planner_canonical_mismatch",
+        "injected_fault": "Planner canonical identity and staffing mismatch",
+        "expected_lane": "planner_canonical_integrity",
+        "detected": true,
+        "expected_status": "policy_blocked",
+        "actual_lane": "planner_canonical_integrity",
+        "actual_status": "policy_blocked",
+        "investigation_id": "qa_inv_001",
+        "repair_attempted": false,
+        "policy_decision": "policy_blocked",
+        "repair_decision": "guarded_no_auto_apply",
+        "validation_result": "policy_blocked",
+        "final_state": "safe_stop",
+        "qa_surface_result": {
+          "lane_id": "planner_canonical_integrity",
+          "label": "Planner Canonical Integrity",
+          "status": "blocked",
+          "open_investigations": 1,
+          "repair_job_count": 1,
+          "blocked_count": 0,
+          "latest_attempt_verdict": "policy_blocked",
+          "latest_policy_block_reason": "Auto-apply is not permitted for this lane trust policy. Governed self-apply v0 is only enabled for validation_seam and ui_boot_integrity.",
+          "trust_level": "guarded",
+          "trust_reason": "Planner integrity is policy-guarded; executor may inspect and validate, but patches require human review."
+        },
+        "expected_vs_actual_pass": true,
+        "details": {
+          "trigger": "planner_truth_stale",
+          "failed_predicates": [
+            "Canonical planner record exists",
+            "Planner desk is owned by delivery",
+            "Planner desk has the planner agent assigned",
+            "Planner record is live and grounded",
+            "Planner agent exists",
+            "Planner agent uses the canonical model profile",
+            "Delivery department includes the planner desk"
+          ]
+        }
+      },
+      {
+        "fault_id": "qa_mcp_stale",
+        "injected_fault": "Stale QA MCP heartbeat with no recent call",
+        "expected_lane": null,
+        "detected": true,
+        "expected_status": "stale",
+        "actual_lane": null,
+        "actual_status": "stale",
+        "investigation_id": null,
+        "repair_attempted": false,
+        "policy_decision": "not_applicable",
+        "repair_decision": "none",
+        "validation_result": "stale",
+        "final_state": "stale",
+        "qa_surface_result": {
+          "status": "stale",
+          "summary": "QA MCP was reachable, but the proof-of-life signal is stale.",
+          "last_ping_at": "2026-05-05T06:01:18.567Z",
+          "last_call_tool": "external_probe_check",
+          "last_qa_gate_source": "browser_qa",
+          "using_mcp_for_qa_decisions": false,
+          "desk_status": "stale"
+        },
+        "expected_vs_actual_pass": true,
+        "details": {
+          "freshness": "stale",
+          "notes": [
+            "Reachable but stale: the most recent MCP proof-of-life signal is outside the freshness window.",
+            "Latest QA gate source: browser_qa.",
+            "Last MCP ping status: ok.",
+            "Last MCP call: external_probe_check (ok).",
+            "Research target: http://127.0.0.1:5052/research_note.",
+            "MCP is reachable, but QA is currently relying on a non-MCP gate source."
+          ]
+        }
+      }
+    ],
+    "comparisons": [
+      {
+        "fault_id": "missing_required_asset",
+        "detected": true,
+        "expected_lane": "ui_boot_integrity",
+        "actual_lane": "ui_boot_integrity",
+        "policy_decision": "auto_apply_allowed",
+        "repair_attempted": true,
+        "validation_result": "accepted",
+        "final_state": "boot_restored",
+        "pass": true
+      },
+      {
+        "fault_id": "planner_canonical_mismatch",
+        "detected": true,
+        "expected_lane": "planner_canonical_integrity",
+        "actual_lane": "planner_canonical_integrity",
+        "policy_decision": "policy_blocked",
+        "repair_attempted": false,
+        "validation_result": "policy_blocked",
+        "final_state": "safe_stop",
+        "pass": true
+      },
+      {
+        "fault_id": "qa_mcp_stale",
+        "detected": true,
+        "expected_lane": null,
+        "actual_lane": null,
+        "policy_decision": "not_applicable",
+        "repair_attempted": false,
+        "validation_result": "stale",
+        "final_state": "stale",
+        "pass": true
+      }
+    ],
+    "summary": "All 3 injected loop faults behaved as expected."
+  },
+  "research_state": {
+    "notes": [],
+    "investigations": [
+      {
+        "id": "qa_inv_001",
+        "type": "qa_investigation",
+        "trigger": "external_mismatch",
+        "severity": "medium",
+        "created_at": "2026-05-05T09:01:12.975Z",
+        "first_seen_at": "2026-05-05T09:01:12.975Z",
+        "last_seen_at": "2026-05-05T09:01:12.975Z",
+        "repeat_count": 1,
+        "status": "open",
+        "summary": "External probe disagrees with internal QA status",
+        "evidence": {
+          "external": {
+            "test_id": "qa_mcp_helper_ping",
+            "status": "pass",
+            "details": "qa_mcp_helper.py is reachable.",
+            "timestamp": "2026-05-05T09:01:12.974281Z",
+            "source": "external_mcp"
+          },
+          "internal": {
+            "status": "missing",
+            "source": "data/spatial/qa/structured/latest.json",
+            "timestamp": null,
+            "details": "Structured QA report unavailable."
+          },
+          "comparison": {
+            "status_match": false,
+            "freshness_known": false,
+            "notes": [
+              "Status mismatch: external pass vs internal missing.",
+              "Internal QA timestamp is missing."
+            ]
+          }
+        },
+        "latest_evidence": {
+          "seen_at": "2026-05-05T09:01:12.975Z",
+          "trigger": "external_mismatch",
+          "internal_status": "missing",
+          "external_status": "pass",
+          "probe_status": "ok",
+          "test_id": "qa_mcp_helper_ping",
+          "pre_adjudication": true,
+          "adjudication_state": "pending_lead_cycle",
+          "evidence_id": "qa_inv_001",
+          "promoted_by_posture_id": null,
+          "promoted_at": null
+        },
+        "evidence_events": [
+          {
+            "seen_at": "2026-05-05T09:01:12.975Z",
+            "trigger": "external_mismatch",
+            "internal_status": "missing",
+            "external_status": "pass",
+            "probe_status": "ok",
+            "test_id": "qa_mcp_helper_ping",
+            "pre_adjudication": true,
+            "adjudication_state": "pending_lead_cycle",
+            "evidence_id": null,
+            "promoted_by_posture_id": null,
+            "promoted_at": null
+          }
+        ],
+        "pre_adjudication": true,
+        "adjudication_state": "pending_lead_cycle",
+        "resolved_at": null,
+        "resolution": null,
+        "evidence_id": "qa_inv_001",
+        "promoted_by_posture_id": null,
+        "promoted_at": null,
+        "research_available": false,
+        "latest_research_at": null,
+        "research_note_count": 0,
+        "research_status": null,
+        "research_error_message": null,
+        "research_summary": null,
+        "research_recommendation": null
+      }
+    ],
+    "summary": {
+      "totalNotes": 0,
+      "availableNotes": 0,
+      "unavailableNotes": 0,
+      "latestNoteAt": null
+    }
+  },
+  "repair_loop": {
+    "lane": "validation_seam",
+    "laneRegistry": [
+      {
+        "lane_id": "ui_boot_integrity",
+        "trust_policy_id": "ui_boot_integrity",
+        "label": "UI Boot Integrity",
+        "owner_department": "QA",
+        "allowed_trigger_classes": [
+          "missing_client_asset"
+        ],
+        "scoped_targets": [
+          "ui/public/index.html",
+          "ui/public/spatial/boot-manifest.json",
+          "ui/public/spatial/spatialBootstrap.js",
+          "ui/public/spatial/spatialApp.js",
+          "ui/public/spatial/intentContract.browser.js",
+          "ui/server.js",
+          "ui/tests/bootIntegrity.test.mjs",
+          "ui/tests/uiBootIntegrityLane.test.mjs",
+          "ui/tests/helpers/browser-module-loader.mjs",
+          "ui/tests/spatialApp.smoke.test.mjs"
+        ],
+        "eligibility": {
+          "requires_open_status": true,
+          "min_repeat_count": 1,
+          "policy_hook": "blocking_missing_client_asset_gate"
+        },
+        "validation_checks": [
+          {
+            "id": "ui-boot-syntax",
+            "kind": "syntax",
+            "label": "UI boot integrity syntax checks",
+            "test_file": null,
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "ui-boot-canary",
+            "kind": "test-file",
+            "label": "UI boot canary test",
+            "test_file": "tests/qaUiBootCanary.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "ui-boot-lane",
+            "kind": "test-file",
+            "label": "UI boot integrity lane test",
+            "test_file": "tests/uiBootIntegrityLane.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "ui-boot-contract",
+            "kind": "test-file",
+            "label": "Boot contract smoke test",
+            "test_file": "tests/bootIntegrity.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          }
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "stop_status": "stalled_after_retries",
+          "allow_retry_verdicts": [
+            "rejected",
+            "inconclusive"
+          ]
+        },
+        "trust_level": "high",
+        "trust_reason": "Blocking boot failures can auto-apply only inside browser boot entry and asset scope.",
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "required_validation_gate_ids": [
+          "ui-boot-syntax",
+          "ui-boot-lane",
+          "ui-boot-contract"
+        ],
+        "policy_block_status": "policy_blocked",
+        "observability": {
+          "label": "UI boot integrity",
+          "status_label": "watching"
+        },
+        "truth_source": "studio boot contract and mounted marker",
+        "repair_focus": "Keep browser boot assets and mount flow canonical.",
+        "acceptance_criteria": [
+          "Required boot assets resolve without a blocking 404",
+          "Health snapshot no longer reports missing_client_asset",
+          "Spatial app mount marker appears in smoke validation",
+          "Focused UI boot validation passes"
+        ],
+        "prohibited_actions": [
+          "no unrestricted self-modification",
+          "no changes outside declared scope",
+          "no secrets/env/token handling",
+          "no destructive file operations outside allowed targets",
+          "no dependency install or removal unless explicitly permitted",
+          "no network use beyond local validation and approved boot probes",
+          "no bypassing QA gates",
+          "no auto-merge / auto-accept without validation pass",
+          "no planner, staffing, or route-contract edits"
+        ],
+        "failing_test_names": [
+          "bootIntegrity",
+          "uiBootIntegrityLane"
+        ],
+        "failure_class": "ui_boot_integrity",
+        "lane_family": "boot",
+        "trust_policy": {
+          "lane_id": "ui_boot_integrity",
+          "allowed_failure_classes": [
+            "missing_client_asset"
+          ],
+          "allowed_file_scope": [
+            "ui/public/index.html",
+            "ui/public/spatial/boot-manifest.json",
+            "ui/public/spatial/spatialBootstrap.js",
+            "ui/public/spatial/spatialApp.js",
+            "ui/public/spatial/intentContract.browser.js",
+            "ui/server.js",
+            "ui/tests/bootIntegrity.test.mjs",
+            "ui/tests/uiBootIntegrityLane.test.mjs",
+            "ui/tests/helpers/browser-module-loader.mjs",
+            "ui/tests/spatialApp.smoke.test.mjs"
+          ],
+          "allowed_action_types": [
+            "inspect",
+            "patch",
+            "validate"
+          ],
+          "auto_apply_allowed": true,
+          "human_review_required_on_ambiguity": true,
+          "retry_budget": 2,
+          "required_validation_gate_ids": [
+            "ui-boot-syntax",
+            "ui-boot-lane",
+            "ui-boot-contract"
+          ],
+          "trust_level": "high",
+          "trust_reason": "Blocking boot failures can auto-apply only inside browser boot entry and asset scope.",
+          "policy_block_status": "policy_blocked"
+        }
+      },
+      {
+        "lane_id": "validation_seam",
+        "trust_policy_id": "validation_seam",
+        "label": "Validation Seam",
+        "owner_department": "QA",
+        "allowed_trigger_classes": [
+          "external_mismatch",
+          "probe_failure",
+          "freshness_unknown"
+        ],
+        "scoped_targets": [
+          "ui/externalQaProbe.js",
+          "ui/server.js",
+          "ui/tests/externalValidation.test.mjs"
+        ],
+        "eligibility": {
+          "requires_open_status": true,
+          "min_repeat_count": 2,
+          "policy_hook": "open_repeat_external_validation_gate"
+        },
+        "validation_checks": [
+          {
+            "id": "validation-seam-syntax",
+            "kind": "syntax",
+            "label": "Validation seam syntax checks",
+            "test_file": null,
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "validation-seam-contract",
+            "kind": "test-file",
+            "label": "External validation contract test",
+            "test_file": "tests/externalValidation.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          }
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "stop_status": "stalled_after_retries",
+          "allow_retry_verdicts": [
+            "rejected",
+            "inconclusive"
+          ]
+        },
+        "trust_level": "high",
+        "trust_reason": "External validation seam is trusted for bounded backend contract repair only.",
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "required_validation_gate_ids": [
+          "validation-seam-syntax",
+          "validation-seam-contract"
+        ],
+        "policy_block_status": "policy_blocked",
+        "observability": {
+          "label": "External validation seam",
+          "status_label": "watching"
+        },
+        "truth_source": "external QA probe",
+        "repair_focus": "Keep the external probe contract stable and truthful.",
+        "acceptance_criteria": [
+          "External probe result remains parseable",
+          "Comparison payload keeps stable pass/fail fields",
+          "Investigation inbox still reflects the contradiction state",
+          "Focused QA validation passes"
+        ],
+        "prohibited_actions": [
+          "no unrestricted self-modification",
+          "no changes outside declared scope",
+          "no secrets/env/token handling",
+          "no destructive file operations outside allowed targets",
+          "no dependency install or removal unless explicitly permitted",
+          "no network use unless explicitly part of approved QA research tooling",
+          "no bypassing QA gates",
+          "no auto-merge / auto-accept without validation pass",
+          "no architectural rewrites"
+        ],
+        "failing_test_names": [
+          "externalValidation"
+        ],
+        "failure_class": "qa_validation_seam",
+        "lane_family": "validation",
+        "trust_policy": {
+          "lane_id": "validation_seam",
+          "allowed_failure_classes": [
+            "external_mismatch",
+            "probe_failure",
+            "freshness_unknown"
+          ],
+          "allowed_file_scope": [
+            "ui/externalQaProbe.js",
+            "ui/server.js",
+            "ui/tests/externalValidation.test.mjs"
+          ],
+          "allowed_action_types": [
+            "inspect",
+            "patch",
+            "validate"
+          ],
+          "auto_apply_allowed": true,
+          "human_review_required_on_ambiguity": true,
+          "retry_budget": 2,
+          "required_validation_gate_ids": [
+            "validation-seam-syntax",
+            "validation-seam-contract"
+          ],
+          "trust_level": "high",
+          "trust_reason": "External validation seam is trusted for bounded backend contract repair only.",
+          "policy_block_status": "policy_blocked"
+        }
+      },
+      {
+        "lane_id": "route_contract_health",
+        "trust_policy_id": "route_contract_health",
+        "label": "Route + Contract Health",
+        "owner_department": "QA",
+        "allowed_trigger_classes": [
+          "route_contract_mismatch",
+          "payload_contract_mismatch",
+          "response_shape_regression",
+          "required_field_omission",
+          "contract_field_omission",
+          "undefined_drift",
+          "null_drift"
+        ],
+        "scoped_targets": [
+          "ui/server.js",
+          "ui/public/spatial/spatialApp.js",
+          "ui/public/spatial/studioData.js",
+          "ui/public/spatial/aceConnector.js",
+          "ui/tests/qaRepairLaneContracts.test.mjs"
+        ],
+        "eligibility": {
+          "requires_open_status": true,
+          "min_repeat_count": 2,
+          "policy_hook": "open_repeat_route_contract_gate"
+        },
+        "validation_checks": [
+          {
+            "id": "route-contract-syntax",
+            "kind": "syntax",
+            "label": "Route contract syntax checks",
+            "test_file": null,
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "route-contract-canary",
+            "kind": "test-file",
+            "label": "Route contract canary test",
+            "test_file": "tests/qaRouteContractCanary.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "route-contract-check",
+            "kind": "test-file",
+            "label": "Route contract health test",
+            "test_file": "tests/qaRepairLaneContracts.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          }
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "stop_status": "stalled_after_retries",
+          "allow_retry_verdicts": [
+            "rejected",
+            "inconclusive"
+          ]
+        },
+        "trust_level": "medium",
+        "trust_reason": "Route and payload contract repairs may auto-apply only inside explicit backend and desk contract files.",
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "required_validation_gate_ids": [
+          "route-contract-syntax",
+          "route-contract-check"
+        ],
+        "policy_block_status": "policy_blocked",
+        "observability": {
+          "label": "Route + contract health",
+          "status_label": "watching"
+        },
+        "truth_source": "QA state and desk contract",
+        "repair_focus": "Keep backend and QA desk payloads in contract.",
+        "acceptance_criteria": [
+          "QA state payload retains the lane registry and repair loop shape",
+          "QA desk payload preserves contract fields and lane observability",
+          "Required QA fields remain present and non-null where expected",
+          "Focused route/contract validation passes"
+        ],
+        "prohibited_actions": [
+          "no unrestricted self-modification",
+          "no changes outside declared scope",
+          "no secrets/env/token handling",
+          "no destructive file operations outside allowed targets",
+          "no dependency install or removal unless explicitly permitted",
+          "no network use unless explicitly part of approved QA research tooling",
+          "no bypassing QA gates",
+          "no auto-merge / auto-accept without validation pass",
+          "no cross-lane repo edits unless explicitly scoped",
+          "no architectural rewrites"
+        ],
+        "failing_test_names": [
+          "qaRepairLaneContracts"
+        ],
+        "failure_class": "qa_route_contract_health",
+        "lane_family": "contract",
+        "trust_policy": {
+          "lane_id": "route_contract_health",
+          "allowed_failure_classes": [
+            "route_contract_mismatch",
+            "payload_contract_mismatch",
+            "response_shape_regression",
+            "required_field_omission",
+            "contract_field_omission",
+            "undefined_drift",
+            "null_drift"
+          ],
+          "allowed_file_scope": [
+            "ui/server.js",
+            "ui/public/spatial/spatialApp.js",
+            "ui/public/spatial/studioData.js",
+            "ui/public/spatial/aceConnector.js",
+            "ui/tests/qaRepairLaneContracts.test.mjs"
+          ],
+          "allowed_action_types": [
+            "inspect",
+            "patch",
+            "validate"
+          ],
+          "auto_apply_allowed": true,
+          "human_review_required_on_ambiguity": true,
+          "retry_budget": 2,
+          "required_validation_gate_ids": [
+            "route-contract-syntax",
+            "route-contract-check"
+          ],
+          "trust_level": "medium",
+          "trust_reason": "Route and payload contract repairs may auto-apply only inside explicit backend and desk contract files.",
+          "policy_block_status": "policy_blocked"
+        }
+      },
+      {
+        "lane_id": "planner_canonical_integrity",
+        "trust_policy_id": "planner_canonical_integrity",
+        "label": "Planner Canonical Integrity",
+        "owner_department": "Delivery",
+        "allowed_trigger_classes": [
+          "planner_identity_mismatch",
+          "planner_staffing_mismatch",
+          "planner_target_mismatch",
+          "planner_packaging_mismatch",
+          "planner_truth_stale"
+        ],
+        "scoped_targets": [
+          "ui/server.js",
+          "ui/studioLayoutSchema.js",
+          "ui/agentWorkers.js",
+          "ui/public/spatial/staffingRules.js",
+          "ui/public/spatial/roleTaxonomy.mjs",
+          "ui/tests/plannerCanonicalIntegrity.test.mjs"
+        ],
+        "eligibility": {
+          "requires_open_status": true,
+          "min_repeat_count": 2,
+          "policy_hook": "open_repeat_planner_canonical_integrity_gate"
+        },
+        "validation_checks": [
+          {
+            "id": "planner-canonical-syntax",
+            "kind": "syntax",
+            "label": "Planner canonical integrity syntax checks",
+            "test_file": null,
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "planner-canonical-canary",
+            "kind": "test-file",
+            "label": "Planner canonical canary test",
+            "test_file": "tests/qaPlannerCanonicalCanary.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "planner-canonical-contract",
+            "kind": "test-file",
+            "label": "Planner canonical integrity test",
+            "test_file": "tests/plannerCanonicalIntegrity.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "planner-regression-pack",
+            "kind": "test-file",
+            "label": "Planner regression pack test",
+            "test_file": "tests/plannerRegressionPack.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          },
+          {
+            "id": "planner-staffing-rules",
+            "kind": "test-file",
+            "label": "Planner staffing rules test",
+            "test_file": "tests/staffingRules.test.mjs",
+            "command": [],
+            "required": true,
+            "description": ""
+          }
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "stop_status": "stalled_after_retries",
+          "allow_retry_verdicts": [
+            "rejected",
+            "inconclusive"
+          ]
+        },
+        "trust_level": "guarded",
+        "trust_reason": "Planner integrity is policy-guarded; executor may inspect and validate, but patches require human review.",
+        "auto_apply_allowed": false,
+        "human_review_required_on_ambiguity": true,
+        "allowed_action_types": [
+          "inspect",
+          "validate"
+        ],
+        "required_validation_gate_ids": [
+          "planner-canonical-syntax",
+          "planner-canonical-contract",
+          "planner-regression-pack",
+          "planner-staffing-rules"
+        ],
+        "policy_block_status": "policy_blocked",
+        "observability": {
+          "label": "Planner canonical integrity",
+          "status_label": "watching"
+        },
+        "truth_source": "planner canonical identity and contract state",
+        "repair_focus": "Keep planner identity, staffing, and action packaging canonical.",
+        "acceptance_criteria": [
+          "Planner identity snapshot stays canonical",
+          "Planner staffing truth stays aligned with delivery ownership",
+          "Planner-generated artifacts resolve to the right target desks",
+          "Planner validation checks pass"
+        ],
+        "prohibited_actions": [
+          "no unrestricted self-modification",
+          "no changes outside declared scope",
+          "no secrets/env/token handling",
+          "no destructive file operations outside allowed targets",
+          "no dependency install or removal unless explicitly permitted",
+          "no network use unless explicitly part of approved QA research tooling",
+          "no bypassing QA gates",
+          "no auto-merge / auto-accept without validation pass",
+          "no planner redesign",
+          "no cross-department orchestration"
+        ],
+        "failing_test_names": [
+          "plannerCanonicalIntegrity",
+          "plannerRegressionPack",
+          "staffingRules"
+        ],
+        "failure_class": "qa_planner_canonical_integrity",
+        "lane_family": "planner",
+        "trust_policy": {
+          "lane_id": "planner_canonical_integrity",
+          "allowed_failure_classes": [
+            "planner_identity_mismatch",
+            "planner_staffing_mismatch",
+            "planner_target_mismatch",
+            "planner_packaging_mismatch",
+            "planner_truth_stale"
+          ],
+          "allowed_file_scope": [
+            "ui/server.js",
+            "ui/studioLayoutSchema.js",
+            "ui/agentWorkers.js",
+            "ui/public/spatial/staffingRules.js",
+            "ui/public/spatial/roleTaxonomy.mjs",
+            "ui/tests/plannerCanonicalIntegrity.test.mjs"
+          ],
+          "allowed_action_types": [
+            "inspect",
+            "validate"
+          ],
+          "auto_apply_allowed": false,
+          "human_review_required_on_ambiguity": true,
+          "retry_budget": 1,
+          "required_validation_gate_ids": [
+            "planner-canonical-syntax",
+            "planner-canonical-contract",
+            "planner-regression-pack",
+            "planner-staffing-rules"
+          ],
+          "trust_level": "guarded",
+          "trust_reason": "Planner integrity is policy-guarded; executor may inspect and validate, but patches require human review.",
+          "policy_block_status": "policy_blocked"
+        }
+      }
+    ],
+    "trustPolicyRegistry": [
+      {
+        "lane_id": "ui_boot_integrity",
+        "allowed_failure_classes": [
+          "missing_client_asset"
+        ],
+        "allowed_file_scope": [
+          "ui/public/index.html",
+          "ui/public/spatial/boot-manifest.json",
+          "ui/public/spatial/spatialBootstrap.js",
+          "ui/public/spatial/spatialApp.js",
+          "ui/public/spatial/intentContract.browser.js",
+          "ui/server.js",
+          "ui/tests/bootIntegrity.test.mjs",
+          "ui/tests/uiBootIntegrityLane.test.mjs",
+          "ui/tests/helpers/browser-module-loader.mjs",
+          "ui/tests/spatialApp.smoke.test.mjs"
+        ],
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "retry_budget": 2,
+        "required_validation_gate_ids": [
+          "ui-boot-syntax",
+          "ui-boot-lane",
+          "ui-boot-contract"
+        ],
+        "trust_level": "high",
+        "trust_reason": "Blocking boot failures can auto-apply only inside browser boot entry and asset scope.",
+        "policy_block_status": "policy_blocked"
+      },
+      {
+        "lane_id": "validation_seam",
+        "allowed_failure_classes": [
+          "external_mismatch",
+          "probe_failure",
+          "freshness_unknown"
+        ],
+        "allowed_file_scope": [
+          "ui/externalQaProbe.js",
+          "ui/server.js",
+          "ui/tests/externalValidation.test.mjs"
+        ],
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "retry_budget": 2,
+        "required_validation_gate_ids": [
+          "validation-seam-syntax",
+          "validation-seam-contract"
+        ],
+        "trust_level": "high",
+        "trust_reason": "External validation seam is trusted for bounded backend contract repair only.",
+        "policy_block_status": "policy_blocked"
+      },
+      {
+        "lane_id": "route_contract_health",
+        "allowed_failure_classes": [
+          "route_contract_mismatch",
+          "payload_contract_mismatch",
+          "response_shape_regression",
+          "required_field_omission",
+          "contract_field_omission",
+          "undefined_drift",
+          "null_drift"
+        ],
+        "allowed_file_scope": [
+          "ui/server.js",
+          "ui/public/spatial/spatialApp.js",
+          "ui/public/spatial/studioData.js",
+          "ui/public/spatial/aceConnector.js",
+          "ui/tests/qaRepairLaneContracts.test.mjs"
+        ],
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "retry_budget": 2,
+        "required_validation_gate_ids": [
+          "route-contract-syntax",
+          "route-contract-check"
+        ],
+        "trust_level": "medium",
+        "trust_reason": "Route and payload contract repairs may auto-apply only inside explicit backend and desk contract files.",
+        "policy_block_status": "policy_blocked"
+      },
+      {
+        "lane_id": "planner_canonical_integrity",
+        "allowed_failure_classes": [
+          "planner_identity_mismatch",
+          "planner_staffing_mismatch",
+          "planner_target_mismatch",
+          "planner_packaging_mismatch",
+          "planner_truth_stale"
+        ],
+        "allowed_file_scope": [
+          "ui/server.js",
+          "ui/studioLayoutSchema.js",
+          "ui/agentWorkers.js",
+          "ui/public/spatial/staffingRules.js",
+          "ui/public/spatial/roleTaxonomy.mjs",
+          "ui/tests/plannerCanonicalIntegrity.test.mjs"
+        ],
+        "allowed_action_types": [
+          "inspect",
+          "validate"
+        ],
+        "auto_apply_allowed": false,
+        "human_review_required_on_ambiguity": true,
+        "retry_budget": 1,
+        "required_validation_gate_ids": [
+          "planner-canonical-syntax",
+          "planner-canonical-contract",
+          "planner-regression-pack",
+          "planner-staffing-rules"
+        ],
+        "trust_level": "guarded",
+        "trust_reason": "Planner integrity is policy-guarded; executor may inspect and validate, but patches require human review.",
+        "policy_block_status": "policy_blocked"
+      }
+    ],
+    "lanes": [
+      {
+        "lane_id": "ui_boot_integrity",
+        "trust_policy_id": "ui_boot_integrity",
+        "label": "UI Boot Integrity",
+        "owner_department": "QA",
+        "status": "idle",
+        "open_investigations": 0,
+        "repair_job_count": 0,
+        "open_job_count": 0,
+        "latest_attempt_verdict": null,
+        "latest_job_status": null,
+        "latest_truth_application_status": null,
+        "policy_blocked_job_count": 0,
+        "latest_policy_block_reason": null,
+        "latest_attempt_at": null,
+        "trust_level": "high",
+        "trust_reason": "Blocking boot failures can auto-apply only inside browser boot entry and asset scope.",
+        "trust_summary": "high trust | auto-apply allowed | 2 attempts | studio boot contract and mounted marker",
+        "eligibility_summary": "open only | repeat_count >= 1 | triggers: missing_client_asset",
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "required_validation_gate_ids": [
+          "ui-boot-syntax",
+          "ui-boot-lane",
+          "ui-boot-contract"
+        ],
+        "observability_label": "UI boot integrity",
+        "observability_status": "watching",
+        "allowed_trigger_classes": [
+          "missing_client_asset"
+        ],
+        "scoped_targets": [
+          "ui/public/index.html",
+          "ui/public/spatial/boot-manifest.json",
+          "ui/public/spatial/spatialBootstrap.js",
+          "ui/public/spatial/spatialApp.js",
+          "ui/public/spatial/intentContract.browser.js",
+          "ui/server.js",
+          "ui/tests/bootIntegrity.test.mjs",
+          "ui/tests/uiBootIntegrityLane.test.mjs",
+          "ui/tests/helpers/browser-module-loader.mjs",
+          "ui/tests/spatialApp.smoke.test.mjs"
+        ],
+        "max_attempts": 2,
+        "latest_job": null,
+        "latest_attempt": null,
+        "investigations": [],
+        "jobs": [],
+        "attempts": [],
+        "source_root": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline"
+      },
+      {
+        "lane_id": "validation_seam",
+        "trust_policy_id": "validation_seam",
+        "label": "Validation Seam",
+        "owner_department": "QA",
+        "status": "idle",
+        "open_investigations": 0,
+        "repair_job_count": 0,
+        "open_job_count": 0,
+        "latest_attempt_verdict": null,
+        "latest_job_status": null,
+        "latest_truth_application_status": null,
+        "policy_blocked_job_count": 0,
+        "latest_policy_block_reason": null,
+        "latest_attempt_at": null,
+        "trust_level": "high",
+        "trust_reason": "External validation seam is trusted for bounded backend contract repair only.",
+        "trust_summary": "high trust | auto-apply allowed | 2 attempts | external QA probe",
+        "eligibility_summary": "open only | repeat_count >= 2 | triggers: external_mismatch, probe_failure, freshness_unknown",
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "required_validation_gate_ids": [
+          "validation-seam-syntax",
+          "validation-seam-contract"
+        ],
+        "observability_label": "External validation seam",
+        "observability_status": "watching",
+        "allowed_trigger_classes": [
+          "external_mismatch",
+          "probe_failure",
+          "freshness_unknown"
+        ],
+        "scoped_targets": [
+          "ui/externalQaProbe.js",
+          "ui/server.js",
+          "ui/tests/externalValidation.test.mjs"
+        ],
+        "max_attempts": 2,
+        "latest_job": null,
+        "latest_attempt": null,
+        "investigations": [],
+        "jobs": [],
+        "attempts": [],
+        "source_root": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline"
+      },
+      {
+        "lane_id": "route_contract_health",
+        "trust_policy_id": "route_contract_health",
+        "label": "Route + Contract Health",
+        "owner_department": "QA",
+        "status": "idle",
+        "open_investigations": 0,
+        "repair_job_count": 0,
+        "open_job_count": 0,
+        "latest_attempt_verdict": null,
+        "latest_job_status": null,
+        "latest_truth_application_status": null,
+        "policy_blocked_job_count": 0,
+        "latest_policy_block_reason": null,
+        "latest_attempt_at": null,
+        "trust_level": "medium",
+        "trust_reason": "Route and payload contract repairs may auto-apply only inside explicit backend and desk contract files.",
+        "trust_summary": "medium trust | auto-apply allowed | 2 attempts | QA state and desk contract",
+        "eligibility_summary": "open only | repeat_count >= 2 | triggers: route_contract_mismatch, payload_contract_mismatch, response_shape_regression, required_field_omission, contract_field_omission, undefined_drift, null_drift",
+        "auto_apply_allowed": true,
+        "human_review_required_on_ambiguity": true,
+        "allowed_action_types": [
+          "inspect",
+          "patch",
+          "validate"
+        ],
+        "required_validation_gate_ids": [
+          "route-contract-syntax",
+          "route-contract-check"
+        ],
+        "observability_label": "Route + contract health",
+        "observability_status": "watching",
+        "allowed_trigger_classes": [
+          "route_contract_mismatch",
+          "payload_contract_mismatch",
+          "response_shape_regression",
+          "required_field_omission",
+          "contract_field_omission",
+          "undefined_drift",
+          "null_drift"
+        ],
+        "scoped_targets": [
+          "ui/server.js",
+          "ui/public/spatial/spatialApp.js",
+          "ui/public/spatial/studioData.js",
+          "ui/public/spatial/aceConnector.js",
+          "ui/tests/qaRepairLaneContracts.test.mjs"
+        ],
+        "max_attempts": 2,
+        "latest_job": null,
+        "latest_attempt": null,
+        "investigations": [],
+        "jobs": [],
+        "attempts": [],
+        "source_root": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline"
+      },
+      {
+        "lane_id": "planner_canonical_integrity",
+        "trust_policy_id": "planner_canonical_integrity",
+        "label": "Planner Canonical Integrity",
+        "owner_department": "Delivery",
+        "status": "idle",
+        "open_investigations": 0,
+        "repair_job_count": 0,
+        "open_job_count": 0,
+        "latest_attempt_verdict": null,
+        "latest_job_status": null,
+        "latest_truth_application_status": null,
+        "policy_blocked_job_count": 0,
+        "latest_policy_block_reason": null,
+        "latest_attempt_at": null,
+        "trust_level": "guarded",
+        "trust_reason": "Planner integrity is policy-guarded; executor may inspect and validate, but patches require human review.",
+        "trust_summary": "guarded trust | human-review apply only | 1 attempt | planner canonical identity and contract state",
+        "eligibility_summary": "open only | repeat_count >= 2 | triggers: planner_identity_mismatch, planner_staffing_mismatch, planner_target_mismatch, planner_packaging_mismatch, planner_truth_stale",
+        "auto_apply_allowed": false,
+        "human_review_required_on_ambiguity": true,
+        "allowed_action_types": [
+          "inspect",
+          "validate"
+        ],
+        "required_validation_gate_ids": [
+          "planner-canonical-syntax",
+          "planner-canonical-contract",
+          "planner-regression-pack",
+          "planner-staffing-rules"
+        ],
+        "observability_label": "Planner canonical integrity",
+        "observability_status": "watching",
+        "allowed_trigger_classes": [
+          "planner_identity_mismatch",
+          "planner_staffing_mismatch",
+          "planner_target_mismatch",
+          "planner_packaging_mismatch",
+          "planner_truth_stale"
+        ],
+        "scoped_targets": [
+          "ui/server.js",
+          "ui/studioLayoutSchema.js",
+          "ui/agentWorkers.js",
+          "ui/public/spatial/staffingRules.js",
+          "ui/public/spatial/roleTaxonomy.mjs",
+          "ui/tests/plannerCanonicalIntegrity.test.mjs"
+        ],
+        "max_attempts": 2,
+        "latest_job": null,
+        "latest_attempt": null,
+        "investigations": [],
+        "jobs": [],
+        "attempts": [],
+        "source_root": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline"
+      }
+    ],
+    "jobs": [],
+    "attempts": [],
+    "applyReceipts": [],
+    "events": [],
+    "latestJob": null,
+    "latestAttempt": null,
+    "latestApplyReceipt": null,
+    "latestEvent": null,
+    "provingCase": null,
+    "summary": {
+      "open": 0,
+      "accepted": 0,
+      "proposalPending": 0,
+      "acceptedPendingApply": 0,
+      "appliedPendingVerification": 0,
+      "blockedDegraded": 0,
+      "stalled": 0,
+      "policyBlocked": 0,
+      "totalJobs": 0,
+      "totalAttempts": 0,
+      "totalApplyReceipts": 0,
+      "totalEvents": 0,
+      "inconsistentJobs": 0,
+      "warningJobs": 0,
+      "totalLanes": 4,
+      "activeLanes": 0,
+      "healthyLanes": 0,
+      "watchingLanes": 0,
+      "stalledLanes": 0,
+      "blockedLanes": 0
+    }
+  },
+  "output_feed": [
+    {
+      "id": "boot-preflight",
+      "label": "Boot preflight",
+      "tool": "boot_preflight",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "Boot preflight passed.",
+      "detail": "",
+      "observed_at": "2026-05-04T07:48:34.327Z",
+      "artifact_refs": [
+        "/api/health"
+      ],
+      "notes": []
+    },
+    {
+      "id": "proof-of-life",
+      "label": "MCP proof of life",
+      "tool": "external_probe_check",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "External QA probe returned a fresh live QA MCP helper result.",
+      "detail": "Structured QA report unavailable.",
+      "observed_at": "2026-05-05T09:01:12.976Z",
+      "artifact_refs": [
+        "http://127.0.0.1:5051/run_test"
+      ],
+      "notes": [
+        "Evidence source: live_helper",
+        "Fallback used: no",
+        "Live helper evidence was consumed through external_probe_check.",
+        "Status mismatch: external pass vs internal missing.",
+        "Internal QA timestamp is missing."
+      ]
+    },
+    {
+      "id": "browser-pass",
+      "label": "Browser QA run",
+      "tool": "chromium",
+      "status": "degraded",
+      "verdict": "fail",
+      "summary": "Browser QA run fail.",
+      "detail": "Chief of Staff overlaps CTO / Architect.",
+      "observed_at": "2026-05-05T09:01:14.509Z",
+      "artifact_refs": [
+        "data/spatial/qa/qa_1777971672977_yv6n5q.json",
+        "/api/spatial/qa/runs/qa_1777971672977_yv6n5q/artifacts/01-initial.png",
+        "/api/spatial/qa/runs/qa_1777971672977_yv6n5q/artifacts/02-studio-smoke.png"
+      ],
+      "notes": [
+        "Runtime attempted: chromium",
+        "Runtime used: chromium",
+        "Runtime fallback used: no",
+        "Chief of Staff overlaps CTO / Architect.",
+        "Team Board overlaps Planner.",
+        "Team Board overlaps Executor.",
+        "Recent Saves is clipped or hidden."
+      ]
+    },
+    {
+      "id": "lane-canaries",
+      "label": "Lane canary suite",
+      "tool": "lane_canary_suite",
+      "status": "degraded",
+      "verdict": "fail",
+      "summary": "3 QA lane canaryies failing.",
+      "detail": "Failing canaries: ui_boot_integrity_missing_asset | route_contract_health_payload | planner_canonical_identity_guard",
+      "observed_at": "2026-05-05T09:01:18.002Z",
+      "artifact_refs": [],
+      "notes": [
+        "UI boot missing asset route: fail",
+        "Route contract payload drift: fail",
+        "Planner canonical identity guard: fail"
+      ]
+    },
+    {
+      "id": "loop-audit",
+      "label": "Closed-loop fault audit",
+      "tool": "loop_audit",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "All 3 injected loop faults behaved as expected.",
+      "detail": "All injected loop faults behaved as expected.",
+      "observed_at": "2026-05-05T09:01:18.607Z",
+      "artifact_refs": [],
+      "notes": [
+        "missing_required_asset: pass",
+        "planner_canonical_mismatch: pass",
+        "qa_mcp_stale: pass"
+      ]
+    },
+    {
+      "id": "mcp-live-status",
+      "label": "QA MCP live status",
+      "tool": "qa_mcp_live_status",
+      "status": "validated",
+      "verdict": "live",
+      "summary": "QA is live and actively gating with MCP-backed evidence.",
+      "detail": "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
+      "observed_at": "2026-05-05T09:01:14.509Z",
+      "artifact_refs": [],
+      "notes": [
+        "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
+        "Latest QA gate source: structured_qa.",
+        "Last MCP ping status: ok.",
+        "Probe target: http://127.0.0.1:5051/run_test.",
+        "Last MCP call: external_probe_check (ok).",
+        "Research target: http://127.0.0.1:5052/research_note."
+      ]
+    },
+    {
+      "id": "repair-loop",
+      "label": "Repair loop summary",
+      "tool": "qa_repair_loop",
+      "status": "validated",
+      "verdict": "pass",
+      "summary": "No repair jobs are tracked yet.",
+      "detail": "",
+      "observed_at": null,
+      "artifact_refs": [],
+      "notes": [
+        "UI Boot Integrity: idle",
+        "Validation Seam: idle",
+        "Route + Contract Health: idle"
+      ]
+    }
+  ],
+  "open_investigation_count": 1,
+  "result_paths": {
+    "researchNotes": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\research-notes.json",
+    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777971672977_yv6n5q.json",
+    "loopAudit": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\qaLoopAudit.js"
+  },
+  "failure_reason": "All 3 injected loop faults behaved as expected.",
+  "summary": "QA lead cycle degraded: All 3 injected loop faults behaved as expected."
+}

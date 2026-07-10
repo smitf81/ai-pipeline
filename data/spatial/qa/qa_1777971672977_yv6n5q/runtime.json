@@ -1,0 +1,288 @@
+{
+  "capturedAt": "2026-05-05T09:01:14.502Z",
+  "runtime": {
+    "ok": false,
+    "error": "ENOENT: no such file or directory, open 'C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\brain\\emergence\\canonical_truth_projections.json'",
+    "failureClass": "panel_degraded",
+    "uiResponse": {
+      "failureClass": "panel_degraded",
+      "uiMode": "fallback_panel",
+      "clientAction": "showFallbackPanel",
+      "safeMode": false,
+      "fallbackPanel": true,
+      "shell": "fallback-panel",
+      "summary": "Render a fallback panel and keep the rest of the UI alive."
+    },
+    "safeMode": false,
+    "route": "/api/spatial/runtime"
+  },
+  "health": {
+    "ok": true,
+    "pid": 41168,
+    "startedAt": "2026-05-04T07:47:25.430Z",
+    "safeMode": false,
+    "bootHealth": {
+      "checked": true,
+      "ok": true,
+      "safeMode": false,
+      "reason": "",
+      "checkedAt": "2026-05-04T07:48:34.327Z",
+      "failureClass": null,
+      "failureStage": null,
+      "asset": null,
+      "httpStatus": null,
+      "clientBootContract": {
+        "version": "ace/studio-boot-contract.v1",
+        "ok": true,
+        "safeMode": false,
+        "failure_class": null,
+        "failure_stage": null,
+        "reason": "",
+        "asset": null,
+        "http_status": null,
+        "mount_marker": {
+          "attribute": "data-boot",
+          "value": "studio-mounted"
+        },
+        "root_id": "spatial-root",
+        "stages": {
+          "html_loaded": {
+            "status": "ok",
+            "ok": true,
+            "reason": ""
+          },
+          "root_dom_found": {
+            "status": "ok",
+            "ok": true,
+            "reason": ""
+          },
+          "core_bundle_loaded": {
+            "status": "ok",
+            "ok": true,
+            "reason": ""
+          },
+          "required_modules_loaded": {
+            "status": "ok",
+            "ok": true,
+            "reason": ""
+          },
+          "app_mounted": {
+            "status": "unknown",
+            "ok": null,
+            "reason": "Client watchdog must confirm mount marker visibility."
+          },
+          "first_render_complete": {
+            "status": "unknown",
+            "ok": null,
+            "reason": "Client watchdog must confirm first render completion."
+          }
+        },
+        "assets": [
+          {
+            "id": "studio_boot_asset_1",
+            "path": "/vendor/react.development.js",
+            "label": "Local React runtime",
+            "kind": "core_runtime",
+            "stage": "core_bundle_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/vendor/react.development.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_2",
+            "path": "/vendor/react-dom.development.js",
+            "label": "Local React DOM runtime",
+            "kind": "core_runtime",
+            "stage": "core_bundle_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/vendor/react-dom.development.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_3",
+            "path": "/spatial/spatialBootstrap.js",
+            "label": "Studio bootstrap entry",
+            "kind": "boot_entry",
+            "stage": "core_bundle_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/spatial/spatialBootstrap.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_4",
+            "path": "/spatial/spatialApp.js",
+            "label": "Spatial app entry module",
+            "kind": "app_entry",
+            "stage": "required_modules_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/spatial/spatialApp.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_5",
+            "path": "/spatial/intentContract.browser.js",
+            "label": "Browser intent contract helper",
+            "kind": "required_module",
+            "stage": "required_modules_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/spatial/intentContract.browser.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_6",
+            "path": "/spatial/spatialSeamContract.js",
+            "label": "Spatial seam contract",
+            "kind": "required_module",
+            "stage": "required_modules_loaded",
+            "blocking": true,
+            "resolved_path": "ui/public/spatial/spatialSeamContract.js",
+            "status": "ok",
+            "ok": true,
+            "http_status": 200,
+            "reason": ""
+          },
+          {
+            "id": "studio_boot_asset_7",
+            "path": "/favicon.ico",
+            "label": "Favicon",
+            "kind": "favicon",
+            "stage": "required_modules_loaded",
+            "blocking": false,
+            "resolved_path": "ui/public/favicon.ico",
+            "status": "missing",
+            "ok": false,
+            "http_status": 404,
+            "reason": "/favicon.ico returned 404 (Not Found)."
+          }
+        ],
+        "warnings": [
+          {
+            "id": "studio_boot_asset_7",
+            "path": "/favicon.ico",
+            "label": "Favicon",
+            "kind": "favicon",
+            "stage": "required_modules_loaded",
+            "blocking": false,
+            "resolved_path": "ui/public/favicon.ico",
+            "status": "missing",
+            "ok": false,
+            "http_status": 404,
+            "reason": "/favicon.ico returned 404 (Not Found)."
+          }
+        ]
+      },
+      "stateShape": {
+        "systemNodes": 0,
+        "systemEdges": 0,
+        "worldNodes": 0,
+        "worldEdges": 0,
+        "graphLayers": 2
+      }
+    },
+    "dependencies": {
+      "ollama": {
+        "id": "ollama",
+        "label": "Ollama",
+        "endpoint": "http://127.0.0.1:11434/api/tags",
+        "launch": {
+          "command": "ollama serve",
+          "mechanism": "local_process_spawn"
+        },
+        "failureReason": "Model \"qwen3.5-9b\" is not currently available on the local backend.",
+        "launchAttemptedThisBoot": false,
+        "launchAttemptedAt": null,
+        "lastProofOfLifeCheck": {
+          "checkedAt": "2026-05-04T07:47:25.449Z",
+          "status": "degraded",
+          "reachable": true,
+          "reason": "Model \"qwen3.5-9b\" is not currently available on the local backend.",
+          "availableModels": [
+            "qwen3.5-8B:latest",
+            "deepseek-r1:8b",
+            "qwen3.5:9b",
+            "qwen2.5-coder:1.5b",
+            "phi3:mini",
+            "gemma3:4b",
+            "mistral:latest",
+            "codellama:latest",
+            "llama3:latest",
+            "openchat:latest"
+          ]
+        },
+        "launcherStatus": null,
+        "status": "degraded",
+        "lastUpdatedAt": "2026-05-04T07:47:25.691Z"
+      },
+      "qa_mcp_helper": {
+        "id": "qa_mcp_helper",
+        "label": "QA MCP Helper",
+        "endpoint": "http://127.0.0.1:5051/run_test",
+        "launch": {
+          "command": "python C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\qa_mcp_helper.py",
+          "mechanism": "python_helper_spawn"
+        },
+        "failureReason": null,
+        "launchAttemptedThisBoot": true,
+        "launchAttemptedAt": "2026-05-04T07:47:26.253Z",
+        "lastProofOfLifeCheck": {
+          "checkedAt": "2026-05-04T07:47:26.246Z",
+          "status": "ok",
+          "reachable": true,
+          "reason": "QA MCP helper answered with a valid contract at 127.0.0.1:5051/run_test.",
+          "transport": {
+            "reachable": true,
+            "http_status": 200,
+            "responded": true,
+            "failure_kind": null,
+            "failure_detail": null
+          }
+        },
+        "launcherStatus": {
+          "source": "qa_mcp_launcher",
+          "helper_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\qa_mcp_helper.py",
+          "target_url": "http://127.0.0.1:5051/run_test",
+          "launch_attempted": true,
+          "already_running": false,
+          "launch_started": true,
+          "post_launch_reachable": true,
+          "status": "launch_started",
+          "summary": "QA MCP helper launch started from C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\qa_mcp_helper.py and became reachable at http://127.0.0.1:5051/run_test.",
+          "pid": 20784,
+          "launch_command": "python C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\qa_mcp_helper.py",
+          "failure_reason": null,
+          "checked_at": "2026-05-04T07:47:26.246Z"
+        },
+        "status": "live",
+        "lastUpdatedAt": "2026-05-04T07:47:26.253Z"
+      }
+    },
+    "selfUpgrade": {
+      "status": "idle",
+      "deploy": {
+        "status": "idle",
+        "requestedAt": null,
+        "restartedAt": null,
+        "health": {
+          "status": "ready",
+          "pid": 41168,
+          "startedAt": "2026-05-04T07:47:25.430Z"
+        }
+      }
+    }
+  }
+}

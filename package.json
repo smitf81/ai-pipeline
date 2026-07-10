@@ -1,7 +1,0 @@
-{
-  "name": "ace-qa",
-  "private": true,
-  "scripts": {
-    "qa": "node qa/runCli.js"
-  }
-}

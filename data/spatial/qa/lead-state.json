@@ -1,75 +1,22 @@
 {
   "source": "qa_lead_runner",
   "agent_id": "qa-lead",
-  "run_id": "qa_lead_1777959568070_j9po3j",
+  "run_id": "qa_lead_1777980073103_onizyj",
   "status": "degraded",
   "current_task": "QA proof-of-life, browser pass, lane canaries, and loop audit",
-  "current_batch": "qa_lead_1777959568070_j9po3j",
-  "started_at": "2026-05-05T05:39:28.070Z",
-  "finished_at": "2026-05-05T05:45:59.575Z",
-  "last_completed_cycle_at": "2026-05-05T05:45:59.575Z",
+  "current_batch": "qa_lead_1777980073103_onizyj",
+  "started_at": "2026-05-05T11:21:13.103Z",
+  "finished_at": "2026-05-05T11:21:28.603Z",
+  "last_completed_cycle_at": "2026-05-05T11:21:28.603Z",
   "active_tools": [
     "boot_preflight",
     "ui_boot_repair",
     "external_probe_check",
     "qa_research_note",
     "browser_qa_run",
-    "lane_canary_suite",
-    "loop_audit"
+    "lane_canary_suite"
   ],
-  "live_status": {
-    "source": "qa_mcp_live_status",
-    "status": "live",
-    "usage_state": "active_gating",
-    "freshness": "fresh",
-    "summary": "QA is live and actively gating with MCP-backed evidence.",
-    "heartbeat_at": "2026-05-05T05:44:59.238Z",
-    "last_completed_cycle_at": "2026-05-05T05:44:59.238Z",
-    "mcp_configured": true,
-    "configured_tools": [
-      "external_probe_check",
-      "qa_research_note"
-    ],
-    "mcp_reachable": true,
-    "external_probe_live": true,
-    "last_ping_at": "2026-05-05T05:41:41.759Z",
-    "last_ping_status": "ok",
-    "last_ping_source": "external_mcp",
-    "last_ping_failure_kind": null,
-    "last_ping_failure_detail": null,
-    "last_ping_http_status": null,
-    "last_ping_target": "http://127.0.0.1:5051/run_test",
-    "research_target": "http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping",
-    "research_last_call_at": "2026-05-04T07:49:40.980Z",
-    "research_last_call_status": "offline",
-    "research_failure_kind": "offline",
-    "research_failure_detail": "fetch failed",
-    "last_call_at": "2026-05-05T05:41:41.759Z",
-    "last_call_tool": "external_probe_check",
-    "last_call_status": "ok",
-    "last_call_source": "external_mcp",
-    "last_qa_gate_source": "structured_qa",
-    "using_mcp_for_qa_decisions": true,
-    "last_success_at": "2026-05-05T05:41:41.759Z",
-    "last_failure_at": "2026-05-04T07:49:40.980Z",
-    "current_failure_kind": "offline",
-    "current_failure_tool": "qa_research_note",
-    "recovery_detected": true,
-    "recovered_at": "2026-05-05T05:41:41.759Z",
-    "recovered_from_kind": "offline",
-    "notes": [
-      "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
-      "Latest QA gate source: structured_qa.",
-      "Last MCP ping status: ok.",
-      "Probe target: http://127.0.0.1:5051/run_test.",
-      "Last MCP call: external_probe_check (ok).",
-      "Latest research call status: offline.",
-      "Latest research failure: offline.",
-      "Research failure detail: fetch failed",
-      "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping.",
-      "Recovery detected after offline."
-    ]
-  },
+  "live_status": null,
   "output_feed": [
     {
       "id": "boot-preflight",
@@ -92,8 +39,8 @@
       "status": "validated",
       "verdict": "pass",
       "summary": "External QA probe returned a fresh live QA MCP helper result.",
-      "detail": "1 of 4 desks failed; 1 of 19 checks failed",
-      "observed_at": "2026-05-05T05:41:41.759Z",
+      "detail": "Structured QA report unavailable.",
+      "observed_at": "2026-05-05T11:21:13.108Z",
       "artifact_refs": [
         "http://127.0.0.1:5051/run_test"
       ],
@@ -101,26 +48,28 @@
         "Evidence source: live_helper",
         "Fallback used: no",
         "Live helper evidence was consumed through external_probe_check.",
-        "Status mismatch: external pass vs internal fail."
+        "Status mismatch: external pass vs internal missing.",
+        "Internal QA timestamp is missing."
       ]
     },
     {
       "id": "browser-pass",
       "label": "Browser QA run",
-      "tool": "browser_qa_run",
+      "tool": "chromium",
       "status": "degraded",
       "verdict": "fail",
-      "summary": "fetch failed",
-      "detail": "fetch failed",
-      "observed_at": "2026-05-05T05:44:59.238Z",
+      "summary": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "detail": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-qa=\"spatial-root\"]') to be visible\u001b[22m",
+      "observed_at": "2026-05-05T11:21:28.245Z",
       "artifact_refs": [
-        "data/spatial/qa/qa_1777959701761_z3750d.json"
+        "data/spatial/qa/qa_1777980073108_tlelmi.json"
       ],
       "notes": [
-        "Runtime attempted: chromium -> firefox",
+        "Runtime attempted: chromium",
+        "Runtime used: chromium",
         "Runtime fallback used: no",
         "Failure stage: run",
-        "Failure code: econnreset"
+        "Failure code: run_timeout"
       ]
     },
     {
@@ -129,13 +78,13 @@
       "tool": "lane_canary_suite",
       "status": "degraded",
       "verdict": "fail",
-      "summary": "2 QA lane canaryies failing.",
-      "detail": "Failing canaries: ui_boot_integrity_missing_asset | planner_canonical_identity_guard",
-      "observed_at": "2026-05-05T05:45:40.543Z",
+      "summary": "3 QA lane canaryies failing.",
+      "detail": "Failing canaries: ui_boot_integrity_missing_asset | route_contract_health_payload | planner_canonical_identity_guard",
+      "observed_at": "2026-05-05T11:21:28.596Z",
       "artifact_refs": [],
       "notes": [
         "UI boot missing asset route: fail",
-        "Route contract payload drift: pass",
+        "Route contract payload drift: fail",
         "Planner canonical identity guard: fail"
       ]
     },
@@ -143,79 +92,20 @@
       "id": "loop-audit",
       "label": "Closed-loop fault audit",
       "tool": "loop_audit",
-      "status": "validated",
-      "verdict": "pass",
-      "summary": "All 3 injected loop faults behaved as expected.",
+      "status": "unknown",
+      "verdict": "unknown",
+      "summary": "No loop audit results were recorded.",
       "detail": "All injected loop faults behaved as expected.",
-      "observed_at": "2026-05-05T05:45:59.523Z",
+      "observed_at": null,
       "artifact_refs": [],
-      "notes": [
-        "missing_required_asset: pass",
-        "planner_canonical_mismatch: pass",
-        "qa_mcp_stale: pass"
-      ]
-    },
-    {
-      "id": "research-note",
-      "label": "Research note",
-      "tool": "qa_research_note",
-      "status": "degraded",
-      "verdict": "unavailable",
-      "summary": "QA research server is offline.",
-      "detail": "Retry later with the same bounded query.",
-      "observed_at": "2026-05-04T07:49:40.980Z",
-      "artifact_refs": [],
-      "notes": [
-        "QA research server is offline or not listening on 127.0.0.1:5052.",
-        "Verify the local QA research server is running on 127.0.0.1:5052."
-      ]
-    },
-    {
-      "id": "mcp-live-status",
-      "label": "QA MCP live status",
-      "tool": "qa_mcp_live_status",
-      "status": "validated",
-      "verdict": "live",
-      "summary": "QA is live and actively gating with MCP-backed evidence.",
-      "detail": "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
-      "observed_at": "2026-05-05T05:44:59.238Z",
-      "artifact_refs": [],
-      "notes": [
-        "Active MCP gating: fresh MCP-backed evidence is influencing QA decisions.",
-        "Latest QA gate source: structured_qa.",
-        "Last MCP ping status: ok.",
-        "Probe target: http://127.0.0.1:5051/run_test.",
-        "Last MCP call: external_probe_check (ok).",
-        "Latest research call status: offline.",
-        "Latest research failure: offline.",
-        "Research failure detail: fetch failed",
-        "Research target: http://127.0.0.1:5052/research_note?query=QA+validation+issue+external_mismatch+External+probe+disagrees+with+internal+QA+status+internal+fail+external+pass+probe+unreachable+test+qa_mcp_helper_ping&current_method=internal%3Dfail+%2F+external%3Dpass+%2F+probe%3Dunreachable+%2F+test%3Dqa_mcp_helper_ping.",
-        "Recovery detected after offline."
-      ]
-    },
-    {
-      "id": "repair-loop",
-      "label": "Repair loop summary",
-      "tool": "qa_repair_loop",
-      "status": "validated",
-      "verdict": "pass",
-      "summary": "1 repair job tracked.",
-      "detail": "open",
-      "observed_at": "2026-05-05T05:43:53.661Z",
-      "artifact_refs": [],
-      "notes": [
-        "UI Boot Integrity: idle",
-        "Validation Seam: idle",
-        "Route + Contract Health: idle"
-      ]
+      "notes": []
     }
   ],
-  "latest_run": "QA lead cycle degraded: fetch failed",
+  "latest_run": "QA lead cycle degraded: ENOENT: no such file or directory, open 'C:\\Users\\felix\\AppData\\Local\\Temp\\ace-loop-audit-fJtEXc\\ui\\public\\spatial\\spatialApp.js'",
   "result_paths": {
     "researchNotes": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\research-notes.json",
-    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777959701761_z3750d.json",
-    "loopAudit": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\ui\\qaLoopAudit.js"
+    "browserRun": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\dev\\ai-pipeline\\ai-pipeline-updated\\ai-pipeline\\data\\spatial\\qa\\qa_1777980073108_tlelmi.json"
   },
-  "summary": "QA lead cycle degraded: fetch failed",
-  "last_updated_at": "2026-05-05T05:45:59.575Z"
+  "summary": "QA lead cycle degraded: ENOENT: no such file or directory, open 'C:\\Users\\felix\\AppData\\Local\\Temp\\ace-loop-audit-fJtEXc\\ui\\public\\spatial\\spatialApp.js'",
+  "last_updated_at": "2026-05-05T11:21:28.603Z"
 }

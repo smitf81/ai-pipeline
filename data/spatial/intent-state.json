@@ -1,11 +1,11 @@
 {
-  "currentIntentId": null,
   "registry": {
-    "byId": {},
     "currentIntentId": null,
     "latestIntentId": null,
+    "byId": {},
     "records": []
   },
-  "status": "idle",
-  "summary": ""
+  "currentIntentId": null,
+  "summary": "",
+  "status": "idle"
 }

@@ -1,0 +1,250 @@
+{
+  "snapshot": {
+    "viewport": {
+      "width": 1600,
+      "height": 1100
+    },
+    "room": {
+      "x": 56,
+      "y": 72,
+      "width": 1088,
+      "height": 664
+    },
+    "roomRect": {
+      "left": 277.760009765625,
+      "top": 405.2799987792969,
+      "width": 1044.47998046875,
+      "height": 637.43994140625
+    },
+    "shellRect": {
+      "left": 0,
+      "top": 348,
+      "width": 1600,
+      "height": 752
+    },
+    "desks": [
+      {
+        "id": "planner",
+        "label": "Planner",
+        "x": 591,
+        "y": 182,
+        "rect": {
+          "left": 708.7999877929688,
+          "top": 443.67999267578125,
+          "width": 165.1199951171875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "executor",
+        "label": "Executor",
+        "x": 758,
+        "y": 256,
+        "rect": {
+          "left": 869.1199951171875,
+          "top": 514.719970703125,
+          "width": 165.1199951171875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "qa-lead",
+        "label": "QA / Test Lead",
+        "x": 202,
+        "y": 490,
+        "rect": {
+          "left": 335.3599853515625,
+          "top": 739.3599853515625,
+          "width": 165.1199951171875,
+          "height": 134.39996337890625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "memory-archivist",
+        "label": "Memory Archivist",
+        "x": 610,
+        "y": 666,
+        "rect": {
+          "left": 727.0399780273438,
+          "top": 873.7599487304688,
+          "width": 165.1199951171875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "rnd-lead",
+        "label": "R&D Lead",
+        "x": 954,
+        "y": 660,
+        "rect": {
+          "left": 1057.280029296875,
+          "top": 873.7599487304688,
+          "width": 165.119873046875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "cto-chief-of-staff",
+        "label": "Chief of Staff",
+        "x": 860,
+        "y": 456,
+        "rect": {
+          "left": 967.0399780273438,
+          "top": 706.719970703125,
+          "width": 165.11993408203125,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "cto-architect",
+        "label": "CTO / Architect",
+        "x": 1008,
+        "y": 456,
+        "rect": {
+          "left": 1109.1199951171875,
+          "top": 706.719970703125,
+          "width": 165.1199951171875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      },
+      {
+        "id": "integration_auditor",
+        "label": "Integration Auditor",
+        "x": 975,
+        "y": 182,
+        "rect": {
+          "left": 1077.43994140625,
+          "top": 443.67999267578125,
+          "width": 165.1201171875,
+          "height": 134.4000244140625
+        },
+        "width": 172,
+        "height": 140
+      }
+    ],
+    "whiteboards": [
+      {
+        "id": "teamBoard",
+        "label": "Team Board",
+        "x": 284,
+        "y": 88,
+        "width": 584,
+        "height": 208,
+        "rect": {
+          "left": 496.6399841308594,
+          "top": 420.6400146484375,
+          "width": 345.6000061035156,
+          "height": 392.8199462890625
+        }
+      }
+    ],
+    "links": [],
+    "controls": [
+      {
+        "id": "scene-canvas-button",
+        "label": "Canvas button",
+        "visible": true,
+        "rect": {
+          "left": 1031.984375,
+          "top": 97.5,
+          "width": 59.078125,
+          "height": 30
+        }
+      },
+      {
+        "id": "scene-studio-button",
+        "label": "ACE Studio button",
+        "visible": true,
+        "rect": {
+          "left": 1101.0625,
+          "top": 97.5,
+          "width": 79.9375,
+          "height": 30
+        }
+      },
+      {
+        "id": "recent-saves-select",
+        "label": "Recent Saves",
+        "visible": false
+      },
+      {
+        "id": "reset-view-button",
+        "label": "Reset View",
+        "visible": true,
+        "rect": {
+          "left": 380.046875,
+          "top": 152,
+          "width": 80.546875,
+          "height": 30
+        }
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "desk-overlap-cto-chief-of-staff-cto-architect",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "cto-chief-of-staff",
+        "cto-architect"
+      ],
+      "summary": "Chief of Staff overlaps CTO / Architect.",
+      "details": "Overlap area is 3360px."
+    },
+    {
+      "id": "whiteboard-overlap-teamBoard-planner",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "planner"
+      ],
+      "relatedWhiteboardIds": [
+        "teamBoard"
+      ],
+      "summary": "Team Board overlaps Planner.",
+      "details": "Overlap area is 24080px."
+    },
+    {
+      "id": "whiteboard-overlap-teamBoard-executor",
+      "severity": "error",
+      "kind": "layout",
+      "relatedDeskIds": [
+        "executor"
+      ],
+      "relatedWhiteboardIds": [
+        "teamBoard"
+      ],
+      "summary": "Team Board overlaps Executor.",
+      "details": "Overlap area is 18920px."
+    },
+    {
+      "id": "control-hidden-recent-saves-select",
+      "severity": "warning",
+      "kind": "visibility",
+      "summary": "Recent Saves is clipped or hidden.",
+      "details": "Required control recent-saves-select was not fully visible in the current browser pass."
+    },
+    {
+      "id": "console-3",
+      "severity": "error",
+      "kind": "console",
+      "summary": "Console errors were captured during the browser pass.",
+      "details": "Failed to load resource: the server responded with a status of 500 (Internal Server Error) | Failed to load resource: the server responded with a status of 500 (Internal Server Error) | Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    }
+  ]
+}
