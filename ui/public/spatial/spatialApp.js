@@ -12,9 +12,6 @@ import {
   normalizeGraphBundle,
   buildRsgState,
 } from './graphEngine.js';
-import {
-  buildCanonicalIntentContract,
-} from './intentContract.browser.js';
 import { AceConnector } from './aceConnector.js';
 import { MutationEngine } from './mutationEngine.js';
 import { ArchitectureMemory } from './architectureMemory.js';
@@ -297,6 +294,15 @@ export function resolveCanvasBackgroundFill(truthKernelVisible = false) {
   return truthKernelVisible ? CANVAS_BACKGROUND_TRUTH_VISIBLE : CANVAS_BACKGROUND_SOLID;
 }
 
+export function normalizeTruthKernelStageBounds(bounds = null) {
+  const width = Number(bounds?.width);
+  const height = Number(bounds?.height);
+  return {
+    width: Number.isFinite(width) && width > 0 ? Math.round(width) : 1600,
+    height: Number.isFinite(height) && height > 0 ? Math.round(height) : 920,
+  };
+}
+
 export function formatTruthKernelTimestamp(timestamp = 0) {
   const numeric = Number(timestamp);
   if (!Number.isFinite(numeric) || numeric <= 0) return 'Unknown';
@@ -364,64 +370,6 @@ export function buildTruthInspectionLegend() {
     { axis: 'SAT', meaning: 'Confidence increases vividness and saturation' },
     { axis: 'NOISE', meaning: 'Instability adds subtle flicker and visual noise' },
   ];
-}
-
-export function buildSketchCanonicalIntentRecord(stroke = {}, source = {}) {
-  const strokePath = normalizeSketchPath(stroke?.path || []);
-  const createdAt = String(stroke?.createdAt || source.timestamp || new Date().toISOString()).trim() || new Date().toISOString();
-  const sourceRef = String(stroke?.id || source.sourceRef || `sketch_${createdAt}`).trim() || `sketch_${createdAt}`;
-  const geometry = {
-    kind: 'stroke',
-    stroke: strokePath,
-    region: null,
-  };
-  const contract = buildCanonicalIntentContract({
-    report: {
-      summary: '',
-      statement: '',
-      goal: '',
-      requestType: 'sketchpad_input',
-      requestedOutcomes: [],
-      tasks: [],
-      targets: [],
-      constraints: [],
-      urgency: 'normal',
-      confidence: Number.isFinite(Number(stroke?.metadata?.confidence)) ? Number(stroke.metadata.confidence) : 0,
-      geometry,
-      source: 'sketchpad-stroke',
-      nodeId: sourceRef,
-      requestedBy: 'sketchpad',
-    },
-    packet: {
-      summary: '',
-      statement: '',
-      goal: '',
-      requestType: 'sketchpad_input',
-      requestedOutcomes: [],
-      tasks: [],
-      targets: [],
-      constraints: [],
-      confidence: Number.isFinite(Number(stroke?.metadata?.confidence)) ? Number(stroke.metadata.confidence) : 0,
-      geometry,
-      sourceType: 'sketchpad-stroke',
-      sourceRef,
-      requestedBy: 'sketchpad',
-      priority: 'normal',
-    },
-    sourceType: 'sketchpad-stroke',
-    sourceRef,
-    requestedBy: 'sketchpad',
-    priority: 'normal',
-    timestamp: createdAt,
-    provenance: {
-      sourceNodeId: sourceRef,
-      inputMode: 'sketchpad',
-      sketchMode: true,
-      createdAt,
-    },
-    intentId: source.sourceRef || sourceRef,
-  });
-  return contract.canonicalIntent;
 }
 
 export function removeIntentRegistryRecord(intentState = EMPTY_INTENT_STATE, intentId = null) {
@@ -519,6 +467,9 @@ function normalizeIntentRecord(report = {}) {
       requestedBy: sourceObject.requestedBy,
     },
   };
+  if (source.fieldInfluence && typeof source.fieldInfluence === 'object') {
+    record.fieldInfluence = source.fieldInfluence;
+  }
   const missingFields = [];
   if (!record.geometry || record.geometry.kind === 'unknown') missingFields.push('geometry');
   if (!String(record.semanticMeaning.summary || record.semanticMeaning.statement || record.semanticMeaning.goal || '').trim()) {
@@ -3353,8 +3304,42 @@ function normalizedNodeContent(value = '') {
   return String(value || '').trim();
 }
 
-export function resolveGeneratedNodeInspection(node = null) {
+export function getExtractedIntent(report = null) {
+  if (!report || typeof report !== 'object') return null;
+  return report.extractedIntent && typeof report.extractedIntent === 'object'
+    ? report.extractedIntent
+    : null;
+}
+
+export function resolveGeneratedNodeInspection(node = null, graph = null) {
   if (!node || typeof node !== 'object' || Array.isArray(node)) return null;
+  const intentRef = node?.metadata?.rsg?.intentRef || node?.metadata?.intentRef || null;
+  if (intentRef && typeof intentRef === 'object') {
+    const nodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
+    const sourceNode = nodes.find((entry) => entry?.id === intentRef.sourceNodeId) || null;
+    const extractedIntent = getExtractedIntent(sourceNode?.metadata?.intentAnalysis) || null;
+    const candidate = (Array.isArray(extractedIntent?.candidateNodes) ? extractedIntent.candidateNodes : [])
+      .find((entry) => entry?.id === intentRef.candidateNodeId) || null;
+    return {
+      id: typeof node.id === 'string' ? node.id : null,
+      kind: typeof node.kind === 'string' ? node.kind : (typeof node.type === 'string' ? node.type : null),
+      label: typeof node.label === 'string'
+        ? node.label
+        : (typeof node.name === 'string' ? node.name : (typeof node.content === 'string' ? node.content : null)),
+      summary: typeof node.summary === 'string'
+        ? node.summary
+        : (typeof node.content === 'string' ? node.content : (typeof node.label === 'string' ? node.label : null)),
+      basis: intentRef.basis || candidate?.basis || null,
+      confidence: node?.metadata?.rsg?.confidence ?? candidate?.confidence ?? null,
+      sourceNode,
+      extractedIntent,
+      candidate,
+      relatedEdges: (Array.isArray(extractedIntent?.candidateEdges) ? extractedIntent.candidateEdges : [])
+        .filter((edge) => edge?.sourceCandidateId === intentRef.candidateNodeId || edge?.targetCandidateId === intentRef.candidateNodeId),
+      node,
+    };
+  }
+  if (node?.metadata && !node.metadata.origin && !node.metadata.rsg && !node.metadata.intentRef) return null;
   return {
     id: typeof node.id === 'string' ? node.id : null,
     kind: typeof node.kind === 'string' ? node.kind : (typeof node.type === 'string' ? node.type : null),
@@ -3557,9 +3542,18 @@ export function shouldRunFocusedRsgLoop({
   if (scene !== SCENES.CANVAS) return { ok: false, reason: 'not-canvas' };
   if (trigger === 'idle' && selectedId !== node.id) return { ok: false, reason: 'not-selected' };
   if (isPrimaryIntentNode(node)) return { ok: false, reason: 'primary-intent-node' };
+  if (isLinkedDraftNode(node)) return { ok: false, reason: 'linked-draft' };
   if (normalizedNodeContent(rawContent ?? node.content).length === 0) return { ok: false, reason: 'empty-content' };
   if (node?.metadata?.intentStatus === 'processing') return { ok: false, reason: 'processing' };
   return { ok: true, reason: '' };
+}
+
+export function isLinkedDraftNode(node = null) {
+  return String(node?.metadata?.rsg?.state || '').trim().toLowerCase() === 'linked-draft';
+}
+
+export function isAdoptedDraftNode(node = null) {
+  return String(node?.metadata?.rsg?.state || '').trim().toLowerCase() === 'adopted';
 }
 
 export function isPrimaryIntentNode(node = null) {
@@ -4237,7 +4231,7 @@ function renderQAInvestigationInboxBlock(investigations = null) {
       openItems.map((item, index) => {
         const researchHint = formatQAInvestigationResearchHint(item);
         return h('div', {
-          key: item.id || `${item.trigger}-${index}`,
+          key: `${item.id || item.trigger || 'qa-investigation'}-${index}`,
           className: `desk-panel-item utility-card qa-investigation-card severity-${item.severity || 'medium'}`,
           'data-status': item.status || 'open',
         },
@@ -4352,8 +4346,8 @@ function renderDeskSection(rawSection, helpers = {}) {
       h('div', { className: 'signal-summary' }, section.summary || 'Freshness, provenance, and coverage by surface.'),
       surfaces.length
         ? h('div', { className: 'desk-panel-list utility-list qa-hygiene-list' },
-            surfaces.map((surface) => h('details', {
-              key: surface.surface_id || surface.label,
+            surfaces.map((surface, index) => h('details', {
+              key: `${surface.surface_id || surface.label || 'surface'}-${index}`,
               className: `desk-panel-item utility-card qa-hygiene-card status-${surface.status || 'unknown'} freshness-${surface.freshness || 'unknown'}`,
             },
               h('summary', { className: 'inline review-header' },
@@ -4713,7 +4707,7 @@ function renderDeskSection(rawSection, helpers = {}) {
       feed.length
         ? h('div', { className: 'desk-panel-list utility-list qa-output-feed-list' },
             feed.slice(0, 8).map((item, index) => h('details', {
-              key: item.id || `${section.id}-${index}`,
+              key: `${item.id || section.id || 'qa-feed'}-${index}`,
               className: `desk-panel-item utility-card qa-output-feed-card status-${item.status || 'unknown'}`,
             },
               h('summary', { className: 'inline review-header' },
@@ -4776,8 +4770,8 @@ function renderDeskSection(rawSection, helpers = {}) {
       canaries.results.length
         ? h('div', { className: 'desk-panel-list utility-list qa-canary-list' },
             canaries.last_run_at ? h('div', { className: 'signal-meta muted' }, `Last run: ${formatTimestamp(canaries.last_run_at)}`) : null,
-            canaries.results.map((result) => h('details', {
-              key: result.canary_id || result.label,
+            canaries.results.map((result, index) => h('details', {
+              key: `${result.canary_id || result.label || 'canary'}-${index}`,
               className: `desk-panel-item utility-card qa-canary-card status-${result.status || 'fail'}`,
             },
               h('summary', { className: 'inline review-header' },
@@ -4857,8 +4851,8 @@ function renderDeskSection(rawSection, helpers = {}) {
         ),
       ),
       cards.length
-        ? h('div', { className: 'desk-panel-list utility-list qa-scorecard-list' }, cards.slice(0, 6).map((card) => h('details', {
-            key: card.id || `${card.desk}-${card.testId}`,
+        ? h('div', { className: 'desk-panel-list utility-list qa-scorecard-list' }, cards.slice(0, 6).map((card, index) => h('details', {
+            key: `${card.id || `${card.desk}-${card.testId}` || 'scorecard'}-${index}`,
             className: `desk-panel-item utility-card qa-scorecard-card status-${card.status || 'pass'}`,
           },
             (() => {
@@ -5071,7 +5065,7 @@ function renderDeskSection(rawSection, helpers = {}) {
         ),
       ),
       lanes.length
-        ? h('div', { className: 'desk-panel-list utility-list qa-repair-lane-list' }, lanes.map((lane) => {
+        ? h('div', { className: 'desk-panel-list utility-list qa-repair-lane-list' }, lanes.map((lane, index) => {
             const outcome = outcomeMeta(lane);
             const statusTone = lane.current_status === 'blocked'
               ? 'bad'
@@ -5079,7 +5073,7 @@ function renderDeskSection(rawSection, helpers = {}) {
                   ? 'warn'
                   : (lane.current_status === 'healthy' ? 'good' : 'neutral'));
             return h('details', {
-              key: lane.lane_id || lane.label,
+              key: `${lane.lane_id || lane.label || 'repair-lane'}-${index}`,
               className: `desk-panel-item utility-card qa-repair-lane-card status-${lane.current_status || 'idle'} outcome-${lane.outcome_status || 'idle'}`,
             },
               h('summary', { className: 'inline review-header' },
@@ -5258,7 +5252,7 @@ function renderDeskSection(rawSection, helpers = {}) {
     return h('div', { key: section.id, className: 'inspector-block panel-card' },
       h('div', { className: 'inspector-label' }, section.label),
       (section.items || []).length
-        ? h('ul', { className: 'signal-list' }, section.items.map((item, index) => h('li', { key: item.id || `${section.id}-${index}` },
+        ? h('ul', { className: 'signal-list' }, section.items.map((item, index) => h('li', { key: `${item.id || section.id || 'item'}-${index}` },
             h('div', null, item.summary || item),
             item.detail ? h('div', { className: 'muted' }, item.detail) : null,
             item.at ? h('div', { className: 'muted' }, formatTimestamp(item.at)) : null,
@@ -5616,6 +5610,7 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   const [truthKernel, setTruthKernel] = useState(EMPTY_TRUTH_KERNEL);
   const [truthKernelLoadState, setTruthKernelLoadState] = useState(TRUTH_KERNEL_LOAD_STATES.LOADING);
   const [truthKernelVisible, setTruthKernelVisible] = useState(false);
+  const [truthKernelStageBounds, setTruthKernelStageBounds] = useState(() => normalizeTruthKernelStageBounds());
   const [truthInspectionCompact, setTruthInspectionCompact] = useState(false);
   const [selectedTruthNodeId, setSelectedTruthNodeId] = useState(null);
 
@@ -5657,7 +5652,9 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   );
   const truthKernelLayout = useMemo(() => buildTruthKernelLayout(truthKernel.dots, {
     sourceAnchors: truthKernelSourceAnchors,
-  }), [truthKernel, truthKernelSourceAnchors]);
+    width: truthKernelStageBounds.width,
+    height: truthKernelStageBounds.height,
+  }), [truthKernel, truthKernelSourceAnchors, truthKernelStageBounds]);
   const truthKernelRenderModel = useMemo(() => {
     const model = buildTruthKernelRenderModel(truthKernel, truthKernelLayout);
     return {
@@ -5796,6 +5793,9 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
     () => getCurrentGhostProjection(normalizedGhostProjectionState),
     [normalizedGhostProjectionState],
   );
+  const currentGhostProjectionLabel = currentGhostProjection?.provenance?.authority === 'ace-resolver-projection'
+    ? 'Governed ghost'
+    : 'Local preview';
   const currentCanonicalIntentRecord = getCurrentIntentRecord(intentState);
   const currentFieldInfluence = currentCanonicalIntentRecord?.fieldInfluence || null;
   const latestCanvasIntakeRecord = getLatestCanonicalIntakeRecord(canonicalIntake, 'canvas_text');
@@ -6841,6 +6841,26 @@ function SpatialNotebook({ initialServerHealth = EMPTY_SERVER_HEALTH } = {}) {
   useEffect(() => {
     loadQaOutputFeed();
   }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const measureStage = () => {
+      const rect = canvas.getBoundingClientRect();
+      const nextBounds = normalizeTruthKernelStageBounds(rect);
+      setTruthKernelStageBounds((current) => (
+        current.width === nextBounds.width && current.height === nextBounds.height ? current : nextBounds
+      ));
+    };
+    measureStage();
+    if (typeof ResizeObserver === 'function') {
+      const observer = new ResizeObserver(measureStage);
+      observer.observe(canvas);
+      return () => observer.disconnect();
+    }
+    window.addEventListener('resize', measureStage);
+    return () => window.removeEventListener('resize', measureStage);
+  }, [scene]);
 
   useEffect(() => {
     memory.syncFromGraph(graphBundle);
@@ -8475,7 +8495,7 @@ function syncRecentWorldChange(change = null) {
     }
   };
 
-  const onCanvasMouseUp = (event) => {
+  const onCanvasMouseUp = async (event) => {
     if (scene === SCENES.CANVAS && connectState.current?.source && pointerWorld && event?.target === canvasRef.current) {
       const created = addNodeAt(pointerWorld, 'text', 'new note', { role: 'thought' });
       if (created) {
@@ -8484,37 +8504,52 @@ function syncRecentWorldChange(change = null) {
         setStatus('node created from connector');
       }
     }
-    if (activeSketch.current && Array.isArray(activeSketch.current.path) && activeSketch.current.path.length) {
-      const canonicalIntent = buildSketchCanonicalIntentRecord(activeSketch.current, {
-        sourceRef: activeSketch.current.id,
-        timestamp: activeSketch.current.createdAt || new Date().toISOString(),
-      });
-      const nextIntentState = upsertIntentRegistry(intentState, canonicalIntent);
-      setIntentState(nextIntentState);
-      setSketches(intentRegistryToSketches(nextIntentState));
-      setSelectedSketchId(canonicalIntent.id);
-      setScanPreview(canonicalIntent);
-      const ghostSourceNode = {
-        id: canonicalIntent.id,
-        content: canonicalIntent.summary || canonicalIntent.statement || canonicalIntent.goal || '',
-        metadata: {
-          graphLayer: activeGraphLayer,
-        },
-      };
-      const ghostResult = mutationEngine.syncDraftNodesFromReport(ghostSourceNode, canonicalIntent, {
-        layer: activeGraphLayer,
-      });
-      setGhostProjectionState(ghostResult.registry);
-      setStatus([
-        canonicalIntent.missingFields.length ? `sketch intent captured | missing: ${canonicalIntent.missingFields.join(', ')}` : 'sketch intent captured',
-        ghostResult.projectionRecords.length ? `ghost projection ${ghostResult.projectionRecords[0].status} | ${ghostResult.projectionRecords.length} candidate${ghostResult.projectionRecords.length === 1 ? '' : 's'}` : ghostResult.reason || 'ghost projection pending',
-      ].join(' | '));
-    }
+    const completedSketch = activeSketch.current && Array.isArray(activeSketch.current.path) && activeSketch.current.path.length
+      ? { ...activeSketch.current, path: [...activeSketch.current.path] }
+      : null;
     draggingNode.current = null;
     isPanning.current = false;
     activeSketch.current = null;
     connectState.current = null;
     document.body.classList.remove('canvas-dragging');
+    if (!completedSketch) return;
+    setStatus('projecting sketch through governed intent and field resolver...');
+    try {
+      const response = await ace.parseIntent({
+        intentId: completedSketch.id,
+        nodeId: completedSketch.id,
+        sourceType: 'sketchpad-stroke',
+        sourceRef: completedSketch.id,
+        requestedBy: 'sketchpad',
+        createdAt: completedSketch.createdAt || new Date().toISOString(),
+        geometry: {
+          kind: 'stroke',
+          stroke: normalizeSketchPath(completedSketch.path),
+          region: null,
+        },
+      });
+      const canonicalIntent = response?.canonicalIntent;
+      if (!canonicalIntent?.id) {
+        throw new Error('server returned no canonical sketch intent');
+      }
+      const nextIntentState = upsertIntentRegistry(intentState, canonicalIntent);
+      const governedGhostRegistry = response?.ghostProjections && typeof response.ghostProjections === 'object'
+        ? response.ghostProjections
+        : createEmptyGhostProjectionRegistry();
+      setIntentState(nextIntentState);
+      setSketches(intentRegistryToSketches(nextIntentState));
+      setSelectedSketchId(canonicalIntent.id);
+      setScanPreview(canonicalIntent);
+      setGhostProjectionState(governedGhostRegistry);
+      mutationEngine.setGhostProjectionRegistry(governedGhostRegistry);
+      setStatus([
+        canonicalIntent.missingFields?.length ? `sketch intent degraded | missing: ${canonicalIntent.missingFields.join(', ')}` : 'sketch intent canonical',
+        response?.fieldInfluence?.status === 'canonical' ? 'field governed' : 'field unavailable',
+        response?.ghostProjection?.status ? `ghost ${response.ghostProjection.status} (uncommitted)` : 'ghost unavailable',
+      ].join(' | '));
+    } catch (error) {
+      setStatus(`sketch projection failed: ${error.message}`);
+    }
   };
 
   const hitTestStroke = (world) => {
@@ -8564,6 +8599,7 @@ function syncRecentWorldChange(change = null) {
       if (annotationId || strokeId) return;
       const stroke = {
         id: `sketch_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        createdAt: new Date().toISOString(),
         path: [world],
         metadata: { tag: null, meaning: null },
       };
@@ -9187,10 +9223,15 @@ function syncRecentWorldChange(change = null) {
       h('div', { className: 'inspector-label' }, 'QA Workbench'),
       h('div', { className: 'signal-meta muted' }, 'QA lead is a live automated operator: it runs MCP-backed scans, tests, audits, and evidence capture. Outputs stay read-only downstream.'),
       qaDesk?.desk?.panel ? renderDeskPanelMetadata(qaDesk.desk.panel) : null,
-      h('div', { className: 'desk-panel-list qa-readable-sections' }, qaSections.map((section) => renderDeskSection(section, {
-        focusCanvasNode: (nodeId) => focusStudioAgent(nodeId),
-        openQARun: (runId) => loadQARunDetails(runId),
-      }))),
+      h('div', { className: 'desk-panel-list qa-readable-sections' }, qaSections.map((section, index) => {
+        const renderedSection = renderDeskSection(section, {
+          focusCanvasNode: (nodeId) => focusStudioAgent(nodeId),
+          openQARun: (runId) => loadQARunDetails(runId),
+        });
+        return renderedSection
+          ? React.cloneElement(renderedSection, { key: `${section.id || section.kind || 'qa-section'}-${index}` })
+          : null;
+      })),
       latestQARun ? h('div', { className: 'signal-meta muted' }, `Latest browser run: ${latestQARun.scenario || 'layout-pass'} | ${latestQARun.verdict || latestQARun.status || 'pending'} | findings ${(latestQARun.findings || []).length || latestQARun.findingCount || 0}`) : null,
     );
   };
@@ -10866,9 +10907,14 @@ function syncRecentWorldChange(change = null) {
                   h('div', { className: 'signal-summary' }, `${targetDeskLabel} truth bundle`),
                   renderTruthMetricRows(panelData.truth || {}, hierarchyModel.focusSummary),
                 ),
-                buildQAReadableSectionsFromState(buildQaDeskReadableState(panelData)).map((section) => renderDeskSection(section, {
-                  openQARun: (runId) => loadQARunDetails(runId),
-                })),
+                buildQAReadableSectionsFromState(buildQaDeskReadableState(panelData)).map((section, index) => {
+                  const renderedSection = renderDeskSection(section, {
+                    openQARun: (runId) => loadQARunDetails(runId),
+                  });
+                  return renderedSection
+                    ? React.cloneElement(renderedSection, { key: `${section.id || section.kind || 'qa-section'}-${index}` })
+                    : null;
+                }),
               )
             : h('div', { className: 'signal-empty muted' }, 'No QA properties available.'),
         ) : null,
@@ -11190,10 +11236,6 @@ function syncRecentWorldChange(change = null) {
               className: 'spatial-main-canvas',
               width: 1600,
               height: 920,
-              style: truthKernelVisible ? {
-                opacity: 0.62,
-                filter: 'saturate(0.68) brightness(0.72)',
-              } : null,
               tabIndex: 0,
               onDoubleClick: onCanvasDoubleClick,
               onWheel: onCanvasWheel,
@@ -11210,7 +11252,7 @@ function syncRecentWorldChange(change = null) {
             },
               h('div', { className: 'truth-kernel-hud__header' },
                 h('div', null,
-                  h('div', { className: 'truth-kernel-hud__eyebrow' }, truthKernelVisible ? 'Truth overlay active' : 'Truth render ready'),
+                  h('div', { className: 'truth-kernel-hud__eyebrow' }, truthKernelVisible ? 'Truth substrate active' : 'Truth render ready'),
                   h('div', { className: 'truth-kernel-hud__title' }, truthKernelRenderSummary.line),
                 ),
                 h('div', { className: 'qa-metric-pill-row truth-kernel-status-pills' },
@@ -11331,7 +11373,7 @@ function syncRecentWorldChange(change = null) {
                 },
                   h('div', null,
                     h('div', { style: { fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8fb2ff' } }, 'Observability'),
-                    h('div', { style: { marginTop: '4px', fontSize: '14px', fontWeight: 600 } }, truthInspectionPanelState.compact ? 'Inspection focus mode' : 'Canonical intent, field, and ghost layers'),
+                    h('div', { style: { marginTop: '4px', fontSize: '14px', fontWeight: 600 } }, truthInspectionPanelState.compact ? 'Inspection focus mode' : 'Governed intent, field, and ghost projections'),
                   ),
                   truthKernelVisible ? h('button', {
                     type: 'button',
@@ -11441,14 +11483,14 @@ function syncRecentWorldChange(change = null) {
                 },
               },
                 h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8fb2ff' } },
-                  h('span', null, 'Ghost'),
+                  h('span', null, currentGhostProjectionLabel),
                   h('span', null, currentGhostProjection?.status || 'missing'),
                 ),
                 h('div', { style: { marginTop: '6px', fontSize: '13px', fontWeight: 600 } }, currentGhostProjection ? summarizeGhostProjection(currentGhostProjection) : 'No ghost projection record'),
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `id: ${currentGhostProjection?.id || 'missing'} | generatedAt: ${currentGhostProjection?.provenance?.createdAt || 'missing'}`),
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `sourceIntentIds: ${Array.isArray(currentGhostProjection?.sourceIntentIds) && currentGhostProjection.sourceIntentIds.length ? currentGhostProjection.sourceIntentIds.join(', ') : 'missing'}`),
                 h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `confidence: ${Number.isFinite(Number(currentGhostProjection?.confidence)) ? `${Math.round(Number(currentGhostProjection.confidence) * 100)}%` : 'missing'}`),
-                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `provenance: ${currentGhostProjection?.provenance?.sourceType || 'missing'} / ${currentGhostProjection?.provenance?.sourceRef || 'missing'}`),
+                h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, `provenance: ${currentGhostProjection?.provenance?.sourceType || 'missing'} / ${currentGhostProjection?.provenance?.sourceRef || 'missing'} | committed: no`),
                 currentGhostProjection?.reasoning?.length ? h('div', { style: { marginTop: '4px', fontSize: '12px', color: '#b8c8e6' } }, currentGhostProjection.reasoning.join(' | ')) : null,
               ) : null,
             ),

@@ -53,7 +53,7 @@ export function normalizeQAEvidenceProvenance(trace = null) {
   const projectionId = pickFirstText(source.projectionId, source.projection_id, source.routeId, source.route_id, source.kind, sourceLabel);
   const generatedAt = pickFirstText(source.generatedAt, source.updatedAt, source.observedAt, source.createdAt, source.lastUpdatedAt);
   const hasProvenance = Boolean(domain || projectionId || sourcePath || sourceClass || freshnessClass || observedAt || generatedByLabel || derivedFrom || fallbackUsed !== null);
-  const classification = pickFirstText(source.classification, sourceClass);
+  const classification = pickFirstText(source.classification, source.kind, sourceClass);
   const freshness = buildFreshnessLabel(freshnessClass);
   const chips = [];
 
@@ -88,7 +88,7 @@ export function normalizeQAEvidenceProvenance(trace = null) {
 
 export function buildQAEvidenceProvenancePresentation(trace = null, { fallbackLabel = '' } = {}) {
   const provenance = normalizeQAEvidenceProvenance(trace);
-  const chips = provenance.chips.slice(0, 6);
+  const chips = provenance.chips.slice();
   return {
     ...provenance,
     chips,

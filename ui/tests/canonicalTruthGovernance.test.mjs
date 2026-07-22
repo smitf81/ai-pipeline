@@ -19,11 +19,15 @@ export default async function runCanonicalTruthGovernanceTests() {
   assert.equal(Boolean(registry.getCanonicalTruthProjection('truth_kernel')), true);
   assert.equal(Boolean(registry.getCanonicalTruthProjection('desk_properties')), true);
   assert.equal(Boolean(registry.getCanonicalTruthProjection('intent')), true);
+  assert.equal(Boolean(registry.getCanonicalTruthProjection('field_influence')), true);
+  assert.equal(Boolean(registry.getCanonicalTruthProjection('ghost_projection')), true);
   assert.equal(Boolean(registry.getCanonicalTruthProjection('qa_evidence')), true);
   assert.equal(Boolean(registry.getCanonicalTruthDomain('workspace')), true);
   assert.equal(Boolean(registry.getCanonicalTruthDomain('runtime')), true);
   assert.equal(Boolean(registry.getCanonicalTruthDomain('desk_properties')), true);
   assert.equal(Boolean(registry.getCanonicalTruthDomain('intent')), true);
+  assert.equal(Boolean(registry.getCanonicalTruthDomain('field_influence')), true);
+  assert.equal(Boolean(registry.getCanonicalTruthDomain('ghost_projection')), true);
   assert.equal(Boolean(registry.getCanonicalTruthDomain('qa_evidence')), true);
 
   const access = createCanonicalTruthAccess({
@@ -66,6 +70,19 @@ export default async function runCanonicalTruthGovernanceTests() {
         canonicalIntent: {
           id: 'intent_live_1',
           statement: String(requestBody?.text || ''),
+        },
+      }),
+      buildFieldInfluenceProjectionPayload: async () => ({
+        fieldInfluence: {
+          fieldKey: 'buildDesirability',
+          sourceIntentId: 'intent_live_1',
+        },
+      }),
+      buildGhostProjectionPayload: async () => ({
+        ghostProjection: {
+          id: 'ghost_field_intent_live_1',
+          status: 'candidate',
+          proposedChange: { committed: false },
         },
       }),
       buildQaEvidenceProjectionPayload: async ({ qaView }) => ({
@@ -113,6 +130,14 @@ export default async function runCanonicalTruthGovernanceTests() {
   assert.equal(intentEnvelope.projectionId, 'intent');
   assert.equal(intentEnvelope.data.canonicalIntent.id, 'intent_live_1');
   assert.equal(intentEnvelope.fallbackUsed, false);
+
+  const fieldEnvelope = await access.resolveProjection('field_influence');
+  assert.equal(fieldEnvelope.domain, 'field_influence');
+  assert.equal(fieldEnvelope.data.fieldInfluence.fieldKey, 'buildDesirability');
+
+  const ghostEnvelope = await access.resolveProjection('ghost_projection');
+  assert.equal(ghostEnvelope.domain, 'ghost_projection');
+  assert.equal(ghostEnvelope.data.ghostProjection.proposedChange.committed, false);
 
   const qaEvidenceEnvelope = await access.resolveProjection('qa_evidence', { qaView: 'qa_runs' });
   assert.equal(qaEvidenceEnvelope.domain, 'qa_evidence');

@@ -5,6 +5,7 @@ import {
   removeGhostProjectionBySourceIntentId,
   upsertGhostProjectionRegistry,
 } from './ghostProjection.js';
+import { createEdge, createNode } from './graphEngine.js';
 
 const MAX_DRAFT_NODES = 3;
 
@@ -109,6 +110,49 @@ function buildProposedChange({
 
 function resolveGhostSourceIntentId(parentNode, report, extractedIntent) {
   return String(report?.intentId || report?.id || extractedIntent?.id || parentNode?.id || '').trim();
+}
+
+function isLinkedDraftForSource(node = null, sourceNodeId = '') {
+  const rsg = node?.metadata?.rsg || {};
+  return (
+    String(rsg.state || '').trim().toLowerCase() === 'linked-draft'
+    && String(rsg.sourceNodeId || node?.metadata?.sourceNodeId || '').trim() === sourceNodeId
+  );
+}
+
+function buildDraftNode(parentNode, candidateNode, { generationId, createdAt, layer, index } = {}) {
+  const sourceNodeId = parentNode?.id || null;
+  return createNode({
+    type: candidateNode.kind === 'text' ? 'text' : candidateNode.kind,
+    content: candidateNode.label,
+    position: {
+      x: Number(parentNode?.position?.x || 0) + 220,
+      y: Number(parentNode?.position?.y || 0) + (index * 96),
+    },
+    metadata: {
+      graphLayer: layer,
+      origin: 'ai',
+      sourceNodeId,
+      basis: candidateNode.basis,
+      confidence: candidateNode.confidence,
+      labels: ['ai', 'rsg', candidateNode.basis].filter(Boolean),
+      intentRef: {
+        sourceNodeId,
+        candidateNodeId: candidateNode.id,
+        basis: candidateNode.basis,
+      },
+      rsg: {
+        state: 'linked-draft',
+        sourceNodeId,
+        generationId,
+        createdAt,
+        intentRef: {
+          candidateNodeId: candidateNode.id,
+          basis: candidateNode.basis,
+        },
+      },
+    },
+  });
 }
 
 export class MutationEngine {
@@ -223,6 +267,8 @@ export class MutationEngine {
       return {
         generationId: null,
         createdAt: options.createdAt || new Date().toISOString(),
+        generatedNodes: [],
+        replacedNodeIds: [],
         projectionRecords: [],
         replacedProjectionIds: [],
         reason: 'missing-source-node',
@@ -237,10 +283,17 @@ export class MutationEngine {
     const rankedCandidates = rankCandidateNodes(extractedIntent, parentNode, options.maxNodes || MAX_DRAFT_NODES);
     const sourceIntentId = resolveGhostSourceIntentId(parentNode, report, extractedIntent);
     const removal = this.removeGhostProjectionsForSource(sourceIntentId);
+    const graphState = this.graphEngine?.getState?.() || { nodes: [], edges: [] };
+    const replacedNodeIds = (Array.isArray(graphState.nodes) ? graphState.nodes : [])
+      .filter((node) => isLinkedDraftForSource(node, parentNode.id))
+      .map((node) => node.id);
+    replacedNodeIds.forEach((nodeId) => this.graphEngine?.removeNode?.(nodeId));
     if (!rankedCandidates.length) {
       return {
         generationId,
         createdAt,
+        generatedNodes: [],
+        replacedNodeIds,
         projectionRecords: [],
         replacedProjectionIds: removal.removedProjectionIds,
         usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || report?.usedFallback),
@@ -282,10 +335,28 @@ export class MutationEngine {
     })];
 
     projectionRecords.forEach((projection) => this.upsertGhostProjection(projection));
+    const generatedNodes = rankedCandidates.map((candidate, index) => buildDraftNode(parentNode, candidate, {
+      generationId,
+      createdAt,
+      layer,
+      index,
+    }));
+    generatedNodes.forEach((node) => {
+      this.graphEngine?.addNode?.(node);
+      this.graphEngine?.addEdge?.(createEdge({
+        source: parentNode.id,
+        target: node.id,
+        relationshipType: 'rsg_draft',
+        label: 'RSG draft',
+        supports: ['intent_projection'],
+      }));
+    });
 
     return {
       generationId,
       createdAt,
+      generatedNodes,
+      replacedNodeIds,
       projectionRecords,
       replacedProjectionIds: removal.removedProjectionIds,
       usedFallback: Boolean(extractedIntent?.provenance?.usedFallback || report?.usedFallback),

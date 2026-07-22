@@ -10,7 +10,9 @@
     "test:watch": "node --watch tests/run-ui-tests.mjs",
     "start": "node server.js",
     "mcp:ace": "node aceRuntimeMcp.js",
-    "cto:bakeoff": "node scripts/cto-model-bakeoff.js"
+    "cto:bakeoff": "node scripts/cto-model-bakeoff.js",
+    "subconscious": "cd .. && node ui/subconsciousDaemon.js",
+    "subconscious:once": "cd .. && node ui/subconsciousDaemon.js --once"
   },
   "keywords": [],
   "author": "",

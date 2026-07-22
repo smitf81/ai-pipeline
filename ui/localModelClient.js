@@ -361,12 +361,16 @@ async function ensureOllamaBootstrapped({
   }
 }
 
-async function requestOllamaJson({
+async function requestOllamaText({
   prompt,
   model = 'qwen3.5-9b',
   host = DEFAULT_OLLAMA_HOST,
   timeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
   fetchImpl = globalThis.fetch,
+  format = null,
+  keepAlive = null,
+  think = null,
+  options = null,
 }) {
   if (typeof fetchImpl !== 'function') {
     throw new Error('No fetch implementation is available for the local model client.');
@@ -381,6 +385,10 @@ async function requestOllamaJson({
         model,
         prompt: String(prompt || ''),
         stream: false,
+        ...(format ? { format } : {}),
+        ...(keepAlive != null ? { keep_alive: keepAlive } : {}),
+        ...(typeof think === 'boolean' ? { think } : {}),
+        ...(options && typeof options === 'object' ? { options } : {}),
       }),
       signal: controller?.signal,
     });
@@ -391,7 +399,12 @@ async function requestOllamaJson({
     const text = String(payload?.response || '').trim();
     return {
       text,
-      json: parseJsonResponse(text),
+      model: String(payload?.model || model).trim() || model,
+      createdAt: normalizeText(payload?.created_at) || nowIso(),
+      done: payload?.done !== false,
+      promptEvalCount: Number.isFinite(Number(payload?.prompt_eval_count)) ? Number(payload.prompt_eval_count) : null,
+      evalCount: Number.isFinite(Number(payload?.eval_count)) ? Number(payload.eval_count) : null,
+      totalDurationNs: Number.isFinite(Number(payload?.total_duration)) ? Number(payload.total_duration) : null,
     };
   } catch (error) {
     if (error?.name === 'AbortError') {
@@ -403,6 +416,14 @@ async function requestOllamaJson({
   }
 }
 
+async function requestOllamaJson(options = {}) {
+  const response = await requestOllamaText(options);
+  return {
+    ...response,
+    json: parseJsonResponse(response.text),
+  };
+}
+
 module.exports = {
   DEFAULT_OLLAMA_HOST,
   DEFAULT_OLLAMA_TIMEOUT_MS,
@@ -410,5 +431,6 @@ module.exports = {
   ensureOllamaBootstrapped,
   parseJsonResponse,
   runOllamaTagsProbe,
+  requestOllamaText,
   requestOllamaJson,
 };

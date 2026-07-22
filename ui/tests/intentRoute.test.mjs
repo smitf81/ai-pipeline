@@ -75,6 +75,48 @@ export default async function runIntentRouteTests() {
     assert.equal(modulePayload.canonicalTruth.fallbackUsed, true);
     assert.equal(modulePayload.canonicalTruthSections.route.derivation, 'module_bypass');
     assert.equal(modulePayload.routedToModule, true);
+
+    const sketchResponse = await fetch('http://localhost:3218/api/spatial/intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intentId: 'sketch_route_probe_1',
+        sourceType: 'sketchpad-stroke',
+        sourceRef: 'sketch_route_probe_1',
+        requestedBy: 'sketchpad',
+        createdAt: '2026-05-27T10:00:00.000Z',
+        geometry: {
+          kind: 'stroke',
+          stroke: [{ x: 10, y: 12 }, { x: 64, y: 32 }, { x: 110, y: 56 }],
+        },
+      }),
+    });
+    const sketchPayload = await sketchResponse.json();
+    assert.equal(sketchResponse.status, 200);
+    assert.equal(sketchPayload.route, 'sketch-field-resolver');
+    assert.equal(sketchPayload.canonicalIntent.id, 'sketch_route_probe_1');
+    assert.equal(sketchPayload.canonicalIntent.status, 'canonical');
+    assert.equal(sketchPayload.fieldInfluence.fieldKey, 'buildDesirability');
+    assert.equal(sketchPayload.fieldInfluence.sourceIntentId, 'sketch_route_probe_1');
+    assert.equal(sketchPayload.ghostProjection.status, 'candidate');
+    assert.equal(sketchPayload.ghostProjection.proposedChange.committed, false);
+    assert.equal(sketchPayload.ghostProjection.provenance.authority, 'ace-resolver-projection');
+    assert.equal(sketchPayload.ghostProjections.currentProjectionId, sketchPayload.ghostProjection.id);
+    assert.equal(sketchPayload.canonicalTruthSections.route.derivation, 'deterministic_sketch_projection');
+
+    const fieldResponse = await fetch('http://localhost:3218/api/spatial/field-influence');
+    const fieldPayload = await fieldResponse.json();
+    assert.equal(fieldResponse.status, 200);
+    assert.equal(fieldPayload.canonicalTruth.projectionId, 'field_influence');
+    assert.equal(fieldPayload.fieldInfluence.fieldKey, 'buildDesirability');
+    assert.equal(fieldPayload.sourceIntentId, 'sketch_route_probe_1');
+
+    const ghostResponse = await fetch('http://localhost:3218/api/spatial/ghost-projection');
+    const ghostPayload = await ghostResponse.json();
+    assert.equal(ghostResponse.status, 200);
+    assert.equal(ghostPayload.canonicalTruth.projectionId, 'ghost_projection');
+    assert.equal(ghostPayload.ghostProjection.sourceIntentIds[0], 'sketch_route_probe_1');
+    assert.equal(ghostPayload.ghostProjection.proposedChange.committed, false);
   } finally {
     if (typeof server.closeAllConnections === 'function') {
       server.closeAllConnections();

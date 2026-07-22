@@ -21,6 +21,35 @@ function writeFile(rootPath, relativePath, content) {
   fs.writeFileSync(targetPath, content, 'utf8');
 }
 
+function createWorkspace(layoutFactory = null) {
+  return {
+    graph: { nodes: [], edges: [] },
+    graphs: { system: { nodes: [], edges: [] }, world: { nodes: [], edges: [] } },
+    sketches: [],
+    annotations: [],
+    pages: [],
+    activePageId: null,
+    intentState: {
+      registry: {
+        currentIntentId: null,
+        latestIntentId: null,
+        byId: {},
+        records: [],
+      },
+      currentIntentId: null,
+      summary: '',
+      status: 'idle',
+    },
+    studio: {
+      layout: typeof layoutFactory === 'function' ? layoutFactory() : {},
+      handoffs: {},
+      teamBoard: { cards: [], selectedCardId: null, summary: {} },
+      deskProperties: {},
+      agentWorkers: {},
+    },
+  };
+}
+
 export default async function runServerTests() {
   const serverPath = path.resolve(process.cwd(), 'server.js');
   const throughputDebugPath = path.resolve(process.cwd(), 'throughputDebug.js');
@@ -178,7 +207,7 @@ export default async function runServerTests() {
   assert.equal(typeof plannerRuntimePayload.plannerOuttray.entryCount, 'number');
   assert.equal(plannerRuntimePayload.freshness, 'live');
   assert.equal(plannerRuntimePayload.source, '/api/spatial/runtime');
-  const overrideWorkspace = createWorkspace();
+  const overrideWorkspace = createWorkspace(createDefaultStudioLayoutSchema);
   overrideWorkspace.studio.ctoOverrides = normalizeCtoOverrideLedger({
     ...createDefaultCtoOverrideLedger(),
     entries: [{
@@ -830,8 +859,8 @@ export default async function runServerTests() {
   assert.ok(defaultLayout.desks['qa-lead']);
   assert.deepEqual(listStudioDeskIds(defaultLayout).sort(), [
     'context-manager',
-    'cto-chief-of-staff',
     'cto-architect',
+    'cto-chief-of-staff',
     'executor',
     'integration_auditor',
     'memory-archivist',

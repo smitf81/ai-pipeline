@@ -1,3 +1,4 @@
+const { existsSync } = require('fs');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 
@@ -15,6 +16,15 @@ function assertSupportedLegacyAction(action) {
   return normalized;
 }
 
+function resolveLegacyRunnerPath(rootPath) {
+  const candidates = [
+    path.join(rootPath, 'legacy', 'runner', 'ai.py'),
+    path.join(rootPath, 'runner', 'ai.py'),
+    path.join(rootPath, 'legacy', 'ai-pipeline', 'runner', 'ai.py'),
+  ];
+  return candidates.find((candidate) => existsSync(candidate)) || candidates[0];
+}
+
 function buildLegacyRunnerCommand({ rootPath, action, taskId, project, model } = {}) {
   const normalizedAction = assertSupportedLegacyAction(action);
   const normalizedTaskId = String(taskId || '').trim();
@@ -23,7 +33,7 @@ function buildLegacyRunnerCommand({ rootPath, action, taskId, project, model } =
     throw new Error('Legacy fallback requires taskId and project.');
   }
 
-  const aiPath = path.join(rootPath, 'runner', 'ai.py');
+  const aiPath = resolveLegacyRunnerPath(rootPath);
   const args = [aiPath, normalizedAction, normalizedTaskId, '--project', normalizedProject];
   if ((normalizedAction === 'manage' || normalizedAction === 'build') && model) {
     args.push('--model', String(model));
@@ -75,6 +85,7 @@ function runLegacyFallbackStream(payload, { rootPath, onStdout = null, onStderr 
 module.exports = {
   LEGACY_FALLBACK_ACTIONS,
   buildLegacyRunnerCommand,
+  resolveLegacyRunnerPath,
   runLegacyFallbackSync,
   runLegacyFallbackStream,
 };

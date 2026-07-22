@@ -29,6 +29,8 @@ export default async function runWorkspaceRouteTests() {
     assert.equal(Boolean(payload.studio), true);
     assert.equal(Array.isArray(payload.pages), true);
     assert.equal(Boolean(payload.graphs), true);
+    const faviconResponse = await fetch('http://localhost:3225/favicon.ico');
+    assert.equal(faviconResponse.status, 204);
   } finally {
     if (typeof server.closeAllConnections === 'function') {
       server.closeAllConnections();

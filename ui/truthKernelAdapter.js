@@ -287,7 +287,7 @@ function linkNodes(registry, parentId, childId) {
 
 function shouldPreserveStandaloneNodeStatus(node = {}) {
   return (
-    (node?.sourceType === 'qa-investigation' || node?.sourceType === 'ace-evaluator')
+    (node?.sourceType === 'qa-investigation' || node?.sourceType === 'ace-evaluator' || node?.sourceType === 'subconscious-daemon')
     && ['healthy', 'degraded', 'blocked', 'informational'].includes(String(node?.status || '').trim().toLowerCase())
   );
 }
@@ -920,6 +920,77 @@ function collectEvaluatorNodes(registry, rootPath) {
   });
 }
 
+function mapSubconsciousStatus(status = {}) {
+  const state = String(status?.state || '').trim().toLowerCase();
+  if (state === 'live') return 'healthy';
+  if (state === 'generation_failed' || state === 'model_unavailable') return 'blocked';
+  if (
+    state === 'paused_by_load'
+    || state === 'paused_manual'
+    || state === 'live_memory_preserved'
+    || state === 'live_memory_unavailable'
+  ) return 'degraded';
+  return 'informational';
+}
+
+function collectSubconsciousNodes(registry, rootPath) {
+  const statusPath = path.join(rootPath, 'brain', 'context', 'subconscious', 'observer-ledger.txt');
+  const status = safeReadJson(statusPath, null);
+  if (!status || status.contract !== 'subconscious.advisory.v1') return;
+  const observerId = 'subconscious_advisory_observer';
+  const latestGeneratedAt = status.lastGeneratedAt || status.updatedAt || null;
+  const pauseReasons = normalizeStringArray(status.pauseReasons || []);
+  const failureReason = normalizeText(status.failureReason);
+  addNode(registry, {
+    id: observerId,
+    kind: 'execution',
+    label: `Subconscious observer: ${status.state || 'unknown'}`,
+    summary: status.latestPreview || 'Local model advisory observation lane.',
+    what: 'Subconscious advisory observer status',
+    why: 'Surfaces low-impact local-model commentary and compressed context without promoting it into canonical truth.',
+    represents: 'A derived, inspectable observer availability signal for agent context.',
+    sourceType: 'subconscious-daemon',
+    sourceRef: 'brain/context/subconscious/observer-ledger.txt',
+    derivedSource: 'brain/context/subconscious/observer-ledger.txt',
+    truthState: 'derived_advisory_not_canonical',
+    verdict: status.state || null,
+    reason: failureReason || pauseReasons.join(' ') || null,
+    blocker: failureReason || pauseReasons.join(' ') || null,
+    owner: 'subconscious-daemon',
+    recommendedOwner: 'context-manager',
+    timestamp: latestGeneratedAt,
+    status: mapSubconsciousStatus(status),
+    statusOrigin: 'derived',
+    ...(status.state === 'live' ? { confidence: 0.72, confidenceOrigin: 'derived' } : { confidenceOrigin: 'unavailable' }),
+    weight: 0.52,
+  });
+  if (!status.latestMemory) return;
+  const memoryId = 'subconscious_advisory_memory';
+  addNode(registry, {
+    id: memoryId,
+    kind: 'artifact',
+    label: 'Subconscious compressed memory',
+    summary: 'Bounded model-generated advisory memory for optional context retrieval.',
+    what: 'Subconscious advisory memory artifact',
+    why: 'Retains compact contextual observations for inspection by working agents.',
+    represents: 'Derived text memory only; it is not registered truth.',
+    sourceType: 'subconscious-memory',
+    sourceRef: status.latestMemory,
+    derivedSource: status.latestMemory,
+    truthState: 'derived_advisory_not_canonical',
+    verdict: 'available',
+    owner: 'subconscious-daemon',
+    recommendedOwner: 'context-manager',
+    timestamp: latestGeneratedAt,
+    status: status.state === 'live' ? 'healthy' : 'informational',
+    statusOrigin: 'derived',
+    confidence: 0.62,
+    confidenceOrigin: 'derived',
+    weight: 0.44,
+  });
+  linkNodes(registry, observerId, memoryId);
+}
+
 function buildTruthKernelPayload({ rootPath, workspace } = {}) {
   const resolvedRoot = rootPath || process.cwd();
   const registry = new Map();
@@ -946,6 +1017,7 @@ function buildTruthKernelPayload({ rootPath, workspace } = {}) {
   collectRepairLoopNodes(registry, resolvedRoot);
   collectEvaluatorNodes(registry, resolvedRoot);
   collectCtoDiagnostics(registry, resolvedRoot);
+  collectSubconsciousNodes(registry, resolvedRoot);
   const nodes = finalizeNodes(registry);
   return {
     generatedAt: new Date().toISOString(),

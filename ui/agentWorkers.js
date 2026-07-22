@@ -2336,7 +2336,7 @@ async function runPlannerWorker(options = {}) {
   if (!handoff) return createBlockedResult('Planner handoff is missing.');
   if (handoff.status !== 'ready') return createBlockedResult('Planner handoff is not ready and must be clarified before planning.');
   if (!Array.isArray(handoff.anchorRefs) || !handoff.anchorRefs.length) return createBlockedResult('Planner handoff has no anchor provenance.');
-  if (!config.toolUseCapable) {
+  if (!generator && !config.toolUseCapable) {
     return createBlockedResult(`Planner model ${resolvedModel} is not tool-use capable.`);
   }
   const requestedOutcomes = Array.isArray(handoff.requestedOutcomes)

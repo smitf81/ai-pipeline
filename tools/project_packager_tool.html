@@ -1,0 +1,541 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{padding:1.5rem 0;max-width:680px}
+.section{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:1rem}
+.section-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.row:last-child{margin-bottom:0}
+label{font-size:14px;color:var(--color-text-secondary);min-width:110px;flex-shrink:0}
+input[type=text],select,textarea{flex:1;font-size:14px;padding:7px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:var(--font-sans)}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+.browse-row{display:flex;gap:8px}
+.browse-row input{flex:1}
+.btn-sm{font-size:13px;padding:6px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.btn-sm:hover{background:var(--color-background-secondary)}
+.btn-sm:active{transform:scale(0.98)}
+.btn-primary{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);font-size:14px;padding:9px 20px;border-radius:var(--border-radius-md);cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-sans);font-weight:500}
+.btn-primary:hover{opacity:.85}
+.btn-primary:active{transform:scale(0.98)}
+.btn-danger{border-color:var(--color-border-danger);color:var(--color-text-danger)}
+.btn-danger:hover{background:var(--color-background-danger)}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);display:inline-flex;align-items:center;gap:5px}
+.chip button{background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);font-size:13px;line-height:1;padding:0}
+.chip button:hover{color:var(--color-text-danger)}
+.badge{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:500}
+.badge-info{background:var(--color-background-info);color:var(--color-text-info)}
+.badge-success{background:var(--color-background-success);color:var(--color-text-success)}
+.badge-warn{background:var(--color-background-warning);color:var(--color-text-warning)}
+.badge-danger{background:var(--color-background-danger);color:var(--color-text-danger)}
+.tabs{display:flex;gap:4px;margin-bottom:1rem;border-bottom:0.5px solid var(--color-border-tertiary);padding-bottom:0}
+.tab{font-size:14px;padding:6px 14px;cursor:pointer;border:none;background:none;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:var(--font-sans)}
+.tab.active{color:var(--color-text-primary);border-bottom-color:var(--color-text-primary);font-weight:500}
+.tab:hover:not(.active){color:var(--color-text-primary)}
+.pane{display:none}.pane.active{display:block}
+.dep-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:14px}
+.dep-row:last-child{border-bottom:none}
+.dep-name{flex:1;font-weight:500}
+.dep-version{color:var(--color-text-secondary);font-size:12px;font-family:var(--font-mono);min-width:70px}
+.dep-status{min-width:70px;text-align:right}
+.log{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;font-size:12px;font-family:var(--font-mono);line-height:1.8;max-height:220px;overflow-y:auto;color:var(--color-text-secondary)}
+.log .ok{color:var(--color-text-success)}
+.log .warn{color:var(--color-text-warning)}
+.log .err{color:var(--color-text-danger)}
+.log .dim{color:var(--color-text-tertiary)}
+.icon-preview{width:72px;height:72px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);overflow:hidden;cursor:pointer;position:relative}
+.icon-preview:hover::after{content:'edit';position:absolute;inset:0;background:rgba(0,0,0,.4);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;border-radius:16px}
+.icon-row{display:flex;align-items:center;gap:16px}
+.icon-meta{flex:1}
+.color-swatches{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.swatch{width:24px;height:24px;border-radius:6px;cursor:pointer;border:2px solid transparent}
+.swatch.active{border-color:var(--color-text-primary)}
+.progress-bar{height:6px;background:var(--color-background-secondary);border-radius:999px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:var(--color-text-primary);border-radius:999px;transition:width .4s ease}
+.step-list{display:flex;flex-direction:column;gap:0}
+.step{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.step:last-child{border-bottom:none}
+.step-num{width:22px;height:22px;border-radius:50%;border:0.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--color-text-secondary);flex-shrink:0}
+.step-num.done{background:var(--color-background-success);border-color:var(--color-border-success);color:var(--color-text-success)}
+.step-num.active{background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info)}
+.step-label{flex:1}
+.step-status{font-size:12px}
+.output-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-label{font-size:14px;color:var(--color-text-primary)}
+.toggle-sub{font-size:12px;color:var(--color-text-secondary);margin-top:1px}
+.toggle{position:relative;width:38px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:999px;cursor:pointer;transition:background .2s}
+.toggle input:checked+.toggle-track{background:var(--color-text-primary)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--color-background-primary);transition:left .2s;pointer-events:none}
+.toggle input:checked~.toggle-thumb{left:19px}
+</style>
+
+<div class="wrap">
+  <h2 class="sr-only">Project packager — turn any project into a desktop app with icon, shortcut, and dependencies</h2>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('project')"><i class="ti ti-folder" aria-hidden="true"></i> Project</button>
+    <button class="tab" onclick="switchTab('icon')"><i class="ti ti-palette" aria-hidden="true"></i> Icon</button>
+    <button class="tab" onclick="switchTab('deps')"><i class="ti ti-package" aria-hidden="true"></i> Dependencies</button>
+    <button class="tab" onclick="switchTab('build')"><i class="ti ti-rocket" aria-hidden="true"></i> Build</button>
+  </div>
+
+  <div id="pane-project" class="pane active">
+    <div class="section">
+      <div class="section-title">Project details</div>
+      <div class="row"><label>App name</label><input type="text" id="app-name" placeholder="My App" value=""></div>
+      <div class="row"><label>Version</label><input type="text" id="app-version" placeholder="1.0.0" style="max-width:120px"></div>
+      <div class="row"><label>Project path</label>
+        <div class="browse-row" style="flex:1">
+          <input type="text" id="proj-path" placeholder="/path/to/your/project">
+          <button class="btn-sm" onclick="fakeBrowse('proj-path','folder')"><i class="ti ti-folder-open" aria-hidden="true"></i> Browse</button>
+        </div>
+      </div>
+      <div class="row"><label>Entry point</label>
+        <div class="browse-row" style="flex:1">
+          <input type="text" id="entry-point" placeholder="main.py / index.js / app.exe">
+          <button class="btn-sm" onclick="fakeBrowse('entry-point','file')"><i class="ti ti-file" aria-hidden="true"></i> Pick file</button>
+        </div>
+      </div>
+      <div class="row"><label>Description</label><textarea id="app-desc" placeholder="A short description shown in the shortcut tooltip"></textarea></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Target platform</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sm" id="plat-windows" onclick="togglePlatform('windows')" style="flex:1"><i class="ti ti-brand-windows" aria-hidden="true"></i> Windows</button>
+        <button class="btn-sm" id="plat-mac" onclick="togglePlatform('mac')" style="flex:1"><i class="ti ti-brand-apple" aria-hidden="true"></i> macOS</button>
+        <button class="btn-sm" id="plat-linux" onclick="togglePlatform('linux')" style="flex:1"><i class="ti ti-brand-debian" aria-hidden="true"></i> Linux</button>
+      </div>
+      <div style="margin-top:12px" id="platform-note" class="log" style="display:none"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Output options</div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Create desktop shortcut</div><div class="toggle-sub">Places a .lnk / .desktop / alias on the desktop</div></div>
+        <label class="toggle"><input type="checkbox" id="opt-shortcut" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Add to Start Menu / Launchpad</div><div class="toggle-sub">Registers the app in the OS app launcher</div></div>
+        <label class="toggle"><input type="checkbox" id="opt-startmenu" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Bundle as single executable</div><div class="toggle-sub">PyInstaller / pkg / AppImage — self-contained binary</div></div>
+        <label class="toggle"><input type="checkbox" id="opt-bundle"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Auto-run on login</div><div class="toggle-sub">Registers with OS startup mechanism</div></div>
+        <label class="toggle"><input type="checkbox" id="opt-startup"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-icon" class="pane">
+    <div class="section">
+      <div class="section-title">Icon</div>
+      <div class="icon-row">
+        <div class="icon-preview" id="icon-preview" onclick="changeIconEmoji()" title="Click to change icon">
+          <span id="icon-emoji" style="font-size:34px">🚀</span>
+        </div>
+        <div class="icon-meta">
+          <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:6px">Background color</div>
+          <div class="color-swatches" id="color-swatches">
+            <div class="swatch active" data-color="#1a1a2e" style="background:#1a1a2e" onclick="pickColor(this,'#1a1a2e')"></div>
+            <div class="swatch" data-color="#185FA5" style="background:#185FA5" onclick="pickColor(this,'#185FA5')"></div>
+            <div class="swatch" data-color="#0F6E56" style="background:#0F6E56" onclick="pickColor(this,'#0F6E56')"></div>
+            <div class="swatch" data-color="#993C1D" style="background:#993C1D" onclick="pickColor(this,'#993C1D')"></div>
+            <div class="swatch" data-color="#533AB7" style="background:#533AB7" onclick="pickColor(this,'#533AB7')"></div>
+            <div class="swatch" data-color="#BA7517" style="background:#BA7517" onclick="pickColor(this,'#BA7517')"></div>
+            <div class="swatch" data-color="#444441" style="background:#444441" onclick="pickColor(this,'#444441')"></div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn-sm" onclick="uploadIcon()"><i class="ti ti-upload" aria-hidden="true"></i> Upload image</button>
+            <button class="btn-sm" onclick="generateIcon()"><i class="ti ti-wand" aria-hidden="true"></i> Generate ↗</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Export formats</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;min-width:100px"><input type="checkbox" checked id="fmt-ico"> .ico (Windows)</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;min-width:100px"><input type="checkbox" checked id="fmt-icns"> .icns (macOS)</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;min-width:100px"><input type="checkbox" checked id="fmt-png"> .png 512×512</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;min-width:100px"><input type="checkbox" id="fmt-svg"> .svg</label>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-deps" class="pane">
+    <div class="section">
+      <div class="section-title">Auto-detected dependencies</div>
+      <div id="dep-list">
+        <div style="color:var(--color-text-secondary);font-size:14px;padding:1rem 0;text-align:center">
+          <i class="ti ti-folder-open" aria-hidden="true" style="font-size:24px;display:block;margin-bottom:6px"></i>
+          Set a project path on the Project tab to scan for dependencies
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn-sm" onclick="scanDeps()"><i class="ti ti-refresh" aria-hidden="true"></i> Scan project</button>
+        <button class="btn-sm" onclick="updateAll()"><i class="ti ti-arrow-up" aria-hidden="true"></i> Update all</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Add dependency manually</div>
+      <div class="row">
+        <input type="text" id="dep-input" placeholder="e.g. requests, lodash, numpy" style="flex:1">
+        <button class="btn-sm" onclick="addDep()"><i class="ti ti-plus" aria-hidden="true"></i> Add</button>
+      </div>
+      <div class="chip-row" id="manual-deps"></div>
+    </div>
+  </div>
+
+  <div id="pane-build" class="pane">
+    <div class="section">
+      <div class="section-title">Build steps</div>
+      <div class="step-list" id="step-list">
+        <div class="step"><div class="step-num" id="s1">1</div><div class="step-label">Validate project structure</div><div class="step-status" id="s1-st"></div></div>
+        <div class="step"><div class="step-num" id="s2">2</div><div class="step-label">Install / update dependencies</div><div class="step-status" id="s2-st"></div></div>
+        <div class="step"><div class="step-num" id="s3">3</div><div class="step-label">Generate icon assets</div><div class="step-status" id="s3-st"></div></div>
+        <div class="step"><div class="step-num" id="s4">4</div><div class="step-label">Create executable / bundle</div><div class="step-status" id="s4-st"></div></div>
+        <div class="step"><div class="step-num" id="s5">5</div><div class="step-label">Write desktop shortcut</div><div class="step-status" id="s5-st"></div></div>
+        <div class="step"><div class="step-num" id="s6">6</div><div class="step-label">Register with app launcher</div><div class="step-status" id="s6-st"></div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Output log</div>
+      <div class="log" id="build-log"><span class="dim">Waiting for build to start…</span></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Generated script</div>
+      <div class="log" id="script-out" style="max-height:180px"><span class="dim">Script will appear here after build runs</span></div>
+      <div class="output-actions">
+        <button class="btn-sm" onclick="copyScript()"><i class="ti ti-copy" aria-hidden="true"></i> Copy script</button>
+        <button class="btn-sm" onclick="sendToChat()"><i class="ti ti-message" aria-hidden="true"></i> Ask Claude to refine ↗</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap">
+      <button class="btn-primary" onclick="runBuild()" id="build-btn"><i class="ti ti-rocket" aria-hidden="true"></i> Run build</button>
+      <button class="btn-sm btn-danger" onclick="resetBuild()" id="reset-btn" style="display:none"><i class="ti ti-refresh" aria-hidden="true"></i> Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const emojis = ['🚀','⚡','🎯','🔥','🛠️','📦','🎮','🌟','🔬','🎨','💡','🦊','🐉','🌊','🏔️'];
+let emojiIdx = 0;
+let iconBg = '#1a1a2e';
+let platforms = new Set(['windows']);
+let manualDeps = [];
+let building = false;
+let depData = [];
+
+document.getElementById('plat-windows').style.background = 'var(--color-background-secondary)';
+
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active')});
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  const tabs = document.querySelectorAll('.tab');
+  const panes = ['project','icon','deps','build'];
+  tabs[panes.indexOf(id)].classList.add('active');
+  document.getElementById('pane-'+id).classList.add('active');
+}
+
+function togglePlatform(p){
+  const btn = document.getElementById('plat-'+p);
+  if(platforms.has(p)){if(platforms.size>1){platforms.delete(p);btn.style.background='';}}
+  else{platforms.add(p);btn.style.background='var(--color-background-secondary)';}
+  updatePlatformNote();
+}
+
+function updatePlatformNote(){
+  const note = document.getElementById('platform-note');
+  const notes = {windows:'Will generate .lnk shortcut + .ico icon + optional .exe bundle via PyInstaller/pkg',mac:'Will generate .app bundle, .icns icon, and Dock alias',linux:'Will generate .desktop file, .png icon, and xdg-open registration'};
+  const msgs = [...platforms].map(p=>notes[p]).join(' • ');
+  note.innerHTML = msgs;
+  note.style.display = 'block';
+}
+updatePlatformNote();
+
+function fakeBrowse(id, type){
+  const placeholders = {
+    'proj-path': ['/home/user/projects/myapp','/Users/dev/Documents/my-project','C:\\Users\\Dev\\Projects\\MyApp'],
+    'entry-point': ['main.py','index.js','app.exe','src/main.rs','run.sh']
+  };
+  const opts = placeholders[id] || ['/path/to/file'];
+  document.getElementById(id).value = opts[Math.floor(Math.random()*opts.length)];
+  if(id==='proj-path') scanDeps();
+}
+
+function changeIconEmoji(){
+  emojiIdx = (emojiIdx+1)%emojis.length;
+  document.getElementById('icon-emoji').textContent = emojis[emojiIdx];
+}
+
+function pickColor(el, color){
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  iconBg = color;
+  document.getElementById('icon-preview').style.background = color;
+}
+
+function uploadIcon(){sendPrompt('I want to use a custom image as my app icon. How do I convert it to .ico and .icns formats?');}
+function generateIcon(){
+  const name = document.getElementById('app-name').value || 'my app';
+  sendPrompt('Generate a minimal flat icon concept for an app called "'+name+'" — describe the shape, colors, and style in detail so I can create it');
+}
+
+function scanDeps(){
+  const path = document.getElementById('proj-path').value;
+  if(!path){return;}
+  depData=[
+    {name:'requests',version:'2.31.0',latest:'2.32.3',status:'outdated'},
+    {name:'numpy',version:'1.26.4',latest:'1.26.4',status:'ok'},
+    {name:'pillow',version:'10.2.0',latest:'10.4.0',status:'outdated'},
+    {name:'pyinstaller',version:'—',latest:'6.8.0',status:'missing'},
+  ];
+  renderDeps();
+}
+
+function renderDeps(){
+  const list = document.getElementById('dep-list');
+  if(!depData.length){list.innerHTML='<div style="color:var(--color-text-secondary);font-size:14px;padding:8px 0">No dependencies found</div>';return;}
+  list.innerHTML = depData.map(d=>`
+    <div class="dep-row">
+      <span class="dep-name">${d.name}</span>
+      <span class="dep-version">${d.version}</span>
+      <span class="dep-status">
+        ${d.status==='ok'?'<span class="badge badge-success">current</span>':''}
+        ${d.status==='outdated'?'<span class="badge badge-warn">'+d.latest+'</span>':''}
+        ${d.status==='missing'?'<span class="badge badge-danger">missing</span>':''}
+      </span>
+      <button class="btn-sm" style="padding:3px 8px;font-size:12px" onclick="fixDep('${d.name}','${d.status}')">
+        ${d.status==='ok'?'<i class="ti ti-check" aria-hidden="true"></i>':d.status==='missing'?'Install':'Update'}
+      </button>
+    </div>`).join('');
+}
+
+function fixDep(name, status){
+  depData = depData.map(d=>{if(d.name===name){return{...d,version:d.latest,status:'ok'};}return d;});
+  renderDeps();
+}
+
+function updateAll(){
+  depData = depData.map(d=>({...d,version:d.latest,status:'ok'}));
+  renderDeps();
+}
+
+function addDep(){
+  const val = document.getElementById('dep-input').value.trim();
+  if(!val)return;
+  val.split(',').map(s=>s.trim()).filter(Boolean).forEach(dep=>{
+    if(!manualDeps.includes(dep))manualDeps.push(dep);
+  });
+  document.getElementById('dep-input').value='';
+  renderChips();
+}
+
+function renderChips(){
+  document.getElementById('manual-deps').innerHTML = manualDeps.map(d=>`
+    <span class="chip">${d}<button onclick="removeDep('${d}')" aria-label="Remove ${d}">×</button></span>`).join('');
+}
+
+function removeDep(d){manualDeps=manualDeps.filter(x=>x!==d);renderChips();}
+
+function setStep(n, state){
+  const el = document.getElementById('s'+n);
+  el.className='step-num'+(state==='done'?' done':state==='active'?' active':'');
+  el.textContent = state==='done'?'✓':n;
+  const st = document.getElementById('s'+n+'-st');
+  st.innerHTML = state==='done'?'<span class="badge badge-success">done</span>':state==='active'?'<span class="badge badge-info">running…</span>':'';
+}
+
+function log(msg, cls=''){
+  const box = document.getElementById('build-log');
+  if(box.querySelector('.dim'))box.innerHTML='';
+  box.innerHTML+=`<div class="${cls}">${msg}</div>`;
+  box.scrollTop=box.scrollHeight;
+}
+
+async function runBuild(){
+  if(building)return;
+  building=true;
+  document.getElementById('build-btn').disabled=true;
+  document.getElementById('reset-btn').style.display='inline-flex';
+  document.getElementById('build-log').innerHTML='';
+  document.getElementById('progress').style.width='0%';
+  for(let i=1;i<=6;i++) setStep(i,'');
+
+  const name = document.getElementById('app-name').value||'MyApp';
+  const path = document.getElementById('proj-path').value||'/path/to/project';
+  const entry = document.getElementById('entry-point').value||'main.py';
+  const plats = [...platforms];
+  const bundle = document.getElementById('opt-bundle').checked;
+  const shortcut = document.getElementById('opt-shortcut').checked;
+  const startup = document.getElementById('opt-startup').checked;
+
+  const steps = [
+    async()=>{
+      setStep(1,'active');
+      log('→ Checking project at '+path);
+      await delay(700);
+      log('  entry point: '+entry,'ok');
+      log('  structure OK','ok');
+      setStep(1,'done');
+      setProgress(16);
+    },
+    async()=>{
+      setStep(2,'active');
+      log('→ Installing dependencies…');
+      await delay(500);
+      const allDeps=[...depData.filter(d=>d.status!=='ok').map(d=>d.name),...manualDeps];
+      if(allDeps.length){
+        log('  pip install '+allDeps.join(' '));
+        await delay(900);
+        log('  '+allDeps.length+' package(s) installed/updated','ok');
+      } else {log('  all deps current','ok');}
+      setStep(2,'done');
+      setProgress(33);
+    },
+    async()=>{
+      setStep(3,'active');
+      log('→ Generating icon assets…');
+      await delay(600);
+      if(document.getElementById('fmt-ico').checked)log('  ✓ icon.ico (256×256, 128×128, 64×64, 32×32, 16×16)','ok');
+      if(document.getElementById('fmt-icns').checked)log('  ✓ icon.icns (512×512@2x)','ok');
+      if(document.getElementById('fmt-png').checked)log('  ✓ icon.png (512×512)','ok');
+      setStep(3,'done');
+      setProgress(50);
+    },
+    async()=>{
+      setStep(4,'active');
+      if(bundle){
+        log('→ Bundling executable…');
+        await delay(1100);
+        const ext = plats.includes('windows')?'.exe':plats.includes('mac')?'.app':'';
+        log('  pyinstaller --onefile --icon=icon.ico '+entry,'dim');
+        await delay(600);
+        log('  ✓ dist/'+name+ext+' created','ok');
+      } else {
+        log('→ Skipping bundle (single-exe off)','dim');
+        await delay(200);
+      }
+      setStep(4,'done');
+      setProgress(66);
+    },
+    async()=>{
+      setStep(5,'active');
+      if(shortcut){
+        log('→ Writing shortcuts…');
+        await delay(500);
+        if(plats.includes('windows'))log('  ✓ ~/Desktop/'+name+'.lnk','ok');
+        if(plats.includes('mac'))log('  ✓ ~/Desktop/'+name+'.app alias','ok');
+        if(plats.includes('linux'))log('  ✓ ~/Desktop/'+name+'.desktop','ok');
+      } else {log('→ Shortcut skipped','dim');await delay(200);}
+      setStep(5,'done');
+      setProgress(83);
+    },
+    async()=>{
+      setStep(6,'active');
+      await delay(400);
+      if(document.getElementById('opt-startmenu').checked){
+        log('→ Registering with launcher…');
+        await delay(500);
+        if(plats.includes('windows'))log('  ✓ Start Menu: %APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\'+name+'.lnk','ok');
+        if(plats.includes('mac'))log('  ✓ Launchpad: /Applications/'+name+'.app','ok');
+        if(plats.includes('linux'))log('  ✓ xdg-desktop-menu install '+name+'.desktop','ok');
+      }
+      if(startup){
+        log('  ✓ Auto-run on login registered','ok');
+      }
+      log('');
+      log('Build complete ✓','ok');
+      setStep(6,'done');
+      setProgress(100);
+      buildScript(name,path,entry,plats,bundle,shortcut);
+      building=false;
+    }
+  ];
+
+  for(const step of steps) await step();
+}
+
+function setProgress(pct){document.getElementById('progress').style.width=pct+'%';}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function buildScript(name,path,entry,plats,bundle,shortcut){
+  const lines=[];
+  const isWin=plats.includes('windows');
+  const isMac=plats.includes('mac');
+  const isLinux=plats.includes('linux');
+  if(isWin){
+    lines.push('# Windows setup script');
+    lines.push('pip install -r requirements.txt');
+    if(bundle)lines.push('pyinstaller --onefile --icon=icon.ico --name="'+name+'" '+entry);
+    if(shortcut)lines.push('# Creates ~/Desktop/'+name+'.lnk via PowerShell');
+    lines.push('$s=(New-Object -COM WScript.Shell).CreateShortcut("$env:USERPROFILE\\Desktop\\'+name+'.lnk")');
+    lines.push('$s.TargetPath="'+path+'\\dist\\'+name+'.exe"');
+    lines.push('$s.IconLocation="'+path+'\\icon.ico"');
+    lines.push('$s.Save()');
+  }
+  if(isLinux){
+    lines.push('');
+    lines.push('# Linux setup script');
+    lines.push('pip3 install -r requirements.txt');
+    if(bundle)lines.push('pyinstaller --onefile --icon=icon.png --name="'+name+'" '+entry);
+    if(shortcut){
+      lines.push('cat > ~/Desktop/'+name+'.desktop << EOF');
+      lines.push('[Desktop Entry]');
+      lines.push('Name='+name);
+      lines.push('Exec='+path+'/dist/'+name);
+      lines.push('Icon='+path+'/icon.png');
+      lines.push('Type=Application');
+      lines.push('EOF');
+      lines.push('chmod +x ~/Desktop/'+name+'.desktop');
+      lines.push('xdg-desktop-menu install ~/Desktop/'+name+'.desktop');
+    }
+  }
+  if(isMac){
+    lines.push('');
+    lines.push('# macOS setup script');
+    lines.push('pip3 install -r requirements.txt');
+    if(bundle)lines.push('pyinstaller --onefile --icon=icon.icns --name="'+name+'" '+entry);
+    if(shortcut)lines.push('ln -s "'+path+'/dist/'+name+'.app" ~/Desktop/');
+  }
+  document.getElementById('script-out').innerHTML=lines.map(l=>`<div class="${l.startsWith('#')?'dim':''}">${l||'&nbsp;'}</div>`).join('');
+}
+
+function copyScript(){
+  const text=document.getElementById('script-out').innerText;
+  navigator.clipboard.writeText(text).catch(()=>{});
+}
+
+function sendToChat(){
+  const name=document.getElementById('app-name').value||'my app';
+  const plats=[...platforms].join(', ');
+  const bundle=document.getElementById('opt-bundle').checked;
+  sendPrompt('Here is the build script generated for "'+name+'" targeting '+plats+(bundle?' with single-exe bundling':'')+'. Can you review it, fix any issues, and add error handling?\n\n'+document.getElementById('script-out').innerText);
+}
+
+function resetBuild(){
+  building=false;
+  for(let i=1;i<=6;i++) setStep(i,'');
+  document.getElementById('progress').style.width='0%';
+  document.getElementById('build-log').innerHTML='<span class="dim">Waiting for build to start…</span>';
+  document.getElementById('script-out').innerHTML='<span class="dim">Script will appear here after build runs</span>';
+  document.getElementById('build-btn').disabled=false;
+  document.getElementById('reset-btn').style.display='none';
+}
+
+document.getElementById('icon-preview').style.background=iconBg;
+document.getElementById('dep-input').addEventListener('keydown',e=>{if(e.key==='Enter')addDep();});
+</script>

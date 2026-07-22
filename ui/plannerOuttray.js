@@ -251,6 +251,7 @@ function summarizePlannerOuttray(queue = {}) {
     laneCount: flattenedItems.length,
     pendingLaneCount: flattenedItems.filter((item) => ['ready_for_handoff', 'deposited'].includes(item.status)).length,
     latestEntry: entries[0] || null,
+    status: entries[0]?.status || (entries.length ? 'mixed' : 'empty'),
   };
 }
 
