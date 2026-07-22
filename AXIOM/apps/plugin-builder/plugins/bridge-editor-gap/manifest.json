@@ -1,0 +1,76 @@
+{
+  "id": "bridge-editor-gap",
+  "name": "Bridge editor gap",
+  "version": "0.1.0",
+  "description": "Bridge missing AXIOM capability: RenderPipeline",
+  "author": {
+    "name": "AXIOM Agent",
+    "source": "axiom-agent"
+  },
+  "entrypoint": "src/index.js",
+  "capabilities": [
+    "ui-command-palette",
+    "event-subscribe"
+  ],
+  "permissions": {
+    "editor": {
+      "commands": [
+        "register"
+      ]
+    },
+    "storage": {
+      "namespaces": [
+        "plugin-local"
+      ]
+    }
+  },
+  "mcp_tools": [],
+  "lifecycle_hooks": {
+    "on_load": "onLoad",
+    "on_activate": "onActivate",
+    "on_deactivate": "onDeactivate",
+    "on_unload": "onUnload"
+  },
+  "event_subscriptions": [],
+  "ui_surfaces": [],
+  "axiom_runtime": {
+    "min_version": "1.0.0",
+    "apis": []
+  },
+  "lifecycle": {
+    "status": "rejected",
+    "created_at": "2026-05-14T07:08:12.935Z",
+    "rejected_at": "2026-05-18T12:58:53.013Z"
+  },
+  "safety": {
+    "may_modify_core": false,
+    "sandboxed": true,
+    "timeout_ms": 30000
+  },
+  "provenance": {
+    "request_id": "9b0d89e5-97ed-454f-a0b9-3bf1df364cb9",
+    "generated_by": "axiom-plugin-builder",
+    "template_used": "editor",
+    "generated_from": "capability_gap"
+  },
+  "compatibility": {
+    "os": [
+      "any"
+    ],
+    "node_version": ">=18"
+  },
+  "validation_status": {
+    "passed": false,
+    "validator_version": "1.0.0",
+    "schema_version": "1.0.0",
+    "errors": [
+      {
+        "code": "PLACEHOLDER_ONLY_UNSUPPORTED_GAP",
+        "message": "Placeholder scaffold only; no implementation contract, validation, package, registration, activation, or persistence evidence.",
+        "severity": "error"
+      }
+    ],
+    "warnings": [],
+    "checksum": null
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "plugins": {
+    "boundedskilldocumentsaver": {
+      "id": "boundedskilldocumentsaver",
+      "name": "BoundedSkillDocumentSaver",
+      "version": "0.1.0",
+      "status": "registered",
+      "registered_at": "2026-05-11T14:52:03.312Z",
+      "activated_at": null,
+      "validated": true,
+      "checksum": "31d412c5e91f936a18b31145e88aaed990a6c814986be1add1daabd823b12d19",
+      "capabilities": [
+        "ui-command-palette",
+        "event-subscribe"
+      ],
+      "permissions": {
+        "editor": {
+          "commands": [
+            "register"
+          ]
+        },
+        "storage": {
+          "namespaces": [
+            "plugin-local"
+          ]
+        }
+      },
+      "author": {
+        "name": "AXIOM Agent",
+        "source": "axiom-agent"
+      },
+      "bundle_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\AXIOM\\apps\\plugin-builder\\packages\\boundedskilldocumentsaver-0.1.0.axpkg"
+    },
+    "safe-write-project-file": {
+      "id": "safe-write-project-file",
+      "name": "safe_write_project_file",
+      "version": "0.1.0",
+      "status": "registered",
+      "registered_at": "2026-05-18T13:31:56.538Z",
+      "activated_at": null,
+      "validated": true,
+      "checksum": "ae44150d7c8c9637912912eafb07e3ef41c89ddb716624dd9028cb2a729608ff",
+      "capabilities": [
+        "mcp-tool-expose",
+        "project-file-patch"
+      ],
+      "permissions": {
+        "mcp": {
+          "expose_tools": true
+        },
+        "filesystem": {
+          "project_root_only": true,
+          "modes": [
+            "documentation",
+            "config_patch",
+            "core_patch"
+          ],
+          "dry_run_default": true
+        }
+      },
+      "author": {
+        "name": "AXIOM Agent",
+        "source": "axiom-agent"
+      },
+      "bundle_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\AXIOM\\apps\\plugin-builder\\packages\\safe-write-project-file-0.1.0.axpkg"
+    }
+  },
+  "receipts": [
+    {
+      "receipt_id": "rcpt_14a29e1e-5319-4b18-9699-aaa5d308f34c",
+      "plugin_id": "boundedskilldocumentsaver",
+      "operation": "register",
+      "timestamp": "2026-05-11T14:52:03.312Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "96ba82436532c524944b3ece76af2a50d9b1eeea47f23d767d40d488a1f51bdf"
+    },
+    {
+      "receipt_id": "rcpt_149889b3-773d-4c47-b021-91f01bb608e0",
+      "plugin_id": "safe-write-project-file",
+      "operation": "register",
+      "timestamp": "2026-05-18T13:30:48.309Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "8b37b05aee754a8ed06d18ab0711f03414ec0032ba1bff754887ab9946a7021f"
+    },
+    {
+      "receipt_id": "rcpt_012e6a3d-b0b6-4ad7-be32-8a7ea9e75753",
+      "plugin_id": "safe-write-project-file",
+      "operation": "register",
+      "timestamp": "2026-05-18T13:31:56.538Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "ae5d1bb04edcf1d0ff0c15866adc6cee48000914c91b43d9bc42114425158194"
+    }
+  ],
+  "updated_at": "2026-06-02T00:00:00.000Z"
+}

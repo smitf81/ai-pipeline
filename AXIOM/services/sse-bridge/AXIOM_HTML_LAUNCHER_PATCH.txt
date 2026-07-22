@@ -1,0 +1,34 @@
+Add this near the bottom of your AXIOM .html file, before </body>:
+
+<script src="http://localhost:3007/axiom-sse-client.js"></script>
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    AXIOMSSE.connect();
+
+    // Optional: if your existing AXIOM chat send function is accessible,
+    // you can also call AXIOMSSE.sendIntent(userText) after sending chat.
+  });
+
+  // Example: listen for proposed kernel deltas and bridge them into your editor.
+  window.addEventListener("axiom:sse:kernel_delta_proposed", (e) => {
+    const delta = e.detail;
+
+    console.log("KERNEL DELTA PROPOSED:", delta);
+
+    // Later:
+    // - update EntityRegistry
+    // - update Truth Kernel panel
+    // - draw region/field overlays
+    // - send to ACE for validation
+  });
+</script>
+
+Then run:
+
+npm install
+npm start
+
+Open:
+http://localhost:3007/sse-demo.html
+
+Or open your AXIOM .html launcher as normal, as long as the bridge server is running.

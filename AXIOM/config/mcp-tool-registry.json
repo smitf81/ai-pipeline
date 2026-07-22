@@ -1,0 +1,13 @@
+{
+  "remote_plugin_builder": "http://127.0.0.1:4242/call",
+  "tools": [
+    "safe_write_documentation",
+    "axiom_plugin_create_from_gap",
+    "axiom_plugin_validate",
+    "axiom_plugin_package",
+    "axiom_plugin_register",
+    "axiom_plugin_inspect",
+    "axiom_plugin_list",
+    "axiom_plugin_generate_patch"
+  ]
+}

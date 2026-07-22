@@ -1,0 +1,73 @@
+{
+  "id": "boundedskilldocumentsaver",
+  "name": "BoundedSkillDocumentSaver",
+  "version": "0.1.0",
+  "description": "Bridge missing AXIOM capability: AXIOM needs a bounded document/skill saver so approved operating notes can be saved from the editor into safe project folders.",
+  "author": {
+    "name": "AXIOM Agent",
+    "source": "axiom-agent"
+  },
+  "entrypoint": "src/index.js",
+  "capabilities": [
+    "ui-command-palette",
+    "event-subscribe"
+  ],
+  "permissions": {
+    "editor": {
+      "commands": [
+        "register"
+      ]
+    },
+    "storage": {
+      "namespaces": [
+        "plugin-local"
+      ]
+    }
+  },
+  "mcp_tools": [],
+  "lifecycle_hooks": {
+    "on_load": "onLoad",
+    "on_activate": "onActivate",
+    "on_deactivate": "onDeactivate",
+    "on_unload": "onUnload"
+  },
+  "event_subscriptions": [],
+  "ui_surfaces": [],
+  "axiom_runtime": {
+    "min_version": "1.0.0",
+    "apis": []
+  },
+  "lifecycle": {
+    "status": "registered",
+    "created_at": "2026-05-11T14:26:50.147Z",
+    "validated_at": "2026-05-11T14:50:27.021Z",
+    "packaged_at": "2026-05-11T14:51:27.937Z",
+    "bundle_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\AXIOM\\apps\\plugin-builder\\packages\\boundedskilldocumentsaver-0.1.0.axpkg",
+    "registered_at": "2026-05-11T14:52:03.312Z"
+  },
+  "safety": {
+    "may_modify_core": false,
+    "sandboxed": true,
+    "timeout_ms": 30000
+  },
+  "provenance": {
+    "request_id": "7e969546-6c2f-4a02-a369-2017d745f925",
+    "generated_by": "axiom-plugin-builder",
+    "template_used": "editor",
+    "generated_from": "capability_gap"
+  },
+  "compatibility": {
+    "os": [
+      "any"
+    ],
+    "node_version": ">=18"
+  },
+  "validation_status": {
+    "passed": true,
+    "validator_version": "1.0.0",
+    "schema_version": "1.0.0",
+    "errors": [],
+    "warnings": [],
+    "checksum": "31d412c5e91f936a18b31145e88aaed990a6c814986be1add1daabd823b12d19"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "axiom-plugin-builder": {
+      "command": "node",
+      "args": ["src/mcp/server.js"],
+      "cwd": "/path/to/axiom-plugin-builder",
+      "description": "AXIOM Plugin Builder — governed plugin creation, validation, packaging and registration"
+    }
+  }
+}
