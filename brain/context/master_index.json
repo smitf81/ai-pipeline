@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-07-22T09:02:17.033Z",
+  "generated_at": "2026-07-22T09:06:02.956Z",
   "root": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline",
-  "files_indexed": 890,
+  "files_indexed": 891,
   "appendix_path": "brain/context/chat_appendix.md",
   "records": [
     {
@@ -3120,9 +3120,9 @@
     {
       "path": "brain/context/helper_inventory.md",
       "category": "doc",
-      "size_bytes": 2499,
-      "modified_at": "2026-07-22T09:02:02.175Z",
-      "sha256": "88688fe9d5a7ec47b634c14cae6ef0d7f717a53982b8edc1f6f40dae8750fc72",
+      "size_bytes": 2587,
+      "modified_at": "2026-07-22T09:05:43.155Z",
+      "sha256": "f655aac426825034bbc664250c1d2c97ca9b3ae3abddc60673979472de43b2b6",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -5032,9 +5032,9 @@
     {
       "path": "ui/legacyRunnerAdapter.js",
       "category": "code",
-      "size_bytes": 2433,
-      "modified_at": "2026-03-18T15:17:47.904Z",
-      "sha256": "ae01ca3f301cfb9d0829ea416eb3a1956b382752f52bd88d12393ee7b3f88c24",
+      "size_bytes": 2811,
+      "modified_at": "2026-07-22T09:05:43.149Z",
+      "sha256": "770dc76a763a0f1b2313d12931ac662057d841a51e799d4bc780cf9d671d79f0",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -6102,6 +6102,14 @@
       "summary": "UI/runtime test coverage."
     },
     {
+      "path": "ui/tests/legacyRunnerAdapter.test.mjs",
+      "category": "test",
+      "size_bytes": 1623,
+      "modified_at": "2026-07-22T09:05:43.157Z",
+      "sha256": "dd706c028a9ad7cc1b396f1fb370e550efde60603c18f951035c9303b867f857",
+      "summary": "UI/runtime test coverage."
+    },
+    {
       "path": "ui/tests/llmAdapter.test.mjs",
       "category": "test",
       "size_bytes": 1315,
@@ -6544,9 +6552,9 @@
     {
       "path": "ui/tests/run-ui-tests.mjs",
       "category": "test",
-      "size_bytes": 10921,
-      "modified_at": "2026-05-27T19:52:12.933Z",
-      "sha256": "c19a01556c2f7dc0b4faec0091a98cf5387ec404eb446db079b77eb05fbada2c",
+      "size_bytes": 10996,
+      "modified_at": "2026-07-22T09:05:43.153Z",
+      "sha256": "cf543b6e1655ee8822cb97c4da49afe3721a214e151fc84f33d0d602c54e3cfe",
       "summary": "UI/runtime test coverage."
     },
     {

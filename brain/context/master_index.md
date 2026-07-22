@@ -1,8 +1,8 @@
 # Project Master Index
 
-Generated: 2026-07-22T09:02:17.044Z
+Generated: 2026-07-22T09:06:02.965Z
 Root: C:\Users\felix\Desktop\Automated_AI_Pipeline
-Indexed files: 890
+Indexed files: 891
 
 Use this file to choose what to read next. It is an orientation map, not canonical truth.
 
@@ -24,7 +24,7 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 
 ## Category Counts
 - code: 243
-- test: 185
+- test: 186
 - doc: 171
 - other: 169
 - data: 90
@@ -33,7 +33,7 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 
 ## Top-Level Map
 - `AXIOM`: 295 files
-- `ui`: 257 files
+- `ui`: 258 files
 - `brain`: 166 files
 - `work`: 31 files
 - `Animation_Embodied_Field_Entity_EFE_Plugin`: 25 files
@@ -75,7 +75,7 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `AXIOM/examples` - 1 files, 64.5 KB (code:1)
 - `AXIOM/patches` - 4 files, 10.6 KB (doc:3, code:1)
 - `brain` - 2 files, 71.6 KB (code:1, doc:1)
-- `brain/context` - 48 files, 972.2 KB (doc:33, data:14, other:1)
+- `brain/context` - 48 files, 972.3 KB (doc:33, data:14, other:1)
 - `brain/emergence` - 17 files, 149.7 KB (doc:12, data:4, code:1)
 - `brain/Image_refs` - 8 files, 13.5 MB (asset:8)
 - `brain/skills` - 34 files, 70.4 KB (doc:18, other:16)
@@ -99,7 +99,7 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `ui` - 68 files, 2.8 MB (code:62, config:2, doc:2, asset:1, data:1)
 - `ui/public` - 45 files, 3.0 MB (code:44, data:1)
 - `ui/scripts` - 4 files, 4.0 KB (code:4)
-- `ui/tests` - 140 files, 1.1 MB (test:140)
+- `ui/tests` - 141 files, 1.1 MB (test:141)
 - `work` - 1 files, 79 B (data:1)
 - `work/hatch-pet` - 21 files, 88.9 KB (doc:10, asset:9, data:2)
 - `work/tasks` - 9 files, 13.7 KB (doc:6, data:2, other:1)
@@ -367,7 +367,7 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `brain/context/chat_appendix.md` [doc, 2.2 KB] - Operational planner-support context artifact.
 - `brain/context/failure_history.json` [data, 97.8 KB] - Operational planner-support context artifact.
 - `brain/context/failure_history.md` [doc, 74.5 KB] - Operational planner-support context artifact.
-- `brain/context/helper_inventory.md` [doc, 2.4 KB] - Operational planner-support context artifact.
+- `brain/context/helper_inventory.md` [doc, 2.5 KB] - Operational planner-support context artifact.
 - `brain/context/known_fixes_candidates.json` [data, 57.6 KB] - Operational planner-support context artifact.
 - `brain/context/known_fixes_candidates.md` [doc, 56.1 KB] - Operational planner-support context artifact.
 - `brain/context/known_fixes.json` [data, 4.3 KB] - Operational planner-support context artifact.
@@ -424,7 +424,7 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `brain/skills/implementation-gravity/SKILL.md` [doc, 1.7 KB] - name: implementation-gravity
 - `brain/skills/literal-vs-useful-completion/SKILL.md` [doc, 1.6 KB] - name: literal-vs-useful-completion
 
-Additional high-signal records omitted from Markdown: 403. Query `brain/context/master_index.json` for the full inventory.
+Additional high-signal records omitted from Markdown: 404. Query `brain/context/master_index.json` for the full inventory.
 
 ## Recent Chat Appendix
 ## 2026-05-27T13:34:59.543Z

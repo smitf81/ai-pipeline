@@ -43,6 +43,7 @@ const testEntries = [
   { name: 'evaluatorAgent', path: './evaluatorAgent.test.mjs' },
   { name: 'evaluatorServerIntegration', path: './evaluatorServerIntegration.test.mjs' },
   { name: 'moduleRunner', path: './moduleRunner.test.mjs' },
+  { name: 'legacyRunnerAdapter', path: './legacyRunnerAdapter.test.mjs' },
   { name: 'graphEngine', path: './graphEngine.test.mjs' },
   { name: 'graphQueries', path: './graphQueries.test.mjs' },
   { name: 'graphMutations', path: './graphMutations.test.mjs' },
