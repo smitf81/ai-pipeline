@@ -52,14 +52,2245 @@
   "agentComments": {},
   "intentState": {
     "registry": {
-      "currentIntentId": null,
-      "latestIntentId": null,
-      "byId": {},
-      "records": []
+      "currentIntentId": "sketch_route_probe_1",
+      "latestIntentId": "sketch_route_probe_1",
+      "byId": {
+        "sketch_route_probe_1": {
+          "id": "sketch_route_probe_1",
+          "source": {
+            "ref": "sketch_route_probe_1",
+            "requestedBy": "sketchpad",
+            "type": "sketchpad-stroke"
+          },
+          "geometry": {
+            "kind": "stroke",
+            "region": null,
+            "stroke": [
+              {
+                "x": 10,
+                "y": 12
+              },
+              {
+                "x": 64,
+                "y": 32
+              },
+              {
+                "x": 110,
+                "y": 56
+              }
+            ]
+          },
+          "semanticMeaning": {
+            "summary": "Flow influence along the drawn stroke.",
+            "statement": "Flow influence along the drawn stroke.",
+            "goal": "Flow influence along the drawn stroke.",
+            "requestType": "flow_influence",
+            "requestedOutcomes": [
+              "Flow influence along the drawn stroke"
+            ],
+            "targets": [
+              "drawn stroke"
+            ],
+            "constraints": [],
+            "urgency": "normal",
+            "labels": [
+              "flow",
+              "influence",
+              "stroke"
+            ]
+          },
+          "confidence": 0.88,
+          "createdAt": "2026-07-15T10:42:06.252Z",
+          "provenance": {
+            "anchorRefs": [],
+            "backend": null,
+            "inferenceMode": "deterministic-geometry-v1",
+            "inputMode": "sketchpad",
+            "interpreter": "deterministic-geometry-v1",
+            "model": null,
+            "reasoning": [
+              "kind=stroke",
+              "pointCount=3",
+              "region-missing",
+              "stroke-present",
+              "confidence=0.88"
+            ],
+            "requestedBy": "sketchpad",
+            "route": "/api/spatial/intent",
+            "runId": null,
+            "sketchMode": true,
+            "sourceNodeId": "sketch_route_probe_1",
+            "sourceRef": "sketch_route_probe_1",
+            "sourceType": "sketchpad-stroke",
+            "usedFallback": false
+          },
+          "fieldInfluence": {
+            "field": {
+              "aggregateStrategy": "majority",
+              "baseLayer": {
+                "aggregateStrategy": "identity",
+                "fallbackValue": 0.08,
+                "height": 6,
+                "kind": "field-layer",
+                "resolution": 1,
+                "role": "build-desirability",
+                "values": [
+                  [
+                    0.9,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.88,
+                    0.54,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.9
+                  ]
+                ],
+                "width": 6
+              },
+              "baseLayerKey": "0",
+              "coarseLayer": {
+                "aggregateStrategy": "majority",
+                "fallbackValue": 0.08,
+                "height": 3,
+                "kind": "field-layer",
+                "resolution": 2,
+                "role": "build-desirability-coarse",
+                "values": [
+                  [
+                    0.52,
+                    0.2,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.51,
+                    0.19
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.52
+                  ]
+                ],
+                "width": 3
+              },
+              "coarseLayerKey": "1",
+              "fieldKey": "buildDesirability",
+              "kind": "intent-field",
+              "layerOrder": [
+                "0",
+                "1"
+              ],
+              "layers": {
+                "0": {
+                  "aggregateStrategy": "identity",
+                  "fallbackValue": 0.08,
+                  "height": 6,
+                  "kind": "field-layer",
+                  "resolution": 1,
+                  "role": "build-desirability",
+                  "values": [
+                    [
+                      0.9,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.88,
+                      0.54,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.9
+                    ]
+                  ],
+                  "width": 6
+                },
+                "1": {
+                  "aggregateStrategy": "majority",
+                  "fallbackValue": 0.08,
+                  "height": 3,
+                  "kind": "field-layer",
+                  "resolution": 2,
+                  "role": "build-desirability-coarse",
+                  "values": [
+                    [
+                      0.52,
+                      0.2,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.51,
+                      0.19
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.52
+                    ]
+                  ],
+                  "width": 3
+                }
+              },
+              "summary": "Build desirability build-desirability 6x6 @1x | build-desirability-coarse 3x3 @2x",
+              "version": "v1"
+            },
+            "fieldKey": "buildDesirability",
+            "kind": "intent-field-bundle",
+            "missingFields": [],
+            "provenance": {
+              "anchorRefs": [],
+              "backend": null,
+              "field": "build_desirability",
+              "fieldKind": "intent-field-bundle",
+              "inferenceMode": "deterministic-geometry-v1",
+              "inputMode": "sketchpad",
+              "interpreter": "deterministic-geometry-v1",
+              "model": null,
+              "reasoning": [
+                "field=build_desirability",
+                "kind=stroke",
+                "pointCount=3",
+                "affectedCells=3",
+                "confidence=0.88",
+                "status=canonical"
+              ],
+              "requestedBy": "sketchpad",
+              "route": "/api/spatial/intent",
+              "runId": null,
+              "sketchMode": true,
+              "sourceNodeId": "sketch_route_probe_1",
+              "sourceRef": "sketch_route_probe_1",
+              "sourceType": "sketchpad-stroke",
+              "usedFallback": false
+            },
+            "sourceIntentConfidence": 0.88,
+            "sourceIntentId": "sketch_route_probe_1",
+            "sourceIntentStatus": "canonical",
+            "status": "canonical",
+            "summary": "Build desirability build-desirability 6x6 @1x | build-desirability-coarse 3x3 @2x",
+            "version": "v1"
+          },
+          "missingFields": [],
+          "status": "canonical",
+          "intentId": "sketch_route_probe_1",
+          "sourceType": "sketchpad-stroke",
+          "sourceRef": "sketch_route_probe_1",
+          "nodeId": "sketch_route_probe_1",
+          "requestedBy": "sketchpad",
+          "timestamp": "2026-07-15T10:42:06.252Z",
+          "priority": "normal",
+          "summary": "Flow influence along the drawn stroke.",
+          "statement": "Flow influence along the drawn stroke.",
+          "goal": "Flow influence along the drawn stroke.",
+          "requestType": "flow_influence",
+          "requestedOutcomes": [
+            "Flow influence along the drawn stroke"
+          ],
+          "tasks": [
+            "Flow influence along the drawn stroke"
+          ],
+          "targets": [
+            "drawn stroke"
+          ],
+          "constraints": [],
+          "projectContext": {
+            "currentFocus": "sketch_route_probe_1",
+            "matchedTerms": [
+              "flow",
+              "influence",
+              "stroke"
+            ],
+            "blockers": [],
+            "anchorRefs": []
+          }
+        },
+        "sketch_1784021317390_vvgs": {
+          "id": "sketch_1784021317390_vvgs",
+          "source": {
+            "ref": "sketch_1784021317390_vvgs",
+            "requestedBy": "sketchpad",
+            "type": "sketchpad-stroke"
+          },
+          "geometry": {
+            "kind": "stroke",
+            "region": null,
+            "stroke": [
+              {
+                "x": 226.31578947368422,
+                "y": 151.1578947368421
+              },
+              {
+                "x": 226.31578947368422,
+                "y": 151.1578947368421
+              },
+              {
+                "x": 223.68421052631578,
+                "y": 151.1578947368421
+              },
+              {
+                "x": 221.05263157894737,
+                "y": 151.1578947368421
+              },
+              {
+                "x": 219.73684210526315,
+                "y": 149.8421052631579
+              },
+              {
+                "x": 213.1578947368421,
+                "y": 149.8421052631579
+              },
+              {
+                "x": 210.52631578947367,
+                "y": 148.52631578947367
+              },
+              {
+                "x": 202.6315789473684,
+                "y": 147.21052631578948
+              },
+              {
+                "x": 200,
+                "y": 145.89473684210526
+              },
+              {
+                "x": 196.05263157894737,
+                "y": 144.57894736842104
+              },
+              {
+                "x": 192.10526315789474,
+                "y": 143.26315789473682
+              },
+              {
+                "x": 182.89473684210526,
+                "y": 139.3157894736842
+              },
+              {
+                "x": 178.94736842105263,
+                "y": 139.3157894736842
+              },
+              {
+                "x": 172.3684210526316,
+                "y": 138
+              },
+              {
+                "x": 163.1578947368421,
+                "y": 136.68421052631578
+              },
+              {
+                "x": 160.52631578947367,
+                "y": 135.36842105263156
+              },
+              {
+                "x": 153.94736842105263,
+                "y": 134.05263157894737
+              },
+              {
+                "x": 151.31578947368422,
+                "y": 131.42105263157893
+              },
+              {
+                "x": 148.68421052631578,
+                "y": 131.42105263157893
+              },
+              {
+                "x": 139.4736842105263,
+                "y": 128.78947368421052
+              },
+              {
+                "x": 138.1578947368421,
+                "y": 127.47368421052632
+              },
+              {
+                "x": 136.8421052631579,
+                "y": 126.1578947368421
+              },
+              {
+                "x": 135.52631578947367,
+                "y": 126.1578947368421
+              },
+              {
+                "x": 132.89473684210526,
+                "y": 124.84210526315789
+              },
+              {
+                "x": 131.57894736842104,
+                "y": 124.84210526315789
+              },
+              {
+                "x": 130.26315789473685,
+                "y": 123.52631578947367
+              },
+              {
+                "x": 126.3157894736842,
+                "y": 123.52631578947367
+              },
+              {
+                "x": 125,
+                "y": 122.21052631578947
+              },
+              {
+                "x": 123.6842105263158,
+                "y": 122.21052631578947
+              },
+              {
+                "x": 123.6842105263158,
+                "y": 122.21052631578947
+              },
+              {
+                "x": 122.36842105263158,
+                "y": 122.21052631578947
+              },
+              {
+                "x": 121.05263157894737,
+                "y": 120.89473684210526
+              }
+            ]
+          },
+          "semanticMeaning": {
+            "summary": "Flow influence along the drawn stroke.",
+            "statement": "Flow influence along the drawn stroke.",
+            "goal": "Flow influence along the drawn stroke.",
+            "requestType": "flow_influence",
+            "requestedOutcomes": [
+              "Flow influence along the drawn stroke"
+            ],
+            "targets": [
+              "drawn stroke"
+            ],
+            "constraints": [],
+            "urgency": "normal",
+            "labels": [
+              "flow",
+              "influence",
+              "stroke"
+            ]
+          },
+          "confidence": 0.88,
+          "createdAt": "2026-07-15T10:42:06.252Z",
+          "provenance": {
+            "anchorRefs": [],
+            "backend": null,
+            "inferenceMode": "deterministic-geometry-v1",
+            "inputMode": "sketchpad",
+            "interpreter": "deterministic-geometry-v1",
+            "model": null,
+            "reasoning": [
+              "kind=stroke",
+              "pointCount=32",
+              "region-missing",
+              "stroke-present",
+              "confidence=0.88"
+            ],
+            "requestedBy": "sketchpad",
+            "route": "/api/spatial/intent",
+            "runId": null,
+            "sketchMode": true,
+            "sourceNodeId": "sketch_1784021317390_vvgs",
+            "sourceRef": "sketch_1784021317390_vvgs",
+            "sourceType": "sketchpad-stroke",
+            "usedFallback": false
+          },
+          "fieldInfluence": {
+            "field": {
+              "aggregateStrategy": "majority",
+              "baseLayer": {
+                "aggregateStrategy": "identity",
+                "fallbackValue": 0.08,
+                "height": 11,
+                "kind": "field-layer",
+                "resolution": 1,
+                "role": "build-desirability",
+                "values": [
+                  [
+                    0.9,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.62,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.64,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.54,
+                    0.7,
+                    0.54,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.76,
+                    0.54,
+                    0.54
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.8,
+                    0.54
+                  ]
+                ],
+                "width": 11
+              },
+              "baseLayerKey": "0",
+              "coarseLayer": {
+                "aggregateStrategy": "majority",
+                "fallbackValue": 0.08,
+                "height": 6,
+                "kind": "field-layer",
+                "resolution": 2,
+                "role": "build-desirability-coarse",
+                "values": [
+                  [
+                    0.63,
+                    0.2,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.43,
+                    0.54,
+                    0.2,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.43,
+                    0.45,
+                    0.2,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.45,
+                    0.58,
+                    0.2,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.43,
+                    0.48,
+                    0.31
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.67,
+                    0.54
+                  ]
+                ],
+                "width": 6
+              },
+              "coarseLayerKey": "1",
+              "fieldKey": "buildDesirability",
+              "kind": "intent-field",
+              "layerOrder": [
+                "0",
+                "1"
+              ],
+              "layers": {
+                "0": {
+                  "aggregateStrategy": "identity",
+                  "fallbackValue": 0.08,
+                  "height": 11,
+                  "kind": "field-layer",
+                  "resolution": 1,
+                  "role": "build-desirability",
+                  "values": [
+                    [
+                      0.9,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.62,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.64,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.54,
+                      0.7,
+                      0.54,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.76,
+                      0.54,
+                      0.54
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.8,
+                      0.54
+                    ]
+                  ],
+                  "width": 11
+                },
+                "1": {
+                  "aggregateStrategy": "majority",
+                  "fallbackValue": 0.08,
+                  "height": 6,
+                  "kind": "field-layer",
+                  "resolution": 2,
+                  "role": "build-desirability-coarse",
+                  "values": [
+                    [
+                      0.63,
+                      0.2,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.43,
+                      0.54,
+                      0.2,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.43,
+                      0.45,
+                      0.2,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.45,
+                      0.58,
+                      0.2,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.43,
+                      0.48,
+                      0.31
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.67,
+                      0.54
+                    ]
+                  ],
+                  "width": 6
+                }
+              },
+              "summary": "Build desirability build-desirability 11x11 @1x | build-desirability-coarse 6x6 @2x",
+              "version": "v1"
+            },
+            "fieldKey": "buildDesirability",
+            "kind": "intent-field-bundle",
+            "missingFields": [],
+            "provenance": {
+              "anchorRefs": [],
+              "backend": null,
+              "field": "build_desirability",
+              "fieldKind": "intent-field-bundle",
+              "inferenceMode": "deterministic-geometry-v1",
+              "inputMode": "sketchpad",
+              "interpreter": "deterministic-geometry-v1",
+              "model": null,
+              "reasoning": [
+                "field=build_desirability",
+                "kind=stroke",
+                "pointCount=32",
+                "affectedCells=24",
+                "confidence=0.88",
+                "status=canonical"
+              ],
+              "requestedBy": "sketchpad",
+              "route": "/api/spatial/intent",
+              "runId": null,
+              "sketchMode": true,
+              "sourceNodeId": "sketch_1784021317390_vvgs",
+              "sourceRef": "sketch_1784021317390_vvgs",
+              "sourceType": "sketchpad-stroke",
+              "usedFallback": false
+            },
+            "sourceIntentConfidence": 0.88,
+            "sourceIntentId": "sketch_1784021317390_vvgs",
+            "sourceIntentStatus": "canonical",
+            "status": "canonical",
+            "summary": "Build desirability build-desirability 11x11 @1x | build-desirability-coarse 6x6 @2x",
+            "version": "v1"
+          },
+          "missingFields": [],
+          "status": "canonical",
+          "intentId": "sketch_1784021317390_vvgs",
+          "sourceType": "sketchpad-stroke",
+          "sourceRef": "sketch_1784021317390_vvgs",
+          "nodeId": "sketch_1784021317390_vvgs",
+          "requestedBy": "sketchpad",
+          "timestamp": "2026-07-15T10:42:06.252Z",
+          "priority": "normal",
+          "summary": "Flow influence along the drawn stroke.",
+          "statement": "Flow influence along the drawn stroke.",
+          "goal": "Flow influence along the drawn stroke.",
+          "requestType": "flow_influence",
+          "requestedOutcomes": [
+            "Flow influence along the drawn stroke"
+          ],
+          "tasks": [
+            "Flow influence along the drawn stroke"
+          ],
+          "targets": [
+            "drawn stroke"
+          ],
+          "constraints": [],
+          "projectContext": {
+            "currentFocus": "sketch_1784021317390_vvgs",
+            "matchedTerms": [
+              "flow",
+              "influence",
+              "stroke"
+            ],
+            "blockers": [],
+            "anchorRefs": []
+          }
+        }
+      },
+      "records": [
+        {
+          "id": "sketch_route_probe_1",
+          "source": {
+            "ref": "sketch_route_probe_1",
+            "requestedBy": "sketchpad",
+            "type": "sketchpad-stroke"
+          },
+          "geometry": {
+            "kind": "stroke",
+            "region": null,
+            "stroke": [
+              {
+                "x": 10,
+                "y": 12
+              },
+              {
+                "x": 64,
+                "y": 32
+              },
+              {
+                "x": 110,
+                "y": 56
+              }
+            ]
+          },
+          "semanticMeaning": {
+            "summary": "Flow influence along the drawn stroke.",
+            "statement": "Flow influence along the drawn stroke.",
+            "goal": "Flow influence along the drawn stroke.",
+            "requestType": "flow_influence",
+            "requestedOutcomes": [
+              "Flow influence along the drawn stroke"
+            ],
+            "targets": [
+              "drawn stroke"
+            ],
+            "constraints": [],
+            "urgency": "normal",
+            "labels": [
+              "flow",
+              "influence",
+              "stroke"
+            ]
+          },
+          "confidence": 0.88,
+          "createdAt": "2026-07-15T10:42:06.252Z",
+          "provenance": {
+            "anchorRefs": [],
+            "backend": null,
+            "inferenceMode": "deterministic-geometry-v1",
+            "inputMode": "sketchpad",
+            "interpreter": "deterministic-geometry-v1",
+            "model": null,
+            "reasoning": [
+              "kind=stroke",
+              "pointCount=3",
+              "region-missing",
+              "stroke-present",
+              "confidence=0.88"
+            ],
+            "requestedBy": "sketchpad",
+            "route": "/api/spatial/intent",
+            "runId": null,
+            "sketchMode": true,
+            "sourceNodeId": "sketch_route_probe_1",
+            "sourceRef": "sketch_route_probe_1",
+            "sourceType": "sketchpad-stroke",
+            "usedFallback": false
+          },
+          "fieldInfluence": {
+            "field": {
+              "aggregateStrategy": "majority",
+              "baseLayer": {
+                "aggregateStrategy": "identity",
+                "fallbackValue": 0.08,
+                "height": 6,
+                "kind": "field-layer",
+                "resolution": 1,
+                "role": "build-desirability",
+                "values": [
+                  [
+                    0.9,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.88,
+                    0.54,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.9
+                  ]
+                ],
+                "width": 6
+              },
+              "baseLayerKey": "0",
+              "coarseLayer": {
+                "aggregateStrategy": "majority",
+                "fallbackValue": 0.08,
+                "height": 3,
+                "kind": "field-layer",
+                "resolution": 2,
+                "role": "build-desirability-coarse",
+                "values": [
+                  [
+                    0.52,
+                    0.2,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.51,
+                    0.19
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.52
+                  ]
+                ],
+                "width": 3
+              },
+              "coarseLayerKey": "1",
+              "fieldKey": "buildDesirability",
+              "kind": "intent-field",
+              "layerOrder": [
+                "0",
+                "1"
+              ],
+              "layers": {
+                "0": {
+                  "aggregateStrategy": "identity",
+                  "fallbackValue": 0.08,
+                  "height": 6,
+                  "kind": "field-layer",
+                  "resolution": 1,
+                  "role": "build-desirability",
+                  "values": [
+                    [
+                      0.9,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.88,
+                      0.54,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.9
+                    ]
+                  ],
+                  "width": 6
+                },
+                "1": {
+                  "aggregateStrategy": "majority",
+                  "fallbackValue": 0.08,
+                  "height": 3,
+                  "kind": "field-layer",
+                  "resolution": 2,
+                  "role": "build-desirability-coarse",
+                  "values": [
+                    [
+                      0.52,
+                      0.2,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.51,
+                      0.19
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.52
+                    ]
+                  ],
+                  "width": 3
+                }
+              },
+              "summary": "Build desirability build-desirability 6x6 @1x | build-desirability-coarse 3x3 @2x",
+              "version": "v1"
+            },
+            "fieldKey": "buildDesirability",
+            "kind": "intent-field-bundle",
+            "missingFields": [],
+            "provenance": {
+              "anchorRefs": [],
+              "backend": null,
+              "field": "build_desirability",
+              "fieldKind": "intent-field-bundle",
+              "inferenceMode": "deterministic-geometry-v1",
+              "inputMode": "sketchpad",
+              "interpreter": "deterministic-geometry-v1",
+              "model": null,
+              "reasoning": [
+                "field=build_desirability",
+                "kind=stroke",
+                "pointCount=3",
+                "affectedCells=3",
+                "confidence=0.88",
+                "status=canonical"
+              ],
+              "requestedBy": "sketchpad",
+              "route": "/api/spatial/intent",
+              "runId": null,
+              "sketchMode": true,
+              "sourceNodeId": "sketch_route_probe_1",
+              "sourceRef": "sketch_route_probe_1",
+              "sourceType": "sketchpad-stroke",
+              "usedFallback": false
+            },
+            "sourceIntentConfidence": 0.88,
+            "sourceIntentId": "sketch_route_probe_1",
+            "sourceIntentStatus": "canonical",
+            "status": "canonical",
+            "summary": "Build desirability build-desirability 6x6 @1x | build-desirability-coarse 3x3 @2x",
+            "version": "v1"
+          },
+          "missingFields": [],
+          "status": "canonical",
+          "intentId": "sketch_route_probe_1",
+          "sourceType": "sketchpad-stroke",
+          "sourceRef": "sketch_route_probe_1",
+          "nodeId": "sketch_route_probe_1",
+          "requestedBy": "sketchpad",
+          "timestamp": "2026-07-15T10:42:06.252Z",
+          "priority": "normal",
+          "summary": "Flow influence along the drawn stroke.",
+          "statement": "Flow influence along the drawn stroke.",
+          "goal": "Flow influence along the drawn stroke.",
+          "requestType": "flow_influence",
+          "requestedOutcomes": [
+            "Flow influence along the drawn stroke"
+          ],
+          "tasks": [
+            "Flow influence along the drawn stroke"
+          ],
+          "targets": [
+            "drawn stroke"
+          ],
+          "constraints": [],
+          "projectContext": {
+            "currentFocus": "sketch_route_probe_1",
+            "matchedTerms": [
+              "flow",
+              "influence",
+              "stroke"
+            ],
+            "blockers": [],
+            "anchorRefs": []
+          }
+        },
+        {
+          "id": "sketch_1784021317390_vvgs",
+          "source": {
+            "ref": "sketch_1784021317390_vvgs",
+            "requestedBy": "sketchpad",
+            "type": "sketchpad-stroke"
+          },
+          "geometry": {
+            "kind": "stroke",
+            "region": null,
+            "stroke": [
+              {
+                "x": 226.31578947368422,
+                "y": 151.1578947368421
+              },
+              {
+                "x": 226.31578947368422,
+                "y": 151.1578947368421
+              },
+              {
+                "x": 223.68421052631578,
+                "y": 151.1578947368421
+              },
+              {
+                "x": 221.05263157894737,
+                "y": 151.1578947368421
+              },
+              {
+                "x": 219.73684210526315,
+                "y": 149.8421052631579
+              },
+              {
+                "x": 213.1578947368421,
+                "y": 149.8421052631579
+              },
+              {
+                "x": 210.52631578947367,
+                "y": 148.52631578947367
+              },
+              {
+                "x": 202.6315789473684,
+                "y": 147.21052631578948
+              },
+              {
+                "x": 200,
+                "y": 145.89473684210526
+              },
+              {
+                "x": 196.05263157894737,
+                "y": 144.57894736842104
+              },
+              {
+                "x": 192.10526315789474,
+                "y": 143.26315789473682
+              },
+              {
+                "x": 182.89473684210526,
+                "y": 139.3157894736842
+              },
+              {
+                "x": 178.94736842105263,
+                "y": 139.3157894736842
+              },
+              {
+                "x": 172.3684210526316,
+                "y": 138
+              },
+              {
+                "x": 163.1578947368421,
+                "y": 136.68421052631578
+              },
+              {
+                "x": 160.52631578947367,
+                "y": 135.36842105263156
+              },
+              {
+                "x": 153.94736842105263,
+                "y": 134.05263157894737
+              },
+              {
+                "x": 151.31578947368422,
+                "y": 131.42105263157893
+              },
+              {
+                "x": 148.68421052631578,
+                "y": 131.42105263157893
+              },
+              {
+                "x": 139.4736842105263,
+                "y": 128.78947368421052
+              },
+              {
+                "x": 138.1578947368421,
+                "y": 127.47368421052632
+              },
+              {
+                "x": 136.8421052631579,
+                "y": 126.1578947368421
+              },
+              {
+                "x": 135.52631578947367,
+                "y": 126.1578947368421
+              },
+              {
+                "x": 132.89473684210526,
+                "y": 124.84210526315789
+              },
+              {
+                "x": 131.57894736842104,
+                "y": 124.84210526315789
+              },
+              {
+                "x": 130.26315789473685,
+                "y": 123.52631578947367
+              },
+              {
+                "x": 126.3157894736842,
+                "y": 123.52631578947367
+              },
+              {
+                "x": 125,
+                "y": 122.21052631578947
+              },
+              {
+                "x": 123.6842105263158,
+                "y": 122.21052631578947
+              },
+              {
+                "x": 123.6842105263158,
+                "y": 122.21052631578947
+              },
+              {
+                "x": 122.36842105263158,
+                "y": 122.21052631578947
+              },
+              {
+                "x": 121.05263157894737,
+                "y": 120.89473684210526
+              }
+            ]
+          },
+          "semanticMeaning": {
+            "summary": "Flow influence along the drawn stroke.",
+            "statement": "Flow influence along the drawn stroke.",
+            "goal": "Flow influence along the drawn stroke.",
+            "requestType": "flow_influence",
+            "requestedOutcomes": [
+              "Flow influence along the drawn stroke"
+            ],
+            "targets": [
+              "drawn stroke"
+            ],
+            "constraints": [],
+            "urgency": "normal",
+            "labels": [
+              "flow",
+              "influence",
+              "stroke"
+            ]
+          },
+          "confidence": 0.88,
+          "createdAt": "2026-07-15T10:42:06.252Z",
+          "provenance": {
+            "anchorRefs": [],
+            "backend": null,
+            "inferenceMode": "deterministic-geometry-v1",
+            "inputMode": "sketchpad",
+            "interpreter": "deterministic-geometry-v1",
+            "model": null,
+            "reasoning": [
+              "kind=stroke",
+              "pointCount=32",
+              "region-missing",
+              "stroke-present",
+              "confidence=0.88"
+            ],
+            "requestedBy": "sketchpad",
+            "route": "/api/spatial/intent",
+            "runId": null,
+            "sketchMode": true,
+            "sourceNodeId": "sketch_1784021317390_vvgs",
+            "sourceRef": "sketch_1784021317390_vvgs",
+            "sourceType": "sketchpad-stroke",
+            "usedFallback": false
+          },
+          "fieldInfluence": {
+            "field": {
+              "aggregateStrategy": "majority",
+              "baseLayer": {
+                "aggregateStrategy": "identity",
+                "fallbackValue": 0.08,
+                "height": 11,
+                "kind": "field-layer",
+                "resolution": 1,
+                "role": "build-desirability",
+                "values": [
+                  [
+                    0.9,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.62,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.64,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.54,
+                    0.7,
+                    0.54,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.54,
+                    0.54,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.76,
+                    0.54,
+                    0.54
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.54,
+                    0.8,
+                    0.54
+                  ]
+                ],
+                "width": 11
+              },
+              "baseLayerKey": "0",
+              "coarseLayer": {
+                "aggregateStrategy": "majority",
+                "fallbackValue": 0.08,
+                "height": 6,
+                "kind": "field-layer",
+                "resolution": 2,
+                "role": "build-desirability-coarse",
+                "values": [
+                  [
+                    0.63,
+                    0.2,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.43,
+                    0.54,
+                    0.2,
+                    0.08,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.43,
+                    0.45,
+                    0.2,
+                    0.08,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.45,
+                    0.58,
+                    0.2,
+                    0.08
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.43,
+                    0.48,
+                    0.31
+                  ],
+                  [
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.08,
+                    0.67,
+                    0.54
+                  ]
+                ],
+                "width": 6
+              },
+              "coarseLayerKey": "1",
+              "fieldKey": "buildDesirability",
+              "kind": "intent-field",
+              "layerOrder": [
+                "0",
+                "1"
+              ],
+              "layers": {
+                "0": {
+                  "aggregateStrategy": "identity",
+                  "fallbackValue": 0.08,
+                  "height": 11,
+                  "kind": "field-layer",
+                  "resolution": 1,
+                  "role": "build-desirability",
+                  "values": [
+                    [
+                      0.9,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.62,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.64,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.54,
+                      0.7,
+                      0.54,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.54,
+                      0.54,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.76,
+                      0.54,
+                      0.54
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.54,
+                      0.8,
+                      0.54
+                    ]
+                  ],
+                  "width": 11
+                },
+                "1": {
+                  "aggregateStrategy": "majority",
+                  "fallbackValue": 0.08,
+                  "height": 6,
+                  "kind": "field-layer",
+                  "resolution": 2,
+                  "role": "build-desirability-coarse",
+                  "values": [
+                    [
+                      0.63,
+                      0.2,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.43,
+                      0.54,
+                      0.2,
+                      0.08,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.43,
+                      0.45,
+                      0.2,
+                      0.08,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.45,
+                      0.58,
+                      0.2,
+                      0.08
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.43,
+                      0.48,
+                      0.31
+                    ],
+                    [
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.08,
+                      0.67,
+                      0.54
+                    ]
+                  ],
+                  "width": 6
+                }
+              },
+              "summary": "Build desirability build-desirability 11x11 @1x | build-desirability-coarse 6x6 @2x",
+              "version": "v1"
+            },
+            "fieldKey": "buildDesirability",
+            "kind": "intent-field-bundle",
+            "missingFields": [],
+            "provenance": {
+              "anchorRefs": [],
+              "backend": null,
+              "field": "build_desirability",
+              "fieldKind": "intent-field-bundle",
+              "inferenceMode": "deterministic-geometry-v1",
+              "inputMode": "sketchpad",
+              "interpreter": "deterministic-geometry-v1",
+              "model": null,
+              "reasoning": [
+                "field=build_desirability",
+                "kind=stroke",
+                "pointCount=32",
+                "affectedCells=24",
+                "confidence=0.88",
+                "status=canonical"
+              ],
+              "requestedBy": "sketchpad",
+              "route": "/api/spatial/intent",
+              "runId": null,
+              "sketchMode": true,
+              "sourceNodeId": "sketch_1784021317390_vvgs",
+              "sourceRef": "sketch_1784021317390_vvgs",
+              "sourceType": "sketchpad-stroke",
+              "usedFallback": false
+            },
+            "sourceIntentConfidence": 0.88,
+            "sourceIntentId": "sketch_1784021317390_vvgs",
+            "sourceIntentStatus": "canonical",
+            "status": "canonical",
+            "summary": "Build desirability build-desirability 11x11 @1x | build-desirability-coarse 6x6 @2x",
+            "version": "v1"
+          },
+          "missingFields": [],
+          "status": "canonical",
+          "intentId": "sketch_1784021317390_vvgs",
+          "sourceType": "sketchpad-stroke",
+          "sourceRef": "sketch_1784021317390_vvgs",
+          "nodeId": "sketch_1784021317390_vvgs",
+          "requestedBy": "sketchpad",
+          "timestamp": "2026-07-15T10:42:06.252Z",
+          "priority": "normal",
+          "summary": "Flow influence along the drawn stroke.",
+          "statement": "Flow influence along the drawn stroke.",
+          "goal": "Flow influence along the drawn stroke.",
+          "requestType": "flow_influence",
+          "requestedOutcomes": [
+            "Flow influence along the drawn stroke"
+          ],
+          "tasks": [
+            "Flow influence along the drawn stroke"
+          ],
+          "targets": [
+            "drawn stroke"
+          ],
+          "constraints": [],
+          "projectContext": {
+            "currentFocus": "sketch_1784021317390_vvgs",
+            "matchedTerms": [
+              "flow",
+              "influence",
+              "stroke"
+            ],
+            "blockers": [],
+            "anchorRefs": []
+          }
+        }
+      ]
     },
-    "currentIntentId": null,
-    "summary": "",
-    "status": "idle"
+    "currentIntentId": "sketch_route_probe_1",
+    "summary": "Flow influence along the drawn stroke.",
+    "status": "canonical"
+  },
+  "ghostProjections": {
+    "byId": {
+      "ghost_field_sketch_1784021317390_vvgs": {
+        "confidence": 0.88,
+        "id": "ghost_field_sketch_1784021317390_vvgs",
+        "proposedChange": {
+          "anchor": {
+            "gridX": 0,
+            "gridY": 0,
+            "influence": 0.9,
+            "normalizedX": 0.045,
+            "normalizedY": 0.045
+          },
+          "committed": false,
+          "description": "Uncommitted resolver candidate derived from the canonical buildDesirability field.",
+          "fieldKey": "buildDesirability",
+          "kind": "pressure_anchor",
+          "summary": "Project a build anchor at the strongest build desirability pressure.",
+          "targetLayer": "world"
+        },
+        "provenance": {
+          "authority": "ace-resolver-projection",
+          "fieldInterpreter": "deterministic-geometry-v1",
+          "fieldKey": "buildDesirability",
+          "interpreter": "field-peak-v1",
+          "resolver": "ui/spatialGhostResolver.js::resolveSpatialGhostProjection",
+          "sourceIntentId": "sketch_1784021317390_vvgs",
+          "sourceIntentIds": [
+            "sketch_1784021317390_vvgs"
+          ],
+          "sourceRef": "buildDesirability",
+          "sourceType": "field-resolver",
+          "usedFallback": false
+        },
+        "reasoning": [
+          "resolver=field-peak-v1",
+          "fieldKey=buildDesirability",
+          "peak=0,0:0.9",
+          "status=candidate",
+          "mutation=uncommitted"
+        ],
+        "sourceIntentIds": [
+          "sketch_1784021317390_vvgs"
+        ],
+        "status": "candidate"
+      },
+      "ghost_field_sketch_route_probe_1": {
+        "blockers": [],
+        "confidence": 0.88,
+        "id": "ghost_field_sketch_route_probe_1",
+        "proposedChange": {
+          "anchor": {
+            "gridX": 0,
+            "gridY": 0,
+            "influence": 0.9,
+            "normalizedX": 0.083,
+            "normalizedY": 0.083
+          },
+          "committed": false,
+          "description": "Uncommitted resolver candidate derived from the canonical buildDesirability field.",
+          "fieldKey": "buildDesirability",
+          "kind": "pressure_anchor",
+          "summary": "Project a build anchor at the strongest build desirability pressure.",
+          "targetLayer": "world"
+        },
+        "provenance": {
+          "authority": "ace-resolver-projection",
+          "fieldInterpreter": "deterministic-geometry-v1",
+          "fieldKey": "buildDesirability",
+          "interpreter": "field-peak-v1",
+          "resolver": "ui/spatialGhostResolver.js::resolveSpatialGhostProjection",
+          "sourceIntentId": "sketch_route_probe_1",
+          "sourceIntentIds": [
+            "sketch_route_probe_1"
+          ],
+          "sourceRef": "buildDesirability",
+          "sourceType": "field-resolver",
+          "usedFallback": false
+        },
+        "reasoning": [
+          "resolver=field-peak-v1",
+          "fieldKey=buildDesirability",
+          "peak=0,0:0.9",
+          "status=candidate",
+          "mutation=uncommitted"
+        ],
+        "sourceIntentIds": [
+          "sketch_route_probe_1"
+        ],
+        "status": "candidate"
+      }
+    },
+    "currentProjectionId": "ghost_field_sketch_route_probe_1",
+    "latestProjectionId": "ghost_field_sketch_route_probe_1",
+    "records": [
+      {
+        "confidence": 0.88,
+        "id": "ghost_field_sketch_1784021317390_vvgs",
+        "proposedChange": {
+          "anchor": {
+            "gridX": 0,
+            "gridY": 0,
+            "influence": 0.9,
+            "normalizedX": 0.045,
+            "normalizedY": 0.045
+          },
+          "committed": false,
+          "description": "Uncommitted resolver candidate derived from the canonical buildDesirability field.",
+          "fieldKey": "buildDesirability",
+          "kind": "pressure_anchor",
+          "summary": "Project a build anchor at the strongest build desirability pressure.",
+          "targetLayer": "world"
+        },
+        "provenance": {
+          "authority": "ace-resolver-projection",
+          "fieldInterpreter": "deterministic-geometry-v1",
+          "fieldKey": "buildDesirability",
+          "interpreter": "field-peak-v1",
+          "resolver": "ui/spatialGhostResolver.js::resolveSpatialGhostProjection",
+          "sourceIntentId": "sketch_1784021317390_vvgs",
+          "sourceIntentIds": [
+            "sketch_1784021317390_vvgs"
+          ],
+          "sourceRef": "buildDesirability",
+          "sourceType": "field-resolver",
+          "usedFallback": false
+        },
+        "reasoning": [
+          "resolver=field-peak-v1",
+          "fieldKey=buildDesirability",
+          "peak=0,0:0.9",
+          "status=candidate",
+          "mutation=uncommitted"
+        ],
+        "sourceIntentIds": [
+          "sketch_1784021317390_vvgs"
+        ],
+        "status": "candidate"
+      },
+      {
+        "confidence": 0.88,
+        "id": "ghost_field_sketch_route_probe_1",
+        "proposedChange": {
+          "anchor": {
+            "gridX": 0,
+            "gridY": 0,
+            "influence": 0.9,
+            "normalizedX": 0.083,
+            "normalizedY": 0.083
+          },
+          "committed": false,
+          "description": "Uncommitted resolver candidate derived from the canonical buildDesirability field.",
+          "fieldKey": "buildDesirability",
+          "kind": "pressure_anchor",
+          "summary": "Project a build anchor at the strongest build desirability pressure.",
+          "targetLayer": "world"
+        },
+        "provenance": {
+          "authority": "ace-resolver-projection",
+          "fieldInterpreter": "deterministic-geometry-v1",
+          "fieldKey": "buildDesirability",
+          "interpreter": "field-peak-v1",
+          "resolver": "ui/spatialGhostResolver.js::resolveSpatialGhostProjection",
+          "sourceIntentId": "sketch_route_probe_1",
+          "sourceIntentIds": [
+            "sketch_route_probe_1"
+          ],
+          "sourceRef": "buildDesirability",
+          "sourceType": "field-resolver",
+          "usedFallback": false
+        },
+        "reasoning": [
+          "resolver=field-peak-v1",
+          "fieldKey=buildDesirability",
+          "peak=0,0:0.9",
+          "status=candidate",
+          "mutation=uncommitted"
+        ],
+        "sourceIntentIds": [
+          "sketch_route_probe_1"
+        ],
+        "status": "candidate"
+      }
+    ]
   },
   "pages": [
     {
@@ -231,11 +2462,11 @@
       "artifactRefs": [],
       "createdAt": "2026-03-27T12:43:25.445Z",
       "id": "page_1774615405445_ect6",
-      "sourceNodeId": "sketch_1775663104107_mxjf",
+      "sourceNodeId": "sketch_route_probe_1",
       "status": "active",
-      "summary": "Prove planner desk canonical visibility.",
-      "title": "Prove planner desk canonical visibility.",
-      "updatedAt": "2026-05-27T13:56:30.087Z"
+      "summary": "Flow influence along the drawn stroke.",
+      "title": "Flow influence along the drawn stroke.",
+      "updatedAt": "2026-07-15T10:42:06.269Z"
     }
   ],
   "activePageId": "page_1774615405445_ect6",
@@ -269,7 +2500,7 @@
     "lastSourceNodeId": null,
     "lastGenerationAt": null,
     "lastStatus": "idle",
-    "lastEvaluatedAt": "2026-05-27T13:56:30.087Z"
+    "lastEvaluatedAt": "2026-07-15T10:42:06.269Z"
   },
   "mutationGate": {
     "activity": [],
@@ -375,13 +2606,13 @@
       }
     },
     "canvasViewport": {
-      "x": 24.5,
-      "y": -36.89999999999998,
-      "zoom": 0.92
+      "x": 567.04,
+      "y": -274.80000000000007,
+      "zoom": 0.76
     },
     "ctoOverrides": {
       "version": "ace/cto-overrides.v1",
-      "generatedAt": "2026-05-16T09:03:37.720Z",
+      "generatedAt": "2026-07-15T10:42:06.250Z",
       "updatedAt": null,
       "entries": [],
       "activeOverrides": [],
@@ -2290,24 +4521,13 @@
     },
     "orchestrator": {
       "status": "needs-attention",
-      "lastTickAt": "2026-05-27T13:56:30.087Z",
+      "lastTickAt": "2026-07-15T10:42:06.269Z",
       "activeDeskIds": [
         "context-manager",
         "memory-archivist",
         "cto-architect"
       ],
       "conflicts": [
-        {
-          "id": "low-confidence-context",
-          "kind": "low-confidence-context",
-          "severity": "medium",
-          "desks": [
-            "context-manager",
-            "planner",
-            "executor"
-          ],
-          "summary": "Planner and Executor are sharing work against a low-confidence context packet."
-        },
         {
           "id": "parallel-plan-execution",
           "kind": "parallel-plan-execution",
@@ -2329,9 +4549,7 @@
           "summary": "Update or check the status of RGS nodes is waiting at the apply gate because Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js."
         }
       ],
-      "pendingUserActions": [
-        "Clarify the active page goal before execution advances further."
-      ],
+      "pendingUserActions": [],
       "desks": {
         "context-manager": {
           "mission": "Maintain active page focus, context confidence, and desk-specific context slices.",
@@ -2376,11 +4594,15 @@
           "blockedReason": null,
           "contextSlice": {
             "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Prove planner desk canonical visibility.",
-            "pageGoal": "Prove planner desk canonical visibility.",
-            "matchedTerms": []
+            "activePageTitle": "Flow influence along the drawn stroke.",
+            "pageGoal": "Flow influence along the drawn stroke.",
+            "matchedTerms": [
+              "flow",
+              "influence",
+              "stroke"
+            ]
           },
-          "freshAt": "2026-05-27T13:56:30.087Z",
+          "freshAt": "2026-07-15T10:42:06.269Z",
           "thoughtBubble": "Context status: queued. Clarification is needed before planner can continue."
         },
         "planner": {
@@ -2427,11 +4649,15 @@
           "blockedReason": "Planner is waiting for Context Manager to clarify the current handoff.",
           "contextSlice": {
             "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Prove planner desk canonical visibility.",
-            "pageGoal": "Prove planner desk canonical visibility.",
-            "matchedTerms": []
+            "activePageTitle": "Flow influence along the drawn stroke.",
+            "pageGoal": "Flow influence along the drawn stroke.",
+            "matchedTerms": [
+              "flow",
+              "influence",
+              "stroke"
+            ]
           },
-          "freshAt": "2026-05-27T13:56:30.087Z",
+          "freshAt": "2026-07-15T10:42:06.269Z",
           "thoughtBubble": "Planner status: blocked. Waiting for a clarified handoff."
         },
         "executor": {
@@ -2478,11 +4704,15 @@
           "blockedReason": "Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js",
           "contextSlice": {
             "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Prove planner desk canonical visibility.",
-            "pageGoal": "Prove planner desk canonical visibility.",
-            "matchedTerms": []
+            "activePageTitle": "Flow influence along the drawn stroke.",
+            "pageGoal": "Flow influence along the drawn stroke.",
+            "matchedTerms": [
+              "flow",
+              "influence",
+              "stroke"
+            ]
           },
-          "freshAt": "2026-05-27T13:56:30.087Z",
+          "freshAt": "2026-07-15T10:42:06.269Z",
           "thoughtBubble": "Executor status: blocked. Waiting for clearer context."
         },
         "memory-archivist": {
@@ -2526,11 +4756,15 @@
           "blockedReason": null,
           "contextSlice": {
             "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Prove planner desk canonical visibility.",
-            "pageGoal": "Prove planner desk canonical visibility.",
-            "matchedTerms": []
+            "activePageTitle": "Flow influence along the drawn stroke.",
+            "pageGoal": "Flow influence along the drawn stroke.",
+            "matchedTerms": [
+              "flow",
+              "influence",
+              "stroke"
+            ]
           },
-          "freshAt": "2026-05-27T13:56:30.087Z",
+          "freshAt": "2026-07-15T10:42:06.269Z",
           "thoughtBubble": "Archivist status: running. Logging summaries."
         },
         "cto-architect": {
@@ -2577,19 +4811,23 @@
           "blockedReason": null,
           "contextSlice": {
             "activePageId": "page_1774615405445_ect6",
-            "activePageTitle": "Prove planner desk canonical visibility.",
-            "pageGoal": "Prove planner desk canonical visibility.",
-            "matchedTerms": []
+            "activePageTitle": "Flow influence along the drawn stroke.",
+            "pageGoal": "Flow influence along the drawn stroke.",
+            "matchedTerms": [
+              "flow",
+              "influence",
+              "stroke"
+            ]
           },
-          "freshAt": "2026-05-27T13:56:30.087Z",
+          "freshAt": "2026-07-15T10:42:06.269Z",
           "thoughtBubble": "Governance status: blocked. Reviewing blocker: Repository has uncommitted tracked changes.\nM agents/context-manager/agent.json\n M agents/evaluator/agent.json\n M agents/executor/agent.json\n M agents/planner/agent.json\n M brain/context/autonomy_fix_tasks.json\n M brain/context/autonomy_fix_tasks.md\n M brain/context/failure_history.json\n M brain/context/failure_history.md\n M brain/context/known_fixes_candidates.json\n M brain/context/known_fixes_candidates.md\n M brain/context/safe_mode/boot-recovery-daemon.json\n M brain/emergence/slices.json\n M brain/emergence/slices.md\n M data/spatial/history.json\n M data/spatial/qa/investigations.json\n M data/spatial/qa/lead-state.json\n M data/spatial/qa/output-feed.json\n M data/spatial/qa/planner-qa-queue.json\n M data/spatial/qa/planner-qa-queue.md\n M data/spatial/qa/repair-events.json\n M data/spatial/qa/repair-jobs.json\n M data/spatial/qa/research-notes.json\n M data/spatial/workspace.json\n M ui/agentRegistry.js\n M ui/agentWorkers.js\n M ui/evaluatorAgent.js\n M ui/llmAdapter.js\n M ui/localModelClient.js\n M ui/preflightGuards.js\n M ui/public/spatial/spatialApp.js\n M ui/public/spatial/studioData.js\n M ui/server.js\n M ui/tests/agentRegistry.test.mjs\n M ui/tests/agentWorkers.test.mjs\n M ui/tests/evaluatorAgent.test.mjs\n M ui/tests/evaluatorServerIntegration.test.mjs\n M ui/tests/preflightGuards.test.mjs\n M ui/tests/studioData.test.mjs\n M ui/tests/truthKernelAdapter.test.mjs\n M ui/truthKernelAdapter.js"
         }
       },
       "activePageId": "page_1774615405445_ect6"
     },
     "scene": "studio",
-    "selectedAgentId": null,
-    "selectedTab": "agents",
+    "selectedAgentId": "qa-lead",
+    "selectedTab": "qa",
     "selfUpgrade": {
       "status": "idle",
       "targetProjectKey": "ace-self",
@@ -2623,9 +4861,9 @@
       "requiresPermission": "none"
     },
     "studioViewport": {
-      "x": 24.5,
-      "y": -36.89999999999998,
-      "zoom": 0.82
+      "x": 567.04,
+      "y": -274.80000000000007,
+      "zoom": 1.28
     },
     "teamBoard": {
       "cards": [
@@ -2746,12 +4984,12 @@
           "verifyRequired": false,
           "verifyRunIds": [],
           "verifyStatus": "idle",
-          "createdAt": "2026-05-16T09:03:31.915Z",
-          "updatedAt": "2026-05-27T13:56:30.086Z"
+          "createdAt": "2026-07-15T10:42:06.235Z",
+          "updatedAt": "2026-07-15T10:42:06.269Z"
         }
       ],
       "selectedCardId": "0001",
-      "updatedAt": "2026-05-27T13:56:30.086Z",
+      "updatedAt": "2026-07-15T10:42:06.269Z",
       "summary": {
         "plan": 0,
         "active": 0,
@@ -2767,22 +5005,16 @@
   },
   "activeGraphLayer": "system",
   "camera": {
-    "x": 24.5,
-    "y": -36.89999999999998,
-    "zoom": 0.82
-  },
-  "ghostProjections": {
-    "byId": {},
-    "currentProjectionId": null,
-    "latestProjectionId": null,
-    "records": []
+    "x": 567.04,
+    "y": -274.80000000000007,
+    "zoom": 1.28
   },
   "openReportId": null,
   "openTaskId": "10000",
   "openTraceId": null,
   "scene": "studio",
-  "selectedDeskId": null,
-  "selectedTab": "agents",
+  "selectedDeskId": "qa-lead",
+  "selectedTab": "qa",
   "worldViewMode": "2d",
-  "zoom": 0.92
+  "zoom": 0.76
 }

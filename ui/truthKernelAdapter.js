@@ -924,12 +924,17 @@ function mapSubconsciousStatus(status = {}) {
   const state = String(status?.state || '').trim().toLowerCase();
   if (state === 'live') return 'healthy';
   if (state === 'generation_failed' || state === 'model_unavailable') return 'blocked';
-  if (state === 'paused_by_load' || state === 'paused_manual') return 'degraded';
+  if (
+    state === 'paused_by_load'
+    || state === 'paused_manual'
+    || state === 'live_memory_preserved'
+    || state === 'live_memory_unavailable'
+  ) return 'degraded';
   return 'informational';
 }
 
 function collectSubconsciousNodes(registry, rootPath) {
-  const statusPath = path.join(rootPath, 'brain', 'context', 'subconscious', 'status.json');
+  const statusPath = path.join(rootPath, 'brain', 'context', 'subconscious', 'observer-ledger.txt');
   const status = safeReadJson(statusPath, null);
   if (!status || status.contract !== 'subconscious.advisory.v1') return;
   const observerId = 'subconscious_advisory_observer';
@@ -945,8 +950,8 @@ function collectSubconsciousNodes(registry, rootPath) {
     why: 'Surfaces low-impact local-model commentary and compressed context without promoting it into canonical truth.',
     represents: 'A derived, inspectable observer availability signal for agent context.',
     sourceType: 'subconscious-daemon',
-    sourceRef: 'brain/context/subconscious/status.json',
-    derivedSource: 'brain/context/subconscious/status.json',
+    sourceRef: 'brain/context/subconscious/observer-ledger.txt',
+    derivedSource: 'brain/context/subconscious/observer-ledger.txt',
     truthState: 'derived_advisory_not_canonical',
     verdict: status.state || null,
     reason: failureReason || pauseReasons.join(' ') || null,

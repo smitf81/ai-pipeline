@@ -64,6 +64,7 @@ node tools/axiom-plugin-slice.mjs --reject-placeholder <plugin-id> --reason "<wh
 ## Slice Workflow
 
 1. Define the capability gap and target area.
+   - If the literal gap may hide a required second step, use `brain/skills/negative-space-intent-reasoning/SKILL.md` to separate the stated request from the goal-preserving requirement.
 2. Decide whether a generated proposal, template plugin, or implementation-bearing proposal is appropriate.
 3. Prefer `--build-slice` for supported implementation generators when the user expects an artifact to be validated, packaged, and registered.
 4. Use `create_from_gap` only for honest scaffold/template work. It must refuse implementation-heavy unsupported gaps unless a placeholder is explicitly requested.

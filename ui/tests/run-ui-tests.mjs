@@ -47,6 +47,8 @@ const testEntries = [
   { name: 'graphQueries', path: './graphQueries.test.mjs' },
   { name: 'graphMutations', path: './graphMutations.test.mjs' },
   { name: 'mutationEngine', path: './mutationEngine.test.mjs' },
+  { name: 'ghostProjection', path: './ghostProjection.test.mjs' },
+  { name: 'spatialGhostResolver', path: './spatialGhostResolver.test.mjs' },
   { name: 'worldScaffoldView', path: './worldScaffoldView.test.mjs' },
   { name: 'persistence', path: './persistence.test.mjs' },
   { name: 'utilityWindowState', path: './utilityWindowState.test.mjs' },

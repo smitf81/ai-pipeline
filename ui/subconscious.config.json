@@ -1,0 +1,47 @@
+{
+  "model": "qwen3.5:9b",
+  "port": 43171,
+  "intervalMs": 900000,
+  "maxQuietMs": 7200000,
+  "timeoutMs": 90000,
+  "cpuPauseThreshold": 55,
+  "numThread": 2,
+  "numPredict": 420,
+  "numCtx": 4096,
+  "keepAlive": "0",
+  "think": false,
+  "temperature": 0.35,
+  "excludedDirectoryNames": [
+    ".codex",
+    ".git",
+    ".npm-cache",
+    ".playwright-browsers",
+    ".python-tools",
+    ".recovery",
+    ".tmp.drivedownload",
+    ".tmp.driveupload",
+    "__pycache__",
+    "archives",
+    "node_modules"
+  ],
+  "excludedFilePrefixes": [
+    ".tmp-"
+  ],
+  "excludedFileExtensions": [
+    ".bin",
+    ".jpeg",
+    ".jpg",
+    ".png",
+    ".pyc",
+    ".zip"
+  ],
+  "pauseProcessPatterns": [
+    "UnrealEditor",
+    "UE4Editor",
+    "UE5Editor",
+    "Unity",
+    "Blender",
+    "Shipping",
+    "Win64-Shipping"
+  ]
+}

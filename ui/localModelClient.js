@@ -369,6 +369,7 @@ async function requestOllamaText({
   fetchImpl = globalThis.fetch,
   format = null,
   keepAlive = null,
+  think = null,
   options = null,
 }) {
   if (typeof fetchImpl !== 'function') {
@@ -386,6 +387,7 @@ async function requestOllamaText({
         stream: false,
         ...(format ? { format } : {}),
         ...(keepAlive != null ? { keep_alive: keepAlive } : {}),
+        ...(typeof think === 'boolean' ? { think } : {}),
         ...(options && typeof options === 'object' ? { options } : {}),
       }),
       signal: controller?.signal,

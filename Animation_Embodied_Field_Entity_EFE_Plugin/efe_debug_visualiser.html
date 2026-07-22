@@ -1,0 +1,349 @@
+
+<h2 class="sr-only">EFE debug visualiser — interactive view of spatial fields, entity morphology, intent stack, and expression frame output</h2>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-mono);font-size:12px}
+.root{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:10px;padding:12px}
+.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px}
+.panel-title{font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+canvas{display:block;image-rendering:pixelated}
+.row{display:flex;gap:6px;align-items:center;margin-bottom:5px}
+.label{color:var(--color-text-secondary);font-size:11px;width:90px;flex-shrink:0}
+.bar-wrap{flex:1;height:10px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden}
+.bar{height:100%;border-radius:3px;transition:width .08s}
+.val{font-size:11px;color:var(--color-text-primary);width:36px;text-align:right}
+.badge{font-size:10px;padding:2px 7px;border-radius:var(--border-radius-md);display:inline-block;margin:2px 3px 2px 0}
+.intent-active{background:var(--color-background-info);color:var(--color-text-info)}
+.intent-idle{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.node-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px}
+.node-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.node-label{color:var(--color-text-secondary);width:80px}
+.node-hp .bar{background:#3266ad}
+.dmg-intact{background:#3266ad}
+.dmg-stressed{background:#EF9F27}
+.dmg-damaged{background:#D85A30}
+.dmg-severed{background:#E24B4A}
+.controls{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.controls button{font-size:11px;padding:4px 10px}
+select{font-size:11px;padding:3px 6px}
+.tick-label{color:var(--color-text-tertiary);font-size:10px}
+</style>
+
+<div class="root">
+
+  <div class="panel" style="grid-column:1/-1">
+    <div class="panel-title">simulation controls</div>
+    <div class="controls">
+      <button id="btn-play">⏵ run</button>
+      <button id="btn-step">step</button>
+      <select id="sel-intent">
+        <option value="idle">intent: idle</option>
+        <option value="pursue">intent: pursue</option>
+        <option value="glide">intent: glide</option>
+        <option value="strike">intent: strike</option>
+        <option value="intimidate">intent: intimidate</option>
+        <option value="evade">intent: evade</option>
+        <option value="parry">intent: parry</option>
+      </select>
+      <button id="btn-damage">apply damage</button>
+      <button id="btn-wind">wind burst</button>
+      <span class="tick-label" id="tick-label">tick 0 · dt 16ms</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">spatial fields · top-down slice</div>
+    <canvas id="field-canvas" width="300" height="200" style="width:100%;border-radius:4px"></canvas>
+    <div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--color-text-secondary)">
+      <span>■ airflow</span><span>■ fear</span><span>■ territory</span><span>○ entity</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">morphology · node health</div>
+    <div id="node-list"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">intent stack</div>
+    <div id="intent-display"></div>
+    <div style="margin-top:10px" class="panel-title">active forces this tick</div>
+    <div id="force-display"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">surface expression frame</div>
+    <div id="expr-display"></div>
+  </div>
+
+</div>
+
+<script>
+const GW=60,GH=40;
+
+function makeGrid(){return new Float32Array(GW*GH);}
+function idx(x,y){return Math.max(0,Math.min(GH-1,y|0))*GW+Math.max(0,Math.min(GW-1,x|0));}
+
+const state={
+  tick:0,
+  running:false,
+  interval:null,
+  fields:{
+    airflow:makeGrid(),
+    fear:makeGrid(),
+    territory:makeGrid(),
+  },
+  entity:{
+    x:30,y:20,vx:0,vy:0,
+    nodes:[
+      {label:'spine_root', hp:1,dmg:0,mass:80},
+      {label:'spine_mid',  hp:1,dmg:0,mass:60},
+      {label:'head',       hp:1,dmg:0,mass:25},
+      {label:'tail_tip',   hp:1,dmg:0,mass:3},
+      {label:'wing_l_tip', hp:1,dmg:0,mass:1},
+      {label:'wing_r_tip', hp:1,dmg:0,mass:1},
+      {label:'leg_l_foot', hp:1,dmg:0,mass:4},
+      {label:'leg_r_foot', hp:1,dmg:0,mass:4},
+    ],
+  },
+  intent:'idle',
+  lastForces:[],
+  expr:{
+    speed:0,inAir:0,alertness:0,aggression:0,
+    exhaustion:0,fear:0,pain:0,
+    wingDmgL:0,wingDmgR:0,breathPhase:0,
+    muscleFlexL:0,muscleFlexR:0,
+  },
+  motorState:{fatigue:0,gaitPhase:0,inFlight:false,parryWindow:0},
+  breathAcc:0,
+};
+
+function decayField(g,rate){for(let i=0;i<g.length;i++)g[i]*=(1-rate);}
+function propagateField(g){
+  const t=new Float32Array(g);
+  for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){
+    const avg=(g[idx(x+1,y)]+g[idx(x-1,y)]+g[idx(x,y+1)]+g[idx(x,y-1)])/4;
+    t[idx(x,y)]+=0.12*(avg-g[idx(x,y)]);
+  }
+  for(let i=0;i<g.length;i++)g[i]=Math.max(0,Math.min(1,t[i]));
+}
+function emitSphere(g,cx,cy,r,v){
+  const x0=Math.max(0,(cx-r)|0),x1=Math.min(GW-1,(cx+r)|0);
+  const y0=Math.max(0,(cy-r)|0),y1=Math.min(GH-1,(cy+r)|0);
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const d=Math.sqrt((x-cx)**2+(y-cy)**2);
+    if(d<=r)g[idx(x,y)]=Math.min(1,g[idx(x,y)]+v*(1-d/r));
+  }
+}
+
+function damageNodeState(hp){
+  if(hp<=0)return'severed';
+  if(hp<=0.25)return'damaged';
+  if(hp<=0.6)return'stressed';
+  return'intact';
+}
+function dmgClass(s){return'dmg-'+s;}
+
+function simulateTick(){
+  const s=state;
+  const dt=0.016;
+  s.tick++;
+
+  const inFlight=s.intent==='glide';
+  const inStrike=s.intent==='strike';
+  const inEv=s.intent==='evade';
+  const inIm=s.intent==='intimidate';
+  const inPar=s.intent==='parry';
+
+  s.motorState.inFlight=inFlight;
+  s.motorState.fatigue=Math.max(0,s.motorState.fatigue-(inFlight||inStrike?-0.008:0.005)*dt*60);
+  s.motorState.gaitPhase=(s.motorState.gaitPhase+0.4*dt)%1;
+  s.breathAcc=(s.breathAcc+0.3*(1+s.motorState.fatigue*0.6)*dt)%1;
+
+  let forces=[];
+  if(s.intent==='pursue'||s.intent==='evade'){
+    const dir=s.intent==='pursue'?1:-1;
+    forces.push({node:'leg_l_foot',fx:dir*15,fy:0});
+    forces.push({node:'leg_r_foot',fx:dir*15,fy:0});
+    s.entity.vx+=dir*0.3;
+    s.motorState.fatigue=Math.min(1,s.motorState.fatigue+0.001);
+  }
+  if(s.intent==='glide'){
+    const lift=8+s.motorState.gaitPhase*2;
+    forces.push({node:'wing_l_tip',fx:0,fy:lift});
+    forces.push({node:'wing_r_tip',fx:0,fy:lift});
+    forces.push({node:'spine_root',fx:0,fy:-1});
+    s.entity.vy-=0.05;
+  }
+  if(s.intent==='strike'){
+    forces.push({node:'spine_root',fx:40,fy:0,impulse:true});
+    s.motorState.fatigue=Math.min(1,s.motorState.fatigue+0.15);
+  }
+  if(s.intent==='intimidate'){
+    forces.push({node:'head',fx:0,fy:4});
+    forces.push({node:'wing_l_tip',fx:-8,fy:2});
+    forces.push({node:'wing_r_tip',fx:8,fy:2});
+    forces.push({node:'tail_tip',fx:0,fy:-3});
+    emitSphere(s.fields.territory,s.entity.x|0,s.entity.y|0,12,0.06);
+  }
+  if(s.intent==='parry'){
+    forces.push({node:'spine_root',fx:-20,fy:3,impulse:true});
+  }
+  if(s.intent==='idle'){
+    forces.push({node:'spine_root',fx:0,fy:0.2*Math.sin(s.breathAcc*Math.PI*2)});
+  }
+  forces.push({node:'spine_root',fx:0,fy:-s.entity.vy*2});
+
+  s.entity.vx*=0.85; s.entity.vy*=0.85;
+  s.entity.x=Math.max(5,Math.min(GW-5,s.entity.x+s.entity.vx*dt));
+  s.entity.y=Math.max(5,Math.min(GH-5,s.entity.y+s.entity.vy*dt));
+  s.lastForces=forces;
+
+  decayField(s.fields.airflow,0.04);
+  decayField(s.fields.fear,0.02);
+  decayField(s.fields.territory,0.015);
+  propagateField(s.fields.airflow);
+  propagateField(s.fields.fear);
+  propagateField(s.fields.territory);
+
+  const speed=Math.sqrt(s.entity.vx**2+s.entity.vy**2);
+  emitSphere(s.fields.airflow,s.entity.x|0,s.entity.y|0,3+speed*2,0.08+speed*0.05);
+  if(inEv||s.motorState.fatigue>0.5)emitSphere(s.fields.fear,s.entity.x|0,s.entity.y|0,6,0.04);
+
+  const avgHP=s.entity.nodes.reduce((a,n)=>a+n.hp,0)/s.entity.nodes.length;
+  const fearAt=s.fields.fear[idx(s.entity.x|0,s.entity.y|0)];
+  s.expr={
+    speed:Math.min(1,speed*5),
+    inAir:inFlight?1:0,
+    alertness:inStrike||inPar?1:inIm?.8:.3,
+    aggression:inStrike?.9:inIm?.7:.0,
+    exhaustion:s.motorState.fatigue,
+    fear:fearAt,
+    pain:1-avgHP,
+    wingDmgL:1-s.entity.nodes[4].hp,
+    wingDmgR:1-s.entity.nodes[5].hp,
+    breathPhase:s.breathAcc,
+    muscleFlexL:Math.max(0,Math.min(1,speed+s.motorState.gaitPhase*0.4)),
+    muscleFlexR:Math.max(0,Math.min(1,speed+(1-s.motorState.gaitPhase)*0.4)),
+  };
+
+  render();
+}
+
+const canvas=document.getElementById('field-canvas');
+const ctx=canvas.getContext('2d');
+function render(){
+  const s=state;
+  const cw=canvas.width,ch=canvas.height;
+  const cxs=cw/GW,cys=ch/GH;
+  const dark=matchMedia('(prefers-color-scheme:dark)').matches;
+  ctx.fillStyle=dark?'#1a1a1a':'#f5f4f0';
+  ctx.fillRect(0,0,cw,ch);
+
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const a=s.fields.airflow[idx(x,y)];
+    const f=s.fields.fear[idx(x,y)];
+    const t=s.fields.territory[idx(x,y)];
+    if(a>.01){ctx.globalAlpha=a*.7;ctx.fillStyle='#378ADD';ctx.fillRect(x*cxs,y*cys,cxs,cys);}
+    if(f>.01){ctx.globalAlpha=f*.6;ctx.fillStyle='#E24B4A';ctx.fillRect(x*cxs,y*cys,cxs,cys);}
+    if(t>.01){ctx.globalAlpha=t*.5;ctx.fillStyle='#3B6D11';ctx.fillRect(x*cxs,y*cys,cxs,cys);}
+  }
+  ctx.globalAlpha=1;
+
+  const ex=s.entity.x*cxs, ey=s.entity.y*cys;
+  ctx.strokeStyle=dark?'rgba(255,255,255,.9)':'rgba(0,0,0,.8)';
+  ctx.lineWidth=0.8;
+  if(s.intent==='glide'||s.motorState.inFlight){
+    ctx.beginPath();ctx.moveTo(ex-12,ey);ctx.lineTo(ex+12,ey);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ex,ey-5);ctx.lineTo(ex,ey+5);ctx.stroke();
+  }else{
+    ctx.beginPath();ctx.arc(ex,ey,5,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=dark?'rgba(255,255,255,.3)':'rgba(0,0,0,.15)';
+    ctx.fill();
+  }
+  const exprO=s.expr;
+  if(exprO.pain>0.1){
+    ctx.strokeStyle='#E24B4A';ctx.globalAlpha=exprO.pain*0.8;
+    ctx.beginPath();ctx.arc(ex,ey,8,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  const nl=document.getElementById('node-list');
+  nl.innerHTML=s.entity.nodes.map(n=>{
+    const ds=damageNodeState(n.hp);
+    const barColor={intact:'#3266ad',stressed:'#EF9F27',damaged:'#D85A30',severed:'#E24B4A'}[ds];
+    return`<div class="node-row">
+      <div class="node-dot" style="background:${barColor}"></div>
+      <div class="node-label">${n.label}</div>
+      <div class="bar-wrap" style="flex:1"><div class="bar" style="width:${(n.hp*100).toFixed(0)}%;background:${barColor}"></div></div>
+      <div class="val">${(n.hp*100).toFixed(0)}%</div>
+      <div style="font-size:10px;color:var(--color-text-tertiary);width:50px">${ds}</div>
+    </div>`;
+  }).join('');
+
+  const activeIntents=[s.intent,...(s.intent!=='idle'?['breathe']:['breathe'])];
+  const allIntents=['pursue','evade','glide','strike','intimidate','parry','idle','breathe'];
+  document.getElementById('intent-display').innerHTML=allIntents.map(i=>{
+    const active=activeIntents.includes(i);
+    return`<span class="badge ${active?'intent-active':'intent-idle'}">${i}${active&&i===s.intent?' ●':''}</span>`;
+  }).join('');
+
+  const fd=document.getElementById('force-display');
+  if(s.lastForces.length===0){fd.innerHTML='<span style="color:var(--color-text-tertiary);font-size:11px">—</span>';}
+  else fd.innerHTML=s.lastForces.map(f=>`<div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">
+    <span style="color:var(--color-text-primary)">${f.node}</span>
+    → fx ${f.fx>=0?'+':''}${f.fx.toFixed(1)} fy ${f.fy>=0?'+':''}${f.fy.toFixed(1)}${f.impulse?' <em style="font-size:10px;color:var(--color-text-info)">[impulse]</em>':''}
+  </div>`).join('');
+
+  const e=s.expr;
+  const rows=[
+    ['speed',e.speed],['in air',e.inAir],['alertness',e.alertness],
+    ['aggression',e.aggression],['exhaustion',e.exhaustion],
+    ['fear',e.fear],['pain',e.pain],
+    ['wing dmg L',e.wingDmgL],['wing dmg R',e.wingDmgR],
+    ['breath',e.breathPhase],['flex L',e.muscleFlexL],['flex R',e.muscleFlexR],
+  ];
+  const barColors={
+    'exhaustion':'#D85A30','fear':'#E24B4A','pain':'#E24B4A',
+    'wing dmg L':'#BA7517','wing dmg R':'#BA7517',
+    'aggression':'#D85A30',
+  };
+  document.getElementById('expr-display').innerHTML=rows.map(([k,v])=>{
+    const c=barColors[k]||'#3266ad';
+    return`<div class="row">
+      <div class="label">${k}</div>
+      <div class="bar-wrap"><div class="bar" style="width:${(v*100).toFixed(0)}%;background:${c}"></div></div>
+      <div class="val">${(v*100).toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('tick-label').textContent=`tick ${s.tick} · fatigue ${(s.motorState.fatigue*100).toFixed(0)}%`;
+}
+
+document.getElementById('btn-play').addEventListener('click',()=>{
+  state.running=!state.running;
+  document.getElementById('btn-play').textContent=state.running?'⏸ pause':'⏵ run';
+  if(state.running)state.interval=setInterval(simulateTick,16);
+  else clearInterval(state.interval);
+});
+document.getElementById('btn-step').addEventListener('click',()=>{
+  if(!state.running)simulateTick();
+});
+document.getElementById('sel-intent').addEventListener('change',e=>{
+  state.intent=e.target.value;
+});
+document.getElementById('btn-damage').addEventListener('click',()=>{
+  const nodes=state.entity.nodes;
+  const pick=nodes[Math.floor(Math.random()*nodes.length)];
+  pick.hp=Math.max(0,pick.hp-0.3-Math.random()*0.3);
+  render();
+});
+document.getElementById('btn-wind').addEventListener('click',()=>{
+  const s=state;
+  emitSphere(s.fields.airflow,s.entity.x|0,s.entity.y|0,15,0.7);
+  render();
+});
+
+render();
+</script>

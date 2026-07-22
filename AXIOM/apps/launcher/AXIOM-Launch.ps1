@@ -18,6 +18,10 @@ $ServerLog = Join-Path $LogsDir "axiom-sse-bridge.out.log"
 $ServerErr = Join-Path $LogsDir "axiom-sse-bridge.err.log"
 $OllamaLog = Join-Path $LogsDir "ollama.out.log"
 $OllamaErr = Join-Path $LogsDir "ollama.err.log"
+$ExpectedBridgeVersion = "axiom-file-manager-bridge.v0.5-project-roots"
+$ExpectedBlackSkySelector = "_A_Projects/BLACK_SKY_BOUND_FFP"
+$ExpectedBlackSkyV2Selector = "_A_Projects/BLACK_SKY_BOUND_V2"
+$RequiredBridgeTools = @("project_list", "project_open", "project_runtime_probe", "project_runtime_bootstrap", "fs_ls", "fs_cat", "safe_write_project_file")
 
 
 $PluginBuilderDir = Join-Path (Split-Path $Root -Parent) "plugin-builder"
@@ -118,6 +122,89 @@ function Write-Bad($Text) { Write-Host "[FAIL] $Text" -ForegroundColor Red; Log-
 function Test-HttpJson($Url) {
   try { return Invoke-RestMethod -Uri $Url -Method GET -TimeoutSec 3 }
   catch { return $null }
+}
+
+function Get-BridgeProject($Health, $Id) {
+  if (-not $Health -or -not $Health.projects) { return $null }
+  return @($Health.projects) | Where-Object { $_.id -eq $Id } | Select-Object -First 1
+}
+
+function Test-AxiomBridgeCurrent($Health) {
+  $missing = @()
+  if (-not ($Health -and $Health.ok)) {
+    return [pscustomobject]@{ Ok = $false; Reason = "bridge_health_missing"; MissingTools = $missing; BlackSky = $null; BlackSkyV2 = $null }
+  }
+  if ($Health.bridgeVersion -ne $ExpectedBridgeVersion) {
+    return [pscustomobject]@{ Ok = $false; Reason = "bridge_version_stale:$($Health.bridgeVersion)"; MissingTools = $missing; BlackSky = $null; BlackSkyV2 = $null }
+  }
+  foreach ($tool in $RequiredBridgeTools) {
+    if (-not (@($Health.mcpTools) -contains $tool)) { $missing += $tool }
+  }
+  if ($missing.Count -gt 0) {
+    return [pscustomobject]@{ Ok = $false; Reason = "bridge_tools_missing:$($missing -join ',')"; MissingTools = $missing; BlackSky = $null; BlackSkyV2 = $null }
+  }
+  $blackSky = Get-BridgeProject $Health "black-sky-bound"
+  if (-not $blackSky) {
+    return [pscustomobject]@{ Ok = $false; Reason = "black_sky_bound_project_missing"; MissingTools = $missing; BlackSky = $null; BlackSkyV2 = $null }
+  }
+  if ($blackSky.selector -ne $ExpectedBlackSkySelector) {
+    return [pscustomobject]@{ Ok = $false; Reason = "black_sky_bound_selector_stale:$($blackSky.selector)"; MissingTools = $missing; BlackSky = $blackSky; BlackSkyV2 = $null }
+  }
+  if ($blackSky.status -and $blackSky.status -ne "ready") {
+    return [pscustomobject]@{ Ok = $false; Reason = "black_sky_bound_not_ready:$($blackSky.status)"; MissingTools = $missing; BlackSky = $blackSky; BlackSkyV2 = $null }
+  }
+  $blackSkyV2 = Get-BridgeProject $Health "black-sky-bound-v2-demo"
+  if (-not $blackSkyV2) {
+    return [pscustomobject]@{ Ok = $false; Reason = "black_sky_bound_v2_project_missing"; MissingTools = $missing; BlackSky = $blackSky; BlackSkyV2 = $null }
+  }
+  if ($blackSkyV2.selector -ne $ExpectedBlackSkyV2Selector) {
+    return [pscustomobject]@{ Ok = $false; Reason = "black_sky_bound_v2_selector_stale:$($blackSkyV2.selector)"; MissingTools = $missing; BlackSky = $blackSky; BlackSkyV2 = $blackSkyV2 }
+  }
+  if ($blackSkyV2.status -and $blackSkyV2.status -ne "ready") {
+    return [pscustomobject]@{ Ok = $false; Reason = "black_sky_bound_v2_not_ready:$($blackSkyV2.status)"; MissingTools = $missing; BlackSky = $blackSky; BlackSkyV2 = $blackSkyV2 }
+  }
+  return [pscustomobject]@{ Ok = $true; Reason = "current"; MissingTools = $missing; BlackSky = $blackSky; BlackSkyV2 = $blackSkyV2 }
+}
+
+function Stop-AxiomBridgeProcess {
+  param([string]$Reason)
+  $stopped = $false
+  Write-Warn "AXIOM SSE Bridge is stale ($Reason). Restarting the local bridge from current source."
+
+  if (Test-Path $PidFile) {
+    try {
+      $pidValue = [int](Get-Content -Path $PidFile -ErrorAction Stop | Select-Object -First 1)
+      $proc = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
+      if ($proc) {
+        Stop-Process -Id $pidValue -Force -ErrorAction Stop
+        Write-Ok "Stopped stale AXIOM bridge process from pid file: $pidValue"
+        $stopped = $true
+      }
+    } catch {
+      Write-Warn "Could not stop bridge from pid file: $($_.Exception.Message)"
+    }
+  }
+
+  if (-not $stopped) {
+    try {
+      $portOwners = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique)
+      foreach ($owner in $portOwners) {
+        if (-not $owner) { continue }
+        $proc = Get-Process -Id $owner -ErrorAction SilentlyContinue
+        if ($proc -and $proc.ProcessName -match "^node") {
+          Stop-Process -Id $owner -Force -ErrorAction Stop
+          Write-Ok "Stopped stale node process listening on port ${Port}: $owner"
+          $stopped = $true
+        }
+      }
+    } catch {
+      Write-Warn "Could not inspect/stop port $Port owner: $($_.Exception.Message)"
+    }
+  }
+
+  Start-Sleep -Milliseconds 700
+  Remove-Item -Path $PidFile -ErrorAction SilentlyContinue
+  return $stopped
 }
 
 function Test-EditorAssetFresh($Url) {
@@ -256,6 +343,11 @@ try {
 
   Write-Step "Checking AXIOM SSE Bridge"
   $health = Test-HttpJson "$BaseUrl/health"
+  $bridgeCurrent = Test-AxiomBridgeCurrent $health
+  if ($health -and -not $bridgeCurrent.Ok) {
+    Stop-AxiomBridgeProcess $bridgeCurrent.Reason | Out-Null
+    $health = $null
+  }
   if (-not $health) {
     Write-Step "Starting AXIOM SSE Bridge on port $Port"
     $proc = Start-Process -FilePath "node" -ArgumentList "server.js" -WorkingDirectory $Root -WindowStyle Hidden -PassThru -RedirectStandardOutput $ServerLog -RedirectStandardError $ServerErr
@@ -263,19 +355,24 @@ try {
 
     for ($i=0; $i -lt 20; $i++) {
       $health = Test-HttpJson "$BaseUrl/health"
-      if ($health -and $health.ok) { break }
+      $bridgeCurrent = Test-AxiomBridgeCurrent $health
+      if ($bridgeCurrent.Ok) { break }
       Start-Sleep -Milliseconds 750
     }
   }
 
-  if (-not ($health -and $health.ok)) {
+  $bridgeCurrent = Test-AxiomBridgeCurrent $health
+  if (-not $bridgeCurrent.Ok) {
     Write-Bad "AXIOM SSE Bridge did not pass health check."
+    Write-Warn "Bridge readiness reason: $($bridgeCurrent.Reason)"
     Write-Host "Check logs:" -ForegroundColor Yellow
     Write-Host "  $ServerLog"
     Write-Host "  $ServerErr"
-    throw "Bridge failed health check"
+    throw "Bridge failed current-source health check"
   }
-  Write-Ok "AXIOM SSE Bridge live: $($health.service), clients=$($health.clients)"
+  Write-Ok "AXIOM SSE Bridge live: $($health.service), version=$($health.bridgeVersion), clients=$($health.clients)"
+  Write-Ok "Black Sky Bound project root: $($bridgeCurrent.BlackSky.selector), status=$($bridgeCurrent.BlackSky.status)"
+  Write-Ok "Black Sky Bound v2 project root: $($bridgeCurrent.BlackSkyV2.selector), status=$($bridgeCurrent.BlackSkyV2.status)"
 
   Write-Step "Verifying required web assets"
   $assetChecks = @(

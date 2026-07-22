@@ -1,6 +1,6 @@
 # ACE Canonical Truth Map
 
-Generated: 2026-05-18T12:27:04.844Z
+Generated: 2026-07-10T15:19:04.799Z
 Contract: canonical-truth-domains.v0
 
 Source of truth: `brain/emergence/canonical_truth_domains.json`.
@@ -28,6 +28,15 @@ Before changing a domain, identify its canonical owner, mutation authority, allo
 - allowed projections: runtime
 - notes: Operational runtime projection consumed by Studio and automation refresh flows.
 
+## axiom_workspace_context - AXIOM Active Project Workspace Context
+
+- classification: projection
+- system of record: AXIOM FileManagerState activeProject/projectRoot/projectManifest + active project's .axiom/project.json workspace declaration + explicit surface-owned state projections
+- canonical owner: AXIOM/apps/launcher/public/axiom-editor.html::FileManagerRuntime.getActiveProject + FileManagerRuntime.getWorkspaceContext
+- mutation authority: FileManagerRuntime governed project-open/manifest flows; scene, authoring, viewport, and connection owners retain mutation authority over their contributed state
+- allowed projections: axiom_workspace_context
+- notes: Single read-only active workspace aggregate used by Project Preview, BSB Map Forge, workspace identity chrome, and agent/tool context. UI consumers may not guess project identity, roots, source paths, or bake owners independently.
+
 ## truth_kernel - Truth Kernel
 
 - classification: projection
@@ -43,8 +52,26 @@ Before changing a domain, identify its canonical owner, mutation authority, allo
 - system of record: workspace.intentState.registry + workspace.studio.intake.records
 - canonical owner: ui/server.js::maybeRunContextManagerWorker + ui/server.js::getCurrentSpatialIntent
 - mutation authority: ui/server.js::maybeRunContextManagerWorker + ui/server.js::persistCanonicalIntakeRecord
-- allowed projections: intent
-- notes: Canonical authored/request intent state surfaced through the live intent route, workspace intent registry, and canonical intake persistence.
+- allowed projections: intent, field_influence, ghost_projection
+- notes: Canonical authored/request intent state surfaced through the live intent route, workspace intent registry, canonical intake persistence, and read-only downstream field/resolver projections.
+
+## field_influence - Spatial Field Influence
+
+- classification: projection
+- system of record: canonical intent geometry projected through deriveSpatialIntentFieldInfluence
+- canonical owner: ui/intentAnalysis.js::deriveSpatialIntentFieldInfluence
+- mutation authority: read-only projection from current canonical intent
+- allowed projections: field_influence
+- notes: First governed spatial field: buildDesirability only, traceable to one canonical intent.
+
+## ghost_projection - Ghost Projection
+
+- classification: projection
+- system of record: canonical intent fieldInfluence resolved through resolveSpatialGhostProjection
+- canonical owner: ui/spatialGhostResolver.js::resolveSpatialGhostProjection
+- mutation authority: read-only uncommitted projection; execution remains separately governed
+- allowed projections: ghost_projection
+- notes: Non-committing resolver candidate generated from buildDesirability pressure; never committed world truth.
 
 ## desk_properties - Desk Properties
 

@@ -2,17 +2,19 @@ const fs = require('fs');
 const http = require('http');
 const os = require('os');
 const path = require('path');
-const { execFile } = require('child_process');
+const { execFile, spawn } = require('child_process');
 const {
   DEFAULT_OLLAMA_HOST,
-  requestOllamaText,
-  runOllamaTagsProbe,
 } = require('./localModelClient');
+const {
+  MEMORY_STORE_CONTRACT,
+  openMemoryStore,
+} = require('./subconsciousMemoryStore');
 
 const CONTRACT = 'subconscious.advisory.v1';
 const ADVISORY_DIR_RELATIVE = path.join('brain', 'context', 'subconscious');
 const DEFAULT_CONFIG = Object.freeze({
-  model: 'qwen2.5-coder:1.5b',
+  model: 'qwen3.5:9b',
   host: DEFAULT_OLLAMA_HOST,
   port: 43171,
   intervalMs: 15 * 60 * 1000,
@@ -24,11 +26,12 @@ const DEFAULT_CONFIG = Object.freeze({
   maxExcerptFiles: 8,
   maxExcerptChars: 900,
   maxMemoryChars: 10000,
-  maxThoughtFiles: 120,
+  maxHistoryChars: 60000,
   numThread: 2,
   numPredict: 420,
   numCtx: 4096,
   keepAlive: '0',
+  think: false,
   temperature: 0.35,
   pauseProcessPatterns: [
     'UnrealEditor',
@@ -40,14 +43,20 @@ const DEFAULT_CONFIG = Object.freeze({
     'Win64-Shipping',
   ],
   excludedDirectoryNames: [
+    '.codex',
     '.git',
     '.npm-cache',
     '.playwright-browsers',
+    '.python-tools',
     '.recovery',
     '.tmp.drivedownload',
     '.tmp.driveupload',
+    '__pycache__',
+    'archives',
     'node_modules',
   ],
+  excludedFilePrefixes: ['.tmp-'],
+  excludedFileExtensions: ['.bin', '.jpeg', '.jpg', '.png', '.pyc', '.zip'],
   excludedRelativePrefixes: [
     'brain/context/subconscious/',
     'AXIOM/apps/launcher/logs/',
@@ -80,9 +89,7 @@ function ensureDir(dirPath) {
 
 function writeText(filePath, content) {
   ensureDir(path.dirname(filePath));
-  const temporaryPath = `${filePath}.tmp`;
-  fs.writeFileSync(temporaryPath, String(content || ''), 'utf8');
-  fs.renameSync(temporaryPath, filePath);
+  fs.writeFileSync(filePath, String(content || ''), 'utf8');
 }
 
 function writeJson(filePath, payload) {
@@ -93,14 +100,17 @@ function advisoryPaths(rootPath) {
   const dir = path.join(rootPath, ADVISORY_DIR_RELATIVE);
   return {
     dir,
-    control: path.join(dir, 'control.json'),
-    settings: path.join(dir, 'settings.json'),
-    snapshot: path.join(dir, 'scan-snapshot.json'),
-    status: path.join(dir, 'status.json'),
-    memory: path.join(dir, 'memory.md'),
-    latestThought: path.join(dir, 'latest-thought.md'),
-    activity: path.join(dir, 'activity.ndjson'),
-    thoughts: path.join(dir, 'thoughts'),
+    control: path.join(dir, 'observer-toggle.txt'),
+    settings: path.join(__dirname, 'subconscious.config.json'),
+    snapshot: path.join(dir, 'observer-index.txt'),
+    status: path.join(dir, 'observer-ledger.txt'),
+    database: path.join(dir, 'subconscious-memory.sqlite'),
+    memory: path.join(dir, 'subconscious-memory.md'),
+    memoryEvents: path.join(dir, 'memory-events.jsonl'),
+    memorySnapshots: path.join(dir, 'memory-snapshots'),
+    latestThought: path.join(dir, 'latest-observation.md'),
+    thoughtHistory: path.join(dir, 'observation-history.md'),
+    activity: path.join(dir, 'observer-events.txt'),
   };
 }
 
@@ -115,15 +125,8 @@ function mergeConfig(base = {}, overrides = {}) {
 function initializeStore(rootPath, configOverrides = {}) {
   const paths = advisoryPaths(rootPath);
   ensureDir(paths.dir);
-  ensureDir(paths.thoughts);
   const storedSettings = safeReadJson(paths.settings, null);
   const config = mergeConfig(storedSettings, configOverrides);
-  if (!storedSettings) {
-    writeJson(paths.settings, {
-      ...DEFAULT_CONFIG,
-      note: 'Advisory observer only. Generated output must not be promoted to canonical truth without explicit review.',
-    });
-  }
   if (!fs.existsSync(paths.control)) {
     writeJson(paths.control, {
       paused: false,
@@ -132,6 +135,7 @@ function initializeStore(rootPath, configOverrides = {}) {
       updatedBy: 'daemon-bootstrap',
     });
   }
+  initializeMemoryStore(paths, rootPath, config);
   return { paths, config };
 }
 
@@ -220,6 +224,8 @@ function scanWorkspace(rootPath, config = DEFAULT_CONFIG) {
         continue;
       }
       if (!entry.isFile()) continue;
+      if ((config.excludedFilePrefixes || []).some((prefix) => entry.name.startsWith(prefix))) continue;
+      if ((config.excludedFileExtensions || []).includes(path.extname(entry.name).toLowerCase())) continue;
       visited += 1;
       if (visited > config.maxVisitedFiles) {
         clipped = true;
@@ -297,7 +303,7 @@ function readBoundedText(filePath, maxChars) {
 }
 
 function buildObservationPrompt(rootPath, paths, scanDelta, config) {
-  const memory = readBoundedText(paths.memory, Math.min(config.maxMemoryChars, 5000));
+  const memory = readCurrentMemory(paths, rootPath, config).content.slice(0, Math.min(config.maxMemoryChars, 5000));
   const anchors = [
     'brain/emergence/project_brain.md',
     'brain/emergence/decisions.md',
@@ -321,7 +327,9 @@ function buildObservationPrompt(rootPath, paths, scanDelta, config) {
     'You are advisory only: do not claim canonical truth, task completion, successful builds, or code changes not shown in the evidence.',
     'Canonical authority is brain/emergence/. Your memory is derived operational context under brain/context/subconscious/.',
     'Comment on coherence, likely relevance, and what a working agent may want to inspect next. Never instruct autonomous mutation.',
-    'Use exactly these headings: OBSERVATION, COHERENCE, ATTENTION, MEMORY UPDATE.',
+    'OUTPUT LIMIT: use at most 120 words total and no more than two short sentences per heading.',
+    'Use exactly these headings in this order: MEMORY UPDATE, OBSERVATION, COHERENCE, ATTENTION.',
+    'MEMORY UPDATE is mandatory and comes first so it cannot be lost to output truncation.',
     'Under MEMORY UPDATE, return a compact replacement memory that incorporates useful earlier memory and current evidence.',
     '',
     `SCAN TIME: ${nowIso()}`,
@@ -341,27 +349,263 @@ function buildObservationPrompt(rootPath, paths, scanDelta, config) {
 
 function extractMemoryUpdate(text, maxChars) {
   const raw = String(text || '').trim();
-  const match = raw.match(/(?:^|\n)MEMORY UPDATE\s*:?\s*\n([\s\S]*)$/i);
-  const memory = match ? match[1].trim() : raw;
+  const match = raw.match(
+    /(?:^|\n)MEMORY UPDATE\s*:?\s*\n([\s\S]*?)(?=\n(?:OBSERVATION|COHERENCE|ATTENTION)\s*:?\s*(?:\n|$)|$)/i,
+  );
+  if (!match) return '';
+  const memory = match[1]
+    .trim()
+    .replace(/^(?:\s*#{1,6}\s+Subconscious Advisory Memory\s*\n?)+/i, '')
+    .trim();
   return memory.slice(0, maxChars).trim();
 }
 
-function appendActivity(paths, payload) {
-  ensureDir(paths.dir);
-  fs.appendFileSync(paths.activity, `${JSON.stringify(payload)}\n`, 'utf8');
+function hasSubstantiveMemory(text) {
+  const content = String(text || '')
+    .replace(/^\s*#{1,6}\s+.*$/gm, '')
+    .replace(/^\s*Updated:\s+.*$/gim, '')
+    .replace(/^\s*This is model-generated compressed context\..*$/gim, '')
+    .replace(/[\s*_`>#-]+/g, ' ')
+    .trim();
+  return content.length >= 20 && /[A-Za-z0-9]/.test(content);
 }
 
-function thoughtFileName(timestamp = new Date()) {
-  return `${timestamp.toISOString().replace(/[:.]/g, '-')}.md`;
-}
-
-function pruneThoughtFiles(paths, maxThoughtFiles) {
-  const files = fs.readdirSync(paths.thoughts)
-    .filter((fileName) => fileName.endsWith('.md'))
-    .sort();
-  files.slice(0, Math.max(0, files.length - maxThoughtFiles)).forEach((fileName) => {
-    fs.unlinkSync(path.join(paths.thoughts, fileName));
+function withMemoryStore(paths, rootPath, callback) {
+  const store = openMemoryStore({
+    databasePath: paths.database,
+    rootPath,
   });
+  try {
+    return callback(store);
+  } finally {
+    store.close();
+  }
+}
+
+function initializeMemoryStore(paths, rootPath, config = DEFAULT_CONFIG) {
+  return withMemoryStore(paths, rootPath, (store) => {
+    const current = store.getCurrentSnapshot();
+    if (current?.content) {
+      const exported = readBoundedText(paths.memory, config.maxMemoryChars + 1024);
+      if (exported !== current.content) {
+        writeText(paths.memory, current.content);
+      }
+      return store.getSummary();
+    }
+    const exported = readBoundedText(paths.memory, config.maxMemoryChars + 1024);
+    if (!hasSubstantiveMemory(exported)) {
+      return store.getSummary();
+    }
+    return store.bootstrapCurrentSummary({
+      createdAt: nowIso(),
+      content: exported,
+      currentMemoryRef: normalizePath(path.relative(rootPath, paths.memory)),
+    });
+  });
+}
+
+function readCurrentMemory(paths, rootPath, config = DEFAULT_CONFIG) {
+  return withMemoryStore(paths, rootPath, (store) => {
+    const current = store.getCurrentSnapshot();
+    if (current?.content) {
+      return {
+        content: current.content,
+        ref: current.exportRef || normalizePath(path.relative(rootPath, paths.memory)),
+        snapshotId: current.id,
+        source: 'sqlite',
+        summary: store.getSummary(),
+      };
+    }
+    const exported = readBoundedText(paths.memory, config.maxMemoryChars + 1024);
+    return {
+      content: hasSubstantiveMemory(exported) ? exported : '',
+      ref: hasSubstantiveMemory(exported) ? normalizePath(path.relative(rootPath, paths.memory)) : null,
+      snapshotId: null,
+      source: hasSubstantiveMemory(exported) ? 'markdown_export' : 'none',
+      summary: store.getSummary(),
+    };
+  });
+}
+
+function inspectMemoryCandidate(text, maxChars) {
+  const raw = String(text || '');
+  if (!/(?:^|\n)MEMORY UPDATE\s*:?\s*\n/i.test(raw)) {
+    return {
+      text: '',
+      accepted: false,
+      reason: 'missing_memory_update_section',
+    };
+  }
+  const memory = extractMemoryUpdate(raw, maxChars);
+  if (!hasSubstantiveMemory(memory)) {
+    return {
+      text: memory,
+      accepted: false,
+      reason: 'empty_or_heading_only_memory_update',
+    };
+  }
+  return {
+    text: memory,
+    accepted: true,
+    reason: null,
+  };
+}
+
+function appendJsonLine(filePath, payload) {
+  ensureDir(path.dirname(filePath));
+  fs.appendFileSync(filePath, `${JSON.stringify(payload)}\n`, 'utf8');
+}
+
+function appendActivity(paths, payload) {
+  appendJsonLine(paths.activity, payload);
+}
+
+function formatCurrentMemory(memoryText, createdAt) {
+  return [
+    '# Subconscious Advisory Memory',
+    '',
+    `Updated: ${createdAt}`,
+    '',
+    'This is model-generated compressed context. It is not canonical truth.',
+    '',
+    memoryText,
+    '',
+  ].join('\n');
+}
+
+function writeMemorySnapshot(paths, rootPath, content, createdAt, disposition) {
+  ensureDir(paths.memorySnapshots);
+  const timestamp = String(createdAt || nowIso()).replace(/[:.]/g, '-');
+  let serial = 0;
+  let snapshotPath;
+  do {
+    const suffix = serial ? `-${serial}` : '';
+    snapshotPath = path.join(paths.memorySnapshots, `${timestamp}-${disposition}${suffix}.md`);
+    serial += 1;
+  } while (fs.existsSync(snapshotPath));
+  fs.writeFileSync(snapshotPath, String(content || ''), { encoding: 'utf8', flag: 'wx' });
+  return normalizePath(path.relative(rootPath, snapshotPath));
+}
+
+function persistMemoryUpdate(paths, rootPath, modelText, details, config) {
+  const createdAt = details.createdAt || nowIso();
+  const previous = readCurrentMemory(paths, rootPath, config);
+  const previousContent = previous.content || '';
+  const previousExists = Boolean(previousContent.trim());
+  const previousSubstantive = hasSubstantiveMemory(previousContent);
+  const candidate = inspectMemoryCandidate(modelText, config.maxMemoryChars);
+  let previousSnapshotRef = null;
+  let activeSnapshotRef = null;
+  let currentMemoryRef = previousSubstantive
+    ? normalizePath(path.relative(rootPath, paths.memory))
+    : null;
+  let status;
+
+  if (candidate.accepted) {
+    if (previousExists) {
+      previousSnapshotRef = writeMemorySnapshot(paths, rootPath, previousContent, createdAt, 'superseded');
+    }
+    const currentContent = formatCurrentMemory(candidate.text, createdAt);
+    activeSnapshotRef = writeMemorySnapshot(paths, rootPath, currentContent, createdAt, 'accepted');
+    currentMemoryRef = normalizePath(path.relative(rootPath, paths.memory));
+    status = 'updated';
+  } else {
+    if (previousExists) {
+      activeSnapshotRef = writeMemorySnapshot(paths, rootPath, previousContent, createdAt, 'preserved');
+    }
+    status = previousSubstantive ? 'preserved_previous' : 'unavailable';
+  }
+
+  const databaseRecord = withMemoryStore(paths, rootPath, (store) => store.recordGeneration({
+    observation: {
+      generatedAt: createdAt,
+      model: details.model || config.model,
+      commentary: String(modelText || '').trim(),
+      thoughtRef: normalizePath(path.relative(rootPath, paths.latestThought)),
+      changeCount: details.changeCount || 0,
+      durationMs: details.durationMs || 0,
+      scanAt: details.scanAt || null,
+    },
+    compression: {
+      status,
+      candidateMemory: candidate.text,
+      rejectionReason: candidate.reason,
+      previousSummarySubstantive: previousSubstantive,
+    },
+    memoryEvent: {
+      event: candidate.accepted ? 'memory_summary_updated' : 'memory_summary_rejected',
+      updateStatus: status,
+      updateApplied: candidate.accepted,
+      rejectionReason: candidate.reason,
+      currentMemoryRef,
+      previousSnapshotRef,
+      activeSnapshotRef,
+    },
+    snapshots: [
+      ...(previousSnapshotRef ? [{
+        disposition: 'superseded',
+        content: previousContent,
+        exportRef: previousSnapshotRef,
+        isCurrent: false,
+      }] : []),
+      ...(activeSnapshotRef ? [{
+        disposition: candidate.accepted ? 'accepted' : 'preserved',
+        content: candidate.accepted ? formatCurrentMemory(candidate.text, createdAt) : previousContent,
+        exportRef: activeSnapshotRef,
+        isCurrent: candidate.accepted || previousSubstantive,
+      }] : []),
+    ],
+    fileMentions: Array.isArray(details.changedPaths) ? details.changedPaths : [],
+    activity: {
+      type: 'subconscious_generation',
+      state: candidate.accepted ? 'memory_updated' : status,
+      details: {
+        model: details.model || config.model,
+        changeCount: details.changeCount || 0,
+        memoryUpdateApplied: candidate.accepted,
+        memoryUpdateReason: candidate.reason,
+      },
+    },
+  }));
+
+  if (candidate.accepted) {
+    writeText(paths.memory, formatCurrentMemory(candidate.text, createdAt));
+  }
+
+  const event = {
+    contract: CONTRACT,
+    event: candidate.accepted ? 'memory_summary_updated' : 'memory_summary_rejected',
+    classification: 'derived_advisory',
+    canonical: false,
+    generatedAt: createdAt,
+    model: details.model || config.model,
+    observationRef: normalizePath(path.relative(rootPath, paths.latestThought)),
+    updateStatus: status,
+    updateApplied: candidate.accepted,
+    rejectionReason: candidate.reason,
+    previousSummaryExisted: previousExists,
+    previousSummarySubstantive: previousSubstantive,
+    previousSnapshotRef,
+    activeSnapshotRef,
+    currentMemoryRef,
+    candidateMemory: candidate.text,
+  };
+  appendJsonLine(paths.memoryEvents, event);
+  return {
+    memoryRef: currentMemoryRef,
+    memoryEventsRef: normalizePath(path.relative(rootPath, paths.memoryEvents)),
+    memorySnapshotRef: activeSnapshotRef,
+    previousMemorySnapshotRef: previousSnapshotRef,
+    memoryUpdateApplied: candidate.accepted,
+    memoryUpdateStatus: status,
+    memoryUpdateReason: candidate.reason,
+    memoryStoreRef: normalizePath(path.relative(rootPath, paths.database)),
+    memoryStoreContract: MEMORY_STORE_CONTRACT,
+    memoryStoreSummary: databaseRecord.summary,
+    observationId: databaseRecord.observationId,
+    compressionRunId: databaseRecord.compressionRunId,
+    memoryEventId: databaseRecord.memoryEventId,
+  };
 }
 
 function writeThought(paths, rootPath, text, details = {}, config = DEFAULT_CONFIG) {
@@ -380,26 +624,19 @@ function writeThought(paths, rootPath, text, details = {}, config = DEFAULT_CONF
     String(text || '').trim(),
     '',
   ].join('\n');
-  const thoughtPath = path.join(paths.thoughts, thoughtFileName(new Date(createdAt)));
-  writeText(thoughtPath, output);
   writeText(paths.latestThought, output);
-  const memoryText = extractMemoryUpdate(text, config.maxMemoryChars);
-  writeText(paths.memory, [
-    '# Subconscious Advisory Memory',
-    '',
-    `Updated: ${createdAt}`,
-    '',
-    'This is model-generated compressed context. It is not canonical truth.',
-    '',
-    memoryText || '(The model returned no memory update.)',
-    '',
-  ].join('\n'));
-  pruneThoughtFiles(paths, config.maxThoughtFiles);
+  const previousHistory = readBoundedText(paths.thoughtHistory, config.maxHistoryChars);
+  const historyBody = `${previousHistory.trim()}\n\n---\n\n${output}`.trim();
+  writeText(paths.thoughtHistory, `${historyBody.slice(-config.maxHistoryChars)}\n`);
+  const memoryResult = persistMemoryUpdate(paths, rootPath, text, {
+    ...details,
+    createdAt,
+  }, config);
   return {
-    thoughtRef: normalizePath(path.relative(rootPath, thoughtPath)),
+    thoughtRef: normalizePath(path.relative(rootPath, paths.thoughtHistory)),
     latestThoughtRef: normalizePath(path.relative(rootPath, paths.latestThought)),
-    memoryRef: normalizePath(path.relative(rootPath, paths.memory)),
     preview: String(text || '').trim().slice(0, 260),
+    ...memoryResult,
   };
 }
 
@@ -466,12 +703,46 @@ function shouldRunContinuityThought(status, config) {
   return !Number.isFinite(lastGeneratedAt) || (Date.now() - lastGeneratedAt) >= config.maxQuietMs;
 }
 
+function runIsolatedModelRequest(request = {}) {
+  return new Promise((resolve, reject) => {
+    const workerPath = path.join(__dirname, 'subconsciousModelWorker.js');
+    const child = spawn(process.execPath, [workerPath], {
+      windowsHide: true,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += String(chunk);
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += String(chunk);
+    });
+    child.once('error', reject);
+    child.once('close', (code) => {
+      let payload = null;
+      try {
+        payload = JSON.parse(stdout || '{}');
+      } catch (error) {
+        reject(new Error(`Subconscious model worker returned invalid output: ${error.message}`));
+        return;
+      }
+      if (code !== 0 || payload?.ok !== true) {
+        reject(new Error(payload?.error || stderr.trim() || `Subconscious model worker exited with code ${code}.`));
+        return;
+      }
+      resolve(payload.response);
+    });
+    child.stdin.end(JSON.stringify(request));
+  });
+}
+
 async function runCycle({
   rootPath = path.join(__dirname, '..'),
   configOverrides = {},
   force = false,
-  modelRequest = requestOllamaText,
-  tagsProbe = runOllamaTagsProbe,
+  modelRequest = runIsolatedModelRequest,
+  tagsProbe = null,
   resourceProbe = null,
 } = {}) {
   const resolvedRoot = path.resolve(rootPath);
@@ -487,7 +758,16 @@ async function runCycle({
       nextEligibleAt: null,
     });
   }
-  const pressure = await probeResourcePressure(config, { probe: resourceProbe });
+  const pressure = force
+    ? {
+        checkedAt: nowIso(),
+        cpuPercent: null,
+        heavyProcesses: [],
+        paused: false,
+        forced: true,
+        reasons: ['Automatic load gates bypassed by explicit forced cycle.'],
+      }
+    : await probeResourcePressure(config, { probe: resourceProbe });
   if (pressure.paused && !force) {
     return writeStatus(paths, resolvedRoot, {
       ...priorStatus,
@@ -500,7 +780,10 @@ async function runCycle({
   }
   const currentScan = scanWorkspace(resolvedRoot, config);
   const previousScan = safeReadJson(paths.snapshot, null);
-  const delta = diffScans(previousScan, currentScan, config.maxChanges);
+  const isInitialBaseline = !previousScan?.capturedAt;
+  const delta = isInitialBaseline
+    ? { total: 0, clipped: false, changes: [] }
+    : diffScans(previousScan, currentScan, config.maxChanges);
   const continuityDue = shouldRunContinuityThought(priorStatus, config);
   if (!force && delta.total === 0 && !continuityDue) {
     writeJson(paths.snapshot, currentScan);
@@ -515,25 +798,6 @@ async function runCycle({
       nextEligibleAt: new Date(Date.now() + config.intervalMs).toISOString(),
     });
   }
-  const probe = await tagsProbe({
-    host: config.host,
-    timeoutMs: Math.min(4000, config.timeoutMs),
-  });
-  if (!probe?.ok || !probe.availableModels.includes(config.model)) {
-    const reason = !probe?.ok
-      ? (probe?.reason || 'Ollama is unavailable.')
-      : `Configured model "${config.model}" is not installed.`;
-    return writeStatus(paths, resolvedRoot, {
-      ...priorStatus,
-      state: 'model_unavailable',
-      failureReason: reason,
-      lastScanAt: currentScan.capturedAt,
-      resourcePressure: pressure,
-      model: config.model,
-      availableModels: probe?.availableModels || [],
-      control,
-    });
-  }
   const generationStartedAt = Date.now();
   writeStatus(paths, resolvedRoot, {
     ...priorStatus,
@@ -545,12 +809,24 @@ async function runCycle({
     control,
   });
   try {
+    if (typeof tagsProbe === 'function') {
+      const probe = await tagsProbe({
+        host: config.host,
+        timeoutMs: Math.min(4000, config.timeoutMs),
+      });
+      if (!probe?.ok || !probe.availableModels.includes(config.model)) {
+        throw new Error(!probe?.ok
+          ? (probe?.reason || 'Ollama is unavailable.')
+          : `Configured model "${config.model}" is not installed.`);
+      }
+    }
     const response = await modelRequest({
       host: config.host,
       model: config.model,
       prompt: buildObservationPrompt(resolvedRoot, paths, delta, config),
       timeoutMs: config.timeoutMs,
       keepAlive: config.keepAlive,
+      think: config.think,
       options: {
         num_ctx: config.numCtx,
         num_predict: config.numPredict,
@@ -567,7 +843,9 @@ async function runCycle({
       createdAt: completedAt,
       model: response.model || config.model,
       changeCount: delta.total,
+      changedPaths: delta.changes,
       durationMs,
+      scanAt: currentScan.capturedAt,
     }, config);
     writeJson(paths.snapshot, currentScan);
     appendActivity(paths, {
@@ -580,11 +858,14 @@ async function runCycle({
       thoughtRef: output.thoughtRef,
       durationMs,
     });
+    const state = output.memoryUpdateApplied
+      ? 'live'
+      : (output.memoryRef ? 'live_memory_preserved' : 'live_memory_unavailable');
     return writeStatus(paths, resolvedRoot, {
-      state: 'live',
+      state,
       model: response.model || config.model,
       modelHost: config.host,
-      modelStatus: 'fresh_generation',
+      modelStatus: output.memoryUpdateApplied ? 'fresh_generation' : 'fresh_generation_memory_degraded',
       resourcePolicy: {
         intervalMs: config.intervalMs,
         maxQuietMs: config.maxQuietMs,
@@ -605,6 +886,18 @@ async function runCycle({
       changedPaths: delta.changes.map((change) => change.path),
       latestThought: output.latestThoughtRef,
       latestMemory: output.memoryRef,
+      memoryEvents: output.memoryEventsRef,
+      memoryStore: output.memoryStoreRef,
+      memoryStoreContract: output.memoryStoreContract,
+      memoryStoreSummary: output.memoryStoreSummary,
+      observationId: output.observationId,
+      compressionRunId: output.compressionRunId,
+      memoryEventId: output.memoryEventId,
+      memorySnapshot: output.memorySnapshotRef,
+      previousMemorySnapshot: output.previousMemorySnapshotRef,
+      memoryUpdateApplied: output.memoryUpdateApplied,
+      memoryUpdateStatus: output.memoryUpdateStatus,
+      memoryUpdateReason: output.memoryUpdateReason,
       latestPreview: output.preview,
       nextEligibleAt: new Date(Date.now() + config.intervalMs).toISOString(),
     });
@@ -624,16 +917,10 @@ async function runCycle({
 
 function listThoughts(rootPath, limit = 8) {
   const paths = advisoryPaths(rootPath);
-  try {
-    return fs.readdirSync(paths.thoughts)
-      .filter((name) => name.endsWith('.md'))
-      .sort()
-      .reverse()
-      .slice(0, Math.max(1, Math.min(Number(limit) || 8, 40)))
-      .map((name) => normalizePath(path.join(ADVISORY_DIR_RELATIVE, 'thoughts', name)));
-  } catch (_error) {
-    return [];
-  }
+  const references = [paths.latestThought, paths.thoughtHistory]
+    .filter((filePath) => fs.existsSync(filePath))
+    .map((filePath) => normalizePath(path.relative(rootPath, filePath)));
+  return references.slice(0, Math.max(1, Math.min(Number(limit) || 8, 2)));
 }
 
 function sendJson(res, statusCode, payload) {
@@ -674,11 +961,18 @@ function createDaemonServer({ rootPath, config, requestCycle }) {
     }
     if (req.method === 'GET' && url.pathname === '/api/subconscious/memory') {
       const paths = advisoryPaths(rootPath);
+      const status = readStatus(rootPath);
+      const current = readCurrentMemory(paths, rootPath, config);
+      const memory = current.content.slice(0, config.maxMemoryChars + 256);
+      const available = Boolean(status.latestMemory || current.ref) && hasSubstantiveMemory(memory);
       return sendJson(res, 200, {
         ok: true,
         classification: 'derived_advisory',
         canonical: false,
-        memory: readBoundedText(paths.memory, config.maxMemoryChars + 256),
+        available,
+        updateStatus: status.memoryUpdateStatus || null,
+        store: current.summary,
+        memory: available ? memory : '',
       });
     }
     if (req.method === 'POST' && url.pathname === '/api/subconscious/control') {
@@ -813,6 +1107,7 @@ module.exports = {
   listThoughts,
   probeResourcePressure,
   readStatus,
+  runIsolatedModelRequest,
   runCycle,
   scanWorkspace,
   startDaemon,

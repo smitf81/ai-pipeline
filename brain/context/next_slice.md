@@ -1,73 +1,59 @@
-# Next Slice
+# AXIOM / Black Sky Bound Next Slice
 
-Generated: 2026-05-27T16:00:00+01:00
+Status: Procedural Geology DNA v1 completed 2026-07-21. Canonical architectural authority remains in `brain/emergence/`. The recommended next slice is **Unified Procedural Scene Painting UX v1**.
 
-## Interpreted Task
+## Completed Slice
 
-Create a local-model-powered "subconscious" observer for the AI Pipeline workspace: it should periodically notice bounded in-repo activity, write inspectable contextual commentary and compressed advisory memory, stay inexpensive while idle, pause around competing load, and be visible to ACE and AXIOM without being mistaken for canonical truth.
+Boulders now use one compact authored geology family rather than a fixed renderer shape.
 
-## Scope Risks
+Delivered behavior:
 
-- Treating model commentary as canonical truth would violate the ACE truth model.
-- A permanent unconstrained model loop could consume laptop resources during games or heavy tools.
-- Completing daemon runtime, durable memory, Windows startup, ACE truth-kernel representation, and AXIOM MSOL representation in one pass risks superficial wiring unless the first slice stays strictly observational.
-- Existing repository recovery work and a heavily dirty working tree are unrelated to this feature and must remain undisturbed.
+- `axiom.geology-dna.v1` intent containing seed, formation, palette, scale, height, angularity, strata direction/density, erosion, crack density, fracture, moss, wetness, and colours;
+- Fieldstone, Fractured Basalt, and Weathered Outcrop recipes;
+- deterministic renderer-neutral hull points, facets, strata polylines, crack polylines, moss patches, and wet edges;
+- semantic create, collision-aware cluster, set-formation, set-scale, randomise, erode, fracture, moss, weather, and patch operations;
+- Map Forge Geology DNA controls plus `EDITOR.procedural.geology`, `axiom_geology_apply`, and a local-agent `geology_action` lane;
+- one-revision cluster receipts with requested/created/skipped counts and deterministic ids/positions;
+- legacy `type: boulder` normalization without rewriting canonical maps;
+- preserved 2x2 blocking collision, `stone_moss` material, occlusion role, authored ids, and runtime-map bake shape;
+- removal of the fixed WebGL `buildBoulder` lit-detail path and addition of generated geology diagnostics.
 
-## Best Next Slice
+## Canonical Ownership
 
-Objective: implement one real, read-only subconscious advisory lane with a live Ollama generation proof and visible status in ACE/AXIOM.
+- `bsb-v2-geology-authoring.js` owns Axiom recipes, compact authoring normalization, and per-record semantic mutation.
+- `bsb-v2-map-authoring.js` owns document transactions, collision-aware clusters, selection, dirty/freshness state, inspector controls, and editor API receipts.
+- `proceduralGeology.js` owns BSB runtime recipe resolution and scene profiles.
+- `proceduralGeologyGenerator.js` owns disposable renderer-neutral formation projections.
+- `geologyGeometry.js` owns WebGL adaptation only. It cannot become an authored-shape owner.
+- Existing scene-object collision, material, and occlusion systems remain canonical for those concerns.
 
-Exact area of focus:
+## Completion Evidence
 
-- A hidden-capable Node daemon that scans only this workspace on an interval, calls an installed lightweight Qwen model through local Ollama, and stores bounded text commentary plus compressed memory under `brain/context/subconscious/`.
-- Explicit manual pause/resume/wake controls and automatic generation deferral when CPU load or known heavy creative/game processes are present.
-- A localhost-only status/control endpoint owned by the daemon.
-- A labelled advisory node in the existing ACE Truth Kernel projection and an AXIOM MSOL capability/status-tool bridge.
-- Windows scheduled-task install/remove scripts for hidden logon startup, leaving installation as an explicit operator action until live validation passes.
+- Axiom's complete launcher suite passes with deterministic DNA, legacy migration, semantic operation, cluster, runtime-bake, MCP, and local-lane coverage.
+- Focused BSB geology, scene-object, collision, material, visibility, runtime-map, renderer, architecture, and LOC tests pass.
+- The complete BSB runner reaches only the previously recorded unrelated `atmosphericCameraOverlay.test.mjs` readability-alpha baseline; all post-baseline modules pass separately.
+- The shared web-game client completed its real input and text-state loop. Its known WebGL backing-store capture remains black, so dedicated Playwright screenshots provide visual acceptance.
+- Real Chromium rendered three formations as 3 generated rocks with 35 hull points, 26 strata segments, 28 crack segments, and 10 moss patches through WebGL with zero browser issues.
+- Real Chromium Axiom proof routed natural language through `geology_action`/MCP, applied erode/fracture/moss operations, created five collision-aware outcrops in one cluster receipt, displayed the selected Geology DNA, then reloaded the original source.
+- Both authoring maps and both BSB runtime maps retained their exact protected SHA-256 hashes.
 
-Likely files or systems involved:
+## Recommended Next Slice: Unified Procedural Scene Painting UX v1
 
-- `ui/localModelClient.js`
-- `ui/subconsciousDaemon.js`
-- `ui/truthKernelAdapter.js`
-- `ui/tests/subconsciousDaemon.test.mjs`
-- `ui/tests/truthKernelAdapter.test.mjs`
-- `ui/scripts/*subconscious*.ps1`
-- `AXIOM/apps/launcher/server.js`
-- `AXIOM/apps/launcher/public/axiom-editor.html`
-- `brain/context/subconscious/` generated outputs
+Turn the proven undergrowth brush into one human-facing semantic painting system for the three procedural families.
 
-Why this slice comes first:
+Suggested bounded scope:
 
-- It proves the non-negotiable requirement: fresh local-model text output under bounded resource policy.
-- It establishes a single inspectable advisory store before any agents consume the memory for decisions.
-- It makes availability visible without introducing an ungoverned truth source or model-authored mutation path.
+- extract a shared deterministic brush kernel from `bsb-v2-undergrowth-brush.js` instead of copying its sampling, revision, collision, preview, commit, or undo logic;
+- add explicit Tree / Undergrowth / Geology brush modes, with one family selected per stroke;
+- share radius, falloff, density, deterministic seed, drag batching, revision-bound preview, commit, and receipt-guarded undo behavior;
+- expose recipe/species mixes appropriate to the active family and preserve emitter-capable undergrowth variants;
+- preview the actual collision footprint separately from the visual marker, especially the geology 2x2 blocker and nonblocking undergrowth;
+- show stable blocked-reason counts for terrain, map bounds, spawn/escape, scene objects, units, and spawners;
+- commit one semantic batch revision through the existing family APIs and keep all generated geometry out of the editor document;
+- retain direct single-object inspector operations as a precise alternative to painting.
 
-Explicitly leave out:
-
-- automatic promotion of model observations into `brain/emergence/`
-- autonomous code edits or direct task creation from subconscious output
-- broad semantic graph ingestion across projects
-- redesign of the ACE or AXIOM interfaces beyond a minimal inspectable representation
-
-## Definition of Done
-
-- A live installed Ollama Qwen model produces fresh text thought artefacts and an updated bounded memory artefact from a scan of files inside this workspace only.
-- Model requests are time/token/thread bounded and unloaded after a cycle; idle cycles do not continuously infer.
-- Manual pause/resume is usable and load-aware deferral is represented explicitly in status.
-- The daemon exposes status/control endpoints on localhost.
-- ACE Truth Kernel and AXIOM MSOL visibly expose the observer as derived/advisory, not canonical state.
-- Targeted tests and a direct live runtime probe record evidence of generation and gating behavior.
-
-## Likely Follow-up Slices
-
-1. Allow governed ACE agents to retrieve selected subconscious context through an explicit context-manager input contract.
-2. Add retention policy, salience indexing, and validated retrieval tests once observation quality is reviewed.
-3. Add richer AXIOM/ACE diagnostics for cadence, load deferrals, and memory provenance if the minimal status surface proves useful.
+Explicitly do not combine terrain painting, root/leaf decals, dead snags, fire-arrow emitters, or mesh editing into the shared procedural brush in this slice.
 
 ## Confidence / Uncertainty
 
-- Confirmed: local Ollama is reachable at `http://127.0.0.1:11434` and installed models include `qwen2.5-coder:1.5b` and `qwen3.5:9b`.
-- Confirmed: ACE already owns a Truth Kernel projection surface and AXIOM already owns an MSOL capability visualiser plus local MCP bridge.
-- Inferred: using the smaller installed Qwen model by default is preferable for a background observer; the model remains configurable for deliberate larger-model runs.
-- Unclear: which game processes matter most on this laptop, so the first pass combines CPU gating with a configurable heavy-process list and explicit pause control.
+Confidence is high in the truth flow: all three procedural families now expose compact authoring contracts and semantic APIs. The main design risk is interaction density in the left panel. The next slice should prioritize a clear mode switch, compact recipe controls, honest footprint preview, and one reusable transaction kernel over adding more per-family sliders.

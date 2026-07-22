@@ -14,6 +14,8 @@ const KNOWN_TRUTH_BEARING_ROUTES = Object.freeze([
   '/api/spatial/desks/:deskId/properties',
   '/api/spatial/workspace',
   '/api/spatial/intent',
+  '/api/spatial/field-influence',
+  '/api/spatial/ghost-projection',
   '/api/qa/lead/state',
   '/api/qa/repair-loop/state',
   '/api/spatial/qa/runs',
@@ -113,7 +115,7 @@ function validateCanonicalTruthRegistry() {
     }
   });
 
-  ['workspace', 'runtime', 'truth_kernel', 'desk_properties', 'intent', 'qa_evidence'].forEach((projectionId) => {
+  ['workspace', 'runtime', 'truth_kernel', 'desk_properties', 'intent', 'field_influence', 'ghost_projection', 'qa_evidence'].forEach((projectionId) => {
     if (!projections.find((entry) => entry.projectionId === projectionId)) {
       errors.push(`required projection "${projectionId}" is missing`);
     }

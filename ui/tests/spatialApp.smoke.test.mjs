@@ -12,6 +12,7 @@ export default async function runSpatialAppSmokeTest() {
   assert.equal(spatialApp.default.rootElement.getAttribute('data-boot'), 'studio-mounted');
   assert.equal(spatialApp.default.rootElement.childNodes.length > 0, true);
   const spatialAppSource = fs.readFileSync(spatialAppPath, 'utf8');
+  const styleSource = fs.readFileSync(path.resolve(process.cwd(), 'public', 'style.css'), 'utf8');
   const canvasShellIndex = spatialAppSource.indexOf("className: 'canvas-shell'");
   const truthCanvasIndex = spatialAppSource.indexOf("className: 'truth-kernel-canvas'");
   const mainCanvasIndex = spatialAppSource.indexOf("className: 'spatial-main-canvas'");
@@ -20,6 +21,8 @@ export default async function runSpatialAppSmokeTest() {
   assert.equal(truthCanvasIndex > canvasShellIndex, true);
   assert.equal(mainCanvasIndex > truthCanvasIndex, true);
   assert.equal(railIndex > mainCanvasIndex, true);
+  assert.match(styleSource, /\.truth-kernel-canvas\s*\{[\s\S]*?z-index:\s*0;/);
+  assert.match(styleSource, /\.spatial-main-canvas\s*\{[\s\S]*?z-index:\s*1;/);
   assert.equal(typeof spatialApp.buildRsgActivityEntry, 'function');
   assert.equal(typeof spatialApp.pushRsgActivityEntry, 'function');
   assert.equal(typeof spatialApp.shouldRunFocusedRsgLoop, 'function');

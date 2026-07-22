@@ -20,6 +20,7 @@ build/
 test-results/
 ui/public/qa-runs/
 AXIOM/apps/launcher/logs/
+AXIOM/apps/launcher/data/project-diary/
 .codex/.skill-staging/
 **/.git/
 **/.vs/
@@ -54,6 +55,10 @@ Projects/*_OLD/
 
 # Local Git preservation store used until active metadata is writable.
 .recovery/
+
+# Locked pre-recovery Git metadata retained for audit/rollback only.
+.git.locked-legacy-*/
+.git.failed-init-*/
 
 # Historical runtime receipts are not archive source.
 legacy/runtime/

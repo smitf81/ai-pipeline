@@ -28,6 +28,8 @@ Initial governed projections:
 - `truth_kernel`
 - `desk_properties`
 - `intent`
+- `field_influence`
+- `ghost_projection`
 - `qa_evidence`
 
 ## Governance Rules
@@ -76,8 +78,21 @@ This slice governs declaration and access for:
 - `/api/spatial/truth-kernel`
 - `/api/spatial/desks/:deskId/properties`
 - `/api/spatial/intent`
+- `/api/spatial/field-influence`
+- `/api/spatial/ghost-projection`
 - `/api/qa/lead/state`
 - `/api/qa/repair-loop/state`
 - `/api/spatial/qa/runs`
 
 It does not migrate the rest of ACE truth surfaces yet.
+
+## 2026-05-28 Sketchpad Projection Update
+
+Canvas sketch strokes now enter ACE through `/api/spatial/intent` as geometry-bearing requests.
+The route persists the server-owned canonical intent record, carries the deterministic `buildDesirability` field influence, and emits an explicitly uncommitted ghost projection from `ui/spatialGhostResolver.js::resolveSpatialGhostProjection`.
+
+Validation state:
+
+- `canonicalTruthGovernance` and `canonicalTruthRegistryDrift` cover the added `field_influence` and `ghost_projection` declarations.
+- `intentRoute` covers geometry-only sketch intake plus `/api/spatial/field-influence` and `/api/spatial/ghost-projection`.
+- `spatialGhostResolver`, `ghostProjection`, and Truth Kernel layout/integration checks cover the resolver output and measured canvas-stage alignment.

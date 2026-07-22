@@ -1,8 +1,8 @@
 # Project Master Index
 
-Generated: 2026-05-27T14:15:41.567Z
+Generated: 2026-05-28T09:12:28.595Z
 Root: C:\Users\felix\Desktop\Automated_AI_Pipeline
-Indexed files: 1282
+Indexed files: 1333
 
 Use this file to choose what to read next. It is an orientation map, not canonical truth.
 
@@ -23,21 +23,21 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `package.json` - "name": "ace-qa",
 
 ## Category Counts
-- code: 326
-- doc: 226
-- test: 216
+- code: 329
+- doc: 251
+- test: 217
+- other: 148
 - historical: 142
-- other: 129
-- data: 108
+- data: 111
 - archive: 65
 - asset: 52
 - config: 18
 
 ## Top-Level Map
-- `Projects`: 372 files
-- `AXIOM`: 313 files
-- `ui`: 254 files
-- `brain`: 130 files
+- `Projects`: 373 files
+- `AXIOM`: 322 files
+- `ui`: 259 files
+- `brain`: 166 files
 - `work`: 31 files
 - `ACE_Local_lightweight`: 30 files
 - `Animation_Embodied_Field_Entity_EFE_Plugin`: 25 files
@@ -54,7 +54,7 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `ta`: 3 files
 
 ## Directory Outline
-- `.` - 20 files, 20.0 MB (archive:5, code:4, config:3, doc:3, other:3, data:2)
+- `.` - 20 files, 20.3 MB (archive:5, code:4, config:3, doc:3, other:3, data:2)
 - `.codex/ace-intended-abstraction` - 2 files, 4.3 KB (doc:1, other:1)
 - `.codex/skills` - 3 files, 7.9 KB (doc:2, other:1)
 - `ACE_Local_lightweight` - 4 files, 76.6 KB (archive:4)
@@ -63,7 +63,7 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `ACE_Local_lightweight/ace-local-agent-ide-v1-readable-guarded` - 6 files, 145.5 KB (code:2, data:2, config:1, doc:1)
 - `ACE_Local_lightweight/ace-local-agent-ide-v1-readable-guarded-throughput-full` - 6 files, 96.4 KB (code:2, data:2, config:1, doc:1)
 - `ACE_Local_lightweight/ace-safeboot-dev-console-v0` - 7 files, 55.6 KB (code:3, data:2, config:1, doc:1)
-- `agents` - 1 files, 1.7 KB (doc:1)
+- `agents` - 1 files, 3.1 KB (doc:1)
 - `agents/context-manager` - 2 files, 1.5 KB (data:1, doc:1)
 - `agents/cto-chief-of-staff` - 2 files, 947 B (data:1, doc:1)
 - `agents/dave` - 2 files, 708 B (data:1, doc:1)
@@ -73,24 +73,24 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `agents/skills` - 2 files, 5.0 KB (doc:1, other:1)
 - `Animation_Embodied_Field_Entity_EFE_Plugin` - 25 files, 411.4 KB (code:18, test:5, doc:2)
 - `AXIOM` - 4 files, 155.3 KB (doc:2, archive:1, code:1)
-- `AXIOM/apps` - 196 files, 1.0 MB (other:90, data:33, code:32, doc:23, test:12, config:5, archive:1)
+- `AXIOM/apps` - 203 files, 1.1 MB (other:97, data:33, code:32, doc:23, test:12, config:5, archive:1)
 - `AXIOM/archives` - 80 files, 3.9 MB (historical:76, archive:4)
 - `AXIOM/config` - 1 files, 318 B (data:1)
-- `AXIOM/docs` - 15 files, 101.9 KB (doc:14, archive:1)
+- `AXIOM/docs` - 17 files, 120.2 KB (doc:16, archive:1)
 - `AXIOM/examples` - 1 files, 64.5 KB (code:1)
 - `AXIOM/patches` - 4 files, 10.6 KB (doc:3, code:1)
 - `AXIOM/services` - 8 files, 14.5 KB (code:4, doc:3, config:1)
 - `AXIOM/snippets` - 4 files, 10.4 KB (code:4)
 - `brain` - 3 files, 681.2 KB (archive:1, code:1, doc:1)
-- `brain/context` - 33 files, 120.8 KB (doc:20, data:13)
-- `brain/emergence` - 17 files, 119.9 KB (doc:12, data:4, code:1)
+- `brain/context` - 47 files, 761.3 KB (doc:32, data:14, other:1)
+- `brain/emergence` - 17 files, 127.7 KB (doc:12, data:4, code:1)
 - `brain/Image_refs` - 8 files, 13.5 MB (asset:8)
-- `brain/skills` - 12 files, 38.5 KB (doc:7, other:5)
+- `brain/skills` - 34 files, 70.4 KB (doc:18, other:16)
 - `brain/topdown-slice` - 57 files, 478.3 KB (code:33, test:20, doc:2, other:2)
 - `context` - 7 files, 12.9 KB (data:3, doc:3, other:1)
 - `context/schemas` - 3 files, 8.6 KB (data:3)
 - `context/updates` - 2 files, 1.2 KB (doc:2)
-- `data/spatial` - 9 files, 406.4 KB (data:9)
+- `data/spatial` - 9 files, 393.4 KB (data:9)
 - `legacy` - 9 files, 7.6 MB (archive:5, historical:4)
 - `legacy/ai-pipeline` - 1 files, 34.4 KB (historical:1)
 - `legacy/data` - 4 files, 41.7 KB (historical:4)
@@ -105,7 +105,7 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `Projects/BitmapForge_local_first_complete` - 9 files, 85.8 KB (code:4, doc:3, other:2)
 - `Projects/Breach` - 103 files, 9.3 MB (historical:47, asset:30, other:10, doc:7, data:6, code:3)
 - `Projects/emergence` - 1 files, 195 B (doc:1)
-- `Projects/field-fronts-prototype` - 192 files, 3.0 MB (doc:75, code:60, test:40, other:9, asset:4, data:2, archive:1, config:1)
+- `Projects/field-fronts-prototype` - 193 files, 3.0 MB (doc:75, code:60, test:40, other:9, asset:4, data:3, archive:1, config:1)
 - `Projects/LocalLamaPanel_UE5_Plugin` - 6 files, 22.6 KB (code:4, doc:1, other:1)
 - `Projects/Moral_Distinction_Visualiser` - 4 files, 25.4 KB (code:2, config:1, doc:1)
 - `Projects/voice-dojo-pwa` - 12 files, 117.1 KB (code:9, config:1, data:1, doc:1)
@@ -117,10 +117,10 @@ Use this file to choose what to read next. It is an orientation map, not canonic
 - `ta` - 3 files, 12.3 KB (data:2, code:1)
 - `tools` - 9 files, 111.0 KB (code:6, other:2, archive:1)
 - `tools/mcp` - 4 files, 22.7 KB (code:4)
-- `ui` - 66 files, 3.9 MB (code:60, config:2, doc:2, archive:1, asset:1)
+- `ui` - 70 files, 3.9 MB (code:63, config:2, doc:2, archive:1, asset:1, data:1)
 - `ui/public` - 45 files, 3.0 MB (code:44, data:1)
-- `ui/scripts` - 4 files, 3.9 KB (code:4)
-- `ui/tests` - 139 files, 1.0 MB (test:139)
+- `ui/scripts` - 4 files, 4.0 KB (code:4)
+- `ui/tests` - 140 files, 1.1 MB (test:140)
 - `work` - 1 files, 79 B (data:1)
 - `work/hatch-pet` - 21 files, 88.9 KB (doc:10, asset:9, data:2)
 - `work/tasks` - 9 files, 13.7 KB (doc:6, data:2, other:1)
@@ -168,10 +168,10 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 
 ### .
 - `ACE_silent.vbs` [code, 211 B] - Set shell = CreateObject("WScript.Shell")
-- `AGENTS.md` [doc, 500 B] - # AI Pipeline Project Instructions
+- `AGENTS.md` [doc, 1.8 KB] - # AI Pipeline Project Instructions
 
 ### agents
-- `agents/AGENTS.md` [doc, 1.7 KB] - Project instructions and canonical ACE context read order.
+- `agents/AGENTS.md` [doc, 3.1 KB] - Project instructions and canonical ACE context read order.
 - `agents/context-manager/agent.json` [data, 547 B] - "autoRun": false,
 - `agents/context-manager/prompt.md` [doc, 983 B] - You are the ACE Context Manager worker.
 - `agents/cto-chief-of-staff/agent.json` [data, 693 B] - "id": "cto-chief-of-staff",
@@ -220,7 +220,7 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `AXIOM/apps/launcher/Install Desktop Shortcut.ps1` [code, 630 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/package-lock.json` [config, 33.6 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/package.json` [config, 197 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
-- `AXIOM/apps/launcher/public/axiom-editor.html` [code, 517.5 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/apps/launcher/public/axiom-editor.html` [code, 537.7 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/public/axiom-sse-client.js` [code, 4.5 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/public/README.txt` [doc, 552 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/public/sse-demo.html` [code, 1.0 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
@@ -228,11 +228,11 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `AXIOM/apps/launcher/README-v0.3-MCP-PATCH.txt` [doc, 1.4 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/README-v1.2-HOTFIX.txt` [doc, 447 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/README.md` [doc, 2.2 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
-- `AXIOM/apps/launcher/server.js` [code, 37.0 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/apps/launcher/server.js` [code, 47.4 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/launcher/server/sse.js` [code, 1.0 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/plugin-builder/demo/workflow.js` [code, 978 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/plugin-builder/docs/skills/Architectural Integrity & Maintainability.md` [doc, 7.8 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
-- `AXIOM/apps/plugin-builder/docs/skills/axiom-agentic-repair-loop.md` [doc, 161 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/apps/plugin-builder/docs/skills/axiom-agentic-repair-loop.md` [doc, 804 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/plugin-builder/docs/tools/safe_write_documentation_v1.md` [doc, 2.8 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/plugin-builder/mcp.json` [config, 283 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/apps/plugin-builder/package-lock.json` [config, 303 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
@@ -323,7 +323,7 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `AXIOM/config/mcp-tool-registry.json` [data, 318 B] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/docs/ACTIVATION-SEAM-FIX-README.txt` [doc, 1.8 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/docs/FINAL-ACTIVATION-CLIENT-APPLY-FIX.txt` [doc, 1.2 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
-- `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_external_files_spec.md` [doc, 31.1 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_external_files_spec.md` [doc, 34.3 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_1_verification_report.md` [doc, 2.1 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_2_verification_report.md` [doc, 1.9 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_3_verification_report.md` [doc, 2.2 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
@@ -333,8 +333,10 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_7_REPAIR_verification_report.md` [doc, 4.1 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_7_verification_report.md` [doc, 3.7 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_8_verification_report.md` [doc, 3.0 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
-- `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_verification_reports_INDEX.md` [doc, 1.2 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
-- `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_v_0_to_v_1_implementation_plan.md` [doc, 35.6 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_8A_live_project_verification_report.md` [doc, 4.6 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_8B_active_project_viewport_preview_report.md` [doc, 3.3 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_verification_reports_INDEX.md` [doc, 1.9 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
+- `AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_v_0_to_v_1_implementation_plan.md` [doc, 42.1 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/examples/axiom-editor-v0.1-with-runtime-loader.html` [code, 64.5 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/patches/safe-write-documentation/docs/skills/axiom-agentic-repair-loop.md` [doc, 1.9 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
 - `AXIOM/patches/safe-write-documentation/INTEGRATION_NOTES.md` [doc, 1.6 KB] - AXIOM runtime, docs, services, plugin-builder, or historical artifact.
@@ -373,32 +375,45 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `brain/context/agent_audits/context-manager/context-manager_context_manager_1776070575926_dflr0v.md` [doc, 728 B] - Operational planner-support context artifact.
 - `brain/context/agent_audits/context-manager/context-manager_context_manager_1776084840461_kh71ts.json` [data, 891 B] - Operational planner-support context artifact.
 - `brain/context/agent_audits/context-manager/context-manager_context_manager_1776084840461_kh71ts.md` [doc, 728 B] - Operational planner-support context artifact.
-- `brain/context/autonomy_fix_tasks.json` [data, 28.0 KB] - Operational planner-support context artifact.
-- `brain/context/autonomy_fix_tasks.md` [doc, 12.3 KB] - Operational planner-support context artifact.
+- `brain/context/autonomy_fix_tasks.json` [data, 34.8 KB] - Operational planner-support context artifact.
+- `brain/context/autonomy_fix_tasks.md` [doc, 19.0 KB] - Operational planner-support context artifact.
 - `brain/context/axiom_plugin_slice_map.md` [doc, 10.7 KB] - Operational planner-support context artifact.
 - `brain/context/canonical_truth_map.md` [doc, 4.0 KB] - Operational planner-support context artifact.
 - `brain/context/chat_appendix.md` [doc, 2.2 KB] - Operational planner-support context artifact.
-- `brain/context/failure_history.json` [data, 6.8 KB] - Operational planner-support context artifact.
-- `brain/context/failure_history.md` [doc, 2.8 KB] - Operational planner-support context artifact.
-- `brain/context/known_fixes_candidates.json` [data, 3.4 KB] - Operational planner-support context artifact.
-- `brain/context/known_fixes_candidates.md` [doc, 2.7 KB] - Operational planner-support context artifact.
+- `brain/context/failure_history.json` [data, 34.4 KB] - Operational planner-support context artifact.
+- `brain/context/failure_history.md` [doc, 23.1 KB] - Operational planner-support context artifact.
+- `brain/context/known_fixes_candidates.json` [data, 17.0 KB] - Operational planner-support context artifact.
+- `brain/context/known_fixes_candidates.md` [doc, 16.1 KB] - Operational planner-support context artifact.
 - `brain/context/known_fixes.json` [data, 4.3 KB] - Operational planner-support context artifact.
 - `brain/context/known_fixes.md` [doc, 3.2 KB] - Operational planner-support context artifact.
-- `brain/context/next_slice.md` [doc, 4.5 KB] - Operational planner-support context artifact.
+- `brain/context/next_slice.md` [doc, 14.8 KB] - Operational planner-support context artifact.
 - `brain/context/recent_change_digest.md` [doc, 7.1 KB] - Operational planner-support context artifact.
-- `brain/context/recommended_skills.md` [doc, 3.3 KB] - Operational planner-support context artifact.
+- `brain/context/recommended_skills.md` [doc, 5.7 KB] - Operational planner-support context artifact.
 - `brain/context/safe_mode/boot-recovery-daemon.json` [data, 5.5 KB] - Operational planner-support context artifact.
-- `brain/context/subconscious/README.md` [doc, 1.4 KB] - Operational planner-support context artifact.
+- `brain/context/subconscious/latest-observation.md` [doc, 1.1 KB] - Operational planner-support context artifact.
+- `brain/context/subconscious/memory-events.jsonl` [data, 2.3 KB] - Operational planner-support context artifact.
+- `brain/context/subconscious/memory-snapshots/2026-05-27T19-53-38-546Z-preserved.md` [doc, 170 B] - Operational planner-support context artifact.
+- `brain/context/subconscious/memory-snapshots/2026-05-27T19-54-52-026Z-accepted.md` [doc, 303 B] - Operational planner-support context artifact.
+- `brain/context/subconscious/memory-snapshots/2026-05-27T19-54-52-026Z-superseded.md` [doc, 170 B] - Operational planner-support context artifact.
+- `brain/context/subconscious/memory-snapshots/2026-05-27T20-05-15-768Z-accepted.md` [doc, 393 B] - Operational planner-support context artifact.
+- `brain/context/subconscious/memory-snapshots/2026-05-27T20-05-15-768Z-superseded.md` [doc, 303 B] - Operational planner-support context artifact.
+- `brain/context/subconscious/observation-history.md` [doc, 11.3 KB] - Operational planner-support context artifact.
+- `brain/context/subconscious/observer-events.txt` [doc, 3.5 KB] - Operational planner-support context artifact.
+- `brain/context/subconscious/observer-index.txt` [doc, 471.6 KB] - Operational planner-support context artifact.
+- `brain/context/subconscious/observer-ledger.txt` [doc, 2.7 KB] - Operational planner-support context artifact.
+- `brain/context/subconscious/observer-toggle.txt` [doc, 84 B] - Operational planner-support context artifact.
+- `brain/context/subconscious/README.md` [doc, 2.6 KB] - Operational planner-support context artifact.
+- `brain/context/subconscious/subconscious-memory.md` [doc, 393 B] - Operational planner-support context artifact.
 - `brain/context/ui_backend_drift.md` [doc, 5.7 KB] - Operational planner-support context artifact.
 - `brain/emergence/ace_engineering_constitution.md` [doc, 22.2 KB] - Canonical ACE brain artifact.
 - `brain/emergence/ace_spatial_field_sketchpad_spec.md` [doc, 7.9 KB] - Canonical ACE brain artifact.
 - `brain/emergence/ace-sketch-intent.html` [code, 32.0 KB] - Canonical ACE brain artifact.
 - `brain/emergence/ACE&AXIOM_Integration.md` [doc, 15.1 KB] - Canonical ACE brain artifact.
-- `brain/emergence/canonical_truth_domains.json` [data, 4.3 KB] - Canonical ACE brain artifact.
-- `brain/emergence/canonical_truth_projections.json` [data, 3.4 KB] - Canonical ACE brain artifact.
-- `brain/emergence/canonical_truth_system.md` [doc, 2.3 KB] - Canonical ACE brain artifact.
-- `brain/emergence/changelog.md` [doc, 1.1 KB] - Canonical ACE brain artifact.
-- `brain/emergence/decisions.md` [doc, 1.3 KB] - Canonical ACE brain artifact.
+- `brain/emergence/canonical_truth_domains.json` [data, 5.6 KB] - Canonical ACE brain artifact.
+- `brain/emergence/canonical_truth_projections.json` [data, 4.6 KB] - Canonical ACE brain artifact.
+- `brain/emergence/canonical_truth_system.md` [doc, 3.2 KB] - Canonical ACE brain artifact.
+- `brain/emergence/changelog.md` [doc, 2.3 KB] - Canonical ACE brain artifact.
+- `brain/emergence/decisions.md` [doc, 4.6 KB] - Canonical ACE brain artifact.
 - `brain/emergence/internal_spec.md` [doc, 8.5 KB] - Canonical ACE brain artifact.
 - `brain/emergence/plan.md` [doc, 1.5 KB] - Canonical ACE brain artifact.
 - `brain/emergence/project_brain.md` [doc, 9.5 KB] - Canonical ACE brain artifact.
@@ -410,42 +425,27 @@ The complete file inventory is in `brain/context/master_index.json`. This Markdo
 - `brain/Methodology for Using Diagrams & References.md` [doc, 19.7 KB] - Methodology for Using ACE Diagrams \& References
 - `brain/skills/ace-canonical-truth-map/SKILL.md` [doc, 2.2 KB] - name: ace-canonical-truth-map
 - `brain/skills/ace-runtime-smoke/SKILL.md` [doc, 2.2 KB] - name: ace-runtime-smoke
-- `brain/skills/axiom-plugin-slice-builder/SKILL.md` [doc, 5.0 KB] - name: axiom-plugin-slice-builder
+- `brain/skills/axiom-plugin-slice-builder/SKILL.md` [doc, 5.2 KB] - name: axiom-plugin-slice-builder
+- `brain/skills/cognitive-skill-kernel/SKILL.md` [doc, 3.2 KB] - name: cognitive-skill-kernel
 - `brain/skills/contextops-maintainer/SKILL.md` [doc, 2.4 KB] - name: contextops-maintainer
+- `brain/skills/dead-end-detection/SKILL.md` [doc, 1.4 KB] - name: dead-end-detection
+- `brain/skills/evidence-first-completion/SKILL.md` [doc, 1.6 KB] - name: evidence-first-completion
+- `brain/skills/fail-loud-output-loop/SKILL.md` [doc, 4.8 KB] - name: fail-loud-output-loop
+- `brain/skills/felix-completion-sense/SKILL.md` [doc, 1.9 KB] - name: felix-completion-sense
 - `brain/skills/game-loop-delta-time-runtime-cadence/SKILL.md` [doc, 20.3 KB] - name: game-loop-delta-time-runtime-cadence
 - `brain/skills/game-runtime-performance-qa/SKILL.md` [doc, 2.8 KB] - name: game-runtime-performance-qa
+- `brain/skills/goal-preserving-initiative/SKILL.md` [doc, 3.9 KB] - name: goal-preserving-initiative
+- `brain/skills/implementation-gravity/SKILL.md` [doc, 1.7 KB] - name: implementation-gravity
+- `brain/skills/literal-vs-useful-completion/SKILL.md` [doc, 1.6 KB] - name: literal-vs-useful-completion
+- `brain/skills/negative-space-intent-reasoning/SKILL.md` [doc, 6.0 KB] - name: negative-space-intent-reasoning
+- `brain/skills/no-orphan-work/SKILL.md` [doc, 1.4 KB] - name: no-orphan-work
 - `brain/skills/project-index/SKILL.md` [doc, 2.2 KB] - name: project-index
+- `brain/skills/projection-vs-truth-discipline/SKILL.md` [doc, 1.6 KB] - name: projection-vs-truth-discipline
 - `brain/topdown-slice/index.html` [code, 20.0 KB] - <!doctype html>
 - `brain/topdown-slice/jfa-sandbox/index.html` [code, 29.0 KB] - <!doctype html>
 - `brain/topdown-slice/progress.md` [doc, 18.6 KB] - Original prompt: projects/topdown slice (emergence sim)
-- `brain/topdown-slice/README.md` [doc, 4.2 KB] - # Top-Down Thin Slice Prototype
-- `brain/topdown-slice/src/ai/adaptiveResolverWeights.js` [code, 6.0 KB] - export const ADAPTIVE_WEIGHT_KEYS = ['def', 'reg', 'mem', 'hold', 'flow', 'trav', 'corr'];
-- `brain/topdown-slice/src/ai/agentStub.js` [code, 27.6 KB] - import {
-- `brain/topdown-slice/src/ai/intents.js` [code, 4.9 KB] - import { createField, getFieldValue, sampleFieldAverage, setFieldValue } from '../world/fields.js';
-- `brain/topdown-slice/src/ai/intentTranslator.js` [code, 7.5 KB] - import { createDefensibilityIntent, createFlowIntent, createThreatIntent } from './intents.js';
-- `brain/topdown-slice/src/ai/resolver.js` [code, 19.7 KB] - import { ADAPTIVE_WEIGHT_KEYS, ADAPTIVE_WEIGHT_LIMIT } from './adaptiveResolverWeights.js';
-- `brain/topdown-slice/src/buildings/builderSpawner.js` [code, 7.2 KB] - import { getTileType, TILE_TYPES } from '../world/tilemap.js';
-- `brain/topdown-slice/src/buildings/buildings.js` [code, 3.2 KB] - import { TILE_TYPES, getTileType } from '../world/tilemap.js';
-- `brain/topdown-slice/src/combat/conflictLoop.js` [code, 5.5 KB] - import { createTask, enqueueActorTask } from '../ai/agentStub.js';
-- `brain/topdown-slice/src/commands/commandParser.js` [code, 3.9 KB] - import { TILE_TYPES } from '../world/tilemap.js';
-- `brain/topdown-slice/src/commands/commandRunner.js` [code, 5.5 KB] - import { createTask, enqueueActorTask, taskToLabel } from '../ai/agentStub.js';
-- `brain/topdown-slice/src/debug/adaptiveTuningMonitor.js` [code, 6.9 KB] - import { ADAPTIVE_WEIGHT_KEYS, formatAdaptiveModifierSummary } from '../ai/adaptiveResolverWeights.js';
-- `brain/topdown-slice/src/debug/debugOverlay.js` [code, 13.2 KB] - import { getFieldValue } from '../world/fields.js';
-- `brain/topdown-slice/src/debug/emergenceQa.js` [code, 9.1 KB] - import { getFieldValue } from '../world/fields.js';
-- `brain/topdown-slice/src/debug/resolverPresentation.js` [code, 2.9 KB] - import { createTileAddress, getTileKey, sameTileAddress } from '../world/coordinates.js';
-- `brain/topdown-slice/src/debug/validator.js` [code, 8.1 KB] - import { BUILDER_SPAWNER_TYPE, getBuilderUnitsForSpawner } from '../buildings/builderSpawner.js';
-- `brain/topdown-slice/src/editor/ui.js` [code, 53.3 KB] - import { getActorEnergyText, getTaskEnergyLabel } from '../units/energy.js';
-- `brain/topdown-slice/src/entities/entityStore.js` [code, 1.0 KB] - import { getInitialActorEnergyState } from '../units/energy.js';
-- `brain/topdown-slice/src/main.js` [code, 59.5 KB] - import { createTilemap, TILE_SIZE } from './world/tilemap.js';
-- `brain/topdown-slice/src/qa/runtimePerformanceQa.js` [code, 9.6 KB] - export const DEFAULT_FIXED_STEP_MS = 1000 / 60;
-- `brain/topdown-slice/src/rendering/renderer.js` [code, 21.8 KB] - import { BUILDING_STATE, BUILDING_TYPES } from '../buildings/buildings.js';
-- `brain/topdown-slice/src/simulation/harness.js` [code, 3.1 KB] - export const FIXED_SIMULATION_STEP_MS = 1000 / 60;
-- `brain/topdown-slice/src/units/conflict.js` [code, 10.4 KB] - import { TILE_TYPES, getTileType } from '../world/tilemap.js';
-- `brain/topdown-slice/src/units/energy.js` [code, 3.5 KB] - export const WORKER_MAX_ENERGY = 16;
-- `brain/topdown-slice/src/units/units.js` [code, 1.3 KB] - import { TILE_TYPES, getTileType } from '../world/tilemap.js';
-- `brain/topdown-slice/src/world/coordinates.js` [code, 2.9 KB] - export const GROUND_Z = 0;
 
-Additional high-signal records omitted from Markdown: 594. Query `brain/context/master_index.json` for the full inventory.
+Additional high-signal records omitted from Markdown: 626. Query `brain/context/master_index.json` for the full inventory.
 
 ## Recent Chat Appendix
 ## 2026-05-27T13:34:59.543Z

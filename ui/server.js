@@ -121,6 +121,14 @@ const {
   buildTruthKernelPayload,
 } = require('./truthKernelAdapter');
 const {
+  buildCanonicalIntentContract,
+} = require('./intentAnalysis');
+const {
+  createEmptySpatialGhostProjectionRegistry,
+  resolveSpatialGhostProjection,
+  upsertSpatialGhostProjectionRegistry,
+} = require('./spatialGhostResolver');
+const {
   buildEvaluatorSnapshot,
   maybeRunEvaluatorCycle,
   readEvaluatorHistory,
@@ -5515,6 +5523,9 @@ function normalizeSpatialIntentRecord(rawIntent = {}) {
       requestedBy: sourceObject.requestedBy,
     },
   };
+  if (source.fieldInfluence && typeof source.fieldInfluence === 'object') {
+    record.fieldInfluence = source.fieldInfluence;
+  }
   const missingFields = [];
   if (!record.geometry || record.geometry.kind === 'unknown') missingFields.push('geometry');
   if (!String(record.semanticMeaning.summary || record.semanticMeaning.statement || record.semanticMeaning.goal || '').trim()) {
@@ -5593,6 +5604,35 @@ function getCurrentSpatialIntent(intentState = {}) {
   const registry = intentState?.registry && typeof intentState.registry === 'object' ? intentState.registry : null;
   if (!registry?.currentIntentId) return null;
   return registry.byId?.[registry.currentIntentId] || null;
+}
+
+function hasSpatialGeometryInput(body = {}) {
+  const geometry = body?.geometry && typeof body.geometry === 'object' ? body.geometry : {};
+  return Boolean(
+    Object.keys(geometry).length
+    || Array.isArray(body?.stroke)
+    || Array.isArray(body?.path)
+    || (body?.region && typeof body.region === 'object'),
+  );
+}
+
+function persistSketchProjectionRecords(canonicalIntent, ghostProjection) {
+  const currentWorkspace = readSpatialWorkspace();
+  const intentState = upsertSpatialIntentRegistry(currentWorkspace.intentState, canonicalIntent);
+  writeJson(SPATIAL_INTENT_STATE_FILE, intentState, {
+    ignoreKeys: SPATIAL_INTENT_VOLATILE_KEYS,
+  });
+  const ghostProjections = upsertSpatialGhostProjectionRegistry(currentWorkspace.ghostProjections, ghostProjection);
+  const workspace = persistWorkspacePatch((storedWorkspace) => ({
+    ...storedWorkspace,
+    intentState,
+    ghostProjections,
+  }));
+  return {
+    workspace,
+    intentState,
+    ghostProjections,
+  };
 }
 
 function normalizeStoredStudioHandoffs(rawHandoffs = null) {
@@ -9506,6 +9546,7 @@ function defaultSpatialWorkspace() {
     architectureMemory: {},
     agentComments: {},
     intentState: createEmptyIntentRegistry(),
+    ghostProjections: createEmptySpatialGhostProjectionRegistry(),
     pages: [],
     activePageId: null,
     rsg: createDefaultRsgState(),
@@ -11131,12 +11172,153 @@ function shouldReturnIntentDependencyFallback(error, dependencyStatus = null) {
   );
 }
 
+function buildFieldInfluenceProjectionPayload({ sourceData = {} } = {}) {
+  const canonicalIntent = sourceData?.currentIntent || getCurrentSpatialIntent(sourceData?.workspace?.intentState);
+  const fieldInfluence = canonicalIntent?.fieldInfluence || null;
+  return {
+    fieldInfluence,
+    sourceIntentId: canonicalIntent?.id || null,
+    status: fieldInfluence?.status || 'missing',
+    canonicalTruthSections: {
+      route: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'canonical_intent_field_projection',
+      },
+      canonicalIntent: {
+        classification: canonicalIntent ? 'canonical' : 'fallback',
+        fallbackUsed: !canonicalIntent,
+        derivation: canonicalIntent ? 'workspace.intentState.registry' : 'missing_canonical_intent',
+      },
+    },
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: false,
+    },
+  };
+}
+
+function buildGhostProjectionPayload({ sourceData = {} } = {}) {
+  const canonicalIntent = sourceData?.currentIntent || getCurrentSpatialIntent(sourceData?.workspace?.intentState);
+  const ghostProjection = resolveSpatialGhostProjection(canonicalIntent);
+  return {
+    ghostProjection,
+    sourceIntentId: canonicalIntent?.id || null,
+    status: ghostProjection.status,
+    canonicalTruthSections: {
+      route: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'field_resolver_projection',
+      },
+      fieldInfluence: {
+        classification: canonicalIntent?.fieldInfluence ? 'projection' : 'fallback',
+        fallbackUsed: !canonicalIntent?.fieldInfluence,
+        derivation: canonicalIntent?.fieldInfluence ? 'canonical_intent_field_influence' : 'missing_field_influence',
+      },
+    },
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: false,
+    },
+  };
+}
+
+function buildSketchIntentProjectionPayload({ requestBody = {} } = {}) {
+  const body = requestBody || {};
+  const sourceRef = String(body.sourceRef || body.nodeId || body.intentId || `sketch_${Date.now()}`).trim() || `sketch_${Date.now()}`;
+  const createdAt = String(body.createdAt || body.timestamp || nowIso()).trim() || nowIso();
+  const sourceType = String(body.sourceType || 'sketchpad-stroke').trim() || 'sketchpad-stroke';
+  const requestedBy = String(body.requestedBy || 'sketchpad').trim() || 'sketchpad';
+  const intentContract = buildCanonicalIntentContract({
+    report: {
+      geometry: body.geometry || {
+        kind: Array.isArray(body.stroke) || Array.isArray(body.path) ? 'stroke' : 'region',
+        stroke: body.stroke || body.path || null,
+        region: body.region || null,
+      },
+      source: sourceType,
+      nodeId: sourceRef,
+      requestedBy,
+    },
+    packet: {
+      geometry: body.geometry || {
+        kind: Array.isArray(body.stroke) || Array.isArray(body.path) ? 'stroke' : 'region',
+        stroke: body.stroke || body.path || null,
+        region: body.region || null,
+      },
+      sourceType,
+      sourceRef,
+      requestedBy,
+      priority: String(body.priority || 'normal').trim() || 'normal',
+    },
+    sourceType,
+    sourceRef,
+    requestedBy,
+    priority: String(body.priority || 'normal').trim() || 'normal',
+    timestamp: createdAt,
+    provenance: {
+      sourceNodeId: sourceRef,
+      inputMode: 'sketchpad',
+      sketchMode: true,
+      createdAt,
+      route: '/api/spatial/intent',
+    },
+    intentId: String(body.intentId || sourceRef).trim() || sourceRef,
+  });
+  const canonicalIntent = normalizeSpatialIntentRecord(intentContract.canonicalIntent);
+  const ghostProjection = resolveSpatialGhostProjection(canonicalIntent);
+  const persisted = persistSketchProjectionRecords(canonicalIntent, ghostProjection);
+  return {
+    __statusCode: 200,
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: false,
+    },
+    route: 'sketch-field-resolver',
+    canonicalIntent,
+    intentContract,
+    fieldInfluence: canonicalIntent.fieldInfluence || null,
+    ghostProjection,
+    ghostProjections: persisted.ghostProjections,
+    runtime: buildSpatialRuntimePayload(persisted.workspace),
+    canonicalTruthSections: {
+      route: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'deterministic_sketch_projection',
+      },
+      canonicalIntent: {
+        classification: 'canonical',
+        fallbackUsed: false,
+        derivation: 'workspace.intentState.registry',
+      },
+      fieldInfluence: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'deterministic_geometry_field',
+      },
+      ghostProjection: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'field_resolver_projection',
+      },
+    },
+  };
+}
+
 async function buildIntentProjectionPayload({
   sourceData = {},
   requestBody = {},
 } = {}) {
   const workspace = sourceData?.workspace || normalizeSpatialWorkspaceShape(readSpatialWorkspace());
   const body = requestBody || {};
+  if (hasSpatialGeometryInput(body)) {
+    return buildSketchIntentProjectionPayload({ requestBody: body });
+  }
   const text = String(body.text || '').trim();
   if (!text) {
     return {
@@ -11396,6 +11578,12 @@ const canonicalTruthAccess = createCanonicalTruthAccess({
       sourceData,
       requestBody,
     }),
+    buildFieldInfluenceProjectionPayload: async ({ sourceData } = {}) => buildFieldInfluenceProjectionPayload({
+      sourceData,
+    }),
+    buildGhostProjectionPayload: async ({ sourceData } = {}) => buildGhostProjectionPayload({
+      sourceData,
+    }),
     buildQaEvidenceProjectionPayload: async ({ sourceData, qaView } = {}) => buildQaEvidenceProjectionPayload({
       sourceData,
       qaView,
@@ -11427,6 +11615,7 @@ async function startBrowserQARun({
   prompt = '',
   actions = [],
   linked = {},
+  captureScreenshots = false,
 } = {}) {
   return runQARun({
     rootPath: ROOT,
@@ -11437,6 +11626,7 @@ async function startBrowserQARun({
     prompt,
     actions,
     linked,
+    captureScreenshots,
     getRuntimeSnapshot: async () => buildSpatialRuntimePayload(refreshSpatialOrchestrator({
       persist: false,
       workspace: await pumpAutomatedTeamBoardAsync(),
@@ -15051,8 +15241,9 @@ app.get('/api/qa/external-probe-check', async (req, res) => {
     await maybeGenerateQaResearchNotesForInvestigations(ROOT, readOpenQaInvestigations(ROOT, 10));
     const repairLoop = buildQaRepairLoopState(ROOT);
     const researchState = buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10));
-    res.status(payload.ok ? 200 : 503).json({
+    res.status(200).json({
       ...payload,
+      httpStatus: payload.ok ? 200 : 503,
       externalValidation: latestExternalValidationSnapshot,
       repairLoop,
       researchState,
@@ -16009,6 +16200,20 @@ app.get('/api/spatial/truth-kernel', async (req, res) => {
   }));
 });
 
+app.get('/api/spatial/field-influence', async (req, res) => {
+  res.json(await canonicalTruthAccess.resolveProjectionResponse('field_influence', {
+    rootPath: ROOT,
+    freshness: 'live',
+  }));
+});
+
+app.get('/api/spatial/ghost-projection', async (req, res) => {
+  res.json(await canonicalTruthAccess.resolveProjectionResponse('ghost_projection', {
+    rootPath: ROOT,
+    freshness: 'live',
+  }));
+});
+
 app.post('/api/spatial/agents/context-manager/run', async (req, res) => {
   const body = req.body || {};
   const text = String(body.text || '').trim();
@@ -16450,6 +16655,7 @@ app.post('/api/spatial/qa/run', async (req, res) => {
       prompt: String(body.prompt || '').trim(),
       actions: Array.isArray(body.actions) ? body.actions : [],
       linked: typeof body.linked === 'object' && body.linked ? body.linked : {},
+      captureScreenshots: Boolean(body.captureScreenshots),
     });
     res.json({
       ok: run.verdict !== 'failed',

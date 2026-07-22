@@ -775,6 +775,136 @@ export async function axiom_plugin_inspect(input = {}) {
   return response('axiom_plugin_inspect', { request_id, plugin_id, status: manifest.lifecycle.status, result, validation: { ran: true, passed: manifest.validation_status?.passed === true, ...manifest.validation_status } });
 }
 
+function repairProposalId(plugin_id) {
+  return `plugin_repair_${String(plugin_id || 'plugin').replace(/[^a-z0-9_.-]+/gi, '_')}_${Date.now().toString(36)}_${randomUUID().slice(0, 8)}`;
+}
+
+function fileHash(text = '') {
+  return createHash('sha256').update(String(text || '')).digest('hex');
+}
+
+function normalisePluginTargetFile(target_file = '') {
+  const safe = safeCandidatePath(target_file || 'src/index.js');
+  if (!safe) return null;
+  if (!/^src\//i.test(safe) && !/^tests\//i.test(safe) && safe !== 'README.md') return null;
+  return safe;
+}
+
+function findRepairPatch({ source, target_file, expected_find, replacement, repair_instruction }) {
+  const text = String(source || '');
+  const exactFind = String(expected_find || '');
+  const exactReplacement = typeof replacement === 'string' ? replacement : null;
+  if (exactFind && exactReplacement != null) {
+    const count = text.split(exactFind).length - 1;
+    return [{
+      target_file,
+      operation: 'single_replace',
+      expectedFind: exactFind,
+      replacement: exactReplacement,
+      matchCount: count,
+      status: count === 1 ? 'ready_for_safe_edit' : count === 0 ? 'expected_find_not_found' : 'expected_find_not_unique',
+      source: 'explicit_expected_find_replacement'
+    }];
+  }
+  const instruction = String(repair_instruction || '');
+  if (/orbitTarget\.set|\.set calls?|Vector3|plain objects?/i.test(instruction) && text.includes('orbitTarget.set')) {
+    const matchCount = text.split('orbitTarget.set').length - 1;
+    return [{
+      target_file,
+      operation: 'single_replace',
+      expectedFind: 'orbitTarget.set',
+      replacement: 'setOrbitTargetSafe',
+      matchCount,
+      status: 'candidate_needs_exact_expected_find',
+      source: 'narrow_orbit_target_set_signal'
+    }];
+  }
+  return [];
+}
+
+export async function axiom_plugin_repair(input = {}) {
+  const {
+    plugin_id,
+    target_file,
+    error,
+    stack,
+    message,
+    repair_instruction,
+    include_files = true,
+    expected_find_required = true,
+    expected_find,
+    replacement,
+    request_id
+  } = input;
+  const id = String(plugin_id || '').trim();
+  if (!id) return fail('axiom_plugin_repair', request_id, id, [{ code: 'PLUGIN_ID_REQUIRED', message: 'plugin_id is required', severity: 'error' }]);
+  const manifest = loadManifest(id);
+  if (!manifest) return fail('axiom_plugin_repair', request_id, id, [{ code: 'PLUGIN_NOT_FOUND', message: `No plugin found: ${id}`, severity: 'error' }]);
+  const targetFile = normalisePluginTargetFile(target_file || manifest.entrypoint || 'src/index.js');
+  if (!targetFile) return fail('axiom_plugin_repair', request_id, id, [{ code: 'INVALID_TARGET_FILE', message: `Unsafe or unsupported target_file: ${target_file}`, severity: 'error' }]);
+  const exactError = String(error || message || '').trim();
+  const instruction = String(repair_instruction || '').trim();
+  const exactStack = String(stack || '').trim();
+  const errors = [];
+  if (!exactError) errors.push({ code: 'RUNTIME_ERROR_REQUIRED', message: 'Exact runtime error is required.', severity: 'error' });
+  if (!instruction) errors.push({ code: 'REPAIR_INSTRUCTION_REQUIRED', message: 'repair_instruction is required.', severity: 'error' });
+  if (errors.length) return fail('axiom_plugin_repair', request_id, id, errors);
+
+  const fullPath = join(pluginDir(id), targetFile);
+  const source = existsSync(fullPath) ? readFileSync(fullPath, 'utf8') : null;
+  if (source == null) return fail('axiom_plugin_repair', request_id, id, [{ code: 'TARGET_FILE_NOT_FOUND', message: `Target file not found: ${targetFile}`, severity: 'error' }]);
+
+  const patches = findRepairPatch({ source, target_file: targetFile, expected_find, replacement, repair_instruction: instruction });
+  const readyPatches = patches.filter(patch => patch.status === 'ready_for_safe_edit');
+  const expectedFindBlocked = Boolean(expected_find_required) && !readyPatches.length;
+  const proposalId = repairProposalId(id);
+  const files = include_files ? { [targetFile]: source } : undefined;
+  const proposal = {
+    schema: 'axiom.plugin.repair.proposal.v1',
+    proposalId,
+    type: 'FileMutationProposal',
+    plugin_id: id,
+    target_file: targetFile,
+    targetPath: targetFile,
+    status: expectedFindBlocked ? 'blocked_expected_find_required' : 'proposed',
+    risk: readyPatches.length ? 'medium' : 'high',
+    runtimeEvidence: {
+      error: exactError,
+      message: String(message || exactError),
+      stack: exactStack || null
+    },
+    repair_instruction: instruction,
+    expected_find_required: Boolean(expected_find_required),
+    filesInspected: [{
+      path: targetFile,
+      exists: true,
+      sha256: fileHash(source),
+      sizeBytes: source.length,
+      included: Boolean(include_files)
+    }],
+    patches,
+    validationPlan: [
+      'Review repair proposal evidence and target file.',
+      'If a patch has status ready_for_safe_edit, pass expectedFind/replacement to FileManager propose_edit.',
+      'Apply only through FileManager apply_edit and verify receipt.applied === true.',
+      'Re-run plugin validation/runtime smoke after safe edit receipt.'
+    ],
+    createdAt: now(),
+    source: 'axiom_plugin_repair'
+  };
+  const rcpt = receipt(id, 'repair_proposal', { proposalId, target_file: targetFile, patchCount: patches.length, readyPatchCount: readyPatches.length, expected_find_required: Boolean(expected_find_required), runtime_error: exactError });
+  appendLifecycle(id, { event: 'repair_proposal_created', status: manifest.lifecycle?.status || 'unknown', request_id, proposalId, target_file: targetFile, runtime_error: exactError });
+  return response('axiom_plugin_repair', {
+    request_id,
+    plugin_id: id,
+    status: proposal.status,
+    result: { ...proposal, files },
+    validation: { ran: true, passed: !expectedFindBlocked, expected_find_required: Boolean(expected_find_required), readyPatchCount: readyPatches.length },
+    warnings: expectedFindBlocked ? ['No ready exact expected-find patch was produced; safe edit proposal must supply exact expectedFind/replacement before apply.'] : [],
+    receipt: rcpt
+  });
+}
+
 export async function axiom_plugin_delete(input = {}) {
   const { plugin_id, force = false, request_id } = input;
   const manifest = loadManifest(plugin_id);

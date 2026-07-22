@@ -1,7 +1,577 @@
 {
   "version": "ace/cto-diagnostics.v1",
-  "updated_at": "2026-05-27T14:00:14.043Z",
+  "updated_at": "2026-07-15T10:31:20.632Z",
   "entries": [
+    {
+      "id": "cto_diag_1784111480629",
+      "timestamp": "2026-07-15T10:31:20.629Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "backend_unreachable",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "The input was expected to not match the regular expression /A QA Lead hire is currently pending/i. Input:\n\n'You are the ACE CTO / Architect chat utility.\\n' +\n  'Use only grounded facts from the supplied ACE context.\\n' +\n  'Do not invent departments, desks, routes, or completed actions.\\n' +\n  'Prefer governance and delegation language over pretending to do all work directly.\\n' +\n  'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.\\n' +\n  'Chief of Staff context is advisory-only support. It can highlight blockers, urgency, confidence, and readiness, but it does not grant execution authority.\\n' +\n  'Do not blindly comply with Chief of Staff advice and do not fabricate action ids from it.\\n' +\n  'If context.cto.chiefOfStaff.execution_ready is false, do not present the Chief of Staff recommendation itself as directly executable.\\n' +\n  'If canonical actions remain available while Chief of Staff execution_ready is false, explain that canonical availability still governs and the advisory remains non-authoritative.\\n' +\n  'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.\\n' +\n  'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.\\n' +\n  'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.\\n' +\n  'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.\\n' +\n  'If an action is unavailable, explain why in system terms.\\n' +\n  'If Chief of Staff recommendation conflicts with canonical action availability, canonical availability wins and you must explain the mismatch.\\n' +\n  'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.\\n' +\n  'Return JSON only with this exact shape:\\n' +\n  '{\\n' +\n  '  \"reply_text\": \"string\",\\n' +\n  '  \"response_kind\": \"advisory|actionable|blocked\",\\n' +\n  '  \"delegation\": { \"desk_id\": \"string\", \"desk_label\": \"string\", \"why\": \"string\" } | null,\\n' +\n  '  \"action\": { \"id\": \"string\" } | null\\n' +\n  '}\\n' +\n  'response_kind must be one of advisory, actionable, blocked.\\n' +\n  'If action is not null, action.id must be one of the ids listed in available_actions.\\n' +\n  'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.\\n' +\n  'Do not emit route status fields. Route status is owned by the server, not the model.\\n' +\n  'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.\\n' +\n  'Stay within the immediate task context. Broader workspace state remains available on demand and is intentionally not injected here.\\n' +\n  '\\n' +\n  'ACE context:\\n' +\n  '{\\n' +\n  '  \"latest_user_message\": \"run a QA smoke test\",\\n' +\n  '  \"history\": [\\n' +\n  '    {\\n' +\n  '      \"role\": \"assistant\",\\n' +\n  '      \"text\": \"A QA Lead hire is currently pending before we can proceed.\",\\n' +\n  '      \"action\": null\\n' +\n  '    }\\n' +\n  '  ],\\n' +\n  '  \"context\": {\\n' +\n  '    \"workspace\": {\\n' +\n  '      \"active_page_id\": null,\\n' +\n  '      \"active_page_title\": null,\\n' +\n  '      \"graph_counts\": {\\n' +\n  '        \"system_nodes\": 0,\\n' +\n  '        \"system_edges\": 0,\\n' +\n  '        \"world_nodes\": 0,\\n' +\n  '        \"world_edges\": 0\\n' +\n  '      },\\n' +\n  '      \"board\": {\\n' +\n  '        \"selected_card_id\": null,\\n' +\n  '        \"active_card_count\": 0\\n' +\n  '      },\\n' +\n  '      \"active_desk_ids\": []\\n' +\n  '    },\\n' +\n  '    \"pipeline\": null,\\n' +\n  '    \"desks\": [\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"qa-lead\",\\n' +\n  '        \"label\": \"QA Lead\",\\n' +\n  '        \"departmentLabel\": \"Quality\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"qa-lead\",\\n' +\n  '          \"evaluator\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 0,\\n' +\n  '        \"reportCount\": 570,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.\",\\n' +\n  '        \"truthContext\": \"Assessment room for QA reports, scorecards, and readiness evidence.\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"context-manager\",\\n' +\n  '        \"label\": \"Context Manager\",\\n' +\n  '        \"departmentLabel\": \"Intake\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"context-manager\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 570,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual context-manager run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": null\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"planner\",\\n' +\n  '        \"label\": \"Planner\",\\n' +\n  '        \"departmentLabel\": \"Delivery\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"planner\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 2,\\n' +\n  '        \"reportCount\": 571,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual planner run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      }\\n' +\n  '    ],\\n' +\n  '    \"ta\": {\\n' +\n  '      \"summary\": \"All 2 canonical desk seats are covered.\",\\n' +\n  '      \"urgency\": \"low\",\\n' +\n  '      \"plannerCoverage\": {\\n' +\n  '        \"canonical\": {\\n' +\n  '          \"deskId\": \"planner\",\\n' +\n  '          \"roleId\": \"planner\",\\n' +\n  '          \"agentId\": \"planner\",\\n' +\n  '          \"modelProfileId\": \"model-profile.planner-default\",\\n' +\n  '          \"departmentId\": \"dept-delivery\",\\n' +\n  '          \"requiredLeadSeatId\": \"planner\"\\n' +\n  '        },\\n' +\n  '        \"organization\": {\\n' +\n  '          \"schemaVersion\": \"studio-relationships.v1\",\\n' +\n  '          \"relationshipTypes\": {\\n' +\n  '            \"parent\": \"parent\",\\n' +\n  '            \"peer\": \"peer\",\\n' +\n  '            \"support\": \"support\",\\n' +\n  '            \"dependency\": \"dependency\"\\n' +\n  '          },\\n' +\n  '          \"departments\": {\\n' +\n  '            \"dept-intake\": {\\n' +\n  '              \"id\": \"dept-intake\",\\n' +\n  '              \"label\": \"Intake\",\\n' +\n  '              \"kind\": \"intake\",\\n' +\n  '              \"templateId\": \"intake\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\",\\n' +\n  '                \"qa-lead\",\\n' +\n  '                \"memory-archivist\",\\n' +\n  '                \"rnd-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"context-manager\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"context-manager\",\\n' +\n  '                \"minimumActiveSeats\": 1,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"context-manager\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"context-manager\",\\n' +\n  '                    \"deskId\": \"context-manager\",\\n' +\n  '                    \"label\": \"context manager\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-delivery\": {\\n' +\n  '              \"id\": \"dept-delivery\",\\n' +\n  '              \"label\": \"Delivery\",\\n' +\n  '              \"kind\": \"delivery\",\\n' +\n  '              \"templateId\": \"delivery\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-quality\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"qa-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"context-manager\",\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"planner\",\\n' +\n  '                \"minimumActiveSeats\": 2,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"planner\",\\n' +\n  '                  \"executor\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"planner\",\\n' +\n  '                    \"deskId\": \"planner\",\\n' +\n  '                    \"label\": \"planner\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  },\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"executor\",\\n' +\n  '                    \"deskId\": \"executor\",\\n' +\n  '                    \"label\": \"executor\",\\n' +\n  '                    \"seatKind\": \"core\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-quality\": {\\n' +\n  '              \"id\": \"dept-quality\",\\n' +\n  '              \"label\": \"Quality\",\\n' +\n  '              \"kind\": \"quality\",\\n' +\n  '              \"templateId\": \"quality\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '        '... 83009 more characters",
+      "failureKind": "parse",
+      "runId": "cto-chat-1784111480619-b8rou7",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-qa"
+      ],
+      "timeout_ms": 30000,
+      "prompt_chars": 93009,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1784111414922",
+      "timestamp": "2026-07-15T10:30:14.922Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat action referenced an unavailable action id: not-available.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1784111414918-dffayk",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1784111347874",
+      "timestamp": "2026-07-15T10:29:07.874Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat delegation did not satisfy the required contract.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1784111347870-72a62m",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1784111285517",
+      "timestamp": "2026-07-15T10:28:05.517Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1784111285513-5eb2za",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1782809205747",
+      "timestamp": "2026-06-30T08:46:45.747Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "backend_unreachable",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "The input was expected to not match the regular expression /A QA Lead hire is currently pending/i. Input:\n\n'You are the ACE CTO / Architect chat utility.\\n' +\n  'Use only grounded facts from the supplied ACE context.\\n' +\n  'Do not invent departments, desks, routes, or completed actions.\\n' +\n  'Prefer governance and delegation language over pretending to do all work directly.\\n' +\n  'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.\\n' +\n  'Chief of Staff context is advisory-only support. It can highlight blockers, urgency, confidence, and readiness, but it does not grant execution authority.\\n' +\n  'Do not blindly comply with Chief of Staff advice and do not fabricate action ids from it.\\n' +\n  'If context.cto.chiefOfStaff.execution_ready is false, do not present the Chief of Staff recommendation itself as directly executable.\\n' +\n  'If canonical actions remain available while Chief of Staff execution_ready is false, explain that canonical availability still governs and the advisory remains non-authoritative.\\n' +\n  'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.\\n' +\n  'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.\\n' +\n  'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.\\n' +\n  'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.\\n' +\n  'If an action is unavailable, explain why in system terms.\\n' +\n  'If Chief of Staff recommendation conflicts with canonical action availability, canonical availability wins and you must explain the mismatch.\\n' +\n  'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.\\n' +\n  'Return JSON only with this exact shape:\\n' +\n  '{\\n' +\n  '  \"reply_text\": \"string\",\\n' +\n  '  \"response_kind\": \"advisory|actionable|blocked\",\\n' +\n  '  \"delegation\": { \"desk_id\": \"string\", \"desk_label\": \"string\", \"why\": \"string\" } | null,\\n' +\n  '  \"action\": { \"id\": \"string\" } | null\\n' +\n  '}\\n' +\n  'response_kind must be one of advisory, actionable, blocked.\\n' +\n  'If action is not null, action.id must be one of the ids listed in available_actions.\\n' +\n  'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.\\n' +\n  'Do not emit route status fields. Route status is owned by the server, not the model.\\n' +\n  'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.\\n' +\n  'Stay within the immediate task context. Broader workspace state remains available on demand and is intentionally not injected here.\\n' +\n  '\\n' +\n  'ACE context:\\n' +\n  '{\\n' +\n  '  \"latest_user_message\": \"run a QA smoke test\",\\n' +\n  '  \"history\": [\\n' +\n  '    {\\n' +\n  '      \"role\": \"assistant\",\\n' +\n  '      \"text\": \"A QA Lead hire is currently pending before we can proceed.\",\\n' +\n  '      \"action\": null\\n' +\n  '    }\\n' +\n  '  ],\\n' +\n  '  \"context\": {\\n' +\n  '    \"workspace\": {\\n' +\n  '      \"active_page_id\": null,\\n' +\n  '      \"active_page_title\": null,\\n' +\n  '      \"graph_counts\": {\\n' +\n  '        \"system_nodes\": 0,\\n' +\n  '        \"system_edges\": 0,\\n' +\n  '        \"world_nodes\": 0,\\n' +\n  '        \"world_edges\": 0\\n' +\n  '      },\\n' +\n  '      \"board\": {\\n' +\n  '        \"selected_card_id\": null,\\n' +\n  '        \"active_card_count\": 0\\n' +\n  '      },\\n' +\n  '      \"active_desk_ids\": []\\n' +\n  '    },\\n' +\n  '    \"pipeline\": null,\\n' +\n  '    \"desks\": [\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"qa-lead\",\\n' +\n  '        \"label\": \"QA Lead\",\\n' +\n  '        \"departmentLabel\": \"Quality\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"qa-lead\",\\n' +\n  '          \"evaluator\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 0,\\n' +\n  '        \"reportCount\": 504,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.\",\\n' +\n  '        \"truthContext\": \"Assessment room for QA reports, scorecards, and readiness evidence.\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"context-manager\",\\n' +\n  '        \"label\": \"Context Manager\",\\n' +\n  '        \"departmentLabel\": \"Intake\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"context-manager\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 504,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual context-manager run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": null\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"planner\",\\n' +\n  '        \"label\": \"Planner\",\\n' +\n  '        \"departmentLabel\": \"Delivery\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"planner\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 2,\\n' +\n  '        \"reportCount\": 505,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual planner run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      }\\n' +\n  '    ],\\n' +\n  '    \"ta\": {\\n' +\n  '      \"summary\": \"All 2 canonical desk seats are covered.\",\\n' +\n  '      \"urgency\": \"low\",\\n' +\n  '      \"plannerCoverage\": {\\n' +\n  '        \"canonical\": {\\n' +\n  '          \"deskId\": \"planner\",\\n' +\n  '          \"roleId\": \"planner\",\\n' +\n  '          \"agentId\": \"planner\",\\n' +\n  '          \"modelProfileId\": \"model-profile.planner-default\",\\n' +\n  '          \"departmentId\": \"dept-delivery\",\\n' +\n  '          \"requiredLeadSeatId\": \"planner\"\\n' +\n  '        },\\n' +\n  '        \"organization\": {\\n' +\n  '          \"schemaVersion\": \"studio-relationships.v1\",\\n' +\n  '          \"relationshipTypes\": {\\n' +\n  '            \"parent\": \"parent\",\\n' +\n  '            \"peer\": \"peer\",\\n' +\n  '            \"support\": \"support\",\\n' +\n  '            \"dependency\": \"dependency\"\\n' +\n  '          },\\n' +\n  '          \"departments\": {\\n' +\n  '            \"dept-intake\": {\\n' +\n  '              \"id\": \"dept-intake\",\\n' +\n  '              \"label\": \"Intake\",\\n' +\n  '              \"kind\": \"intake\",\\n' +\n  '              \"templateId\": \"intake\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\",\\n' +\n  '                \"qa-lead\",\\n' +\n  '                \"memory-archivist\",\\n' +\n  '                \"rnd-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"context-manager\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"context-manager\",\\n' +\n  '                \"minimumActiveSeats\": 1,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"context-manager\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"context-manager\",\\n' +\n  '                    \"deskId\": \"context-manager\",\\n' +\n  '                    \"label\": \"context manager\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-delivery\": {\\n' +\n  '              \"id\": \"dept-delivery\",\\n' +\n  '              \"label\": \"Delivery\",\\n' +\n  '              \"kind\": \"delivery\",\\n' +\n  '              \"templateId\": \"delivery\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-quality\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"qa-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"context-manager\",\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"planner\",\\n' +\n  '                \"minimumActiveSeats\": 2,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"planner\",\\n' +\n  '                  \"executor\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"planner\",\\n' +\n  '                    \"deskId\": \"planner\",\\n' +\n  '                    \"label\": \"planner\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  },\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"executor\",\\n' +\n  '                    \"deskId\": \"executor\",\\n' +\n  '                    \"label\": \"executor\",\\n' +\n  '                    \"seatKind\": \"core\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-quality\": {\\n' +\n  '              \"id\": \"dept-quality\",\\n' +\n  '              \"label\": \"Quality\",\\n' +\n  '              \"kind\": \"quality\",\\n' +\n  '              \"templateId\": \"quality\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '        '... 83009 more characters",
+      "failureKind": "parse",
+      "runId": "cto-chat-1782809205738-r0h40i",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-qa"
+      ],
+      "timeout_ms": 30000,
+      "prompt_chars": 93009,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1782809160404",
+      "timestamp": "2026-06-30T08:46:00.404Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat action referenced an unavailable action id: not-available.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1782809160400-rcm6dd",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1782809115331",
+      "timestamp": "2026-06-30T08:45:15.331Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat delegation did not satisfy the required contract.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1782809115327-4oo8kp",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1782809064330",
+      "timestamp": "2026-06-30T08:44:24.330Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1782809064326-pvv4vc",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1779962709045",
+      "timestamp": "2026-05-28T10:05:09.045Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "backend_unreachable",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mistral:latest",
+      "host": "http://127.0.0.1:11434",
+      "reason": "The input was expected to not match the regular expression /A QA Lead hire is currently pending/i. Input:\n\n'You are the ACE CTO / Architect chat utility.\\n' +\n  'Use only grounded facts from the supplied ACE context.\\n' +\n  'Do not invent departments, desks, routes, or completed actions.\\n' +\n  'Prefer governance and delegation language over pretending to do all work directly.\\n' +\n  'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.\\n' +\n  'Chief of Staff context is advisory-only support. It can highlight blockers, urgency, confidence, and readiness, but it does not grant execution authority.\\n' +\n  'Do not blindly comply with Chief of Staff advice and do not fabricate action ids from it.\\n' +\n  'If context.cto.chiefOfStaff.execution_ready is false, do not present the Chief of Staff recommendation itself as directly executable.\\n' +\n  'If canonical actions remain available while Chief of Staff execution_ready is false, explain that canonical availability still governs and the advisory remains non-authoritative.\\n' +\n  'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.\\n' +\n  'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.\\n' +\n  'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.\\n' +\n  'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.\\n' +\n  'If an action is unavailable, explain why in system terms.\\n' +\n  'If Chief of Staff recommendation conflicts with canonical action availability, canonical availability wins and you must explain the mismatch.\\n' +\n  'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.\\n' +\n  'Return JSON only with this exact shape:\\n' +\n  '{\\n' +\n  '  \"reply_text\": \"string\",\\n' +\n  '  \"response_kind\": \"advisory|actionable|blocked\",\\n' +\n  '  \"delegation\": { \"desk_id\": \"string\", \"desk_label\": \"string\", \"why\": \"string\" } | null,\\n' +\n  '  \"action\": { \"id\": \"string\" } | null\\n' +\n  '}\\n' +\n  'response_kind must be one of advisory, actionable, blocked.\\n' +\n  'If action is not null, action.id must be one of the ids listed in available_actions.\\n' +\n  'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.\\n' +\n  'Do not emit route status fields. Route status is owned by the server, not the model.\\n' +\n  'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.\\n' +\n  'Stay within the immediate task context. Broader workspace state remains available on demand and is intentionally not injected here.\\n' +\n  '\\n' +\n  'ACE context:\\n' +\n  '{\\n' +\n  '  \"latest_user_message\": \"run a QA smoke test\",\\n' +\n  '  \"history\": [\\n' +\n  '    {\\n' +\n  '      \"role\": \"assistant\",\\n' +\n  '      \"text\": \"A QA Lead hire is currently pending before we can proceed.\",\\n' +\n  '      \"action\": null\\n' +\n  '    }\\n' +\n  '  ],\\n' +\n  '  \"context\": {\\n' +\n  '    \"workspace\": {\\n' +\n  '      \"active_page_id\": null,\\n' +\n  '      \"active_page_title\": null,\\n' +\n  '      \"graph_counts\": {\\n' +\n  '        \"system_nodes\": 0,\\n' +\n  '        \"system_edges\": 0,\\n' +\n  '        \"world_nodes\": 0,\\n' +\n  '        \"world_edges\": 0\\n' +\n  '      },\\n' +\n  '      \"board\": {\\n' +\n  '        \"selected_card_id\": null,\\n' +\n  '        \"active_card_count\": 0\\n' +\n  '      },\\n' +\n  '      \"active_desk_ids\": []\\n' +\n  '    },\\n' +\n  '    \"pipeline\": null,\\n' +\n  '    \"desks\": [\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"qa-lead\",\\n' +\n  '        \"label\": \"QA Lead\",\\n' +\n  '        \"departmentLabel\": \"Quality\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"qa-lead\",\\n' +\n  '          \"evaluator\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 0,\\n' +\n  '        \"reportCount\": 465,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.\",\\n' +\n  '        \"truthContext\": \"Assessment room for QA reports, scorecards, and readiness evidence.\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"context-manager\",\\n' +\n  '        \"label\": \"Context Manager\",\\n' +\n  '        \"departmentLabel\": \"Intake\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"context-manager\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 465,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual context-manager run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": null\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"planner\",\\n' +\n  '        \"label\": \"Planner\",\\n' +\n  '        \"departmentLabel\": \"Delivery\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"planner\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 2,\\n' +\n  '        \"reportCount\": 466,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual planner run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      }\\n' +\n  '    ],\\n' +\n  '    \"ta\": {\\n' +\n  '      \"summary\": \"All 2 canonical desk seats are covered.\",\\n' +\n  '      \"urgency\": \"low\",\\n' +\n  '      \"plannerCoverage\": {\\n' +\n  '        \"canonical\": {\\n' +\n  '          \"deskId\": \"planner\",\\n' +\n  '          \"roleId\": \"planner\",\\n' +\n  '          \"agentId\": \"planner\",\\n' +\n  '          \"modelProfileId\": \"model-profile.planner-default\",\\n' +\n  '          \"departmentId\": \"dept-delivery\",\\n' +\n  '          \"requiredLeadSeatId\": \"planner\"\\n' +\n  '        },\\n' +\n  '        \"organization\": {\\n' +\n  '          \"schemaVersion\": \"studio-relationships.v1\",\\n' +\n  '          \"relationshipTypes\": {\\n' +\n  '            \"parent\": \"parent\",\\n' +\n  '            \"peer\": \"peer\",\\n' +\n  '            \"support\": \"support\",\\n' +\n  '            \"dependency\": \"dependency\"\\n' +\n  '          },\\n' +\n  '          \"departments\": {\\n' +\n  '            \"dept-intake\": {\\n' +\n  '              \"id\": \"dept-intake\",\\n' +\n  '              \"label\": \"Intake\",\\n' +\n  '              \"kind\": \"intake\",\\n' +\n  '              \"templateId\": \"intake\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\",\\n' +\n  '                \"qa-lead\",\\n' +\n  '                \"memory-archivist\",\\n' +\n  '                \"rnd-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"context-manager\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"context-manager\",\\n' +\n  '                \"minimumActiveSeats\": 1,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"context-manager\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"context-manager\",\\n' +\n  '                    \"deskId\": \"context-manager\",\\n' +\n  '                    \"label\": \"context manager\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-delivery\": {\\n' +\n  '              \"id\": \"dept-delivery\",\\n' +\n  '              \"label\": \"Delivery\",\\n' +\n  '              \"kind\": \"delivery\",\\n' +\n  '              \"templateId\": \"delivery\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-quality\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"qa-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"context-manager\",\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"planner\",\\n' +\n  '                \"minimumActiveSeats\": 2,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"planner\",\\n' +\n  '                  \"executor\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"planner\",\\n' +\n  '                    \"deskId\": \"planner\",\\n' +\n  '                    \"label\": \"planner\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  },\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"executor\",\\n' +\n  '                    \"deskId\": \"executor\",\\n' +\n  '                    \"label\": \"executor\",\\n' +\n  '                    \"seatKind\": \"core\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-quality\": {\\n' +\n  '              \"id\": \"dept-quality\",\\n' +\n  '              \"label\": \"Quality\",\\n' +\n  '              \"kind\": \"quality\",\\n' +\n  '              \"templateId\": \"quality\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '        '... 83009 more characters",
+      "failureKind": "parse",
+      "runId": "cto-chat-1779962709042-wldjk0",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-qa"
+      ],
+      "timeout_ms": 30000,
+      "prompt_chars": 93009,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1779962684938",
+      "timestamp": "2026-05-28T10:04:44.938Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat action referenced an unavailable action id: not-available.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1779962684936-frma7e",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1779962660496",
+      "timestamp": "2026-05-28T10:04:20.496Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat delegation did not satisfy the required contract.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1779962660493-1ay4y0",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1779962635838",
+      "timestamp": "2026-05-28T10:03:55.838Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1779962635835-n3g05s",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1779959931580",
+      "timestamp": "2026-05-28T09:18:51.580Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "contract_invalid",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat delegation did not satisfy the required contract.",
+      "failureKind": "contract",
+      "runId": "cto-chat-1779959931577-ei4w7g",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1779959899613",
+      "timestamp": "2026-05-28T09:18:19.613Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1779959899610-xirky2",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
+    {
+      "id": "cto_diag_1779941636474",
+      "timestamp": "2026-05-28T04:13:56.474Z",
+      "route": "/api/spatial/cto/chat",
+      "source": "cto-chat",
+      "category": "non_json_output",
+      "status": "degraded",
+      "backend": "ollama",
+      "model": "mixtral:latest",
+      "host": "http://127.0.0.1:22445",
+      "reason": "CTO chat returned prose instead of strict JSON.",
+      "failureKind": "parse",
+      "runId": "cto-chat-1779941636471-kn064j",
+      "httpStatus": 0,
+      "actionId": null,
+      "availableActionIds": [
+        "request-plan"
+      ],
+      "timeout_ms": 34567,
+      "prompt_chars": 92703,
+      "context_mode": "scoped",
+      "used_live_call": true,
+      "used_fallback": true,
+      "failure_reason": "bad_prompt_shape",
+      "included_sections": [
+        "identity",
+        "conversation",
+        "scoped_context",
+        "available_actions"
+      ],
+      "broader_context_available": true,
+      "repair_applied": {
+        "timeout_changed": false,
+        "prompt_scope_changed": true,
+        "retrieval_shifted": true,
+        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
+      }
+    },
     {
       "id": "cto_diag_1779890414041",
       "timestamp": "2026-05-27T14:00:14.041Z",
@@ -1694,576 +2264,6 @@
       ],
       "timeout_ms": 34567,
       "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863573012",
-      "timestamp": "2026-05-15T16:46:13.012Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "contract_invalid",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat delegation did not satisfy the required contract.",
-      "failureKind": "contract",
-      "runId": "cto-chat-1778863573009-1gryrk",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863555759",
-      "timestamp": "2026-05-15T16:45:55.759Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "non_json_output",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat returned prose instead of strict JSON.",
-      "failureKind": "parse",
-      "runId": "cto-chat-1778863555756-c6jakd",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863474046",
-      "timestamp": "2026-05-15T16:44:34.046Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "backend_unreachable",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mistral:latest",
-      "host": "http://127.0.0.1:11434",
-      "reason": "The input was expected to not match the regular expression /A QA Lead hire is currently pending/i. Input:\n\n'You are the ACE CTO / Architect chat utility.\\n' +\n  'Use only grounded facts from the supplied ACE context.\\n' +\n  'Do not invent departments, desks, routes, or completed actions.\\n' +\n  'Prefer governance and delegation language over pretending to do all work directly.\\n' +\n  'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.\\n' +\n  'Chief of Staff context is advisory-only support. It can highlight blockers, urgency, confidence, and readiness, but it does not grant execution authority.\\n' +\n  'Do not blindly comply with Chief of Staff advice and do not fabricate action ids from it.\\n' +\n  'If context.cto.chiefOfStaff.execution_ready is false, do not present the Chief of Staff recommendation itself as directly executable.\\n' +\n  'If canonical actions remain available while Chief of Staff execution_ready is false, explain that canonical availability still governs and the advisory remains non-authoritative.\\n' +\n  'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.\\n' +\n  'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.\\n' +\n  'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.\\n' +\n  'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.\\n' +\n  'If an action is unavailable, explain why in system terms.\\n' +\n  'If Chief of Staff recommendation conflicts with canonical action availability, canonical availability wins and you must explain the mismatch.\\n' +\n  'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.\\n' +\n  'Return JSON only with this exact shape:\\n' +\n  '{\\n' +\n  '  \"reply_text\": \"string\",\\n' +\n  '  \"response_kind\": \"advisory|actionable|blocked\",\\n' +\n  '  \"delegation\": { \"desk_id\": \"string\", \"desk_label\": \"string\", \"why\": \"string\" } | null,\\n' +\n  '  \"action\": { \"id\": \"string\" } | null\\n' +\n  '}\\n' +\n  'response_kind must be one of advisory, actionable, blocked.\\n' +\n  'If action is not null, action.id must be one of the ids listed in available_actions.\\n' +\n  'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.\\n' +\n  'Do not emit route status fields. Route status is owned by the server, not the model.\\n' +\n  'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.\\n' +\n  'Stay within the immediate task context. Broader workspace state remains available on demand and is intentionally not injected here.\\n' +\n  '\\n' +\n  'ACE context:\\n' +\n  '{\\n' +\n  '  \"latest_user_message\": \"run a QA smoke test\",\\n' +\n  '  \"history\": [\\n' +\n  '    {\\n' +\n  '      \"role\": \"assistant\",\\n' +\n  '      \"text\": \"A QA Lead hire is currently pending before we can proceed.\",\\n' +\n  '      \"action\": null\\n' +\n  '    }\\n' +\n  '  ],\\n' +\n  '  \"context\": {\\n' +\n  '    \"workspace\": {\\n' +\n  '      \"active_page_id\": null,\\n' +\n  '      \"active_page_title\": null,\\n' +\n  '      \"graph_counts\": {\\n' +\n  '        \"system_nodes\": 0,\\n' +\n  '        \"system_edges\": 0,\\n' +\n  '        \"world_nodes\": 0,\\n' +\n  '        \"world_edges\": 0\\n' +\n  '      },\\n' +\n  '      \"board\": {\\n' +\n  '        \"selected_card_id\": null,\\n' +\n  '        \"active_card_count\": 0\\n' +\n  '      },\\n' +\n  '      \"active_desk_ids\": []\\n' +\n  '    },\\n' +\n  '    \"pipeline\": null,\\n' +\n  '    \"desks\": [\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"qa-lead\",\\n' +\n  '        \"label\": \"QA Lead\",\\n' +\n  '        \"departmentLabel\": \"Quality\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"qa-lead\",\\n' +\n  '          \"evaluator\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 0,\\n' +\n  '        \"reportCount\": 383,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.\",\\n' +\n  '        \"truthContext\": \"Assessment room for QA reports, scorecards, and readiness evidence.\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"context-manager\",\\n' +\n  '        \"label\": \"Context Manager\",\\n' +\n  '        \"departmentLabel\": \"Intake\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"context-manager\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 383,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual context-manager run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": null\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"planner\",\\n' +\n  '        \"label\": \"Planner\",\\n' +\n  '        \"departmentLabel\": \"Delivery\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"planner\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 2,\\n' +\n  '        \"reportCount\": 384,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual planner run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      }\\n' +\n  '    ],\\n' +\n  '    \"ta\": {\\n' +\n  '      \"summary\": \"All 2 canonical desk seats are covered.\",\\n' +\n  '      \"urgency\": \"low\",\\n' +\n  '      \"plannerCoverage\": {\\n' +\n  '        \"canonical\": {\\n' +\n  '          \"deskId\": \"planner\",\\n' +\n  '          \"roleId\": \"planner\",\\n' +\n  '          \"agentId\": \"planner\",\\n' +\n  '          \"modelProfileId\": \"model-profile.planner-default\",\\n' +\n  '          \"departmentId\": \"dept-delivery\",\\n' +\n  '          \"requiredLeadSeatId\": \"planner\"\\n' +\n  '        },\\n' +\n  '        \"organization\": {\\n' +\n  '          \"schemaVersion\": \"studio-relationships.v1\",\\n' +\n  '          \"relationshipTypes\": {\\n' +\n  '            \"parent\": \"parent\",\\n' +\n  '            \"peer\": \"peer\",\\n' +\n  '            \"support\": \"support\",\\n' +\n  '            \"dependency\": \"dependency\"\\n' +\n  '          },\\n' +\n  '          \"departments\": {\\n' +\n  '            \"dept-intake\": {\\n' +\n  '              \"id\": \"dept-intake\",\\n' +\n  '              \"label\": \"Intake\",\\n' +\n  '              \"kind\": \"intake\",\\n' +\n  '              \"templateId\": \"intake\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\",\\n' +\n  '                \"qa-lead\",\\n' +\n  '                \"memory-archivist\",\\n' +\n  '                \"rnd-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"context-manager\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"context-manager\",\\n' +\n  '                \"minimumActiveSeats\": 1,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"context-manager\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"context-manager\",\\n' +\n  '                    \"deskId\": \"context-manager\",\\n' +\n  '                    \"label\": \"context manager\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-delivery\": {\\n' +\n  '              \"id\": \"dept-delivery\",\\n' +\n  '              \"label\": \"Delivery\",\\n' +\n  '              \"kind\": \"delivery\",\\n' +\n  '              \"templateId\": \"delivery\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-quality\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"qa-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"context-manager\",\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"planner\",\\n' +\n  '                \"minimumActiveSeats\": 2,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"planner\",\\n' +\n  '                  \"executor\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"planner\",\\n' +\n  '                    \"deskId\": \"planner\",\\n' +\n  '                    \"label\": \"planner\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  },\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"executor\",\\n' +\n  '                    \"deskId\": \"executor\",\\n' +\n  '                    \"label\": \"executor\",\\n' +\n  '                    \"seatKind\": \"core\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-quality\": {\\n' +\n  '              \"id\": \"dept-quality\",\\n' +\n  '              \"label\": \"Quality\",\\n' +\n  '              \"kind\": \"quality\",\\n' +\n  '              \"templateId\": \"quality\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '        '... 83009 more characters",
-      "failureKind": "parse",
-      "runId": "cto-chat-1778863474038-sbqehg",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-qa"
-      ],
-      "timeout_ms": 30000,
-      "prompt_chars": 93009,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863457141",
-      "timestamp": "2026-05-15T16:44:17.141Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "contract_invalid",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat action referenced an unavailable action id: not-available.",
-      "failureKind": "contract",
-      "runId": "cto-chat-1778863457137-38ka4k",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863439535",
-      "timestamp": "2026-05-15T16:43:59.535Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "contract_invalid",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat delegation did not satisfy the required contract.",
-      "failureKind": "contract",
-      "runId": "cto-chat-1778863439533-xfcidr",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863422359",
-      "timestamp": "2026-05-15T16:43:42.359Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "non_json_output",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat returned prose instead of strict JSON.",
-      "failureKind": "parse",
-      "runId": "cto-chat-1778863422356-wz2i3v",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863332570",
-      "timestamp": "2026-05-15T16:42:12.570Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "backend_unreachable",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mistral:latest",
-      "host": "http://127.0.0.1:11434",
-      "reason": "The input was expected to not match the regular expression /A QA Lead hire is currently pending/i. Input:\n\n'You are the ACE CTO / Architect chat utility.\\n' +\n  'Use only grounded facts from the supplied ACE context.\\n' +\n  'Do not invent departments, desks, routes, or completed actions.\\n' +\n  'Prefer governance and delegation language over pretending to do all work directly.\\n' +\n  'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.\\n' +\n  'Chief of Staff context is advisory-only support. It can highlight blockers, urgency, confidence, and readiness, but it does not grant execution authority.\\n' +\n  'Do not blindly comply with Chief of Staff advice and do not fabricate action ids from it.\\n' +\n  'If context.cto.chiefOfStaff.execution_ready is false, do not present the Chief of Staff recommendation itself as directly executable.\\n' +\n  'If canonical actions remain available while Chief of Staff execution_ready is false, explain that canonical availability still governs and the advisory remains non-authoritative.\\n' +\n  'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.\\n' +\n  'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.\\n' +\n  'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.\\n' +\n  'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.\\n' +\n  'If an action is unavailable, explain why in system terms.\\n' +\n  'If Chief of Staff recommendation conflicts with canonical action availability, canonical availability wins and you must explain the mismatch.\\n' +\n  'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.\\n' +\n  'Return JSON only with this exact shape:\\n' +\n  '{\\n' +\n  '  \"reply_text\": \"string\",\\n' +\n  '  \"response_kind\": \"advisory|actionable|blocked\",\\n' +\n  '  \"delegation\": { \"desk_id\": \"string\", \"desk_label\": \"string\", \"why\": \"string\" } | null,\\n' +\n  '  \"action\": { \"id\": \"string\" } | null\\n' +\n  '}\\n' +\n  'response_kind must be one of advisory, actionable, blocked.\\n' +\n  'If action is not null, action.id must be one of the ids listed in available_actions.\\n' +\n  'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.\\n' +\n  'Do not emit route status fields. Route status is owned by the server, not the model.\\n' +\n  'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.\\n' +\n  'Stay within the immediate task context. Broader workspace state remains available on demand and is intentionally not injected here.\\n' +\n  '\\n' +\n  'ACE context:\\n' +\n  '{\\n' +\n  '  \"latest_user_message\": \"run a QA smoke test\",\\n' +\n  '  \"history\": [\\n' +\n  '    {\\n' +\n  '      \"role\": \"assistant\",\\n' +\n  '      \"text\": \"A QA Lead hire is currently pending before we can proceed.\",\\n' +\n  '      \"action\": null\\n' +\n  '    }\\n' +\n  '  ],\\n' +\n  '  \"context\": {\\n' +\n  '    \"workspace\": {\\n' +\n  '      \"active_page_id\": null,\\n' +\n  '      \"active_page_title\": null,\\n' +\n  '      \"graph_counts\": {\\n' +\n  '        \"system_nodes\": 0,\\n' +\n  '        \"system_edges\": 0,\\n' +\n  '        \"world_nodes\": 0,\\n' +\n  '        \"world_edges\": 0\\n' +\n  '      },\\n' +\n  '      \"board\": {\\n' +\n  '        \"selected_card_id\": null,\\n' +\n  '        \"active_card_count\": 0\\n' +\n  '      },\\n' +\n  '      \"active_desk_ids\": []\\n' +\n  '    },\\n' +\n  '    \"pipeline\": null,\\n' +\n  '    \"desks\": [\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"qa-lead\",\\n' +\n  '        \"label\": \"QA Lead\",\\n' +\n  '        \"departmentLabel\": \"Quality\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"qa-lead\",\\n' +\n  '          \"evaluator\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 0,\\n' +\n  '        \"reportCount\": 383,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.\",\\n' +\n  '        \"truthContext\": \"Assessment room for QA reports, scorecards, and readiness evidence.\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"context-manager\",\\n' +\n  '        \"label\": \"Context Manager\",\\n' +\n  '        \"departmentLabel\": \"Intake\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"context-manager\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 383,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual context-manager run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": null\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"planner\",\\n' +\n  '        \"label\": \"Planner\",\\n' +\n  '        \"departmentLabel\": \"Delivery\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"planner\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 2,\\n' +\n  '        \"reportCount\": 384,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual planner run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      }\\n' +\n  '    ],\\n' +\n  '    \"ta\": {\\n' +\n  '      \"summary\": \"All 2 canonical desk seats are covered.\",\\n' +\n  '      \"urgency\": \"low\",\\n' +\n  '      \"plannerCoverage\": {\\n' +\n  '        \"canonical\": {\\n' +\n  '          \"deskId\": \"planner\",\\n' +\n  '          \"roleId\": \"planner\",\\n' +\n  '          \"agentId\": \"planner\",\\n' +\n  '          \"modelProfileId\": \"model-profile.planner-default\",\\n' +\n  '          \"departmentId\": \"dept-delivery\",\\n' +\n  '          \"requiredLeadSeatId\": \"planner\"\\n' +\n  '        },\\n' +\n  '        \"organization\": {\\n' +\n  '          \"schemaVersion\": \"studio-relationships.v1\",\\n' +\n  '          \"relationshipTypes\": {\\n' +\n  '            \"parent\": \"parent\",\\n' +\n  '            \"peer\": \"peer\",\\n' +\n  '            \"support\": \"support\",\\n' +\n  '            \"dependency\": \"dependency\"\\n' +\n  '          },\\n' +\n  '          \"departments\": {\\n' +\n  '            \"dept-intake\": {\\n' +\n  '              \"id\": \"dept-intake\",\\n' +\n  '              \"label\": \"Intake\",\\n' +\n  '              \"kind\": \"intake\",\\n' +\n  '              \"templateId\": \"intake\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\",\\n' +\n  '                \"qa-lead\",\\n' +\n  '                \"memory-archivist\",\\n' +\n  '                \"rnd-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"context-manager\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"context-manager\",\\n' +\n  '                \"minimumActiveSeats\": 1,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"context-manager\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"context-manager\",\\n' +\n  '                    \"deskId\": \"context-manager\",\\n' +\n  '                    \"label\": \"context manager\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-delivery\": {\\n' +\n  '              \"id\": \"dept-delivery\",\\n' +\n  '              \"label\": \"Delivery\",\\n' +\n  '              \"kind\": \"delivery\",\\n' +\n  '              \"templateId\": \"delivery\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-quality\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"qa-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"context-manager\",\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"planner\",\\n' +\n  '                \"minimumActiveSeats\": 2,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"planner\",\\n' +\n  '                  \"executor\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"planner\",\\n' +\n  '                    \"deskId\": \"planner\",\\n' +\n  '                    \"label\": \"planner\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  },\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"executor\",\\n' +\n  '                    \"deskId\": \"executor\",\\n' +\n  '                    \"label\": \"executor\",\\n' +\n  '                    \"seatKind\": \"core\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-quality\": {\\n' +\n  '              \"id\": \"dept-quality\",\\n' +\n  '              \"label\": \"Quality\",\\n' +\n  '              \"kind\": \"quality\",\\n' +\n  '              \"templateId\": \"quality\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '        '... 83009 more characters",
-      "failureKind": "parse",
-      "runId": "cto-chat-1778863332561-rpswd3",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-qa"
-      ],
-      "timeout_ms": 30000,
-      "prompt_chars": 93009,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863313365",
-      "timestamp": "2026-05-15T16:41:53.365Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "contract_invalid",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat action referenced an unavailable action id: not-available.",
-      "failureKind": "contract",
-      "runId": "cto-chat-1778863313360-wtsp1i",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863294536",
-      "timestamp": "2026-05-15T16:41:34.536Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "contract_invalid",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat delegation did not satisfy the required contract.",
-      "failureKind": "contract",
-      "runId": "cto-chat-1778863294534-fmpghe",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863276340",
-      "timestamp": "2026-05-15T16:41:16.340Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "non_json_output",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat returned prose instead of strict JSON.",
-      "failureKind": "parse",
-      "runId": "cto-chat-1778863276337-2j56jx",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863153354",
-      "timestamp": "2026-05-15T16:39:13.354Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "backend_unreachable",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mistral:latest",
-      "host": "http://127.0.0.1:11434",
-      "reason": "The input was expected to not match the regular expression /A QA Lead hire is currently pending/i. Input:\n\n'You are the ACE CTO / Architect chat utility.\\n' +\n  'Use only grounded facts from the supplied ACE context.\\n' +\n  'Do not invent departments, desks, routes, or completed actions.\\n' +\n  'Prefer governance and delegation language over pretending to do all work directly.\\n' +\n  'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.\\n' +\n  'Chief of Staff context is advisory-only support. It can highlight blockers, urgency, confidence, and readiness, but it does not grant execution authority.\\n' +\n  'Do not blindly comply with Chief of Staff advice and do not fabricate action ids from it.\\n' +\n  'If context.cto.chiefOfStaff.execution_ready is false, do not present the Chief of Staff recommendation itself as directly executable.\\n' +\n  'If canonical actions remain available while Chief of Staff execution_ready is false, explain that canonical availability still governs and the advisory remains non-authoritative.\\n' +\n  'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.\\n' +\n  'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.\\n' +\n  'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.\\n' +\n  'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.\\n' +\n  'If an action is unavailable, explain why in system terms.\\n' +\n  'If Chief of Staff recommendation conflicts with canonical action availability, canonical availability wins and you must explain the mismatch.\\n' +\n  'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.\\n' +\n  'Return JSON only with this exact shape:\\n' +\n  '{\\n' +\n  '  \"reply_text\": \"string\",\\n' +\n  '  \"response_kind\": \"advisory|actionable|blocked\",\\n' +\n  '  \"delegation\": { \"desk_id\": \"string\", \"desk_label\": \"string\", \"why\": \"string\" } | null,\\n' +\n  '  \"action\": { \"id\": \"string\" } | null\\n' +\n  '}\\n' +\n  'response_kind must be one of advisory, actionable, blocked.\\n' +\n  'If action is not null, action.id must be one of the ids listed in available_actions.\\n' +\n  'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.\\n' +\n  'Do not emit route status fields. Route status is owned by the server, not the model.\\n' +\n  'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.\\n' +\n  'Stay within the immediate task context. Broader workspace state remains available on demand and is intentionally not injected here.\\n' +\n  '\\n' +\n  'ACE context:\\n' +\n  '{\\n' +\n  '  \"latest_user_message\": \"run a QA smoke test\",\\n' +\n  '  \"history\": [\\n' +\n  '    {\\n' +\n  '      \"role\": \"assistant\",\\n' +\n  '      \"text\": \"A QA Lead hire is currently pending before we can proceed.\",\\n' +\n  '      \"action\": null\\n' +\n  '    }\\n' +\n  '  ],\\n' +\n  '  \"context\": {\\n' +\n  '    \"workspace\": {\\n' +\n  '      \"active_page_id\": null,\\n' +\n  '      \"active_page_title\": null,\\n' +\n  '      \"graph_counts\": {\\n' +\n  '        \"system_nodes\": 0,\\n' +\n  '        \"system_edges\": 0,\\n' +\n  '        \"world_nodes\": 0,\\n' +\n  '        \"world_edges\": 0\\n' +\n  '      },\\n' +\n  '      \"board\": {\\n' +\n  '        \"selected_card_id\": null,\\n' +\n  '        \"active_card_count\": 0\\n' +\n  '      },\\n' +\n  '      \"active_desk_ids\": []\\n' +\n  '    },\\n' +\n  '    \"pipeline\": null,\\n' +\n  '    \"desks\": [\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"qa-lead\",\\n' +\n  '        \"label\": \"QA Lead\",\\n' +\n  '        \"departmentLabel\": \"Quality\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"qa-lead\",\\n' +\n  '          \"evaluator\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 0,\\n' +\n  '        \"reportCount\": 383,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.\",\\n' +\n  '        \"truthContext\": \"Assessment room for QA reports, scorecards, and readiness evidence.\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"context-manager\",\\n' +\n  '        \"label\": \"Context Manager\",\\n' +\n  '        \"departmentLabel\": \"Intake\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"context-manager\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 383,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual context-manager run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": null\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"planner\",\\n' +\n  '        \"label\": \"Planner\",\\n' +\n  '        \"departmentLabel\": \"Delivery\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"planner\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 2,\\n' +\n  '        \"reportCount\": 384,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual planner run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      }\\n' +\n  '    ],\\n' +\n  '    \"ta\": {\\n' +\n  '      \"summary\": \"All 2 canonical desk seats are covered.\",\\n' +\n  '      \"urgency\": \"low\",\\n' +\n  '      \"plannerCoverage\": {\\n' +\n  '        \"canonical\": {\\n' +\n  '          \"deskId\": \"planner\",\\n' +\n  '          \"roleId\": \"planner\",\\n' +\n  '          \"agentId\": \"planner\",\\n' +\n  '          \"modelProfileId\": \"model-profile.planner-default\",\\n' +\n  '          \"departmentId\": \"dept-delivery\",\\n' +\n  '          \"requiredLeadSeatId\": \"planner\"\\n' +\n  '        },\\n' +\n  '        \"organization\": {\\n' +\n  '          \"schemaVersion\": \"studio-relationships.v1\",\\n' +\n  '          \"relationshipTypes\": {\\n' +\n  '            \"parent\": \"parent\",\\n' +\n  '            \"peer\": \"peer\",\\n' +\n  '            \"support\": \"support\",\\n' +\n  '            \"dependency\": \"dependency\"\\n' +\n  '          },\\n' +\n  '          \"departments\": {\\n' +\n  '            \"dept-intake\": {\\n' +\n  '              \"id\": \"dept-intake\",\\n' +\n  '              \"label\": \"Intake\",\\n' +\n  '              \"kind\": \"intake\",\\n' +\n  '              \"templateId\": \"intake\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\",\\n' +\n  '                \"qa-lead\",\\n' +\n  '                \"memory-archivist\",\\n' +\n  '                \"rnd-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"context-manager\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"context-manager\",\\n' +\n  '                \"minimumActiveSeats\": 1,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"context-manager\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"context-manager\",\\n' +\n  '                    \"deskId\": \"context-manager\",\\n' +\n  '                    \"label\": \"context manager\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-delivery\": {\\n' +\n  '              \"id\": \"dept-delivery\",\\n' +\n  '              \"label\": \"Delivery\",\\n' +\n  '              \"kind\": \"delivery\",\\n' +\n  '              \"templateId\": \"delivery\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-quality\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"qa-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"context-manager\",\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"planner\",\\n' +\n  '                \"minimumActiveSeats\": 2,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"planner\",\\n' +\n  '                  \"executor\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"planner\",\\n' +\n  '                    \"deskId\": \"planner\",\\n' +\n  '                    \"label\": \"planner\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  },\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"executor\",\\n' +\n  '                    \"deskId\": \"executor\",\\n' +\n  '                    \"label\": \"executor\",\\n' +\n  '                    \"seatKind\": \"core\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-quality\": {\\n' +\n  '              \"id\": \"dept-quality\",\\n' +\n  '              \"label\": \"Quality\",\\n' +\n  '              \"kind\": \"quality\",\\n' +\n  '              \"templateId\": \"quality\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '        '... 83009 more characters",
-      "failureKind": "parse",
-      "runId": "cto-chat-1778863153348-y2ihax",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-qa"
-      ],
-      "timeout_ms": 30000,
-      "prompt_chars": 93009,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863136767",
-      "timestamp": "2026-05-15T16:38:56.767Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "contract_invalid",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat action referenced an unavailable action id: not-available.",
-      "failureKind": "contract",
-      "runId": "cto-chat-1778863136764-0heel6",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863120373",
-      "timestamp": "2026-05-15T16:38:40.373Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "contract_invalid",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat delegation did not satisfy the required contract.",
-      "failureKind": "contract",
-      "runId": "cto-chat-1778863120371-ee7op0",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778863103946",
-      "timestamp": "2026-05-15T16:38:23.946Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "non_json_output",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mixtral:latest",
-      "host": "http://127.0.0.1:22445",
-      "reason": "CTO chat returned prose instead of strict JSON.",
-      "failureKind": "parse",
-      "runId": "cto-chat-1778863103943-ge9u7e",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-plan"
-      ],
-      "timeout_ms": 34567,
-      "prompt_chars": 92703,
-      "context_mode": "scoped",
-      "used_live_call": true,
-      "used_fallback": true,
-      "failure_reason": "bad_prompt_shape",
-      "included_sections": [
-        "identity",
-        "conversation",
-        "scoped_context",
-        "available_actions"
-      ],
-      "broader_context_available": true,
-      "repair_applied": {
-        "timeout_changed": false,
-        "prompt_scope_changed": true,
-        "retrieval_shifted": true,
-        "notes": "CTO chat now injects compact workspace summaries and desk slices instead of the full workspace object by default."
-      }
-    },
-    {
-      "id": "cto_diag_1778862718345",
-      "timestamp": "2026-05-15T16:31:58.345Z",
-      "route": "/api/spatial/cto/chat",
-      "source": "cto-chat",
-      "category": "backend_unreachable",
-      "status": "degraded",
-      "backend": "ollama",
-      "model": "mistral:latest",
-      "host": "http://127.0.0.1:11434",
-      "reason": "The input was expected to not match the regular expression /A QA Lead hire is currently pending/i. Input:\n\n'You are the ACE CTO / Architect chat utility.\\n' +\n  'Use only grounded facts from the supplied ACE context.\\n' +\n  'Do not invent departments, desks, routes, or completed actions.\\n' +\n  'Prefer governance and delegation language over pretending to do all work directly.\\n' +\n  'When a desk is weak, missing, read-only, or advisory-only, say so explicitly.\\n' +\n  'Chief of Staff context is advisory-only support. It can highlight blockers, urgency, confidence, and readiness, but it does not grant execution authority.\\n' +\n  'Do not blindly comply with Chief of Staff advice and do not fabricate action ids from it.\\n' +\n  'If context.cto.chiefOfStaff.execution_ready is false, do not present the Chief of Staff recommendation itself as directly executable.\\n' +\n  'If canonical actions remain available while Chief of Staff execution_ready is false, explain that canonical availability still governs and the advisory remains non-authoritative.\\n' +\n  'Use exactly one canonical CTO action id when actioning the pipeline: hire-role, assign-agent-to-desk, request-plan, request-execution, request-qa.\\n' +\n  'Use exactly one canonical worker action id when describing downstream work: create-task, apply-narrow-fix, run-smoke-check.\\n' +\n  'Keep the pipeline narrow and sequential. Do not invent extra tasks or extra fixes.\\n' +\n  'If an action is listed as available, mention it only as a confirmation-gated option unless execution_result already shows it was executed.\\n' +\n  'If an action is unavailable, explain why in system terms.\\n' +\n  'If Chief of Staff recommendation conflicts with canonical action availability, canonical availability wins and you must explain the mismatch.\\n' +\n  'When context.cto.governedRepair is present, treat it as the authoritative repair/apply state and do not infer a different status from summaries or heuristics.\\n' +\n  'Return JSON only with this exact shape:\\n' +\n  '{\\n' +\n  '  \"reply_text\": \"string\",\\n' +\n  '  \"response_kind\": \"advisory|actionable|blocked\",\\n' +\n  '  \"delegation\": { \"desk_id\": \"string\", \"desk_label\": \"string\", \"why\": \"string\" } | null,\\n' +\n  '  \"action\": { \"id\": \"string\" } | null\\n' +\n  '}\\n' +\n  'response_kind must be one of advisory, actionable, blocked.\\n' +\n  'If action is not null, action.id must be one of the ids listed in available_actions.\\n' +\n  'If delegation is not null, delegation.desk_id must match a real desk_id from the supplied context.\\n' +\n  'Do not emit route status fields. Route status is owned by the server, not the model.\\n' +\n  'If execution_result already shows an action was confirmed, you may explain the next canonical step, but do not fabricate any new action ids.\\n' +\n  'Stay within the immediate task context. Broader workspace state remains available on demand and is intentionally not injected here.\\n' +\n  '\\n' +\n  'ACE context:\\n' +\n  '{\\n' +\n  '  \"latest_user_message\": \"run a QA smoke test\",\\n' +\n  '  \"history\": [\\n' +\n  '    {\\n' +\n  '      \"role\": \"assistant\",\\n' +\n  '      \"text\": \"A QA Lead hire is currently pending before we can proceed.\",\\n' +\n  '      \"action\": null\\n' +\n  '    }\\n' +\n  '  ],\\n' +\n  '  \"context\": {\\n' +\n  '    \"workspace\": {\\n' +\n  '      \"active_page_id\": null,\\n' +\n  '      \"active_page_title\": null,\\n' +\n  '      \"graph_counts\": {\\n' +\n  '        \"system_nodes\": 0,\\n' +\n  '        \"system_edges\": 0,\\n' +\n  '        \"world_nodes\": 0,\\n' +\n  '        \"world_edges\": 0\\n' +\n  '      },\\n' +\n  '      \"board\": {\\n' +\n  '        \"selected_card_id\": null,\\n' +\n  '        \"active_card_count\": 0\\n' +\n  '      },\\n' +\n  '      \"active_desk_ids\": []\\n' +\n  '    },\\n' +\n  '    \"pipeline\": null,\\n' +\n  '    \"desks\": [\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"qa-lead\",\\n' +\n  '        \"label\": \"QA Lead\",\\n' +\n  '        \"departmentLabel\": \"Quality\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"qa-lead\",\\n' +\n  '          \"evaluator\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 0,\\n' +\n  '        \"reportCount\": 383,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": false,\\n' +\n  '        \"routeNote\": \"QA desk properties are read-only. QA evidence is available, but no CTO chat execution route is wired for this desk.\",\\n' +\n  '        \"truthContext\": \"Assessment room for QA reports, scorecards, and readiness evidence.\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"context-manager\",\\n' +\n  '        \"label\": \"Context Manager\",\\n' +\n  '        \"departmentLabel\": \"Intake\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"context-manager\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 1,\\n' +\n  '        \"reportCount\": 383,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual context-manager run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": null\\n' +\n  '      },\\n' +\n  '      {\\n' +\n  '        \"deskId\": \"planner\",\\n' +\n  '        \"label\": \"Planner\",\\n' +\n  '        \"departmentLabel\": \"Delivery\",\\n' +\n  '        \"assignedAgentIds\": [\\n' +\n  '          \"planner\"\\n' +\n  '        ],\\n' +\n  '        \"liveAgentCount\": 0,\\n' +\n  '        \"liveAgentStatuses\": [],\\n' +\n  '        \"taskCount\": 2,\\n' +\n  '        \"reportCount\": 384,\\n' +\n  '        \"readOnly\": true,\\n' +\n  '        \"manualRunRoute\": true,\\n' +\n  '        \"routeNote\": \"A manual planner run route exists on the backend, but this CTO panel does not yet create grounded handoff payloads for it.\",\\n' +\n  '        \"truthContext\": \"Migrate to canonical anchor-based ACE system\",\\n' +\n  '        \"taCoverage\": {\\n' +\n  '          \"health\": \"healthy\",\\n' +\n  '          \"blocked\": false,\\n' +\n  '          \"statusLabel\": \"covered\",\\n' +\n  '          \"openRoles\": [],\\n' +\n  '          \"blockers\": []\\n' +\n  '        }\\n' +\n  '      }\\n' +\n  '    ],\\n' +\n  '    \"ta\": {\\n' +\n  '      \"summary\": \"All 2 canonical desk seats are covered.\",\\n' +\n  '      \"urgency\": \"low\",\\n' +\n  '      \"plannerCoverage\": {\\n' +\n  '        \"canonical\": {\\n' +\n  '          \"deskId\": \"planner\",\\n' +\n  '          \"roleId\": \"planner\",\\n' +\n  '          \"agentId\": \"planner\",\\n' +\n  '          \"modelProfileId\": \"model-profile.planner-default\",\\n' +\n  '          \"departmentId\": \"dept-delivery\",\\n' +\n  '          \"requiredLeadSeatId\": \"planner\"\\n' +\n  '        },\\n' +\n  '        \"organization\": {\\n' +\n  '          \"schemaVersion\": \"studio-relationships.v1\",\\n' +\n  '          \"relationshipTypes\": {\\n' +\n  '            \"parent\": \"parent\",\\n' +\n  '            \"peer\": \"peer\",\\n' +\n  '            \"support\": \"support\",\\n' +\n  '            \"dependency\": \"dependency\"\\n' +\n  '          },\\n' +\n  '          \"departments\": {\\n' +\n  '            \"dept-intake\": {\\n' +\n  '              \"id\": \"dept-intake\",\\n' +\n  '              \"label\": \"Intake\",\\n' +\n  '              \"kind\": \"intake\",\\n' +\n  '              \"templateId\": \"intake\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\",\\n' +\n  '                \"qa-lead\",\\n' +\n  '                \"memory-archivist\",\\n' +\n  '                \"rnd-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"context-manager\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"context-manager\",\\n' +\n  '                \"minimumActiveSeats\": 1,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"context-manager\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"context-manager\",\\n' +\n  '                    \"deskId\": \"context-manager\",\\n' +\n  '                    \"label\": \"context manager\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-delivery\": {\\n' +\n  '              \"id\": \"dept-delivery\",\\n' +\n  '              \"label\": \"Delivery\",\\n' +\n  '              \"kind\": \"delivery\",\\n' +\n  '              \"templateId\": \"delivery\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-quality\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '                \"dept-research\",\\n' +\n  '                \"dept-talent-acquisition\"\\n' +\n  '              ],\\n' +\n  '              \"supportDepartmentIds\": [\\n' +\n  '                \"dept-quality\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-control\"\\n' +\n  '              ],\\n' +\n  '              \"supportDeskIds\": [\\n' +\n  '                \"qa-lead\"\\n' +\n  '              ],\\n' +\n  '              \"dependencyDeskIds\": [\\n' +\n  '                \"context-manager\",\\n' +\n  '                \"cto-chief-of-staff\",\\n' +\n  '                \"cto-architect\"\\n' +\n  '              ],\\n' +\n  '              \"deskIds\": [\\n' +\n  '                \"planner\",\\n' +\n  '                \"executor\"\\n' +\n  '              ],\\n' +\n  '              \"controlCentreDeskId\": \"cto-architect\",\\n' +\n  '              \"staffing\": {\\n' +\n  '                \"requiredLeadSeatId\": \"planner\",\\n' +\n  '                \"minimumActiveSeats\": 2,\\n' +\n  '                \"baselineRoleIds\": [\\n' +\n  '                  \"planner\",\\n' +\n  '                  \"executor\"\\n' +\n  '                ],\\n' +\n  '                \"openSeatPlaceholders\": [\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"planner\",\\n' +\n  '                    \"deskId\": \"planner\",\\n' +\n  '                    \"label\": \"planner\",\\n' +\n  '                    \"seatKind\": \"lead\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  },\\n' +\n  '                  {\\n' +\n  '                    \"roleId\": \"executor\",\\n' +\n  '                    \"deskId\": \"executor\",\\n' +\n  '                    \"label\": \"executor\",\\n' +\n  '                    \"seatKind\": \"core\",\\n' +\n  '                    \"open\": true\\n' +\n  '                  }\\n' +\n  '                ]\\n' +\n  '              }\\n' +\n  '            },\\n' +\n  '            \"dept-quality\": {\\n' +\n  '              \"id\": \"dept-quality\",\\n' +\n  '              \"label\": \"Quality\",\\n' +\n  '              \"kind\": \"quality\",\\n' +\n  '              \"templateId\": \"quality\",\\n' +\n  '              \"parentDepartmentId\": \"dept-control\",\\n' +\n  '              \"peerDepartmentIds\": [\\n' +\n  '                \"dept-intake\",\\n' +\n  '                \"dept-delivery\",\\n' +\n  '                \"dept-archive\",\\n' +\n  '        '... 83009 more characters",
-      "failureKind": "parse",
-      "runId": "cto-chat-1778862718337-m8emvx",
-      "httpStatus": 0,
-      "actionId": null,
-      "availableActionIds": [
-        "request-qa"
-      ],
-      "timeout_ms": 30000,
-      "prompt_chars": 93009,
       "context_mode": "scoped",
       "used_live_call": true,
       "used_fallback": true,

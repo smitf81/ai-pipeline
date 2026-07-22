@@ -163,7 +163,7 @@ export default async function runTruthKernelAdapterTests() {
       weight: 0.22,
     }],
   }]);
-  writeJson(rootPath, 'brain/context/subconscious/status.json', {
+  writeJson(rootPath, 'brain/context/subconscious/observer-ledger.txt', {
     contract: 'subconscious.advisory.v1',
     classification: 'derived_advisory',
     canonical: false,
@@ -297,10 +297,23 @@ export default async function runTruthKernelAdapterTests() {
   assert.equal(evaluatorNode.evaluatorCognitionMode, 'model_live');
   assert.equal(subconsciousNode.status, 'healthy');
   assert.equal(subconsciousNode.canonicalSource, null);
-  assert.equal(subconsciousNode.derivedSource, 'brain/context/subconscious/status.json');
+  assert.equal(subconsciousNode.derivedSource, 'brain/context/subconscious/observer-ledger.txt');
   assert.equal(subconsciousNode.truthState, 'derived_advisory_not_canonical');
   assert.equal(subconsciousNode.children.includes('subconscious_advisory_memory'), true);
   assert.equal(subconsciousMemoryNode.parents.includes('subconscious_advisory_observer'), true);
+  writeJson(rootPath, 'brain/context/subconscious/observer-ledger.txt', {
+    contract: 'subconscious.advisory.v1',
+    classification: 'derived_advisory',
+    canonical: false,
+    state: 'live_memory_preserved',
+    memoryUpdateStatus: 'preserved_previous',
+    latestMemory: 'brain/context/subconscious/memory.md',
+  });
+  const degradedSubconsciousPayload = buildTruthKernelPayload({ rootPath, workspace });
+  assert.equal(
+    degradedSubconsciousPayload.nodes.find((node) => node.id === 'subconscious_advisory_observer').status,
+    'degraded',
+  );
   assert.match(String(evaluatorNode.label || ''), /Runtime posture improved/i);
   assert.ok(evaluatorNode.visual);
   assert.ok(String(evaluatorNode.rgba || evaluatorNode.visual?.rgba || '').startsWith('rgba('));

@@ -20,6 +20,7 @@ export function normalizeStudioBootManifest(manifest = {}) {
       attribute: String(mountMarker.attribute || 'data-boot').trim() || 'data-boot',
       value: String(mountMarker.value || 'studio-mounted').trim() || 'studio-mounted',
     },
+    asset_probe_timeout_ms: Math.max(250, Number(source.asset_probe_timeout_ms) || 2500),
     blank_render_timeout_ms: Math.max(1000, Number(source.blank_render_timeout_ms) || 5000),
     entry_module_import: String(source.entry_module_import || './spatialApp.js').trim() || './spatialApp.js',
     assets: assets.map((asset, index) => ({
@@ -129,32 +130,50 @@ export function buildStudioBootFailure({
   };
 }
 
-export async function probeStudioBootAssets(manifest = {}, { fetchImpl = globalThis.fetch } = {}) {
+export async function probeStudioBootAssets(manifest = {}, { fetchImpl = globalThis.fetch, timeoutMs = null } = {}) {
   const normalizedManifest = normalizeStudioBootManifest(manifest);
   if (typeof fetchImpl !== 'function') {
     throw new Error('Boot asset probe requires a fetch-compatible function.');
   }
+  const requestTimeoutMs = Math.max(
+    250,
+    Number(timeoutMs || normalizedManifest.asset_probe_timeout_ms) || 2500,
+  );
   const assets = [];
   let blockingFailure = null;
   for (const asset of normalizedManifest.assets) {
     let status = 0;
     let ok = false;
     let message = '';
+    let timeout = null;
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
     try {
-      const response = await fetchImpl(asset.path, { cache: 'no-store' });
+      if (controller) {
+        timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+      }
+      const response = await fetchImpl(asset.path, {
+        cache: 'no-store',
+        ...(controller ? { signal: controller.signal } : {}),
+      });
       status = Number(response?.status) || 0;
       ok = status >= 200 && status < 300;
       if (!ok) {
         message = `${asset.path} returned ${status || 'no status'}.`;
       }
     } catch (error) {
-      message = String(error?.message || error || 'Boot asset request failed.');
+      const errorMessage = String(error?.message || error || 'Boot asset request failed.');
+      message = error?.name === 'AbortError'
+        ? `${asset.path} timed out after ${requestTimeoutMs}ms.`
+        : errorMessage;
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
     const assetResult = {
       ...asset,
       status: ok ? 'ok' : 'missing',
       ok,
       http_status: ok ? (status || 200) : (status || 404),
+      timeout_ms: requestTimeoutMs,
       reason: ok ? '' : (message || `${asset.path} is unavailable.`),
     };
     assets.push(assetResult);

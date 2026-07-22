@@ -774,6 +774,99 @@ Project open flow:
 7. Render Files panel.
 8. Chat announces project state only if user asks or if blockers exist.
 
+### 9.2.1 Project-root execution boundary
+
+Selecting a project in the browser is not filesystem authority by itself. The
+launcher bridge must authorise the project root before `fs_ls`, `fs_cat`,
+`safe_read_project_file`, `safe_write_project_file`, `file_stat`, `file_hash`,
+or `file_validate` may operate against it.
+
+Current initial live-project contract:
+
+```txt
+project_list -> list server-authorised roots
+project_open -> validate a selected authorised root
+filesystem call + projectRoot/projectId -> resolve inside that same root
+```
+
+The bridge remains the canonical owner of which roots are allowed. The Files
+panel owns selection and receipts, but cannot turn an arbitrary path into a
+trusted project locally. Each filesystem call carries its scope explicitly;
+the server must not silently rely on a global last-opened root.
+
+First registered test subject:
+
+```txt
+id: black-sky-bound
+root selector: _A_Projects/BLACK_SKY_BOUND_FFP
+legacy selector: Projects/field-fronts-prototype
+manifest: _A_Projects/BLACK_SKY_BOUND_FFP/.axiom/project.json
+```
+
+This integration loads the project files and manifest into AXIOM File Manager.
+It does not claim that the browser game's runtime world is imported into the
+AXIOM scene graph.
+
+The legacy selector may resolve to the registered project for operator
+continuity, but filesystem reads and writes must use the current registered
+root after authorisation.
+
+### 9.2.2 Active project viewport preview
+
+Live browser projects may declare browser entrypoints in `.axiom/project.json`:
+
+```json
+{
+  "entrypoints": [
+    {
+      "id": "prototype",
+      "name": "Field Fronts Prototype",
+      "path": "index.html",
+      "run": "npm.cmd start",
+      "url": "http://127.0.0.1:4184/?seed=1"
+    }
+  ]
+}
+```
+
+When the active project manifest contains an HTTP(S) entrypoint URL, AXIOM may
+render that URL in an isolated viewport preview iframe.
+
+Canonical ownership:
+
+- `FileManagerRuntime` owns active project root/manifest state.
+- `ProjectPreviewRuntime` owns embedded browser preview state and reachability
+  status.
+- `SceneManager` remains the AXIOM Three.js scene truth owner.
+- The external project remains its own runtime truth owner.
+
+Required behavior:
+
+1. The preview only loads URLs declared by the authorised active project
+   manifest.
+2. The launcher bridge exposes `project_runtime_probe` to check whether the
+   declared entrypoint is reachable; this probe never starts, mutates, or
+   imports the project.
+3. If the runtime server is offline, AXIOM must show a degraded/offline preview
+   state instead of claiming the project is rendered.
+4. Loading the preview must not create or modify AXIOM scene objects.
+5. Browser automation or game-specific first-person playtests remain external
+   project tests, not File Manager acceptance by themselves.
+
+For `black-sky-bound`, the existing project-side live/browser test subjects are:
+
+```txt
+npm.cmd run test:browser
+npm.cmd run test:shelter-route
+npm.cmd run test:mouse
+npm.cmd run test:mouse:live
+```
+
+AXIOM viewport acceptance for this slice is narrower: authorised project opens,
+manifest entrypoint is selected, the preview iframe targets that URL, and
+`project_runtime_probe` can prove reachability when the project server is
+running.
+
 ### 9.3 Project save
 
 Project save writes:
@@ -1348,6 +1441,10 @@ Frontend `FileManagerRuntime` then becomes a client-side adapter, not the whole 
 
 - Add `.axiom/project.json`.
 - Add project root detection.
+- Add server-authorised project-root scoping for external live projects.
+- Verify the first registered live project, `black-sky-bound`, through real scan/read receipts.
+- Add an active project viewport preview for declared browser entrypoints, with
+  runtime reachability probing.
 - Add project save/load.
 - Replace browser-only scene save with project scene file save.
 - Keep localStorage as fallback only.
@@ -1481,4 +1578,3 @@ AXIOM:
 ```
 
 That is the line between an AI-themed editor and an AI-native development environment.
-

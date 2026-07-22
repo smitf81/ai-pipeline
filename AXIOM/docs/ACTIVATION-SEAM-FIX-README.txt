@@ -14,7 +14,7 @@ What changed:
    - deactivate_plugin -> window.AXIOM_PLUGIN_RUNTIME.deactivate(...)
    - plugin_runtime_status -> window.AXIOM_PLUGIN_RUNTIME.status()
 
-4. AXIOM exposes the runtime APIs required by the viewport plugin:
+4. AXIOM exposes the runtime APIs formerly required by the generated viewport plugin:
    - scene.getCamera()
    - scene.getOrbitTarget()
    - scene.getRendererDomElement()
@@ -22,6 +22,10 @@ What changed:
    - scene.focusSelected()
 
 5. Browser runtime loader is installed in axiom-editor-v0.2.html.
+
+Viewport update:
+- The generated viewport-navigation plugin path is superseded and removed from the active Plugin Builder registry.
+- Native AXIOM viewport controls now own lens switching, plane lock, layer-stack projections, orbit, pan, zoom, and focus.
 
 Validated:
 - axiom-launcher-bundle/server.js passes node syntax check.
@@ -43,15 +47,10 @@ Expected:
 - You should see a client_apply event in the Stream tab.
 - Runtime status should report AXIOM_PLUGIN_RUNTIME state instead of only pendingClientApply.
 
-4. Then ask:
-   Use axiom_plugin_activate.
-
-   plugin_id:
-   ViewportNavigationImplementation
+4. Do not activate ViewportNavigationImplementation. That generated plugin path has been culled.
 
 Expected:
-- You should see a client_apply event.
-- Plugin should become active or return a structured activation failure/rollback.
-
-If activation fails, ask:
-   Use axiom_plugin_runtime_status.
+- The viewport controls are available natively in AXIOM.
+- `1`, `2`, `3`, and `4` switch lenses.
+- `P` toggles Plane Lock.
+- `L` opens Layer Stack View.

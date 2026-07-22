@@ -13,6 +13,14 @@ function writeBootStatus(status) {
   return status;
 }
 
+function finishBoot(status) {
+  writeBootStatus(status);
+  window.dispatchEvent(new CustomEvent('ace:spatial-boot-complete', {
+    detail: status,
+  }));
+  return status;
+}
+
 async function loadBootManifest(url = '/spatial/boot-manifest.json') {
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
@@ -65,11 +73,11 @@ async function renderBootFailure(root, status, failure) {
   status.ok = false;
   status.failure = failure;
   writeBootStatus(status);
-  if (!root) return status;
+  if (!root) return finishBoot(status);
   root.setAttribute('data-boot', 'boot-failed');
   root.innerHTML = buildStudioBootFailureMarkup(failure, status);
   await mountRecoveryShell(root, status, failure);
-  return status;
+  return finishBoot(status);
 }
 
 function renderBootWarning(status, warning) {
@@ -146,7 +154,10 @@ async function bootSpatialStudio() {
 
   let assetProbe;
   try {
-    assetProbe = await probeStudioBootAssets(manifest, { fetchImpl: window.fetch.bind(window) });
+    assetProbe = await probeStudioBootAssets(manifest, {
+      fetchImpl: window.fetch.bind(window),
+      timeoutMs: manifest.asset_probe_timeout_ms,
+    });
     status.assets = assetProbe.assets;
   } catch (error) {
     return renderBootFailure(root, status, buildStudioBootFailure({
@@ -232,7 +243,7 @@ async function bootSpatialStudio() {
       effect: 'ui_blank_screen',
     }));
   }
-  return writeBootStatus(status);
+  return finishBoot(status);
 }
 
 bootSpatialStudio();

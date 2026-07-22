@@ -10,7 +10,9 @@
 window.AXIOMSSE = (() => {
   let source = null;
   let feed = null;
-  const bridgeUrl = "http://localhost:3007";
+  const bridgeUrl = /^https?:$/.test(globalThis.location?.protocol || '')
+    ? globalThis.location.origin
+    : "http://localhost:3007";
 
   function ensureFeed() {
     if (feed) return feed;

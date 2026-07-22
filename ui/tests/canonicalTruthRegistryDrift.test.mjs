@@ -15,6 +15,8 @@ export default async function runCanonicalTruthRegistryDriftTests() {
   assert.equal(governedRoutes.has('/api/spatial/truth-kernel'), true);
   assert.equal(governedRoutes.has('/api/spatial/desks/:deskId/properties'), true);
   assert.equal(governedRoutes.has('/api/spatial/intent'), true);
+  assert.equal(governedRoutes.has('/api/spatial/field-influence'), true);
+  assert.equal(governedRoutes.has('/api/spatial/ghost-projection'), true);
   assert.equal(governedRoutes.has('/api/qa/lead/state'), true);
   assert.equal(governedRoutes.has('/api/qa/repair-loop/state'), true);
   assert.equal(governedRoutes.has('/api/spatial/qa/runs'), true);

@@ -13,6 +13,7 @@ import {
   axiom_plugin_delete,
   axiom_plugin_list,
   axiom_plugin_inspect,
+  axiom_plugin_repair,
   list_plugin_templates,
   explain_plugin_contract
 } from '../builder/index.js';
@@ -153,6 +154,28 @@ export const TOOLS = {
     description: 'Inspect manifest, validation state, lifecycle log, and optionally plugin files.',
     inputSchema: { type: 'object', required: ['plugin_id'], properties: { plugin_id: { type: 'string' }, include_files: { type: 'boolean', default: false }, request_id: { type: 'string' } } },
     handler: axiom_plugin_inspect
+  },
+  axiom_plugin_repair: {
+    name: 'axiom_plugin_repair',
+    description: 'Create a targeted plugin repair proposal preserving exact runtime evidence. Does not apply patches; FileManager safe edit/apply is required.',
+    inputSchema: {
+      type: 'object',
+      required: ['plugin_id', 'target_file', 'error', 'repair_instruction'],
+      properties: {
+        plugin_id: { type: 'string' },
+        target_file: { type: 'string' },
+        error: { type: 'string' },
+        message: { type: 'string' },
+        stack: { type: 'string' },
+        repair_instruction: { type: 'string' },
+        include_files: { type: 'boolean', default: true },
+        expected_find_required: { type: 'boolean', default: true },
+        expected_find: { type: 'string' },
+        replacement: { type: 'string' },
+        request_id: { type: 'string' }
+      }
+    },
+    handler: axiom_plugin_repair
   },
   list_plugin_templates: {
     name: 'list_plugin_templates',

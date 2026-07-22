@@ -22,12 +22,12 @@ Expected result:
 - Stream should show mcp_client_apply.
 - It should no longer stop at pendingClientApply only.
 
-4. Ask:
-   Use axiom_plugin_activate.
+4. Do not ask AXIOM to activate ViewportNavigationImplementation.
 
-   plugin_id:
-   ViewportNavigationImplementation
+That generated viewport plugin path has been superseded and removed from the active Plugin Builder registry.
 
 Expected result:
-- clientApplyReceipt.applied should be true if the plugin source loads successfully.
-- If activation fails, it should return a structured activation_failed_rolled_back error instead of pretending success.
+- Native AXIOM viewport controls are available without Plugin Builder activation.
+- 1, 2, 3, and 4 switch viewport lenses.
+- P toggles Plane Lock.
+- L opens Layer Stack View.

@@ -38,15 +38,72 @@ const state = {
   canonicalIntent: null,
 };
 
+let legacyDebugDataSyncPromise = null;
+
 const ACTION_PREFLIGHT_STAGE = {
   scan: 'planner',
   manage: 'context-manager',
   build: 'rebuild',
 };
 
+const SPATIAL_BOOT_COMPLETE_EVENT = 'ace:spatial-boot-complete';
+const SPATIAL_BOOT_WAIT_TIMEOUT_MS = 12000;
+
 function detectQaMode() {
   const { searchParams, pathname } = new URL(window.location.href);
   return searchParams.get('mode') === 'qa' || pathname === '/qa';
+}
+
+function getSpatialBootRoot() {
+  if (typeof document.querySelector !== 'function') return null;
+  return document.querySelector('#spatial-root');
+}
+
+function spatialBootHasReachedBoundary(root = getSpatialBootRoot()) {
+  if (!root || typeof root.getAttribute !== 'function') return true;
+  const marker = root.getAttribute('data-boot');
+  const bootStatus = window.__aceBootStatus;
+  return marker === 'studio-mounted'
+    || marker === 'boot-failed'
+    || bootStatus?.ok === true
+    || Boolean(bootStatus?.failure);
+}
+
+function waitForSpatialBootBoundary({ timeoutMs = SPATIAL_BOOT_WAIT_TIMEOUT_MS } = {}) {
+  const root = getSpatialBootRoot();
+  if (!root || spatialBootHasReachedBoundary(root)) {
+    return Promise.resolve(window.__aceBootStatus || null);
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let timeout = null;
+    let poller = null;
+    const setDelay = typeof window.setTimeout === 'function' ? window.setTimeout.bind(window) : setTimeout;
+    const clearDelay = typeof window.clearTimeout === 'function' ? window.clearTimeout.bind(window) : clearTimeout;
+    const setPoll = typeof window.setInterval === 'function' ? window.setInterval.bind(window) : setInterval;
+    const clearPoll = typeof window.clearInterval === 'function' ? window.clearInterval.bind(window) : clearInterval;
+
+    const done = (status = null) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearDelay(timeout);
+      if (poller) clearPoll(poller);
+      if (typeof window.removeEventListener === 'function') {
+        window.removeEventListener(SPATIAL_BOOT_COMPLETE_EVENT, onComplete);
+      }
+      resolve(status || window.__aceBootStatus || null);
+    };
+
+    const onComplete = (event) => done(event?.detail || null);
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener(SPATIAL_BOOT_COMPLETE_EVENT, onComplete, { once: true });
+    }
+    poller = setPoll(() => {
+      if (spatialBootHasReachedBoundary(root)) done(window.__aceBootStatus || null);
+    }, 100);
+    timeout = setDelay(() => done(window.__aceBootStatus || null), timeoutMs);
+  });
 }
 
 function formatTimestamp(value) {
@@ -1597,6 +1654,32 @@ async function postAdd(url, payload) {
   await loadProjects();
 }
 
+async function startLegacyDebugDataSync() {
+  await Promise.all([
+    refreshDashboard(),
+    loadProjects(),
+    loadTasks(),
+    hydrateRunHistory(),
+    loadTalentDepartment().catch(() => {}),
+    refreshPlannerRuntimeDiagnostics().catch(() => {}),
+    refreshPlannerOuttrayDiagnostics().catch(() => {}),
+    refreshTaHireRequestQueueDiagnostics().catch(() => {}),
+  ]);
+  syncActionUi();
+  startAutoRefresh();
+}
+
+function ensureLegacyDebugDataSync() {
+  if (!legacyDebugDataSyncPromise) {
+    legacyDebugDataSyncPromise = startLegacyDebugDataSync().catch((error) => {
+      setText('uiConnectionState', 'retrying');
+      setText('uiLastRefreshError', shortText(error?.message || error, 180));
+      throw error;
+    });
+  }
+  return legacyDebugDataSyncPromise;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   state.qaMode = detectQaMode();
   setModeUi();
@@ -1610,8 +1693,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     syncLegacyToggleLabel();
     legacyBtn.onclick = () => {
+      const wasHidden = legacyUi.classList.contains('legacy-hidden');
       legacyUi.classList.toggle('legacy-hidden');
       syncLegacyToggleLabel();
+      if (wasHidden) {
+        ensureLegacyDebugDataSync().catch(() => {});
+      }
     };
   }
 
@@ -1651,19 +1738,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   setText('uiLastRefreshError', 'none');
-  setText('uiConnectionState', 'connecting');
-  await Promise.all([
-    refreshDashboard(),
-    loadProjects(),
-    loadTasks(),
-    hydrateRunHistory(),
-    loadTalentDepartment().catch(() => {}),
-    refreshPlannerRuntimeDiagnostics().catch(() => {}),
-    refreshPlannerOuttrayDiagnostics().catch(() => {}),
-    refreshTaHireRequestQueueDiagnostics().catch(() => {}),
-  ]);
-  syncActionUi();
-  startAutoRefresh();
+  setText('uiConnectionState', 'waiting for studio boot');
+  await waitForSpatialBootBoundary();
+  if (!getSpatialBootRoot()) {
+    setText('uiConnectionState', 'connecting');
+    await ensureLegacyDebugDataSync();
+  } else {
+    setText('uiConnectionState', 'studio ready');
+  }
 });
 
 window.__ACE_APP_TEST__ = {
@@ -1672,6 +1754,8 @@ window.__ACE_APP_TEST__ = {
   loadTalentDepartment,
   hireTalentCandidate,
   generateTalentCandidates,
+  waitForSpatialBootBoundary,
+  ensureLegacyDebugDataSync,
   detectQaMode,
   buildCommandSummary,
   refreshPreflightSummary,

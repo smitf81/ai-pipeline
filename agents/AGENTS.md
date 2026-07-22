@@ -37,6 +37,24 @@ Preferred mappings:
 - `ui-backend-gap-audit` -> `brain/context/ui_backend_drift.md`
 - `task-scope-compressor` -> `brain/context/next_slice.md`
 
+## Cognitive Skill Kernel
+
+When an ACE/AXIOM task requires intent interpretation, goal-preserving initiative, completion judgment, implementation grounding, proof selection, projection/truth separation, or Felix-specific completion judgment, use `brain/skills/cognitive-skill-kernel/SKILL.md` to choose the smallest relevant cognitive operating skill.
+
+These skills are reasoning contracts. They should alter the plan, proof bar, or completion criteria; do not cite them as decoration.
+
+## Fail-Loud Output Loop
+
+When a task asks for fail-fast or fail-loud behavior, bold output orientation, rapid ruling-out, no silent fallback, honest failure registration, or lateral problem solving under uncertainty, use `brain/skills/fail-loud-output-loop/SKILL.md`.
+
+Treat the skill as a working mode, not a replacement for ACE governance. It must keep failed assumptions visible and repairable while still respecting canonical truth, validation gates, safety, and approval boundaries.
+
+## Negative-Space Intent Reasoning
+
+When the literal request may under-deliver the user's real goal, use `brain/skills/negative-space-intent-reasoning/SKILL.md`.
+
+Apply it to detect unstated but necessary follow-on work, such as import plus viewport rendering, file discovery plus activation, route wiring plus visible UI behavior, or intent capture plus projection. Handle bounded, necessary requirements now; surface ambiguous or risky second-order requirements explicitly.
+
 ## UI Completion Gate
 
 Any change touching `ui/public/spatial/*`, `ui/public/style.css`, or browser-loaded UI shell code is not complete until `npm test` passes from `ui/`.

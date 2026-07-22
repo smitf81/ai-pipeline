@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ACE Local Agent IDE v1</title>
+  <style>
+    :root {
+      --bg:#070a12; --panel:#0d1320; --panel2:#111a2c; --panel3:#17233a;
+      --border:#26364f; --text:#e7eefc; --muted:#93a4bf;
+      --accent:#54d6ff; --violet:#b388ff; --danger:#ff6b7a; --ok:#69e69d; --warn:#ffd166;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; height:100vh; overflow:hidden; color:var(--text); font-family:var(--sans);
+      background:radial-gradient(circle at top left, rgba(84,214,255,.15), transparent 32rem),
+                 radial-gradient(circle at bottom right, rgba(179,136,255,.13), transparent 34rem), var(--bg);
+    }
+    button,input,textarea,select { font:inherit; color:inherit; }
+    button {
+      border:1px solid var(--border); background:linear-gradient(180deg,var(--panel3),var(--panel2));
+      border-radius:12px; padding:8px 11px; cursor:pointer;
+    }
+    button:hover { border-color:var(--accent); }
+    button.primary { border-color:rgba(84,214,255,.65); }
+    button.danger { border-color:rgba(255,107,122,.7); }
+    button.ok { border-color:rgba(105,230,157,.65); }
+    input,textarea,select {
+      width:100%; border:1px solid var(--border); background:rgba(3,7,15,.55);
+      border-radius:12px; padding:8px 10px; outline:none;
+    }
+    textarea { resize:vertical; min-height:84px; }
+    .app { display:grid; grid-template-columns:310px 1fr 460px; grid-template-rows:60px 1fr; gap:10px; height:100vh; padding:10px; }
+    header { grid-column:1/4; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); background:rgba(13,19,32,.88); border-radius:18px; padding:9px 13px; }
+    h1 { margin:0; font-size:16px; }
+    h2 { margin:0; font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:#d9e7ff; }
+    .sub { color:var(--muted); font-size:12px; margin-top:2px; }
+    .panel { min-height:0; overflow:hidden; border:1px solid var(--border); background:rgba(13,19,32,.86); border-radius:18px; display:flex; flex-direction:column; }
+    .bar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 11px; border-bottom:1px solid var(--border); background:rgba(17,26,44,.72); }
+    .content { padding:10px; overflow:auto; min-height:0; }
+    .field { margin-bottom:9px; }
+    label { display:block; color:var(--muted); font-size:12px; margin-bottom:4px; }
+    .row { display:flex; gap:7px; align-items:center; }
+    .pill { padding:4px 8px; border:1px solid var(--border); border-radius:999px; color:var(--muted); font-size:11px; white-space:nowrap; }
+    .chat { display:grid; grid-template-rows:auto 1fr auto; min-height:0; }
+    .history { overflow:auto; padding:13px; display:flex; flex-direction:column; gap:10px; }
+    .msg { border:1px solid var(--border); background:rgba(17,26,44,.72); border-radius:15px; padding:10px; white-space:pre-wrap; line-height:1.42; max-width:92%; }
+    .msg.user { align-self:flex-end; border-color:rgba(84,214,255,.4); background:rgba(84,214,255,.12); }
+    .msg.system { max-width:100%; align-self:stretch; border-color:rgba(255,209,102,.35); background:rgba(255,209,102,.08); color:#fff1c0; }
+    .meta { display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }
+    .composer { border-top:1px solid var(--border); padding:10px; display:grid; grid-template-columns:1fr auto; gap:8px; background:rgba(17,26,44,.72); }
+    .split { display:grid; grid-template-rows:1fr 1fr; gap:10px; min-height:0; }
+    .mono { font-family:var(--mono); font-size:12px; line-height:1.45; white-space:pre-wrap; }
+.event-line{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.event-agent{color:var(--accent);font-weight:700}
+.event-phase{color:var(--ok)}
+
+    .treeItem { padding:6px 8px; border:1px solid transparent; border-radius:10px; cursor:pointer; font-family:var(--mono); font-size:12px; color:#c7d7f0; }
+    .treeItem:hover { border-color:var(--border); background:rgba(84,214,255,.06); }
+    .treeItem.selected { border-color:rgba(84,214,255,.5); background:rgba(84,214,255,.12); }
+    .agentCard { border:1px solid var(--border); border-radius:14px; background:rgba(17,26,44,.62); padding:9px; margin-bottom:8px; }
+    .agentHead { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
+    .dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:7px; background:var(--muted); box-shadow:0 0 10px currentColor; }
+    .dot.run { background:var(--accent); color:var(--accent); }
+    .dot.ok { background:var(--ok); color:var(--ok); }
+    .dot.fail { background:var(--danger); color:var(--danger); }
+    .tabs { display:flex; gap:5px; padding:8px 8px 0; }
+    .tab { font-size:12px; border-bottom-left-radius:0; border-bottom-right-radius:0; color:var(--muted); }
+    .tab.active { color:var(--text); border-color:rgba(84,214,255,.45); background:rgba(84,214,255,.08); }
+    .hidden { display:none !important; }
+    .codebox { min-height:0; overflow:auto; padding:10px; background:rgba(3,7,15,.45); }
+    .fileEditor { width:100%; height:100%; min-height:230px; font-family:var(--mono); font-size:12px; }
+    .warn { color:var(--warn); }
+    .okText { color:var(--ok); }
+    .badText { color:var(--danger); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>ACE Local Agent IDE v1</h1>
+      <div class="sub">Real Ollama calls · selected-folder file edits · workspace-scoped CLI · guarded repair loop</div>
+    </div>
+    <div class="row">
+      <span class="pill" id="statusPill">booting</span>
+      <button id="reloadBtn">Reload</button>
+      <button id="modelsBtn">Models</button>
+    </div>
+  </header>
+
+  <aside class="panel">
+    <div class="bar"><h2>Workspace & agents</h2><button id="saveBtn" class="primary">Save</button></div>
+    <div class="content">
+      <div class="field">
+        <label>Selected workspace folder path</label>
+        <input id="workspacePath" placeholder="C:\Users\felix\Desktop\YourProject" />
+      </div>
+      <div class="field">
+        <label>Ollama endpoint</label>
+        <input id="ollamaEndpoint" />
+      </div>
+      <div class="field">
+        <label>ACE endpoint</label>
+        <input id="aceEndpoint" />
+      </div>
+      <div class="row">
+        <button id="treeBtn">Load tree</button>
+        <button id="clearSelectionBtn">Clear selected</button>
+      </div>
+      <hr style="border-color:var(--border); opacity:.5; margin:12px 0;">
+      <div id="agents"></div>
+      <hr style="border-color:var(--border); opacity:.5; margin:12px 0;">
+      <div class="field">
+        <label>Selected files for model context</label>
+        <div id="selectedFiles" class="mono warn">None selected.</div>
+      </div>
+      <div id="tree" class="mono"></div>
+    </div>
+  </aside>
+
+  <main class="panel chat">
+    <div class="bar">
+      <h2>Agent chat</h2>
+      <div class="row">
+        <button id="runBtn" class="primary">Run slice</button>
+        <button id="applyBtn" class="ok">Apply proposed edits</button>
+      </div>
+    </div>
+    <div id="history" class="history"></div>
+    <div class="composer">
+      <textarea id="prompt" placeholder="Example: In the selected file, add a tiny cooldown tuning constant for the wyvern claw attack. Keep it scoped."></textarea>
+      <div style="display:flex; flex-direction:column; gap:7px;">
+        <button id="sendBtn" class="primary">Run</button>
+        <button id="exportBtn">Export</button>
+      </div>
+    </div>
+  </main>
+
+  <aside class="split">
+    <section class="panel">
+      <div class="bar">
+        <h2>Joint coding space</h2>
+        <div class="row">
+          <button class="tab active" data-tab="plan">Plan</button>
+          <button class="tab" data-tab="editor">File</button>
+          <button class="tab" data-tab="cli">CLI</button>
+        </div>
+      </div>
+      <div id="planTab" class="codebox mono"></div>
+      <div id="editorTab" class="codebox hidden">
+        <div class="row" style="margin-bottom:8px;">
+          <span class="pill" id="openFileLabel">No file open</span>
+          <button id="saveFileBtn">Save open file</button>
+        </div>
+        <textarea id="fileEditor" class="fileEditor"></textarea>
+      </div>
+      <div id="cliTab" class="codebox hidden">
+        <div class="field">
+          <label>Command runs from selected workspace only</label>
+          <input id="cliCommand" placeholder="npm test" />
+        </div>
+        <button id="cliRunBtn">Run command</button>
+        <pre id="cliOutput" class="mono"></pre>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="bar"><h2>Visible debug / receipts</h2><span class="pill" id="loopState">idle</span></div>
+      <pre id="debug" class="content mono"></pre>
+    </section>
+  </aside>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const state = {
+  settings: null,
+  models: [],
+  selectedPaths: [],
+  currentFile: null,
+  currentHash: null,
+  lastResult: null,
+  agentStatus: {}
+};
+
+function time(){ return new Date().toLocaleTimeString(); }
+function debug(msg, obj){
+  const line = document.createElement("div");
+  line.className = "event-line";
+
+  const payload = typeof obj === "string"
+    ? obj
+    : obj ? JSON.stringify(obj, null, 2) : "";
+
+  line.innerHTML = `
+    <span class="event-agent">[${time()}]</span>
+    <span class="event-phase">${esc(msg)}</span>
+  `;
+
+  if(payload){
+    const pre = document.createElement("pre");
+    pre.className = "mono";
+    pre.style.margin = "6px 0 0";
+    pre.textContent = payload;
+    line.appendChild(pre);
+  }
+
+  $("debug").appendChild(line);
+  $("debug").scrollTop = $("debug").scrollHeight;
+}
+function msg(kind, who, text){
+  const el = document.createElement("div");
+  el.className = `msg ${kind}`;
+  el.innerHTML = `<div class="meta"><span>${esc(who)}</span><span>${time()}</span></div><div></div>`;
+  el.lastChild.textContent = text;
+  $("history").appendChild(el);
+  $("history").scrollTop = $("history").scrollHeight;
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function api(path, options={}){
+  const res = await fetch(path, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+  });
+  const data = await res.json();
+  if (!res.ok || data.ok === false) throw new Error(data.details || data.error || res.statusText);
+  return data;
+}
+
+async function loadSettings(){
+  const data = await api("/api/settings");
+  state.settings = data.settings;
+  $("workspacePath").value = data.settings.workspacePath || "";
+  $("ollamaEndpoint").value = data.settings.ollamaEndpoint || "";
+  $("aceEndpoint").value = data.settings.aceEndpoint || "";
+  renderAgents();
+  $("statusPill").textContent = "settings loaded";
+}
+async function saveSettings(){
+  const next = {
+    workspacePath: $("workspacePath").value.trim(),
+    ollamaEndpoint: $("ollamaEndpoint").value.trim(),
+    aceEndpoint: $("aceEndpoint").value.trim(),
+    agents: collectAgents()
+  };
+  const data = await api("/api/settings", { method:"POST", body:JSON.stringify({ settings: next }) });
+  state.settings = data.settings;
+  renderAgents();
+  debug("Settings saved", data.settings);
+}
+function collectAgents(){
+  const agents = structuredClone(state.settings.agents);
+  document.querySelectorAll("[data-agent-model]").forEach(el => {
+    agents[el.dataset.agentModel].model = el.value;
+  });
+  document.querySelectorAll("[data-agent-temp]").forEach(el => {
+    agents[el.dataset.agentTemp].temperature = Number(el.value);
+  });
+  return agents;
+}
+function renderAgents(){
+  const host = $("agents");
+  host.innerHTML = "";
+  const agents = state.settings?.agents || {};
+  for (const [name, cfg] of Object.entries(agents)) {
+    const card = document.createElement("div");
+    card.className = "agentCard";
+    const dotClass = state.agentStatus[name] || "";
+    const options = state.models.length
+      ? state.models.map(m => `<option ${m===cfg.model?"selected":""}>${esc(m)}</option>`).join("")
+      : `<option>${esc(cfg.model)}</option>`;
+    card.innerHTML = `
+      <div class="agentHead"><strong><span class="dot ${dotClass}"></span>${esc(name)}</strong><span class="pill">${esc(cfg.model)}</span></div>
+      <div class="field"><label>Model</label><select data-agent-model="${esc(name)}">${options}</select></div>
+      <div class="field"><label>Temperature</label><input data-agent-temp="${esc(name)}" type="number" min="0" max="1" step="0.05" value="${cfg.temperature}"></div>
+    `;
+    host.appendChild(card);
+  }
+}
+function setAgent(name, status){ state.agentStatus[name] = status; renderAgents(); }
+
+async function loadModels(){
+  await saveSettings();
+  const data = await api("/api/models");
+  state.models = data.models.sort();
+  renderAgents();
+  debug("Loaded Ollama models", state.models);
+}
+
+async function loadTree(){
+  await saveSettings();
+  const data = await api("/api/workspace/tree?depth=2");
+  const host = $("tree");
+  host.innerHTML = "";
+  data.tree.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "treeItem";
+    div.textContent = `${item.type === "dir" ? "📁" : "📄"} ${item.path}`;
+    if (state.selectedPaths.includes(item.path)) div.classList.add("selected");
+    div.onclick = () => {
+      if (item.type === "file") {
+        if (state.selectedPaths.includes(item.path)) {
+          state.selectedPaths = state.selectedPaths.filter(p => p !== item.path);
+        } else {
+          state.selectedPaths.push(item.path);
+        }
+        updateSelected();
+        loadTree();
+        openFile(item.path).catch(err => debug("Open file failed", err.message));
+      }
+    };
+    host.appendChild(div);
+  });
+  debug("Workspace tree loaded", { count:data.tree.length });
+}
+function updateSelected(){
+  $("selectedFiles").textContent = state.selectedPaths.length ? state.selectedPaths.join("\n") : "None selected.";
+}
+async function openFile(path){
+  const data = await api("/api/workspace/read", { method:"POST", body:JSON.stringify({ path }) });
+  state.currentFile = path;
+  state.currentHash = data.file.hash;
+  $("openFileLabel").textContent = `${path} · ${data.file.hash.slice(0,8)}`;
+  $("fileEditor").value = data.file.content;
+}
+async function saveOpenFile(){
+  if (!state.currentFile) return alert("No file open.");
+  const data = await api("/api/workspace/write", {
+    method:"POST",
+    body:JSON.stringify({ path:state.currentFile, content:$("fileEditor").value, expectedHash:state.currentHash })
+  });
+  state.currentHash = data.written.hash;
+  $("openFileLabel").textContent = `${state.currentFile} · ${state.currentHash.slice(0,8)}`;
+  debug("Saved file", data.written);
+}
+
+async function runSlice(){
+  const userRequest = $("prompt").value.trim();
+  if (!userRequest) return;
+  msg("user", "You", userRequest);\ndebug("manager → analysing slice");
+  $("loopState").textContent = "running";
+  $("planTab").textContent = "";
+  state.lastResult = null;
+
+  try {
+    await saveSettings();
+    ["manager","builder","qa","repair"].forEach(a => setAgent(a, a==="repair" ? "" : "run"));
+    debug("builder → generating patch");\nconst data = await api("/api/agents/run-slice", {
+      method:"POST",
+      body:JSON.stringify({ userRequest, selectedPaths:state.selectedPaths })
+    });
+    state.lastResult = data.result;\ndebug("qa → validating output");
+    ["manager","builder","qa","repair"].forEach(a => setAgent(a, "ok"));
+    $("loopState").textContent = data.result.ok ? "PASS" : data.result.finalVerdict || "needs attention";
+
+    msg(data.result.ok ? "system" : "system", "Agent run", `Verdict: ${data.result.finalVerdict}\nRun ID: ${data.result.runId}`);
+    const edits = data.result?.plan?.edits || [];
+const summary = [
+  `VERDICT: ${data.result.finalVerdict}`,
+  `RUN ID: ${data.result.runId}`,
+  "",
+  "FILES:",
+  ...edits.map(e => `- ${e.path}`),
+  "",
+  "SUMMARY:",
+  data.result.summary || "No summary provided."
+].join("\n");
+
+$("planTab").textContent = summary;
+
+if(edits.length){
+  $("fileEditor").value = edits.map((e, i) =>
+    `===== EDIT ${i+1} =====\nFILE: ${e.path}\n\n${e.proposedContent || e.content || "[no content preview]"}`
+  ).join("\n\n");
+}
+    debug("Agent run complete", {
+      ok:data.result.ok,
+      verdict:data.result.finalVerdict,
+      validationErrors:data.result.validationErrors
+    });
+  } catch (err) {
+    ["manager","builder","qa","repair"].forEach(a => setAgent(a, "fail"));
+    $("loopState").textContent = "failed";
+    msg("system", "Error", err.message);
+    debug("Agent run failed", err.message);
+  }
+}
+async function applyEdits(){
+  if (!state.lastResult?.plan?.edits?.length) return alert("No proposed edits to apply.");
+  if (!state.lastResult.ok) {
+    const proceed = confirm("QA did not PASS this plan. Apply anyway?");
+    if (!proceed) return;
+  }
+  const data = await api("/api/agents/apply-edits", {
+    method:"POST",
+    body:JSON.stringify({ edits:state.lastResult.plan.edits })
+  });
+  debug("Applied edits", data.applied);
+  msg("system", "Apply", `Applied ${data.applied.length} edit(s).`);
+  await loadTree();
+}
+async function runCli(){
+  const command = $("cliCommand").value.trim();
+  if (!command) return;
+  $("cliOutput").textContent = "running...";
+  setAgent("cli", "run");
+  try {
+    const data = await api("/api/cli/run", { method:"POST", body:JSON.stringify({ command }) });
+    setAgent("cli", data.result.exitCode === 0 ? "ok" : "fail");
+    $("cliOutput").textContent = JSON.stringify(data.result, null, 2);
+    debug("CLI complete", data.result);
+  } catch (err) {
+    setAgent("cli", "fail");
+    $("cliOutput").textContent = err.message;
+    debug("CLI failed", err.message);
+  }
+}
+function switchTab(tab){
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  $("planTab").classList.toggle("hidden", tab !== "plan");
+  $("editorTab").classList.toggle("hidden", tab !== "editor");
+  $("cliTab").classList.toggle("hidden", tab !== "cli");
+}
+function exportLog(){
+  const blob = new Blob([JSON.stringify({ history:$("history").innerText, lastResult:state.lastResult }, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `ace-local-agent-run-${Date.now()}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+$("saveBtn").onclick = () => saveSettings().catch(e => debug("Save failed", e.message));
+$("modelsBtn").onclick = () => loadModels().catch(e => debug("Models failed", e.message));
+$("reloadBtn").onclick = () => location.reload();
+$("treeBtn").onclick = () => loadTree().catch(e => debug("Tree failed", e.message));
+$("clearSelectionBtn").onclick = () => { state.selectedPaths=[]; updateSelected(); loadTree().catch(()=>{}); };
+$("sendBtn").onclick = runSlice;
+$("runBtn").onclick = runSlice;
+$("applyBtn").onclick = applyEdits;
+$("cliRunBtn").onclick = runCli;
+$("saveFileBtn").onclick = saveOpenFile;
+$("exportBtn").onclick = exportLog;
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+$("prompt").addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") runSlice(); });
+
+msg("system", "ACE Local Agent IDE", "Set a workspace folder, load models, select relevant files, then run a tiny slice. File edits and CLI are real, but constrained to the selected workspace.");
+loadSettings().then(() => loadModels().catch(e => debug("Initial model load failed", e.message))).catch(e => debug("Boot failed", e.message));
+</script>
+</body>
+</html>

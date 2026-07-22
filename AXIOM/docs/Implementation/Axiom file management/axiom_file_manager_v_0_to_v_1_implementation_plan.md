@@ -6,6 +6,15 @@ This plan implements the behaviour defined in:
 
 **AXIOM File Manager, External File Authority, Project Save/Load & Agent Access Specification v1**
 
+For current slice selection, read the condensed backlog first:
+
+```txt
+AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_current_backlog.md
+```
+
+The full plan below remains the historical implementation ladder and detailed
+slice contract.
+
 It is written so a third-party junior developer, AI coding agent, or future AXIOM repair agent can implement the system in slices without needing to understand the whole cursed cathedral at once.
 
 The main deliverable is not “a nicer file browser”.
@@ -884,11 +893,306 @@ Expected:
 
 ---
 
-# Slice 9 — Scene save/load local fallback formalisation
+# Slice 8A - Live external project root bridge: Black Sky Bound
 
 ## Goal
 
-Make current local scene save/load honest and receipted before project-file save.
+Make the Field Fronts prototype the first honest live-project load in AXIOM
+without pretending it has been imported into the scene graph.
+
+## Version target
+
+v0.4a
+
+## Root cause / prerequisite
+
+Slice 8 selected a project root in browser state, but the launcher filesystem
+tools still resolved paths under `AXIOM/apps/launcher` only. A UI-selected
+external root therefore could not be the project that was actually scanned,
+read, or saved.
+
+## Canonical owners
+
+- Launcher bridge project registry/path resolver: authorises roots and scopes all filesystem calls.
+- `FileManagerRuntime`: owns the user's selected project, manifest state, and visible receipts.
+- `<project>/.axiom/project.json`: owns persisted project metadata for a registered project.
+
+## Files likely touched
+
+- `AXIOM/apps/launcher/server.js`
+- `AXIOM/apps/launcher/public/axiom-editor.html`
+- `Projects/field-fronts-prototype/.axiom/project.json`
+- Slice verification report/index
+
+## Tasks
+
+1. Add bridge actions `project_list` and `project_open`.
+2. Register `black-sky-bound` at `Projects/field-fronts-prototype`.
+3. Require every File Manager filesystem call to carry `projectRoot` or `projectId`; resolve paths under that authorised root only.
+4. Keep the launcher project as the default for compatibility and reject arbitrary unregistered roots.
+5. Add a quiet `Load Black Sky Bound` Files-panel action that opens the registered root, reads its manifest, scans it, and emits a receipt.
+6. Create `Projects/field-fronts-prototype/.axiom/project.json` with the browser prototype entrypoint and bounded file policy.
+7. Fix any Slice 8 project-root/manifest validation defect discovered by the live load proof.
+
+## Verification
+
+Server probe:
+
+```txt
+project_open(projectRoot=Projects/field-fronts-prototype)
+fs_ls(path=., projectRoot=Projects/field-fronts-prototype)
+fs_cat(path=.axiom/project.json, projectRoot=Projects/field-fronts-prototype)
+fs_cat(path=README.md, projectRoot=Projects/field-fronts-prototype)
+project_open(projectRoot=Projects/not-registered) -> blocked
+```
+
+Browser:
+
+```js
+await AXIOM_FILE_MANAGER.openBlackSkyBound()
+FileManagerRuntime.getState().projectManifest
+FileManagerRuntime.getState().lastScan
+FileManagerRuntime.getReceipts(5)
+```
+
+Expected:
+
+- Visible project name is `Black Sky Bound`.
+- Manifest comes from the project's real `.axiom/project.json`.
+- Root scan returns the prototype's real files.
+- Reading `README.md` shows Black Sky Bound / Field Fronts content.
+- An unregistered root cannot be promoted to a trusted project by browser state alone.
+
+## Acceptance criteria
+
+- Black Sky Bound can be loaded as a live file-managed AXIOM project.
+- The backend, Files panel, manifest, and receipts agree on the selected root.
+- No simulation source or AXIOM scene truth is changed by opening the project.
+
+---
+
+# Slice 8B - Active project viewport preview: Black Sky Bound
+
+## Goal
+
+Make the first live AXIOM project visibly load through the AXIOM viewport
+without pretending the external browser game has been imported into AXIOM's
+Three.js scene graph.
+
+## Version target
+
+v0.4b
+
+## Root cause / prerequisite
+
+Slice 8A authorises Black Sky Bound as a real file-managed project root, but
+that still only proves filesystem and manifest access. The viewport must also
+have an honest projection path for the active project's browser entrypoint, and
+AXIOM must distinguish "project selected" from "project runtime reachable".
+
+## Canonical owners
+
+- Launcher bridge: owns authorised project roots and runtime reachability probe.
+- `FileManagerRuntime`: owns active project root, manifest state, and receipts.
+- `ProjectPreviewRuntime`: owns embedded viewport preview state, iframe target,
+  and runtime probe status.
+- `SceneManager`: continues to own AXIOM internal scene truth only.
+- Black Sky Bound runtime/tests: continue to own game simulation truth and
+  first-person/browser playtest proof.
+
+## Files likely touched
+
+- `AXIOM/apps/launcher/server.js`
+- `AXIOM/apps/launcher/public/axiom-editor.html`
+- File-management spec, plan, and slice verification report/index
+
+## Tasks
+
+1. Remove any duplicate `#viewport` DOM IDs before adding new viewport behavior.
+2. Add a `ProjectPreviewRuntime` viewport panel that embeds the active manifest
+   browser entrypoint in an isolated iframe.
+3. Add `project_runtime_probe` to the launcher MCP bridge. It reads the
+   authorised project manifest and probes the declared entrypoint URL without
+   starting or mutating the project.
+4. Route successful manifest reads with browser entrypoints from
+   `FileManagerRuntime` into `ProjectPreviewRuntime`.
+5. Expose preview state through `AXIOM_PROJECT_PREVIEW`, `window.EDITOR`, and
+   MSOL capability registration.
+6. Keep preview loading separate from AXIOM scene save/load, object creation,
+   and scene graph mutation.
+
+## Verification
+
+Static:
+
+```txt
+node --check AXIOM/apps/launcher/server.js
+extract and parse axiom-editor.html inline scripts with new Function(...)
+rg id="viewport" AXIOM/apps/launcher/public/axiom-editor.html -> exactly one editor viewport div
+```
+
+Server/runtime probe:
+
+```txt
+start Black Sky Bound static server on 4184
+start AXIOM launcher on an isolated port
+project_open(projectRoot=Projects/field-fronts-prototype)
+project_runtime_probe(projectRoot=Projects/field-fronts-prototype)
+```
+
+Expected:
+
+- `project_open` returns `black-sky-bound` with manifest present.
+- `project_runtime_probe` returns the manifest entrypoint URL
+  `http://127.0.0.1:4184/?seed=1`.
+- When the project server is running, runtime probe returns HTTP 200 and
+  `reachable: true`.
+- AXIOM scene object count is not part of the preview contract and must not be
+  mutated by project preview.
+
+Browser:
+
+```js
+await AXIOM_FILE_MANAGER.openBlackSkyBound()
+AXIOM_PROJECT_PREVIEW.status()
+```
+
+Expected:
+
+- Preview panel opens in the viewport.
+- Preview URL matches the active project manifest entrypoint.
+- Status is `reachable`/`frame loaded` when the project server is running, or
+  explicitly offline/degraded when it is not.
+- Browser/game first-person proof remains covered by the Black Sky Bound
+  project-side tests: `test:browser`, `test:shelter-route`, `test:mouse`, and
+  `test:mouse:live`.
+
+## Acceptance criteria
+
+- Black Sky Bound can be opened as the active file-managed project and rendered
+  as a live browser preview in AXIOM's viewport when its server is running.
+- Runtime reachability is probed and visible; AXIOM does not claim render
+  success if the project server is offline.
+- The preview is explicitly a projection surface and does not mutate AXIOM
+  scene truth.
+
+---
+
+# Slice 8C - Known project root relocation and status hardening
+
+## Goal
+
+Repair the first live-project registration after the Black Sky Bound workspace
+was relocated from the old `Projects/field-fronts-prototype` path to
+`_A_Projects/BLACK_SKY_BOUND_FFP`.
+
+## Version target
+
+v0.4c
+
+## Root cause / prerequisite
+
+Slices 8A and 8B proved the live-project bridge against the original Field
+Fronts path. Later BSB work moved the active project into `_A_Projects`,
+leaving AXIOM's registered project root stale. That makes project open,
+manifest read, root scan, and viewport probing fail even though the real
+project exists.
+
+## Canonical owners
+
+- Launcher bridge registered-project table: owns known project roots,
+  selectors, legacy selectors, and required-path verification.
+- `FileManagerRuntime`: owns selected project state and receipts after the
+  bridge authorises a root.
+- The external project remains read-only for this AXIOM verification slice.
+
+## Files likely touched
+
+- `AXIOM/apps/launcher/server.js`
+- `AXIOM/apps/launcher/public/axiom-editor.html`
+- Slice verification report/index
+
+## Tasks
+
+1. Move the registered `black-sky-bound` root to
+   `_A_Projects/BLACK_SKY_BOUND_FFP`.
+2. Keep `Projects/field-fronts-prototype` as a legacy selector only, so old
+   calls can resolve to the current registered project without using the stale
+   filesystem root for reads/writes.
+3. Add required-path verification for the known project:
+   `.axiom/project.json`, `README.md`, `index.html`, `package.json`, `src`,
+   and `tests`.
+4. Include project status and missing required paths in `project_list` and
+   `project_open` responses.
+5. Update the Files-panel `Load Black Sky Bound` preset to request the current
+   selector.
+
+## Verification
+
+Server probe:
+
+```txt
+project_list -> black-sky-bound status ready
+project_open(projectRoot=_A_Projects/BLACK_SKY_BOUND_FFP) -> ready
+project_open(projectRoot=Projects/field-fronts-prototype) -> resolves legacy selector to current registered root
+fs_ls(path=., projectRoot=_A_Projects/BLACK_SKY_BOUND_FFP) -> README.md/.axiom visible
+fs_cat(path=.axiom/project.json, projectRoot=_A_Projects/BLACK_SKY_BOUND_FFP) -> projectId black-sky-bound
+fs_cat(path=../AGENTS.md, projectRoot=_A_Projects/BLACK_SKY_BOUND_FFP) -> blocked as project-root escape
+```
+
+## Acceptance criteria
+
+- AXIOM resolves the live BSB project to the active `_A_Projects` root.
+- Stale root selectors are visible as legacy aliases, not hidden truth.
+- Missing required project files/folders block `project_open` instead of being
+  silently ignored.
+- No Black Sky Bound gameplay code is modified.
+
+---
+
+# Slice 8D - Stale launcher bridge diagnostic and plan condensation
+
+## Goal
+
+Make stale running launcher processes visible when the browser has current
+frontend code but `/mcp/call` still reports the old project registry.
+
+## Version target
+
+v0.4d
+
+## Root cause / prerequisite
+
+After Slice 8C, the source registry correctly pointed to
+`_A_Projects/BLACK_SKY_BOUND_FFP`, but the live browser still showed the old
+`Projects/field-fronts-prototype` root. Direct probing confirmed the running
+`3007` bridge process was stale relative to source.
+
+## Tasks
+
+1. Add bridge version metadata to health and project actions.
+2. Add frontend diagnostic output for stale registered project indexes.
+3. Migrate legacy BSB roots from browser storage before opening a project.
+4. Add a condensed current backlog so future agents can continue from the
+   current state without re-reading every historical slice.
+
+## Acceptance criteria
+
+- A stale bridge is reported explicitly as
+  `bridge_registered_project_index_stale`.
+- The user gets a restart-oriented diagnostic instead of only
+  `project_not_authorised`.
+- The condensed backlog identifies the next safe slice and current proof gate.
+- No Black Sky Bound gameplay code is modified.
+
+---
+
+# Slice 9 — Scene save/load local persistence formalisation
+
+## Goal
+
+Make current local scene save/load honest, exact, fail-loud, and receipted
+before project-file save.
 
 ## Version target
 
@@ -941,8 +1245,11 @@ verifySaveLoad()
 5. UI must label:
 
 ```txt
-Persistence: browser localStorage fallback, not project file save
+Persistence: browser localStorage scene persistence, not project file save
 ```
+
+6. No legacy scene key, no compatibility read, and no silent schema
+normalisation. Missing or malformed local scene payloads must fail loudly.
 
 ## Verification
 
@@ -969,7 +1276,7 @@ Expected:
 ## Acceptance criteria
 
 - Existing save/load is no longer ambiguous.
-- It is clearly labelled as local fallback.
+- It is clearly labelled as browser-local scene persistence, not project save.
 - Verification proves object-level consistency.
 
 ---
@@ -1025,6 +1332,13 @@ read → validate → preview → apply → verify → receipt
 ```
 
 6. If safe write missing, project scene save is blocked with clear reason.
+
+7. If safe project read is missing or the bridge reports a truncated scene
+   file, project scene preview/load is blocked with clear reason.
+
+8. No browser-local manifest or default manifest may be promoted as a project
+   scene save. The manifest update must be a filesystem write through the
+   authorised project bridge.
 
 ## Verification
 
@@ -1101,7 +1415,10 @@ Export Scene → FileManagerRuntime action or clear export-only path
 New Scene → SceneManager authority with FileManager receipt if project state changes
 ```
 
-3. Ensure CLI output includes receipt summary.
+3. Route keyboard save (`Ctrl+S` / `Cmd+S`) through the same
+   FileManagerRuntime action as File menu Save.
+
+4. Ensure CLI output includes receipt summary.
 
 Example:
 
@@ -2009,4 +2326,3 @@ Any human or agent can ask AXIOM what files exist, what project is active, what 
 ```
 
 That is the target.
-

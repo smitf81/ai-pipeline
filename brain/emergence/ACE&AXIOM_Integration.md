@@ -1,5 +1,28 @@
 ACE / AXIOM Foundational Architecture
 
+Status note - 2026-05-28
+
+This document is now historical/directional, not the live ownership contract.
+
+Current canonical ACE truth is governed by `brain/emergence/project_brain.md` and
+`brain/emergence/canonical_truth_domains.json`.
+
+Correct current boundary:
+
+- ACE owns canonical intent records, field influence, ghost projections, runtime
+  projections, execution provenance, and QA evidence.
+- AXIOM may observe ACE, organize projects, preview local proposed deltas, and
+  submit intent into ACE through explicit ACE-owned contracts.
+- AXIOM must not become a parallel source of ACE intent truth, field truth,
+  ghost/projection truth, runtime truth, or execution truth.
+- The old phrase "ACE should not think" means ACE runtime substrate should not
+  absorb AXIOM authoring concerns. It does not mean AXIOM owns ACE canonical
+  intent interpretation. In the current implementation, ACE's governed server
+  path owns canonical intent extraction and downstream projections.
+- ACE's sketchpad ghost predictions/panels remain ACE-side read-only
+  projections. AXIOM can inspect or inject intent around them later, but it
+  should not replace the ACE sketchpad truth path.
+
 You are accidentally converging toward something closer to a civilization stack than a normal game engine toolchain.
 
 

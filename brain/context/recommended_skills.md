@@ -19,6 +19,39 @@ Implemented in `brain/skills/ace-canonical-truth-map/SKILL.md` with `tools/canon
 ### `axiom-plugin-slice-builder`
 Implemented in `brain/skills/axiom-plugin-slice-builder/SKILL.md` with `tools/axiom-plugin-slice.mjs`. Use it to guide AXIOM plugin proposals through manifest, lifecycle, validation, package, registry, and smoke checks.
 
+### `fail-loud-output-loop`
+Implemented in `brain/skills/fail-loud-output-loop/SKILL.md`. Use it when ACE/AXIOM work should fail fast, fail loudly, register mistakes honestly, rule out weak paths quickly, and keep bold attempts tied to visible evidence instead of silent fallback or heuristic success.
+
+### `negative-space-intent-reasoning`
+Implemented in `brain/skills/negative-space-intent-reasoning/SKILL.md`. Use it to detect unstated but necessary second-order requirements behind literal asks, such as AXIOM imports that also need viewport instantiation, while avoiding unrelated wandering.
+
+### `cognitive-skill-kernel`
+Implemented in `brain/skills/cognitive-skill-kernel/SKILL.md`. Use it as the router for ACE/AXIOM cognitive operating skills: intent interpretation, goal-preserving initiative, implementation grounding, proof, projection/truth separation, and Felix-specific completion judgment.
+
+### `literal-vs-useful-completion`
+Implemented in `brain/skills/literal-vs-useful-completion/SKILL.md`. Use it to check whether work merely satisfies the words or actually gives the user a usable, visible, validated result.
+
+### `goal-preserving-initiative`
+Implemented in `brain/skills/goal-preserving-initiative/SKILL.md`. Use it to take the necessary extra mile when adjacent work is on the same road as the user's intended outcome.
+
+### `implementation-gravity`
+Implemented in `brain/skills/implementation-gravity/SKILL.md`. Use it to map where a change must land across source, discovery, contract, runtime, persistence, visibility, control, proof, and docs.
+
+### `no-orphan-work`
+Implemented in `brain/skills/no-orphan-work/SKILL.md`. Use it to prevent disconnected files, routes, panels, plugins, tests, docs, or assets.
+
+### `evidence-first-completion`
+Implemented in `brain/skills/evidence-first-completion/SKILL.md`. Use it to require proof before completion claims.
+
+### `dead-end-detection`
+Implemented in `brain/skills/dead-end-detection/SKILL.md`. Use it when repeated failures indicate an approach needs to be ruled out and pivoted.
+
+### `projection-vs-truth-discipline`
+Implemented in `brain/skills/projection-vs-truth-discipline/SKILL.md`. Use it to classify candidate, advisory, historical, fallback, and canonical state before treating anything as truth.
+
+### `felix-completion-sense`
+Implemented in `brain/skills/felix-completion-sense/SKILL.md`. Use it to judge whether ACE/AXIOM work is visible, wired, useful, testable, and honestly reported for Felix.
+
 ## Remaining candidates
 
 ### `ace-next-slice-implementer`

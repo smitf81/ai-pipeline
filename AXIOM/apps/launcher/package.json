@@ -4,7 +4,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node tests/project-management.test.mjs && node tests/bsb-v2-map-authoring.test.mjs && node tests/bsb-v2-geology-authoring.test.mjs && node tests/bsb-v2-undergrowth-brush.test.mjs && node tests/ux-shell.test.mjs && node tests/project-diary.test.mjs",
+    "test:bsb-v2-authoring": "node tests/bsb-v2-map-authoring.playtest.mjs",
+    "test:undergrowth-brush": "node tests/bsb-v2-undergrowth-brush.playtest.mjs",
+    "test:bsb-authoring-goal": "node tests/bsb-authoring-goal.playtest.mjs",
+    "test:workspace-context": "node tests/workspace-context.playtest.mjs",
+    "test:project-diary": "node tests/project-diary.playtest.mjs"
   },
   "dependencies": {
     "express": "^4.18.3"

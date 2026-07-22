@@ -1,72 +1,5 @@
 {
   "plugins": {
-    "viewportnavigationplugin": {
-      "id": "viewportnavigationplugin",
-      "name": "ViewportNavigationPlugin",
-      "version": "0.1.0",
-      "status": "registered",
-      "registered_at": "2026-05-11T07:59:37.161Z",
-      "activated_at": null,
-      "validated": true,
-      "checksum": "ef0a25059f1dff9f366e5060d7a4b30ae259bbc8a7b1f789b7fb8bc708a71fd6",
-      "capabilities": [
-        "ui-command-palette",
-        "event-subscribe"
-      ],
-      "permissions": {
-        "editor": {
-          "commands": [
-            "register"
-          ]
-        },
-        "storage": {
-          "namespaces": [
-            "plugin-local"
-          ]
-        }
-      },
-      "author": {
-        "name": "AXIOM Agent",
-        "source": "axiom-agent"
-      },
-      "bundle_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\AXIOM\\apps\\plugin-builder\\packages\\viewportnavigationplugin-0.1.0.axpkg"
-    },
-    "viewportnavigationimplementation": {
-      "id": "viewportnavigationimplementation",
-      "name": "ViewportNavigationImplementation",
-      "version": "0.1.0",
-      "status": "registered",
-      "registered_at": "2026-05-16T07:45:36.930Z",
-      "activated_at": null,
-      "validated": true,
-      "checksum": "3a6c645fbe7d4260037afd0c7c8e5e172c5deecf476d049939cd1eaab210cee8",
-      "capabilities": [
-        "ui-command-palette",
-        "event-subscribe"
-      ],
-      "permissions": {
-        "editor": {
-          "commands": [
-            "register"
-          ]
-        },
-        "storage": {
-          "namespaces": [
-            "plugin-local"
-          ]
-        },
-        "input": {
-          "mouse": true,
-          "keyboard": true,
-          "bounded_to": "editor.viewport"
-        }
-      },
-      "author": {
-        "name": "AXIOM Agent",
-        "source": "axiom-agent"
-      },
-      "bundle_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\AXIOM\\apps\\plugin-builder\\packages\\viewportnavigationimplementation-0.1.0.axpkg"
-    },
     "boundedskilldocumentsaver": {
       "id": "boundedskilldocumentsaver",
       "name": "BoundedSkillDocumentSaver",
@@ -134,30 +67,6 @@
   },
   "receipts": [
     {
-      "receipt_id": "rcpt_994072aa-f7e7-43ab-860f-4302352d4bd0",
-      "plugin_id": "viewportnavigationplugin",
-      "operation": "register",
-      "timestamp": "2026-05-11T07:59:37.161Z",
-      "authorized_by": "axiom-plugin-builder",
-      "metadata": {
-        "activated": false,
-        "status": "registered"
-      },
-      "checksum": "32d920de5b2a8b23874995a766c817dc92ef85d137ffa0a50eb8e393df9b8257"
-    },
-    {
-      "receipt_id": "rcpt_011a4736-89c2-4e89-a657-ea75cb2c6c00",
-      "plugin_id": "ViewportNavigationImplementation",
-      "operation": "register",
-      "timestamp": "2026-05-11T09:09:41.166Z",
-      "authorized_by": "axiom-plugin-builder",
-      "metadata": {
-        "activated": false,
-        "status": "registered"
-      },
-      "checksum": "e1cb0f3a42debfb1c69d21d8ac23774496ae2e8bcbed58e9a88d99a8c5ec143b"
-    },
-    {
       "receipt_id": "rcpt_14a29e1e-5319-4b18-9699-aaa5d308f34c",
       "plugin_id": "boundedskilldocumentsaver",
       "operation": "register",
@@ -168,30 +77,6 @@
         "status": "registered"
       },
       "checksum": "96ba82436532c524944b3ece76af2a50d9b1eeea47f23d767d40d488a1f51bdf"
-    },
-    {
-      "receipt_id": "rcpt_7754d104-6147-4c4d-ba8a-063b317972c8",
-      "plugin_id": "viewportnavigationimplementation",
-      "operation": "register",
-      "timestamp": "2026-05-16T07:33:50.762Z",
-      "authorized_by": "axiom-plugin-builder",
-      "metadata": {
-        "activated": false,
-        "status": "registered"
-      },
-      "checksum": "7ce219ca1f354bc28b84d4e905cb961fca163c69d96009c6e8487e609f853b69"
-    },
-    {
-      "receipt_id": "rcpt_48cd71fb-5826-4e29-879c-8c455d819dbc",
-      "plugin_id": "viewportnavigationimplementation",
-      "operation": "register",
-      "timestamp": "2026-05-16T07:45:36.930Z",
-      "authorized_by": "axiom-plugin-builder",
-      "metadata": {
-        "activated": false,
-        "status": "registered"
-      },
-      "checksum": "dd5bb3bc75a4908a7280cac5f855ae1725cdbb67afd49d513a648e383aa101e4"
     },
     {
       "receipt_id": "rcpt_149889b3-773d-4c47-b021-91f01bb608e0",
@@ -218,5 +103,5 @@
       "checksum": "ae5d1bb04edcf1d0ff0c15866adc6cee48000914c91b43d9bc42114425158194"
     }
   ],
-  "updated_at": "2026-05-18T13:31:56.539Z"
+  "updated_at": "2026-06-02T00:00:00.000Z"
 }

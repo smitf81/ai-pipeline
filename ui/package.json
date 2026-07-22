@@ -11,8 +11,8 @@
     "start": "node server.js",
     "mcp:ace": "node aceRuntimeMcp.js",
     "cto:bakeoff": "node scripts/cto-model-bakeoff.js",
-    "subconscious": "node subconsciousDaemon.js",
-    "subconscious:once": "node subconsciousDaemon.js --once"
+    "subconscious": "cd .. && node ui/subconsciousDaemon.js",
+    "subconscious:once": "cd .. && node ui/subconsciousDaemon.js --once"
   },
   "keywords": [],
   "author": "",

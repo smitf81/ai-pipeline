@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-05-27T14:15:41.563Z",
+  "generated_at": "2026-05-28T09:12:28.590Z",
   "root": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline",
-  "files_indexed": 1282,
+  "files_indexed": 1333,
   "appendix_path": "brain/context/chat_appendix.md",
   "records": [
     {
@@ -328,17 +328,17 @@
     {
       "path": "AGENTS.md",
       "category": "doc",
-      "size_bytes": 500,
-      "modified_at": "2026-05-18T14:29:02.550Z",
-      "sha256": "6653da85ecd01a5b0164fdbb7dfd219eebffae97f31e9726883ec7bd3e52a82d",
+      "size_bytes": 1806,
+      "modified_at": "2026-05-28T09:11:53.305Z",
+      "sha256": "d6bda416bbe4c90cd43decbc359221fce809df175925c9f6342f52dbd834ddb7",
       "summary": "# AI Pipeline Project Instructions"
     },
     {
       "path": "agents/AGENTS.md",
       "category": "doc",
-      "size_bytes": 1761,
-      "modified_at": "2026-03-25T11:56:37.590Z",
-      "sha256": "cd0dc9f43df89e75d9f644b511bbbfcd9204df6edac43b400918d14f079b6956",
+      "size_bytes": 3215,
+      "modified_at": "2026-05-28T09:11:24.582Z",
+      "sha256": "141dd2b4855ae5b78c7dbf2b14e1d9c11a261594e6ada83effa40f29229b7d38",
       "summary": "Project instructions and canonical ACE context read order."
     },
     {
@@ -753,7 +753,7 @@
       "path": "AXIOM/apps/launcher/logs/axiom-sse-bridge.err.log",
       "category": "other",
       "size_bytes": 0,
-      "modified_at": "2026-05-19T18:34:12.470Z",
+      "modified_at": "2026-05-27T19:48:40.719Z",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
@@ -761,7 +761,7 @@
       "path": "AXIOM/apps/launcher/logs/axiom-sse-bridge.out.log",
       "category": "other",
       "size_bytes": 140,
-      "modified_at": "2026-05-19T18:34:12.628Z",
+      "modified_at": "2026-05-27T19:48:40.869Z",
       "sha256": "63e7f81b9cb961e657399f37e04af6c013df21d17a08f76b2813509f4fce2694",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
@@ -915,6 +915,14 @@
       "size_bytes": 1170,
       "modified_at": "2026-05-19T18:34:13.640Z",
       "sha256": "49b2b9664dca5225851091a1c8733f5271f3e4a80a1c91a8c6f2276c3b660fbb",
+      "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
+    },
+    {
+      "path": "AXIOM/apps/launcher/logs/launcher-20260527-204827.log",
+      "category": "other",
+      "size_bytes": 1170,
+      "modified_at": "2026-05-27T19:48:41.868Z",
+      "sha256": "9a258d035004e071055192b7e4935c1584322f8a0a96560501a1c624b6cb0307",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
@@ -1374,11 +1382,59 @@
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
+      "path": "AXIOM/apps/launcher/logs/launcher-fallback-20260527-204837-482.log",
+      "category": "other",
+      "size_bytes": 80,
+      "modified_at": "2026-05-27T19:48:37.484Z",
+      "sha256": "9e798e43504d027cc6f260b53095728db9ad272dab955c5e009a40145edeedfe",
+      "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
+    },
+    {
+      "path": "AXIOM/apps/launcher/logs/launcher-fallback-20260527-204837-487.log",
+      "category": "other",
+      "size_bytes": 68,
+      "modified_at": "2026-05-27T19:48:37.489Z",
+      "sha256": "3792cfa35e773ffeea9e483497db5ec3d95e6672676a3a7d0aca5e606d324417",
+      "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
+    },
+    {
+      "path": "AXIOM/apps/launcher/logs/launcher-fallback-20260527-204837-627.log",
+      "category": "other",
+      "size_bytes": 102,
+      "modified_at": "2026-05-27T19:48:37.629Z",
+      "sha256": "b00adfa330dde849928a21de7c611cd610e140c65537ce4b485b259f12b002fe",
+      "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
+    },
+    {
+      "path": "AXIOM/apps/launcher/logs/launcher-fallback-20260527-204837-631.log",
+      "category": "other",
+      "size_bytes": 69,
+      "modified_at": "2026-05-27T19:48:37.633Z",
+      "sha256": "e7d58f9c7568560e2d0afa6159f100adb12e1dfe9152311edc729896657e11f0",
+      "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
+    },
+    {
+      "path": "AXIOM/apps/launcher/logs/launcher-fallback-20260527-204837-686.log",
+      "category": "other",
+      "size_bytes": 88,
+      "modified_at": "2026-05-27T19:48:37.686Z",
+      "sha256": "d265fb97911d89a8624732901669e57fc0244e17a6c59e6f3af71eed29d48d77",
+      "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
+    },
+    {
+      "path": "AXIOM/apps/launcher/logs/launcher-fallback-20260527-204837-689.log",
+      "category": "other",
+      "size_bytes": 57,
+      "modified_at": "2026-05-27T19:48:37.690Z",
+      "sha256": "e0ab346349a588c832f96f3e5d3e9ce08e004ea374e289a3b3eb4cbe84f04fe6",
+      "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
+    },
+    {
       "path": "AXIOM/apps/launcher/logs/launcher.log",
       "category": "other",
-      "size_bytes": 114621,
-      "modified_at": "2026-05-19T18:34:13.641Z",
-      "sha256": "13263e506a96fc6b13d1df4db607186e4839b2d4f9591420c0680cfde4ed0828",
+      "size_bytes": 116255,
+      "modified_at": "2026-05-27T19:48:41.869Z",
+      "sha256": "fc017215ac10fbae7c3b398cb66dfc1d1acd8e3de8dea233ac107abadae87230",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
@@ -1409,7 +1465,7 @@
       "path": "AXIOM/apps/launcher/logs/plugin-builder.err.log",
       "category": "other",
       "size_bytes": 56,
-      "modified_at": "2026-05-19T18:34:00.842Z",
+      "modified_at": "2026-05-27T19:48:29.382Z",
       "sha256": "4b591cec36615301f215041daddc5dfec45a152d454f71249663e59c0e357c15",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
@@ -1417,7 +1473,7 @@
       "path": "AXIOM/apps/launcher/logs/plugin-builder.out.log",
       "category": "other",
       "size_bytes": 0,
-      "modified_at": "2026-05-19T18:34:00.745Z",
+      "modified_at": "2026-05-27T19:48:29.285Z",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
@@ -1440,9 +1496,9 @@
     {
       "path": "AXIOM/apps/launcher/public/axiom-editor.html",
       "category": "code",
-      "size_bytes": 529895,
-      "modified_at": "2026-05-27T14:14:24.781Z",
-      "sha256": "74af3b1749e3dd8f2fed0d2105b6e01973a63011a2102863c4cea873dd0a5514",
+      "size_bytes": 550654,
+      "modified_at": "2026-05-28T04:31:37.379Z",
+      "sha256": "f89bbedc8ee375542e43feb8c9c1a16aebaf7a513a957228fcb4506f08632f15",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
@@ -1504,9 +1560,9 @@
     {
       "path": "AXIOM/apps/launcher/server.js",
       "category": "code",
-      "size_bytes": 37890,
-      "modified_at": "2026-05-27T14:14:24.691Z",
-      "sha256": "4385e6055fbe9451c107ee5b4f0b4601768a9ecf65940e6d7efa94f9b7bf3985",
+      "size_bytes": 48577,
+      "modified_at": "2026-05-28T04:37:16.368Z",
+      "sha256": "a211366e7969fa0db8d867ce8f4fa2846a0ecd330cda90edbc73772543c65887",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
@@ -1536,9 +1592,9 @@
     {
       "path": "AXIOM/apps/plugin-builder/docs/skills/axiom-agentic-repair-loop.md",
       "category": "doc",
-      "size_bytes": 161,
-      "modified_at": "2026-05-12T08:29:10.000Z",
-      "sha256": "f0263d8188d41e37b137eecdac8a851e713b2e2f7abc88b21614af08a4a7ab62",
+      "size_bytes": 804,
+      "modified_at": "2026-05-28T05:02:19.435Z",
+      "sha256": "804bbee4744d4f533274bf87012ba1a879174e9817b54094bfea91433fad6d18",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
@@ -2928,9 +2984,9 @@
     {
       "path": "AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_external_files_spec.md",
       "category": "doc",
-      "size_bytes": 31836,
-      "modified_at": "2026-05-15T07:36:50.392Z",
-      "sha256": "ab6d310c95f2feb7058f1d5290ee0391ebd3f7004abe6fd8e442b03b809b7728",
+      "size_bytes": 35141,
+      "modified_at": "2026-05-28T04:35:57.570Z",
+      "sha256": "84a90afcff5029901f90361403879b057c5910305ea0343aed3a514d3ffae7ec",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
@@ -3014,19 +3070,35 @@
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
+      "path": "AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_8A_live_project_verification_report.md",
+      "category": "doc",
+      "size_bytes": 4713,
+      "modified_at": "2026-05-27T19:23:20.528Z",
+      "sha256": "7952bfe10bbe216c3fda67b1542ce8792dcccf3ab84fc1d73b01ee2b49b4dd76",
+      "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
+    },
+    {
+      "path": "AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_8B_active_project_viewport_preview_report.md",
+      "category": "doc",
+      "size_bytes": 3401,
+      "modified_at": "2026-05-28T04:38:00.599Z",
+      "sha256": "f9e3fc3c135f539b9a382d7f651955f6e82669dcedbb3819010a19d405cb2f9f",
+      "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
+    },
+    {
       "path": "AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_slice_verification_reports/axiom_file_manager_slice_verification_reports_INDEX.md",
       "category": "doc",
-      "size_bytes": 1268,
-      "modified_at": "2026-05-16T07:02:17.531Z",
-      "sha256": "6e36a4420db2e012cde2f8f3dfaf28eeb0900a79ca41a63ff2fe21893412336f",
+      "size_bytes": 1950,
+      "modified_at": "2026-05-28T04:35:48.172Z",
+      "sha256": "37a4da34a3969a0c2acc871de3894d9ecc4703629c4355f5869ab1decd2ba764",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
       "path": "AXIOM/docs/Implementation/Axiom file management/axiom_file_manager_v_0_to_v_1_implementation_plan.md",
       "category": "doc",
-      "size_bytes": 36424,
-      "modified_at": "2026-05-15T08:55:49.305Z",
-      "sha256": "1697d23eb37095ab1e5ab1ebdaf0c55b594a461adf900b9c1dce3817d365ce5f",
+      "size_bytes": 43092,
+      "modified_at": "2026-05-28T04:35:14.638Z",
+      "sha256": "da45632c343fa2992ba9d57f3d2849d6255e26f089326d94aec3953cc9fa8381",
       "summary": "AXIOM runtime, docs, services, plugin-builder, or historical artifact."
     },
     {
@@ -3192,9 +3264,9 @@
     {
       "path": "brain.zip",
       "category": "archive",
-      "size_bytes": 15507782,
-      "modified_at": "2026-05-12T16:20:00.429Z",
-      "sha256": "4f08cffff97c8213d020240391dbfd9f684887fbf1b159605b3899245f953c9e",
+      "size_bytes": 15758833,
+      "modified_at": "2026-05-28T05:18:14.268Z",
+      "sha256": "e67d520cba46e88f24d5551980342e32af38860476247a1db2f3d5d6950ff516",
       "summary": "Archive file; do not read into chat unless recovering a snapshot."
     },
     {
@@ -3209,16 +3281,16 @@
       "path": "brain/context/agent_audits/builder/builder_0001.json",
       "category": "data",
       "size_bytes": 1163,
-      "modified_at": "2026-05-27T13:57:04.411Z",
-      "sha256": "7a19e2c23b090164dc4941f3610649841c526deaf4d34aa7605112c3056fe09b",
+      "modified_at": "2026-05-28T04:11:12.447Z",
+      "sha256": "ce88cdf3c9bd3195bbf2c34a4e18a99e93413efac5c175e9d08bb0a06ade0cd2",
       "summary": "Operational planner-support context artifact."
     },
     {
       "path": "brain/context/agent_audits/builder/builder_0001.md",
       "category": "doc",
       "size_bytes": 979,
-      "modified_at": "2026-05-27T13:57:04.412Z",
-      "sha256": "ad59f62336ad0420cb56bbb3069af8d53442226027038c777615bf0a09851ef7",
+      "modified_at": "2026-05-28T04:11:12.447Z",
+      "sha256": "b8562ae18e2ad4509a154ba414404a99db8640bed0d1b3b52cf65aa57b5fdfe1",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -3336,17 +3408,17 @@
     {
       "path": "brain/context/autonomy_fix_tasks.json",
       "category": "data",
-      "size_bytes": 28719,
-      "modified_at": "2026-05-27T14:00:14.498Z",
-      "sha256": "755957f5a71f3b4d9e8f20f36ac5074b80161747ea72d6b8fd050d1959075315",
+      "size_bytes": 35629,
+      "modified_at": "2026-05-28T05:16:13.582Z",
+      "sha256": "951291f50486ab186fac9ea822d0dc01796bd3591dd3cadff6aa979cf876c9eb",
       "summary": "Operational planner-support context artifact."
     },
     {
       "path": "brain/context/autonomy_fix_tasks.md",
       "category": "doc",
-      "size_bytes": 12632,
-      "modified_at": "2026-05-27T14:00:14.499Z",
-      "sha256": "f86c4ea68c338a173187297561cab929ecaf866efd541baab33618ef94636f43",
+      "size_bytes": 19423,
+      "modified_at": "2026-05-28T05:16:13.582Z",
+      "sha256": "84b07966157db3f70a4305e0f6fc6edf4f3e12e62760df73b3559a5cf7e4408c",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -3376,33 +3448,33 @@
     {
       "path": "brain/context/failure_history.json",
       "category": "data",
-      "size_bytes": 6951,
-      "modified_at": "2026-05-27T13:57:04.414Z",
-      "sha256": "659ee93f8fbde0c15107c4cd8d8662df6b1abaadbda1cc21c0bd6ddf90ab8a26",
+      "size_bytes": 35224,
+      "modified_at": "2026-05-28T09:12:23.538Z",
+      "sha256": "7cd2d445e3829f390a176ac865c836b03931d2e6f76d02d94364d2743883c457",
       "summary": "Operational planner-support context artifact."
     },
     {
       "path": "brain/context/failure_history.md",
       "category": "doc",
-      "size_bytes": 2845,
-      "modified_at": "2026-05-27T13:57:04.415Z",
-      "sha256": "fddd390f8afcf456b0fa7c6149822607f1bbbfa876137b5b200d1755c8e1c210",
+      "size_bytes": 23656,
+      "modified_at": "2026-05-28T09:12:23.539Z",
+      "sha256": "39bd6d3205149ca60e7c7512446c576e16295743033e75d2a21c97d3814c1765",
       "summary": "Operational planner-support context artifact."
     },
     {
       "path": "brain/context/known_fixes_candidates.json",
       "category": "data",
-      "size_bytes": 3524,
-      "modified_at": "2026-05-27T13:57:04.417Z",
-      "sha256": "a9ea7d6fd878fd505946143306faf72d88a723116ff607db3f85ab5b5844b5f3",
+      "size_bytes": 17442,
+      "modified_at": "2026-05-28T09:12:23.541Z",
+      "sha256": "093896b1d95993330cf1d957006c0d0f5ec06b6acb1d2c4e981bd683b5179ea2",
       "summary": "Operational planner-support context artifact."
     },
     {
       "path": "brain/context/known_fixes_candidates.md",
       "category": "doc",
-      "size_bytes": 2771,
-      "modified_at": "2026-05-27T13:57:04.417Z",
-      "sha256": "6e66a532f390cd245a4e73b8d0c242540f0324f309191183c69d4278424b7639",
+      "size_bytes": 16509,
+      "modified_at": "2026-05-28T09:12:23.542Z",
+      "sha256": "98cdb53bbff271d84048113fd110325e9a3179d4d4df677c25be9ce762d691bb",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -3424,9 +3496,9 @@
     {
       "path": "brain/context/next_slice.md",
       "category": "doc",
-      "size_bytes": 4577,
-      "modified_at": "2026-05-27T14:06:39.553Z",
-      "sha256": "db5e8bfd8c7a4a2d60b8795cd81d717d276cff0ab9ba4214bd4212dd36968548",
+      "size_bytes": 15106,
+      "modified_at": "2026-05-28T04:21:35.392Z",
+      "sha256": "b0ce40f9fa6ffd540e920f45eeca00162dabea62ce0843c46dee9b2d5fe4028c",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -3440,9 +3512,9 @@
     {
       "path": "brain/context/recommended_skills.md",
       "category": "doc",
-      "size_bytes": 3371,
-      "modified_at": "2026-05-18T12:49:06.379Z",
-      "sha256": "76263d8cbe73939ea9bc7be9da0ce7c242f6547cb805e3ab6d3a37b7de19040a",
+      "size_bytes": 5855,
+      "modified_at": "2026-05-28T09:11:53.402Z",
+      "sha256": "90e9724b5be02036e70f5e002dca6b110cf7193b46213ab3dcf147a7c8194395",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -3454,11 +3526,123 @@
       "summary": "Operational planner-support context artifact."
     },
     {
+      "path": "brain/context/subconscious/latest-observation.md",
+      "category": "doc",
+      "size_bytes": 1095,
+      "modified_at": "2026-05-27T20:05:15.769Z",
+      "sha256": "263f46f753c5e5ea94403e05f218dec55443196b532e0a18f5659d5558f6b05b",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/memory-events.jsonl",
+      "category": "data",
+      "size_bytes": 2401,
+      "modified_at": "2026-05-27T20:05:15.781Z",
+      "sha256": "46c35e658caca22017d7fc4644e63b24d705ca4fda04eec620e5fd4757686563",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/memory-snapshots/2026-05-27T19-53-38-546Z-preserved.md",
+      "category": "doc",
+      "size_bytes": 170,
+      "modified_at": "2026-05-27T19:53:38.547Z",
+      "sha256": "d3fc8ddd78a421b5415279808af6706d55b34c4db11886fa509898be8f2f84f1",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/memory-snapshots/2026-05-27T19-54-52-026Z-accepted.md",
+      "category": "doc",
+      "size_bytes": 303,
+      "modified_at": "2026-05-27T19:54:52.033Z",
+      "sha256": "c886251ee979d0b17bbcbac37584b4b4546423305529d512e19a866fb3f22ace",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/memory-snapshots/2026-05-27T19-54-52-026Z-superseded.md",
+      "category": "doc",
+      "size_bytes": 170,
+      "modified_at": "2026-05-27T19:54:52.029Z",
+      "sha256": "d3fc8ddd78a421b5415279808af6706d55b34c4db11886fa509898be8f2f84f1",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/memory-snapshots/2026-05-27T20-05-15-768Z-accepted.md",
+      "category": "doc",
+      "size_bytes": 393,
+      "modified_at": "2026-05-27T20:05:15.775Z",
+      "sha256": "81ee8ae8f0c80898c1f2ce791182d6c8c94014d51973d18bec2441438849432b",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/memory-snapshots/2026-05-27T20-05-15-768Z-superseded.md",
+      "category": "doc",
+      "size_bytes": 303,
+      "modified_at": "2026-05-27T20:05:15.774Z",
+      "sha256": "c886251ee979d0b17bbcbac37584b4b4546423305529d512e19a866fb3f22ace",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/observation-history.md",
+      "category": "doc",
+      "size_bytes": 11546,
+      "modified_at": "2026-05-27T20:05:15.770Z",
+      "sha256": "08c794baa3d6af021baf8822dde25b1814d04a0ffd499843fe3e73620e22d00c",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/observer-events.txt",
+      "category": "doc",
+      "size_bytes": 3554,
+      "modified_at": "2026-05-27T20:05:15.785Z",
+      "sha256": "e36b3f9a1f03c88aedd3e0bad45e01eaffd2cf3a9421a3002661a4595bfe18db",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/observer-index.txt",
+      "category": "doc",
+      "size_bytes": 482944,
+      "modified_at": "2026-05-27T20:05:15.785Z",
+      "sha256": "c424c39dd2e8008ed98fc50363b75160bca974c611b85dc35cdc479e3ccee1ac",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/observer-ledger.txt",
+      "category": "doc",
+      "size_bytes": 2812,
+      "modified_at": "2026-05-27T20:05:15.786Z",
+      "sha256": "0663e5a426b0f9397d8319784f1f2d8a85f45b3868a4065901ff3b0a73f47162",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/observer-toggle.txt",
+      "category": "doc",
+      "size_bytes": 84,
+      "modified_at": "2026-05-27T14:26:45.610Z",
+      "sha256": "77d9e8f6dc93c8bfb966f327b2d0670cfe24cafa7e3eb7b3953a4ca36da2676d",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
       "path": "brain/context/subconscious/README.md",
       "category": "doc",
-      "size_bytes": 1473,
-      "modified_at": "2026-05-27T14:11:27.614Z",
-      "sha256": "b1fb631098ac47cffc65ed994d8659308d923e8f5b5310ec0b2224fea1e4bd31",
+      "size_bytes": 2677,
+      "modified_at": "2026-05-27T20:04:34.541Z",
+      "sha256": "0dcff4d8fbac952c8a14eb2b764c0630c7469b1090f302da591af91d79175c64",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/subconscious-memory.md",
+      "category": "doc",
+      "size_bytes": 393,
+      "modified_at": "2026-05-27T20:05:15.781Z",
+      "sha256": "81ee8ae8f0c80898c1f2ce791182d6c8c94014d51973d18bec2441438849432b",
+      "summary": "Operational planner-support context artifact."
+    },
+    {
+      "path": "brain/context/subconscious/subconscious-memory.sqlite",
+      "category": "other",
+      "size_bytes": 45056,
+      "modified_at": "2026-05-27T20:05:15.779Z",
+      "sha256": "a7fc51c4b8d4c2ac09f9d1e678716c184bf1a9a19a6488f152762ba3223b8799",
       "summary": "Operational planner-support context artifact."
     },
     {
@@ -3504,41 +3688,41 @@
     {
       "path": "brain/emergence/canonical_truth_domains.json",
       "category": "data",
-      "size_bytes": 4442,
-      "modified_at": "2026-04-08T13:41:55.783Z",
-      "sha256": "7fb7be4c88e80a94f5c437a70947af6a5a8712c213d6ab2609356a446fff1ded",
+      "size_bytes": 5688,
+      "modified_at": "2026-05-27T19:49:14.827Z",
+      "sha256": "200b5496bfa091bc96885672fbde26d0918c55c49c2064a4e7d9648348ac3e38",
       "summary": "Canonical ACE brain artifact."
     },
     {
       "path": "brain/emergence/canonical_truth_projections.json",
       "category": "data",
-      "size_bytes": 3485,
-      "modified_at": "2026-04-08T13:41:55.783Z",
-      "sha256": "9d1f97ef3d752ae631e9d28ab5de2b007d246e20e777dcdf83111ddc66ef83f5",
+      "size_bytes": 4696,
+      "modified_at": "2026-05-27T19:49:46.426Z",
+      "sha256": "99d349449168d66cbd0d3e47b89c24bac9fad196ccff86ba50cd7902acb8d392",
       "summary": "Canonical ACE brain artifact."
     },
     {
       "path": "brain/emergence/canonical_truth_system.md",
       "category": "doc",
-      "size_bytes": 2325,
-      "modified_at": "2026-04-08T13:41:55.783Z",
-      "sha256": "640930d5cb4bd4980663de59bd389000139bd01af57755c5595dc3d002b6bb3d",
+      "size_bytes": 3245,
+      "modified_at": "2026-05-28T04:21:01.292Z",
+      "sha256": "ca9db1c57e75b9757fe3f934c468b7f4bb598f73ab10477a724f0615e064fad9",
       "summary": "Canonical ACE brain artifact."
     },
     {
       "path": "brain/emergence/changelog.md",
       "category": "doc",
-      "size_bytes": 1167,
-      "modified_at": "2026-03-26T11:13:19.722Z",
-      "sha256": "7f3ac0f94a1c2ce93c2e33559466939c724bb3ae238cce580069c77bb1415a25",
+      "size_bytes": 2345,
+      "modified_at": "2026-05-28T09:11:24.864Z",
+      "sha256": "3dfcbd7c7b501fd6a111771f54fa6cfb43cb1dcfc570b9ad398d7eed973d6eac",
       "summary": "Canonical ACE brain artifact."
     },
     {
       "path": "brain/emergence/decisions.md",
       "category": "doc",
-      "size_bytes": 1333,
-      "modified_at": "2026-03-25T10:10:07.115Z",
-      "sha256": "fb112fea77a443a19b9eab658d952c964e203bebcdc84fd51b772855b2a86565",
+      "size_bytes": 4717,
+      "modified_at": "2026-05-28T09:11:53.481Z",
+      "sha256": "ef05a5d7d7f0cadd62c8b8499e811baaa674ca98332bb154481529c2b30b4ce6",
       "summary": "Canonical ACE brain artifact."
     },
     {
@@ -3577,16 +3761,16 @@
       "path": "brain/emergence/slices.json",
       "category": "data",
       "size_bytes": 8283,
-      "modified_at": "2026-05-16T13:03:04.512Z",
-      "sha256": "e5e3962ffe3e00496c58bda8b054be3d82d8bdb0244dbfa41ffd52eb83a8e3f2",
+      "modified_at": "2026-05-28T04:10:41.677Z",
+      "sha256": "ea5c4bea768931ade2d9783f3228670979004cd5c6dd518053c211b3d47e1dbe",
       "summary": "Canonical ACE brain artifact."
     },
     {
       "path": "brain/emergence/slices.md",
       "category": "doc",
       "size_bytes": 619,
-      "modified_at": "2026-05-16T13:03:04.514Z",
-      "sha256": "1d18e2444093736ac04d496597cc538793710c30877bbfe995be40a57015c688",
+      "modified_at": "2026-05-28T04:10:41.678Z",
+      "sha256": "22e60619e51aab997514f2e4d4f8c218fff7cb25cacb8555531a43df8f2b51bc",
       "summary": "Canonical ACE brain artifact."
     },
     {
@@ -3601,7 +3785,7 @@
       "path": "brain/emergence/tasks.md",
       "category": "doc",
       "size_bytes": 195,
-      "modified_at": "2026-05-16T13:03:04.515Z",
+      "modified_at": "2026-05-28T04:10:41.678Z",
       "sha256": "d276463f43875cbcfe310ffa4d39c9921cc61e69d2228d766ddf0c91550d1dbd",
       "summary": "Canonical ACE brain artifact."
     },
@@ -3720,10 +3904,26 @@
     {
       "path": "brain/skills/axiom-plugin-slice-builder/SKILL.md",
       "category": "doc",
-      "size_bytes": 5132,
-      "modified_at": "2026-05-18T13:59:48.634Z",
-      "sha256": "c300670b22cdfeeedcebaa55d076d92a34425c5a1bb67d4011e3bc087145ff22",
+      "size_bytes": 5318,
+      "modified_at": "2026-05-28T04:47:45.402Z",
+      "sha256": "12fb77a6a5f3330dfdf8feb2a88d4f1eb5061b10159b35d91ae9f52d5a6094a8",
       "summary": "name: axiom-plugin-slice-builder"
+    },
+    {
+      "path": "brain/skills/cognitive-skill-kernel/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 242,
+      "modified_at": "2026-05-28T05:01:29.380Z",
+      "sha256": "2c7f1123a34954d94964e03d3579bdd07fa4b0e117a7e3c36d48403fd2ac209c",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/cognitive-skill-kernel/SKILL.md",
+      "category": "doc",
+      "size_bytes": 3276,
+      "modified_at": "2026-05-28T09:11:24.962Z",
+      "sha256": "2879a6435d0862e3e5e45bb88ec9a0a32177602fcadcf92131132d8bbbc0cbc1",
+      "summary": "name: cognitive-skill-kernel"
     },
     {
       "path": "brain/skills/contextops-maintainer/agents/openai.yaml",
@@ -3740,6 +3940,70 @@
       "modified_at": "2026-05-18T12:19:52.656Z",
       "sha256": "0528fb9c7bdc823398795becd1d56939961fd67357c58df161addd7bcbdca66c",
       "summary": "name: contextops-maintainer"
+    },
+    {
+      "path": "brain/skills/dead-end-detection/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 263,
+      "modified_at": "2026-05-28T05:01:30.517Z",
+      "sha256": "0ea43c1d45cff16ed66f586d6eab21b68641dc93609cca1c49035ab0d47e366c",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/dead-end-detection/SKILL.md",
+      "category": "doc",
+      "size_bytes": 1440,
+      "modified_at": "2026-05-28T05:01:07.782Z",
+      "sha256": "aa9f48c39a50cb319ef62133a45c78bb61bb1498c35190a7c8e9429d0ce57355",
+      "summary": "name: dead-end-detection"
+    },
+    {
+      "path": "brain/skills/evidence-first-completion/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 233,
+      "modified_at": "2026-05-28T05:01:30.327Z",
+      "sha256": "eb63aa1e736c1ff8012e8fe8288fa5365096d5db6eaf94e749c03c42fb7d911f",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/evidence-first-completion/SKILL.md",
+      "category": "doc",
+      "size_bytes": 1610,
+      "modified_at": "2026-05-28T05:01:07.559Z",
+      "sha256": "dce51cadf8f5254b4b9f0ac614dd9595f84d8ddaef8a5de3f0e41b14b6ffa6cc",
+      "summary": "name: evidence-first-completion"
+    },
+    {
+      "path": "brain/skills/fail-loud-output-loop/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 269,
+      "modified_at": "2026-05-28T04:33:43.241Z",
+      "sha256": "bd71feeafde8786a65636ad7fc5ebe736140f8cdf9df9a3cc4b7c91c8a848ae0",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/fail-loud-output-loop/SKILL.md",
+      "category": "doc",
+      "size_bytes": 4921,
+      "modified_at": "2026-05-28T04:47:39.614Z",
+      "sha256": "a25f3a9e3621fc22a6f910e96e34413abcb1340c3ece07efde89055aab790e17",
+      "summary": "name: fail-loud-output-loop"
+    },
+    {
+      "path": "brain/skills/felix-completion-sense/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 263,
+      "modified_at": "2026-05-28T05:01:30.886Z",
+      "sha256": "e0276ca55eb37075b203ed8ed965f310a5acd9113e87acff5a3ea4cc36e54c21",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/felix-completion-sense/SKILL.md",
+      "category": "doc",
+      "size_bytes": 1912,
+      "modified_at": "2026-05-28T05:02:53.987Z",
+      "sha256": "0e2e809fffae63fe2a097f91313fadf2d025efa593eca503dd739e72e0e123ad",
+      "summary": "name: felix-completion-sense"
     },
     {
       "path": "brain/skills/game-loop-delta-time-runtime-cadence/SKILL.md",
@@ -3766,12 +4030,108 @@
       "summary": "name: game-runtime-performance-qa"
     },
     {
+      "path": "brain/skills/goal-preserving-initiative/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 270,
+      "modified_at": "2026-05-28T09:10:53.735Z",
+      "sha256": "4d5825d344321f32e38c6a64da1272bad53c1d0b67782772ab3e86b1b5588916",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/goal-preserving-initiative/SKILL.md",
+      "category": "doc",
+      "size_bytes": 3944,
+      "modified_at": "2026-05-28T09:12:12.092Z",
+      "sha256": "d155b814dcd76fa5f3a654e1f47c4e3ed050e63a2bd5b8958ee24f00fb28f133",
+      "summary": "name: goal-preserving-initiative"
+    },
+    {
+      "path": "brain/skills/implementation-gravity/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 252,
+      "modified_at": "2026-05-28T05:01:29.953Z",
+      "sha256": "bd9f90c2b27e60a49595fd21689ab63953203941d41a7353cc73bc6d5003dca1",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/implementation-gravity/SKILL.md",
+      "category": "doc",
+      "size_bytes": 1725,
+      "modified_at": "2026-05-28T05:01:07.178Z",
+      "sha256": "efe9dc891c1986cd91942c0d194720fb0c921a0b5ac1b76c70209eb021083942",
+      "summary": "name: implementation-gravity"
+    },
+    {
+      "path": "brain/skills/literal-vs-useful-completion/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 255,
+      "modified_at": "2026-05-28T05:01:29.573Z",
+      "sha256": "6a0f93ab91f93037726c40ae62fc046efcf4892cd5dad902f76e574db09ef471",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/literal-vs-useful-completion/SKILL.md",
+      "category": "doc",
+      "size_bytes": 1636,
+      "modified_at": "2026-05-28T05:01:06.782Z",
+      "sha256": "c7db10a63a57ab4996829784998ad561c95502513de8b2256b26ce2e7c2bc16c",
+      "summary": "name: literal-vs-useful-completion"
+    },
+    {
+      "path": "brain/skills/negative-space-intent-reasoning/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 290,
+      "modified_at": "2026-05-28T04:46:58.625Z",
+      "sha256": "7b5be6354f61793009b8c05f142dd07ed7ea18590605bd08b83c4eb2f2757919",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/negative-space-intent-reasoning/SKILL.md",
+      "category": "doc",
+      "size_bytes": 6168,
+      "modified_at": "2026-05-28T09:11:53.572Z",
+      "sha256": "309ff1c3eaecc5f03a02bb06e38cc30161ed99a774786914ddba9c6b74795d58",
+      "summary": "name: negative-space-intent-reasoning"
+    },
+    {
+      "path": "brain/skills/no-orphan-work/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 236,
+      "modified_at": "2026-05-28T05:01:30.139Z",
+      "sha256": "fcdc31d46796ef556df8996b59bbc920ad28f22490768bd125cf2fa73ce2928b",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/no-orphan-work/SKILL.md",
+      "category": "doc",
+      "size_bytes": 1438,
+      "modified_at": "2026-05-28T05:01:07.368Z",
+      "sha256": "dcd3606c49feb9a44e7594485182fcd5034771c8be665c2e30abf81df370eb30",
+      "summary": "name: no-orphan-work"
+    },
+    {
       "path": "brain/skills/project-index/SKILL.md",
       "category": "doc",
       "size_bytes": 2290,
       "modified_at": "2026-05-18T11:25:59.354Z",
       "sha256": "aedf84358b6c8ab6808c57c058c084ba00395d3d755f1b49647e2c44600e91c0",
       "summary": "name: project-index"
+    },
+    {
+      "path": "brain/skills/projection-vs-truth-discipline/agents/openai.yaml",
+      "category": "other",
+      "size_bytes": 284,
+      "modified_at": "2026-05-28T05:01:30.704Z",
+      "sha256": "2a1dd5fb34dd07857159f1b5f72a94d83499e164665240a7aa5d7521a7ffc2c5",
+      "summary": "interface:"
+    },
+    {
+      "path": "brain/skills/projection-vs-truth-discipline/SKILL.md",
+      "category": "doc",
+      "size_bytes": 1598,
+      "modified_at": "2026-05-28T05:01:07.997Z",
+      "sha256": "cd287aad416d6399d133256670383fadfa202edc1925359715b1b570bac2cb81",
+      "summary": "name: projection-vs-truth-discipline"
     },
     {
       "path": "brain/topdown-slice.zip",
@@ -4344,9 +4704,9 @@
     {
       "path": "data/spatial/cto-diagnostics.json",
       "category": "data",
-      "size_bytes": 273615,
-      "modified_at": "2026-05-27T14:00:14.046Z",
-      "sha256": "e9bbd9c3f6c12e0d7549d7c005b2812c4f6fa76858eaa08167476ab20668ddd0",
+      "size_bytes": 260328,
+      "modified_at": "2026-05-28T04:13:56.480Z",
+      "sha256": "299590a81c54f048dd17402bea02ded419bb21fb3aa8c7b479277ef3a4c793df",
       "summary": "\"version\": \"ace/cto-diagnostics.v1\","
     },
     {
@@ -4360,9 +4720,9 @@
     {
       "path": "data/spatial/intent-state.json",
       "category": "data",
-      "size_bytes": 179,
-      "modified_at": "2026-04-13T05:35:14.388Z",
-      "sha256": "d393ffafb1216a21cf49aefa8163ba1938cf34fbb84cda7df6af9a06c40525c4",
+      "size_bytes": 184,
+      "modified_at": "2026-05-28T04:20:03.265Z",
+      "sha256": "0699d6152776643ea42ebb7a8cb585d9796e0830ca9926f3ebf3cc87dad35648",
       "summary": "\"currentIntentId\": null,"
     },
     {
@@ -4393,16 +4753,16 @@
       "path": "data/spatial/ta-department.json",
       "category": "data",
       "size_bytes": 4016,
-      "modified_at": "2026-05-27T13:58:00.586Z",
-      "sha256": "83ecece9bd20ba0c2f8675c1936d3597189d71dff5c543d11673674b7f69148d",
+      "modified_at": "2026-05-28T04:12:22.244Z",
+      "sha256": "e1a9923e341493f64d5c5609c02cbbf38971683655b815b8c926d948df837692",
       "summary": "\"hiredCandidates\": ["
     },
     {
       "path": "data/spatial/workspace.json",
       "category": "data",
-      "size_bytes": 101071,
-      "modified_at": "2026-05-27T13:56:30.088Z",
-      "sha256": "f03d300832154eaeaf7e8306920c220a250ad12c506ca56e661b2391b9a9156c",
+      "size_bytes": 101076,
+      "modified_at": "2026-05-28T09:12:23.551Z",
+      "sha256": "853827161be4fa81ae6c665cf3af1b0d0e92c79ccb51f1ccbd02a9ed708d7a29",
       "summary": "\"graph\": {"
     },
     {
@@ -5641,7 +6001,7 @@
       "path": "Projects/emergence/tasks.md",
       "category": "doc",
       "size_bytes": 195,
-      "modified_at": "2026-05-16T13:03:04.515Z",
+      "modified_at": "2026-05-28T04:10:41.679Z",
       "sha256": "d276463f43875cbcfe310ffa4d39c9921cc61e69d2228d766ddf0c91550d1dbd",
       "summary": "Project artifact or experiment outside the ACE core."
     },
@@ -5923,6 +6283,14 @@
       "size_bytes": 14022696,
       "modified_at": "2026-05-22T07:31:19.043Z",
       "sha256": "94b1bfae9643311aaa731f5de438027bfb158994ff48a0fd6bb152115f6bfd66",
+      "summary": "Project artifact or experiment outside the ACE core."
+    },
+    {
+      "path": "Projects/field-fronts-prototype/.axiom/project.json",
+      "category": "data",
+      "size_bytes": 865,
+      "modified_at": "2026-05-27T19:23:11.801Z",
+      "sha256": "15d54a1687d9c927c9b71b5bf66e966ba3a6c1aa23021afc296d1e4edeef1fb8",
       "summary": "Project artifact or experiment outside the ACE core."
     },
     {
@@ -8088,9 +8456,9 @@
     {
       "path": "ui/canonicalTruthRegistry.js",
       "category": "code",
-      "size_bytes": 6010,
-      "modified_at": "2026-04-08T13:41:55.783Z",
-      "sha256": "302c4f8fac27da5912da09f438766d6da3847e6a247d7d48bb4a2c30cde7fed9",
+      "size_bytes": 6118,
+      "modified_at": "2026-05-27T19:49:04.238Z",
+      "sha256": "a38d75cd80085fccaf96b36181ab19ebcf2edeaffc852e538008e89b11086bbd",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8208,9 +8576,9 @@
     {
       "path": "ui/localModelClient.js",
       "category": "code",
-      "size_bytes": 12681,
-      "modified_at": "2026-05-27T14:07:11.797Z",
-      "sha256": "57bc4ce4445300ea9969f990ac78ad3d2152cbb668f3cc99f31537278474914d",
+      "size_bytes": 12755,
+      "modified_at": "2026-05-27T14:32:18.895Z",
+      "sha256": "03df04780336387407e4d476ffb817e6416fa4e265eb66a0cbbc67161e3d6126",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8240,9 +8608,9 @@
     {
       "path": "ui/package.json",
       "category": "config",
-      "size_bytes": 840,
-      "modified_at": "2026-05-27T14:11:27.210Z",
-      "sha256": "f2917b41f144a96f7a4a4f3764c483b4820f4fda04d686dcf9201f34502b3a45",
+      "size_bytes": 864,
+      "modified_at": "2026-05-27T14:37:53.834Z",
+      "sha256": "e96fd958e3036a72d64d405319749b44580373f537a26283671c4b466afecac9",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8488,9 +8856,9 @@
     {
       "path": "ui/public/spatial/spatialApp.js",
       "category": "code",
-      "size_bytes": 618252,
-      "modified_at": "2026-05-15T15:48:39.972Z",
-      "sha256": "be6be25b582061fe5c071dc349ac442a4c105391e18571c76c065d76c74cb84c",
+      "size_bytes": 618485,
+      "modified_at": "2026-05-27T19:51:26.365Z",
+      "sha256": "bbd488995a475ac465b3d442f15f3e760a388d32630e527da0c5229d03147f6d",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8625,8 +8993,8 @@
       "path": "ui/public/style.css",
       "category": "code",
       "size_bytes": 89174,
-      "modified_at": "2026-04-13T14:17:55.716Z",
-      "sha256": "a21b1d5214b433cc1189a82d1523760f39120fe8ca28173218f97b112d2cc144",
+      "modified_at": "2026-05-27T19:51:31.899Z",
+      "sha256": "99bae68f91b7bb017e9a8e0694fabd6987d9eee0050ab9e4dd4d724fedcfca61",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8712,9 +9080,9 @@
     {
       "path": "ui/qaRunner.js",
       "category": "code",
-      "size_bytes": 34910,
-      "modified_at": "2026-05-15T16:53:31.784Z",
-      "sha256": "c85984505f96cd9d60109c049bdbc71680ea3289d49d76613657db45cf0d3d7a",
+      "size_bytes": 36025,
+      "modified_at": "2026-05-28T05:12:07.564Z",
+      "sha256": "f6c21c0c6062907388e0fd6a476c10700f3a66ecc508a103dd876bd13121d12b",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8760,9 +9128,9 @@
     {
       "path": "ui/scripts/Start-Subconscious-Hidden.ps1",
       "category": "code",
-      "size_bytes": 312,
-      "modified_at": "2026-05-27T14:11:27.294Z",
-      "sha256": "af4969a2ca83fa4709b6e9b152d8a581a6b928ade4c838a15c62cb59529484d4",
+      "size_bytes": 377,
+      "modified_at": "2026-05-27T14:37:53.750Z",
+      "sha256": "9381430d0d8fbe1f9f0e057c7eab226b1c256be74b518766ae49eb514444afee",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8792,9 +9160,9 @@
     {
       "path": "ui/server.js",
       "category": "code",
-      "size_bytes": 694242,
-      "modified_at": "2026-05-15T22:52:59.320Z",
-      "sha256": "30f2249f26e5b6e10b5247b318d4559f2b2b891c1424c7642ca343135ad3d0da",
+      "size_bytes": 701269,
+      "modified_at": "2026-05-27T19:48:58.291Z",
+      "sha256": "c0437ca202616debb4616be91386af113667fac513ad4de494a660cdfe8b8c4f",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8814,6 +9182,14 @@
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
+      "path": "ui/spatialGhostResolver.js",
+      "category": "code",
+      "size_bytes": 4969,
+      "modified_at": "2026-05-27T19:47:59.227Z",
+      "sha256": "5f816c924d6e56fba292d3368aac5fda82fc17f25aa1410bc8f9be93e303623f",
+      "summary": "Spatial IDE browser/server runtime code."
+    },
+    {
       "path": "ui/studioLayoutSchema.js",
       "category": "code",
       "size_bytes": 64501,
@@ -8822,11 +9198,35 @@
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
+      "path": "ui/subconscious.config.json",
+      "category": "data",
+      "size_bytes": 814,
+      "modified_at": "2026-05-27T14:32:19.076Z",
+      "sha256": "007f71dd72ed282c7459efa249b4674ca9cb2373a1d57a9d3a6412c64ae11aa4",
+      "summary": "Spatial IDE browser/server runtime code."
+    },
+    {
       "path": "ui/subconsciousDaemon.js",
       "category": "code",
-      "size_bytes": 26927,
-      "modified_at": "2026-05-27T14:11:27.123Z",
-      "sha256": "4cfd3fb7c18a054eb3ed25e7ebc287651d8a08cad3bee09a847d77ff759b76f5",
+      "size_bytes": 37961,
+      "modified_at": "2026-05-27T20:03:56.483Z",
+      "sha256": "05c1d2fa38f3f82b8cf73bd9a4506c88873e4bc8b523233c3c55abb9bfa6af81",
+      "summary": "Spatial IDE browser/server runtime code."
+    },
+    {
+      "path": "ui/subconsciousMemoryStore.js",
+      "category": "code",
+      "size_bytes": 10578,
+      "modified_at": "2026-05-27T20:06:18.879Z",
+      "sha256": "3105acfaf841186fe77dee3d17aa3726c9b53cb6771164e5e65031b62fd40981",
+      "summary": "Spatial IDE browser/server runtime code."
+    },
+    {
+      "path": "ui/subconsciousModelWorker.js",
+      "category": "code",
+      "size_bytes": 1163,
+      "modified_at": "2026-05-27T14:27:47.435Z",
+      "sha256": "1e87cc70f89e687e72ba4aba441b7a21a89fc60d7531bb23273c338a14dda8ee",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {
@@ -8976,17 +9376,17 @@
     {
       "path": "ui/tests/canonicalTruthGovernance.test.mjs",
       "category": "test",
-      "size_bytes": 6507,
-      "modified_at": "2026-04-08T13:44:16.725Z",
-      "sha256": "761f4f147d640fb6df8e820d23456c36673b3a2bfe1cd6adb65ee8a757dd5df9",
+      "size_bytes": 7696,
+      "modified_at": "2026-05-27T19:52:45.763Z",
+      "sha256": "b62711b8d071f5c7c18dc5e6bef8cb515786f707f5863636c51ac0306fdf84f3",
       "summary": "UI/runtime test coverage."
     },
     {
       "path": "ui/tests/canonicalTruthRegistryDrift.test.mjs",
       "category": "test",
-      "size_bytes": 2575,
-      "modified_at": "2026-04-08T13:44:16.726Z",
-      "sha256": "c5bb2577e56b1a6ab12e18b9ab8ba597f3575f31080ddfae4d27879d7de9b40e",
+      "size_bytes": 2724,
+      "modified_at": "2026-05-27T19:52:45.693Z",
+      "sha256": "249ce000d0beb482661b8ee8bd1d733006dcfea86beb46973317b04fe05422e6",
       "summary": "UI/runtime test coverage."
     },
     {
@@ -9168,9 +9568,9 @@
     {
       "path": "ui/tests/ghostProjection.test.mjs",
       "category": "test",
-      "size_bytes": 5587,
-      "modified_at": "2026-04-02T14:02:44.067Z",
-      "sha256": "11663b1f4d7ebf5c3d29725cfb6b05c5ceeb5a8d00b70adf051bc5f1745887ff",
+      "size_bytes": 1778,
+      "modified_at": "2026-05-27T19:52:02.533Z",
+      "sha256": "f9c3e8aa342b63286c94186be546038ce8822bd2ec4fb9bc0559c3a8eae83498",
       "summary": "UI/runtime test coverage."
     },
     {
@@ -9232,9 +9632,9 @@
     {
       "path": "ui/tests/intentRoute.test.mjs",
       "category": "test",
-      "size_bytes": 4393,
-      "modified_at": "2026-04-13T12:36:20.642Z",
-      "sha256": "b3c41a4c4e9f697232ec441ab2b5c5cbcc15b4ab3fd2f700266715f6ceb7cc03",
+      "size_bytes": 6736,
+      "modified_at": "2026-05-27T19:52:33.616Z",
+      "sha256": "9337d9801b00ae301a41437394c891215132dff5c47116a4e065cafd420762b1",
       "summary": "UI/runtime test coverage."
     },
     {
@@ -9688,9 +10088,9 @@
     {
       "path": "ui/tests/run-ui-tests.mjs",
       "category": "test",
-      "size_bytes": 10777,
-      "modified_at": "2026-05-27T14:13:35.143Z",
-      "sha256": "2389b6cc803e8494c35a15fc7ad204928bf34cb26d99ab71dfb5569ba65924cd",
+      "size_bytes": 10921,
+      "modified_at": "2026-05-27T19:52:12.933Z",
+      "sha256": "c19a01556c2f7dc0b4faec0091a98cf5387ec404eb446db079b77eb05fbada2c",
       "summary": "UI/runtime test coverage."
     },
     {
@@ -9728,9 +10128,17 @@
     {
       "path": "ui/tests/spatialApp.smoke.test.mjs",
       "category": "test",
-      "size_bytes": 27104,
-      "modified_at": "2026-04-11T19:05:43.967Z",
-      "sha256": "e81554142af2bacc1bdac06db5fdc13f105c96d4f3fdb03f02622172263f801e",
+      "size_bytes": 27363,
+      "modified_at": "2026-05-27T19:53:03.633Z",
+      "sha256": "feb9585892954bc3747aff5d58c8a52f32a818529a210b8a4cc5df7c8395b8e6",
+      "summary": "UI/runtime test coverage."
+    },
+    {
+      "path": "ui/tests/spatialGhostResolver.test.mjs",
+      "category": "test",
+      "size_bytes": 1889,
+      "modified_at": "2026-05-27T19:51:49.238Z",
+      "sha256": "a71fb84398cd82cf0cb10b8de3f1e336597fc09b4c71802b7d9ce09f44f0310d",
       "summary": "UI/runtime test coverage."
     },
     {
@@ -9800,9 +10208,9 @@
     {
       "path": "ui/tests/subconsciousDaemon.test.mjs",
       "category": "test",
-      "size_bytes": 5617,
-      "modified_at": "2026-05-27T14:14:49.284Z",
-      "sha256": "73ea9f379c6448c95847fa07e44defd6c42cb6b5d59753b0732537647def69f4",
+      "size_bytes": 11690,
+      "modified_at": "2026-05-27T20:04:26.754Z",
+      "sha256": "fcb4e0bee71dab667bf7180f875c82be72eb68bab05694a33655d47da6b7b50b",
       "summary": "UI/runtime test coverage."
     },
     {
@@ -9864,17 +10272,17 @@
     {
       "path": "ui/tests/truthKernelAdapter.test.mjs",
       "category": "test",
-      "size_bytes": 14783,
-      "modified_at": "2026-05-27T14:12:52.400Z",
-      "sha256": "15dacec38872812c426cbe4dcba0f74911f65fe78976ff200b767afe95e26ef9",
+      "size_bytes": 15355,
+      "modified_at": "2026-05-27T19:52:31.735Z",
+      "sha256": "57aa3fda1d9e0bb03179426b0e79a5eb73c07409f44bad07ef8f84d00785b696",
       "summary": "UI/runtime test coverage."
     },
     {
       "path": "ui/tests/truthKernelIntegration.test.mjs",
       "category": "test",
-      "size_bytes": 9450,
-      "modified_at": "2026-04-13T07:49:41.216Z",
-      "sha256": "4da9a6f3bbdce36cb96ed166bba4c7a3d9b6467cf347bc28a47ee2935fe7607e",
+      "size_bytes": 9757,
+      "modified_at": "2026-05-27T19:52:53.707Z",
+      "sha256": "420e3da92f1f5e53485b77cb4144db2c101ce4b1b3d362c751aaa1fedeb89ed7",
       "summary": "UI/runtime test coverage."
     },
     {
@@ -9976,9 +10384,9 @@
     {
       "path": "ui/truthKernelAdapter.js",
       "category": "code",
-      "size_bytes": 49070,
-      "modified_at": "2026-05-27T14:12:52.315Z",
-      "sha256": "b1ba5f6b5615cf8e1313d4e18cc0dae03a89daf38f544f56bc03a86654ad7dda",
+      "size_bytes": 49190,
+      "modified_at": "2026-05-27T19:52:06.784Z",
+      "sha256": "2e3cc7d9335d28463ad05f74483d1bd3c479d6ab0b57721664c66b5c86add048",
       "summary": "Spatial IDE browser/server runtime code."
     },
     {

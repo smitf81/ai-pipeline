@@ -37,32 +37,15 @@ npm run start:http
 - `axiom_plugin_deactivate`
 - `axiom_plugin_runtime_status`
 
-## Test prompt in AXIOM chat
+## Viewport note
 
-```txt
-Use axiom_plugin_activate.
+The old generated viewport-navigation plugins have been culled from the active Plugin Builder registry. Viewport lens switching, plane lock, layer-stack projections, orbit, pan, zoom, and focus now belong to the native AXIOM spatial viewport foundation instead of a runtime plugin activation path.
 
-plugin_id:
-ViewportNavigationImplementation
-```
+Use the viewport controls directly:
 
-Then test:
-
-- middle mouse drag = orbit
-- middle mouse held + WASD = move camera/orbit target
-- wheel zoom still works
-- F focus still works
-- left-click selection still works
-
-## Rollback
-
-```txt
-Use axiom_plugin_deactivate.
-
-plugin_id:
-ViewportNavigationImplementation
-```
-
-## Important
-
-The included Plugin Builder generator fix changes the generated viewport plugin so `camera.getWorldDirection()` receives a real `THREE.Vector3` when available. Without this, activation may fail in Three.js.
+- `1` Planar authoring lens
+- `2` Isometric game lens
+- `3` Free 3D inspect lens
+- `4` Truth overlay lens
+- `P` Plane Lock
+- `L` Layer Stack View
