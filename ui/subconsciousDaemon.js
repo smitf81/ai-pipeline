@@ -13,6 +13,7 @@ const {
 
 const CONTRACT = 'subconscious.advisory.v1';
 const ADVISORY_DIR_RELATIVE = path.join('brain', 'context', 'subconscious');
+const INCLUDED_PROJECT_ROOT = '_A_Projects/BLACK_SKY_BOUND_V2';
 const DEFAULT_CONFIG = Object.freeze({
   model: 'qwen3.5:9b',
   host: DEFAULT_OLLAMA_HOST,
@@ -71,7 +72,12 @@ const DEFAULT_CONFIG = Object.freeze({
   excludedRelativePrefixes: [
     'brain/context/subconscious/',
     'AXIOM/apps/launcher/logs/',
+    'AXIOM/apps/launcher/data/project-diary/',
+    'ACE_Local_lightweight/',
+    'Animation_Embodied_Field_Entity_EFE_Plugin/',
     'Projects/field-fronts-prototype/output/',
+    'work/hatch-pet/',
+    'work/tasks/',
     '_A_Projects/2D_Sprite_Maker/',
     '_A_Projects/BLACK_SKY_BOUND_FFP/',
     '_A_Projects/BitmapForge/',
@@ -215,7 +221,8 @@ function isInsideRoot(rootPath, targetPath) {
 
 function isExcludedPath(relativePath, config) {
   const normalized = `${normalizePath(relativePath).replace(/^\/+/, '')}`;
-  if (normalized.startsWith('_A_Projects/') && !normalized.startsWith('_A_Projects/BLACK_SKY_BOUND_V2/')) {
+  const includedProjectPath = normalized === INCLUDED_PROJECT_ROOT || normalized.startsWith(`${INCLUDED_PROJECT_ROOT}/`);
+  if (normalized.startsWith('_A_Projects/') && !includedProjectPath) {
     return true;
   }
   return config.excludedRelativePrefixes.some((prefix) => normalized.startsWith(normalizePath(prefix)));

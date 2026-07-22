@@ -64,6 +64,9 @@ export default async function runSubconsciousDaemonTests() {
   writeFile(rootPath, '_A_Projects/Breach/src/unrelated.js', 'export const unrelated = true;\n');
   writeFile(rootPath, '_A_Projects/unrelated-note.md', '# unrelated\n');
   writeFile(rootPath, '_A_Projects/BLACK_SKY_BOUND_V2/src/scene.js', 'export const bsb = true;\n');
+  writeFile(rootPath, 'AXIOM/apps/launcher/data/project-diary/runtime.json', '{"generated":true}\n');
+  writeFile(rootPath, 'work/tasks/0001-runtime/receipt.json', '{"generated":true}\n');
+  writeFile(rootPath, 'work/hatch-pet/proof.png', 'generated\n');
 
   const boundedScan = scanWorkspace(rootPath, DEFAULT_CONFIG);
   assert.equal(Boolean(boundedScan.files['src/example.js']), true);
@@ -72,6 +75,9 @@ export default async function runSubconsciousDaemonTests() {
   assert.equal(Boolean(boundedScan.files['output/session/result.json']), false);
   assert.equal(Boolean(boundedScan.files['_A_Projects/Breach/src/unrelated.js']), false);
   assert.equal(Boolean(boundedScan.files['_A_Projects/unrelated-note.md']), false);
+  assert.equal(Boolean(boundedScan.files['AXIOM/apps/launcher/data/project-diary/runtime.json']), false);
+  assert.equal(Boolean(boundedScan.files['work/tasks/0001-runtime/receipt.json']), false);
+  assert.equal(Boolean(boundedScan.files['work/hatch-pet/proof.png']), false);
 
   const modelCalls = [];
   let modelText = [

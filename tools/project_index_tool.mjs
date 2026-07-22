@@ -36,6 +36,8 @@ const IGNORE_DIRS = new Set([
 
 const IGNORE_PATH_PREFIXES = [
   '.codex/.skill-staging/',
+  'ACE_Local_lightweight/',
+  'Animation_Embodied_Field_Entity_EFE_Plugin/',
   'dev/ai-pipeline/',
   '_A_Projects/2D_Sprite_Maker/',
   '_A_Projects/BLACK_SKY_BOUND_FFP/',
@@ -56,12 +58,17 @@ const IGNORE_PATH_PREFIXES = [
   'Animation_Embodied_Field_Entity_EFE_Plugin/.slice1_build/',
   'Animation_Embodied_Field_Entity_EFE_Plugin/output/',
   'AXIOM/apps/launcher/runtime/',
+  'AXIOM/apps/launcher/data/project-diary/',
+  'AXIOM/apps/launcher/logs/',
   'AXIOM/apps/launcher/Version history/',
+  'brain/context/subconscious/',
   'legacy/runtime/',
   'data/spatial/qa/',
   'data/spatial/agent-runs/',
   'data/spatial/throughput/',
-  'ui/public/qa-runs/'
+  'ui/public/qa-runs/',
+  'work/hatch-pet/',
+  'work/tasks/'
 ];
 
 const GENERATED_INDEX_FILES = new Set([
@@ -78,6 +85,7 @@ const CONFIG_NAMES = new Set(['package.json', 'package-lock.json', '.gitignore',
 const MAX_TEXT_SAMPLE_BYTES = 12000;
 const MAX_MARKDOWN_FILE_RECORDS = 300;
 const LARGE_FILE_BYTES = 1_000_000;
+const INCLUDED_PROJECT_ROOT = '_A_Projects/BLACK_SKY_BOUND_V2';
 
 function normalizePath(pathValue) {
   return pathValue.split(sep).join('/');
@@ -148,7 +156,8 @@ function walk(root) {
       const absPath = join(absDir, entry.name);
       const relPath = normalizePath(relative(root, absPath));
       const pathForPrefix = entry.isDirectory() ? `${relPath}/` : relPath;
-      const unrelatedProjectPath = relPath.startsWith('_A_Projects/') && !relPath.startsWith('_A_Projects/BLACK_SKY_BOUND_V2/');
+      const includedProjectPath = relPath === INCLUDED_PROJECT_ROOT || relPath.startsWith(`${INCLUDED_PROJECT_ROOT}/`);
+      const unrelatedProjectPath = relPath.startsWith('_A_Projects/') && !includedProjectPath;
 
       if (entry.isDirectory()) {
         if (unrelatedProjectPath || IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.git.') || IGNORE_PATH_PREFIXES.some((prefix) => pathForPrefix.startsWith(prefix))) {
