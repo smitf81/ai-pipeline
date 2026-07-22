@@ -1,0 +1,4 @@
+interface:
+  display_name: "Negative-Space Intent Reasoning"
+  short_description: "Detect unstated requirements behind literal asks."
+  default_prompt: "Use $negative-space-intent-reasoning to identify unstated requirements that must be handled for a literal ask to satisfy the real goal."

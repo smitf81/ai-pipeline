@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Structured Audit Framework"
+  short_description: "Standards-based repo audit framework"
+  default_prompt: "Use $structured-audit-framework to audit a bounded repo subsystem and separate canonical truth from evidence artefacts."
+
+policy:
+  allow_implicit_invocation: true

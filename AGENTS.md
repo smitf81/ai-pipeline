@@ -1,44 +1,27 @@
-## ACE Canonical Brain
+# AI Pipeline Project Instructions
 
-Canonical truth for the active ACE domain lives in `brain/emergence/`.
+Read `agents/AGENTS.md` before planning or implementation.
 
-Before planning or implementing, read:
-1. `brain/emergence/project_brain.md`
-2. `brain/emergence/roadmap.md`
-3. `brain/emergence/plan.md`
-4. `brain/emergence/tasks.md`
-5. `brain/emergence/decisions.md`
-6. `brain/emergence/changelog.md`
+## Design Skill Gate
 
-Treat those files as the source of truth for architecture, roadmap, decisions, and task state.
+For any task that touches UI, visual systems, dashboards, browser shells, frontend polish, layout, interaction design, debug surfaces, or user-facing workflow design, use `agents/skills/ai-pipeline-design/SKILL.md`.
 
-## ACE Planner Inputs
+Treat this design skill as the AI Pipeline default: subtle, beautiful, modular, scalable, smooth, low-clutter by default, and rich in optional debugging visibility.
 
-Operational planner-support artefacts live in `brain/context/`.
+## Cognitive Skill Kernel
 
-Before planning or implementing, also read:
-1. `brain/context/recent_change_digest.md`
-2. `brain/context/ui_backend_drift.md`
-3. `brain/context/next_slice.md`
+For planning, intent interpretation, completion auditing, goal-preserving initiative decisions, proof selection, projection/truth separation, or ACE/AXIOM agent cognition, use `brain/skills/cognitive-skill-kernel/SKILL.md` to choose the relevant cognitive operating skill.
 
-Treat `brain/context/*` as planner fuel, not canonical truth.
-If a context file conflicts with `brain/emergence/*`, trust `brain/emergence/*`.
-If an automation updates a context file, use the latest version as current operational context until its findings are promoted into canonical brain files.
+Treat these as behavioural contracts, not motivational prompts. They should change what the agent checks before acting.
 
-## Automation Output Contract
+## Fail-Loud Output Skill Gate
 
-When running recurring audits, summaries, or scoping passes:
-- Write or update planner-support outputs in `brain/context/`
-- Do not create parallel Codex-only report locations
-- Do not overwrite canonical brain files unless the task explicitly says to promote confirmed findings
+For tasks that explicitly ask for failing fast, failing loudly, bold output orientation, no silent fallback, honest mistake registration, lateral problem solving, or rapid ruling-out, use `brain/skills/fail-loud-output-loop/SKILL.md`.
 
-Preferred mappings:
-- `repo-change-digest` -> `brain/context/recent_change_digest.md`
-- `ui-backend-gap-audit` -> `brain/context/ui_backend_drift.md`
-- `task-scope-compressor` -> `brain/context/next_slice.md`
+This skill does not override canonical truth, safety, or validation gates. It makes ambitious attempts inspectable, failed assumptions explicit, and repair paths easier to locate.
 
-## UI Completion Gate
+## Negative-Space Intent Skill Gate
 
-Any change touching `ui/public/spatial/*`, `ui/public/style.css`, or browser-loaded UI shell code is not complete until `npm test` passes from `ui/`.
+For tasks where the literal request may technically pass while missing the user's real goal, use `brain/skills/negative-space-intent-reasoning/SKILL.md`.
 
-Treat that local `ui` test run as a required completion gate, not an optional spot check.
+Use it to identify unstated but necessary second-order requirements, such as import plus viewport rendering, file discovery plus activation, or saved state plus runtime visibility. Surface the inference clearly and avoid unrelated wandering.

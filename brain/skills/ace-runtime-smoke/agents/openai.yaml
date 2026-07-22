@@ -1,0 +1,4 @@
+interface:
+  display_name: "ACE Runtime Smoke"
+  short_description: "Run ACE runtime smoke checks."
+  default_prompt: "Run the smallest ACE smoke checks that match the changed files, then report exact commands and results."

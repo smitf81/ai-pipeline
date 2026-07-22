@@ -63,11 +63,38 @@
       "consumers": [
         "ui/public/spatial/aceConnector.js::parseIntent",
         "ui/public/spatial/spatialApp.js::handleNodeContentCommit",
-        "ui/public/spatial/spatialApp.js::runAiProcess"
+        "ui/public/spatial/spatialApp.js::runAiProcess",
+        "ui/public/spatial/spatialApp.js::onCanvasMouseUp"
       ],
       "classification": "projection",
       "readOnly": false,
-      "readinessSemantics": "available when a request includes text and the intent pipeline returns either canonical output or an explicit classified branch"
+      "readinessSemantics": "available when a request includes text or sketch geometry and the intent pipeline returns canonical output or an explicit classified branch"
+    },
+    {
+      "projectionId": "field_influence",
+      "sourceDomain": "intent",
+      "builder": "buildFieldInfluenceProjectionPayload",
+      "route": "/api/spatial/field-influence",
+      "consumers": [
+        "ui/public/spatial/spatialApp.js Canvas observability field card",
+        "ui/spatialGhostResolver.js::resolveSpatialGhostProjection"
+      ],
+      "classification": "projection",
+      "readOnly": true,
+      "readinessSemantics": "available when the current canonical spatial intent carries deterministic buildDesirability field influence"
+    },
+    {
+      "projectionId": "ghost_projection",
+      "sourceDomain": "intent",
+      "builder": "buildGhostProjectionPayload",
+      "route": "/api/spatial/ghost-projection",
+      "consumers": [
+        "ui/public/spatial/spatialApp.js Canvas observability ghost card",
+        "ui/public/spatial/studioData.js planner handoff projection"
+      ],
+      "classification": "projection",
+      "readOnly": true,
+      "readinessSemantics": "available as an explicitly uncommitted candidate when buildDesirability yields a resolvable peak, otherwise explicitly blocked"
     },
     {
       "projectionId": "qa_evidence",
@@ -86,6 +113,21 @@
       "classification": "projection",
       "readOnly": true,
       "readinessSemantics": "available when QA evidence sources can be read, even if individual sections are empty or explicitly degraded"
+    },
+    {
+      "projectionId": "axiom_workspace_context",
+      "sourceDomain": "axiom_workspace_context",
+      "builder": "FileManagerRuntime.getWorkspaceContext",
+      "route": "browser:window.EDITOR.workspace.getContext",
+      "consumers": [
+        "AXIOM/apps/launcher/public/axiom-editor.html::ProjectPreviewRuntime",
+        "AXIOM/apps/launcher/public/bsb-v2-map-authoring.js::BsbV2MapAuthoring",
+        "AXIOM workspace identity indicator",
+        "AXIOM agent and tool context consumers"
+      ],
+      "classification": "projection",
+      "readOnly": true,
+      "readinessSemantics": "ready when FileManager has a matching authorised project and filesystem manifest; degraded or failed states remain explicit when identity, manifest, authoring, bake, or connection evidence is missing or contradictory"
     }
   ]
 }
