@@ -10,8 +10,11 @@ const DEFAULT_APPENDIX = 'brain/context/chat_appendix.md';
 
 const IGNORE_DIRS = new Set([
   '.git',
+  '.ace-local-agent-ide',
+  '.ace-safeboot',
   '.npm-cache',
   '.playwright',
+  '.playwright-cli',
   '.playwright-browsers',
   '.pytest_cache',
   '.python-tools',
@@ -20,16 +23,29 @@ const IGNORE_DIRS = new Set([
   '.tmp.driveupload',
   '.venv',
   '__pycache__',
+  'archives',
+  'artifacts',
   'build',
   'coverage',
   'dist',
+  'legacy',
   'node_modules',
+  'output',
   'test-results'
 ]);
 
 const IGNORE_PATH_PREFIXES = [
   '.codex/.skill-staging/',
   'dev/ai-pipeline/',
+  '_A_Projects/2D_Sprite_Maker/',
+  '_A_Projects/BLACK_SKY_BOUND_FFP/',
+  '_A_Projects/BitmapForge/',
+  '_A_Projects/Breach/',
+  '_A_Projects/LocalLamaPanel_UE5_Plugin/',
+  '_A_Projects/Moral_Distinction_Visualiser/',
+  '_A_Projects/YouTubeScraper/',
+  '_A_Projects/emergence/',
+  '_A_Projects/voice-dojo-pwa/',
   'Projects/field-fronts-prototype_OLD/',
   'Projects/field-fronts-prototype/output/',
   'Projects/field-fronts-prototype/qa-output/',
@@ -132,10 +148,11 @@ function walk(root) {
       const absPath = join(absDir, entry.name);
       const relPath = normalizePath(relative(root, absPath));
       const pathForPrefix = entry.isDirectory() ? `${relPath}/` : relPath;
+      const unrelatedProjectPath = relPath.startsWith('_A_Projects/') && !relPath.startsWith('_A_Projects/BLACK_SKY_BOUND_V2/');
 
       if (entry.isDirectory()) {
-        if (IGNORE_DIRS.has(entry.name) || IGNORE_PATH_PREFIXES.some((prefix) => pathForPrefix.startsWith(prefix))) {
-          markSkipped(`dir:${relPath}`);
+        if (unrelatedProjectPath || IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.git.') || IGNORE_PATH_PREFIXES.some((prefix) => pathForPrefix.startsWith(prefix))) {
+          markSkipped('excluded-directory');
           continue;
         }
         visit(absPath);
@@ -143,12 +160,17 @@ function walk(root) {
       }
 
       if (!entry.isFile()) {
-        markSkipped(`non-file:${relPath}`);
+        markSkipped('non-file');
         continue;
       }
 
       if (entry.name.startsWith('.tmp-') || entry.name.endsWith('.tmp')) {
-        markSkipped(`temp-file:${relPath}`);
+        markSkipped('temporary-file');
+        continue;
+      }
+
+      if (unrelatedProjectPath || ARCHIVE_EXTENSIONS.has(extname(entry.name).toLowerCase())) {
+        markSkipped('excluded-file');
         continue;
       }
 
@@ -157,12 +179,12 @@ function walk(root) {
         (relPath.startsWith('AXIOM/apps/plugin-builder/docs/skills/') && relPath.endsWith('.audit.jsonl')) ||
         (relPath.startsWith('AXIOM/apps/launcher/public/') && relPath.endsWith('_DEGRADED.html'))
       ) {
-        markSkipped(`generated-or-runtime:${relPath}`);
+        markSkipped('generated-or-runtime');
         continue;
       }
 
       if (GENERATED_INDEX_FILES.has(relPath) || IGNORE_PATH_PREFIXES.some((prefix) => relPath.startsWith(prefix))) {
-        markSkipped(`generated-or-runtime:${relPath}`);
+        markSkipped('generated-or-runtime');
         continue;
       }
 

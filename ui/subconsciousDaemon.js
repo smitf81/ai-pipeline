@@ -45,7 +45,11 @@ const DEFAULT_CONFIG = Object.freeze({
   excludedDirectoryNames: [
     '.codex',
     '.git',
+    '.ace-local-agent-ide',
+    '.ace-safeboot',
     '.npm-cache',
+    '.playwright',
+    '.playwright-cli',
     '.playwright-browsers',
     '.python-tools',
     '.recovery',
@@ -53,7 +57,14 @@ const DEFAULT_CONFIG = Object.freeze({
     '.tmp.driveupload',
     '__pycache__',
     'archives',
+    'artifacts',
+    'build',
+    'coverage',
+    'dist',
+    'legacy',
     'node_modules',
+    'output',
+    'test-results',
   ],
   excludedFilePrefixes: ['.tmp-'],
   excludedFileExtensions: ['.bin', '.jpeg', '.jpg', '.png', '.pyc', '.zip'],
@@ -61,6 +72,15 @@ const DEFAULT_CONFIG = Object.freeze({
     'brain/context/subconscious/',
     'AXIOM/apps/launcher/logs/',
     'Projects/field-fronts-prototype/output/',
+    '_A_Projects/2D_Sprite_Maker/',
+    '_A_Projects/BLACK_SKY_BOUND_FFP/',
+    '_A_Projects/BitmapForge/',
+    '_A_Projects/Breach/',
+    '_A_Projects/LocalLamaPanel_UE5_Plugin/',
+    '_A_Projects/Moral_Distinction_Visualiser/',
+    '_A_Projects/YouTubeScraper/',
+    '_A_Projects/emergence/',
+    '_A_Projects/voice-dojo-pwa/',
   ],
 });
 const EXCERPT_EXTENSIONS = new Set([
@@ -195,6 +215,9 @@ function isInsideRoot(rootPath, targetPath) {
 
 function isExcludedPath(relativePath, config) {
   const normalized = `${normalizePath(relativePath).replace(/^\/+/, '')}`;
+  if (normalized.startsWith('_A_Projects/') && !normalized.startsWith('_A_Projects/BLACK_SKY_BOUND_V2/')) {
+    return true;
+  }
   return config.excludedRelativePrefixes.some((prefix) => normalized.startsWith(normalizePath(prefix)));
 }
 
@@ -220,7 +243,7 @@ function scanWorkspace(rootPath, config = DEFAULT_CONFIG) {
       if (!relativePath || isExcludedPath(relativePath, config)) continue;
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
-        if (!excludedDirectoryNames.has(entry.name)) walk(fullPath);
+        if (!excludedDirectoryNames.has(entry.name) && !entry.name.startsWith('.git.')) walk(fullPath);
         continue;
       }
       if (!entry.isFile()) continue;

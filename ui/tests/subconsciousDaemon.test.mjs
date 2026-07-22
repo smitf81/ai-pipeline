@@ -12,6 +12,7 @@ const {
   initializeStore,
   readStatus,
   runCycle,
+  scanWorkspace,
   writeControl,
 } = require(path.resolve(process.cwd(), 'subconsciousDaemon.js'));
 const {
@@ -58,6 +59,19 @@ export default async function runSubconsciousDaemonTests() {
   writeFile(rootPath, 'brain/emergence/decisions.md', '# Decisions\nKeep evidence visible.\n');
   writeFile(rootPath, 'brain/context/next_slice.md', '# Next Slice\nObserve bounded activity.\n');
   writeFile(rootPath, 'src/example.js', 'export function example() { return true; }\n');
+  writeFile(rootPath, 'artifacts/browser/frame.png', 'generated proof');
+  writeFile(rootPath, 'output/session/result.json', '{"generated":true}\n');
+  writeFile(rootPath, '_A_Projects/Breach/src/unrelated.js', 'export const unrelated = true;\n');
+  writeFile(rootPath, '_A_Projects/unrelated-note.md', '# unrelated\n');
+  writeFile(rootPath, '_A_Projects/BLACK_SKY_BOUND_V2/src/scene.js', 'export const bsb = true;\n');
+
+  const boundedScan = scanWorkspace(rootPath, DEFAULT_CONFIG);
+  assert.equal(Boolean(boundedScan.files['src/example.js']), true);
+  assert.equal(Boolean(boundedScan.files['_A_Projects/BLACK_SKY_BOUND_V2/src/scene.js']), true);
+  assert.equal(Boolean(boundedScan.files['artifacts/browser/frame.png']), false);
+  assert.equal(Boolean(boundedScan.files['output/session/result.json']), false);
+  assert.equal(Boolean(boundedScan.files['_A_Projects/Breach/src/unrelated.js']), false);
+  assert.equal(Boolean(boundedScan.files['_A_Projects/unrelated-note.md']), false);
 
   const modelCalls = [];
   let modelText = [

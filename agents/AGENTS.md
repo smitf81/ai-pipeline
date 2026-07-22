@@ -2,28 +2,18 @@
 
 Canonical truth for the active ACE domain lives in `brain/emergence/`.
 
-Before planning or implementing, read:
+Use this compact boot set before planning or implementing:
+
 1. `brain/emergence/project_brain.md`
-2. `brain/emergence/roadmap.md`
-3. `brain/emergence/plan.md`
-4. `brain/emergence/tasks.md`
-5. `brain/emergence/decisions.md`
-6. `brain/emergence/changelog.md`
-
-Treat those files as the source of truth for architecture, roadmap, decisions, and task state.
-
-## ACE Planner Inputs
-
-Operational planner-support artefacts live in `brain/context/`.
-
-Before planning or implementing, also read:
-1. `brain/context/recent_change_digest.md`
-2. `brain/context/ui_backend_drift.md`
+2. `brain/emergence/slices.md`
 3. `brain/context/next_slice.md`
+4. The relevant domain entry in `brain/emergence/canonical_truth_domains.json`
 
-Treat `brain/context/*` as planner fuel, not canonical truth.
-If a context file conflicts with `brain/emergence/*`, trust `brain/emergence/*`.
-If an automation updates a context file, use the latest version as current operational context until its findings are promoted into canonical brain files.
+Do not read the complete roadmap, archived plan, deprecated task ledger, decision history, changelog, generated master index, or BSB-specific drift reports by default. Search those sources for task-specific terms and read only the matching sections when the work needs historical rationale, recent-change evidence, or a domain-specific audit.
+
+Treat `brain/context/*` as planner fuel, never canonical truth. If a context file conflicts with `brain/emergence/*`, trust `brain/emergence/*`.
+
+Read `brain/context/recent_change_digest.md` when recovering or continuing recent implementation work. Read `brain/context/ui_backend_drift.md` only for UI/backend contract work or when the requested slice depends on its findings.
 
 ## Automation Output Contract
 

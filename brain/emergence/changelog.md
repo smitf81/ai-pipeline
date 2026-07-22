@@ -61,6 +61,12 @@
 - Re-anchored the Truth Kernel as a measured substrate behind the sketchpad canvas.
 - Added focused validation for the canonical registries, sketch intent route, ghost resolver, ghost projection payload, and Truth Kernel measured-stage alignment.
 
+## 2026-04-06
+
+- Completed the bounded QA contradiction and repair spine: external validation, comparison, investigations, repeat pressure, research notes, repair jobs, validation, attempt history, and safe stop.
+- Established validation-seam, route-and-contract-health, and planner-canonical-integrity repair lanes, with readable QA desk sections and deterministic planner-only validation.
+- Recorded the remaining cautions: generated context and spatial outputs are derived evidence, the lane registry and canonical brain path must remain stable, and an unrelated `ui/tests/server.test.mjs` forced/normal assertion mismatch was still present at handoff.
+
 ## 2026-03-15
 
 - Added a shared anchor resolver and canonical brain bundle.

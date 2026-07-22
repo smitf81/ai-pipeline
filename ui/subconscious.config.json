@@ -14,7 +14,11 @@
   "excludedDirectoryNames": [
     ".codex",
     ".git",
+    ".ace-local-agent-ide",
+    ".ace-safeboot",
     ".npm-cache",
+    ".playwright",
+    ".playwright-cli",
     ".playwright-browsers",
     ".python-tools",
     ".recovery",
@@ -22,7 +26,14 @@
     ".tmp.driveupload",
     "__pycache__",
     "archives",
-    "node_modules"
+    "artifacts",
+    "build",
+    "coverage",
+    "dist",
+    "legacy",
+    "node_modules",
+    "output",
+    "test-results"
   ],
   "excludedFilePrefixes": [
     ".tmp-"
