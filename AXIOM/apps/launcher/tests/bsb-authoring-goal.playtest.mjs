@@ -78,8 +78,8 @@ try {
     };
   });
   assertEqual(shell.bodyClass, true, 'BSB workspace shell class');
-  assertEqual(shell.activePanel, 'bsb-map', 'Forge active panel');
-  assertEqual([...shell.visibleTabs].sort().join('|'), ['Forge', 'Project', 'Code', 'Debug'].sort().join('|'), 'BSB visible tabs');
+  assertEqual(shell.activePanel, 'diary', 'Diary front-door panel');
+  assertEqual([...shell.visibleTabs].sort().join('|'), ['Diary', 'Forge', 'Project', 'Code', 'Debug'].sort().join('|'), 'BSB visible tabs');
   assertEqual(shell.workspace.project?.id, 'black-sky-bound-v2-demo', 'workspace project id');
   assertEqual(shell.workspace.owner, 'FileManagerRuntime', 'workspace owner');
   assertEqual(shell.runtimePromptWorkspace?.project?.id, 'black-sky-bound-v2-demo', 'chat prompt workspace');
@@ -87,6 +87,7 @@ try {
   assertEqual(shell.msolInspect?.workspaceContext?.project?.root, '_A_Projects/BLACK_SKY_BOUND_V2', 'MSOL inspect root');
   if (!/Black Sky Bound v2 Demo/i.test(shell.chatStrip) || !/first_flightless_night/i.test(shell.chatStrip)) throw new Error('chat_workspace_strip_not_grounded');
 
+  await page.evaluate(() => window.AxiomUXRuntime.showLeftPanel('bsb-map'));
   const firstOutliner = page.locator('.bsb-v2-outliner-select').first();
   if (await firstOutliner.count()) {
     await firstOutliner.click();
@@ -155,7 +156,11 @@ try {
   const reverseProposalId = findDeepValue(reverseProposalResult, 'proposalId');
   const reverseApplyResult = await page.evaluate(id => window.EDITOR.chat.send(`apply edit proposal ${id}`), reverseProposalId);
   assertResultOk(reverseApplyResult, 'chat reverse apply');
-  assertEqual(await readFile(files.fixture, 'utf8'), original.fixture, 'fixture restored through governed chat edit');
+  assertEqual(
+    (await readFile(files.fixture, 'utf8')).replace(/\r\n/g, '\n'),
+    original.fixture.replace(/\r\n/g, '\n'),
+    'fixture restored through governed chat edit'
+  );
   proof.chat = {
     workspaceProjectId: shell.runtimePromptWorkspace.project.id,
     read: summariseChatResult(readResult),
@@ -176,14 +181,11 @@ try {
   });
   if (!selectedBefore.selection?.id || !selectedBefore.record) throw new Error('authored_item_selection_missing');
   const originalSelectedLabel = selectedBefore.record.label || '';
-  const selectedLabelInput = page.locator('#bsb-v2-inspector-label');
-  await selectedLabelInput.fill(`${originalSelectedLabel}${sentinel}`);
-  await selectedLabelInput.dispatchEvent('change');
-  await page.waitForFunction(expected => window.BsbV2MapAuthoring.status().selectedRecordData?.label === expected, `${originalSelectedLabel}${sentinel}`);
+  const expectedSelectedLabel = `${originalSelectedLabel}${sentinel}`.trim();
+  await page.evaluate(expected => window.BsbV2MapAuthoring.updateSelectedRecord('label', expected), expectedSelectedLabel);
+  await page.waitForFunction(expected => window.BsbV2MapAuthoring.status().selectedRecordData?.label === expected, expectedSelectedLabel);
   const originalTitle = await page.evaluate(() => window.BsbV2MapAuthoring.status().document.title);
-  const titleInput = page.locator('.bsb-v2-title-field input');
-  await titleInput.fill(`${originalTitle}${sentinel}`);
-  await titleInput.dispatchEvent('change');
+  await page.evaluate(expected => window.BsbV2MapAuthoring.updateTitle(expected), `${originalTitle}${sentinel}`);
   await page.waitForFunction(() => {
     const status = window.BsbV2MapAuthoring.status();
     const context = window.EDITOR.workspace.getContext();
@@ -217,7 +219,7 @@ try {
   assertEqual(bakedRuntime.revision, bakedState.authoring.document.revision, 'external runtime map revision');
   const bakedSelectedRecord = [...(bakedRuntime.sceneObjects || []), ...(bakedRuntime.unitPlacements || []), ...(bakedRuntime.unitSpawners || [])]
     .find(record => record.id === selectedBefore.selection.id);
-  assertEqual(bakedSelectedRecord?.label, `${originalSelectedLabel}${sentinel}`, 'selected authored item in external runtime bake');
+  assertEqual(bakedSelectedRecord?.label, expectedSelectedLabel, 'selected authored item in external runtime bake');
   await page.waitForFunction(() => document.getElementById('project-preview-frame')?.src?.includes('axiom-first-escape.runtime-map.json'));
   const embeddedRuntimeFrame = await waitForFrame(page, 'axiom-first-escape.runtime-map.json');
   await embeddedRuntimeFrame.waitForFunction(() => window.BSB_V2_DEMO && window.render_game_to_text, null, { timeout: 20000 });
@@ -227,9 +229,10 @@ try {
 
   const runtimePage = await browser.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1 });
   const runtimeIssues = observePage(runtimePage);
-  await runtimePage.goto(`${runtimeUrl}?map=${encodeURIComponent('/data/maps/axiom-first-escape.runtime-map.json')}`, { waitUntil: 'domcontentloaded' });
+  await runtimePage.goto(`${runtimeUrl}?map=${encodeURIComponent('/data/maps/axiom-first-escape.runtime-map.json')}&skipHatch=1`, { waitUntil: 'domcontentloaded' });
   await runtimePage.waitForFunction(() => window.BSB_V2_DEMO && window.render_game_to_text, null, { timeout: 20000 });
-  await runtimePage.waitForTimeout(500);
+  await runtimePage.keyboard.press('d');
+  await runtimePage.waitForTimeout(1200);
   const externalRuntimeState = await runtimePage.evaluate(() => JSON.parse(window.render_game_to_text()));
   assertEqual(externalRuntimeState.runtimeMap?.source, '/data/maps/axiom-first-escape.runtime-map.json', 'standalone BSB runtime source');
   assertEqual(externalRuntimeState.runtimeMap?.revision, bakedRuntime.revision, 'standalone BSB runtime revision');

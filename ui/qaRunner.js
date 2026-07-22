@@ -9,6 +9,7 @@ const STRUCTURED_QA_RELATIVE_DIR = path.join(QA_RELATIVE_DIR, 'structured');
 const LOCAL_GATE_RELATIVE_DIR = path.join(QA_RELATIVE_DIR, 'local-gates');
 const QA_BROWSER_PRIMARY_TARGET = 'chromium';
 const QA_BROWSER_FALLBACK_TARGET = 'firefox';
+const QA_SYSTEM_BROWSER_TARGET = 'system-chromium';
 
 const STUDIO_SIZE = { width: 1200, height: 800 };
 const STUDIO_ROOM = { x: 72, y: 86, width: 1056, height: 642 };
@@ -297,6 +298,20 @@ function ensurePlaywrightBrowserRuntime(rootPath = null) {
   return { source: 'workspace', path: workspacePath, applied: true };
 }
 
+function resolveSystemBrowserExecutable(explicitPath = null) {
+  const candidates = [
+    explicitPath,
+    process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : null,
+    process.platform === 'win32' ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' : null,
+    process.platform === 'win32' ? 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe' : null,
+    process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : null,
+    process.platform === 'linux' ? '/usr/bin/google-chrome' : null,
+    process.platform === 'linux' ? '/usr/bin/chromium' : null,
+    process.platform === 'linux' ? '/usr/bin/chromium-browser' : null,
+  ].map((candidate) => String(candidate || '').trim()).filter(Boolean);
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
 async function launchManagedBrowser(options = {}) {
   const runtime = ensurePlaywrightBrowserRuntime(options.rootPath);
   const playwrightModule = options.playwrightModule || require('playwright');
@@ -344,6 +359,34 @@ async function launchManagedBrowser(options = {}) {
         browsersPath: runtime.path,
       });
       lastError = error;
+    }
+  }
+
+  if (options.systemBrowserFallback !== false) {
+    const executablePath = resolveSystemBrowserExecutable(options.systemBrowserExecutable);
+    const browserType = playwrightModule?.chromium;
+    if (executablePath && browserType && typeof browserType.launch === 'function') {
+      try {
+        const browser = await browserType.launch({ ...launchOptions, executablePath });
+        attempts.push({ target: QA_SYSTEM_BROWSER_TARGET, ok: true, executablePath });
+        return {
+          browser,
+          usedTarget: QA_SYSTEM_BROWSER_TARGET,
+          executablePath,
+          browsersPath: runtime.path,
+          browsersPathSource: 'system',
+          attempts,
+        };
+      } catch (error) {
+        attempts.push({
+          target: QA_SYSTEM_BROWSER_TARGET,
+          ok: false,
+          code: normalizeBrowserFailureCode(error, 'launch'),
+          summary: String(error?.message || error),
+          executablePath,
+        });
+        lastError = error;
+      }
     }
   }
 
@@ -699,6 +742,8 @@ async function runQARun(options = {}) {
     playwrightModule,
     browserRuntimeTargets,
     browserRuntimeFallback = true,
+    systemBrowserFallback = true,
+    systemBrowserExecutable = null,
     browserDisabled = false,
     captureScreenshots = false,
   } = options;
@@ -739,15 +784,17 @@ async function runQARun(options = {}) {
       playwrightModule,
       browserRuntimeTargets,
       browserRuntimeFallback,
+      systemBrowserFallback,
+      systemBrowserExecutable,
     });
     browser = launched.browser;
     run.browser.engine = launched.usedTarget || QA_BROWSER_PRIMARY_TARGET;
     run.browser_runtime_target.attempted = launched.attempts.map((attempt) => attempt.target);
     run.browser_runtime_target.used = launched.usedTarget || null;
-    run.browser_runtime_target.fallbackUsed = launched.usedTarget === QA_BROWSER_FALLBACK_TARGET;
+    run.browser_runtime_target.fallbackUsed = launched.usedTarget !== QA_BROWSER_PRIMARY_TARGET;
     run.browser_runtime_target.browsersPath = launched.browsersPath || null;
     run.browser_runtime_target.browsersPathSource = launched.browsersPathSource || null;
-    run.browser.executablePath = null;
+    run.browser.executablePath = launched.executablePath || null;
     context = await browser.newContext({
       viewport: { width: 1600, height: 1100 },
       ignoreHTTPSErrors: true,
