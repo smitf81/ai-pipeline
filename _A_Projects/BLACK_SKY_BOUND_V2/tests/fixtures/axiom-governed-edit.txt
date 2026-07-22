@@ -1,0 +1,2 @@
+AXIOM_GOVERNED_EDIT_FIXTURE=ORIGINAL
+This file exists only for reversible AXIOM FileManager acceptance proof.

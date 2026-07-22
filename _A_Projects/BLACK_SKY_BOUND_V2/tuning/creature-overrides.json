@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "bsb.creatureTuning.v0",
+  "profiles": {
+    "grounded_wyvern_hatchling_skeletal_gait_v0": {
+      "visual": {
+        "scale": 1.44
+      },
+      "tail": {
+        "baseWidth": 0.36,
+        "rootMass": 0.28
+      },
+      "jaw": {
+        "width": 0.16
+      }
+    },
+    "raider_top_down_stick_v0": {
+      "visual": {
+        "scale": 1
+      }
+    }
+  }
+}

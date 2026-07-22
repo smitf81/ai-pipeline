@@ -1,0 +1,18 @@
+{
+  "name": "black-sky-bound-v2-demo",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Black Sky Bound focused young-dragon action-survival demo husk.",
+  "scripts": {
+    "start": "node tools/launch.mjs",
+    "test": "node tests/runTests.mjs",
+    "test:loc": "node tests/locBudget.test.mjs",
+    "launch": "node tools/launch.mjs",
+    "learn": "node learning/runLearningChecks.mjs",
+    "learn:map": "node learning/runLearningChecks.mjs --map"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.0"
+  }
+}
