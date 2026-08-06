@@ -15,7 +15,7 @@ export function buildProceduralOneShot(context, cue, outputGain, pitch = 1) {
   if (profile.type === 'thunderRoll') return createThunderRoll(context, outputGain, frequencyHz, durationMs);
   if (profile.type === 'creatureHowl') return createCreatureHowl(context, outputGain, frequencyHz, durationMs);
   if (profile.type === 'huskGargle') return createHuskGargle(context, outputGain, frequencyHz, durationMs);
-  if (['distantShout', 'distantCall', 'warningBark'].includes(profile.type)) {
+  if (['distantShout', 'distantCall'].includes(profile.type)) {
     return createHumanVoice(context, outputGain, frequencyHz, durationMs, profile.type);
   }
   if (['smokeExhale', 'breathBurst', 'airSlice'].includes(profile.type)) {
@@ -248,7 +248,7 @@ function createHumanVoice(context, outputGain, frequencyHz, durationMs, mode) {
   const envelope = context.createGain();
   fundamental.type = 'sawtooth';
   grit.type = 'triangle';
-  const start = mode === 'warningBark' ? frequencyHz * 1.15 : frequencyHz * 0.82;
+  const start = frequencyHz * 0.82;
   const peak = mode === 'distantCall' ? frequencyHz * 1.34 : frequencyHz * 1.08;
   fundamental.frequency.setValueAtTime(start, now);
   fundamental.frequency.linearRampToValueAtTime(peak, now + durationMs / 3500);
@@ -256,11 +256,10 @@ function createHumanVoice(context, outputGain, frequencyHz, durationMs, mode) {
   grit.frequency.setValueAtTime(start * 0.5, now);
   grit.frequency.linearRampToValueAtTime(peak * 0.48, end);
   formant.type = 'bandpass';
-  formant.frequency.value = mode === 'warningBark' ? 1080 : 760;
-  formant.Q.value = mode === 'warningBark' ? 1.6 : 1.05;
-  scheduleEnvelope(envelope.gain, now, durationMs / 1000, mode === 'warningBark'
-    ? [[0, 0.0001], [0.035, 0.82], [0.32, 0.48], [1, 0.0001]]
-    : [[0, 0.0001], [0.06, 0.68], [0.38, 0.82], [0.72, 0.34], [1, 0.0001]]);
+  formant.frequency.value = 760;
+  formant.Q.value = 1.05;
+  scheduleEnvelope(envelope.gain, now, durationMs / 1000,
+    [[0, 0.0001], [0.06, 0.68], [0.38, 0.82], [0.72, 0.34], [1, 0.0001]]);
   fundamental.connect(formant);
   grit.connect(formant);
   formant.connect(envelope);
@@ -272,12 +271,12 @@ function createHumanVoice(context, outputGain, frequencyHz, durationMs, mode) {
   const breath = connectNoiseLayer(context, outputGain, {
     durationMs,
     filterType: 'bandpass',
-    frequencyHz: mode === 'warningBark' ? 1750 : 1280,
+    frequencyHz: 1280,
     q: 0.7,
     gain: 0.2,
-    seed: mode === 'warningBark' ? 239 : 227
+    seed: 227
   });
-  return voice(durationMs, mode === 'warningBark' ? 'human_alarm_bark' : 'distant_human_call', [fundamental, grit, formant, envelope, ...breath]);
+  return voice(durationMs, 'distant_human_call', [fundamental, grit, formant, envelope, ...breath]);
 }
 
 function createAirGesture(context, outputGain, frequencyHz, durationMs, mode) {

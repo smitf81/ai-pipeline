@@ -1,0 +1,7 @@
+# Black Sky Bound raider warning v1 - aligned real-source stems and selected master
+window offset 0 duration 4.2
+file "01_01_real_warning_vocal_reel.wav"
+file "02_02_real_chest_double_reel.wav"
+file "03_03_real_fight_breath_reel.wav"
+file "04_04_source_derived_early_room_reel.wav"
+file "05_selected_master_reel.wav"

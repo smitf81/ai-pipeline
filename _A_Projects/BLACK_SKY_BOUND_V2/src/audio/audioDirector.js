@@ -2,6 +2,7 @@ import { EventType } from '../constants/eventTypes.js';
 import { AUDIO_TUNING } from '../data/audio/audioTuning.js';
 import { buildBodyStateProjection } from '../projection/bodyStateProjection.js';
 import { AudioAssetBank } from './audioAssetBank.js';
+import { startDecodedFileVoice } from './audioFileVoice.js';
 import { AudioBusGraph, setAudioParam } from './audioBus.js';
 import {
   clamp01,
@@ -399,8 +400,18 @@ export class AudioDirector {
     const gain = this.bus.createVoiceGain(cue.bus, 0);
     if (!gain) return null;
     setAudioParam(gain.gain, this.bus.context.currentTime, initialGain, 0.08);
-    const voice = buildProceduralLoop(this.bus.context, cue, gain);
-    return voice ? { gain, nodes: voice.nodes, source: voice.source, mode: voice.mode, tonal: voice.tonal, startedAtMs: this.timeMs } : null;
+    const voice = cue.source === 'file'
+      ? startDecodedFileVoice(this, cue, gain, 1, 0, true)
+      : buildProceduralLoop(this.bus.context, cue, gain);
+    return voice ? {
+      gain,
+      nodes: voice.nodes,
+      source: voice.source,
+      file: voice.file ?? null,
+      mode: voice.mode,
+      tonal: voice.tonal,
+      startedAtMs: this.timeMs
+    } : null;
   }
 
   startOneShot(cue, payload, sequence = 0) {
@@ -422,7 +433,7 @@ export class AudioDirector {
     const volume = cue.volume * (0.54 + intensity * 0.46);
     setAudioParam(gain.gain, this.bus.context.currentTime, volume, 0.012);
     const voice = cue.source === 'file'
-      ? this.startFileOneShot(cue, gain, pitch, sequence)
+      ? startDecodedFileVoice(this, cue, gain, pitch, sequence)
       : buildProceduralOneShot(this.bus.context, cue, gain, pitch);
     if (!voice) return null;
     return {
@@ -434,30 +445,6 @@ export class AudioDirector {
       durationMs: voice.durationMs,
       startedAtMs: this.timeMs,
       endsAtMs: this.timeMs + voice.durationMs
-    };
-  }
-
-  startFileOneShot(cue, outputGain, pitch, sequence) {
-    const selected = this.assets.select(cue, sequence);
-    if (!selected?.file || selected.entry?.status !== 'ready' || !selected.entry.buffer) {
-      const status = selected?.entry?.status ?? 'not_registered';
-      this.recordPlaybackError(cue, selected?.file ?? null, `required_asset_${status}`);
-      return null;
-    }
-    const source = this.bus.context.createBufferSource();
-    source.buffer = selected.entry.buffer;
-    if (source.playbackRate?.setValueAtTime) {
-      source.playbackRate.setValueAtTime(pitch, this.bus.context.currentTime);
-    } else if (source.playbackRate) {
-      source.playbackRate.value = pitch;
-    }
-    source.connect(outputGain);
-    source.start(this.bus.context.currentTime);
-    return {
-      source: 'file',
-      file: selected.file,
-      durationMs: selected.entry.buffer.duration * 1000 / Math.max(0.01, pitch),
-      nodes: [source]
     };
   }
 
@@ -500,6 +487,7 @@ export class AudioDirector {
           active: loopVoiceIsActive(loop, !!this.bus.context),
           suspended: loop.suspended === true,
           source: loop.voice?.source ?? getSoundCue(cueId)?.source ?? null,
+          file: loop.voice?.file ?? getSoundCue(cueId)?.files?.[0] ?? null,
           mode: loop.voice?.mode ?? getSoundCue(cueId)?.procedural?.type ?? null,
           tonal: loop.voice?.tonal ?? false
         }

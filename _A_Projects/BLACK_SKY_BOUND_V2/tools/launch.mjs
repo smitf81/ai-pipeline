@@ -8,16 +8,28 @@ import { handleCreatureTuningApi } from './tuningApi.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const requestedPort = Number.parseInt(process.argv[2] || process.env.BSB_PORT || '5177', 10);
-const port = Number.isFinite(requestedPort) ? requestedPort : 5177;
+const preferredPort = Number.isFinite(requestedPort) ? requestedPort : 5177;
+let activePort = preferredPort;
 const host = '127.0.0.1';
-const url = `http://${host}:${port}/`;
 const shouldOpenBrowser = process.env.BSB_NO_OPEN !== '1';
-const runtimeIdentity = Object.freeze({
-  contract: 'black-sky-bound.local-runtime-identity.v1',
-  projectId: 'black-sky-bound-v2-demo',
-  rootDir,
-  servingMode: 'live_source_no_store'
-});
+const maxPortAttempts = 20;
+const runtimeIdentityContract = 'black-sky-bound.local-runtime-identity.v1';
+const projectId = 'black-sky-bound-v2-demo';
+
+function activeUrl(port = activePort) {
+  return `http://${host}:${port}/`;
+}
+
+function runtimeIdentity() {
+  return {
+    contract: runtimeIdentityContract,
+    projectId,
+    rootDir,
+    servingMode: 'live_source_no_store',
+    preferredPort,
+    activePort
+  };
+}
 
 const mimeTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -63,7 +75,7 @@ function openBrowser(targetUrl) {
 }
 
 function resolveRequestPath(requestUrl) {
-  const parsed = new URL(requestUrl, url);
+  const parsed = new URL(requestUrl, activeUrl());
   let pathname = decodeURIComponent(parsed.pathname);
   if (pathname === '/') pathname = '/index.html';
 
@@ -74,10 +86,10 @@ function resolveRequestPath(requestUrl) {
 }
 
 async function serveFile(req, res) {
-  const requestPath = new URL(req.url || '/', url).pathname;
+  const requestPath = new URL(req.url || '/', activeUrl()).pathname;
   if (requestPath === '/__bsb_runtime_identity') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-    res.end(`${JSON.stringify(runtimeIdentity)}\n`);
+    res.end(`${JSON.stringify(runtimeIdentity())}\n`);
     return;
   }
   if (await handleCreatureTuningApi(req, res, rootDir)) return;
@@ -111,16 +123,28 @@ const server = http.createServer(serveFile);
 
 server.on('error', async (error) => {
   if (error.code === 'EADDRINUSE') {
-    const existing = await probeExistingRuntime();
-    if (existing?.projectId === runtimeIdentity.projectId && path.resolve(existing.rootDir || '') === rootDir) {
-      console.log(`Verified Black Sky Bound live-source runtime already serving ${rootDir} on port ${port}.`);
-      if (shouldOpenBrowser) openBrowser(url);
+    const occupiedPort = activePort;
+    const existing = await probeExistingRuntime(occupiedPort);
+    if (existing?.projectId === projectId && sameRoot(existing.rootDir, rootDir)) {
+      const existingUrl = activeUrl(occupiedPort);
+      console.log(`Verified this Black Sky Bound checkout is already serving on port ${occupiedPort}.`);
+      console.log(`Serving: ${rootDir}`);
+      console.log(`URL:     ${existingUrl}`);
+      if (shouldOpenBrowser) openBrowser(existingUrl);
       process.exit(0);
     }
-    console.error(`Port ${port} is occupied by an unverified or stale process.`);
-    console.error(`Expected ${runtimeIdentity.projectId} from ${rootDir}.`);
-    console.error('Close the process using that port, then run LAUNCH_BSB.bat again.');
-    process.exit(1);
+
+    const attempt = occupiedPort - preferredPort + 1;
+    if (attempt >= maxPortAttempts || occupiedPort >= 65535) {
+      console.error(`Could not find a free local port after ${maxPortAttempts} attempts.`);
+      process.exit(1);
+    }
+
+    activePort = occupiedPort + 1;
+    const owner = existing?.rootDir ? `another checkout (${existing.rootDir})` : 'another local process';
+    console.log(`Port ${occupiedPort} belongs to ${owner}; using port ${activePort} for this checkout.`);
+    server.listen(activePort, host);
+    return;
   }
 
   console.error('Launcher failed:');
@@ -128,21 +152,32 @@ server.on('error', async (error) => {
   process.exit(1);
 });
 
-async function probeExistingRuntime() {
+function sameRoot(left, right) {
+  const normalize = (value) => {
+    const resolved = path.resolve(String(value || '')).replace(/[\\/]+$/, '');
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  };
+  return Boolean(left) && normalize(left) === normalize(right);
+}
+
+async function probeExistingRuntime(port) {
   try {
-    const response = await fetch(`${url}__bsb_runtime_identity`, { signal: AbortSignal.timeout(1200) });
+    const response = await fetch(`${activeUrl(port)}__bsb_runtime_identity`, { signal: AbortSignal.timeout(1200) });
     if (!response.ok) return null;
     const identity = await response.json();
-    return identity?.contract === runtimeIdentity.contract ? identity : null;
+    return identity?.contract === runtimeIdentityContract ? identity : null;
   } catch {
     return null;
   }
 }
 
-server.listen(port, host, () => {
+server.on('listening', () => {
+  const url = activeUrl();
   console.log('Black Sky Bound v2 Demo launcher');
   console.log(`Serving: ${rootDir}`);
   console.log(`URL:     ${url}`);
   console.log('Press Ctrl+C in this window to stop the local server.');
   if (shouldOpenBrowser) openBrowser(url);
 });
+
+server.listen(activePort, host);

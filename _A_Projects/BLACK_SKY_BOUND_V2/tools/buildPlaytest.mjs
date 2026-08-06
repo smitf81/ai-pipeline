@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
+import { SOUND_CUES } from '../src/audio/soundManifest.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outRoot = resolve(root, 'dist', 'playtest');
@@ -9,16 +10,9 @@ const playRoot = join(outRoot, 'play');
 const mapRoot = join(outRoot, 'data', 'maps');
 const audioRoot = join(playRoot, 'assets', 'audio', 'production');
 const arenaFilename = 'axiom-crown-of-cinders.runtime-map.json';
-const audioFiles = [
-  'enemy_hit_flesh_01.wav',
-  'enemy_hit_flesh_02.wav',
-  'mama_wyvern_distant_roar_02.wav',
-  'mama_wyvern_flyover_roar_01.wav',
-  'mama_wyvern_inferno_aftermath_01.wav',
-  'mama_wyvern_napalm_projection_01.wav',
-  'player_bite_snap_01.wav',
-  'player_bite_snap_02.wav'
-];
+const audioFiles = [...new Set(Object.values(SOUND_CUES)
+  .filter((cue) => cue.source === 'file')
+  .flatMap((cue) => cue.files))].sort();
 
 assertBoundedOutput(outRoot);
 await rm(outRoot, { recursive: true, force: true });
@@ -48,8 +42,11 @@ await build({
 await mkdir(mapRoot, { recursive: true });
 await mkdir(audioRoot, { recursive: true });
 await cp(join(root, 'data', 'maps', arenaFilename), join(mapRoot, arenaFilename));
-for (const filename of audioFiles) {
-  await cp(join(root, 'assets', 'audio', 'production', filename), join(audioRoot, filename));
+for (const relativePath of audioFiles) {
+  if (!relativePath.startsWith('assets/audio/production/')) {
+    throw new Error(`playtest_audio_outside_production_root:${relativePath}`);
+  }
+  await cp(join(root, relativePath), join(playRoot, relativePath));
 }
 const runtimeMap = JSON.parse(await readFile(join(mapRoot, arenaFilename), 'utf8'));
 const manifest = {

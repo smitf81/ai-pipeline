@@ -31,11 +31,13 @@ export const SOUND_CUES = Object.freeze({
   }),
   'player.heartbeat': cue({
     id: 'player.heartbeat',
+    files: [`${productionAssetRoot}/player_heartbeat_01.wav`],
+    source: 'file',
+    required: true,
     bus: 'player',
     volume: 0.62,
     loop: true,
-    maxVoices: 1,
-    procedural: { type: 'organicHeartbeatLoop', rateHz: 1.55 }
+    maxVoices: 1
   }),
   'player.hit.light': cue({
     id: 'player.hit.light',
@@ -151,12 +153,20 @@ export const SOUND_CUES = Object.freeze({
   }),
   'enemy.raider.warn': cue({
     id: 'enemy.raider.warn',
+    files: [
+      `${productionAssetRoot}/enemy_raider_warning_01.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_02.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_03.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_04.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_05.wav`
+    ],
+    source: 'file',
+    required: true,
     bus: 'enemies',
     volume: 0.7,
-    pitchRandom: [0.93, 1.06],
+    pitchRandom: [0.985, 1.015],
     cooldownMs: 360,
-    maxVoices: 3,
-    procedural: { type: 'warningBark', frequencyHz: 280, durationMs: 240 }
+    maxVoices: 3
   }),
   'enemy.raider.distant_shout': cue({
     id: 'enemy.raider.distant_shout',

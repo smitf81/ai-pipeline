@@ -19,6 +19,22 @@ const targets = [
     duration: [0.42, 0.58]
   },
   {
+    cueId: 'enemy.raider.warn',
+    fileCount: 5,
+    channels: 1,
+    duration: [0.45, 0.55],
+    firstSignalMaxMs: 5,
+    bus: 'enemies'
+  },
+  {
+    cueId: 'player.heartbeat',
+    fileCount: 1,
+    channels: 1,
+    duration: [8.22, 8.24],
+    bus: 'player',
+    loop: true
+  },
+  {
     cueId: 'world.mama_wyvern.distant_roar',
     fileCount: 1,
     channels: 2,
@@ -56,6 +72,7 @@ for (const target of targets) {
   equal(cue.required, true, `${target.cueId} should fail visibly when its production asset is unavailable`);
   equal(cue.procedural, null, `${target.cueId} should use only its authored production file`);
   if (target.bus) equal(cue.bus, target.bus, `${target.cueId} should route through its visible pause-menu mix category`);
+  if (target.loop) equal(cue.loop, true, `${target.cueId} should retain its single-voice loop contract`);
   equal(cue.files.length, target.fileCount, `${target.cueId} should expose the intended variation count`);
 
   for (const runtimeFile of cue.files) {
@@ -105,10 +122,31 @@ assert(
   'every Mama candidate should preserve all eight authored stems'
 );
 
+const heartbeatSourceRoot = join(root, 'assets', 'audio', 'sources', 'player_heartbeat_v1');
+const heartbeatLicence = readFileSync(join(heartbeatSourceRoot, 'SOURCE_AND_LICENSE.md'), 'utf8');
+assert(heartbeatLicence.includes('Pixabay'), 'heartbeat source notes should identify Pixabay');
+assert(heartbeatLicence.includes('Pixabay Content License'), 'heartbeat source notes should retain the licence');
+assert(existsSync(join(root, 'assets', 'audio', 'projects', 'player_heartbeat_v1.aup3')), 'editable Audacity heartbeat project should exist');
+assert(existsSync(join(heartbeatSourceRoot, 'originals')), 'unaltered heartbeat source directory should be retained');
+assert(existsSync(join(heartbeatSourceRoot, 'processed_stems')), 'heartbeat processed stems should be retained');
+
+const raiderSourceRoot = join(root, 'assets', 'audio', 'sources', 'raider_warning_v1');
+const raiderLicence = readFileSync(join(raiderSourceRoot, 'SOURCE_AND_LICENSE.md'), 'utf8');
+assert(raiderLicence.includes('Pixabay'), 'raider warning source notes should identify Pixabay');
+assert(raiderLicence.includes('Pixabay Content License'), 'raider warning source notes should retain the licence');
+assert(existsSync(join(raiderSourceRoot, 'audacity_session', 'raider_warning_v1.lof')), 'portable Audacity raider-warning session should exist');
+assert(existsSync(join(raiderSourceRoot, 'originals')), 'unaltered raider vocal sources should be retained');
+assert(existsSync(join(raiderSourceRoot, 'processed_stems')), 'raider warning processed stems should be retained');
+
 const directorSource = readFileSync(join(root, 'src', 'audio', 'audioDirector.js'), 'utf8');
+const fileVoiceSource = readFileSync(join(root, 'src', 'audio', 'audioFileVoice.js'), 'utf8');
+const buildSource = readFileSync(join(root, 'tools', 'buildPlaytest.mjs'), 'utf8');
 assert(directorSource.includes("cue.source === 'file'"), 'AudioDirector should route file cues through the buffer path');
+assert(fileVoiceSource.includes('source.loop = loop'), 'decoded file playback should loop production buffers for file-backed body cues');
 assert(directorSource.includes('recordPlaybackError'), 'required file playback failures should be explicit in runtime diagnostics');
 assert(!directorSource.includes('file_fallback_to_placeholder'), 'production file cues must not silently fall back to synthesis');
+assert(buildSource.includes("filter((cue) => cue.source === 'file')"), 'packaged playtests should derive production audio from the canonical sound manifest');
+assert(!buildSource.includes("'enemy_hit_flesh_01.wav',"), 'packaged playtests should not retain a hand-maintained audio allowlist');
 
 function inspectPcmWav(path) {
   const buffer = readFileSync(path);

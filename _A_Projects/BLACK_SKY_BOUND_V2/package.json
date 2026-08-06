@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node tools/launch.mjs",
     "test": "node tests/runTests.mjs",
+    "test:launcher": "node tests/launcherRootIdentity.test.mjs",
     "test:loc": "node tests/locBudget.test.mjs",
     "build:playtest": "node tools/buildPlaytest.mjs",
     "launch:built": "node tools/launchBuiltPlaytest.mjs",

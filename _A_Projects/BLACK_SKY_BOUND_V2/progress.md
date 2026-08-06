@@ -5883,3 +5883,24 @@ Validation and remaining boundary:
 
 - `npm test` and `npm run build:playtest` pass. Focused mouth-follow, turn/separation, real-height fall, secondary landing, pool stage, instancing/capacity, renderer reuse, light, smoke, Mama event, and Mama mesh tests pass. The curated build remains dependency-free beyond the existing project and retains the existing Vite large-chunk advisory.
 - The intentionally tiny effect remains subtle in a single still and its smoke is visibly faceted at close inspection because the renderer uses bounded low-poly instancing rather than soft-particle shaders. The artificial 12.24 s orbit stress frame exposes the full live 15-pool/75-ember envelope, but counts stay capped, no emissions are dropped, and the 6.8 s lifecycle cleans old droplets, pools, lights, and fading scorch decals. Final aesthetic approval remains human-owned.
+
+## 2026-08-06 - Desktop launcher consolidation and production threat audio
+
+Runtime repair:
+
+- Consolidated the accepted heartbeat and raider-warning work into the Desktop checkout owned by `LAUNCH_BSB.bat`; normal playtesting no longer depends on selecting a Codex worktree.
+- Replaced the procedural heartbeat with one decoded 8.23-second mono production loop and the oscillator raider warning with five short recorded human variants. Both cues are required file assets, expose decoded-file provenance in runtime diagnostics, and have no synthetic fallback branch.
+- Retained 24-bit masters, the editable Audacity heartbeat project, a portable Audacity raider session, unaltered source recordings, processed stems, and Pixabay licence notes beside the runtime assets.
+- Extracted shared decoded-buffer playback so file-backed one-shots and loops use the same asset bank, error reporting, pitch, routing, and lifecycle contract.
+
+Launcher durability:
+
+- `tools/launch.mjs` now verifies both project identity and exact checkout root before reusing an occupied port. A different worktree or unrelated process is skipped automatically; the launcher advances to a free local port and opens the correct Desktop checkout.
+- Runtime identity reports the preferred and active ports. Every served source and audio response retains `Cache-Control: no-store`.
+- Added a deterministic launcher regression covering wrong-worktree collision recovery, exact-root reuse, runtime identity, production-audio HTTP availability, and cache policy.
+
+Validation:
+
+- The full `npm test` suite, focused production-audio tests, syntax checks, `git diff --check`, and `npm run test:launcher` pass.
+- Real Edge/Chromium proof launched the Desktop root with a deliberately occupied preferred port, recovered from port 53702 to 53703, decoded all six new runtime files at 48 kHz, activated the low-health file-backed heartbeat, and exercised all five raider-warning variants.
+- The browser proof reports zero console errors, page errors, failed requests, HTTP errors, or audio errors. Evidence is in `artifacts/local-launcher-consolidation-v1/`.
