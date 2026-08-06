@@ -83,6 +83,7 @@ export class WebGLPostProcessPipeline {
     this.gl = gl;
     this.resources = createFullscreenResources(gl);
     this.target = null;
+    this.activeTarget = null;
     this.width = 0;
     this.height = 0;
     this.mode = WEBGL_POST_PROCESS_MODE;
@@ -97,7 +98,16 @@ export class WebGLPostProcessPipeline {
     gl.viewport(0, 0, this.width, this.height);
     this.renderTargetActive = true;
     this.passCount = 0;
+    this.activeTarget = target;
     return target;
+  }
+
+  getActiveSceneTexture() {
+    return this.activeTarget?.texture ?? null;
+  }
+
+  setActiveSceneTarget(target) {
+    this.activeTarget = target;
   }
 
   compositeToScreen({ enabled = true, bodyState = null, tuning = POST_PROCESS_POLISH_TUNING, width = this.width, height = this.height, renderTime = 0 } = {}) {
@@ -119,7 +129,7 @@ export class WebGLPostProcessPipeline {
     gl.enableVertexAttribArray(this.resources.positionLocation);
     gl.vertexAttribPointer(this.resources.positionLocation, 2, gl.FLOAT, false, 0, 0);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.target.texture);
+    gl.bindTexture(gl.TEXTURE_2D, this.activeTarget?.texture ?? this.target.texture);
     gl.uniform1i(this.resources.sceneUniform, 0);
     gl.uniform2f(this.resources.resolutionUniform, this.width, this.height);
     const post = bodyState?.postProcess ?? {};

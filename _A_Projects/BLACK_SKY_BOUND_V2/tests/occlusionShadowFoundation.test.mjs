@@ -45,7 +45,7 @@ assert(blockers.blockers.every((blocker) => blocker.height > 0), 'all accepted b
 const game = createInitialGameState(createDemoMap());
 assert(game.occlusionBlockers.length > 0, 'current demo should expose explicit tree/boulder occluder entities');
 assert(game.occlusionBlockers.every((blocker) => blocker.source === 'scenario.sceneObjects'), 'demo blockers should come from explicit scene objects');
-assert(game.occlusionBlockers.some((blocker) => blocker.shadowSilhouette?.contract === 'scene_object_shadow_silhouette.v1'), 'demo blockers should carry renderer-neutral SDF silhouette profiles');
+assert(game.occlusionBlockers.some((blocker) => blocker.shadowShape?.contract === 'black-sky-bound.shadow-shape-profile.v1'), 'demo blockers should carry renderer-neutral shadow-shape families');
 
 const camera = { x: 0, y: 0, zoom: 1, viewportW: 220, viewportH: 160 };
 const tileSize = 10;
@@ -66,9 +66,9 @@ equal(projection.clippedToLightSpace, true, 'shadow projection should be clipped
 equal(projection.activeBlockers, 1, 'projection should expose active explicit blocker count');
 equal(projection.shadowCastingLights, 1, 'nearby explicit blockers should create a shadow-casting light');
 assert(projection.approximateShadowRegions >= 1, 'nearby explicit blockers should project shadow regions');
-assert(projection.shadowRegions.every((region) => region.points.length === 4), 'shadow regions should be cheap wedges');
+assert(projection.shadowRegions.every((region) => region.points.length === 4), 'shadow regions should retain diagnostic projection bounds');
 assert(projection.shadowRegions.every((region) => region.quality === 'sdf_ready_anchored_shadow_field_v1'), 'shadow regions should declare the SDF-ready anchored field quality contract');
-assert(projection.shadowRegions.every((region) => region.contactRadius > 0 && region.length > 0), 'shadow regions should expose contact and length facts for WebGL falloff composition');
+assert(projection.shadowRegions.every((region) => region.contactFootprint && region.length > 0), 'shadow regions should separate authored contact footprints from projected length facts');
 assert(projection.shadowRegions.every((region) => region.direction && region.normal), 'shadow regions should expose direction and normal vectors for anchored rendering');
 equal(projection.shadowFieldContract, SHADOW_FIELD_CONTRACT, 'projection should expose the SDF-ready shadow-field contract');
 equal(projection.shadowFieldPacketCount, projection.approximateShadowRegions, 'radius-only blockers should still produce one fallback field packet per region');

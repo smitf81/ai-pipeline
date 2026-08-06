@@ -1,10 +1,9 @@
-import { clamp } from '../core/math.js';
 import { ComponentType } from '../constants/componentTypes.js';
 import { getComponent } from '../ecs/world.js';
 import { query } from '../ecs/query.js';
 import { getTile } from '../world/map.js';
-import { isSceneObjectBlocked } from '../world/sceneObjects.js';
-import { getTerrainDef, isTileBlocked } from '../world/terrain.js';
+import { getTerrainDef } from '../world/terrain.js';
+import { circleIntersectsEnvironment, environmentTraversalMultiplier, getEnvironmentCollisionIndex } from '../physics/environmentCollision.js';
 import { CORPSE_SLOWDOWN_MINIMUM } from '../data/deathAftermath.js';
 
 export const ENEMY_STEERING_ANGLES_DEGREES = Object.freeze([0, 25, -25, 50, -50, 80, -80]);
@@ -28,10 +27,12 @@ export function moveEntityOnMap(world, entity, dx, dy, dt, map) {
   transform.rotation = Math.atan2(dy, dx);
   const terrain = getTerrainDef(getTile(map, Math.floor(transform.x), Math.floor(transform.y)));
   const corpseSlowdown = getCorpseSlowdownMultiplier(world, entity, transform.x, transform.y);
+  const traversalSlowdown = getEnvironmentTraversalMultiplier(map, transform.x, transform.y, getComponent(world, entity, ComponentType.Collider)?.radius ?? 0);
   const speedMultiplier = getMovementSpeedMultiplier(world, entity);
   motion.corpseSlowdownMultiplier = corpseSlowdown;
+  motion.environmentTraversalMultiplier = traversalSlowdown;
   motion.speedMultiplier = speedMultiplier;
-  const step = motion.speed * speedMultiplier * dt / terrain.moveCost * corpseSlowdown;
+  const step = motion.speed * speedMultiplier * dt / terrain.moveCost * corpseSlowdown * traversalSlowdown;
   return moveEntityRaw(world, entity, (dx / len) * step, (dy / len) * step, map);
 }
 
@@ -39,19 +40,19 @@ export function moveEntityRaw(world, entity, dx, dy, map) {
   const transform = getComponent(world, entity, ComponentType.Transform);
   if (!transform) return false;
   const radius = getComponent(world, entity, ComponentType.Collider)?.radius ?? 0;
-  const next = clampToPlayableMap(map, transform.x + dx, transform.y + dy, radius);
+  const next = { x: transform.x + dx, y: transform.y + dy };
   if (canEntityOccupy(world, entity, next.x, next.y, map)) {
     transform.x = next.x;
     transform.y = next.y;
     return true;
   }
   let moved = false;
-  const slideX = clampToPlayableMap(map, transform.x + dx, transform.y, radius);
+  const slideX = { x: transform.x + dx, y: transform.y };
   if (canEntityOccupy(world, entity, slideX.x, slideX.y, map)) {
     transform.x = slideX.x;
     moved = true;
   }
-  const slideY = clampToPlayableMap(map, transform.x, transform.y + dy, radius);
+  const slideY = { x: transform.x, y: transform.y + dy };
   if (canEntityOccupy(world, entity, slideY.x, slideY.y, map)) {
     transform.y = slideY.y;
     moved = true;
@@ -69,10 +70,12 @@ export function moveEntityWithSteering(world, entity, dx, dy, dt, map) {
   const intendedY = dy / length;
   const terrain = getTerrainDef(getTile(map, Math.floor(transform.x), Math.floor(transform.y)));
   const corpseSlowdown = getCorpseSlowdownMultiplier(world, entity, transform.x, transform.y);
+  const traversalSlowdown = getEnvironmentTraversalMultiplier(map, transform.x, transform.y, getComponent(world, entity, ComponentType.Collider)?.radius ?? 0);
   const speedMultiplier = getMovementSpeedMultiplier(world, entity);
   motion.corpseSlowdownMultiplier = corpseSlowdown;
+  motion.environmentTraversalMultiplier = traversalSlowdown;
   motion.speedMultiplier = speedMultiplier;
-  const step = motion.speed * speedMultiplier * dt / terrain.moveCost * corpseSlowdown;
+  const step = motion.speed * speedMultiplier * dt / terrain.moveCost * corpseSlowdown * traversalSlowdown;
   const radius = getComponent(world, entity, ComponentType.Collider)?.radius ?? 0;
   const side = deterministicSide(entity);
   const angles = side > 0
@@ -95,11 +98,11 @@ export function moveEntityWithSteering(world, entity, dx, dy, dt, map) {
 }
 
 function findSteeredPosition(world, entity, transform, dx, dy, radius, map, allowComponentSlide) {
-  const candidates = [clampToPlayableMap(map, transform.x + dx, transform.y + dy, radius)];
+  const candidates = [{ x: transform.x + dx, y: transform.y + dy }];
   if (allowComponentSlide) {
     const components = [
-      { magnitude: Math.abs(dx), position: clampToPlayableMap(map, transform.x + dx, transform.y, radius) },
-      { magnitude: Math.abs(dy), position: clampToPlayableMap(map, transform.x, transform.y + dy, radius) }
+      { magnitude: Math.abs(dx), position: { x: transform.x + dx, y: transform.y } },
+      { magnitude: Math.abs(dy), position: { x: transform.x, y: transform.y + dy } }
     ].sort((a, b) => b.magnitude - a.magnitude);
     for (const component of components) {
       if (component.magnitude > 0.00001) candidates.push(component.position);
@@ -118,19 +121,11 @@ export function canEntityOccupy(world, entity, x, y, map) {
 
 export function isPositionBlocked(map, x, y, radius = 0) {
   const safeRadius = Math.max(0, Number(radius) || 0);
-  if (x - safeRadius < 1 || y - safeRadius < 1 || x + safeRadius > map.width - 1 || y + safeRadius > map.height - 1) return true;
-  const minX = Math.floor(x - safeRadius);
-  const maxX = Math.floor(x + safeRadius);
-  const minY = Math.floor(y - safeRadius);
-  const maxY = Math.floor(y + safeRadius);
-  for (let tileY = minY; tileY <= maxY; tileY += 1) {
-    for (let tileX = minX; tileX <= maxX; tileX += 1) {
-      const blocked = isTileBlocked(getTile(map, tileX, tileY))
-        || isSceneObjectBlocked(map, tileX + 0.5, tileY + 0.5);
-      if (blocked && circleIntersectsTile(x, y, safeRadius, tileX, tileY)) return true;
-    }
-  }
-  return false;
+  return circleIntersectsEnvironment(getEnvironmentCollisionIndex(map), x, y, safeRadius);
+}
+
+export function getEnvironmentTraversalMultiplier(map, x, y, radius = 0) {
+  return environmentTraversalMultiplier(getEnvironmentCollisionIndex(map), x, y, Math.max(0, Number(radius) || 0));
 }
 
 export function getCorpseSlowdownMultiplier(world, entity, x, y) {
@@ -156,19 +151,6 @@ export function getMovementSpeedMultiplier(world, entity) {
     ? Math.max(0.1, Math.min(1, Number(status.movementSlowMultiplier) || 1))
     : 1;
   return sprintMultiplier * slowMultiplier;
-}
-
-function clampToPlayableMap(map, x, y, radius) {
-  const min = 1 + radius;
-  const maxX = Math.max(min, map.width - 1 - radius);
-  const maxY = Math.max(min, map.height - 1 - radius);
-  return { x: clamp(x, min, maxX), y: clamp(y, min, maxY) };
-}
-
-function circleIntersectsTile(x, y, radius, tileX, tileY) {
-  const nearestX = clamp(x, tileX, tileX + 1);
-  const nearestY = clamp(y, tileY, tileY + 1);
-  return (x - nearestX) ** 2 + (y - nearestY) ** 2 <= radius ** 2;
 }
 
 function deterministicSide(entity) {

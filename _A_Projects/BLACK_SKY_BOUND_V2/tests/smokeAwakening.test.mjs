@@ -20,6 +20,7 @@ const transform = getComponent(game.world, game.dragonId, ComponentType.Transfor
 const scene = createSmokeAwakeningState({
   enabled: true,
   source: 'test_level_transition',
+  startPhase: SmokeAwakeningPhase.BLACKOUT_HOLD,
   fromMapId: 'axiom_first_escape',
   mapId: 'axiom_second_approach',
   worldX: transform.x * 32,
@@ -38,24 +39,24 @@ equal(inactive.radialSmokeEmitted, false, 'an awakening that never ran must not 
 equal(inactive.diagnostics.releaseCount, 0, 'an awakening that never ran must not claim a release transition');
 equal(inactiveProjection.pocket01, 0, 'an awakening that never ran must not project a stale clear-air pocket');
 
-equal(scene.phase, SmokeAwakeningPhase.IMPACT, 'locked smoke transition should begin with Mama landing offscreen');
-equal(scene.audio.events[0]?.cueId, SmokeAwakeningCueId.IMPACT, 'scene should publish the landing impact as its first authored audio cue');
+equal(scene.phase, SmokeAwakeningPhase.BLACKOUT_HOLD, 'destination awakening should preserve the opaque handoff before asking for breath input');
+equal(scene.audio.events.length, 0, 'destination awakening must not replay the outgoing landing audio');
 assert(!canUseAbility(game.world, game.dragonId, AbilityId.SMOKE_BURST), 'hatchling should enter the scene without smoke available');
-
-updateSmokeAwakening({ scene, input, realDt: SMOKE_AWAKENING.timing.impactSeconds + 0.01 });
-equal(scene.phase, SmokeAwakeningPhase.SCATTER, 'impact should hand off to the raider-scatter beat');
 let projection = buildSmokeAwakeningProjection(state);
-equal(projection.raiderShadows.length, 2, 'scatter projection should stage only the two real raiders in the fixture');
-assert(projection.raiderShadows.every((shadow) => game.actors.some((actor) => actor.id === shadow.sourceActorId)), 'every fleeing silhouette should retain provenance from a living runtime raider');
+equal(projection.smokeCoverage, 1, 'destination hold should preserve complete smoke coverage');
+assert(projection.fullSmokeOpacity >= 0.98, 'blackout contract should be effectively opaque rather than a light vignette');
+const blackoutLayer = new WebGLSmokeAwakeningLayer();
+blackoutLayer.update({ smokeAwakening: projection }, { camera: { viewportW: 1280, viewportH: 720 } });
+assert(blackoutLayer.rects.some((entry) => entry.color[3] >= 0.98), 'arrival renderer should contain a full-screen opaque smoke primitive');
+equal(projection.raiderShadows.length, 0, 'destination projection must never fabricate screen-space raider substitutes');
 equal(projection.narrative.mamaVisibility, 'offscreen_only', 'scene contract should explicitly keep Mama outside the frame');
 equal(projection.narrative.timeOfDay, 'night', 'smoke awakening must preserve the story-wide night setting');
 
-updateSmokeAwakening({ scene, input, realDt: SMOKE_AWAKENING.timing.scatterSeconds + 0.01 });
-equal(scene.phase, SmokeAwakeningPhase.SMOKE_ROLL, 'scattering raiders should be swallowed by the rolling smoke front');
-assert(scene.audio.events.some((event) => event.cueId === SmokeAwakeningCueId.MAMA_ROAR), 'offscreen landing beat should carry Mama through sound rather than a fragile silhouette');
-updateSmokeAwakening({ scene, input, realDt: SMOKE_AWAKENING.timing.smokeRollSeconds + 0.01 });
-equal(scene.phase, SmokeAwakeningPhase.EXHALE, 'full smoke cover should enter the interactive instinct beat');
-
+updateSmokeAwakening({ scene, input, realDt: SMOKE_AWAKENING.timing.blackoutHoldSeconds - 0.1 });
+equal(scene.phase, SmokeAwakeningPhase.BLACKOUT_HOLD, 'blackout should remain held for a noticeable multi-second interval');
+equal(scene.acceptedInputCount, 0, 'held blackout must not advance the breathing lesson');
+updateSmokeAwakening({ scene, input, realDt: 0.11 });
+equal(scene.phase, SmokeAwakeningPhase.EXHALE, 'the held blackout should hand off to the breathing beat');
 input.click(2);
 updateSmokeAwakening({ scene, input, realDt: 0.1 });
 equal(scene.acceptedInputCount, 0, 'RMB before the restrained prompt reveal must not skip the first cough');
@@ -109,8 +110,8 @@ const reducedProjection = buildSmokeAwakeningProjection({
   smokeAwakening: reduced,
   playerProfile: { settings: { reducedMotion: true } }
 });
-equal(reducedProjection.camera.impulseWorldX, 0, 'reduced motion should suppress impact camera shake');
-equal(reducedProjection.camera.impulseWorldY, 0, 'reduced motion should suppress vertical impact shake');
+equal(reducedProjection.camera.impulseWorldX, 0, 'destination breathing beat should not replay impact camera shake');
+equal(reducedProjection.camera.impulseWorldY, 0, 'destination breathing beat should keep its camera anchored');
 
 const noRaiderGame = { ...game, actors: game.actors.filter((actor) => actor.type !== 'raider') };
 const noRaiderProjection = buildSmokeAwakeningProjection({

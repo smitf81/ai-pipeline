@@ -43,6 +43,7 @@ function requestEscapeMapTransition(game, scenario, transition) {
     objective: scenario.objective.id,
     nextMapPath: transition.nextMapPath,
     nextMapId: transition.nextMapId,
+    departureSequenceId: transition.departureSequenceId,
     arrivalSequenceId: transition.arrivalSequenceId,
     label: transition.label
   };

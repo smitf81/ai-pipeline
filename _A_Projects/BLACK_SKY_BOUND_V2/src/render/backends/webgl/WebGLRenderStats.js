@@ -22,21 +22,18 @@ export function ensureWebGLLayerStats(stats, layerId) {
 }
 
 export function resetWebGLFrameStats(stats) {
-  stats.totalMs = 0;
-  stats.backendPresentMs = 0;
+  stats.totalMs = 0; stats.backendPresentMs = 0;
   for (const layerId of stats.layerOrder) {
     const layer = ensureWebGLLayerStats(stats, layerId);
-    layer.updateMs = 0;
-    layer.renderMs = 0;
-    layer.objectCount = 0;
-    layer.status = 'inactive';
+    layer.updateMs = 0; layer.renderMs = 0;
+    layer.objectCount = 0; layer.status = 'inactive';
     layer.mode = null;
-    layer.darknessMode = null;
+    layer.illuminationModel = null;
     layer.activeLightCount = 0;
     layer.overlayCount = 0;
     layer.influenceCount = 0;
     layer.lightingProfileId = null;
-    layer.darknessOpacity = 0;
+    layer.illuminationCompositeMode = null; layer.illuminationCompositeActive = false; layer.illuminationFieldPassCount = 0; layer.illuminationCompositePassCount = 0; layer.ambientIllumination = 0; layer.ambientIlluminationColour = null;
     layer.lightRevealStrength = 0;
     layer.warmBloomOpacity = 0;
     layer.flickeringLightCount = 0;
@@ -59,6 +56,7 @@ export function resetWebGLFrameStats(stats) {
     layer.shadowPenumbraTriangleCount = 0;
     layer.shadowCoreTriangleCount = 0;
     layer.shadowContactTriangleCount = 0;
+    layer.shadowContactFootprintCount = 0; layer.coarseProjectedShadowTriangleCount = 0;
     layer.shadowSegmentCount = 0;
     layer.shadowFieldPacketCount = 0;
     layer.shadowFieldSampleCount = 0;
@@ -191,13 +189,14 @@ export function buildWebGLStatsSummary(stats) {
       objectCount: layer.objectCount,
       updateMs: layer.updateMs,
       renderMs: layer.renderMs,
+      gpuTimingMode: layer.gpuTimingMode ?? null, gpuTimingSupported: !!layer.gpuTimingSupported, gpuTimingDisjoint: !!layer.gpuTimingDisjoint, gpuRenderMs: layer.gpuRenderMs ?? 0, gpuSampleFrame: layer.gpuSampleFrame ?? -1, gpuSampleAgeFrames: layer.gpuSampleAgeFrames ?? -1,
       mode: layer.mode ?? null, phase: layer.phase ?? null, crackStage: layer.crackStage ?? 0, fragmentCount: layer.fragmentCount ?? 0, rayCount: layer.rayCount ?? 0,
-      darknessMode: layer.darknessMode ?? null,
+      illuminationModel: layer.illuminationModel ?? null,
       activeLightCount: layer.activeLightCount ?? 0,
       overlayCount: layer.overlayCount ?? 0,
       influenceCount: layer.influenceCount ?? 0,
       lightingProfileId: layer.lightingProfileId ?? null,
-      darknessOpacity: layer.darknessOpacity ?? 0,
+      illuminationCompositeMode: layer.illuminationCompositeMode ?? null, illuminationCompositeActive: !!layer.illuminationCompositeActive, illuminationFieldPassCount: layer.illuminationFieldPassCount ?? 0, illuminationCompositePassCount: layer.illuminationCompositePassCount ?? 0, ambientIllumination: layer.ambientIllumination ?? 0, ambientIlluminationColour: layer.ambientIlluminationColour ?? null,
       lightRevealStrength: layer.lightRevealStrength ?? 0,
       warmBloomOpacity: layer.warmBloomOpacity ?? 0,
       emitterCompositeMode: layer.emitterCompositeMode ?? null,
@@ -224,6 +223,7 @@ export function buildWebGLStatsSummary(stats) {
       shadowPenumbraTriangleCount: layer.shadowPenumbraTriangleCount ?? 0,
       shadowCoreTriangleCount: layer.shadowCoreTriangleCount ?? 0,
       shadowContactTriangleCount: layer.shadowContactTriangleCount ?? 0,
+      shadowContactFootprintCount: layer.shadowContactFootprintCount ?? 0, coarseProjectedShadowTriangleCount: layer.coarseProjectedShadowTriangleCount ?? 0,
       shadowSegmentCount: layer.shadowSegmentCount ?? 0,
       shadowFieldPacketCount: layer.shadowFieldPacketCount ?? 0,
       shadowFieldSampleCount: layer.shadowFieldSampleCount ?? 0,
@@ -231,6 +231,7 @@ export function buildWebGLStatsSummary(stats) {
       shadowSilhouettePrimitiveCount: layer.shadowSilhouettePrimitiveCount ?? 0,
       shadowShaderPacketCount: layer.shadowShaderPacketCount ?? 0,
       shadowShaderPrimitiveCount: layer.shadowShaderPrimitiveCount ?? 0,
+      shadowGeometryCacheHit: !!layer.shadowGeometryCacheHit, shadowGeometryCacheRebuilds: layer.shadowGeometryCacheRebuilds ?? 0, staticShadowPacketCount: layer.staticShadowPacketCount ?? 0, dynamicShadowPacketCount: layer.dynamicShadowPacketCount ?? 0, staticLightCacheHits: layer.staticLightCacheHits ?? 0, staticLightCacheMisses: layer.staticLightCacheMisses ?? 0,
       sceneryMode: layer.sceneryMode ?? null,
       worldDepthMode: layer.worldDepthMode ?? null,
       depthSortedItemCount: layer.depthSortedItemCount ?? 0,
@@ -285,8 +286,7 @@ export function buildWebGLStatsSummary(stats) {
       actorContactShadowPrimitiveCount: layer.actorContactShadowPrimitiveCount ?? 0,
       actorCoreOcclusionPrimitiveCount: layer.actorCoreOcclusionPrimitiveCount ?? 0, actorShadowLodMode: layer.actorShadowLodMode ?? null, actorShadowLodPolicy: layer.actorShadowLodPolicy ?? null, actorShadowLodCount: layer.actorShadowLodCount ?? 0, actorShadowLodPrimitiveCount: layer.actorShadowLodPrimitiveCount ?? 0,
       triangleCount: layer.triangleCount ?? 0, flyoverViewportIntersecting: !!layer.flyoverViewportIntersecting, flyoverViewportTriangleCount: layer.flyoverViewportTriangleCount ?? 0, flyoverViewportCoverage: layer.flyoverViewportCoverage ?? 0, flyoverWorldBounds: layer.flyoverWorldBounds ?? null, infernoGeometry: layer.infernoGeometry ?? null,
-      terrainTextureActive: !!layer.terrainTextureActive,
-      terrainTextureDisabledByRuntime: !!layer.terrainTextureDisabledByRuntime,
+      terrainTextureActive: !!layer.terrainTextureActive, terrainTextureDisabledByRuntime: !!layer.terrainTextureDisabledByRuntime,
       terrainTextureUploadCount: layer.terrainTextureUploadCount ?? 0,
       terrainTextureKey: layer.terrainTextureKey ?? null,
       postProcessMode: layer.postProcessMode ?? null,
@@ -351,10 +351,8 @@ export function buildWebGLStatsSummary(stats) {
   }
   return {
     mode: stats.mode,
-    fullSceneTextureUploadActive: stats.fullSceneTextureUploadActive,
-    textureUploads: stats.textureUploads,
-    totalMs: stats.totalMs,
-    backendPresentMs: stats.backendPresentMs,
+    fullSceneTextureUploadActive: stats.fullSceneTextureUploadActive, textureUploads: stats.textureUploads,
+    totalMs: stats.totalMs, backendPresentMs: stats.backendPresentMs, gpuTimingMode: stats.gpuTimingMode ?? null, gpuTimingSupported: !!stats.gpuTimingSupported, gpuTimingDisjoint: !!stats.gpuTimingDisjoint, gpuPendingSamples: stats.gpuPendingSamples ?? 0,
     layerOrder: [...stats.layerOrder],
     layers
   };
@@ -367,13 +365,14 @@ function createLayerStats(id) {
     objectCount: 0,
     updateMs: 0,
     renderMs: 0,
+    gpuTimingMode: null, gpuTimingSupported: false, gpuTimingDisjoint: false, gpuRenderMs: 0, gpuSampleFrame: -1, gpuSampleAgeFrames: -1,
     mode: null,
-    darknessMode: null,
+    illuminationModel: null,
     activeLightCount: 0,
     overlayCount: 0,
     influenceCount: 0,
     lightingProfileId: null,
-    darknessOpacity: 0,
+    illuminationCompositeMode: null, illuminationCompositeActive: false, illuminationFieldPassCount: 0, illuminationCompositePassCount: 0, ambientIllumination: 0, ambientIlluminationColour: null,
     lightRevealStrength: 0,
     warmBloomOpacity: 0,
     flickeringLightCount: 0,
@@ -396,6 +395,7 @@ function createLayerStats(id) {
     shadowPenumbraTriangleCount: 0,
     shadowCoreTriangleCount: 0,
     shadowContactTriangleCount: 0,
+    shadowContactFootprintCount: 0, coarseProjectedShadowTriangleCount: 0,
     shadowSegmentCount: 0,
     shadowFieldPacketCount: 0,
     shadowFieldSampleCount: 0,

@@ -16,7 +16,9 @@ export function buildTerrainProjection(map, tileSize) {
       mapHeight: 0,
       worldWidth: 0,
       worldHeight: 0,
+      mapId: null,
       revision: 0,
+      detailExclusionZones: [],
       connectedRuleModel: CONNECTED_RULE_MODEL,
       connectedRuleTypes: [...CONNECTED_TERRAIN_TYPES],
       connectedRuleTileCount: 0,
@@ -65,12 +67,39 @@ export function buildTerrainProjection(map, tileSize) {
     mapHeight: map.height,
     worldWidth: map.width * tileSize,
     worldHeight: map.height * tileSize,
+    mapId: map.id ?? null,
     revision: map.revision ?? 0,
+    detailExclusionZones: buildDetailExclusionZones(map),
     connectedRuleModel: CONNECTED_RULE_MODEL,
     connectedRuleTypes: [...CONNECTED_TERRAIN_TYPES],
     connectedRuleTileCount,
     tiles
   };
+}
+
+function buildDetailExclusionZones(map) {
+  const zones = [];
+  if (Number.isFinite(Number(map.spawn?.x)) && Number.isFinite(Number(map.spawn?.y))) {
+    zones.push({
+      kind: 'circle',
+      source: 'map_spawn',
+      x: Number(map.spawn.x) + 0.5,
+      y: Number(map.spawn.y) + 0.5,
+      radiusTiles: 1.55
+    });
+  }
+  if (map.escapeZone) {
+    zones.push({
+      kind: 'rect',
+      source: 'map_escape_zone',
+      x: Number(map.escapeZone.x),
+      y: Number(map.escapeZone.y),
+      w: Number(map.escapeZone.w),
+      h: Number(map.escapeZone.h),
+      paddingTiles: 0.8
+    });
+  }
+  return zones;
 }
 
 function buildConnectedRuleLookup(map) {

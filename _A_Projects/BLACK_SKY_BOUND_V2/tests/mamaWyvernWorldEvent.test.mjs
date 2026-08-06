@@ -7,11 +7,13 @@ import {
   MamaWyvernEventPhase,
   buildMamaWorldEventLightViews,
   buildMamaWorldEventSmokeSourceViews,
+  mamaWorldEventKind,
   queueMamaWyvernWorldEvent
 } from '../src/data/mamaWyvernWorldEvents.js';
 import { buildSceneLightViews, getLightningEventStart } from '../src/data/sceneLights.js';
 import { getComponent } from '../src/ecs/world.js';
 import { createInitialGameState } from '../src/game/createGame.js';
+import { createWorldEventAudioBridge } from '../src/game/worldEventControls.js';
 import { createUnitSpawnerFixtureEntity } from '../src/game/unitSpawners.js';
 import { syncGameViews } from '../src/game/selectors.js';
 import { createCamera } from '../src/render/camera.js';
@@ -27,6 +29,9 @@ const map = createDemoMap();
 const game = createInitialGameState(map);
 game.worldEvents.autoEnabled = false;
 
+equal(mamaWorldEventKind(0), MamaWyvernEventKind.INFERNO, 'the first natural Mama encounter should activate the complete sampled roar, flyover, napalm, and aftermath suite');
+equal(mamaWorldEventKind(1), MamaWyvernEventKind.FLYOVER, 'the next natural encounter should retain the lower-impact visual flyover variation');
+
 const lightningIntervals = Array.from({ length: 6 }, (_, index) => (
   getLightningEventStart(game.sceneLights[0], index + 1) - getLightningEventStart(game.sceneLights[0], index)
 ));
@@ -40,10 +45,12 @@ queueMamaWyvernWorldEvent(game.worldEvents, MamaWyvernEventKind.FLYOVER, {
 worldEventSystem({ game, map, dt: 0 });
 equal(game.worldEvents.activeEvent.phase, MamaWyvernEventPhase.WARNING, 'manual flyover should begin with the distant-roar warning phase');
 equal(game.worldEvents.audio.eventType, AudioEventType.MAMA_WYVERN_ROAR, 'warning phase should publish the mama roar audio event');
+equal(game.worldEvents.audio.cueId, 'world.mama_wyvern.distant_roar', 'warning receipt should identify the sampled distant cue');
 
 game.renderTime = 2;
 worldEventSystem({ game, map, dt: MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds + MAMA_WYVERN_WORLD_EVENT.timing.flyoverSeconds * 0.46 });
 equal(game.worldEvents.activeEvent.phase, MamaWyvernEventPhase.FLYOVER, 'warning should hand off to the moving shadow phase');
+equal(game.worldEvents.audio.eventType, AudioEventType.MAMA_WYVERN_FLYOVER, 'flyover handoff should publish the close moving roar');
 equal(game.worldEvents.diagnostics.lightningSyncCount, 1, 'lightning-sync trigger should queue one manual lightning event');
 const manualLightning = buildSceneLightViews(game.sceneLights, game.renderTime + 0.02)
   .find((light) => light.stormEvent?.manual === true);
@@ -76,11 +83,26 @@ worldEventSystem({
   game,
   map,
   dt: MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds
-    + MAMA_WYVERN_WORLD_EVENT.timing.flyoverSeconds * 0.55
+    + MAMA_WYVERN_WORLD_EVENT.timing.flyoverSeconds * 0.7
 });
 equal(game.worldEvents.fireWalls.length, 1, 'inferno flyover should deposit one non-propagating residual fire wall');
 const wall = game.worldEvents.fireWalls[0];
 equal(wall.lifetime, 18, 'residual fire wall should persist long enough to shape an encounter');
+const infernoAudioTypes = game.worldEvents.audio.events
+  .filter((event) => event.sourceEventId === wall.sourceEventId)
+  .map((event) => event.eventType);
+assert(infernoAudioTypes.includes(AudioEventType.MAMA_WYVERN_NAPALM), 'inferno delivery should publish the pressurised napalm cue');
+assert(infernoAudioTypes.includes(AudioEventType.MAMA_WYVERN_AFTERMATH), 'inferno deployment should publish the persistent fire aftermath cue');
+const bridgedAudioEvents = [];
+const audioBridge = createWorldEventAudioBridge({
+  emit(type, payload) {
+    bridgedAudioEvents.push({ type, payload });
+  }
+});
+assert(audioBridge.sync(game), 'world-event audio bridge should drain unseen authored receipts');
+assert(bridgedAudioEvents.some((event) => event.type === AudioEventType.MAMA_WYVERN_FLYOVER), 'audio bridge should preserve the phase-specific flyover event type');
+assert(bridgedAudioEvents.some((event) => event.type === AudioEventType.MAMA_WYVERN_NAPALM), 'audio bridge should preserve the phase-specific napalm event type');
+assert(bridgedAudioEvents.some((event) => event.payload.cueId === 'world.mama_wyvern.inferno_aftermath'), 'audio bridge should retain the authored sampled cue ID');
 
 const midpoint = { x: (wall.ax + wall.bx) * 0.5, y: (wall.ay + wall.by) * 0.5 };
 const playerTransform = getComponent(game.world, game.dragonId, ComponentType.Transform);
@@ -144,8 +166,14 @@ assert(wall.lightScale < 1 && wall.smokeScale > 0, 'residual light and smoke sho
 
 const director = createAudioDirector({ context: null });
 director.emit(AudioEventType.MAMA_WYVERN_ROAR, { intensity: 1 });
+director.emit(AudioEventType.MAMA_WYVERN_FLYOVER, { intensity: 1 });
+director.emit(AudioEventType.MAMA_WYVERN_NAPALM, { intensity: 1 });
+director.emit(AudioEventType.MAMA_WYVERN_AFTERMATH, { intensity: 1 });
 const audioState = director.update({ game, time: 0, paused: false }, 1 / 60);
 assert(audioState.recentCues.some((cue) => cue.cueId === 'world.mama_wyvern.distant_roar'), 'audio director should resolve the distant mama roar cue');
+assert(audioState.recentCues.some((cue) => cue.cueId === 'world.mama_wyvern.flyover_roar'), 'audio director should resolve the close flyover roar cue');
+assert(audioState.recentCues.some((cue) => cue.cueId === 'world.mama_wyvern.napalm_projection'), 'audio director should resolve the napalm projection cue');
+assert(audioState.recentCues.some((cue) => cue.cueId === 'world.mama_wyvern.inferno_aftermath'), 'audio director should resolve the inferno aftermath cue');
 
 function buildProjection(targetGame, targetMap) {
   return buildRenderProjection({

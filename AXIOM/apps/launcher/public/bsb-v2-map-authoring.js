@@ -52,6 +52,15 @@ import {
   isBsbV2GeologyRecord,
   normalizeBsbV2GeologyRecord
 } from './bsb-v2-geology-authoring.js';
+import {
+  BSB_V2_TRANSITION_SEQUENCE_CONTRACT,
+  BSB_V2_TRANSITION_SEQUENCE_OPERATION_CONTRACT,
+  SMOKE_INSTINCT_DEPARTURE_ID,
+  applyBsbV2TransitionSequenceOperation as applyBsbV2TransitionSequenceRecordOperation,
+  normalizeBsbV2TransitionSequences,
+  normalizeBsbV2TransitionSequenceIntentProposal,
+  parseBsbV2TransitionSequenceCommand
+} from './bsb-v2-scene-sequence-authoring.js';
 
 export const BSB_V2_AUTHORING_CONTRACT = 'axiom.bsb-map-authoring.v0';
 export const BSB_V2_RUNTIME_MAP_CONTRACT = 'black-sky-bound.runtime-map.v0';
@@ -62,6 +71,12 @@ export const BSB_V2_MAP_MANIFEST_PATH = 'data/maps/manifest.json';
 export const AXIOM_WORKSPACE_CONTEXT_CONTRACT = 'axiom.workspace-context.v0';
 export const BSB_V2_PROJECT_WORKSPACE_CONTRACT = 'axiom.project-workspace.v0';
 export const BSB_V2_AUTHORING_SURFACE_ID = 'bsb-v2-map-authoring';
+export const BSB_V2_DEMO_ARENA_CONTRACT = 'black-sky-bound.demo-arena.v1';
+
+const DEMO_ARENA_ABILITIES = new Set([
+  'move', 'bite_claw', 'body_lunge', 'smoke_burst',
+  'smoke_spit', 'dodge', 'charge_counter', 'dragonfire'
+]);
 
 export function resolveBsbV2WorkspaceBinding(context) {
   if (!context || typeof context !== 'object' || Array.isArray(context)) throw new Error('bsb_workspace_context_missing');
@@ -340,6 +355,7 @@ export function createDefaultBsbV2AuthoringDocument() {
         label: 'Ash Road Threshold'
       }
     },
+    sceneSequences: [],
     sceneObjects: [
       { id: 'boulder:start-route', type: 'boulder', x: 8, y: 15 },
       normalizeBsbV2UndergrowthRecord({ id: 'fern:start-route-left', type: 'fern_patch', x: 7, y: 17 }),
@@ -382,9 +398,10 @@ export function createSecondApproachBsbV2AuthoringDocument() {
     width,
     height,
     tiles,
-    spawn: { x: 6, y: 17 },
+    spawn: { x: 24, y: 31, rotation: -Math.PI / 2 },
     escapeZone: { x: 46, y: 11, w: 4, h: 5 },
     transitions: { escapeZone: null },
+    sceneSequences: [],
     sceneObjects: [
       { id: 'snag:arrival-ash-road', type: 'dead_snag', x: 9, y: 15 },
       { id: 'boulder:ash-road-left', type: 'boulder', x: 12, y: 19 },
@@ -408,6 +425,200 @@ export function createSecondApproachBsbV2AuthoringDocument() {
   };
 }
 
+export function createCrownOfCindersBsbV2AuthoringDocument() {
+  const width = 64;
+  const height = 48;
+  const tiles = Array.from({ length: height }, () => Array(width).fill('rock'));
+  for (let y = 2; y < height - 2; y += 1) {
+    for (let x = 2; x < width - 2; x += 1) {
+      const nx = (x - 31.5) / 30;
+      const ny = (y - 23.5) / 21.5;
+      const edgeNoise = Math.sin(x * 0.71) * 0.035 + Math.cos(y * 0.83) * 0.035;
+      if ((nx * nx) + (ny * ny) < 0.94 + edgeNoise) tiles[y][x] = 'grass';
+    }
+  }
+  paintTiles(tiles, width, height, 32, 24, 8, 'scorched');
+  paintTiles(tiles, width, height, 32, 24, 3, 'dirt');
+  paintTiles(tiles, width, height, 32, 8, 4, 'scorched');
+  paintTiles(tiles, width, height, 54, 24, 4, 'dirt');
+  paintTiles(tiles, width, height, 32, 40, 4, 'scorched');
+  paintTiles(tiles, width, height, 9, 24, 4, 'dirt');
+  for (let y = 9; y <= 39; y += 1) {
+    if (Math.abs(y - 24) > 8) tiles[y][32] = y % 3 === 0 ? 'scorched' : 'dirt';
+  }
+  for (let x = 10; x <= 53; x += 1) {
+    if (Math.abs(x - 32) > 9) tiles[24][x] = x % 3 === 0 ? 'scorched' : 'dirt';
+  }
+  for (const [x, y] of [[18, 13], [46, 13], [18, 35], [46, 35], [25, 18], [39, 30]]) {
+    paintTiles(tiles, width, height, x, y, 2, 'rock');
+  }
+
+  const spawners = [
+    arenaSpawner('wave1_husk_north', 'Husks at the Broken Crown', 'husk', 32, 8, 1.55, 3, 2),
+    arenaSpawner('wave1_husk_south', 'Husks on the Ash Stair', 'husk', 32, 40, 1.7, 3, 2),
+    arenaSpawner('wave2_raider_west', 'West Spearline', 'raider', 9, 24, 2.25, 3, 2, 48),
+    arenaSpawner('wave2_raider_east', 'East Spearline', 'raider', 54, 24, 2.1, 3, 2, 48),
+    arenaSpawner('wave2_husk_north', 'Crown Rabble', 'husk', 32, 8, 1.4, 4, 3),
+    arenaSpawner('wave3_husk_west', 'West Ash Press', 'husk', 9, 24, 1.15, 5, 3),
+    arenaSpawner('wave3_husk_east', 'East Ash Press', 'husk', 54, 24, 1.15, 5, 3),
+    arenaSpawner('wave3_raider_north', 'Crown Torchbearers', 'raider', 32, 8, 1.9, 4, 2, 52),
+    arenaSpawner('wave4_wolf_nw', 'Northwest Hunt', 'werewolf', 14, 12, 2.8, 2, 1, 76),
+    arenaSpawner('wave4_wolf_se', 'Southeast Hunt', 'werewolf', 49, 36, 2.8, 2, 1, 76),
+    arenaSpawner('wave4_raider_south', 'Ash Stair Spears', 'raider', 32, 40, 1.75, 5, 3, 54),
+    arenaSpawner('wave5_husk_north', 'Black Sky North', 'husk', 32, 8, 1.0, 6, 4),
+    arenaSpawner('wave5_raider_east', 'Black Sky East', 'raider', 54, 24, 1.55, 5, 3, 58),
+    arenaSpawner('wave5_wolf_south', 'Black Sky Hunt', 'werewolf', 32, 40, 2.35, 3, 2, 82),
+    arenaSpawner('wave5_husk_west', 'Black Sky West', 'husk', 9, 24, 1.0, 6, 4)
+  ];
+  const sceneObjects = [
+    ['snag:northwest', 'dead_snag', 11, 10], ['snag:northeast', 'dead_snag', 52, 11],
+    ['snag:southwest', 'dead_snag', 12, 37], ['snag:southeast', 'dead_snag', 51, 37],
+    ['boulder:crown-west', 'boulder', 25, 24], ['boulder:crown-east', 'boulder', 39, 24],
+    ['boulder:crown-north', 'boulder', 32, 17], ['boulder:crown-south', 'boulder', 32, 31],
+    ['embers:crown-nw', 'smouldering_bramble', 27, 20], ['embers:crown-ne', 'smouldering_fern', 37, 20],
+    ['embers:crown-sw', 'smouldering_fern', 27, 28], ['embers:crown-se', 'smouldering_bramble', 37, 28],
+    ['arrows:west', 'fire_arrow_cluster', 16, 24], ['arrows:east', 'fire_arrow_cluster', 48, 24],
+    ['roots:north', 'root_decal', 31, 14], ['roots:south', 'root_decal', 33, 34],
+    ['litter:west', 'leaf_litter', 20, 27], ['litter:east', 'leaf_litter', 44, 21]
+  ].map(([id, type, x, y]) => ({ id, type, x, y }));
+  return {
+    contract: BSB_V2_AUTHORING_CONTRACT,
+    mapId: 'axiom_crown_of_cinders',
+    title: 'The Crown of Cinders',
+    scenarioId: 'demo_arena',
+    revision: 1,
+    width,
+    height,
+    tiles,
+    spawn: { x: 32, y: 24, rotation: -Math.PI / 2 },
+    escapeZone: { x: 1, y: 1, w: 1, h: 1 },
+    transitions: { escapeZone: null },
+    sceneSequences: [],
+    sceneObjects,
+    unitPlacements: [],
+    unitSpawners: spawners,
+    arena: {
+      contract: BSB_V2_DEMO_ARENA_CONTRACT,
+      initialUnlockedAbilityIds: ['move', 'bite_claw'],
+      startDelaySeconds: 2.5,
+      intermissionSeconds: 4,
+      recoveryPerWave: 24,
+      waves: [
+        arenaWave('first_blood', 'I · FIRST BLOOD', ['wave1_husk_north', 'wave1_husk_south'], 'dodge', 'INSTINCT AWAKENED · DODGE'),
+        arenaWave('spearline', 'II · THE SPEARLINE', ['wave2_raider_west', 'wave2_raider_east', 'wave2_husk_north'], 'body_lunge', 'INSTINCT AWAKENED · BODY LUNGE'),
+        arenaWave('the_press', 'III · THE PRESS', ['wave3_husk_west', 'wave3_husk_east', 'wave3_raider_north'], 'smoke_burst', 'INSTINCT AWAKENED · SMOKE BURST'),
+        arenaWave('the_hunt', 'IV · THE HUNT', ['wave4_wolf_nw', 'wave4_wolf_se', 'wave4_raider_south'], 'charge_counter', 'INSTINCT AWAKENED · DODGE CHARGE'),
+        arenaWave('black_sky', 'V · BLACK SKY', ['wave5_husk_north', 'wave5_raider_east', 'wave5_wolf_south', 'wave5_husk_west'])
+      ],
+      victoryMessage: 'THE CROWN HOLDS · DEMO COMPLETE'
+    },
+    lastResize: null,
+    provenance: {
+      canonicalOwner: 'AXIOM',
+      purpose: 'editable_source_for_bsb_public_demo_arena_bake',
+      runtimeAuthority: false
+    },
+    updatedAt: '2026-07-29T00:00:00.000Z'
+  };
+}
+
+function arenaSpawner(id, label, type, x, y, intervalSeconds, limit, maxAlive, hitPoints = 40) {
+  return {
+    id,
+    label,
+    type,
+    team: defaultTeamForUnit(type),
+    x,
+    y,
+    enabled: true,
+    intervalSeconds,
+    initialDelaySeconds: 0.35,
+    burstCount: 1,
+    maxAlive,
+    limit,
+    spawnRadiusTiles: 1.15,
+    hitPoints,
+    fixtureRadiusTiles: type === 'werewolf' ? 0.68 : 0.58
+  };
+}
+
+function arenaWave(id, label, spawnerIds, rewardAbilityId = null, rewardLabel = null) {
+  return { id, label, spawnerIds, rewardAbilityId, rewardLabel };
+}
+
+function normalizeDemoArenaDefinition(source, spawners) {
+  if (source == null) return null;
+  if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('bsb_demo_arena_invalid');
+  if (source.contract !== BSB_V2_DEMO_ARENA_CONTRACT) {
+    throw new Error(`bsb_demo_arena_contract_invalid:${source.contract ?? 'missing'}`);
+  }
+  const initialUnlockedAbilityIds = normalizeArenaAbilityIds(source.initialUnlockedAbilityIds, 'initialUnlockedAbilityIds');
+  if (!initialUnlockedAbilityIds.includes('move') || !initialUnlockedAbilityIds.includes('bite_claw')) {
+    throw new Error('bsb_demo_arena_starting_actions_missing');
+  }
+  if (!Array.isArray(source.waves) || source.waves.length < 1 || source.waves.length > 12) {
+    throw new Error('bsb_demo_arena_waves_invalid');
+  }
+  const spawnerById = new Map(spawners.map((entry) => [entry.id, entry]));
+  const assignedSpawnerIds = new Set();
+  const rewardAbilityIds = new Set(initialUnlockedAbilityIds);
+  const waveIds = new Set();
+  const waves = source.waves.map((wave, index) => {
+    const id = identifier(wave?.id, `arena.waves:${index}.id`);
+    if (waveIds.has(id)) throw new Error(`bsb_demo_arena_wave_duplicate:${id}`);
+    waveIds.add(id);
+    if (!Array.isArray(wave?.spawnerIds) || wave.spawnerIds.length === 0) {
+      throw new Error(`bsb_demo_arena_wave_spawners_missing:${id}`);
+    }
+    const spawnerIds = [...new Set(wave.spawnerIds.map((value, spawnerIndex) => identifier(value, `arena.waves:${index}.spawnerIds:${spawnerIndex}`)))];
+    for (const spawnerId of spawnerIds) {
+      const spawner = spawnerById.get(spawnerId);
+      if (!spawner) throw new Error(`bsb_demo_arena_spawner_missing:${id}:${spawnerId}`);
+      if (assignedSpawnerIds.has(spawnerId)) throw new Error(`bsb_demo_arena_spawner_reused:${spawnerId}`);
+      if (!(spawner.limit > 0)) throw new Error(`bsb_demo_arena_spawner_limit_required:${spawnerId}`);
+      assignedSpawnerIds.add(spawnerId);
+    }
+    const rewardAbilityId = wave.rewardAbilityId == null ? null : identifier(wave.rewardAbilityId, `arena.waves:${index}.rewardAbilityId`);
+    if (rewardAbilityId && !DEMO_ARENA_ABILITIES.has(rewardAbilityId)) throw new Error(`bsb_demo_arena_ability_unknown:${rewardAbilityId}`);
+    if (rewardAbilityId && rewardAbilityIds.has(rewardAbilityId)) throw new Error(`bsb_demo_arena_reward_repeated:${rewardAbilityId}`);
+    if (rewardAbilityId) rewardAbilityIds.add(rewardAbilityId);
+    return {
+      id,
+      label: text(wave.label, `WAVE ${index + 1}`),
+      spawnerIds,
+      rewardAbilityId,
+      rewardLabel: rewardAbilityId ? text(wave.rewardLabel, `INSTINCT AWAKENED · ${rewardAbilityId.replaceAll('_', ' ').toUpperCase()}`) : null
+    };
+  });
+  if (assignedSpawnerIds.size !== spawners.length) {
+    const unassigned = spawners.find((entry) => !assignedSpawnerIds.has(entry.id));
+    throw new Error(`bsb_demo_arena_spawner_unassigned:${unassigned?.id ?? 'unknown'}`);
+  }
+  return {
+    contract: BSB_V2_DEMO_ARENA_CONTRACT,
+    initialUnlockedAbilityIds,
+    startDelaySeconds: arenaNumber(source.startDelaySeconds, 2.5, 0, 30),
+    intermissionSeconds: arenaNumber(source.intermissionSeconds, 4, 0.5, 30),
+    recoveryPerWave: arenaNumber(source.recoveryPerWave, 20, 0, 999),
+    waves,
+    victoryMessage: text(source.victoryMessage, 'DEMO COMPLETE')
+  };
+}
+
+function normalizeArenaAbilityIds(values, label) {
+  if (!Array.isArray(values)) throw new Error(`bsb_demo_arena_abilities_invalid:${label}`);
+  const normalized = [...new Set(values.map((value, index) => identifier(value, `arena.${label}:${index}`)))];
+  const unknown = normalized.find((value) => !DEMO_ARENA_ABILITIES.has(value));
+  if (unknown) throw new Error(`bsb_demo_arena_ability_unknown:${unknown}`);
+  return normalized;
+}
+
+function arenaNumber(value, fallback, min, max) {
+  const numeric = value == null ? fallback : Number(value);
+  if (!Number.isFinite(numeric) || numeric < min || numeric > max) throw new Error('bsb_demo_arena_number_invalid');
+  return Math.round(numeric * 1000) / 1000;
+}
+
 export function validateBsbV2AuthoringDocument(source) {
   if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('bsb_authoring_document_invalid');
   if (source.contract !== BSB_V2_AUTHORING_CONTRACT) throw new Error(`bsb_authoring_contract_invalid:${source.contract ?? 'missing'}`);
@@ -424,6 +635,15 @@ export function validateBsbV2AuthoringDocument(source) {
   const sceneObjects = normalizeRecords(source.sceneObjects, 'sceneObjects', width, height, new Set(SCENE_OBJECTS.map(([id]) => id)));
   const unitPlacements = normalizeRecords(source.unitPlacements, 'unitPlacements', width, height, new Set(UNIT_TYPES.map(([id]) => id)), true);
   const unitSpawners = normalizeRecords(source.unitSpawners, 'unitSpawners', width, height, new Set(UNIT_TYPES.map(([id]) => id)), true);
+  const arena = normalizeDemoArenaDefinition(source.arena, unitSpawners);
+  const sceneSequences = normalizeBsbV2TransitionSequences(source.sceneSequences, {
+    actorIds: unitPlacements.map((entry) => entry.id)
+  });
+  const transitions = normalizeAuthoringTransitions(source.transitions);
+  const departureSequenceId = transitions.escapeZone?.departureSequenceId;
+  if (departureSequenceId && !sceneSequences.some((entry) => entry.id === departureSequenceId)) {
+    throw new Error(`bsb_authoring_departure_sequence_missing:${departureSequenceId}`);
+  }
   const lastResize = normalizeLastResize(source.lastResize, width, height);
   return {
     contract: BSB_V2_AUTHORING_CONTRACT,
@@ -434,12 +654,14 @@ export function validateBsbV2AuthoringDocument(source) {
     width,
     height,
     tiles,
-    spawn: point(source.spawn, width, height, 'spawn'),
+    spawn: spawnPoint(source.spawn, width, height, 'spawn'),
     escapeZone: rect(source.escapeZone, width, height, 'escapeZone'),
-    transitions: normalizeAuthoringTransitions(source.transitions),
+    transitions,
+    sceneSequences,
     sceneObjects,
     unitPlacements,
     unitSpawners,
+    ...(arena ? { arena } : {}),
     lastResize,
     provenance: {
       canonicalOwner: 'AXIOM',
@@ -524,9 +746,11 @@ export function buildBsbV2RuntimeMap(source) {
     spawn: { ...document.spawn },
     escapeZone: { ...document.escapeZone },
     transitions: cloneRecord(document.transitions),
+    sceneSequences: document.sceneSequences.map(cloneRecord),
     enemySpawns: document.unitPlacements.filter((entry) => entry.team === 'enemy').map(cloneRecord),
     unitPlacements: document.unitPlacements.map(cloneRecord),
     unitSpawners: document.unitSpawners.map(cloneRecord),
+    ...(document.arena ? { arena: cloneRecord(document.arena) } : {}),
     sceneObjects: document.sceneObjects.map((entry) => ({ ...cloneRecord(entry), source: 'axiom.bsb-map-authoring.v0' }))
   };
 }
@@ -1770,6 +1994,12 @@ function createRuntime() {
       const record = state.document.sceneObjects.find((entry) => entry.id === id && isBsbV2GeologyRecord(entry));
       return record ? cloneRecord(record) : null;
     },
+    list() {
+      if (!state.document) return [];
+      return state.document.sceneObjects
+        .filter(isBsbV2GeologyRecord)
+        .map((record) => cloneRecord(record));
+    },
     create(options = {}) { return applyGeologyOperation({ ...options, op: 'create' }); },
     createCluster(options = {}) { return applyGeologyOperation({ ...options, op: 'create_cluster' }); },
     setFormation(geologyId, formation) { return applyGeologyOperation({ op: 'set_formation', geologyId, formation }); },
@@ -1781,6 +2011,62 @@ function createRuntime() {
     moss(geologyId, amount = 0.2) { return applyGeologyOperation({ op: 'moss', geologyId, amount }); },
     weather(geologyId, amount = 0.18) { return applyGeologyOperation({ op: 'weather', geologyId, amount }); },
     applyOperation(operation) { return applyGeologyOperation(operation); }
+  });
+
+  function applyTransitionSequenceOperation(operation = {}) {
+    if (!state.document) throw new Error('bsb_transition_sequence_authoring_document_unavailable');
+    const result = applyBsbV2TransitionSequenceRecordOperation(state.document, operation);
+    state.document = validateBsbV2AuthoringDocument(result.document);
+    state.saveReceipt = null;
+    state.bakeReceipt = null;
+    markDirty();
+    const receipt = {
+      ok: true,
+      applied: true,
+      contract: result.contract,
+      operation: result.operation,
+      affectedIds: [...result.affectedIds],
+      beforeRevision: result.beforeRevision,
+      afterRevision: result.afterRevision,
+      authoringPath: state.authoringPath,
+      runtimeStatus: classifyBsbV2RuntimeFreshness(state),
+      source: 'EDITOR.scenes.transitions'
+    };
+    try { window.EDITOR?.events?.emit?.('sceneSequence:operationApplied', cloneRecord(receipt)); } catch (_) {}
+    return receipt;
+  }
+
+  function updateTransitionSequencePhase(sequenceId, phaseId, durationSeconds) {
+    return applyTransitionSequenceOperation({ op: 'set_phase_duration', sequenceId, phaseId, durationSeconds: Number(durationSeconds) });
+  }
+
+  function updateTransitionSequenceLanding(sequenceId, axis, value) {
+    const sequence = state.document?.sceneSequences?.find((entry) => entry.id === sequenceId);
+    if (!sequence) throw new Error(`bsb_transition_sequence_missing:${sequenceId}`);
+    return applyTransitionSequenceOperation({
+      op: 'set_landing_anchor',
+      sequenceId,
+      x: axis === 'x' ? Number(value) : sequence.landing.anchor.x,
+      y: axis === 'y' ? Number(value) : sequence.landing.anchor.y
+    });
+  }
+
+  const transitionSequenceApi = Object.freeze({
+    contract: BSB_V2_TRANSITION_SEQUENCE_OPERATION_CONTRACT,
+    catalogue() {
+      return {
+        contract: BSB_V2_TRANSITION_SEQUENCE_CONTRACT,
+        operations: ['ensure_smoke_instinct_departure', 'upsert', 'set_landing_anchor', 'set_phase_duration', 'set_smoke_threshold', 'set_actor_path', 'remove']
+      };
+    },
+    list() { return cloneRecord(state.document?.sceneSequences ?? []); },
+    get(sequenceId = SMOKE_INSTINCT_DEPARTURE_ID) {
+      const sequence = state.document?.sceneSequences?.find((entry) => entry.id === sequenceId);
+      return sequence ? cloneRecord(sequence) : null;
+    },
+    parseCommand(text) { return parseBsbV2TransitionSequenceCommand(text); },
+    interpretProposal(proposal) { return normalizeBsbV2TransitionSequenceIntentProposal(proposal); },
+    applyOperation(operation) { return applyTransitionSequenceOperation(operation); }
   });
 
   function removeRecord(kind, id) {
@@ -2098,6 +2384,11 @@ function createRuntime() {
         contract: BSB_V2_UNDERGROWTH_DNA_CONTRACT,
         count: state.document.sceneObjects.filter(isBsbV2UndergrowthRecord).length
       } : null,
+      transitionSequences: state.document ? {
+        contract: BSB_V2_TRANSITION_SEQUENCE_CONTRACT,
+        count: state.document.sceneSequences.length,
+        ids: state.document.sceneSequences.map((entry) => entry.id)
+      } : null,
       undergrowthBrush: {
         active: isUndergrowthBrushActive(),
         previewCount: state.undergrowthBrushPreview?.candidates.length ?? 0,
@@ -2181,6 +2472,7 @@ function createRuntime() {
       ${doc ? `
         ${renderRegionSelector(doc)}
         ${renderAuthoringLifecycle(doc, records.length, workspaceContext)}
+        ${renderTransitionSequenceEditor(doc)}
         <div class="bsb-v2-actions">
           <button class="bsb-v2-button primary" onclick="BsbV2MapAuthoring.save()" ${!state.dirty || ['saving', 'baking', 'loading'].includes(state.status) ? 'disabled' : ''}>${state.dirty ? 'Save Source' : 'Source Saved'}</button>
           <button class="bsb-v2-button accent" onclick="BsbV2MapAuthoring.bakeAndPreview()" ${['saving', 'baking', 'loading'].includes(state.status) ? 'disabled' : ''}>Bake & Preview</button>
@@ -2217,6 +2509,31 @@ function createRuntime() {
       ` : '<div class="bsb-v2-card"><div class="bsb-v2-muted">Loading the canonical AXIOM authoring document…</div></div>'}`;
     setView(state.view);
     draw();
+  }
+
+  function renderTransitionSequenceEditor(doc) {
+    const sequence = doc.sceneSequences.find((entry) => entry.id === doc.transitions?.escapeZone?.departureSequenceId)
+      ?? doc.sceneSequences[0]
+      ?? null;
+    if (!sequence) {
+      return `<details class="bsb-v2-card"><summary>Scene transition · none authored</summary>
+        <div class="bsb-v2-muted">Author impact, actor paths, and cover timing before a map handoff.</div>
+        <button class="bsb-v2-button primary" onclick="BsbV2MapAuthoring.applyTransitionSequenceOperation({op:'ensure_smoke_instinct_departure'})">Author smoke instinct departure</button>
+      </details>`;
+    }
+    const phase = (id) => sequence.phases.find((entry) => entry.id === id);
+    return `<details class="bsb-v2-card" open data-scene-sequence-id="${escapeAttr(sequence.id)}">
+      <summary>Scene transition · ${escapeHtml(sequence.label)}</summary>
+      <div class="bsb-v2-muted">${sequence.actorTracks.length} authored actors · ${escapeHtml(sequence.landing.debris.direction.replaceAll('_', ' '))} · handoff at ${Math.round(sequence.smoke.coverageThreshold * 100)}% smoke</div>
+      <div class="bsb-v2-resize-grid">
+        <label>Landing X<input type="number" step="0.1" value="${sequence.landing.anchor.x}" onchange="BsbV2MapAuthoring.updateTransitionSequenceLanding('${escapeAttr(sequence.id)}','x',this.value)"></label>
+        <label>Landing Y<input type="number" step="0.1" value="${sequence.landing.anchor.y}" onchange="BsbV2MapAuthoring.updateTransitionSequenceLanding('${escapeAttr(sequence.id)}','y',this.value)"></label>
+        <label>Impact s<input type="number" min="0.1" max="30" step="0.05" value="${phase('impact').durationSeconds}" onchange="BsbV2MapAuthoring.updateTransitionSequencePhase('${escapeAttr(sequence.id)}','impact',this.value)"></label>
+        <label>Charge s<input type="number" min="0.1" max="30" step="0.05" value="${phase('raider_charge').durationSeconds}" onchange="BsbV2MapAuthoring.updateTransitionSequencePhase('${escapeAttr(sequence.id)}','raider_charge',this.value)"></label>
+        <label>Smoke s<input type="number" min="0.1" max="30" step="0.05" value="${phase('smoke_cover').durationSeconds}" onchange="BsbV2MapAuthoring.updateTransitionSequencePhase('${escapeAttr(sequence.id)}','smoke_cover',this.value)"></label>
+      </div>
+      <div class="bsb-v2-muted">Actors: ${sequence.actorTracks.map((entry) => escapeHtml(entry.actorId)).join(' · ')}</div>
+    </details>`;
   }
 
   function renderOutlinerRows(records) {
@@ -2669,11 +2986,13 @@ function createRuntime() {
     updateTitle, selectRecord, updateSelectedRecord, removeRecord, syncProject,
     updateSelectedTreeField, operateSelectedTree, updateSelectedUndergrowthField, operateSelectedUndergrowth,
     updateSelectedGeologyField, operateSelectedGeology,
+    applyTransitionSequenceOperation, updateTransitionSequencePhase, updateTransitionSequenceLanding,
     setOutlinerQuery, setOutlinerKind,
     setInputOwner, captureDiaryAnchor, focusContext, getDiaryAnchor: () => state.diaryAnchor ? cloneRecord(state.diaryAnchor) : null,
     trees: treeApi,
     undergrowth: undergrowthApi,
-    geology: geologyApi
+    geology: geologyApi,
+    transitionSequences: transitionSequenceApi
   };
 }
 
@@ -2984,6 +3303,7 @@ function normalizeAuthoringEscapeTransition(source) {
     mode,
     nextMapPath: normalizeBsbV2RuntimeMapPath(source.nextMapPath),
     nextMapId: source.nextMapId == null ? null : identifier(source.nextMapId, 'transitions.escapeZone.nextMapId'),
+    departureSequenceId: source.departureSequenceId == null ? null : identifier(source.departureSequenceId, 'transitions.escapeZone.departureSequenceId'),
     arrivalSequenceId: source.arrivalSequenceId == null ? null : identifier(source.arrivalSequenceId, 'transitions.escapeZone.arrivalSequenceId'),
     label: text(source.label, 'Next region')
   };
@@ -3031,6 +3351,13 @@ function normalizeLastResize(source, width, height) {
 
 function point(value, width, height, label) {
   return { x: integer(value?.x, `${label}.x`, 0, width - 1), y: integer(value?.y, `${label}.y`, 0, height - 1) };
+}
+
+function spawnPoint(value, width, height, label) {
+  const position = point(value, width, height, label);
+  const rotation = value?.rotation == null ? 0 : Number(value.rotation);
+  if (!Number.isFinite(rotation)) throw new Error(`bsb_authoring_number_invalid:${label}.rotation`);
+  return { ...position, rotation };
 }
 
 function rect(value, width, height, label) {
@@ -3103,6 +3430,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     window.EDITOR.procedural.trees = runtime.trees;
     window.EDITOR.procedural.undergrowth = runtime.undergrowth;
     window.EDITOR.procedural.geology = runtime.geology;
+    window.EDITOR.scenes = window.EDITOR.scenes || {};
+    window.EDITOR.scenes.transitions = runtime.transitionSequences;
   }
   queueMicrotask(() => runtime.init());
 }

@@ -1,20 +1,22 @@
 import { getDragon } from '../game/selectors.js';
 import { getTerrainDef } from '../world/terrain.js';
 import { createDebugSnapshot } from './snapshot.js';
-import { buildPlayerAbilityText } from './playerAbilityText.js';
-import { buildTutorialText } from './tutorialText.js';
+import { buildPlayerAbilityText } from './playerAbilityText.js'; import { buildTutorialText } from './tutorialText.js';
 import { buildEnemyBehaviourText } from './enemyBehaviourText.js';
 import { buildOpeningSequenceProjection } from '../projection/openingSequenceProjection.js';
 import { buildSmokeAwakeningText } from './smokeAwakeningText.js';
+import { buildAuthoredTransitionText } from './authoredTransitionText.js'; import { buildArenaWaveText } from './arenaWaveText.js'; import { buildRaiderPhysicalMotionText } from './raiderPhysicalMotionText.js';
 
 export function renderGameToText(app) {
-  const dragon = getDragon(app.state.game);
-  const snapshot = createDebugSnapshot(app.state.game);
+  const dragon = getDragon(app.state.game); const snapshot = createDebugSnapshot(app.state.game);
   const rigPose = dragon?.wyvernProjection?.rigPose ?? null;
   return JSON.stringify({
     coordinateSystem: 'world tiles, origin top-left, x right, y down',
     status: app.state.game.status,
     paused: app.state.paused,
+    pauseMenu: app.state.paused ? { selectedSettingIndex: app.state.pauseMenu?.selectedSettingIndex ?? 0,
+      lastInputMethod: app.state.pauseMenu?.lastInputMethod ?? null, draggedSettingId: app.state.pauseMenu?.draggedSettingId ?? null,
+      pointerOverControl: app.state.pauseMenu?.pointerOverControl === true, settings: { ...(app.state.playerProfile?.settings?.audio ?? {}) } } : null,
     time: Number(app.state.time.toFixed(3)),
     gameplayTimeScale: Number((app.state.gameTime?.currentScale ?? 1).toFixed(3)),
     performance: {
@@ -38,6 +40,7 @@ export function renderGameToText(app) {
       catalogueMapId: app.state.runtimeMapLoad.catalogueMapId,
       transition: app.state.runtimeMapLoad.transition ?? null,
       escapeTransition: app.state.map.transitions?.escapeZone ?? null,
+      sceneSequenceIds: (app.state.map.sceneSequences ?? []).map((entry) => entry.id),
       immutable: Object.isFrozen(app.state.map)
     },
     camera: {
@@ -49,6 +52,8 @@ export function renderGameToText(app) {
     },
     player: dragon ? buildPlayerText(dragon) : null,
     opening: buildOpeningText(app.state),
+    authoredTransition: buildAuthoredTransitionText(app.state),
+    arena: buildArenaWaveText(app.state.game),
     smokeAwakening: buildSmokeAwakeningText(app.state),
     tutorial: buildTutorialText(app.state),
     actors: app.state.game.actors.map(buildActorText),
@@ -138,6 +143,12 @@ function buildPlayerText(dragon) {
     hp: dragon.hp,
     maxHp: dragon.maxHp,
     alive: dragon.alive,
+    recovery: dragon.health ? {
+      blockedByThreat: dragon.health.recoveryBlockedByThreat === true,
+      directPursuerCount: dragon.health.directPursuerCount ?? 0,
+      delayRemainingMs: Number((dragon.health.recoveryDelayRemainingMs ?? 0).toFixed(1)),
+      regeneratedTotal: Number((dragon.health.regeneratedTotal ?? 0).toFixed(3))
+    } : null,
     lifecycle: dragon.playerLifecycle ? {
       state: dragon.playerLifecycle.state,
       previousState: dragon.playerLifecycle.previousState ?? null,
@@ -190,7 +201,7 @@ function buildPlayerText(dragon) {
 
 function buildActorText(actor) {
   return {
-    id: actor.id,
+    id: actor.id, authoredId: actor.authoredId ?? null,
     type: actor.type,
     team: actor.team,
     x: Number(actor.x.toFixed(2)),
@@ -239,6 +250,8 @@ function buildActorText(actor) {
     } : null,
     humanoidPartCount: actor.humanoidProjection?.partCount ?? null,
     humanoidReactionState: actor.humanoidProjection?.reactionState ?? null,
+    creatureRecipe: actor.creatureRecipe ? { contract: actor.creatureRecipe.contract, recipeId: actor.creatureRecipe.recipeId, seed: actor.creatureRecipe.seed, seedProvenance: actor.creatureRecipe.seedProvenance, variantSignature: actor.creatureRecipe.variantSignature, attachmentIds: actor.creatureRecipe.attachmentIds } : null,
+    raiderPhysicalMotion: buildRaiderPhysicalMotionText(actor.raiderPhysicalMotion, roundPoint),
     motionTrailRoles: [...new Set((actor.humanoidProjection?.motionTrails ?? []).map((sample) => sample.role))],
     motionTrailSamples: actor.humanoidProjection?.motionTrails?.length ?? 0,
     spearSocket: actor.humanoidProjection?.sockets?.spearTip ? {

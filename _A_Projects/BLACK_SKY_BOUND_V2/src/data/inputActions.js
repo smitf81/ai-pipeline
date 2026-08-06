@@ -11,7 +11,9 @@ export const InputActionId = Object.freeze({
   MENU_DOWN: 'menu_down',
   MENU_LEFT: 'menu_left',
   MENU_RIGHT: 'menu_right',
-  MENU_CONFIRM: 'menu_confirm'
+  MENU_CONFIRM: 'menu_confirm',
+  MENU_MIN: 'menu_min',
+  MENU_MAX: 'menu_max'
 });
 
 const key = (value, label, options = {}) => Object.freeze({ device: 'keyboard', key: value, label, ...options });
@@ -39,7 +41,9 @@ export const INPUT_ACTIONS = Object.freeze({
   [InputActionId.MENU_DOWN]: action(InputActionId.MENU_DOWN, 'MENU DOWN', [key('arrowdown', 'DOWN'), key('s', 'S', { alternate: true })]),
   [InputActionId.MENU_LEFT]: action(InputActionId.MENU_LEFT, 'MENU LEFT', [key('arrowleft', 'LEFT'), key('a', 'A', { alternate: true })]),
   [InputActionId.MENU_RIGHT]: action(InputActionId.MENU_RIGHT, 'MENU RIGHT', [key('arrowright', 'RIGHT'), key('d', 'D', { alternate: true })]),
-  [InputActionId.MENU_CONFIRM]: action(InputActionId.MENU_CONFIRM, 'CONFIRM', [key('enter', 'ENTER')])
+  [InputActionId.MENU_CONFIRM]: action(InputActionId.MENU_CONFIRM, 'CONFIRM', [key('enter', 'ENTER')]),
+  [InputActionId.MENU_MIN]: action(InputActionId.MENU_MIN, 'MINIMUM', [key('home', 'HOME')]),
+  [InputActionId.MENU_MAX]: action(InputActionId.MENU_MAX, 'MAXIMUM', [key('end', 'END')])
 });
 
 export function getInputAction(id) {

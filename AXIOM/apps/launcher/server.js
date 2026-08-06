@@ -212,6 +212,42 @@ const MCP_TOOLS = [
     }
   },
   {
+    name: "axiom_entity_tuning_propose",
+    description: "Create a non-committed Entity Studio candidate through a provider-backed field manifest. This never applies or persists the value; the human must Preview and Apply it in AXIOM.",
+    inputSchema: {
+      type: "object",
+      required: ["targetId", "path", "value"],
+      properties: {
+        providerId: { type: "string", description: "Optional provider id used for traceability." },
+        targetId: { type: "string", description: "Entity Studio target id, such as actor:raider_1 or geology:boulder_1." },
+        path: { type: "string", description: "Exact editable path from the target's provider manifest." },
+        value: { description: "Proposed scalar or enumerated value from the provider manifest." },
+        reason: { type: "string", description: "Short reason for the proposal." },
+        source: { type: "object", description: "Optional agent provenance." }
+      }
+    }
+  },
+  {
+    name: "axiom_scene_sequence_apply",
+    description: "Author or tune one transition sequence in the active BSB Map Forge document. The browser applies the semantic operation to AXIOM source and exposes a dirty-state receipt before save and runtime bake.",
+    inputSchema: {
+      type: "object",
+      required: ["op"],
+      properties: {
+        op: { type: "string", enum: ["ensure_smoke_instinct_departure", "upsert", "set_landing_anchor", "set_phase_duration", "set_smoke_threshold", "set_actor_path", "remove"] },
+        sequenceId: { type: "string" },
+        phaseId: { type: "string", enum: ["impact", "raider_charge", "smoke_cover"] },
+        durationSeconds: { type: "number", minimum: 0.1, maximum: 30 },
+        x: { type: "number" },
+        y: { type: "number" },
+        coverageThreshold: { type: "number", minimum: 0.5, maximum: 1 },
+        actorId: { type: "string" },
+        path: { type: "array", items: { type: "object" } },
+        sequence: { type: "object" }
+      }
+    }
+  },
+  {
     name: "project_list",
     description: "List project roots explicitly authorised for AXIOM File Manager access.",
     inputSchema: { type: "object", properties: {} }
@@ -1600,6 +1636,56 @@ if (toolDef?.remoteCallUrl) {
         pendingClientApply: true,
         applied: false,
         note: "Browser client must apply this operation through EDITOR.procedural.geology."
+      },
+      clientAction,
+      receipt: { tool, status: "proposed_for_client_apply", createdAt: now }
+    };
+  }
+
+  if (tool === "axiom_entity_tuning_propose") {
+    const targetId = String(params.targetId || "").trim();
+    const fieldPath = String(params.path || "").trim();
+    if (!targetId) return { ok: false, error: "Entity tuning proposal requires targetId" };
+    if (!fieldPath) return { ok: false, error: "Entity tuning proposal requires an exact provider field path" };
+    if (!Object.hasOwn(params, "value")) return { ok: false, error: "Entity tuning proposal requires value" };
+    const clientAction = {
+      type: "entity_authoring_candidate",
+      payload: {
+        providerId: params.providerId || null,
+        targetId,
+        path: fieldPath,
+        value: params.value,
+        reason: params.reason || null,
+        source: params.source || { kind: "agent", id: "axiom_mcp_entity_tuning" }
+      }
+    };
+    return {
+      ok: true,
+      result: {
+        classification: "non_committed_entity_authoring_candidate",
+        requested: clientAction.payload,
+        pendingClientApply: true,
+        applied: false,
+        note: "Browser client must validate this proposal through the selected Entity Studio provider. Human Preview and Apply remain explicit."
+      },
+      clientAction,
+      receipt: { tool, status: "proposed_for_entity_studio", createdAt: now }
+    };
+  }
+
+  if (tool === "axiom_scene_sequence_apply") {
+    const op = String(params.op || "").trim().toLowerCase().replace(/-/g, "_");
+    const allowed = new Set(["ensure_smoke_instinct_departure", "upsert", "set_landing_anchor", "set_phase_duration", "set_smoke_threshold", "set_actor_path", "remove"]);
+    if (!allowed.has(op)) return { ok: false, error: `Unsupported scene-sequence operation: ${op || "<missing>"}` };
+    const clientAction = { type: "bsb_scene_sequence_operation", payload: { ...params, op } };
+    return {
+      ok: true,
+      result: {
+        contract: "axiom.bsb-transition-sequence-operation.v1",
+        requested: clientAction.payload,
+        pendingClientApply: true,
+        applied: false,
+        note: "Browser client must apply this operation through EDITOR.scenes.transitions."
       },
       clientAction,
       receipt: { tool, status: "proposed_for_client_apply", createdAt: now }

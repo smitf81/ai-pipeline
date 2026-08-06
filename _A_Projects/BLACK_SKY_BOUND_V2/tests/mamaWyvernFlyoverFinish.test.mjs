@@ -70,7 +70,7 @@ worldEventSystem({ game, map, dt: 0 });
 worldEventSystem({
   game,
   map,
-  dt: MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds + MAMA_WYVERN_WORLD_EVENT.timing.flyoverSeconds * 0.55
+  dt: MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds + MAMA_WYVERN_WORLD_EVENT.timing.flyoverSeconds * 0.7
 });
 const burningTree = game.sceneObjects.find((object) => object.id === 'tree:torch-edge');
 assert(burningTree?.materialState?.treeFire, 'an inferno crossing a tree should ignite runtime tree material state');

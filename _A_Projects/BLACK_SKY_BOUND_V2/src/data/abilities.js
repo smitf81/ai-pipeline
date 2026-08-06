@@ -67,7 +67,7 @@ export const ABILITIES = Object.freeze({
     displayName: 'DODGE',
     reviewOrder: 50,
     unlockedByDefault: true,
-    staminaCost: 20,
+    staminaCost: 24,
     requiredState: 'grounded'
   }),
   [AbilityId.CHARGE_COUNTER]: Object.freeze({

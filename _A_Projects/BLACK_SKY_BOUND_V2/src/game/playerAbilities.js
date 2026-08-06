@@ -9,6 +9,22 @@ export function canUseAbility(world, entity, abilityId) {
   return progression?.unlockedAbilities?.includes(abilityId) === true;
 }
 
+export function captureRunAbilityProgression(world, entity) {
+  const progression = getComponent(world, entity, ComponentType.AbilityProgression);
+  return progression ? {
+    unlockedAbilities: [...progression.unlockedAbilities],
+    consumedUnlockEvents: [...progression.consumedUnlockEvents]
+  } : null;
+}
+
+export function hydrateRunAbilityProgression(world, entity, snapshot) {
+  const progression = getComponent(world, entity, ComponentType.AbilityProgression);
+  if (!progression || !snapshot) return false;
+  progression.unlockedAbilities = uniqueKnown(snapshot.unlockedAbilities, getAbilityDefinition);
+  progression.consumedUnlockEvents = uniqueKnown(snapshot.consumedUnlockEvents, getAbilityUnlockEvent);
+  return true;
+}
+
 export function grantAbility(world, entity, abilityId, source = 'direct_grant') {
   const progression = getComponent(world, entity, ComponentType.AbilityProgression);
   if (!progression || !getAbilityDefinition(abilityId)) return false;
@@ -29,4 +45,8 @@ export function applyAbilityUnlockEvent(world, entity, eventId) {
   const receipt = { ok: true, eventId, grants, presentation: event.presentation };
   progression.lastUnlockReceipt = receipt;
   return receipt;
+}
+
+function uniqueKnown(values, resolver) {
+  return [...new Set((Array.isArray(values) ? values : []).filter((value) => resolver(value)))];
 }

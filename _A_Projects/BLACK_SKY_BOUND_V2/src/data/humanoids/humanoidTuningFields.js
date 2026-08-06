@@ -1,3 +1,5 @@
+import { CAMERA_VISIBILITY_FOCUS_TUNING_FIELDS } from '../cameraVisibilityFocusProfile.js';
+
 export const HUMANOID_TUNING_FIELDS = Object.freeze([
   field('visual.scale', 'Visual scale', 'Scale', 0.72, 1.45, 0.01),
   field('body.torsoLength', 'Body', 'Torso length', 0.22, 0.72, 0.01),
@@ -14,7 +16,8 @@ export const HUMANOID_TUNING_FIELDS = Object.freeze([
   field('gait.armSwing', 'Gait', 'Arm swing', 0.04, 0.28, 0.01),
   field('torch.handOffsetForward', 'Torch', 'Hand forward', -0.06, 0.2, 0.01),
   field('torch.handOffsetRight', 'Torch', 'Hand side', -0.08, 0.16, 0.01),
-  field('torch.length', 'Torch', 'Length', 0.2, 0.62, 0.01)
+  field('torch.length', 'Torch', 'Length', 0.2, 0.62, 0.01),
+  ...CAMERA_VISIBILITY_FOCUS_TUNING_FIELDS
 ]);
 
 export function getHumanoidTuningFields() {

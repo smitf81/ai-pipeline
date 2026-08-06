@@ -1,4 +1,4 @@
-export function createFixedStepLoop({ stepMs, update, render, now = () => performance.now(), raf = requestAnimationFrame }) {
+export function createFixedStepLoop({ stepMs, update, render, onFrameTiming = null, now = () => performance.now(), raf = requestAnimationFrame }) {
   let running = false;
   let last = 0;
   let accumulator = 0;
@@ -11,11 +11,17 @@ export function createFixedStepLoop({ stepMs, update, render, now = () => perfor
     last = t;
     accumulator += elapsed;
 
+    const simulationStart = now();
+    let steps = 0;
     while (accumulator >= stepMs) {
       update(stepMs / 1000);
       accumulator -= stepMs;
+      steps += 1;
     }
+    const simulationMs = now() - simulationStart;
+    const renderStart = now();
     render(accumulator / stepMs);
+    onFrameTiming?.({ frameIntervalMs: elapsed, simulationMs, renderPathMs: now() - renderStart, steps });
     raf(frame);
   }
 
@@ -35,7 +41,9 @@ export function createFixedStepLoop({ stepMs, update, render, now = () => perfor
         accumulator -= stepMs;
         steps += 1;
       }
+      const renderStart = now();
       render(accumulator / stepMs);
+      onFrameTiming?.({ frameIntervalMs: ms, simulationMs: 0, renderPathMs: now() - renderStart, steps });
       return steps;
     },
     isRunning() { return running; }

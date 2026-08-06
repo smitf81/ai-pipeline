@@ -1,12 +1,13 @@
 import { ComponentType } from '../constants/componentTypes.js';
 import { CONFIG } from '../config.js';
 import { getCreatureTuningFields, listProfileOverridePaths } from '../data/creatures/creatureTuning.js';
-import { getHumanoidTuningFields } from '../data/humanoids/raiderHumanoid.js';
 import { getComponent } from '../ecs/world.js';
 import { screenToWorld } from '../render/camera.js';
 import { syncGameViews } from '../game/selectors.js';
 import { wyvernProjectionSystem } from '../systems/wyvernProjectionSystem.js';
 import { humanoidProjectionSystem } from '../systems/humanoidProjectionSystem.js';
+import { raiderPhysicalMotionSystem } from '../systems/raiderPhysicalMotionSystem.js';
+import { resolveCreatureTuningTarget } from './entityTuningTargets.js';
 
 export function createTuningState() {
   return {
@@ -60,7 +61,7 @@ export function applyTuningSelectionInput(state, input) {
 
 export function selectTuningEntity(state, entityId) {
   const actor = state.game.actors.find((item) => item.id === entityId);
-  const target = getTuningTarget(actor);
+  const target = resolveCreatureTuningTarget(actor, state.game.creatureTuning);
   if (!target) return false;
   state.tuning.selectedEntityId = entityId;
   state.tuning.selectedProfileId = target.profileId;
@@ -73,6 +74,7 @@ export function selectTuningEntity(state, entityId) {
 export function refreshCreatureRigForTuning(state) {
   if (!state?.game) return;
   wyvernProjectionSystem({ game: state.game, dt: 0 });
+  raiderPhysicalMotionSystem({ game: state.game, dt: 0 });
   humanoidProjectionSystem({ game: state.game, dt: 0 });
   syncGameViews(state.game);
   syncTuningSummary(state);
@@ -82,7 +84,7 @@ export function syncTuningSummary(state) {
   const tuning = state.tuning;
   if (!tuning) return;
   const actor = state.game?.actors?.find((item) => item.id === tuning.selectedEntityId);
-  const target = getTuningTarget(actor);
+  const target = resolveCreatureTuningTarget(actor, state.game?.creatureTuning);
   const profileId = target?.profileId ?? tuning.selectedProfileId;
   tuning.selectedProfileId = profileId ?? null;
   tuning.selectedTuningKind = target?.kind ?? tuning.selectedTuningKind ?? null;
@@ -108,26 +110,6 @@ function pickActorByVisualBounds(state, screenX, screenY) {
     if (!targetBounds) return false;
     return tileX >= targetBounds.minX && tileX <= targetBounds.maxX && tileY >= targetBounds.minY && tileY <= targetBounds.maxY;
   }) ?? null;
-}
-
-function getTuningTarget(actor) {
-  if (actor?.wyvernProjection) {
-    return {
-      kind: 'wyvern',
-      profileId: actor.wyvernProjection.rigPose?.profileId ?? actor.wyvernProjection.proceduralPose?.proportionProfileId ?? null,
-      manifest: getCreatureTuningFields(),
-      visualBounds: actor.wyvernProjection.rigPose?.visualBounds ?? null
-    };
-  }
-  if (actor?.humanoidProjection) {
-    return {
-      kind: 'humanoid',
-      profileId: actor.humanoidProjection.profileId,
-      manifest: getHumanoidTuningFields(),
-      visualBounds: actor.humanoidProjection.visualBounds ?? null
-    };
-  }
-  return null;
 }
 
 export function zeroPlayerIntentWhileTuning(state, input) {

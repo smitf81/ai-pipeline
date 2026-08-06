@@ -25,12 +25,29 @@ export function summarizePayload(payload) {
   return summary;
 }
 
-function rounded(value) {
+export function findAudioPlayer(game) {
+  return (game?.actors ?? []).find((actor) => actor.id === game.dragonId)
+    ?? (game?.actors ?? []).find((actor) => actor.team === 'player')
+    ?? null;
+}
+
+export function findNearestEnemy(game, player) {
+  if (!game || !player) return null;
+  let nearest = null;
+  for (const actor of game.actors ?? []) {
+    if (!actor.alive || actor.team === player.team) continue;
+    const distance = Math.hypot(actor.x - player.x, actor.y - player.y);
+    if (!nearest || distance < nearest.distance) nearest = { actor, distance };
+  }
+  return nearest;
+}
+
+export function rounded(value) {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? Number(numeric.toFixed(3)) : 0;
 }
 
-function clamp01(value) {
+export function clamp01(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return 0;
   return Math.max(0, Math.min(1, numeric));

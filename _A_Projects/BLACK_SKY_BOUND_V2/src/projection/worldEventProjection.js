@@ -61,6 +61,7 @@ function projectFlyover(event, tileSize) {
     crossingWorldX: event.centerX * tileSize,
     crossingWorldY: event.centerY * tileSize,
     scale: event.shadowScale,
+    altitudeMeters: MAMA_WYVERN_WORLD_EVENT.shadow.altitudeMeters,
     opacity: event.shadowOpacity * opacityEnvelope,
     penumbraOpacity: MAMA_WYVERN_WORLD_EVENT.shadow.penumbraOpacity * opacityEnvelope,
     worldScale: event.shadowScale * tileSize,

@@ -60,6 +60,7 @@ export function enemyPressureSystem({ game, map, dt }) {
     if (!health.alive) continue;
     const transform = getComponent(game.world, enemy, ComponentType.Transform);
     const ai = getComponent(game.world, enemy, ComponentType.EnemyPressureAI);
+    if (ai.disabled === true) continue;
     ensureEnemyPressureState(ai, transform);
     ai.elapsed += delta;
     ai.decisionCooldown = Math.max(0, ai.decisionCooldown - delta);

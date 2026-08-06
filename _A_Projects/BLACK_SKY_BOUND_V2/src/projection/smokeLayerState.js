@@ -72,6 +72,7 @@ function buildNapalmDropletWispSourceViews(game) {
         sourceId: droplet.id,
         x: visual.x,
         y: visual.y,
+        heightMeters: Math.max(0.08, visual.heightMeters + 0.035),
         radius: (droplet.glowRadius ?? droplet.radius ?? 0.14) * recipe.radiusScale * (0.72 + life01 * 0.28),
         density: recipe.density * (0.56 + life01 * 0.44),
         opacity: 0.34 + life01 * 0.18,
@@ -81,8 +82,8 @@ function buildNapalmDropletWispSourceViews(game) {
         renderPriority: recipe.renderPriority,
         classification: 'derived_smoke_source_view',
         shape: 'rising_micro_wisp',
-        forwardX: 0,
-        forwardY: -1
+        forwardX: visual.x - visual.previousX,
+        forwardY: visual.y - visual.previousY
       };
     });
 }

@@ -14,6 +14,7 @@ export function buildSmokeAwakeningText(state) {
     acceptedInputCount: scene.acceptedInputCount,
     requiredInputCount: scene.requiredInputCount,
     smokeCoverage: rounded(scene.smokeCoverage),
+    fullSmokeOpacity: rounded(scene.fullSmokeOpacity),
     pocket01: rounded(scene.pocket01),
     impactPulse: rounded(scene.impactPulse),
     exhalePulse: rounded(scene.exhalePulse),

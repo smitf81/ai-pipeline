@@ -3,7 +3,7 @@
   "mapId": "axiom_first_escape",
   "title": "AXIOM First Escape",
   "scenarioId": "first_escape",
-  "revision": 2523,
+  "revision": 2527,
   "width": 80,
   "height": 60,
   "tiles": [
@@ -4943,10 +4943,52 @@
       "mode": "load_next_map",
       "nextMapPath": "/data/maps/axiom-second-approach.runtime-map.json",
       "nextMapId": "axiom_second_approach",
+      "departureSequenceId": "smoke_instinct_departure",
       "arrivalSequenceId": "smoke_instinct_awakening",
       "label": "Ash Road Threshold"
     }
   },
+  "sceneSequences": [
+    {
+      "contract": "axiom.bsb-transition-sequence.v1",
+      "id": "smoke_instinct_departure",
+      "label": "Mama lands · raiders charge · smoke cover",
+      "trigger": { "type": "escape_zone" },
+      "camera": { "mode": "hold_player_north", "playerFacingRadians": -1.5707963267948966, "zoom": 3.25 },
+      "landing": {
+        "anchor": { "x": 38.5, "y": -2.5 },
+        "rumble": { "durationSeconds": 0.72, "intensity": 0.92 },
+        "debris": { "direction": "north_to_south", "count": 32 }
+      },
+      "phases": [
+        { "id": "impact", "durationSeconds": 0.9 },
+        { "id": "raider_charge", "durationSeconds": 1.65 },
+        { "id": "smoke_cover", "durationSeconds": 1.45 }
+      ],
+      "actorTracks": [
+        {
+          "actorId": "raider:34:8:2200",
+          "reserve": true,
+          "path": [
+            { "at": 0, "x": 34.5, "y": 9.75 },
+            { "at": 0.48, "x": 36.2, "y": 4.9 },
+            { "at": 1, "x": 37.7, "y": 1.15 }
+          ]
+        },
+        {
+          "actorId": "raider:39:11:2201",
+          "reserve": true,
+          "path": [
+            { "at": 0, "x": 39.5, "y": 11.5 },
+            { "at": 0.52, "x": 39.15, "y": 6.15 },
+            { "at": 1, "x": 38.55, "y": 1.35 }
+          ]
+        }
+      ],
+      "smoke": { "direction": "north_to_south", "coverageThreshold": 0.995 },
+      "handoff": { "action": "load_transition" }
+    }
+  ],
   "sceneObjects": [
     {
       "id": "boulder:start-route",
@@ -6966,5 +7008,5 @@
     "purpose": "editable_source_for_bsb_runtime_map_bake",
     "runtimeAuthority": false
   },
-  "updatedAt": "2026-07-20T18:04:16.746Z"
+  "updatedAt": "2026-07-27T15:50:00.000Z"
 }

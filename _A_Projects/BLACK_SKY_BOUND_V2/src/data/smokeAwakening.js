@@ -3,6 +3,7 @@ export const SmokeAwakeningPhase = Object.freeze({
   IMPACT: 'impact',
   SCATTER: 'scatter',
   SMOKE_ROLL: 'smoke_roll',
+  BLACKOUT_HOLD: 'blackout_hold',
   EXHALE: 'exhale',
   CLEARING: 'clearing',
   RELEASED: 'released'
@@ -26,6 +27,7 @@ export const SMOKE_AWAKENING = Object.freeze({
     impactSeconds: 1.05,
     scatterSeconds: 1.3,
     smokeRollSeconds: 1.65,
+    blackoutHoldSeconds: 2.6,
     promptDelaySeconds: 0.62,
     inputCooldownSeconds: 0.56,
     pulseSeconds: 0.74,
@@ -34,8 +36,8 @@ export const SMOKE_AWAKENING = Object.freeze({
   visual: Object.freeze({
     cameraZoom: 2.88,
     impactShakeWorld: 5.8,
-    fullSmokeOpacity: 0.82,
-    pocketStages: Object.freeze([0, 0.16, 0.3, 0.52])
+    fullSmokeOpacity: 0.985,
+    pocketStages: Object.freeze([0, 0.14, 0.36, 0.62])
   }),
   narrative: Object.freeze({
     timeOfDay: 'night',

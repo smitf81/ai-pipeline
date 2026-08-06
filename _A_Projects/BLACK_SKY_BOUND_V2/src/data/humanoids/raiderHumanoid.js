@@ -1,6 +1,7 @@
 import { WORLD_SCALE } from '../worldScale.js';
 import { resolveCreatureProfile } from '../creatures/creatureTuning.js';
 import { HUMANOID_TUNING_FIELDS, getHumanoidTuningFields } from './humanoidTuningFields.js';
+import { DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE } from '../cameraVisibilityFocusProfile.js';
 
 export const HumanoidProjectionId = Object.freeze({
   RAIDER_TOP_DOWN_STICK: 'raider_top_down_stick_v0',
@@ -12,7 +13,7 @@ export { HUMANOID_TUNING_FIELDS, getHumanoidTuningFields };
 export const RAIDER_HUMANOID_PROFILE = Object.freeze({
   id: HumanoidProjectionId.RAIDER_TOP_DOWN_STICK,
   classification: 'humanoid_projection_profile',
-  label: 'Raider top-down stick figure',
+  label: 'Raider articulated procedural humanoid',
   scaleProfileId: WORLD_SCALE.id,
   physical: {
     heightMeters: 1.72,
@@ -23,6 +24,7 @@ export const RAIDER_HUMANOID_PROFILE = Object.freeze({
     scale: 1,
     boundsPadding: 0.16
   },
+  visibilityFocus: DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE,
   body: {
     torsoLength: 0.46,
     shoulderWidth: 0.62,
@@ -123,6 +125,7 @@ export const HUSK_HUMANOID_PROFILE = Object.freeze({
     scale: 0.97,
     boundsPadding: 0.17
   },
+  visibilityFocus: DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE,
   body: {
     torsoLength: 0.5,
     shoulderWidth: 0.54,

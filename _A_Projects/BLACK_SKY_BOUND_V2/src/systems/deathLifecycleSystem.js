@@ -8,7 +8,7 @@ import {
   createWakeFlickerSequence,
   isPlayerInteractiveLifecycle
 } from '../data/playerLifecycle.js';
-import { DEATH_AFTERMATH_CAP, getDeathAftermathProfile } from '../data/deathAftermath.js';
+import { DEATH_AFTERMATH_CAP, getDeathAftermathProfile, getDeathAftermathProfileById } from '../data/deathAftermath.js';
 import { drainEvents } from '../ecs/events.js';
 import { query } from '../ecs/query.js';
 import { addComponent, createEntity, getComponent, removeComponent, removeEntity } from '../ecs/world.js';
@@ -59,9 +59,12 @@ export function handleEntityDeath(game, payload) {
 
   const kind = getComponent(world, entity, ComponentType.Kind)?.type;
   const transform = getComponent(world, entity, ComponentType.Transform);
-  const profile = getDeathAftermathProfile(kind);
+  const creatureRecipe = getComponent(world, entity, ComponentType.CreatureRecipe);
+  const profile = creatureRecipe?.gameplay?.deathProfileId
+    ? getDeathAftermathProfileById(creatureRecipe.gameplay.deathProfileId)
+    : getDeathAftermathProfile(kind);
   const aftermathEntityId = profile && transform
-    ? createCorpseAftermath(world, entity, kind, transform, profile)
+    ? createCorpseAftermath(world, entity, kind, transform, profile, creatureRecipe)
     : null;
 
   addComponent(world, entity, ComponentType.DeathState, Components.deathState({
@@ -100,7 +103,7 @@ export function performCanonicalPlayerRespawn(game, map) {
   return point;
 }
 
-function createCorpseAftermath(world, sourceEntityId, sourceKind, transform, profile) {
+function createCorpseAftermath(world, sourceEntityId, sourceKind, transform, profile, creatureRecipe = null) {
   const corpseEntity = createEntity(world, EntityKind.CORPSE);
   addComponent(world, corpseEntity, ComponentType.Kind, Components.kind(EntityKind.CORPSE, `${sourceKind} remains`));
   addComponent(world, corpseEntity, ComponentType.Transform, Components.transform(transform.x, transform.y, transform.rotation ?? 0));
@@ -109,6 +112,8 @@ function createCorpseAftermath(world, sourceEntityId, sourceKind, transform, pro
     profileId: profile.id,
     sourceEntityId,
     sourceKind,
+    sourceRecipeId: creatureRecipe?.recipeId ?? null,
+    sourceVariantSignature: creatureRecipe?.variantSignature ?? null,
     createdOrder: world.nextEntityId - 1
   }));
   return corpseEntity;

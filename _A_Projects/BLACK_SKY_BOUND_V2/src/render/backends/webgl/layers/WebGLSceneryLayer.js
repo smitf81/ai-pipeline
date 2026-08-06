@@ -167,13 +167,10 @@ function buildDeadSnag(object, alpha, rects, triangles) {
   const cx = object.anchorWorldX ?? x + w * 0.5;
   const baseY = object.anchorWorldY ?? y + h * 0.92;
   const trunkW = Math.max(7, (object.collisionWorldWidth ?? w * 0.34) * 0.42);
-  rects.push({
-    x: cx - trunkW * 1.5,
-    y: baseY - trunkW * 0.16,
-    w: trunkW * 3,
-    h: trunkW * 0.28,
-    color: parseWebGLColor(r.baseShadow, [0, 0, 0, 0.24 * alpha])
-  });
+  appendSoftBaseEllipse(
+    triangles, cx, baseY, trunkW * 0.72, trunkW * 0.2,
+    parseWebGLColor(r.baseShadow, [0, 0, 0, 0.2 * alpha])
+  );
   addMaterialTriangle(triangles, cx - trunkW * 0.45, baseY, cx, y + h * 0.06, cx + trunkW * 0.46, baseY, material.baseColor, alpha * 0.96);
   addMaterialTriangle(triangles, cx - trunkW * 0.45, baseY, cx - trunkW * 0.08, y + h * 0.08, cx - trunkW * 0.08, baseY, material.shadowColor, alpha * 0.72);
   addMaterialTriangle(triangles, cx, y + h * 0.2, x + w * 0.08, y + h * 0.36, cx - trunkW * 0.04, y + h * 0.32, material.shadowColor, alpha * 0.72);
@@ -367,4 +364,18 @@ function addTriangle(triangles, ax, ay, bx, by, cx, cy, colour, alpha) {
 
 function addMaterialTriangle(triangles, ax, ay, bx, by, cx, cy, color, alpha) {
   triangles.push({ ax, ay, bx, by, cx, cy, color: withAlpha(color, alpha) });
+}
+
+function appendSoftBaseEllipse(triangles, x, y, radiusX, radiusY, color) {
+  const segments = 10;
+  for (let index = 0; index < segments; index += 1) {
+    const a = Math.PI * 2 * index / segments;
+    const b = Math.PI * 2 * (index + 1) / segments;
+    triangles.push({
+      ax: x, ay: y,
+      bx: x + Math.cos(a) * radiusX, by: y + Math.sin(a) * radiusY,
+      cx: x + Math.cos(b) * radiusX, cy: y + Math.sin(b) * radiusY,
+      color
+    });
+  }
 }

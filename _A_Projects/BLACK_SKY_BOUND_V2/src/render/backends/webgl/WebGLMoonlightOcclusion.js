@@ -12,28 +12,29 @@ export function buildMoonlightLightInfluences(light, radius, profile) {
   const inner = parseWebGLColor(light.innerColour, [0.64, 0.72, 0.88, 1]);
   const intensity = clamp01(light.effectiveIntensity ?? light.intensity ?? 0.2);
   const reveal = clamp01(profile.lightRevealStrength ?? 0.9);
-  const softness = Math.max(0.88, Math.min(0.99, light.softness ?? 0.97));
+  const sourceSoftness = Math.max(0, Math.min(1, light.softness ?? 0.97));
+  const fieldSoftness = clampRange(1.16 - sourceSoftness, 0.22, 0.48);
   return [
     {
       x: light.worldX,
       y: light.worldY,
       radius: radius * 1.18,
-      softness,
-      color: withAlpha(mixColor(outer, inner, 0.16), clampRange(intensity * reveal * 0.072, 0.006, 0.034))
+      softness: Math.min(0.56, fieldSoftness + 0.12),
+      color: withAlpha(mixColor(outer, inner, 0.16), clampRange(intensity * reveal * 0.42, 0.018, 0.42))
     },
     {
       x: light.worldX,
       y: light.worldY,
       radius: radius,
-      softness,
-      color: withAlpha(outer, clampRange(intensity * reveal * 0.18, 0.012, 0.076))
+      softness: Math.min(0.5, fieldSoftness + 0.06),
+      color: withAlpha(outer, clampRange(intensity * reveal * 0.92, 0.034, 0.92))
     },
     {
       x: light.worldX,
       y: light.worldY,
       radius: radius * 0.62,
-      softness: Math.max(0.74, softness - 0.08),
-      color: withAlpha(inner, clampRange(intensity * reveal * 0.052, 0.004, 0.024))
+      softness: fieldSoftness,
+      color: withAlpha(inner, clampRange(intensity * reveal * 0.48, 0.016, 0.48))
     }
   ];
 }
@@ -62,7 +63,7 @@ export function buildMoonlightCloudOcclusion(light, context, profile) {
     morphPhase: cloud.shapeNoise?.morphPhase ?? 0,
     segments: Math.max(1, Math.min(12, Math.round(cloud.shapeNoise?.segments ?? 5)))
   };
-  const darkness = parseWebGLColor(profile.darknessColour, [0.004, 0.007, 0.012, 1]);
+  const shadow = parseWebGLColor(profile.shadowColour, [0, 0, 0, 1]);
   const triangles = [];
   const bandNormalCoordinates = [];
   for (const bandIndex of visibleBandIndices) {
@@ -74,7 +75,7 @@ export function buildMoonlightCloudOcclusion(light, context, profile) {
     bandNormalCoordinates.push(round3(bandNormalCoordinate));
     const wave = 0.72 + 0.28 * Math.sin((bandIndex + 1) * 1.91 + driftOffset / Math.max(1, scale) + (shapeNoise?.morphPhase ?? 0) * 0.23);
     const alpha = clamp01((cloud.opacity ?? 0.1) * wave * (0.72 + (cloud.contrast ?? 0.4) * 0.28));
-    appendBandTriangles(triangles, center, direction, normal, 0, bandWidth, span, withAlpha(darkness, alpha), shapeNoise, bandIndex, scale, centerAlong);
+    appendBandTriangles(triangles, center, direction, normal, 0, bandWidth, span, withAlpha(shadow, alpha), shapeNoise, bandIndex, scale, centerAlong);
   }
   return {
     mode: MOONLIGHT_CLOUD_OCCLUSION_MODE,

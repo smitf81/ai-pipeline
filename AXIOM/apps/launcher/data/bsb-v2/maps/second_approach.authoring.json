@@ -3,7 +3,7 @@
   "mapId": "axiom_second_approach",
   "title": "Ash Road Threshold",
   "scenarioId": "first_escape",
-  "revision": 5,
+  "revision": 6,
   "width": 52,
   "height": 34,
   "tiles": [
@@ -1845,8 +1845,9 @@
     ]
   ],
   "spawn": {
-    "x": 6,
-    "y": 17
+    "x": 24,
+    "y": 31,
+    "rotation": -1.5707963267948966
   },
   "escapeZone": {
     "x": 46,
@@ -1894,36 +1895,36 @@
       "id": "raider:smoke-screen-north-1",
       "type": "raider",
       "team": "raiders",
-      "x": 13,
-      "y": 12
+      "x": 20,
+      "y": 24
     },
     {
       "id": "raider:smoke-screen-north-2",
       "type": "raider",
       "team": "raiders",
-      "x": 15,
-      "y": 14
+      "x": 22,
+      "y": 23
     },
     {
       "id": "raider:smoke-screen-center",
       "type": "raider",
       "team": "raiders",
-      "x": 14,
-      "y": 17
+      "x": 24,
+      "y": 22
     },
     {
       "id": "raider:smoke-screen-south-1",
       "type": "raider",
       "team": "raiders",
-      "x": 15,
-      "y": 20
+      "x": 26,
+      "y": 23
     },
     {
       "id": "raider:smoke-screen-south-2",
       "type": "raider",
       "team": "raiders",
-      "x": 13,
-      "y": 22
+      "x": 28,
+      "y": 24
     },
     {
       "id": "husk:threshold-1",
@@ -1954,5 +1955,5 @@
     "purpose": "editable_source_for_bsb_runtime_map_bake",
     "runtimeAuthority": false
   },
-  "updatedAt": "2026-07-20T00:00:00.000Z"
+  "updatedAt": "2026-07-27T15:00:00.000Z"
 }

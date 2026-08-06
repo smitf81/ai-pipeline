@@ -1,9 +1,27 @@
 # Recent Change Digest
 
-Status: updated 2026-07-21
+Status: updated 2026-08-03
 
 This file is an operational context artefact for the ACE planner.
 Use it as recent-change context, not as canonical truth.
+
+## 2026-08-03 AXIOM / Black Sky Bound Entity Studio Foundation v0
+
+- Added one provider/capability/candidate/apply spine across live BSB creatures and AXIOM procedural geology. The UI owns no raider-specific tuning paths; manifests and canonical providers decide what is editable.
+- Animated selection now pauses/focuses/restores the actual BSB runtime, choosing a low-occlusion live raider for useful preview. Stationary selection hands the viewport back to the real Map Forge canvas and canonical scene-object selection.
+- Human and agent proposals share the same non-committed candidate contract. Apply persists through the owning API, refreshes the runtime, verifies readback, and rejects stale candidates; werewolf remains explicitly `manifest_missing`.
+- The browser proof now requires a new bridge response after iframe reload, preventing stale parent state from masquerading as persistence proof. It also checks Outliner/Details/candidate/viewport salience and restores all protected tuning/map files.
+- Official Unreal Editor documentation informed the final viewport + searchable Outliner + context-sensitive categorized Details arrangement; AXIOM retains its own restrained visual language.
+- The local BSB live-source launcher now verifies project/root identity before reusing port 5177, so a stale or unrelated server fails loudly.
+- This is authoring infrastructure, not raider visual acceptance. The current production body remains visibly inadequate and physical motion remains `shadow_only_pending_visual_acceptance`; the immediate next slice is one fixed-seed production raider body and motion pass.
+
+## 2026-07-31 Black Sky Bound selective player-mesh rollback
+
+- The Blender V5 baby-wyvern import was rejected on visual acceptance despite mechanically correct loading, bone mapping, contact alignment, and automated tests. Production now uses the exact prior `black-sky-bound.procedural-wyvern-mesh-recipe.v1` faceted hatchling again.
+- Mama remains a deliberate separate success: its `dragon_main_march_v5_flyover.glb` path, timing, parallax compensation, and smoke gate are unchanged and passing.
+- The failed player outputs remain preserved as unbundled research evidence. Unit and production-build gates now reject player GLTF/skinning dependencies and the baby-rig asset while requiring the procedural player contract and Mama mesh contract/asset.
+- `npm run smoke:wyvern-visual` is the reusable promotion gate: ten locked close live-game frames cover idle, crawl, bilateral claw, bite, and contact alignment before any future imported player can replace the production reference.
+- The rollback did not touch terrain, map, floor-material, or PBR sources, allowing the parallel floor-texture work to remain isolated.
 
 ## 2026-07-21 AXIOM / Black Sky Bound Procedural Geology DNA v1
 

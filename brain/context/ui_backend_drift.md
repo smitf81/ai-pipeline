@@ -5,6 +5,78 @@ Last updated: 2026-07-21
 This file is an operational drift note for ACE work.
 Treat it as audit context, not canonical truth.
 
+## 2026-08-03 - AXIOM/BSB entity authoring and animation audit
+
+Active audit target: `_A_Projects/BLACK_SKY_BOUND_V2`, specifically whether the existing AXIOM animation/entity surfaces can truthfully become a recipe and physical-motion editor.
+
+### Confirmed wired relationship: BSB already has a real live creature-tuning loop
+
+- Exact files involved:
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/tuning/tuningOverlay.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/tuning/tuningRuntime.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/data/creatures/creatureTuning.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/data/humanoids/humanoidTuningFields.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/tuning/creatureTuningClient.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/tools/tuningApi.mjs`
+  `_A_Projects/BLACK_SKY_BOUND_V2/tuning/creature-overrides.json`
+- Evidence:
+  Backtick toggles an in-game tuning mode that pauses simulation, selects actors by their projected visual bounds, exposes validated numeric fields, refreshes the wyvern/raider rig immediately, and saves normalized overrides through `PUT /api/tuning/creature-overrides`. The current raider override record exists under `raider_top_down_stick_v0`.
+- Boundary:
+  The humanoid manifest currently exposes scale, torso/head/limb dimensions, gait stride/arm swing, and torch geometry only. It does not expose recipe assembly, equipment selection, material roles, light response, planted-contact tuning, centre-of-mass transfer, attention, frozen-impact prediction, recoil, or attack phase timing.
+- Confidence:
+  high
+- Recommended next validation step:
+  Preserve this resolver, validation, immediate-refresh, and file-receipt path as the BSB backend for a new AXIOM Raider Motion Studio; expand only fields with real runtime consumers.
+
+### Frontend with missing backend grounding: AXIOM Animation Graph is an obscured local projection toy
+
+- Exact files involved:
+  `AXIOM/apps/launcher/public/axiom-editor.html`
+- Evidence:
+  `AnimationStateMachineRuntime` uses the preview-only contract `axiom.animation-state-machine-preview.v0`, hardcoded variables and thresholds, and CSS transforms on a generic stick figure. Sampling only assigns `selected.animationProjection` in browser memory. Repository search found no server tool, persistence adapter, BSB runtime command, or test referencing this contract outside `axiom-editor.html`. Its packet honestly states that it cannot emit combat truth.
+- Visibility cause:
+  `.anim-machine-panel` uses z-index 32 while `.project-preview-panel` uses z-index 35, so loading the BSB project preview covers the panel. It is not a deliberately integrated BSB editor surface.
+- Confidence:
+  high
+- Recommended action:
+  Reuse only the compact panel/disclosure shell and projection-versus-truth language. Remove the hardcoded state inference and CSS preview rather than promoting them to canonical entity authoring.
+
+### Frontend with missing backend grounding: legacy BSB runtime panels do not bind Black Sky Bound V2
+
+- Exact files involved:
+  `AXIOM/apps/launcher/public/axiom-editor.html`
+  `_A_Projects/BLACK_SKY_BOUND_V2/.axiom/project.json`
+- Evidence:
+  The V2 manifest identifies the project as `black-sky-bound-v2-demo`, but `BlackSkyBoundAxiomPanels.isBlackSkyBoundLoaded()` accepts only `black-sky-bound`. AXIOM contains consumers for `bsb.axiom.snapshot.v1`, `black-sky-bound.entity-render-packet.v0`, and `black-sky-bound.motion-render-telemetry.v0`; repository search found no V2 producer or command receiver for those contracts. The visible Runtime Layers controls therefore cannot currently prove V2 entity or motion truth.
+- Confidence:
+  high
+- Recommended action:
+  Do not extend the legacy packet assumptions. Add one versioned V2 bridge around actual recipe, pose, and render projections, then make the AXIOM module fail loudly when that bridge is unavailable.
+
+### Likely placeholder: focus-packet animation/file heuristics are stale for V2
+
+- Exact files involved:
+  `AXIOM/apps/launcher/public/axiom-editor.html`
+- Evidence:
+  Focus packets report `animation_owner: not_connected` and `current_animation: not_connected`. Related-file inference recognizes the old `black_sky_bound_ffp` root and suggests obsolete paths such as `src/game/movementSystem.js`, `src/game/combatSystem.js`, and `src/rendering/canvasRenderer.js` rather than the V2 recipe, physical-motion, projection, and Three renderer owners.
+- Confidence:
+  high
+- Recommended action:
+  Cull the path-guessing branch for BSB entity work. Populate focus packets only from FileManager-verified V2 paths and live runtime provenance.
+
+### High-risk drift area: tuning profile ownership stops before recipe and physical intention
+
+- Exact files involved:
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/data/creatures/raiderCreatureRecipe.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/components/raiderPhysicalMotionComponents.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/data/humanoids/humanoidTuningFields.js`
+- Evidence:
+  The canonical raider recipe owns the body plan, mesh assembly, material roles, equipment, locomotion, attack bindings, behaviour, audio, lighting, and death profile. The persisted tuning overlay still targets the legacy-named humanoid profile `raider_top_down_stick_v0`, while physical motion is a separate ECS component whose rendered pose remains disabled by default. Treating the old tuning overlay or Animation Graph as recipe truth would create another split owner.
+- Confidence:
+  high
+- Recommended action:
+  Define a narrow authoring contract that resolves against the canonical recipe and physical-motion field manifests. Keep gameplay balance and visual/motion tuning separated, preview changes as candidates, and persist only after validation and an explicit apply receipt.
+
 Active audit target: `_A_Projects/BLACK_SKY_BOUND_V2`, procedural scene-object truth flow plus smoke-instinct transition and first/repeat-playthrough surfaces.
 
 ## 1. Confirmed wired relationships
@@ -206,3 +278,22 @@ Active audit target: `_A_Projects/BLACK_SKY_BOUND_V2`, procedural scene-object t
   high for the harness limitation; no product-render failure observed
 - Recommended next validation step:
   Update the shared client to prefer element/page screenshots for WebGL canvases unless `preserveDrawingBuffer` is known to be enabled.
+
+## 7. Repaired: AXIOM Entity Studio is now grounded in canonical BSB and Map Forge owners
+
+- Why it was flagged:
+  The prior hidden creature-tuning panel and AXIOM's old animation-facing surfaces could imply authoring capability without one shared persistence/readback path. The first Entity Studio UI pass also let a 43-row Outliner hide Details and candidate actions while a stale runtime reload could appear successful from cached parent state.
+- Exact files involved:
+  `AXIOM/apps/launcher/public/entity-studio.js`
+  `AXIOM/apps/launcher/public/entity-studio.css`
+  `AXIOM/apps/launcher/public/axiom-editor.html`
+  `AXIOM/apps/launcher/server.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/tuning/entityAuthoringRuntime.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/src/tuning/entityTuningTargets.js`
+  `_A_Projects/BLACK_SKY_BOUND_V2/tools/launch.mjs`
+- Evidence:
+  Provider manifests now decide which controls exist; candidates do not write before Apply; apply returns persistence and readback evidence; iframe reload proof requires a new bridge response and restored focus; werewolf remains visibly `manifest_missing`; geology delegates to Map Forge; protected files are restored by the browser proof. Visual assertions bound the Outliner, keep Details/candidate actions visible, and require the viewport to remain dominant.
+- Confidence:
+  high
+- Recommended next validation step:
+  Add the production raider body/motion provider fields only as each acquires a real BSB consumer. Do not reintroduce browser-local animation heuristics or let agent proposals bypass candidate review.

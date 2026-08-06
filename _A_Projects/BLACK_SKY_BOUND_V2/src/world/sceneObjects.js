@@ -1,4 +1,5 @@
 import { getSceneObjectDefinition } from '../data/sceneObjects.js';
+import { resolveShadowShapeProfile } from '../data/shadowShapeProfiles.js';
 import {
   getTreeSpeciesRecipe,
   isProceduralTreeType,
@@ -17,6 +18,10 @@ import {
   resolveProceduralGeologyDefinition,
   resolveProceduralGeologySceneProfile
 } from '../data/proceduralGeology.js';
+import { WORLD_SCALE } from '../data/worldScale.js';
+import { generateProceduralTreeSpatialRecipe } from './proceduralTreeSpatialRecipe.js';
+import { createCircleCollision, createConvexPolygonCollision, translateCollisionShape } from '../physics/collisionShapes.js';
+import { translateTraversalModifier } from '../physics/traversalModifiers.js';
 
 export function createSceneObjects(entries = []) {
   return entries.map((entry, index) => createSceneObject(entry, index));
@@ -72,9 +77,13 @@ export function createSceneObject(entry, index = 0) {
     entry.visualOffsetY ?? entry.visualFootprint?.offsetY ?? visualProfile?.offsetY,
     (heightTiles - visualHeightTiles) / 2
   );
+  const shadowShapeReference = def.occlusion?.shadowShape || entry.occlusion?.shadowShape
+    ? { ...(def.occlusion?.shadowShape ?? {}), ...(entry.occlusion?.shadowShape ?? {}) }
+    : null;
   const occlusion = {
     ...def.occlusion,
-    ...(entry.occlusion ?? {})
+    ...(entry.occlusion ?? {}),
+    shadowShape: shadowShapeReference ? resolveShadowShapeProfile(shadowShapeReference) : null
   };
   const render = {
     ...def.render,
@@ -91,6 +100,18 @@ export function createSceneObject(entry, index = 0) {
     : null;
   const visualTileX = tileX + visualOffsetX;
   const visualTileY = tileY + visualOffsetY;
+  const blocksMovement = entry.blocksMovement ?? def.collision.blocksMovement;
+  const objectX = tileX + widthTiles / 2;
+  const objectY = tileY + heightTiles / 2;
+  const treeSpatialRecipe = treeDefinition ? generateProceduralTreeSpatialRecipe(treeDefinition) : null;
+  const collisionShape = blocksMovement
+    ? buildSceneObjectCollisionShape({ treeDefinition, treeSpatialRecipe, geologyDefinition, def, entry, x: objectX, y: objectY, widthTiles, heightTiles, id })
+    : null;
+  const traversalModifiers = treeSpatialRecipe
+    ? treeSpatialRecipe.traversalModifiers.map((modifier) => translateTraversalModifier(modifier, objectX, objectY, {
+      ...modifier.source, sourceId: id
+    }))
+    : [];
   return {
     id,
     type: treeDefinition ? 'tree' : def.type,
@@ -122,8 +143,8 @@ export function createSceneObject(entry, index = 0) {
     geologyDefinition,
     tileX,
     tileY,
-    x: tileX + widthTiles / 2,
-    y: tileY + heightTiles / 2,
+    x: objectX,
+    y: objectY,
     widthTiles,
     heightTiles,
     collisionFootprint: { w: widthTiles, h: heightTiles },
@@ -139,13 +160,40 @@ export function createSceneObject(entry, index = 0) {
       offsetX: visualOffsetX,
       offsetY: visualOffsetY
     },
-    blocksMovement: entry.blocksMovement ?? def.collision.blocksMovement,
-    collisionPolicy: def.collision.policy,
+    blocksMovement,
+    collisionPolicy: treeSpatialRecipe ? 'recipe_derived_trunk_circle_root_traversal_v2'
+      : collisionShape ? 'recipe_derived_spatial_shape_v1' : def.collision.policy,
+    collisionShape,
+    traversalModifiers,
     render,
     emitter,
     occlusion,
     source: entry.source ?? 'scenario.sceneObjects'
   };
+}
+
+function buildSceneObjectCollisionShape({ treeDefinition, treeSpatialRecipe, geologyDefinition, def, entry, x, y, widthTiles, heightTiles, id }) {
+  if (entry.collisionShape?.contract === 'black-sky-bound.collision-shape-2d.v1') return entry.collisionShape;
+  if (treeDefinition) {
+    const local = treeSpatialRecipe.collision;
+    return translateCollisionShape(local, x, y, {
+      sourceKind: 'procedural_tree', sourceId: id, species: treeDefinition.species,
+      policy: 'visible_trunk_circle_roots_traversable_canopy_excluded'
+    });
+  }
+  if (geologyDefinition || def.render?.kind === 'procedural_geology' || def.render?.kind === 'dead_snag') {
+    const widthMeters = Number(def.physical?.widthMeters ?? def.physical?.trunkBaseMeters ?? widthTiles * WORLD_SCALE.tileMeters);
+    const depthMeters = Number(def.physical?.depthMeters ?? def.physical?.trunkBaseMeters ?? heightTiles * WORLD_SCALE.tileMeters);
+    return createCircleCollision(x, y, Math.max(0.18, Math.min(widthMeters, depthMeters) / WORLD_SCALE.tileMeters * 0.5), {
+      sourceKind: def.render?.kind, sourceId: id, policy: 'visible_base_circle'
+    });
+  }
+  return createConvexPolygonCollision([
+    { x: x - widthTiles * 0.5, y: y - heightTiles * 0.5 },
+    { x: x + widthTiles * 0.5, y: y - heightTiles * 0.5 },
+    { x: x + widthTiles * 0.5, y: y + heightTiles * 0.5 },
+    { x: x - widthTiles * 0.5, y: y + heightTiles * 0.5 }
+  ], { sourceKind: def.render?.kind ?? 'scene_object', sourceId: id, policy: 'visible_footprint_polygon' });
 }
 
 export function isSceneObjectBlocked(map, x, y) {
@@ -165,7 +213,7 @@ export function getBlockingSceneObjectAtTile(map, tileX, tileY) {
 
 export function buildSceneObjectOcclusionBlockers(sceneObjects = []) {
   return sceneObjects
-    .filter((object) => object.occlusion?.castsShadow !== false)
+    .filter((object) => object.occlusion?.castsShadow !== false && object.occlusion?.shadowShape?.castsShadow !== false)
     .map((object) => ({
       id: object.id,
       entityId: object.id,
@@ -175,7 +223,7 @@ export function buildSceneObjectOcclusionBlockers(sceneObjects = []) {
       y: object.y,
       radius: positiveNumber(object.occlusion?.radius, Math.max(object.widthTiles, object.heightTiles) * 0.45),
       height: positiveNumber(object.occlusion?.height ?? object.occlusion?.occlusionHeight, 0),
-      shadowSilhouette: object.occlusion?.shadowSilhouette ?? null,
+      shadowShape: object.occlusion?.shadowShape ?? null,
       static: true,
       source: object.source
     }))

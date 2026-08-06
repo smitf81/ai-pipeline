@@ -3,13 +3,19 @@ import { worldToScreen } from '../render/camera.js';
 import { selectActiveLightViews, worldCircleIntersectsLightSpace } from './lightSpaceRenderCulling.js';
 
 export const SHADOW_FIELD_CONTRACT = 'black-sky-bound.render-shadow-field.sdf-ready.v1';
+const staticBlockerProjectionCache = new WeakMap();
 
 export function buildExplicitOcclusionBlockers(sourceBlockers = [], options = RENDER_BUDGETS.occlusionShadows) {
   const inputs = Array.isArray(sourceBlockers) ? sourceBlockers : [];
   const candidates = [];
   let ignoredBlockers = 0;
+  let staticCacheHits = 0;
+  let staticCacheMisses = 0;
   for (let i = 0; i < inputs.length; i += 1) {
-    const blocker = normalizeExplicitBlocker(inputs[i], i);
+    const normalized = normalizeCachedExplicitBlocker(inputs[i], i);
+    const blocker = normalized.blocker;
+    staticCacheHits += normalized.cacheHit ? 1 : 0;
+    staticCacheMisses += normalized.cacheMiss ? 1 : 0;
     if (!blocker) {
       ignoredBlockers += 1;
       continue;
@@ -22,6 +28,8 @@ export function buildExplicitOcclusionBlockers(sourceBlockers = [], options = RE
     droppedBlockers: Math.max(0, candidates.length - max),
     ignoredBlockers,
     candidateCount: candidates.length,
+    staticCacheHits,
+    staticCacheMisses,
     policy: options.blockerPolicy
   };
 }
@@ -30,23 +38,36 @@ export function buildOcclusionShadowProjection(sourceBlockers, lights, camera, t
   const enabled = options.enabled !== false && profile.shadowPassEnabled !== false;
   if (!enabled) return emptyProjection(false, options);
   const blockerProjection = buildExplicitOcclusionBlockers(sourceBlockers, options);
+  const shadowCandidates = [...(lights ?? [])]
+    .filter((light) => light?.castsShadows !== false)
+    .filter((light) => worldCircleIntersectsLightSpace(lightSpaceCulling, camera, tileSize, light.x, light.y, light.radius));
   const shadowLights = selectActiveLightViews(
-    [...(lights ?? [])].sort((a, b) => (b.shadowPriority ?? 0) - (a.shadowPriority ?? 0)),
+    shadowCandidates.sort((a, b) => (b.shadowPriority ?? 0) - (a.shadowPriority ?? 0)),
     options.maxShadowCastingLights
   );
   const shadowRegions = [];
   const shadowFieldPackets = [];
+  const blockerLightCounts = new Map();
+  let skippedByBlockerLightLimit = 0;
   let shadowCastingLightCount = 0;
   for (const light of shadowLights) {
     const nearby = collectNearbyBlockers(light, blockerProjection.blockers, lightSpaceCulling, camera, tileSize, options);
     if (!nearby.length) continue;
-    shadowCastingLightCount += 1;
+    let projectedForLight = false;
     for (const blocker of nearby) {
+      const lightCount = blockerLightCounts.get(blocker.id) ?? 0;
+      if (lightCount >= (options.maxShadowLightsPerBlocker ?? 2)) {
+        skippedByBlockerLightLimit += 1;
+        continue;
+      }
       const shadow = projectBlockerShadow(light, blocker, camera, tileSize, profile, options);
       if (!shadow) continue;
+      blockerLightCounts.set(blocker.id, lightCount + 1);
       shadowRegions.push(shadow.region);
       shadowFieldPackets.push(...shadow.fieldPackets);
+      projectedForLight = true;
     }
+    if (projectedForLight) shadowCastingLightCount += 1;
   }
   return {
     classification: 'derived_render_shadow_projection',
@@ -60,7 +81,13 @@ export function buildOcclusionShadowProjection(sourceBlockers, lights, camera, t
     actorShadowBlockers: blockerProjection.blockers.filter(isActorShadowBlocker).length,
     droppedBlockers: blockerProjection.droppedBlockers,
     ignoredBlockers: blockerProjection.ignoredBlockers,
+    staticBlockerCacheHits: blockerProjection.staticCacheHits,
+    staticBlockerCacheMisses: blockerProjection.staticCacheMisses,
     shadowCastingLights: shadowCastingLightCount,
+    shadowCandidateLights: shadowCandidates.length,
+    shadowBudgetDroppedLights: Math.max(0, shadowCandidates.length - shadowLights.length),
+    maxShadowLightsPerBlocker: options.maxShadowLightsPerBlocker ?? 2,
+    skippedByBlockerLightLimit,
     shadowRegions,
     approximateShadowRegions: shadowRegions.length,
     shadowFieldContract: options.shadowFieldContract ?? SHADOW_FIELD_CONTRACT,
@@ -69,7 +96,9 @@ export function buildOcclusionShadowProjection(sourceBlockers, lights, camera, t
     shadowFieldPacketCount: shadowFieldPackets.length,
     actorShadowFieldPacketCount: shadowFieldPackets.filter(isActorShadowPacket).length,
     shadowFieldSampleCount: shadowFieldPackets.reduce((sum, packet) => sum + (packet.samples?.length ?? 0), 0),
-    shadowSilhouettePrimitiveCount: shadowFieldPackets.filter((packet) => packet.silhouettePrimitive).length
+    shadowSilhouettePrimitiveCount: shadowFieldPackets.filter((packet) => packet.silhouettePrimitive).length,
+    contactFootprintCount: new Set(shadowRegions.map((region) => region.blockerId)).size,
+    shadowShapeProfileIds: [...new Set(shadowRegions.map((region) => region.shadowShapeProfileId).filter(Boolean))]
   };
 }
 
@@ -145,7 +174,7 @@ export function sampleShadowFieldPacketAt(packet, point = {}) {
 }
 
 function normalizeExplicitBlocker(input, index) {
-  if (!input || input.castsShadow === false) return null;
+  if (!input || input.castsShadow === false || input.shadowShape?.castsShadow === false) return null;
   const x = Number(input.x);
   const y = Number(input.y);
   const radius = Number(input.radius);
@@ -163,9 +192,23 @@ function normalizeExplicitBlocker(input, index) {
     y,
     radius,
     height,
-    shadowSilhouette: normalizeShadowSilhouette(input.shadowSilhouette),
+    shadowShape: normalizeShadowShape(input.shadowShape) ?? normalizeShadowSilhouette(input.shadowSilhouette),
     static: input.static !== false
   };
+}
+
+function normalizeCachedExplicitBlocker(input, index) {
+  if (!input || typeof input !== 'object' || input.static === false) {
+    return { blocker: normalizeExplicitBlocker(input, index), cacheHit: false, cacheMiss: false };
+  }
+  const signature = JSON.stringify([input.id, input.entityId, input.x, input.y, input.radius,
+    input.height ?? input.occlusionHeight, input.castsShadow, input.blockerKind ?? input.kind,
+    input.shadowShape ?? input.shadowSilhouette ?? null]);
+  const cached = staticBlockerProjectionCache.get(input);
+  if (cached?.signature === signature) return { blocker: cached.blocker, cacheHit: true, cacheMiss: false };
+  const blocker = normalizeExplicitBlocker(input, index);
+  staticBlockerProjectionCache.set(input, { signature, blocker });
+  return { blocker, cacheHit: false, cacheMiss: true };
 }
 
 function collectNearbyBlockers(light, blockers, lightSpaceCulling, camera, tileSize, options) {
@@ -185,7 +228,16 @@ function collectNearbyBlockers(light, blockers, lightSpaceCulling, camera, tileS
 
 function projectBlockerShadow(light, blocker, camera, tileSize, profile, options) {
   const lightScreen = worldToScreen(camera, light.x * tileSize, light.y * tileSize);
-  const blockerScreen = worldToScreen(camera, blocker.x * tileSize, blocker.y * tileSize);
+  const centerScreen = worldToScreen(camera, blocker.x * tileSize, blocker.y * tileSize);
+  const shape = blocker.shadowShape;
+  const shapeScale = shape?.scale ?? 1;
+  const rotation = shape?.rotation ?? 0;
+  const anchor = rotatePoint(shape?.anchor, rotation);
+  const screenScale = tileSize * camera.zoom;
+  const blockerScreen = {
+    x: centerScreen.x + anchor.x * screenScale * shapeScale,
+    y: centerScreen.y + anchor.y * screenScale * shapeScale
+  };
   const vx = blockerScreen.x - lightScreen.x;
   const vy = blockerScreen.y - lightScreen.y;
   const distancePx = Math.hypot(vx, vy);
@@ -198,12 +250,18 @@ function projectBlockerShadow(light, blocker, camera, tileSize, profile, options
   const lightRadiusPx = Math.max(4, light.radius * tileSize * camera.zoom);
   const remaining = Math.max(0, lightRadiusPx - distancePx);
   const heightScale = clampRange(blocker.height * (light.shadowHeightScale ?? 1), 0.2, 2.5);
-  const length = remaining * (profile.shadowLengthScale ?? 1.1) * heightScale * clampRange(light.shadowLengthScale ?? 1, 0.05, 2);
+  const projection = shape?.projection ?? {};
+  const contact = shape?.contact ?? {};
+  const length = remaining * (profile.shadowLengthScale ?? 1.1) * heightScale
+    * clampRange(light.shadowLengthScale ?? 1, 0.05, 2) * finite(projection.lengthScale, 1);
   if (length <= 2) return null;
-  const nearWidth = blockerRadiusPx * (profile.shadowSpreadScale ?? 1.2);
-  const farWidth = nearWidth + length * 0.34;
-  const endX = blockerScreen.x + nx * length;
-  const endY = blockerScreen.y + ny * length;
+  const nearWidth = blockerRadiusPx * finite(projection.baseWidthScale, profile.shadowSpreadScale ?? 1.2) * shapeScale;
+  const farWidth = nearWidth + length * finite(projection.spreadScale, 0.34);
+  const rootInset = blockerRadiusPx * finite(contact.depthScale, 0.32) * finite(projection.rootInsetScale, 0.62) * shapeScale;
+  const projectedStart = { x: blockerScreen.x + nx * rootInset, y: blockerScreen.y + ny * rootInset };
+  const endX = projectedStart.x + nx * length;
+  const endY = projectedStart.y + ny * length;
+  const contactFootprint = buildContactFootprint(blockerScreen, blockerRadiusPx, shape);
   const region = {
     blockerId: blocker.id,
     lightId: light.id,
@@ -211,24 +269,29 @@ function projectBlockerShadow(light, blocker, camera, tileSize, profile, options
     blockerKind: blocker.blockerKind,
     fieldPacketId: `shadow_field:${light.id}:${blocker.id}`,
     points: [
-      { x: blockerScreen.x + px * nearWidth, y: blockerScreen.y + py * nearWidth },
-      { x: blockerScreen.x - px * nearWidth, y: blockerScreen.y - py * nearWidth },
+      { x: projectedStart.x + px * nearWidth, y: projectedStart.y + py * nearWidth },
+      { x: projectedStart.x - px * nearWidth, y: projectedStart.y - py * nearWidth },
       { x: endX - px * farWidth, y: endY - py * farWidth },
       { x: endX + px * farWidth, y: endY + py * farWidth }
     ],
-    start: blockerScreen,
+    start: projectedStart,
     end: { x: endX, y: endY },
     direction: { x: nx, y: ny },
     normal: { x: px, y: py },
     length,
     nearWidth,
     farWidth,
-    screenScale: tileSize * camera.zoom,
+    screenScale,
+    shadowShapeProfileId: shape?.profileId ?? 'legacy_radius',
+    shadowShapeVariantId: shape?.variantId ?? 'fallback',
+    contactFootprint,
     contactRadius: blockerRadiusPx * (profile.shadowContactScale ?? 0.72),
     distanceToLight: distancePx,
     lightRadius: lightRadiusPx,
     opacity: (profile.shadowOpacity ?? 0.32) * clampRange(light.shadowOpacityScale ?? 1, 0.05, 2),
-    softness: profile.shadowSoftness ?? 0.6
+    softness: profile.shadowSoftness ?? 0.6,
+    staticBlocker: blocker.static !== false,
+    cacheableGeometry: blocker.static !== false && light.illuminationState === 'nearby_static'
   };
   return {
     region,
@@ -238,8 +301,9 @@ function projectBlockerShadow(light, blocker, camera, tileSize, profile, options
 
 function buildShadowFieldPackets(region, light, blocker, profile, options) {
   return shadowSilhouettePrimitives(blocker).map((primitive, index) => {
-    const offsetX = (primitive.offsetX ?? 0) * region.screenScale;
-    const offsetY = (primitive.offsetY ?? 0) * region.screenScale;
+    const offset = rotatePoint(primitive, blocker.shadowShape?.rotation ?? 0);
+    const offsetX = offset.x * region.screenScale * (blocker.shadowShape?.scale ?? 1);
+    const offsetY = offset.y * region.screenScale * (blocker.shadowShape?.scale ?? 1);
     const length = Math.max(3, region.length * primitive.lengthScale);
     const nearWidth = Math.max(3, region.nearWidth * primitive.widthScale);
     const farWidth = Math.max(3, region.farWidth * primitive.widthScale * primitive.tailWidthScale);
@@ -253,8 +317,8 @@ function buildShadowFieldPackets(region, light, blocker, profile, options) {
       farWidth,
       opacity: (region.opacity ?? profile.shadowOpacity ?? 0.32) * primitive.dimnessScale,
       softness: (region.softness ?? profile.shadowSoftness ?? 0.6) * primitive.softnessScale,
-      silhouetteShape: blocker.shadowSilhouette?.shape ?? 'radial_blocker_fallback_sdf_v0',
-      silhouetteContract: blocker.shadowSilhouette?.contract ?? 'radius_blocker_shadow_silhouette.v1',
+      silhouetteShape: blocker.shadowShape?.profileId ?? 'radial_blocker_fallback_sdf_v0',
+      silhouetteContract: blocker.shadowShape?.contract ?? 'radius_blocker_shadow_silhouette.v1',
       silhouettePrimitive: primitive
     }, light, blocker, profile, options);
   });
@@ -287,8 +351,12 @@ function buildShadowFieldPacket(region, light, blocker, profile, options) {
     blockerId: region.blockerId,
     lightId: region.lightId,
     blockerKind: blocker.blockerKind,
+    shadowShapeProfileId: region.shadowShapeProfileId,
+    shadowShapeVariantId: region.shadowShapeVariantId,
+    contactSeparated: true,
     blockerSource: blocker.source,
     staticBlocker: blocker.static !== false,
+    cacheableGeometry: region.cacheableGeometry === true,
     source: `${blocker.source}.light_distance_shadow_field`,
     shape: region.silhouetteShape ?? 'tapered_capsule_chain',
     silhouettePrimitive: region.silhouettePrimitive ? {
@@ -324,7 +392,7 @@ function buildShadowFieldPacket(region, light, blocker, profile, options) {
 }
 
 function shadowSilhouettePrimitives(blocker) {
-  const primitives = blocker.shadowSilhouette?.primitives;
+  const primitives = blocker.shadowShape?.primitives;
   if (!Array.isArray(primitives) || !primitives.length) {
     return [normalizeShadowPrimitive({ id: 'radius_core', kind: 'radial_blocker' }, 0)];
   }
@@ -336,12 +404,51 @@ function normalizeShadowSilhouette(value) {
   const contract = value.contract ?? 'scene_object_shadow_silhouette.v1';
   return {
     contract,
-    shape: value.shape ?? 'compound_shadow_silhouette_sdf_v0',
+    profileId: value.shape ?? 'legacy_compound',
+    variantId: 'legacy',
+    castsShadow: true,
+    anchor: { x: 0, y: 0 }, rotation: 0, scale: 1,
+    contact: { shape: 'ellipse', widthScale: 0.5, depthScale: 0.32, softnessScale: 1, densityScale: 1 },
+    projection: { lengthScale: 1, baseWidthScale: 1.2, spreadScale: 0.34, rootInsetScale: 0.62 },
     primitives: value.primitives.map((primitive, index) => ({
       ...normalizeShadowPrimitive(primitive, index),
       contract: primitive.contract ?? contract
     }))
   };
+}
+
+function normalizeShadowShape(value) {
+  if (!value || value.castsShadow === false || !Array.isArray(value.primitives)) return null;
+  return {
+    ...value,
+    anchor: { x: finite(value.anchor?.x, 0), y: finite(value.anchor?.y, 0) },
+    rotation: finite(value.rotation, 0), scale: clampRange(value.scale ?? 1, 0.2, 4),
+    contact: value.contact ? { ...value.contact } : null,
+    projection: value.projection ? { ...value.projection } : null,
+    primitives: value.primitives.map((primitive, index) => normalizeShadowPrimitive(primitive, index))
+  };
+}
+
+function buildContactFootprint(center, blockerRadiusPx, shape) {
+  const contact = shape?.contact ?? {};
+  const scale = shape?.scale ?? 1;
+  const rotation = shape?.rotation ?? 0;
+  const radiusX = Math.max(3, blockerRadiusPx * finite(contact.widthScale, 0.5) * scale);
+  const radiusY = Math.max(2, blockerRadiusPx * finite(contact.depthScale, 0.32) * scale);
+  return {
+    shape: contact.shape ?? 'ellipse', center, radiusX, radiusY, rotation,
+    softness: finite(contact.softnessScale, 1), density: finite(contact.densityScale, 1),
+    points: Array.isArray(contact.points) ? contact.points.map(([x, y]) => ({
+      x: finite(x, 0) * radiusX, y: finite(y, 0) * radiusY
+    })) : []
+  };
+}
+
+function rotatePoint(point = {}, rotation = 0) {
+  const x = finite(point.x ?? point.offsetX, 0);
+  const y = finite(point.y ?? point.offsetY, 0);
+  const cosine = Math.cos(rotation); const sine = Math.sin(rotation);
+  return { x: x * cosine - y * sine, y: x * sine + y * cosine };
 }
 
 function normalizeShadowPrimitive(value = {}, index = 0) {
@@ -370,6 +477,8 @@ function emptyProjection(enabled, options) {
     activeBlockers: 0,
     droppedBlockers: 0,
     ignoredBlockers: 0,
+    staticBlockerCacheHits: 0,
+    staticBlockerCacheMisses: 0,
     shadowCastingLights: 0,
     shadowRegions: [],
     approximateShadowRegions: 0,
@@ -380,21 +489,17 @@ function emptyProjection(enabled, options) {
     actorShadowBlockers: 0,
     actorShadowFieldPacketCount: 0,
     shadowFieldSampleCount: 0,
-    shadowSilhouettePrimitiveCount: 0
+    shadowSilhouettePrimitiveCount: 0,
+    contactFootprintCount: 0,
+    shadowShapeProfileIds: []
   };
 }
 
-function isActorShadowBlocker(blocker) {
-  return blocker?.source === 'renderer_neutral_actor_visual_projection';
-}
+function isActorShadowBlocker(blocker) { return blocker?.source === 'renderer_neutral_actor_visual_projection'; }
 
-function isActorShadowPacket(packet) {
-  return packet?.blockerSource === 'renderer_neutral_actor_visual_projection';
-}
+function isActorShadowPacket(packet) { return packet?.blockerSource === 'renderer_neutral_actor_visual_projection'; }
 
-function lerp(a, b, t) {
-  return a + (b - a) * t;
-}
+function lerp(a, b, t) { return a + (b - a) * t; }
 
 function smoothstep(edge0, edge1, value) {
   if (edge0 === edge1) return value < edge0 ? 0 : 1;
@@ -419,6 +524,4 @@ function finite(value, fallback) {
   return Number.isFinite(numeric) ? numeric : fallback;
 }
 
-function round3(value) {
-  return Math.round((Number(value) || 0) * 1000) / 1000;
-}
+function round3(value) { return Math.round((Number(value) || 0) * 1000) / 1000; }

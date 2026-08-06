@@ -13,7 +13,7 @@ import { humanoidProjectionSystem } from '../src/systems/humanoidProjectionSyste
 import {
   createWebGLLayers,
   WEBGL_LAYER_ORDER,
-  WEBGL_LIGHTING_WORLD_DEPTH_COMPOSITE_CONTRACT
+  WEBGL_ILLUMINATION_WORLD_DEPTH_COMPOSITE_CONTRACT
 } from '../src/render/backends/webgl/WebGLGameRenderer.js';
 
 const requiredFiles = [
@@ -22,6 +22,7 @@ const requiredFiles = [
   'src/render/backends/webgl/WebGLCamera2D.js',
   'src/render/backends/webgl/WebGLRenderLayerRegistry.js',
   'src/render/backends/webgl/WebGLPostProcessPipeline.js',
+  'src/render/backends/webgl/WebGLIlluminationPipeline.js',
   'src/render/backends/webgl/layers/WebGLTerrainLayer.js',
   'src/render/backends/webgl/WebGLLightSpaceGate.js',
   'src/render/backends/webgl/layers/WebGLDecalLayer.js',
@@ -113,7 +114,9 @@ assert(projection.lights.length > 0, 'light projection should include light pack
 assert(projection.lights.every((light) => typeof light.softness === 'number'), 'light packets should include renderer-neutral softness');
 assert(projection.lights.every((light) => typeof light.flickerAmount === 'number'), 'light packets should preserve emitter flicker amount');
 assert(projection.lights.every((light) => typeof light.effectiveIntensity === 'number'), 'light packets should expose resolved flicker intensity');
-assert(projection.lightingProfile.darknessOpacity > 0, 'lighting profile projection should expose profile darkness opacity');
+assert(projection.lightingProfile.ambientIllumination > 0, 'lighting profile projection should expose low ambient illumination');
+assert(projection.lightingProfile.illuminationModel === 'ambient_plus_world_light_rgb_field_v1', 'lighting profile projection should expose its additive illumination model');
+assert(!Object.hasOwn(projection.lightingProfile, 'darknessOpacity'), 'lighting profile projection should omit the retired darkness-overlay contract');
 assert(projection.lightingProfile.shadowCompositeMode === 'light_shadow_attenuation_blend_v0', 'lighting profile projection should expose shadow/light composite tuning');
 assert(projection.lightingProfile.shadowFieldEdgeSoftness > 1, 'lighting profile projection should expose SDF edge softening');
 assert(projection.lightSpaceCulling.classification === 'derived_render_budget_gate', 'projection should carry light-space culling data');
@@ -122,7 +125,7 @@ assert(projection.occlusionShadows.shadowFieldContract === 'black-sky-bound.rend
 assert(projection.occlusionShadows.shadowFieldPacketCount > 0, 'projection should expose SDF-ready shadow field packets');
 assert(projection.occlusionShadows.shadowSilhouettePrimitiveCount > projection.occlusionShadows.approximateShadowRegions, 'projection should expose compound scene-object SDF silhouette primitives');
 assert(projection.occlusionShadows.actorShadowBlockers > 0, 'projection should expose render-only actor shadow blockers');
-assert(projection.occlusionShadows.actorShadowFieldPacketCount > 0, 'projection should expose dynamic actor SDF shadow packets');
+assert(projection.shadowBlockers.some((blocker) => blocker.source === 'renderer_neutral_actor_visual_projection' && blocker.shadowShapeProfileId === 'creature'), 'projection should expose the creature family on render-only actor shadow blockers');
 assert(projection.occlusionShadows.shadowFieldSampleCount >= projection.occlusionShadows.shadowFieldPacketCount * 3, 'projection should expose sampled shadow-field data');
 assert(projection.fogSmoke.length > 0, 'fog/smoke projection should include smoke source packets');
 assert(projection.fogSmoke.every((source) => source.classification === 'renderer_neutral_fog_smoke_projection'), 'fog/smoke packets should declare renderer-neutral classification');
@@ -155,12 +158,14 @@ for (const layerName of ['WebGLTerrainLayer', 'WebGLDecalLayer', 'WebGLLightingL
 }
 const runtimeLayerIds = createWebGLLayers().map((layer) => layer.id);
 deepEqual(runtimeLayerIds, WEBGL_LAYER_ORDER, 'WebGL layer factory should match the exported diagnostic layer order contract');
-equal(WEBGL_LIGHTING_WORLD_DEPTH_COMPOSITE_CONTRACT, 'black-sky-bound.webgl-ground-shadows-under-world-depth-light-over-world-depth.v0', 'WebGL should name the split shadow/light world-depth relationship');
+equal(WEBGL_ILLUMINATION_WORLD_DEPTH_COMPOSITE_CONTRACT, 'black-sky-bound.webgl-world-depth-times-additive-illumination.v1', 'WebGL should name the multiplicative world/illumination relationship');
 const indexOfLayer = (layerId) => runtimeLayerIds.indexOf(layerId);
 assert(indexOfLayer('terrain') < indexOfLayer('decals'), 'WebGL ground decals should render after terrain');
 assert(indexOfLayer('decals') < indexOfLayer('shadows'), 'WebGL ground/contact shadows should render over terrain and decals');
 assert(indexOfLayer('shadows') < indexOfLayer('worldDepth'), 'WebGL ground/contact shadows should stay under scene objects and actors');
-assert(indexOfLayer('worldDepth') < indexOfLayer('lighting'), 'WebGL darkness and emitted light should render over scene objects and actors');
+assert(indexOfLayer('worldDepth') < indexOfLayer('worldParticles'), 'non-emissive world particles should render with world materials');
+assert(indexOfLayer('worldParticles') < indexOfLayer('lighting'), 'non-emissive world particles should be multiplied by illumination');
+assert(indexOfLayer('worldDepth') < indexOfLayer('lighting'), 'WebGL illumination should composite after scene objects and actors');
 assert(indexOfLayer('lighting') < indexOfLayer('worldEvents'), 'mama shadow and inferno should composite over the lit world');
 assert(indexOfLayer('worldEvents') < indexOfLayer('effects'), 'ordinary combat effects should stay legible above world events');
 assert(indexOfLayer('lighting') < indexOfLayer('effects'), 'WebGL effects should render after scene light reveal');
@@ -171,7 +176,7 @@ assert(indexOfLayer('gameplayOverlay') < indexOfLayer('hudDebug'), 'WebGL HUD/de
 assert(gameRendererSource.indexOf('new WebGLTerrainLayer()') < gameRendererSource.indexOf('new WebGLDecalLayer()'), 'WebGL ground decals should render after terrain');
 assert(gameRendererSource.indexOf("id: 'shadows'") < gameRendererSource.indexOf('new WebGLWorldDepthLayer()'), 'WebGL ground/contact shadows should be registered before y-sorted world depth');
 assert(gameRendererSource.indexOf('new WebGLWorldDepthLayer()') < gameRendererSource.indexOf("id: 'lighting'"), 'WebGL light reveal should be registered after y-sorted world depth');
-assert(gameRendererSource.indexOf("id: 'lighting'") < gameRendererSource.indexOf('new WebGLEffectLayer()'), 'WebGL effects should render after scene light reveal');
+assert(gameRendererSource.indexOf("id: 'lighting'") < gameRendererSource.indexOf("stage: 'post_illumination_effects'"), 'WebGL emissive and combat effects should render after scene light reveal');
 assert(gameRendererSource.indexOf('new WebGLPostProcessLayer()') < gameRendererSource.indexOf('new WebGLAtmosphericOverlayLayer()'), 'camera atmosphere should be registered after post-process');
 assert(gameRendererSource.indexOf('new WebGLAtmosphericOverlayLayer()') < gameRendererSource.indexOf('new WebGLGameplayOverlayLayer()'), 'gameplay screen overlays should render above camera atmosphere');
 assert(gameRendererSource.indexOf('new WebGLGameplayOverlayLayer()') < gameRendererSource.indexOf('new WebGLHudDebugLayer()'), 'WebGL HUD/debug should render above gameplay screen overlays');
@@ -210,17 +215,18 @@ assert(sceneSource.includes('a_blend'), 'WebGL scene root should pass profile-ow
 assert(!sceneSource.includes('drawImage'), 'WebGL scene root should not use Canvas drawImage compositing');
 
 const lightingSource = readFileSync(new URL('../src/render/backends/webgl/layers/WebGLLightingLayer.js', import.meta.url), 'utf8');
-assert(lightingSource.includes('profiled_flicker_light_cutouts_v2'), 'WebGL lighting layer should expose the profiled flicker mode');
-assert(lightingSource.includes('drawWorldRadialLights'), 'WebGL lighting layer should render light influence through WebGL-owned primitives');
-assert(lightingSource.includes('drawWorldRadialSaturatedLights'), 'WebGL lighting layer should use saturated local emitter compositing');
-assert(lightingSource.includes('drawScreenTriangles'), 'WebGL lighting layer should render shadow wedges through WebGL-owned primitives');
+assert(lightingSource.includes('WEBGL_ILLUMINATION_COMPOSITE_MODE'), 'WebGL lighting layer should expose illumination-composite ownership');
+assert(lightingSource.includes('context.illumination.compositeWorld'), 'WebGL lighting layer should composite the world through the shared illumination target');
+assert(!lightingSource.includes('overlayRects'), 'WebGL lighting layer should not retain a global darkness rectangle');
+assert(lightingSource.includes('drawScreenTriangles'), 'WebGL lighting layer should render contact footprints through WebGL-owned primitives');
 assert(lightingSource.includes('drawScreenSdfShadowFields'), 'WebGL lighting layer should render shadow-field packets through the WebGL-owned SDF shader primitive');
 assert(lightingSource.includes('projection.lights'), 'WebGL lighting layer should consume projection light packets');
 assert(lightingSource.includes('projection.lightingProfile'), 'WebGL lighting layer should consume profile projection packets');
 assert(lightingSource.includes('webgl_bounded_capsule_sdf_shadow_shader_v0'), 'WebGL lighting layer should expose the bounded SDF shader shadow-field mode');
 assert(lightingSource.includes('light_shadow_attenuation_blend_v0'), 'WebGL lighting layer should expose the shadow/light attenuation blend mode');
 assert(lightingSource.includes('shadowContactTriangleCount'), 'WebGL lighting layer should report contact shadow diagnostics');
-assert(lightingSource.includes('shadowSegmentCount'), 'WebGL lighting layer should report segmented falloff diagnostics');
+assert(lightingSource.includes('shadowContactFootprintCount'), 'WebGL lighting layer should report authored contact-footprint diagnostics');
+assert(lightingSource.includes('coarseProjectedShadowTriangleCount'), 'WebGL lighting layer should prove the coarse projected wedge remains retired');
 assert(lightingSource.includes('shadowFieldPrimitiveCount'), 'WebGL lighting layer should report shadow-field primitive diagnostics');
 assert(lightingSource.includes('shadowShaderPrimitiveCount'), 'WebGL lighting layer should report shader primitive diagnostics');
 assert(lightingSource.includes('shadowCompositeMode'), 'WebGL lighting layer should report light/shadow composite diagnostics');

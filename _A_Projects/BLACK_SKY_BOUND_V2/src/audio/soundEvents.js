@@ -9,6 +9,9 @@ export const AudioEventType = Object.freeze({
   ENEMY_NEAR: 'enemy.raider.near',
   ENEMY_ATTACK_WARNING: 'enemy.raider.warn',
   MAMA_WYVERN_ROAR: 'world.mama_wyvern.roar',
+  MAMA_WYVERN_FLYOVER: 'world.mama_wyvern.flyover',
+  MAMA_WYVERN_NAPALM: 'world.mama_wyvern.napalm',
+  MAMA_WYVERN_AFTERMATH: 'world.mama_wyvern.aftermath',
   UI_PAUSE: 'ui.pause'
 });
 

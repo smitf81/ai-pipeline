@@ -14,6 +14,7 @@ import {
   resolveMovementInput,
   wasInputActionPressed
 } from '../data/inputActions.js';
+import { rotateScreenRelativeInput } from '../render/three/worldTransform3D.js';
 
 export function inputSystem({ state, input }) {
   if (zeroPlayerIntentWhileTuning(state, input)) return;
@@ -23,8 +24,17 @@ export function inputSystem({ state, input }) {
       Object.assign(intent, { moveX: 0, moveY: 0, sprint: false, dodge: false, dodgeFollowup: false, melee: false, bite: false, lunge: false, smoke: false, smokeAbilityId: null });
       continue;
     }
-    const movement = resolveMovementInput(input);
-    const pointerWorld = screenToWorld(state.camera, input.pointer.x, input.pointer.y);
+    const rawMovement = resolveMovementInput(input);
+    const screenRelative3D = isWebGL3DRequested();
+    const movement = screenRelative3D ? rotateScreenRelativeInput(rawMovement.x, rawMovement.y) : rawMovement;
+    const pointerWorld2D = screenToWorld(state.camera, input.pointer.x, input.pointer.y);
+    const pointerDelta = screenRelative3D ? rotateScreenRelativeInput(
+      pointerWorld2D.x - state.camera.x,
+      pointerWorld2D.y - state.camera.y
+    ) : null;
+    const pointerWorld = pointerDelta
+      ? { x: state.camera.x + pointerDelta.x, y: state.camera.y + pointerDelta.y }
+      : pointerWorld2D;
     const canMove = canUseAbility(state.game.world, entity, AbilityId.MOVE);
     intent.moveX = canMove ? movement.x : 0;
     intent.moveY = canMove ? movement.y : 0;
@@ -48,6 +58,16 @@ export function inputSystem({ state, input }) {
     intent.smokeAbilityId = resolveAvailableSmokeAbility(state.game.world, entity);
     intent.smoke = smokePressed && intent.smokeAbilityId !== null;
     intent.lunge = wasInputActionPressed(input, InputActionId.LUNGE) && canUseAbility(state.game.world, entity, AbilityId.BODY_LUNGE);
+  }
+}
+
+function isWebGL3DRequested() {
+  try {
+    const requested = new URLSearchParams(globalThis.location?.search ?? '').get('renderer')
+      ?? globalThis.localStorage?.getItem?.('bsb.rendererBackend');
+    return requested === null || requested === 'webgl3d' || requested === 'webgl';
+  } catch {
+    return true;
   }
 }
 

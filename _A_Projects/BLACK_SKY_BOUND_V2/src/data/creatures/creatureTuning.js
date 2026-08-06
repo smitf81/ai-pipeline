@@ -1,4 +1,5 @@
 import { HUMANOID_TUNING_FIELDS } from '../humanoids/humanoidTuningFields.js';
+import { CAMERA_VISIBILITY_FOCUS_TUNING_FIELDS } from '../cameraVisibilityFocusProfile.js';
 
 export const CREATURE_TUNING_SCHEMA_VERSION = 'bsb.creatureTuning.v0';
 
@@ -43,13 +44,16 @@ export const WYVERN_TUNING_FIELDS = Object.freeze([
   field('gait.tailWave', 'Gait', 'Tail wave', 0.06, 0.38, 0.01),
   field('constraints.maxTailForward', 'Constraints', 'Tail reach limit', 0.22, 0.82, 0.01),
   field('constraints.maxTailBend', 'Constraints', 'Tail bend limit', 0.16, 0.64, 0.01),
-  field('constraints.maxHindAnkleForward', 'Constraints', 'Hind ankle forward', 0.12, 0.48, 0.01)
+  field('constraints.maxHindAnkleForward', 'Constraints', 'Hind ankle forward', 0.12, 0.48, 0.01),
+  ...CAMERA_VISIBILITY_FOCUS_TUNING_FIELDS
 ]);
 
 const FIELD_BY_PATH = new Map(WYVERN_TUNING_FIELDS.map((item) => [item.path, item]));
 for (const item of HUMANOID_TUNING_FIELDS) {
   if (!FIELD_BY_PATH.has(item.path)) FIELD_BY_PATH.set(item.path, item);
 }
+const UNTUNED_PROFILE_CACHE = new WeakMap();
+const TUNED_PROFILE_CACHE = new WeakMap();
 
 export function createEmptyCreatureTuning() {
   return { schemaVersion: CREATURE_TUNING_SCHEMA_VERSION, profiles: {} };
@@ -80,6 +84,26 @@ export function normalizeCreatureTuning(payload, options = {}) {
 }
 
 export function resolveCreatureProfile(baseProfile, tuning) {
+  if (!tuning || typeof tuning !== 'object') {
+    const cached = UNTUNED_PROFILE_CACHE.get(baseProfile);
+    if (cached) return cached;
+    const resolved = resolveProfile(baseProfile, null);
+    UNTUNED_PROFILE_CACHE.set(baseProfile, resolved);
+    return resolved;
+  }
+  let tuningCache = TUNED_PROFILE_CACHE.get(baseProfile);
+  if (!tuningCache) {
+    tuningCache = new WeakMap();
+    TUNED_PROFILE_CACHE.set(baseProfile, tuningCache);
+  }
+  const cached = tuningCache.get(tuning);
+  if (cached) return cached;
+  const resolved = resolveProfile(baseProfile, tuning);
+  tuningCache.set(tuning, resolved);
+  return resolved;
+}
+
+function resolveProfile(baseProfile, tuning) {
   const resolved = cloneData(baseProfile);
   const normalized = normalizeCreatureTuning(tuning).tuning;
   const overrides = normalized.profiles?.[baseProfile.id] ?? {};

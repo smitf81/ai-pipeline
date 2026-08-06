@@ -1,5 +1,6 @@
 import { ComponentType } from '../constants/componentTypes.js';
 import { getAbilityDefinition, getDefaultUnlockedAbilityIds } from '../data/abilities.js';
+import { getAbilityUnlockEvent } from '../data/abilityUnlockEvents.js';
 import { normalizeAudioMix } from '../data/audio/audioTuning.js';
 import { getComponent } from '../ecs/world.js';
 
@@ -36,8 +37,10 @@ export function createDefaultPlayerProfile(options = {}) {
 export function normalizePlayerProfile(source = null, options = {}) {
   const base = createDefaultPlayerProfile(options);
   if (!source || typeof source !== 'object') return base;
-  const consumedUnlockEventIds = uniqueStrings(source.progression?.consumedUnlockEventIds);
+  const consumedUnlockEventIds = uniqueStrings(source.progression?.consumedUnlockEventIds)
+    .filter(isProfilePersistentUnlockEventId);
   const unlockedAbilityIds = uniqueStrings(source.progression?.unlockedAbilityIds, base.progression.unlockedAbilityIds)
+    .filter(isProfilePersistentAbility)
     .filter((abilityId) => abilityHasRequiredReceipt(abilityId, consumedUnlockEventIds));
   return {
     schema: PLAYER_PROFILE_SCHEMA,
@@ -67,6 +70,15 @@ export function normalizePlayerProfile(source = null, options = {}) {
 function abilityHasRequiredReceipt(abilityId, consumedUnlockEventIds) {
   const ability = getAbilityDefinition(abilityId);
   return ability?.requiresUnlockReceipt !== true || consumedUnlockEventIds.includes(ability.unlockEventId);
+}
+
+function isProfilePersistentAbility(abilityId) {
+  const ability = getAbilityDefinition(abilityId);
+  return ability?.unlockEventId == null || isProfilePersistentUnlockEventId(ability.unlockEventId);
+}
+
+function isProfilePersistentUnlockEventId(eventId) {
+  return getAbilityUnlockEvent(eventId)?.persistenceScope !== 'run';
 }
 
 export function createPlayerProfileStore(storage = null, key = PLAYER_PROFILE_STORAGE_KEY) {
@@ -108,8 +120,10 @@ export function captureAbilityProgressionInProfile(world, entity, profile) {
   const progression = getComponent(world, entity, ComponentType.AbilityProgression);
   if (!progression) return normalizePlayerProfile(profile);
   const normalized = normalizePlayerProfile(profile);
-  normalized.progression.unlockedAbilityIds = uniqueStrings(progression.unlockedAbilities);
-  normalized.progression.consumedUnlockEventIds = uniqueStrings(progression.consumedUnlockEvents);
+  normalized.progression.unlockedAbilityIds = uniqueStrings(progression.unlockedAbilities)
+    .filter(isProfilePersistentAbility);
+  normalized.progression.consumedUnlockEventIds = uniqueStrings(progression.consumedUnlockEvents)
+    .filter(isProfilePersistentUnlockEventId);
   return normalized;
 }
 

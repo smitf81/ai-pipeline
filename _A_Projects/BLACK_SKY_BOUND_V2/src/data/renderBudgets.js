@@ -1,15 +1,15 @@
 export const RENDER_BUDGETS = Object.freeze({
   renderer: Object.freeze({
-    preferredBackend: 'webgl',
-    candidateBackend: 'webgl',
+    preferredBackend: 'webgl3d',
+    candidateBackend: 'webgl3d',
     fallbackBackend: null,
-    activationPolicy: 'webgl_only_no_renderer_fallback',
-    migrationPolicy: 'canvas2d_renderer_culled_webgl_only_v1',
-    sceneLayerPolicy: 'webgl_owned_layer_registry_with_renderer_neutral_projection',
+    activationPolicy: 'webgl3d_default_no_renderer_fallback',
+    migrationPolicy: 'three3d_default_legacy_webgl_alias_retired_v1',
+    sceneLayerPolicy: 'three_scene_graph_consumes_renderer_neutral_projection',
     unsupportedRendererPolicy: 'explicit_error_no_fallback',
     canvas2dRuntimeAvailable: false,
-    migrationCoverageStatus: 'webgl_only_canvas2d_renderer_culled',
-    terrainCachePolicy: 'webgl_visible_tile_projection_no_canvas_cache'
+    migrationCoverageStatus: 'three3d_default_legacy_scene_root_unregistered',
+    terrainCachePolicy: 'three_static_projection_one_layered_floor_batch_plus_instanced_detail_v1'
   }),
   liveEffects: Object.freeze({
     maxActive: 48,
@@ -30,7 +30,12 @@ export const RENDER_BUDGETS = Object.freeze({
   }),
   lightEmitters: Object.freeze({
     maxActive: 32,
-    overflowPolicy: 'render_first'
+    threeShaderSlotCapacity: 24,
+    overflowPolicy: 'critical_then_dynamic_then_static_nearest',
+    shaderCapacityPolicy: 'fixed_content_complete_slots_fail_visible_on_overflow_v1',
+    cullingPolicy: 'expanded_camera_influence_bounds_before_projection_v1',
+    statePolicy: 'dormant_nearby_static_active_dynamic_critical_v1',
+    cullPaddingTiles: 0
   }),
   actorShadowLod: Object.freeze({
     policy: 'unlit_non_player_black_shadow_lod_v0',
@@ -125,8 +130,9 @@ export const RENDER_BUDGETS = Object.freeze({
   occlusionShadows: Object.freeze({
     enabled: true,
     maxPhysicalBlockers: 96,
-    maxBlockersPerLight: 10,
-    maxShadowCastingLights: 12,
+    maxBlockersPerLight: 8,
+    maxShadowCastingLights: 4,
+    maxShadowLightsPerBlocker: 2,
     blockerPolicy: 'explicit_scene_and_visual_actor_occluder_projection',
     missingBlockerPolicy: 'painted_terrain_has_no_height_no_shadows',
     shadowPolicy: 'nearby_scene_and_dynamic_actor_sdf_ready_shadow_field_v1',

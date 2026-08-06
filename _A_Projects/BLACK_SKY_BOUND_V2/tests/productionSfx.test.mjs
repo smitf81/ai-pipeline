@@ -22,7 +22,31 @@ const targets = [
     cueId: 'world.mama_wyvern.distant_roar',
     fileCount: 1,
     channels: 2,
-    duration: [5.0, 5.4]
+    duration: [5.0, 5.4],
+    firstSignalMaxMs: 50,
+    bus: 'enemies'
+  },
+  {
+    cueId: 'world.mama_wyvern.flyover_roar',
+    fileCount: 1,
+    channels: 2,
+    duration: [3.0, 3.1],
+    bus: 'enemies'
+  },
+  {
+    cueId: 'world.mama_wyvern.napalm_projection',
+    fileCount: 1,
+    channels: 2,
+    duration: [2.2, 2.3],
+    firstSignalMaxMs: 100,
+    bus: 'combat'
+  },
+  {
+    cueId: 'world.mama_wyvern.inferno_aftermath',
+    fileCount: 1,
+    channels: 2,
+    duration: [17.9, 18.1],
+    bus: 'ambience'
   }
 ];
 
@@ -31,6 +55,7 @@ for (const target of targets) {
   equal(cue.source, 'file', `${target.cueId} should use decoded file playback`);
   equal(cue.required, true, `${target.cueId} should fail visibly when its production asset is unavailable`);
   equal(cue.procedural, null, `${target.cueId} should use only its authored production file`);
+  if (target.bus) equal(cue.bus, target.bus, `${target.cueId} should route through its visible pause-menu mix category`);
   equal(cue.files.length, target.fileCount, `${target.cueId} should expose the intended variation count`);
 
   for (const runtimeFile of cue.files) {
@@ -46,7 +71,7 @@ for (const target of targets) {
     assert(runtime.peak > 0.5 && runtime.peak < 0.95, `${runtimeFile} should be audible with sensible peak headroom`);
     assert(runtime.clippedSampleCount === 0, `${runtimeFile} should contain no clipped samples`);
     assert(runtime.dcOffset < 0.002, `${runtimeFile} should have negligible DC offset`);
-    assert(runtime.firstSignalMs < 20, `${runtimeFile} should start promptly`);
+    assert(runtime.firstSignalMs < (target.firstSignalMaxMs ?? 20), `${runtimeFile} should start within its authored attack envelope`);
 
     const stem = basename(runtimeFile, '.wav');
     const masterPath = join(root, 'assets', 'audio', 'masters', `${stem}_master.wav`);

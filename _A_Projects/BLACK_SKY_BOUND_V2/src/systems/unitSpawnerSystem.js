@@ -24,10 +24,15 @@ export function unitSpawnerSystem({ game, dt }) {
       spawner.cooldownSeconds = Math.max(0.1, Number(spawner.intervalSeconds) || 1);
       continue;
     }
+    const firstSpawnOrdinal = spawner.spawnedCount ?? 0;
     for (let index = 0; index < burstCount; index += 1) {
-      const originIndex = (spawner.spawnedCount ?? 0) + index;
+      const originIndex = firstSpawnOrdinal + index;
       const point = spawnPoint(spawner, originIndex);
-      const entityId = spawnActor(game.world, spawner.type, point.x, point.y, spawner.team);
+      const entityId = spawnActor(game.world, spawner.type, point.x, point.y, spawner.team, {
+        creature: spawner.creature,
+        sourceId: `${spawner.id}:${originIndex}`,
+        sourceKind: 'unit_spawner_ordinal'
+      });
       spawner.spawnedEntityIds.push(entityId);
       spawner.spawnedCount = (spawner.spawnedCount ?? 0) + 1;
     }

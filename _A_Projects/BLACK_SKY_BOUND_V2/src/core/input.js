@@ -31,7 +31,7 @@ export function createInput(canvas) {
     onMove(event);
   };
   const onUp = () => { pointer.down = false; pointer.button = -1; };
-  const onWheel = (event) => { pointer.wheel += Math.sign(event.deltaY); event.preventDefault(); };
+  const onWheel = (event) => { onMove(event); pointer.wheel += Math.sign(event.deltaY); event.preventDefault(); };
   const onContextMenu = (event) => event.preventDefault();
 
   if (typeof window !== 'undefined') {

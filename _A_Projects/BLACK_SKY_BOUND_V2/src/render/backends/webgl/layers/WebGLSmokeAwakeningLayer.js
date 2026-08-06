@@ -42,6 +42,7 @@ export class WebGLSmokeAwakeningLayer {
     const centerX = w * 0.5;
     const centerY = h * 0.49;
     this.buildNightVignette(w, h, scene);
+    this.buildOpaqueBlackout(w, h, scene);
     this.buildImpactDebris(w, h, scene);
     for (const shadow of scene.raiderShadows ?? []) this.buildRaiderShadow(w, h, shadow, scene);
     this.buildRollingSmoke(centerX, centerY, w, h, scene);
@@ -72,9 +73,26 @@ export class WebGLSmokeAwakeningLayer {
     const coverage = scene.smokeCoverage;
     this.rects.push(rect(0, 0, w, h, withAlpha(NIGHT, 0.08 + coverage * 0.16)));
     this.radials.push(radial(w * 0.5, h * 0.48, w * 0.68, h * 0.72, [0, 0, 0, 0.18 + coverage * 0.12], 0.99));
+    if (scene.pocket01 > 0) {
+      this.radials.push(radial(
+        w * 0.5,
+        h * 0.49,
+        w * (0.07 + scene.pocket01 * 0.34),
+        h * (0.06 + scene.pocket01 * 0.3),
+        withAlpha(MOON, 0.018 + scene.pocket01 * 0.075),
+        0.99
+      ));
+    }
     if (scene.phase === 'clearing') {
       this.radials.push(radial(w * 0.5, h * 0.47, w * (0.12 + scene.pocket01 * 0.26), h * (0.1 + scene.pocket01 * 0.22), withAlpha(MOON, 0.035 + scene.clearing01 * 0.045), 0.98));
     }
+  }
+
+  buildOpaqueBlackout(w, h, scene) {
+    const held = scene.phase === 'blackout_hold'
+      || (scene.phase === 'exhale' && scene.acceptedInputCount === 0);
+    if (!held) return;
+    this.rects.push(rect(0, 0, w, h, withAlpha(SMOKE, scene.fullSmokeOpacity ?? 0.985)));
   }
 
   buildImpactDebris(w, h, scene) {
@@ -134,8 +152,8 @@ export class WebGLSmokeAwakeningLayer {
     const minSize = Math.min(w, h);
     for (let index = 0; index < 12; index += 1) {
       const angle = index / 12 * Math.PI * 2;
-      const edgeDistanceX = w * (0.34 + pocket * 0.24);
-      const edgeDistanceY = h * (0.3 + pocket * 0.23);
+      const edgeDistanceX = w * (0.26 + pocket * 0.55);
+      const edgeDistanceY = h * (0.23 + pocket * 0.5);
       const drift = scene.settings?.reducedMotion ? 0 : Math.sin(scene.elapsedReal * 0.7 + index * 1.9) * 12;
       const radius = minSize * (0.22 + (index % 3) * 0.025) * (1 - pocket * 0.2);
       const colour = index % 3 === 0 ? SMOKE_LIT : SMOKE;
@@ -144,7 +162,7 @@ export class WebGLSmokeAwakeningLayer {
         centerY + Math.sin(angle) * edgeDistanceY + drift * 0.3,
         radius * 1.3,
         radius,
-        withAlpha(colour, coverage * (0.5 + (index % 4) * 0.045)),
+        withAlpha(colour, coverage * (0.5 + (index % 4) * 0.045) * (1 - pocket * 0.66)),
         0.95
       ));
     }

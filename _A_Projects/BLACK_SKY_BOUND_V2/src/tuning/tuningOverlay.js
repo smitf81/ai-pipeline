@@ -1,6 +1,5 @@
 import { getProfileOverrideValue } from '../data/creatures/creatureTuning.js';
-import { resolveCreatureProjectionRecipe } from '../data/creatureProjections.js';
-import { getHumanoidProjectionProfile } from '../data/humanoids/raiderHumanoid.js';
+import { resolveCreatureTuningTarget } from './entityTuningTargets.js';
 
 export function createCreatureTuningOverlay({ state, onChange }) {
   if (typeof document === 'undefined') return noopOverlay();
@@ -40,7 +39,7 @@ export function createCreatureTuningOverlay({ state, onChange }) {
 function buildPanel(state, onChange) {
   const tuning = state.tuning;
   const actor = state.game.actors.find((item) => item.id === tuning.selectedEntityId);
-  const target = resolveTuningTarget(actor, state.game.creatureTuning);
+  const target = resolveCreatureTuningTarget(actor, state.game.creatureTuning);
   const panel = el('div', 'bsb-tuning-panel');
   panel.append(
     header(target?.title ?? 'Actor Tuning', tuning.saveStatus, tuning.saveError),
@@ -67,17 +66,6 @@ function buildPanel(state, onChange) {
     panel.append(section);
   }
   return panel;
-}
-
-function resolveTuningTarget(actor, tuning) {
-  if (actor?.wyvernProjection?.recipeId) {
-    const recipe = resolveCreatureProjectionRecipe(actor.wyvernProjection.recipeId, tuning);
-    return { title: 'Wyvern Tuning', profile: recipe.proportionProfile };
-  }
-  if (actor?.humanoidProjection?.profileId) {
-    return { title: 'Humanoid Tuning', profile: getHumanoidProjectionProfile(actor.humanoidProjection.profileId, tuning) };
-  }
-  return null;
 }
 
 function header(title, status, error) {

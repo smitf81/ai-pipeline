@@ -22,6 +22,8 @@ export function buildSceneryProjection(sceneObjects, tileSize) {
     widthTiles: object.widthTiles,
     heightTiles: object.heightTiles,
     collisionFootprint: cloneProjectionData(object.collisionFootprint) ?? { w: object.widthTiles, h: object.heightTiles },
+    collisionShape: cloneProjectionData(object.collisionShape),
+    traversalModifiers: cloneProjectionData(object.traversalModifiers) ?? [],
     visualTileX: object.visualTileX,
     visualTileY: object.visualTileY,
     visualWidthTiles: object.visualWidthTiles,
@@ -50,12 +52,29 @@ export function buildSceneryProjection(sceneObjects, tileSize) {
     occlusionHeight: object.occlusion?.height ?? object.occlusion?.occlusionHeight ?? 0,
     occlusionRadius: object.occlusion?.radius ?? 0,
     materialProfileId: object.materialProfileId ?? null,
-    material: object.materialProfileId ? buildMaterialProjection(object.materialProfileId, {
-      family: MaterialFamily.SCENE_OBJECT,
-      state: buildSceneObjectMaterialState(object),
-      source: { kind: 'sceneObject', id: object.id, type: object.type }
-    }) : null,
+    material: buildSceneryMaterialProjection(object),
     render: cloneProjectionData(object.render) ?? {}
+  }));
+}
+
+export function buildSceneryMaterialProjection(object) {
+  return object?.materialProfileId ? buildMaterialProjection(object.materialProfileId, {
+    family: MaterialFamily.SCENE_OBJECT,
+    state: buildSceneObjectMaterialState(object),
+    source: { kind: 'sceneObject', id: object.id, type: object.type }
+  }) : null;
+}
+
+export function buildTreeFireSceneryProjection(sceneObjects, tileSize) {
+  return sceneObjects.map((object) => ({
+    id: object.id,
+    material: buildSceneryMaterialProjection(object),
+    worldX: object.visualX * tileSize,
+    worldY: object.visualY * tileSize,
+    worldTileX: object.visualTileX * tileSize,
+    worldTileY: object.visualTileY * tileSize,
+    worldWidth: object.visualWidthTiles * tileSize,
+    worldHeight: object.visualHeightTiles * tileSize
   }));
 }
 

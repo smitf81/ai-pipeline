@@ -7,6 +7,7 @@ import { buildLightViews } from '../src/game/selectors.js';
 import { buildRenderProjection } from '../src/projection/renderProjection.js';
 import { createCamera } from '../src/render/camera.js';
 import { EMITTER_LIGHT_COMPOSITE_MODE } from '../src/render/backends/webgl/WebGLEmitterLightComposite.js';
+import { WEBGL_ILLUMINATION_COMPOSITE_MODE, WEBGL_ILLUMINATION_FIELD_MODE } from '../src/render/backends/webgl/WebGLIlluminationPipeline.js';
 import { WebGLActorLayer } from '../src/render/backends/webgl/layers/WebGLActorLayer.js';
 import {
   WebGLLightingLayer,
@@ -25,7 +26,9 @@ const projectionB = buildProjectionAt(0.37);
 
 equal(projectionA.lightingProfile.classification, 'renderer_neutral_lighting_profile_projection', 'projection should expose the lighting profile as renderer-neutral data');
 equal(projectionA.lightingProfile.id, profile.id, 'projection should use the active lighting profile id');
-equal(projectionA.lightingProfile.darknessOpacity, profile.darknessOpacity, 'projection should carry profile darkness opacity');
+equal(projectionA.lightingProfile.illuminationModel, profile.illuminationModel, 'projection should carry the additive illumination model');
+equal(projectionA.lightingProfile.ambientIllumination, profile.ambientIllumination, 'projection should carry the low ambient illumination contribution');
+assert(!Object.hasOwn(projectionA.lightingProfile, 'darknessOpacity'), 'projection should not carry the retired darkness-overlay opacity');
 equal(projectionA.lightingProfile.lightRevealStrength, profile.lightRevealStrength, 'projection should carry profile light reveal strength');
 equal(projectionA.lightingProfile.warmBloomOpacity, profile.warmBloomOpacity, 'projection should carry profile warm bloom opacity');
 equal(projectionA.lightingProfile.shadowFieldSampleCount, profile.shadowFieldSampleCount, 'projection should carry shadow-field sample count');
@@ -53,12 +56,15 @@ assert(flickerA.revealRadius > flickerA.glowRadius && flickerA.glowRadius > flic
 const lightingLayer = new WebGLLightingLayer();
 lightingLayer.update(projectionA, fakeLightingContext(projectionA));
 equal(lightingLayer.profileId, profile.id, 'WebGL lighting layer should consume the projected lighting profile id');
-equal(lightingLayer.darknessOpacity, profile.darknessOpacity, 'WebGL darkness overlay should use profile darkness opacity');
+equal(lightingLayer.illuminationModel, WEBGL_ILLUMINATION_FIELD_MODE, 'WebGL lighting should accumulate an RGB illumination field');
+equal(lightingLayer.illuminationCompositeMode, WEBGL_ILLUMINATION_COMPOSITE_MODE, 'WebGL lighting should multiply world colour by illumination');
+equal(lightingLayer.ambientIllumination, profile.ambientIllumination, 'WebGL lighting should use profile-owned ambient illumination');
 equal(lightingLayer.lightRevealStrength, profile.lightRevealStrength, 'WebGL lighting should use profile reveal strength');
 equal(lightingLayer.sourceLightCount, projectionA.lights.length, 'WebGL active light count should count source lights, not expanded primitives');
 equal(lightingLayer.flickeringLightCount, projectionA.lights.filter((light) => light.flickerAmount > 0).length, 'WebGL diagnostics should count flickering lights');
 equal(lightingLayer.lightInfluences.length, projectionA.lights.length * 3, 'WebGL should use reveal, glow, and core primitives per light');
-assert(lightingLayer.lightInfluences.every((influence) => influence.color[3] <= 0.38), 'WebGL light alpha should be tuned below harsh additive blowout');
+assert(lightingLayer.lightInfluences.every((influence) => influence.color[3] <= 0.78), 'illumination coefficients should remain bounded below field saturation');
+assert(lightingLayer.localRevealInfluences.some((influence) => influence.color[3] > 0.38), 'local reveal should contribute meaningful illumination instead of a faint glow sticker');
 assert(lightingLayer.lightInfluences[0].color[0] > lightingLayer.lightInfluences[0].color[1], 'outer torch light should remain warm amber rather than white');
 equal(lightingLayer.emitterCompositeMode, EMITTER_LIGHT_COMPOSITE_MODE, 'WebGL should report the split emitter composite mode');
 assert(lightingLayer.localRevealInfluences.length > 0 && lightingLayer.localGlowInfluences.length > 0, 'WebGL should split local emitter reveal and glow primitives');
@@ -67,10 +73,12 @@ equal(lightingLayer.shadowCompositeMode, WEBGL_SHADOW_COMPOSITE_MODE, 'WebGL lig
 equal(lightingLayer.shadowBlendStrength, profile.shadowLightBlendStrength, 'WebGL lighting layer should use profiled shadow blend strength');
 equal(lightingLayer.shadowFieldEdgeSoftness, profile.shadowFieldEdgeSoftness, 'WebGL lighting layer should use profiled SDF edge softness');
 equal(lightingLayer.shadowFieldTailFloor, profile.shadowFieldTailFloor, 'WebGL lighting layer should use profiled tail fade floor');
-equal(lightingLayer.statsFields().occlusionShadowRenderable, true, 'WebGL should mark explicit scene-object shadow wedges renderable');
+equal(lightingLayer.statsFields().occlusionShadowRenderable, true, 'WebGL should mark contact footprints and projected SDF streaks renderable');
 equal(lightingLayer.statsFields().occlusionShadowMode, WEBGL_SHADOW_MODE, 'WebGL should report the SDF-ready shadow-field mode');
 assert(lightingLayer.statsFields().shadowContactTriangleCount > 0, 'WebGL should report anchored contact shadow triangles');
-assert(lightingLayer.statsFields().shadowSegmentCount > 0, 'WebGL should report segmented shadow falloff');
+assert(lightingLayer.statsFields().shadowContactFootprintCount > 0, 'WebGL should report separate authored contact footprints');
+equal(lightingLayer.statsFields().shadowSegmentCount, 0, 'WebGL should leave projected falloff to the SDF streak');
+equal(lightingLayer.statsFields().coarseProjectedShadowTriangleCount, 0, 'WebGL should not render a duplicate coarse wedge');
 assert(lightingLayer.statsFields().shadowFieldPacketCount > 0, 'WebGL should report SDF-ready shadow field packets');
 assert(lightingLayer.statsFields().shadowFieldSampleCount > 0, 'WebGL should report SDF-ready shadow field samples');
 assert(lightingLayer.statsFields().shadowFieldPacketCount > projectionA.occlusionShadows.approximateShadowRegions, 'compound SDF silhouettes should produce more shader packets than broad shadow regions');
@@ -99,7 +107,7 @@ assert(projectionA.occlusionShadows.approximateShadowRegions > 0, 'current scene
 assert(projectionA.occlusionShadows.shadowFieldPacketCount > 0, 'current scene should project SDF-ready shadow field packets');
 assert(projectionA.occlusionShadows.shadowSilhouettePrimitiveCount > projectionA.occlusionShadows.approximateShadowRegions, 'current scene should project compound silhouette SDF primitives');
 assert(projectionA.occlusionShadows.actorShadowBlockers > 0, 'current scene should derive render-only actor shadow blockers');
-assert(projectionA.occlusionShadows.actorShadowFieldPacketCount > 0, 'current scene should project actor-sourced SDF shadow packets');
+assert(projectionA.shadowBlockers.some((blocker) => blocker.source === 'renderer_neutral_actor_visual_projection' && blocker.shadowShapeProfileId === 'creature'), 'current scene actors should resolve the creature shadow family even when light budgets select nearer scenery');
 equal(projectionA.debug.occlusionShadowMode, 'projection_live_sdf_ready_shadow_field_v1', 'projection debug should label live SDF-ready shadow field rendering');
 
 const actorLayer = new WebGLActorLayer();
@@ -111,9 +119,10 @@ assert(actorLayer.actorShadowLodPrimitiveCount > 0, 'shadow LoD should emit chea
 equal(actorLayer.rects.length, 3, 'player, lit enemy, and unlit enemy contact LoD should remain rendered after light-space gating');
 
 const lightingSource = readFileSync(new URL('../src/render/backends/webgl/layers/WebGLLightingLayer.js', import.meta.url), 'utf8');
-assert(lightingSource.includes('profiled_flicker_light_cutouts_v2'), 'WebGL lighting mode should name profile/flicker ownership');
+assert(lightingSource.includes('WEBGL_ILLUMINATION_COMPOSITE_MODE'), 'WebGL lighting mode should name illumination-composite ownership');
 assert(lightingSource.includes('projection.lightingProfile'), 'WebGL lighting layer should consume projected lighting profile data');
-assert(lightingSource.includes('drawWorldRadialSaturatedLights'), 'WebGL local emitter glow should use capped/saturated compositing');
+assert(lightingSource.includes('context.illumination.compositeWorld'), 'WebGL lighting should hand the world and light field to the illumination compositor');
+assert(!lightingSource.includes('overlayRects'), 'WebGL lighting should not retain a full-screen darkness rectangle');
 assert(lightingSource.includes('webgl_bounded_capsule_sdf_shadow_shader_v0'), 'WebGL lighting layer should name the bounded SDF shader mode');
 assert(lightingSource.includes('light_shadow_attenuation_blend_v0'), 'WebGL lighting layer should name the light/shadow attenuation blend mode');
 assert(lightingSource.includes('drawScreenSdfShadowFields'), 'WebGL lighting layer should render shadow-field packets through the bounded SDF shader primitive');

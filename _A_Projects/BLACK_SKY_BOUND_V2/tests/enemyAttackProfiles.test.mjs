@@ -4,6 +4,7 @@ import { EntityKind } from '../src/constants/entityKinds.js';
 import { Faction } from '../src/constants/factions.js';
 import { ACTORS } from '../src/data/actors.js';
 import { COMBAT_BALANCE } from '../src/data/combatBalance.js';
+import { CreatureRecipeId, getCreatureRecipe } from '../src/data/creatures/creatureRecipes.js';
 import {
   EnemyAttackPhase,
   EnemyAttackProfileId,
@@ -21,10 +22,10 @@ import { enemyPressureSystem } from '../src/systems/enemyPressureSystem.js';
 import { humanoidProjectionSystem } from '../src/systems/humanoidProjectionSystem.js';
 import { createDemoMap } from '../src/world/map.js';
 
-deepEqual(ACTORS[EntityKind.RAIDER].attackProfileIds, [
+deepEqual(getCreatureRecipe(CreatureRecipeId.RAIDER_SCAVENGER).attacks.map((entry) => entry.profileId), [
   EnemyAttackProfileId.RAIDER_SPEAR_JAB,
   EnemyAttackProfileId.RAIDER_TORCH_SWING
-], 'raiders should own both spear jab and carried-torch swing profiles');
+], 'raider recipe should own both spear jab and carried-torch swing profiles');
 deepEqual(ACTORS[EntityKind.HUSK].attackProfileIds, [EnemyAttackProfileId.HUSK_CLAW_MAUL], 'husks should own the claw maul profile');
 deepEqual(ACTORS[EntityKind.WEREWOLF].attackProfileIds, [EnemyAttackProfileId.WEREWOLF_LUNGE_BITE], 'werewolves should own the lunge bite profile');
 
@@ -156,6 +157,20 @@ missDragonTransform.x = 9;
 enemyAttackSystem({ game: missHarness.game, dt: bite.windup });
 enemyAttackSystem({ game: missHarness.game, dt: bite.active * bite.damageTime01 });
 equal(missDragonHealth.hp, missDragonHealth.maxHp, 'target leaving the hit shape during windup should be missed safely');
+
+const trackingHarness = createHarness();
+const trackingRaider = spawnActor(trackingHarness.game.world, EntityKind.RAIDER, 5, 5);
+const trackingDragonTransform = component(trackingHarness, trackingHarness.game.dragonId, ComponentType.Transform);
+trackingDragonTransform.x = 5.8;
+trackingDragonTransform.y = 5;
+enemyPressureSystem({ game: trackingHarness.game, map: trackingHarness.map, dt: 0 });
+const trackingAI = component(trackingHarness, trackingRaider, ComponentType.EnemyPressureAI);
+equal(trackingAI.attackPhase, EnemyAttackPhase.WINDUP, 'tracking raider should commit a readable windup before turning');
+trackingDragonTransform.x = 5;
+trackingDragonTransform.y = 4.2;
+enemyAttackSystem({ game: trackingHarness.game, dt: spear.windup * 0.5 });
+const trackingTransform = component(trackingHarness, trackingRaider, ComponentType.Transform);
+assert(Math.abs(trackingTransform.rotation + Math.PI / 2) < 0.001, 'committed raider should track a moving target through windup');
 
 equal(canEnemyAttackDamageCandidate(raiderHarness.game.world, raider, friendlyRaider, hostileHusk, EnemyCollateralMode.HOSTILE_ONLY), false, 'hostile-only mode should exclude a friendly');
 equal(canEnemyAttackDamageCandidate(raiderHarness.game.world, raider, friendlyRaider, hostileHusk, EnemyCollateralMode.TARGET_ONLY), false, 'target-only mode should exclude collateral friendlies');

@@ -91,7 +91,7 @@ function buildHudLines(hud, debug, status) {
   const hp = `${Math.ceil(hud.playerHp ?? 0)}/${Math.ceil(hud.playerMaxHp ?? 0)}`;
   const stamina = `${Math.ceil(hud.playerStamina ?? 0)}/${Math.ceil(hud.playerMaxStamina ?? 0)}`;
   const cooldowns = hud.cooldowns ?? {};
-  const darkMs = formatMs(status.webglDarknessRenderMs ?? 0);
+  const illuminationMs = formatMs(status.webglIlluminationRenderMs ?? 0);
   const flicker = status.webglFlickeringLightCount ?? 0;
   const lightSpace = status.webglLightSpaceCullingActive ? `LSP ${status.webglLightSpaceCulledCount ?? 0}` : 'LSP OFF';
   const occlusion = `${status.webglOcclusionShadowMode?.includes('scaffolded') ? 'OCC S' : 'OCC'}${status.webglOcclusionShadowRegions ?? 0}`;
@@ -100,7 +100,7 @@ function buildHudLines(hud, debug, status) {
     { text: `HP ${hp} ST ${stamina} EN ${hud.enemyCount ?? 0} ${compact(hud.status)}`, x: 164, y: 45, color: [0.82, 0.86, 0.82, 0.95] },
     { text: compact(hud.objective || hud.message || 'SURVIVE'), x: 22, y: 78, color: [0.7, 0.77, 0.8, 0.92], maxWidth: 520 },
     { text: `D ${ready(hud.dodgeCooldown)} B ${ready(cooldowns.bite)} L ${ready(cooldowns.lunge)} S ${ready(cooldowns.smoke)}`, x: 22, y: 101, color: [0.86, 0.72, 0.5, 0.95] },
-    { text: `LT ${debug.lightCount ?? 0} FLK ${flicker} ${lightSpace} ${occlusion} ${darkMs}`, x: 22, y: 124, color: [0.57, 0.68, 0.74, 0.9] }
+    { text: `LT ${debug.lightCount ?? 0} FLK ${flicker} ${lightSpace} ${occlusion} ${illuminationMs}`, x: 22, y: 124, color: [0.57, 0.68, 0.74, 0.9] }
   ];
 }
 

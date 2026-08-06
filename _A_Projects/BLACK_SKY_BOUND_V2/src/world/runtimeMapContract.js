@@ -21,7 +21,9 @@ export const RUNTIME_MAP_OPTIONAL_FIELDS = Object.freeze([
   'enemySpawns',
   'unitPlacements',
   'unitSpawners',
-  'transitions'
+  'transitions',
+  'sceneSequences',
+  'arena'
 ]);
 
 export const RUNTIME_MAP_AUTHORING_FIELDS = Object.freeze([

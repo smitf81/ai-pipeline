@@ -21,13 +21,13 @@ export const MAMA_WYVERN_WORLD_EVENT = Object.freeze({
   schedule: Object.freeze({
     firstEventAtSeconds: 36,
     intervalSeconds: Object.freeze({ min: 52, max: 78 }),
-    kindPolicy: 'alternating_visual_flyover_and_inferno'
+    kindPolicy: 'inferno_first_then_alternating_flyover_and_inferno'
   }),
   timing: Object.freeze({
     warningSeconds: 1.65,
     flyoverSeconds: 1.22,
     aftermathSeconds: 0.45,
-    infernoDeployProgress: 0.5
+    infernoDeployProgress: 0.67
   }),
   shadow: Object.freeze({
     cameraPeripheryOffsetTiles: 1.35,
@@ -37,13 +37,14 @@ export const MAMA_WYVERN_WORLD_EVENT = Object.freeze({
     fallbackViewportHeightTiles: 10,
     crossingPolicy: 'active_camera_frustum_heading_crossing_v1',
     scale: 0.46,
+    altitudeMeters: 9.2,
     opacity: 0.82,
     penumbraOpacity: 0.12
   }),
   breath: Object.freeze({
     mode: 'mama_head_rooted_directional_delivery_v1',
-    startProgress: 0.32,
-    endProgress: 0.66,
+    startProgress: 0.16,
+    endProgress: 0.84,
     headForwardTiles: 2,
     groundForwardTiles: 4.35,
     rightOffsetTiles: 0.16
@@ -66,7 +67,13 @@ export const MAMA_WYVERN_WORLD_EVENT = Object.freeze({
   }),
   audio: Object.freeze({
     warningEventType: 'world.mama_wyvern.roar',
-    cueId: 'world.mama_wyvern.distant_roar'
+    warningCueId: 'world.mama_wyvern.distant_roar',
+    flyoverEventType: 'world.mama_wyvern.flyover',
+    flyoverCueId: 'world.mama_wyvern.flyover_roar',
+    napalmEventType: 'world.mama_wyvern.napalm',
+    napalmCueId: 'world.mama_wyvern.napalm_projection',
+    aftermathEventType: 'world.mama_wyvern.aftermath',
+    aftermathCueId: 'world.mama_wyvern.inferno_aftermath'
   })
 });
 
@@ -89,7 +96,8 @@ export function createMamaWyvernWorldEventState() {
       sequence: 0,
       eventType: null,
       cueId: null,
-      sourceEventId: null
+      sourceEventId: null,
+      events: []
     },
     diagnostics: {
       manualTriggerCount: 0,
@@ -235,7 +243,7 @@ export function mamaWorldEventAngle(eventIndex, previousHeadingRadians = null) {
 }
 
 export function mamaWorldEventKind(eventIndex) {
-  return eventIndex % 2 === 0 ? MamaWyvernEventKind.FLYOVER : MamaWyvernEventKind.INFERNO;
+  return eventIndex % 2 === 0 ? MamaWyvernEventKind.INFERNO : MamaWyvernEventKind.FLYOVER;
 }
 
 function hash01(...values) {

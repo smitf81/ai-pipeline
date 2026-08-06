@@ -52,6 +52,7 @@ const shrub = projection.scenery.find((object) => object.type === SceneObjectTyp
 const leafLitter = projection.scenery.find((object) => object.type === SceneObjectType.LEAF_LITTER);
 const grass = projection.terrain.tiles.find((tile) => tile.type === 'grass');
 const dirt = projection.terrain.tiles.find((tile) => tile.type === 'dirt');
+const scorched = projection.terrain.tiles.find((tile) => tile.type === 'scorched');
 
 equal(player.material.profileId, MaterialProfileId.SCALE_WYVERN_COPPER, 'wyvern should project a scale material profile');
 equal(raider.material.profileId, MaterialProfileId.CLOTH_RAIDER, 'human raider should project a cloth material profile');
@@ -65,6 +66,7 @@ equal(shrub.material.profileId, MaterialProfileId.FOLIAGE_SHRUB, 'forest shrub s
 equal(leafLitter.material.profileId, MaterialProfileId.FOREST_FLOOR_DECAL, 'leaf litter should project forest floor decal material profile');
 equal(grass.material.profileId, MaterialProfileId.SOIL_GRASS, 'grass terrain should project a soil/grass material profile');
 equal(dirt.material.profileId, MaterialProfileId.SOIL_DIRT, 'dirt terrain should project a soil/dirt material profile');
+equal(scorched.material.profileId, MaterialProfileId.SCORCHED_SOIL, 'scorched terrain should project a scorched-soil material profile');
 
 assert(player.material.state.integrity > 0.99, 'undamaged player material should preserve full integrity');
 equal(player.material.provenance.truthSource, 'material profile registry plus projected object state', 'material packets should preserve projection/truth provenance');

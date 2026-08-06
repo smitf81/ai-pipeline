@@ -6,12 +6,12 @@ import { RENDER_BUDGETS } from '../data/renderBudgets.js';
 import { resolvePostProcessPolishTuning } from '../data/postProcessPolish.js';
 import { buildActorShadowBlockers } from './actorShadowSilhouettes.js';
 import { buildLightSpaceRenderCulling, resetLightSpaceCullingStats } from './lightSpaceRenderCulling.js';
-import { buildLightProjection } from './lightProjection.js';
+import { buildVisibleLightProjection } from './lightProjection.js';
 import { buildActorMaterialState, buildMaterialProjection, buildMaterialSummary } from './materialProjection.js';
 import { buildOcclusionShadowProjection, resetOcclusionShadowStats } from './occlusionShadowState.js';
 import { buildSceneryProjection } from './sceneObjectProjection.js';
 import { buildShadowBlockerProjection } from './shadowBlockerProjection.js';
-import { getHumanoidProjectionProfile } from '../data/humanoids/raiderHumanoid.js';
+import { getHumanoidProjectionProfile } from '../data/humanoids/raiderHumanoid.js'; import { resolveCreatureHumanoidProfile } from '../data/creatures/creatureRecipes.js';
 import { buildTerrainProjection } from './terrainProjection.js';
 import { buildAmbientParticleProjection } from './ambientParticleProjection.js';
 import { buildEffectProjection, buildProjectileProjection } from './effectProjection.js';
@@ -29,6 +29,7 @@ import { buildWorldEventProjection } from './worldEventProjection.js';
 import { buildTutorialProjection } from './tutorialProjection.js';
 import { buildOpeningSequenceProjection } from './openingSequenceProjection.js';
 import { buildSmokeAwakeningProjection } from './smokeAwakeningProjection.js';
+import { buildAuthoredTransitionSequenceProjection } from './authoredTransitionSequenceProjection.js';
 
 export function buildRenderProjection(state, config) {
   const game = state.game ?? {};
@@ -36,13 +37,13 @@ export function buildRenderProjection(state, config) {
   const tileSize = config.tileSize;
   const renderTime = game.renderTime ?? state.time ?? 0;
   const lightingProfile = getLightingProfile(game.lighting?.profileId);
-  const lights = game.lights ?? [];
-  const lightProjection = buildLightProjection(lights, tileSize);
+  const lights = game.lights ?? []; const camera = state.camera ?? createFallbackCamera();
+  const lightSelection = buildVisibleLightProjection(lights, camera, tileSize, { ...RENDER_BUDGETS.lightEmitters, criticalEntityId: game.dragonId }); const lightProjection = lightSelection.lights;
   const lightSpaceLights = lightProjection.map((light) => ({
     id: light.id,
     x: light.x,
     y: light.y,
-    radius: Math.max(0, (light.revealRadius ?? light.radius) / tileSize),
+    radius: Math.max(0, (light.baseRevealRadius ?? light.revealRadius ?? light.radius) / tileSize),
     intensity: light.revealStrength ?? light.effectiveIntensity,
     enabled: light.enabled,
     sourceKind: light.sourceKind,
@@ -52,9 +53,8 @@ export function buildRenderProjection(state, config) {
     shadowHeightScale: light.shadow?.heightScale ?? 1,
     flashStage: light.flashStage ?? null,
     afterimageIntensity: light.afterimageIntensity ?? 0,
-    shadowPriority: light.shadowPriority ?? 0
+    shadowPriority: light.shadowPriority ?? 0, castsShadows: light.castsShadows !== false, illuminationState: light.illuminationState
   }));
-  const camera = state.camera ?? createFallbackCamera();
   const lightSpaceCulling = buildLightSpaceRenderCulling(lightSpaceLights, camera, tileSize);
   const actors = applyActorLightReadabilityProjection(
     buildActorProjection(game.actors ?? [], tileSize, game.creatureTuning),
@@ -85,6 +85,7 @@ export function buildRenderProjection(state, config) {
     lightingProfile,
     lights,
     lightProjection,
+    lightSelection: lightSelection.diagnostics,
     lightSpaceCulling,
     occlusionShadows
   });
@@ -107,7 +108,7 @@ export function buildRenderProjection(state, config) {
     decals: [...buildDecalProjection(game.renderLayers?.decals?.stamps ?? [], tileSize), ...corpseDecals],
     groundHazards,
     droppedTorches,
-    lights: lightProjection,
+    lights: lightProjection, illuminationSelection: lightSelection.diagnostics,
     lightSpaceCulling,
     occlusionShadows,
     shadowBlockers: buildShadowBlockerProjection(shadowBlockers, tileSize),
@@ -123,6 +124,7 @@ export function buildRenderProjection(state, config) {
     bodyState: buildBodyStateProjection(game, renderTime),
     hud: buildHudProjection(game),
     opening: buildOpeningSequenceProjection(state),
+    authoredTransition: buildAuthoredTransitionSequenceProjection(state),
     smokeAwakening: buildSmokeAwakeningProjection(state),
     tutorial: buildTutorialProjection(state),
     debug: {
@@ -151,6 +153,7 @@ function buildActorProjection(actors, tileSize, creatureTuning = null) {
       const def = ACTORS[actor.type] ?? {};
       return {
         id: actor.id,
+        authoredId: actor.authoredId ?? null,
         type: actor.type,
         team: actor.team,
         alive: !!actor.alive,
@@ -158,27 +161,27 @@ function buildActorProjection(actors, tileSize, creatureTuning = null) {
         y: actor.y,
         worldX: actor.x * tileSize,
         worldY: actor.y * tileSize,
-        radius: actor.radius,
+        radius: actor.radius, bodyContactRig: cloneProjectionData(actor.bodyContactRig),
         worldRadius: Math.max(2, actor.radius * tileSize),
         rotation: actor.rotation ?? 0,
         hp: actor.hp,
         maxHp: actor.maxHp,
         stamina: cloneProjectionData(actor.stamina),
         dodgeState: cloneProjectionData(actor.dodgeState),
-        colour: def.colour ?? '#d8d8d8',
-        stroke: def.stroke ?? '#111111',
-        materialProfileId: def.materialProfileId ?? actor.materialProfileId ?? null,
-        material: (def.materialProfileId ?? actor.materialProfileId) ? buildMaterialProjection(def.materialProfileId ?? actor.materialProfileId, {
+        colour: actor.colour ?? def.colour ?? '#d8d8d8',
+        stroke: actor.stroke ?? def.stroke ?? '#111111',
+        materialProfileId: actor.materialProfileId ?? def.materialProfileId ?? null,
+        material: (actor.materialProfileId ?? def.materialProfileId) ? buildMaterialProjection(actor.materialProfileId ?? def.materialProfileId, {
           family: MaterialFamily.ENTITY,
           state: buildActorMaterialState(actor, actor.team),
           source: { kind: 'actor', id: actor.id, type: actor.type, team: actor.team }
         }) : null,
-        role: def.role ?? 'actor',
-        silhouette: def.silhouette ?? 'marker',
-        lightReadabilityProfileId: def.lightReadabilityProfileId ?? null,
+        role: actor.role ?? def.role ?? 'actor',
+        silhouette: actor.silhouette ?? def.silhouette ?? 'marker',
+        lightReadabilityProfileId: actor.lightReadabilityProfileId ?? def.lightReadabilityProfileId ?? null,
         enemyBehaviour: cloneProjectionData(actor.enemyBehaviour),
         wyvernProjection: buildWyvernVisualProjection(actor.wyvernProjection, tileSize, creatureTuning),
-        humanoidProjection: buildHumanoidVisualProjection(actor.humanoidProjection, tileSize, creatureTuning),
+        humanoidProjection: buildHumanoidVisualProjection(actor.humanoidProjection, tileSize, creatureTuning, actor.creatureRecipe),
         predatorProjection: buildPredatorVisualProjection(actor.predatorProjection, tileSize),
         impactResponse: cloneProjectionData(actor.impactResponse),
         lightEmitter: actor.lightEmitter ?? null
@@ -208,9 +211,9 @@ function buildPredatorVisualProjection(projection, tileSize) {
   };
 }
 
-function buildHumanoidVisualProjection(projection, tileSize, creatureTuning = null) {
+function buildHumanoidVisualProjection(projection, tileSize, creatureTuning = null, creatureRecipe = null) {
   if (!projection?.profileId) return null;
-  const profile = getHumanoidProjectionProfile(projection.profileId, creatureTuning);
+  const profile = resolveCreatureHumanoidProfile(getHumanoidProjectionProfile(projection.profileId, creatureTuning), creatureRecipe);
   return {
     classification: 'renderer_neutral_humanoid_visual_projection',
     profileId: projection.profileId,
@@ -434,8 +437,8 @@ function buildLightingProfileProjection(profile) {
   return {
     classification: 'renderer_neutral_lighting_profile_projection',
     id: profile.id,
-    darknessOpacity: clamp01(profile.darknessOpacity ?? 0.76),
-    darknessColour: profile.darknessColour ?? 'rgba(3, 7, 14, 1)',
+    illuminationModel: profile.illuminationModel ?? 'ambient_plus_world_light_rgb_field_v1', illuminationCompositeMode: profile.illuminationCompositeMode ?? 'scene_colour_times_additive_illumination_field_v1',
+    ambientIllumination: clamp01(profile.ambientIllumination ?? 0.14), ambientIlluminationColour: profile.ambientIlluminationColour ?? 'rgba(108, 124, 154, 1)', shadowColour: profile.shadowColour ?? 'rgba(0, 0, 0, 1)',
     lightRevealStrength: clamp01(profile.lightRevealStrength ?? 0.9),
     warmBloomOpacity: clamp01(profile.warmBloomOpacity ?? 0.2),
     shadowPassEnabled: profile.shadowPassEnabled !== false,
@@ -493,7 +496,7 @@ function syncRenderProjectionStats(renderLayers, data) {
   if (renderLayers.lighting) {
     renderLayers.lighting.profileId = data.lightingProfile.id;
     renderLayers.lighting.activeLights = data.lightProjection.filter((light) => light.enabled && (light.revealStrength ?? light.effectiveIntensity) > 0).length;
-    renderLayers.lighting.droppedLights = Math.max(0, data.lights.length - RENDER_BUDGETS.lightEmitters.maxActive);
+    renderLayers.lighting.droppedLights = (data.lightSelection?.dormantCount ?? 0) + (data.lightSelection?.budgetDroppedCount ?? 0);
     renderLayers.lighting.budgetMax = RENDER_BUDGETS.lightEmitters.maxActive;
   }
   resetLightSpaceCullingStats(renderLayers.lightSpaceCulling, data.lightSpaceCulling);

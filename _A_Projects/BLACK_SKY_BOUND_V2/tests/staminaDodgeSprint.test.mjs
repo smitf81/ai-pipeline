@@ -49,7 +49,7 @@ const sprintStart = component(sprinting, sprinting.game.dragonId, ComponentType.
 movementSystem({ game: sprinting.game, map: sprinting.map, dt: 0.25 });
 const sprintDistance = component(sprinting, sprinting.game.dragonId, ComponentType.Transform).x - sprintStart;
 assert(sprintDistance > walkingDistance * 1.4, 'sprint should be a sharp movement multiplier rather than a cosmetic flag');
-equal(component(sprinting, sprinting.game.dragonId, ComponentType.Stamina).current, 93, 'sprint should drain the 100-point hatchling pool');
+equal(component(sprinting, sprinting.game.dragonId, ComponentType.Stamina).current, 52.5, 'sprint should quickly consume the bounded hatchling escape pool');
 
 const exhausted = createHarness();
 const exhaustedIntent = component(exhausted, exhausted.game.dragonId, ComponentType.PlayerIntent);
@@ -57,7 +57,7 @@ exhaustedIntent.moveX = 1;
 exhaustedIntent.sprint = true;
 staminaSystem({ game: exhausted.game, dt: 4 });
 const exhaustedStamina = component(exhausted, exhausted.game.dragonId, ComponentType.Stamina);
-equal(exhaustedStamina.current, 0, 'a sustained sprint should exhaust the 100-point hatchling pool');
+equal(exhaustedStamina.current, 0, 'a sustained sprint should exhaust the bounded hatchling pool');
 assert(exhaustedStamina.exhausted && !exhaustedStamina.sprinting, 'exhaustion should stop sprint immediately');
 equal(component(exhausted, exhausted.game.dragonId, ComponentType.Motion).speedMultiplier, 1, 'exhaustion should clear the effective sprint multiplier');
 exhaustedIntent.sprint = false;
@@ -77,7 +77,7 @@ playerIntent.melee = true;
 playerIntent.bite = true;
 staminaSystem({ game: playerDodge.game, dt: 0 });
 const playerDodgeState = component(playerDodge, playerDodge.game.dragonId, ComponentType.DodgeState);
-equal(component(playerDodge, playerDodge.game.dragonId, ComponentType.Stamina).current, 80, 'player dodge should spend 20 points from the shared stamina resource');
+equal(component(playerDodge, playerDodge.game.dragonId, ComponentType.Stamina).current, 36, 'player dodge should spend 24 points from the shared stamina resource');
 assert(playerDodgeState.active, 'player dodge input should start the shared dodge state');
 assert(!playerIntent.melee && !playerIntent.bite, 'dodge should win same-frame arbitration over attacks');
 const dodgeStartY = component(playerDodge, playerDodge.game.dragonId, ComponentType.Transform).y;
@@ -86,12 +86,12 @@ wyvernProjectionSystem({ game: playerDodge.game, dt: 0.01 });
 assert(component(playerDodge, playerDodge.game.dragonId, ComponentType.Transform).y < dodgeStartY - 0.4, 'dodge should apply a short collision-safe jump');
 equal(component(playerDodge, playerDodge.game.dragonId, ComponentType.MotionState).locomotionId, 'dodge', 'wyvern projection should embody the active dodge');
 dodgeSystem({ game: playerDodge.game, map: playerDodge.map, dt: 0.08 });
-staminaSystem({ game: playerDodge.game, dt: 0.4 });
+staminaSystem({ game: playerDodge.game, dt: 0.6 });
 assert(startDodge(playerDodge.game.world, playerDodge.game.dragonId, { x: 1, y: 0 }, 'test_second_dodge'), 'a second dodge should fit in the restrained full pool');
 dodgeSystem({ game: playerDodge.game, map: playerDodge.map, dt: 0.2 });
-staminaSystem({ game: playerDodge.game, dt: 0.4 });
-component(playerDodge, playerDodge.game.dragonId, ComponentType.Stamina).current = 19;
-assert(!startDodge(playerDodge.game.world, playerDodge.game.dragonId, { x: 1, y: 0 }, 'test_low_stamina_dodge'), 'a dodge should be denied below its 20-point cost');
+staminaSystem({ game: playerDodge.game, dt: 0.6 });
+component(playerDodge, playerDodge.game.dragonId, ComponentType.Stamina).current = 23;
+assert(!startDodge(playerDodge.game.world, playerDodge.game.dragonId, { x: 1, y: 0 }, 'test_low_stamina_dodge'), 'a dodge should be denied below its 24-point cost');
 equal(canStartDodge(playerDodge.game.world, playerDodge.game.dragonId).reason, 'insufficient_stamina', 'dodge denial should fail loudly with a resource reason');
 
 const wallDodge = createHarness();
@@ -128,7 +128,7 @@ assert(!component(huskEvasion, passiveHusk, ComponentType.DodgeState).active, 'h
 
 syncGameViews(sprinting.game);
 const hud = buildHudProjection(sprinting.game);
-equal(hud.playerStamina, 93, 'HUD projection should read canonical player stamina');
+equal(hud.playerStamina, 52.5, 'HUD projection should read canonical player stamina');
 assert(hud.sprinting, 'HUD projection should expose sprint state');
 assert(ACTION_SYSTEM_NAMES.indexOf('staminaSystem') < ACTION_SYSTEM_NAMES.indexOf('movementSystem'), 'stamina should resolve before movement speed');
 assert(ACTION_SYSTEM_NAMES.indexOf('enemyPressureSystem') < ACTION_SYSTEM_NAMES.indexOf('dodgeSystem'), 'enemy AI should be able to request dodge before displacement');

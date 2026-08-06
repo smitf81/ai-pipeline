@@ -33,6 +33,18 @@ export const AUDIO_TUNING = Object.freeze({
     ui: 0.55,
     music: 0.18
   }),
+  pause: Object.freeze({
+    mode: 'ui_live_ambience_duck_gameplay_silent',
+    busMultipliers: Object.freeze({
+      master: 1,
+      ambience: 0.16,
+      player: 0,
+      enemies: 0,
+      combat: 0,
+      ui: 1,
+      music: 0.12
+    })
+  }),
   bodyState: Object.freeze({
     muffle: Object.freeze({
       minCutoffHz: 720,

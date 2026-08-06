@@ -12,6 +12,12 @@ const port = Number.isFinite(requestedPort) ? requestedPort : 5177;
 const host = '127.0.0.1';
 const url = `http://${host}:${port}/`;
 const shouldOpenBrowser = process.env.BSB_NO_OPEN !== '1';
+const runtimeIdentity = Object.freeze({
+  contract: 'black-sky-bound.local-runtime-identity.v1',
+  projectId: 'black-sky-bound-v2-demo',
+  rootDir,
+  servingMode: 'live_source_no_store'
+});
 
 const mimeTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -27,6 +33,7 @@ const mimeTypes = new Map([
   ['.ico', 'image/x-icon'],
   ['.md', 'text/markdown; charset=utf-8'],
   ['.txt', 'text/plain; charset=utf-8'],
+  ['.glb', 'model/gltf-binary'],
   ['.wav', 'audio/wav'],
   ['.ogg', 'audio/ogg'],
 ]);
@@ -67,6 +74,12 @@ function resolveRequestPath(requestUrl) {
 }
 
 async function serveFile(req, res) {
+  const requestPath = new URL(req.url || '/', url).pathname;
+  if (requestPath === '/__bsb_runtime_identity') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(`${JSON.stringify(runtimeIdentity)}\n`);
+    return;
+  }
   if (await handleCreatureTuningApi(req, res, rootDir)) return;
   const filePath = resolveRequestPath(req.url || '/');
   if (!filePath) {
@@ -96,18 +109,35 @@ async function serveFile(req, res) {
 
 const server = http.createServer(serveFile);
 
-server.on('error', (error) => {
+server.on('error', async (error) => {
   if (error.code === 'EADDRINUSE') {
-    console.log(`Port ${port} is already in use.`);
-    console.log(`Opening existing local URL: ${url}`);
-    if (shouldOpenBrowser) openBrowser(url);
-    process.exit(0);
+    const existing = await probeExistingRuntime();
+    if (existing?.projectId === runtimeIdentity.projectId && path.resolve(existing.rootDir || '') === rootDir) {
+      console.log(`Verified Black Sky Bound live-source runtime already serving ${rootDir} on port ${port}.`);
+      if (shouldOpenBrowser) openBrowser(url);
+      process.exit(0);
+    }
+    console.error(`Port ${port} is occupied by an unverified or stale process.`);
+    console.error(`Expected ${runtimeIdentity.projectId} from ${rootDir}.`);
+    console.error('Close the process using that port, then run LAUNCH_BSB.bat again.');
+    process.exit(1);
   }
 
   console.error('Launcher failed:');
   console.error(error);
   process.exit(1);
 });
+
+async function probeExistingRuntime() {
+  try {
+    const response = await fetch(`${url}__bsb_runtime_identity`, { signal: AbortSignal.timeout(1200) });
+    if (!response.ok) return null;
+    const identity = await response.json();
+    return identity?.contract === runtimeIdentity.contract ? identity : null;
+  } catch {
+    return null;
+  }
+}
 
 server.listen(port, host, () => {
   console.log('Black Sky Bound v2 Demo launcher');

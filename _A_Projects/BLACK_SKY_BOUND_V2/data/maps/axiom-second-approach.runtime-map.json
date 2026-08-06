@@ -1843,10 +1843,11 @@
       "rock"
     ]
   ],
-  "revision": 5,
+  "revision": 6,
   "spawn": {
-    "x": 6,
-    "y": 17
+    "x": 24,
+    "y": 31,
+    "rotation": -1.5707963267948966
   },
   "escapeZone": {
     "x": 46,
@@ -1857,42 +1858,43 @@
   "transitions": {
     "escapeZone": null
   },
+  "sceneSequences": [],
   "enemySpawns": [],
   "unitPlacements": [
     {
       "id": "raider:smoke-screen-north-1",
       "type": "raider",
       "team": "raiders",
-      "x": 13,
-      "y": 12
+      "x": 20,
+      "y": 24
     },
     {
       "id": "raider:smoke-screen-north-2",
       "type": "raider",
       "team": "raiders",
-      "x": 15,
-      "y": 14
+      "x": 22,
+      "y": 23
     },
     {
       "id": "raider:smoke-screen-center",
       "type": "raider",
       "team": "raiders",
-      "x": 14,
-      "y": 17
+      "x": 24,
+      "y": 22
     },
     {
       "id": "raider:smoke-screen-south-1",
       "type": "raider",
       "team": "raiders",
-      "x": 15,
-      "y": 20
+      "x": 26,
+      "y": 23
     },
     {
       "id": "raider:smoke-screen-south-2",
       "type": "raider",
       "team": "raiders",
-      "x": 13,
-      "y": 22
+      "x": 28,
+      "y": 24
     },
     {
       "id": "husk:threshold-1",
@@ -1930,6 +1932,27 @@
       "type": "boulder",
       "x": 12,
       "y": 19,
+      "geology": {
+        "contract": "axiom.geology-dna.v1",
+        "recipe": "axiom.geology-recipe.v1",
+        "seed": 322565883,
+        "formation": "fieldstone",
+        "palette": "granite_moss",
+        "scale": 1.111,
+        "heightMeters": 1.153,
+        "angularity": 0.445,
+        "strataAngleDegrees": 19.8,
+        "strataDensity": 0.169,
+        "erosion": 0.44,
+        "crackDensity": 0.313,
+        "fracture": 0.251,
+        "moss": 0.534,
+        "wetness": 0.246,
+        "bodyColour": "#626a66",
+        "shadeColour": "#3f4645",
+        "strataColour": "#89918a",
+        "mossColour": "#314d35"
+      },
       "source": "axiom.bsb-map-authoring.v0"
     },
     {
@@ -1937,6 +1960,29 @@
       "type": "tree",
       "x": 28,
       "y": 13,
+      "tree": {
+        "contract": "axiom.tree-dna.v1",
+        "recipe": "axiom.tree-species-recipe.v1",
+        "seed": 1213333863,
+        "species": "old_pine",
+        "ageYears": 72,
+        "health": 0.94,
+        "season": "summer",
+        "heightMeters": 9.659,
+        "trunkRadiusMeters": 0.534,
+        "taper": 0.743,
+        "bend": 0.178,
+        "twist": 0.198,
+        "branchLevels": 6,
+        "branchDensity": 0.781,
+        "leafDensity": 0.862,
+        "canopySpread": 0.809,
+        "crownStart": 0.25,
+        "rootScale": 1.069,
+        "moss": 0.37,
+        "barkColour": "#4a3020",
+        "leafColour": "#244d33"
+      },
       "source": "axiom.bsb-map-authoring.v0"
     },
     {
@@ -1944,6 +1990,28 @@
       "type": "forest_shrub",
       "x": 24,
       "y": 20,
+      "undergrowth": {
+        "contract": "axiom.undergrowth-dna.v1",
+        "recipe": "axiom.undergrowth-species-recipe.v1",
+        "seed": 898961690,
+        "species": "forest_shrub",
+        "ageYears": 12,
+        "health": 0.94,
+        "season": "summer",
+        "heightMeters": 0.849,
+        "spreadMeters": 2.051,
+        "density": 0.766,
+        "stemCount": 9,
+        "leafSize": 0.19,
+        "curl": 0.099,
+        "lean": 0.115,
+        "irregularity": 0.295,
+        "groundCover": 0.552,
+        "burn": 0,
+        "char": 0,
+        "stemColour": "#3f452b",
+        "leafColour": "#3f6b39"
+      },
       "source": "axiom.bsb-map-authoring.v0"
     },
     {

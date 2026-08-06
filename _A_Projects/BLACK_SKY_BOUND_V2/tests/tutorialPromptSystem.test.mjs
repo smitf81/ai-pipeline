@@ -8,6 +8,7 @@ import { createInitialGameState } from '../src/game/createGame.js';
 import { advanceGameTime, createGameTimeState } from '../src/game/gameTime.js';
 import { applyPauseMenuInput, createPauseMenuState } from '../src/game/pause.js';
 import {
+  captureAbilityProgressionInProfile,
   createDefaultPlayerProfile,
   createPlayerProfileStore,
   normalizePlayerProfile,
@@ -21,7 +22,7 @@ import {
   temporarilyDismissActiveTutorialCue,
   updateTutorialRuntime
 } from '../src/game/tutorialRuntime.js';
-import { applyAbilityUnlockEvent } from '../src/game/playerAbilities.js';
+import { applyAbilityUnlockEvent, canUseAbility, captureRunAbilityProgression } from '../src/game/playerAbilities.js';
 import { InputActionId, formatInputActionBindings } from '../src/data/inputActions.js';
 import { AbilityUnlockEventId } from '../src/data/abilityUnlockEvents.js';
 import { TutorialCueId } from '../src/data/tutorialCues.js';
@@ -50,7 +51,8 @@ const legacySmoke = createDefaultPlayerProfile();
 legacySmoke.progression.unlockedAbilityIds.push(AbilityId.SMOKE_BURST);
 assert(!normalizePlayerProfile(legacySmoke).progression.unlockedAbilityIds.includes(AbilityId.SMOKE_BURST), 'legacy profiles must lose the former default smoke ability without its awakening receipt');
 legacySmoke.progression.consumedUnlockEventIds.push(AbilityUnlockEventId.INSTINCT_SMOKE_AWAKENED);
-assert(normalizePlayerProfile(legacySmoke).progression.unlockedAbilityIds.includes(AbilityId.SMOKE_BURST), 'awakened smoke should persist when its canonical receipt exists');
+assert(!normalizePlayerProfile(legacySmoke).progression.unlockedAbilityIds.includes(AbilityId.SMOKE_BURST), 'transition-earned smoke must be stripped even when an old profile contains its receipt');
+assert(!normalizePlayerProfile(legacySmoke).progression.consumedUnlockEventIds.includes(AbilityUnlockEventId.INSTINCT_SMOKE_AWAKENED), 'old smoke receipts must not leak a run-scoped unlock into Level 1');
 const ngPlus = startNewGamePlusProfile(loaded);
 equal(ngPlus.runs.newGamePlusCount, 1, 'New Game Plus should increment retained run metadata');
 assert(ngPlus.tutorial.completedCueIds.includes(TutorialCueId.FIRST_MOVEMENT), 'New Game Plus should retain completed tutorial history');
@@ -152,15 +154,33 @@ equal(smokeVeil.tutorial.activeCue?.id, TutorialCueId.SMOKE_VEIL, 'first success
 equal(smokeVeil.tutorial.activeCue?.presentationType, 'message', 'smoke veil explanation should be a low-clutter message rather than another key prompt');
 equal(smokeVeil.gameTime.currentScale, 1, 'smoke veil explanation should preserve the live combat tempo');
 step(smokeVeil, 2.9);
-assert(smokeVeil.playerProfile.tutorial.completedCueIds.includes(TutorialCueId.SMOKE_VEIL), 'smoke veil explanation should persist as a one-time learned cue');
+assert(smokeVeil.tutorial.completedRunCueIds.has(TutorialCueId.SMOKE_VEIL), 'smoke veil explanation should complete once within the active run');
+assert(!smokeVeil.playerProfile.tutorial.completedCueIds.includes(TutorialCueId.SMOKE_VEIL), 'run-scoped smoke teaching must remain replayable on a future transition');
 
 const smokeEscape = createState(profileCompleted(TutorialCueId.FIRST_MOVEMENT, TutorialCueId.FIRST_COMBAT));
 unlockSmoke(smokeEscape);
+const runSnapshot = captureRunAbilityProgression(smokeEscape.game.world, smokeEscape.game.dragonId);
+const capturedProfile = captureAbilityProgressionInProfile(smokeEscape.game.world, smokeEscape.game.dragonId, smokeEscape.playerProfile);
+assert(!capturedProfile.progression.unlockedAbilityIds.includes(AbilityId.SMOKE_BURST), 'profile capture must exclude the run-scoped smoke unlock');
+assert(!capturedProfile.progression.consumedUnlockEventIds.includes(AbilityUnlockEventId.INSTINCT_SMOKE_AWAKENED), 'profile capture must exclude the run-scoped smoke receipt');
+const nextRegionGame = createInitialGameState(createDemoMap(), { playerProfile: capturedProfile, runAbilityProgression: runSnapshot });
+assert(canUseAbility(nextRegionGame.world, nextRegionGame.dragonId, AbilityId.SMOKE_BURST), 'live run progression should carry smoke through later map transitions');
+const freshRunGame = createInitialGameState(createDemoMap(), { playerProfile: capturedProfile });
+assert(!canUseAbility(freshRunGame.world, freshRunGame.dragonId, AbilityId.SMOKE_BURST), 'a fresh Level 1 game should start with smoke locked');
 assert(requestTutorialCue(smokeEscape.tutorial, smokeEscape, TutorialCueId.SMOKE_ESCAPE), 'scene release should be able to request the high-priority exhale-and-run cue');
 equal(smokeEscape.tutorial.activeCue?.title, 'EXHALE', 'post-awakening gameplay cue should preserve the instinct language');
 emitAccepted(smokeEscape, InputActionId.SMOKE);
 step(smokeEscape, 0.016);
-equal(smokeEscape.tutorial.activeCue?.phase, 'exiting', 'the first real radial smoke use should complete the escape cue');
+equal(smokeEscape.tutorial.activeCue?.phase, 'entering', 'accepted smoke alone must not claim that enemy line of sight was broken');
+emitEvent(smokeEscape.game.world, EventType.SMOKE_PURSUIT_BROKEN, {
+  enemy: firstEnemy(smokeEscape).id,
+  target: smokeEscape.game.dragonId,
+  reason: 'player_concealed',
+  sourceKind: 'dragon_smoke_plume'
+});
+step(smokeEscape, 0.016);
+equal(smokeEscape.tutorial.activeCue?.phase, 'exiting', 'the escape cue should complete only after smoke genuinely breaks pursuit');
+assert(!smokeEscape.playerProfile.tutorial.completedCueIds.includes(TutorialCueId.SMOKE_ESCAPE), 'run-scoped smoke teaching must replay when the ability is earned in a future run');
 
 const instinct = createState(profileCompleted(TutorialCueId.FIRST_MOVEMENT, TutorialCueId.FIRST_COMBAT, TutorialCueId.FIRST_DODGE));
 const health = component(instinct, instinct.game.dragonId, ComponentType.Health);
@@ -211,8 +231,39 @@ applyPauseMenuInput(pause, input({ pressed: ['a'] }));
 equal(pause.playerProfile.settings.audio.master, 0.9, 'pause menu should adjust master volume in bounded ten-percent steps');
 equal(pause.pauseMenu.settingsChanged, true, 'audio changes should use the existing persistent settings signal');
 equal(pause.pauseMenu.lastChangedSettingId, 'audio_master', 'pause menu should identify audio changes without misclassifying them as tutorial changes');
+applyPauseMenuInput(pause, input({ pressed: ['home'] }));
+equal(pause.playerProfile.settings.audio.master, 0, 'Home should apply the standard slider minimum');
+equal(buildTutorialProjection(pause).pauseMenu.settings[0].value, 'MUTED', 'zero level should read as an explicit muted state');
+applyPauseMenuInput(pause, input({ pressed: ['end'] }));
+equal(pause.playerProfile.settings.audio.master, 1, 'End should apply the standard slider maximum');
+applyPauseMenuInput(pause, input({ pressed: ['a'] }));
+
+pauseProjection = buildTutorialProjection(pause);
+let ambienceRow = pauseProjection.pauseMenu.layout.settingsRows[1];
+applyPauseMenuInput(pause, input({
+  pointerPressed: [0],
+  pointer: { x: ambienceRow.rail.x + ambienceRow.rail.w * 0.37, y: ambienceRow.rail.y + 2, down: true, button: 0 }
+}), pauseProjection.pauseMenu);
+equal(pause.playerProfile.settings.audio.ambience, 0.37, 'clicking a sound rail should set its exact pointer-relative level');
+equal(pause.pauseMenu.draggedSettingId, 'audio_ambience', 'pressing a sound rail should begin drag scrubbing');
+equal(pause.pauseMenu.selectedSettingIndex, 1, 'pointer editing should focus the same row the renderer exposes');
+
+pauseProjection = buildTutorialProjection(pause);
+ambienceRow = pauseProjection.pauseMenu.layout.settingsRows[1];
+applyPauseMenuInput(pause, input({
+  pointer: { x: ambienceRow.rail.x + ambienceRow.rail.w * 0.64, y: ambienceRow.rail.y + 2, down: true, button: 0, deltaX: 18 }
+}), pauseProjection.pauseMenu);
+equal(pause.playerProfile.settings.audio.ambience, 0.64, 'holding the pointer should continuously scrub the active sound rail');
+
+pauseProjection = buildTutorialProjection(pause);
+const effectsRow = pauseProjection.pauseMenu.layout.settingsRows[2];
+applyPauseMenuInput(pause, input({ pointer: { x: effectsRow.rail.x, y: effectsRow.rail.y }, wheel: 1 }), pauseProjection.pauseMenu);
+equal(pause.playerProfile.settings.audio.effects, 0.9, 'wheel-down over a sound rail should lower it by one keyboard-sized step');
+equal(pause.pauseMenu.selectedSettingIndex, 2, 'wheel adjustment should focus the affected row');
 for (let index = 0; index < 4; index += 1) applyPauseMenuInput(pause, input({ pressed: ['arrowdown'] }));
-equal(pause.pauseMenu.selectedSettingIndex, 4, 'pause menu should navigate sound and tutorial settings as one bounded list');
+equal(pause.pauseMenu.selectedSettingIndex, 1, 'pause menu should wrap navigation across sound and tutorial settings as one list');
+for (let index = 0; index < 3; index += 1) applyPauseMenuInput(pause, input({ pressed: ['arrowdown'] }));
+equal(pause.pauseMenu.selectedSettingIndex, 4, 'keyboard navigation should remain independent after pointer editing');
 applyPauseMenuInput(pause, input({ pressed: ['d'] }));
 equal(pause.playerProfile.settings.tutorialTimeSlow, TutorialTimeSlowMode.REDUCED, 'pause menu should retain tutorial preference controls after sound settings');
 store.save(pause.playerProfile);
@@ -290,16 +341,22 @@ function component(state, entity, type) {
   return getComponent(state.game.world, entity, type);
 }
 
-function input({ down = [], pressed = [], pointerPressed = [] } = {}) {
+function input({ down = [], pressed = [], pointerPressed = [], pointer = {}, wheel = 0 } = {}) {
   const held = new Set(down);
   const fresh = new Set(pressed);
   const pointers = new Set(pointerPressed);
+  let wheelConsumed = false;
   return {
-    pointer: { x: 0, y: 0, down: false, button: -1 },
+    pointer: { x: 0, y: 0, deltaX: 0, deltaY: 0, down: false, button: -1, ...pointer },
     isDown: (key) => held.has(key),
     wasPressed: (key) => fresh.has(key),
     wasPointerPressed: (button) => pointers.has(button),
-    consumePointerClick: () => false
+    consumePointerClick: () => false,
+    consumeWheel: () => {
+      if (wheelConsumed) return 0;
+      wheelConsumed = true;
+      return wheel;
+    }
   };
 }
 

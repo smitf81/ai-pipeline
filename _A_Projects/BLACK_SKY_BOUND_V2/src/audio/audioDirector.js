@@ -3,8 +3,17 @@ import { AUDIO_TUNING } from '../data/audio/audioTuning.js';
 import { buildBodyStateProjection } from '../projection/bodyStateProjection.js';
 import { AudioAssetBank } from './audioAssetBank.js';
 import { AudioBusGraph, setAudioParam } from './audioBus.js';
-import { damageIntensity, resolveOpeningMix, summarizePayload } from './audioStateMath.js';
+import {
+  clamp01,
+  damageIntensity,
+  findAudioPlayer,
+  findNearestEnemy,
+  resolveOpeningMix,
+  rounded,
+  summarizePayload
+} from './audioStateMath.js';
 import { createLightningThunderBridge } from './lightningThunder.js';
+import { createLoopState, isPlayerBodyLoopCue, loopVoiceIsActive, syncLoopSuspension } from './audioLoopLifecycle.js';
 import {
   buildProceduralLoop,
   buildProceduralOneShot,
@@ -31,6 +40,9 @@ const EVENT_CUES = Object.freeze({
   [AudioEventType.ENEMY_NEAR]: 'enemy.raider.near',
   [AudioEventType.ENEMY_ATTACK_WARNING]: 'enemy.raider.warn',
   [AudioEventType.MAMA_WYVERN_ROAR]: 'world.mama_wyvern.distant_roar',
+  [AudioEventType.MAMA_WYVERN_FLYOVER]: 'world.mama_wyvern.flyover_roar',
+  [AudioEventType.MAMA_WYVERN_NAPALM]: 'world.mama_wyvern.napalm_projection',
+  [AudioEventType.MAMA_WYVERN_AFTERMATH]: 'world.mama_wyvern.inferno_aftermath',
   [AudioEventType.UI_PAUSE]: 'ui.pause.breath_stop'
 });
 
@@ -64,7 +76,7 @@ export class AudioDirector {
     this.recentCues = [];
     this.recentErrors = [];
     this.reportedErrorKeys = new Set();
-    this.suppressed = { cooldown: 0, maxVoices: 0, disabled: 0 };
+    this.suppressed = { cooldown: 0, maxVoices: 0, disabled: 0, paused: 0 };
     this.pressure = {
       healthPressure: 0,
       staminaPressure: 0,
@@ -109,18 +121,20 @@ export class AudioDirector {
 
   update(state, dt = 0) {
     if (!this.enabled) return this.getDebugState();
+    const paused = state?.paused === true;
     this.timeMs += Math.max(0, Number(dt) || 0) * 1000;
+    this.bus.setPaused(paused);
     this.bus.applyUserMix(state?.playerProfile?.settings?.audio);
-    this.ensureLoops();
+    this.ensureLoops(paused);
     this.updatePressureLoops(state);
     this.collectOpeningState(state?.opening);
-    this.lightning.collect(state?.game, this.timeMs);
+    if (!paused) this.lightning.collect(state?.game, this.timeMs);
     if (state?.opening?.released !== false) {
       this.collectWorldEvents(state?.game);
       this.collectStateTransitions(state);
     }
-    this.processQueuedEvents();
-    this.lightning.process(this.timeMs, this.pressure.muffleIntensity, (cueId, payload) => this.playCue(cueId, payload));
+    this.processQueuedEvents(paused);
+    if (!paused) this.lightning.process(this.timeMs, this.pressure.muffleIntensity, (cueId, payload) => this.playCue(cueId, payload));
     this.cleanupVoices();
     return this.getDebugState();
   }
@@ -176,7 +190,7 @@ export class AudioDirector {
         });
       } else if (payload.source === game.dragonId) {
         this.emit(AudioEventType.COMBAT_ENEMY_HIT, {
-          intensity: damageIntensity(payload.amount),
+          cueId: game.actors?.find((actor) => actor.id === payload.target)?.creatureRecipe?.gameplay?.audioCueIds?.receivedHit, intensity: damageIntensity(payload.amount),
           target: payload.target,
           killed: payload.killed === true,
           damageType: payload.damageType
@@ -201,7 +215,14 @@ export class AudioDirector {
 
   collectStateTransitions(state) {
     const game = state?.game;
-    const player = findPlayer(game);
+    const player = findAudioPlayer(game);
+    const paused = state?.paused === true;
+    if (paused !== this.lastPauseState) this.emit(AudioEventType.UI_PAUSE, { paused, intensity: paused ? 0.48 : 0.32 });
+    this.lastPauseState = paused;
+    if (paused) {
+      this.nearestEnemy = null;
+      return;
+    }
     const actionState = player?.wyvernProjection?.actionState;
     const currentActionId = actionState?.active ? actionState.actionId : null;
     if (currentActionId && currentActionId !== this.lastActionId) {
@@ -219,10 +240,6 @@ export class AudioDirector {
     }
     if (bodyState.stamina.pressure < 0.42) this.staminaLowArmed = true;
 
-    const paused = state?.paused === true;
-    if (paused !== this.lastPauseState) this.emit(AudioEventType.UI_PAUSE, { paused, intensity: paused ? 0.48 : 0.32 });
-    this.lastPauseState = paused;
-
     this.collectEnemyPressure(game, player);
   }
 
@@ -239,7 +256,7 @@ export class AudioDirector {
       if (this.timeMs - this.nearEnemyLastAtMs >= cooldown) {
         this.nearEnemyLastAtMs = this.timeMs;
         this.emit(AudioEventType.ENEMY_NEAR, {
-          actorId: nearest.actor.id,
+          cueId: nearest.actor.creatureRecipe?.gameplay?.audioCueIds?.proximity, actorId: nearest.actor.id,
           actorType: nearest.actor.type,
           distance: nearest.distance,
           intensity: proximityIntensity(nearest.distance)
@@ -255,7 +272,7 @@ export class AudioDirector {
       if (this.timeMs - lastAt >= AUDIO_TUNING.proximity.attackWarningCooldownMs) {
         this.attackWarningKeys.set(key, this.timeMs);
         this.emit(AudioEventType.ENEMY_ATTACK_WARNING, {
-          actorId: actor.id,
+          cueId: actor.creatureRecipe?.gameplay?.audioCueIds?.attackWarning, actorId: actor.id,
           actorType: actor.type,
           profileId: ai.activeAttackProfileId,
           intensity: 0.82
@@ -264,8 +281,12 @@ export class AudioDirector {
     }
   }
 
-  processQueuedEvents() {
+  processQueuedEvents(paused = false) {
     for (const event of this.queue.drain()) {
+      if (paused && event.type !== AudioEventType.UI_PAUSE) {
+        this.suppressed.paused += 1;
+        continue;
+      }
       this.playEvent(event.type, event.payload ?? {});
     }
   }
@@ -318,10 +339,11 @@ export class AudioDirector {
     return true;
   }
 
-  ensureLoops() {
+  ensureLoops(paused = false) {
     for (const cueId of LOOP_CUE_IDS) {
       if (!this.loopVoices.has(cueId)) this.loopVoices.set(cueId, createLoopState(cueId));
       const loop = this.loopVoices.get(cueId);
+      if (syncLoopSuspension(loop, paused && isPlayerBodyLoopCue(cueId))) continue;
       if (!loop.voice && this.bus.context && this.unlocked) loop.voice = this.startLoopVoice(getSoundCue(cueId), loop.targetGain);
     }
   }
@@ -345,6 +367,7 @@ export class AudioDirector {
       + bodyState.health.hitPulse * heartProfile.hitPulseBoost
     );
     const openingMix = resolveOpeningMix(state?.opening);
+    const bodyLoopScale = state?.paused === true ? 0 : 1;
 
     this.pressure = {
       healthPressure: rounded(bodyState.health.pressure),
@@ -357,9 +380,9 @@ export class AudioDirector {
     this.bus.setMuffleIntensity(this.pressure.muffleIntensity);
 
     this.setLoopGain('ambience.forest_night', getSoundCue('ambience.forest_night').volume * (1 - bodyState.health.pressure * 0.24) * openingMix.ambience);
-    this.setLoopGain('player.breath.calm', breathProfile.calmBaseGain * (1 - breathStrain * breathProfile.calmPressureDuck) * openingMix.breath);
-    this.setLoopGain('player.breath.strained', breathProfile.strainedBaseGain * breathStrain);
-    this.setLoopGain('player.heartbeat', heartProfile.baseGain * Math.max(heartbeat, openingMix.heartbeat));
+    this.setLoopGain('player.breath.calm', breathProfile.calmBaseGain * (1 - breathStrain * breathProfile.calmPressureDuck) * openingMix.breath * bodyLoopScale);
+    this.setLoopGain('player.breath.strained', breathProfile.strainedBaseGain * breathStrain * bodyLoopScale);
+    this.setLoopGain('player.heartbeat', heartProfile.baseGain * Math.max(heartbeat, openingMix.heartbeat) * bodyLoopScale);
   }
 
   setLoopGain(cueId, value) {
@@ -474,7 +497,8 @@ export class AudioDirector {
         cueId,
         {
           targetGain: rounded(loop.targetGain),
-          active: !!loop.voice || !this.bus.context,
+          active: loopVoiceIsActive(loop, !!this.bus.context),
+          suspended: loop.suspended === true,
           source: loop.voice?.source ?? getSoundCue(cueId)?.source ?? null,
           mode: loop.voice?.mode ?? getSoundCue(cueId)?.procedural?.type ?? null,
           tonal: loop.voice?.tonal ?? false
@@ -485,6 +509,10 @@ export class AudioDirector {
       recentErrors: [...this.recentErrors],
       assets: this.assets.snapshot(),
       suppressed: { ...this.suppressed },
+      pauseMix: {
+        active: this.bus.paused,
+        mode: this.bus.tuning.pause?.mode ?? null
+      },
       mix: this.bus.snapshot().userMix,
       buses: this.bus.snapshot().buses
     };
@@ -498,42 +526,10 @@ export class AudioDirector {
 
 function resolveCueId(type, payload) {
   if (type === AudioEventType.PLAYER_HIT) return payload.heavy ? 'player.hit.heavy' : 'player.hit.light';
-  return EVENT_CUES[type] ?? null;
-}
-
-function createLoopState(cueId) {
-  return { cueId, targetGain: 0, voice: null };
-}
-
-function findPlayer(game) {
-  return (game?.actors ?? []).find((actor) => actor.id === game.dragonId)
-    ?? (game?.actors ?? []).find((actor) => actor.team === 'player')
-    ?? null;
-}
-
-function findNearestEnemy(game, player) {
-  if (!game || !player) return null;
-  let nearest = null;
-  for (const actor of game.actors ?? []) {
-    if (!actor.alive || actor.team === player.team) continue;
-    const distance = Math.hypot(actor.x - player.x, actor.y - player.y);
-    if (!nearest || distance < nearest.distance) nearest = { actor, distance };
-  }
-  return nearest;
+  return payload?.cueId ?? EVENT_CUES[type] ?? null;
 }
 
 function proximityIntensity(distance) {
   const range = AUDIO_TUNING.proximity.warningRangeTiles;
   return clamp01(1 - Math.max(0, distance) / range);
-}
-
-function rounded(value) {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? Number(numeric.toFixed(3)) : 0;
-}
-
-function clamp01(value) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.max(0, Math.min(1, numeric));
 }

@@ -8,6 +8,7 @@ import { ACTORS } from '../src/data/actors.js';
 import { EnemyAttackProfileId, getEnemyAttackProfile } from '../src/data/enemyAttackProfiles.js';
 import { ImpactReactionProfileId } from '../src/data/impactReactionProfiles.js';
 import { WyvernActionId } from '../src/data/creatures/groundedWyvernMotionProfiles.js';
+import { CreatureRecipeId, getCreatureRecipe } from '../src/data/creatures/creatureRecipes.js';
 import { getComponent, removeComponent } from '../src/ecs/world.js';
 import { createInitialGameState } from '../src/game/createGame.js';
 import { spawnActor } from '../src/game/spawn.js';
@@ -26,7 +27,7 @@ import { wyvernProjectionSystem } from '../src/systems/wyvernProjectionSystem.js
 import { createDemoMap } from '../src/world/map.js';
 
 equal(ACTORS[EntityKind.YOUNG_DRAGON].physics.reactionProfileId, ImpactReactionProfileId.WYVERN_WEIGHTED, 'wyvern should own its weighted receive profile');
-equal(ACTORS[EntityKind.RAIDER].physics.reactionProfileId, ImpactReactionProfileId.RAIDER_HUMAN, 'raider should own its human receive profile');
+equal(getCreatureRecipe(CreatureRecipeId.RAIDER_SCAVENGER).physical.physics.reactionProfileId, ImpactReactionProfileId.RAIDER_HUMAN, 'raider recipe should own its human receive profile');
 equal(ACTORS[EntityKind.HUSK].physics.reactionProfileId, ImpactReactionProfileId.HUSK_LOOSE, 'husk should own its loose receive profile');
 equal(ACTORS[EntityKind.WEREWOLF].physics.reactionProfileId, ImpactReactionProfileId.WEREWOLF_BRACED, 'werewolf should own its braced receive profile');
 

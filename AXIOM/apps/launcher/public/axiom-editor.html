@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./bsb-v2-map-authoring.css">
+  <link rel="stylesheet" href="./entity-studio.css">
   <link rel="stylesheet" href="./project-diary.css">
   <title>AXIOM — AI Native Game Editor</title>
   <style>
@@ -6196,6 +6197,7 @@
         tree_action: ['axiom_tree_apply'],
         undergrowth_action: ['axiom_undergrowth_apply'],
         geology_action: ['axiom_geology_apply'],
+        scene_sequence_action: ['axiom_scene_sequence_apply'],
         ontology_mutation: ['MSOL'],
         documentation_write: ['safe_write_documentation', 'safe_write_project_file'],
         plugin_proposal: ['axiom_plugin_generate_patch', 'axiom_plugin_inspect'],
@@ -6286,6 +6288,10 @@
         const simpleSceneAction = /^(create|add|spawn|make|place|put)\s+(a\s+|an\s+)?(cube|box|sphere|ball|plane|floor|cylinder|cone|point light|directional light)(?:\s|$)/i.test(String(text || '').trim());
         if (simpleSceneAction) return 'scene_action';
 
+        const sceneSequenceAction = /\b(scene transition|transition sequence|departure sequence|smoke instinct|smoke unlock|mama lands|smoke cover|raider charge)\b/i.test(t)
+          && /\b(author|create|add|set|change|update|tune|remove|delete|timing|duration|handoff|landing)\b/i.test(t);
+        if (sceneSequenceAction) return 'scene_sequence_action';
+
         const geologyAction = /\b(geology|rock|rocks|boulder|boulders|fieldstone|basalt|outcrop)\b/i.test(t)
           && /\b(create|add|spawn|place|cluster|randomise|randomize|erode|fracture|moss|weather|formation|scale)\b/i.test(t);
         if (geologyAction) return 'geology_action';
@@ -6324,6 +6330,36 @@
         const xyz = t.match(/(?:at|position|pos)\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,?\s+(-?\d+(?:\.\d+)?)\s*,?\s+(-?\d+(?:\.\d+)?)/i);
         const position = xyz ? { x: Number(xyz[1]), y: Number(xyz[2]), z: Number(xyz[3]) } : { x: type === 'sphere' ? 2 : 0, y: 0.5, z: 0 };
         return { command: 'mcp_call', tool: 'axiom_create_object', parameters: { type, position, select: true }, source: 'AgenticToolUseLoop.scene_action' };
+      }
+
+      function parseSceneSequenceCommand(text) {
+        const canonicalParser = window.EDITOR?.scenes?.transitions?.parseCommand;
+        if (typeof canonicalParser === 'function') return canonicalParser(text);
+        const raw = String(text || '').trim();
+        const t = lower(raw);
+        const sequenceId = raw.match(/(?:sequence\s+id|sequenceId)\s*[=:]?\s*["'`]([^"'`]+)["'`]/i)?.[1] || 'smoke_instinct_departure';
+        let parameters;
+        const landing = t.match(/(?:landing|mama lands)(?:\s+(?:anchor|at|to))?\s*\(?\s*(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)\s*\)?/i);
+        const duration = Number(t.match(/(?:to|for|duration)\s+(\d+(?:\.\d+)?)\s*(?:s|sec|secs|second|seconds)\b/i)?.[1]);
+        if (/\b(remove|delete)\b/.test(t)) {
+          parameters = { op: 'remove', sequenceId };
+        } else if (landing) {
+          parameters = { op: 'set_landing_anchor', sequenceId, x: Number(landing[1]), y: Number(landing[2]) };
+        } else if (/\b(smoke cover|impact|raider charge|charge)\b/.test(t) && Number.isFinite(duration)) {
+          const phaseId = /\bimpact\b/.test(t) ? 'impact' : /\b(smoke cover)\b/.test(t) ? 'smoke_cover' : 'raider_charge';
+          parameters = { op: 'set_phase_duration', sequenceId, phaseId, durationSeconds: duration };
+        } else if (/\b(handoff|coverage|threshold)\b/.test(t)) {
+          const percent = Number(t.match(/(\d+(?:\.\d+)?)\s*%/)?.[1]);
+          const decimal = Number(t.match(/(?:to|at)\s+(0(?:\.\d+)?|1(?:\.0+)?)\b/)?.[1]);
+          const coverageThreshold = Number.isFinite(percent) ? percent / 100 : decimal;
+          if (!Number.isFinite(coverageThreshold)) return null;
+          parameters = { op: 'set_smoke_threshold', sequenceId, coverageThreshold };
+        } else if (/\b(author|create|add|ensure|implement)\b/.test(t) && /\b(smoke instinct|smoke unlock|mama lands|departure sequence|scene transition|transition sequence)\b/.test(t)) {
+          parameters = { op: 'ensure_smoke_instinct_departure' };
+        } else {
+          return null;
+        }
+        return { command: 'mcp_call', tool: 'axiom_scene_sequence_apply', parameters, source: 'AgenticToolUseLoop.scene_sequence_action' };
       }
 
       function parseTreeCommand(text) {
@@ -6653,6 +6689,36 @@
           if (!hasTool(ctx, 'axiom_create_object')) return blocked(ctx, userText, lane, 'scene_tool_missing:axiom_create_object');
           const cmd = parseSimpleSceneCommand(userText);
           if (!cmd) return { handled: false, lane };
+          return callAndInspect(ctx, userText, lane, cmd);
+        }
+
+        if (lane === 'scene_sequence_action') {
+          let cmd = parseSceneSequenceCommand(userText);
+          if (!cmd && ctx.resolveSceneSequenceIntent) {
+            const resolved = await ctx.resolveSceneSequenceIntent(userText);
+            if (resolved?.error) {
+              return blocked(ctx, userText, lane, `scene_sequence_intent_resolution_failed:${resolved.error}`, {
+                intentResolution: resolved
+              });
+            }
+            cmd = resolved;
+          }
+          if (!cmd) return blocked(ctx, userText, lane, 'scene_sequence_intent_missing_target_or_parameters');
+          const localApi = window.EDITOR?.scenes?.transitions;
+          if (localApi?.applyOperation) {
+            const result = await localApi.applyOperation(cmd.parameters);
+            const receipt = {
+              ok: result?.ok !== false,
+              applied: result?.applied === true,
+              transport: 'EDITOR.scenes.transitions',
+              tool: 'axiom_scene_sequence_apply',
+              intentResolution: cmd.intentResolution || { mode: 'deterministic', classification: 'projection' },
+              result
+            };
+            ctx.addMsg?.('assistant', `Agentic scene-sequence receipt:\n\`\`\`json\n${JSON.stringify(receipt, null, 2)}\n\`\`\``);
+            return { handled: true, ok: receipt.ok, lane, receipt };
+          }
+          if (!hasTool(ctx, 'axiom_scene_sequence_apply')) return blocked(ctx, userText, lane, 'scene_sequence_transport_unavailable');
           return callAndInspect(ctx, userText, lane, cmd);
         }
 
@@ -7063,6 +7129,93 @@
         return { ...(result || {}), handled: Boolean(result?.handled), lane, pipelineCard };
       }
 
+      async function resolveSceneSequenceIntent(userText) {
+        const sequenceApi = window.EDITOR?.scenes?.transitions;
+        if (!sequenceApi?.interpretProposal || !sequenceApi?.get) {
+          return { error: 'scene_sequence_intent_contract_unavailable' };
+        }
+        const model = ModelBus.getCurrent?.();
+        if (!model) return { error: 'local_model_unavailable' };
+
+        const sequence = sequenceApi.get('smoke_instinct_departure');
+        if (!sequence) return { error: 'active_scene_sequence_unavailable' };
+        const system = `You are AXIOM's bounded scene-intent resolver. Infer the user's intended edit from natural language and the active authored transition sequence.
+
+CURRENT SEQUENCE:
+${JSON.stringify(sequence, null, 2)}
+
+Return one JSON object only, with no markdown or prose:
+{"operation":{"op":"set_phase_duration","sequenceId":"smoke_instinct_departure","phaseId":"smoke_cover","durationSeconds":1.5},"confidence":0.0,"reason":"short explanation"}
+
+Allowed operations:
+- set_phase_duration: phaseId is impact, raider_charge, or smoke_cover; include durationSeconds.
+- set_landing_anchor: include x and y.
+- set_smoke_threshold: include coverageThreshold from 0.5 to 1.
+- set_actor_path: include actorId and a complete normalized path.
+- ensure_smoke_instinct_departure.
+- remove only when the user explicitly asks to remove the sequence.
+
+Interpret references using the sequence's labels, phases, and current values. The user does not need to know canonical property names. Do not invent values. If the intended target or value cannot be inferred, return {"operation":null,"confidence":0.0,"reason":"what is ambiguous"}.`;
+
+        setPhase('think', 'Interpreting scene intent…');
+        let raw;
+        try {
+          raw = await ModelBus.complete(
+            [{ role: 'user', content: userText }],
+            { system, max_tokens: 320, timeoutMs: 20000, think: false }
+          );
+        } catch (error) {
+          return { error: `model_request_failed:${String(error?.message || error).slice(0, 180)}` };
+        }
+        const parsed = tryParseJsonObject(raw);
+        if (!parsed?.operation) {
+          return { error: `intent_ambiguous:${String(parsed?.reason || 'model_returned_no_operation').slice(0, 180)}` };
+        }
+
+        let proposal;
+        try {
+          proposal = sequenceApi.interpretProposal(parsed);
+        } catch (error) {
+          return { error: `proposal_validation_failed:${String(error?.message || error).slice(0, 180)}` };
+        }
+        if (proposal.confidence < 0.6) {
+          return { error: `intent_confidence_too_low:${proposal.confidence}:${proposal.reason || 'no_reason'}` };
+        }
+        setPhase('act', 'Applying interpreted scene edit…');
+        return {
+          command: 'mcp_call',
+          tool: 'axiom_scene_sequence_apply',
+          parameters: proposal.operation,
+          source: 'ModelBus.scene_sequence_resolver.v1',
+          intentResolution: {
+            mode: 'model_inference',
+            classification: proposal.classification,
+            contract: proposal.contract,
+            model: model.model || model.endpoint?.name || 'local_model',
+            confidence: proposal.confidence,
+            reason: proposal.reason
+          }
+        };
+      }
+
+      async function tryAgenticSceneSequenceCommand(userText) {
+        const lane = window.AgenticToolUseLoop?.classifyGoal?.(userText) || 'unknown';
+        if (lane !== 'scene_sequence_action') return { handled: false, lane };
+        setPhase('observe', 'Resolving scene authoring intent…');
+        try {
+          const result = await window.AgenticToolUseLoop.handle(userText, {
+            addMsg,
+            executeAICommand,
+            getAvailableMcpTools,
+            tryHandleMSOLMutationIntent,
+            resolveSceneSequenceIntent
+          });
+          return { ...(result || {}), handled: Boolean(result?.handled), lane };
+        } finally {
+          setPhase('idle');
+        }
+      }
+
       async function send(userText) {
         if (!userText.trim()) return;
         // ── input is ALWAYS available — we never lock the textarea ───────────
@@ -7074,6 +7227,12 @@
 
         addMsg('user', userText);
         history.push({ role: 'user', content: userText });
+
+        const sceneSequenceCommand = await tryAgenticSceneSequenceCommand(userText);
+        if (sceneSequenceCommand?.handled) {
+          activeRuns = Math.max(0, activeRuns - 1);
+          return sceneSequenceCommand;
+        }
 
         // ── 0. FILE / SKILL shortcuts (deterministic — bypass agent) ─────────
         const agenticFileCommand = await tryAgenticFileLaneCommand(userText);
@@ -9003,6 +9162,7 @@ ${repairNote ? `Previous output failed: ${repairNote}` : ''}`;
         if (lane === 'tree_action' && !has('axiom_tree_apply')) missing.push('axiom_tree_apply');
         if (lane === 'undergrowth_action' && !has('axiom_undergrowth_apply')) missing.push('axiom_undergrowth_apply');
         if (lane === 'geology_action' && !has('axiom_geology_apply')) missing.push('axiom_geology_apply');
+        if (lane === 'scene_sequence_action' && !has('axiom_scene_sequence_apply') && !window.EDITOR?.scenes?.transitions?.applyOperation) missing.push('axiom_scene_sequence_apply or EDITOR.scenes.transitions');
         if (lane === 'direct_mcp' && !toolNames.length) missing.push('MCP tool registry');
         if (lane === 'documentation_write' && !has('safe_write_project_file') && !has('safe_write_documentation')) missing.push('safe_write_project_file or safe_write_documentation');
         if (lane === 'plugin_proposal' && !has('axiom_plugin_generate_patch')) missing.push('axiom_plugin_generate_patch');
@@ -17214,6 +17374,99 @@ ${listeners}
           }
         }
 
+        if (action.type === 'bsb_scene_sequence_operation') {
+          const sequenceApi = window.EDITOR?.scenes?.transitions;
+          if (!sequenceApi?.applyOperation) {
+            const receipt = {
+              applied: false,
+              ok: false,
+              reason: 'scene_transition_sequence_api_unavailable',
+              actionType: action.type,
+              appliedAt: new Date().toISOString()
+            };
+            appendFeed('mcp_client_apply_failed', receipt);
+            cliPrint('err', 'MCP scene-sequence operation failed: EDITOR.scenes.transitions is unavailable');
+            post('mcp_event', { type: 'client_apply_receipt', receipt });
+            return receipt;
+          }
+          try {
+            const result = await sequenceApi.applyOperation(action.payload || {});
+            const receipt = {
+              ...result,
+              applied: result?.applied === true,
+              ok: result?.ok !== false,
+              actionType: action.type,
+              appliedAt: new Date().toISOString()
+            };
+            appendFeed(receipt.ok ? 'mcp_client_apply' : 'mcp_client_apply_failed', receipt);
+            cliPrint(receipt.ok ? 'ok' : 'err', `MCP scene-sequence ${receipt.operation || action.payload?.op || 'unknown'} -> revision ${receipt.afterRevision ?? 'unchanged'}`);
+            if (receipt.ok) notify('ok', `Scene transition ${receipt.operation || action.payload?.op || 'operation'} applied`);
+            post('mcp_event', { type: 'client_apply_receipt', receipt });
+            return receipt;
+          } catch (error) {
+            const receipt = {
+              applied: false,
+              ok: false,
+              reason: String(error?.message || error),
+              actionType: action.type,
+              appliedAt: new Date().toISOString()
+            };
+            appendFeed('mcp_client_apply_failed', receipt);
+            cliPrint('err', `MCP scene-sequence operation failed: ${receipt.reason}`);
+            post('mcp_event', { type: 'client_apply_receipt', receipt });
+            return receipt;
+          }
+        }
+
+        if (action.type === 'entity_authoring_candidate') {
+          const entityStudio = window.EDITOR?.entities;
+          if (!entityStudio?.propose) {
+            const receipt = {
+              applied: false,
+              ok: false,
+              reason: 'entity_studio_runtime_unavailable',
+              actionType: action.type,
+              appliedAt: new Date().toISOString()
+            };
+            appendFeed('mcp_client_apply_failed', receipt);
+            cliPrint('err', 'MCP entity proposal failed: Entity Studio is unavailable');
+            post('mcp_event', { type: 'client_apply_receipt', receipt });
+            return receipt;
+          }
+          try {
+            await entityStudio.open();
+            const result = await entityStudio.propose(action.payload || {}, {
+              source: action.payload?.source || { kind: 'agent', id: 'axiom_mcp_entity_tuning' }
+            });
+            const receipt = {
+              applied: false,
+              ok: result?.ok === true,
+              candidateCreated: result?.candidate?.candidateId || null,
+              classification: result?.classification || 'candidate',
+              actionType: action.type,
+              result,
+              appliedAt: new Date().toISOString()
+            };
+            appendFeed(receipt.ok ? 'mcp_client_apply' : 'mcp_client_apply_failed', receipt);
+            cliPrint(receipt.ok ? 'ok' : 'err', `MCP entity proposal ${receipt.ok ? 'ready for review' : 'failed'} — not applied`);
+            if (receipt.ok) notify('ok', 'Entity tuning candidate ready for Preview and Apply.');
+            post('mcp_event', { type: 'client_apply_receipt', receipt });
+            return receipt;
+          } catch (error) {
+            const receipt = {
+              applied: false,
+              ok: false,
+              reason: String(error?.message || error),
+              actionType: action.type,
+              appliedAt: new Date().toISOString()
+            };
+            appendFeed('mcp_client_apply_failed', receipt);
+            cliPrint('err', `MCP entity proposal failed: ${receipt.reason}`);
+            post('mcp_event', { type: 'client_apply_receipt', receipt });
+            return receipt;
+          }
+        }
+
         if (action.type !== 'create_object') return null;
         const payload = action.payload || {};
         const pos = payload.position || {};
@@ -19031,6 +19284,7 @@ Before proposing structural editor changes, validate with window.MSOL.validateMu
   </script>
   <script type="module" src="./project-diary.js"></script>
   <script type="module" src="./bsb-v2-map-authoring.js"></script>
+  <script type="module" src="./entity-studio.js"></script>
 </body>
 
 </html>
