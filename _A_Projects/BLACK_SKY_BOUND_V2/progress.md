@@ -5904,3 +5904,24 @@ Validation:
 - The full `npm test` suite, focused production-audio tests, syntax checks, `git diff --check`, and `npm run test:launcher` pass.
 - Real Edge/Chromium proof launched the Desktop root with a deliberately occupied preferred port, recovered from port 53702 to 53703, decoded all six new runtime files at 48 kHz, activated the low-health file-backed heartbeat, and exercised all five raider-warning variants.
 - The browser proof reports zero console errors, page errors, failed requests, HTTP errors, or audio errors. Evidence is in `artifacts/local-launcher-consolidation-v1/`.
+
+## 2026-08-06 - Baby wyvern bite production replacement v2
+
+Playtest correction:
+
+- Rejected the two seeded procedural bite files as cartoon-like and bonk-y. Their generated noise, chirps, resonances and tooth clicks were not retuned or disguised; `make_bite` and both legacy output calls were removed from the old production generator.
+- Built three new 0.48-second mono variants from retained real recordings: animal breath/snarl, jaw-on-bone closure and a restrained wet-food detail. Original downloads, Pixabay source/artist/licence notes, source hashes, aligned 24-bit stems, 24-bit masters and a portable Audacity LOF session are retained.
+- Moved the authored jaw closure from the old 128-142 ms range to 195 ms, matching the bite profile's 0.34 s duration x 0.58 hit timing (197 ms). Kept the wet layer quiet because the bite action can miss and `combat.enemy.hit.flesh` separately owns confirmed contact.
+- Added a third real variation and narrowed runtime pitch randomisation from `0.96-1.035` to `0.985-1.015`, so variation comes from actual source performance rather than cartoon pitch movement.
+
+Evidence and validation:
+
+- The deterministic source-based generator emits masters, runtime assets, aligned stems, comparison reel, contact sheet and a machine-readable analysis contract with zero synthetic production layers.
+- The exact Desktop launcher browser proof used the real third-combo `bite_attack` input, observed the decoded file cue, rotated all three variants, and verified every asset as 0.48-second mono 48 kHz audio served with HTTP 200 and `Cache-Control: no-store`.
+- Browser proof reported zero audio, console, page, request or HTTP errors. `npm test`, `npm run test:launcher`, `npm run build:playtest` and `git diff --check` pass; the curated build contains all three bite files among 15 manifest-derived production audio files.
+- Evidence is in `artifacts/player-bite-v2/`; design, provenance and reproduction notes are in `docs/PLAYER_BITE_PRODUCTION_V2.md`.
+
+Next audio ownership:
+
+- Opening Exterior Soundscape v1 is now the active slice: replace procedural thunder, husk, werewolf and distant-raider cues with recorded sources authored through the closed-shell perspective.
+- The dedicated hatchling first cry follows separately. The current full Mama roar must stop owning that newborn release beat; Mama may answer later if the story mix supports it.

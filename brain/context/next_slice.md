@@ -1,101 +1,69 @@
 # Black Sky Bound Active Slice
 
-Status: Entity Studio Foundation v0 completed 2026-08-03. Canonical architectural authority remains in `brain/emergence/`; this file is the bounded BSB/AXIOM handoff. Immediate successor: Raider Production Body and Motion v0.
+Status: Baby Wyvern Bite Production Replacement v2 completed 2026-08-06. Immediate audio successor: Opening Exterior Soundscape v1.
 
 ## Interpreted Task
 
-Build the foundation of an AXIOM Entity Studio that can inspect, preview, tune, validate, and persist changes for heterogeneous BSB entities. Raiders remain the first production-quality visual vertical slice, but neither the studio contract nor its UI may be raider-specific.
+Continue replacing placeholder-feeling BSB audio with grounded production assets. The combat bite now has a real-source three-variant palette; the opening remains the next most visible identity break because its storm and exterior creatures are procedural oscillators heard through a runtime muffle filter.
 
-The practical goal is not a generic-looking panel. It is one shared authoring workflow that delegates to the real canonical owners for animated creatures, procedural scenery, and static scene records, and that can later expose the same governed workflow to AXIOM agents.
+The practical goal is an authored inside-egg soundscape: recognisable physical events outside a closed shell, obscured by distance, shell mass and the hatchling's bodily perspective without becoming dull or unintelligible.
 
-## Scope Risks
+## Completed Predecessor
 
-- A universal entity schema would erase real differences between wyvern, humanoid, predator, procedural-tree/geology, and static-scene-object ownership.
-- Fully tuning every entity family in one pass would create shallow manifests and placeholder controls.
-- Reusing AXIOM's old Animation Graph would introduce browser-local heuristic state with no BSB consumer or persistence.
-- Letting an agent edit source files directly would bypass preview, validation, provenance, and apply receipts.
-- Spending the whole slice on infrastructure would repeat the previous failure unless a visible live-runtime proof is included.
+### Baby Wyvern Bite Production Replacement v2
 
-## Completed Slice
+- Three real-source 0.48-second variations replaced the rejected two-file synthetic palette.
+- Jaw closure moved from 128-142 ms to 195 ms, matching the 197 ms animation contact point.
+- The old procedural generator no longer owns or can overwrite `player_bite_snap`.
+- Masters, originals, aligned stems, portable Audacity session, source/licence record, comparison reel, analysis and browser proof are retained.
+- Full tests, launcher regression, curated build and exact-Desktop-root browser playtest passed.
 
-### Entity Studio Foundation v0
+## Best Next Slice
 
-Objective: establish an entity-agnostic selection, capability, live-preview, candidate-diff, validation, and governed-apply spine, proven by one animated target and one stationary target through their existing real consumers.
+### Opening Exterior Soundscape v1
 
-Core contracts:
+Objective: replace the four synthetic exterior cues heard before shell release with recorded-source production assets and author their closed-shell perspective in the assets as well as through the existing runtime muffle state.
 
-- `axiom.entity-authoring-target.v0`: stable target id, target class, provider id, canonical source, runtime identity, revision/hash, capabilities, and provenance.
-- `axiom.entity-authoring-field-manifest.v0`: provider-owned editable field descriptors with path, value type, bounds/options, units, classification, affected consumer, and validation rule.
-- `axiom.entity-authoring-candidate.v0`: non-committed patch against an exact source revision/hash, with before/after values, provenance, validation status, and blockers.
-- `axiom.entity-authoring-apply-receipt.v0`: explicit applied/rejected/stale result, persisted destination, before/after revision/hash, runtime refresh result, and validation evidence.
-- `EntityAuthoringProvider`: resolve target, report capabilities, read field manifest, build candidate, validate, preview, apply through the canonical owner, and read back.
+Target cue set:
 
-Initial real providers:
+- `world.storm.thunder`;
+- `enemy.husk.distant_gargle`;
+- `enemy.werewolf.distant_howl`;
+- `enemy.raider.distant_shout`.
 
-1. `bsb.creature-profile-tuning`: wraps the existing BSB creature-tuning resolver/API for the baby wyvern and humanoid profiles. Prove it with the accepted procedural hatchling and one raider profile field; husks inherit the same humanoid provider without raider-specific UI branching.
-2. `bsb.procedural-scene-object`: wraps one existing governed AXIOM DNA path, preferably geology, to prove stationary entities use the same studio workflow without acquiring animation fields.
-3. `bsb.raider-recipe-motion`: registers the canonical raider recipe and physical-motion profile as capabilities, but this foundation pass need only expose current validated fields and live diagnostic state. New art and broad motion tuning belong to the immediate follow-up slice.
+Canonical owner and landing points:
 
-The provider registry must discover and classify the current baby wyvern, raider, husk, werewolf, procedural tree/geology/undergrowth, and ordinary static scene-object families. Unsupported write capabilities must be reported explicitly as `read_only` or `manifest_missing`; they may not silently disappear or fall back to generic guessed fields.
-
-AXIOM surface:
-
-- compact target/outliner selection;
-- actual BSB runtime preview in the gameplay renderer, not a CSS substitute;
-- contextual inspector generated only from the selected provider's real field manifest;
-- baseline/candidate toggle and concise diff;
-- Preview, Apply, Revert Candidate, and Reset View controls;
-- optional diagnostics drawer for source owner, runtime projection, revision/hash, sockets/contacts, validation, and receipts;
-- agent proposals enter the same candidate contract and cannot apply directly.
-
-Likely systems involved:
-
-- `AXIOM/apps/launcher/public/axiom-editor.html` only for mounting/routing the modular surface;
-- new modular AXIOM Entity Studio JS/CSS rather than additional monolithic inline runtime code;
-- `AXIOM/apps/launcher/server.js` for one semantic proposal tool and client-apply receipt path;
-- existing `AXIOM/apps/launcher/public/bsb-v2-map-authoring.js` selection and procedural authoring APIs;
-- BSB creature tuning runtime, client, API, field manifests, projections, and recipe registry;
-- a versioned BSB V2 preview bridge that reports actual target/projection state and fails loudly when unavailable.
+- event order, narrative intent and shell state: `_A_Projects/BLACK_SKY_BOUND_V2/src/data/openingSequence.js`;
+- cue identity and file palette: `_A_Projects/BLACK_SKY_BOUND_V2/src/audio/soundManifest.js`;
+- dynamic perspective mix: existing opening-state path in `src/audio/audioDirector.js`;
+- runtime/master/source/session assets: `assets/audio/{production,masters,sources}`;
+- proof: opening-sequence event order plus a real browser hatch run with decoded-file and `muffleAtPlay` diagnostics.
 
 Explicit exclusions:
 
-- no claim that raiders are production ready;
-- no generalized animation graph or behavior-tree editor;
-- no shader, lighting, combat-balance, loot, personality, or population-variation pass;
-- no migration of husk, werewolf, or wyvern to the raider creature-recipe schema merely to satisfy the editor;
-- no direct agent source mutation and no browser-local canonical tuning state.
+- no baby-first-cry implementation in this slice;
+- no reuse or pitch-shift derivation of Mama's voice for the baby;
+- no shell crack/break replacement unless source research exposes a uniquely coherent, low-risk companion set;
+- no changes to opening input timing, egg-break progression, creature spawning or combat;
+- no generic fantasy ambience bed pasted under the entire sequence.
 
 ## Definition of Done
 
-- The shared Entity Studio core contains no raider-specific field paths or pose logic; those live in providers.
-- Selecting the baby wyvern shows its real canonical source, runtime projection, and existing validated tuning fields.
-- Selecting a raider uses the same core and shows its recipe/profile identity plus real runtime pose/recipe diagnostics.
-- Selecting one geology entity uses the same candidate/apply/readback lifecycle and changes the actual procedural runtime result.
-- Husk and werewolf targets are discoverable and accurately declare their current capabilities; no guessed or misleading controls appear.
-- A candidate remains non-canonical until Apply, stale base revisions are rejected, save/apply receipts are visible, and reload reproduces the applied value.
-- An agent-generated proposal and a human slider change produce the same candidate contract and use the same validation/apply path.
-- Real-browser proof covers animated selection, stationary selection, candidate preview, apply/readback, reload persistence, blocked/stale behavior, and zero browser errors.
+- Every target cue uses recorded-source layers and retains source URL, provider, artist, licence, unaltered original and editable aligned material.
+- Each event remains individually legible through a closed-shell perspective: attenuated upper frequencies, transmitted low/body energy, constrained stereo width and event-specific distance, without merely applying one blanket low-pass preset.
+- Runtime cues remain file-backed and required, with bounded variation and no silent procedural fallback.
+- The real opening sequence emits the target cues in authored order, decoded files play, `muffleAtPlay` follows shell state, and the exact Desktop launcher/browser diagnostics report no errors.
+- Full tests and the curated build pass; source materials do not enter the public playtest package.
 
-## Likely Follow-up Slices
+## Follow-up Slices
 
-1. **Raider Production Body and Motion v0:** one seed and one spear; move physical-intention constants into a provider-owned validated motion profile, enable live pose preview, rebuild the canonical silhouette, and pass normal-speed plus slow-motion human visual review.
-2. **Raider Materials, Equipment, and Lighting:** reattach clothing/equipment layers, tune material separation and shadow response, then validate in moon, torch, smoke, and lightning.
-3. **Creature Provider Expansion:** add a real predator tuning manifest for werewolves, promote husk-specific controls, and expose more of the accepted wyvern provider without changing their canonical projection families.
-4. **Entity Family and Agent Generation:** seeded variant comparison, bounded generation proposals, batch/contact-sheet review, and explicit promotion controls after each canonical exemplar passes visually.
+1. **Baby Wyvern First Cry v1:** add a dedicated newborn vocal at the release beat and remove Mama's full roar from that narrative role. Mama may answer later, but must not mask the hatchling identity beat.
+2. **Egg Shell Interaction Palette v1:** replace rock, crack and break with recorded shell/mineral/organic membrane layers authored from the hatchling's internal perspective.
+3. **Opening Mix and Transition v1:** A/B the full sequence, expose the high-frequency world as the shell opens, and balance exterior threats, shell movement, first cry, Mama answer, heartbeat and ambience in context.
+4. **Remaining Combat Palette:** review claw swipe, lunge body, enemy flesh impacts and player-hit cues in frequency-of-use order.
 
 ## Confidence / Uncertainty
 
-- High confidence: the provider/capability model matches current BSB ownership better than a universal recipe schema.
-- High confidence: BSB's existing creature-tuning API and AXIOM's geology authoring receipts provide real animated and stationary precedents.
-- High confidence: raider visual quality must remain the first production-facing follow-up, not be replaced by editor infrastructure.
-- Medium confidence: geology is the best stationary proof target; a tree is an equally valid substitute if its preview/readback seam proves cheaper during implementation.
-
-## Immediate Next Slice
-
-### Raider Production Body and Motion v0
-
-- Keep one recipe, one seed, one spear, flat/open staging, and the gameplay camera.
-- Use Entity Studio as the governed selection/candidate/apply shell, but add only real provider fields consumed by the production body or physical-intention solver.
-- Replace the current fragmented canonical raider silhouette; do not expand family variation, materials breadth, or other species first.
-- Promote physical motion from `shadow_only_pending_visual_acceptance` only after planted feet, weight transfer, anticipation, frozen commitment, recoil, and recovery read clearly on the finished faceted body.
-- Require comparative current/new stills, normal-speed combat, slow motion, and explicit human acceptance. Technical topology/determinism tests remain necessary but cannot confer visual acceptance.
+- High confidence: the current thunder, husk, werewolf and distant-raider opening cues are procedural and runtime muffling alone cannot provide recorded physical identity.
+- High confidence: no baby-first-cry cue currently exists, while `mama_answering_roar` schedules the full Mama cue after release.
+- Medium confidence: the four exterior events belong in one soundscape slice because their perspective must translate consistently; shell-contact transients are safer as a separate palette.

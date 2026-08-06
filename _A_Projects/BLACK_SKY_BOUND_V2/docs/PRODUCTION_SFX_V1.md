@@ -2,6 +2,8 @@
 
 Date: 2026-07-16
 
+> Historical note (2026-08-06): the procedural baby-wyvern bite documented below was rejected in playtesting as cartoon-like and bonk-y. `player.bite.snap` is now owned by the real-source three-variant pipeline documented in `docs/PLAYER_BITE_PRODUCTION_V2.md`; `tools/audio/generate_production_sfx.py` no longer renders or overwrites bite files. Flesh impacts and the historical Mama exploration remain owned by this v1 pass.
+
 ## Outcome
 
 Three existing gameplay categories now use original, file-backed production SFX through the canonical Audio Director:

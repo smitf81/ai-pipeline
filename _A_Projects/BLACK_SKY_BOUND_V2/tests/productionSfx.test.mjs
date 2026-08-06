@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assert, equal } from './assert.mjs';
@@ -8,9 +8,10 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const targets = [
   {
     cueId: 'player.bite.snap',
-    fileCount: 2,
+    fileCount: 3,
     channels: 1,
-    duration: [0.38, 0.5]
+    duration: [0.47, 0.49],
+    firstSignalMaxMs: 40
   },
   {
     cueId: 'combat.enemy.hit.flesh',
@@ -105,7 +106,7 @@ const analysisPath = join(root, 'artifacts', 'production-sfx-v1', 'audio-analysi
 const analysis = JSON.parse(readFileSync(analysisPath, 'utf8'));
 equal(analysis.contract, 'black-sky-bound.production-sfx-generation.v1', 'audio analysis should identify the production render contract');
 equal(analysis.externalComponents.length, 0, 'production SFX should contain no externally sourced components');
-equal(analysis.assets.length, 5, 'analysis should cover every production runtime file');
+equal(analysis.assets.length, 3, 'legacy generator analysis should cover its remaining flesh-impact and Mama-roar assets');
 equal(analysis.mamaRoarExploration.candidateCount, 3, 'Mama roar exploration should preserve three authored candidates');
 equal(
   analysis.mamaRoarExploration.selectedCandidateId,
@@ -137,6 +138,53 @@ assert(raiderLicence.includes('Pixabay Content License'), 'raider warning source
 assert(existsSync(join(raiderSourceRoot, 'audacity_session', 'raider_warning_v1.lof')), 'portable Audacity raider-warning session should exist');
 assert(existsSync(join(raiderSourceRoot, 'originals')), 'unaltered raider vocal sources should be retained');
 assert(existsSync(join(raiderSourceRoot, 'processed_stems')), 'raider warning processed stems should be retained');
+
+const biteSourceRoot = join(root, 'assets', 'audio', 'sources', 'player_bite_v2');
+const biteLicence = readFileSync(join(biteSourceRoot, 'SOURCE_AND_LICENSE.md'), 'utf8');
+assert(biteLicence.includes('Pixabay'), 'player bite source notes should identify Pixabay');
+assert(biteLicence.includes('Pixabay Content License'), 'player bite source notes should retain the licence');
+equal(
+  [...readFileSync(join(biteSourceRoot, 'audacity_session', 'player_bite_v2.lof'), 'utf8').matchAll(/^file /gm)].length,
+  12,
+  'portable Audacity bite session should open nine aligned stems and three reference mixes'
+);
+equal(
+  readdirSync(join(biteSourceRoot, 'originals')).length,
+  3,
+  'all three unaltered bite source recordings should be retained'
+);
+equal(
+  readdirSync(join(biteSourceRoot, 'processed_stems')).filter((name) => name.endsWith('.wav')).length,
+  9,
+  'three aligned production layers should be retained for each bite variant'
+);
+
+const biteAnalysis = JSON.parse(readFileSync(join(biteSourceRoot, 'PRODUCTION_ANALYSIS.json'), 'utf8'));
+equal(biteAnalysis.contract, 'black-sky-bound.player-bite-production.v2', 'bite analysis should identify its production contract');
+equal(biteAnalysis.syntheticLayersInProductionAssets, 0, 'the replacement bite palette should contain no generated sound layers');
+equal(biteAnalysis.sources.length, 3, 'bite provenance should cover every retained real recording');
+equal(biteAnalysis.variants.length, 3, 'bite analysis should cover all three production variants');
+equal(
+  readdirSync(join(biteSourceRoot, 'legacy_procedural')).filter((name) => name.endsWith('.wav')).length,
+  2,
+  'the two rejected procedural bite files should remain available for honest before/after comparison'
+);
+assert(
+  biteAnalysis.sources.every((source) => source.provider === 'Pixabay' && source.license === 'Pixabay Content License'),
+  'every bite source should retain provider and licence metadata'
+);
+assert(
+  biteAnalysis.variants.every((variant) => variant.contactSeconds >= 0.18 && variant.contactSeconds <= 0.215),
+  'every bite jaw closure should remain aligned with animation contact'
+);
+equal(new Set(biteAnalysis.variants.map((variant) => variant.runtimeFile)).size, 3, 'each bite variant should own a distinct runtime file');
+equal(new Set(biteAnalysis.variants.map((variant) => variant.runtimeSha256)).size, 3, 'every bite variation should contain materially distinct audio');
+
+const legacyGeneratorSource = readFileSync(join(root, 'tools', 'audio', 'generate_production_sfx.py'), 'utf8');
+const biteGeneratorSource = readFileSync(join(root, 'tools', 'audio', 'generate_player_bite_v2.py'), 'utf8');
+assert(!legacyGeneratorSource.includes('make_bite'), 'legacy procedural generator must not retain a callable bite renderer');
+assert(!legacyGeneratorSource.includes('player_bite_snap'), 'legacy procedural generator must not overwrite source-based bite assets');
+assert(biteGeneratorSource.includes('player_bite_snap'), 'the source-based bite generator should own the production files');
 
 const directorSource = readFileSync(join(root, 'src', 'audio', 'audioDirector.js'), 'utf8');
 const fileVoiceSource = readFileSync(join(root, 'src', 'audio', 'audioFileVoice.js'), 'utf8');

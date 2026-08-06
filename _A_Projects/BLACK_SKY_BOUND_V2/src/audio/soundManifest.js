@@ -113,12 +113,16 @@ export const SOUND_CUES = Object.freeze({
   }),
   'player.bite.snap': cue({
     id: 'player.bite.snap',
-    files: [`${productionAssetRoot}/player_bite_snap_01.wav`, `${productionAssetRoot}/player_bite_snap_02.wav`],
+    files: [
+      `${productionAssetRoot}/player_bite_snap_01.wav`,
+      `${productionAssetRoot}/player_bite_snap_02.wav`,
+      `${productionAssetRoot}/player_bite_snap_03.wav`
+    ],
     source: 'file',
     required: true,
     bus: 'combat',
     volume: 0.66,
-    pitchRandom: [0.96, 1.035],
+    pitchRandom: [0.985, 1.015],
     cooldownMs: 105,
     maxVoices: 2
   }),
