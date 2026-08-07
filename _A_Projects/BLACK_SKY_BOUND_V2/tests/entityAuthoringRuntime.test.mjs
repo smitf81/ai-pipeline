@@ -1,7 +1,10 @@
 import { assert, equal } from './assert.mjs';
+import { createAudioDirector } from '../src/audio/audioDirector.js';
 import { EntityKind } from '../src/constants/entityKinds.js';
+import { createEmptyAudioTuning } from '../src/data/audio/audioTuning.js';
 import { setCreatureTuningValue } from '../src/data/creatures/creatureTuning.js';
 import { createInitialGameState } from '../src/game/createGame.js';
+import { createOpeningSequenceState } from '../src/game/openingSequence.js';
 import { syncGameViews } from '../src/game/selectors.js';
 import { spawnActor } from '../src/game/spawn.js';
 import {
@@ -21,11 +24,26 @@ spawnActor(game.world, EntityKind.WEREWOLF, 14, 10);
 syncGameViews(game);
 
 let persisted = null;
-const app = { state: { game, tuning: createTuningState(), paused: false, camera: { x: 4, y: 5, zoom: 2.75 } } };
+let persistedAudio = null;
+const app = {
+  audio: createAudioDirector({ context: null }),
+  state: {
+    game,
+    tuning: createTuningState(),
+    audioTuning: createEmptyAudioTuning(),
+    opening: createOpeningSequenceState({ enabled: true, eggTileX: 8, eggTileY: 9, tileSize: 32 }),
+    paused: false,
+    camera: { x: 4, y: 5, zoom: 2.75 }
+  }
+};
 const runtime = createEntityAuthoringRuntime(app, {
   persist: async (tuning) => {
     persisted = JSON.parse(JSON.stringify(tuning));
     return { ok: true, tuning: persisted, source: 'test_persistence' };
+  },
+  persistAudio: async (tuning) => {
+    persistedAudio = JSON.parse(JSON.stringify(tuning));
+    return { ok: true, tuning: persistedAudio, source: 'test_audio_persistence' };
   }
 });
 
@@ -35,6 +53,7 @@ const wyvern = snapshot.targets.find((target) => target.runtimeIdentity.kind ===
 const raider = snapshot.targets.find((target) => target.runtimeIdentity.id === raiderId);
 const husk = snapshot.targets.find((target) => target.runtimeIdentity.kind === EntityKind.HUSK);
 const werewolf = snapshot.targets.find((target) => target.runtimeIdentity.kind === EntityKind.WEREWOLF);
+const openingAudio = snapshot.targets.find((target) => target.targetId === 'audio:opening-perspective');
 equal(raider.contract, ENTITY_AUTHORING_TARGET_CONTRACT, 'targets should use the shared entity-authoring contract');
 equal(wyvern.providerId, raider.providerId, 'wyvern and humanoid tuning should share the provider contract without sharing rig logic');
 equal(husk.writeStatus, 'ready', 'husk should reuse the real humanoid field manifest');
@@ -44,6 +63,9 @@ assert(raider.capabilities.some((capability) => capability.id === 'motion' && ca
 assert(raider.capabilities.some((capability) => capability.id === 'camera_focus' && capability.status === 'ready'), 'animated providers should expose the real camera-focus capability');
 const focusField = raider.fields.find((entry) => entry.path === 'visibilityFocus.radiusMeters');
 assert(focusField, 'Entity Studio should receive provider-owned camera focus controls');
+assert(openingAudio, 'Entity Studio should receive the provider-owned opening audio target');
+equal(openingAudio.targetClass, 'runtime_profile', 'opening audio should remain a runtime profile rather than masquerading as an entity');
+assert(openingAudio.capabilities.some((capability) => capability.id === 'listener_relative_3d' && capability.status === 'not_connected'), 'audio provider should report the real positional-audio boundary');
 
 const cameraBeforeSession = { ...app.state.camera };
 const cameraFocusBeforeSession = JSON.stringify(app.state.game.cameraVisibilityFocus);
@@ -104,6 +126,29 @@ runtime.replaceCanonicalTuning(external.tuning, 'stale_candidate_test');
 const staleResult = await runtime.applyCandidate(staleProposal.candidate.candidateId);
 equal(staleResult.ok, false, 'stale candidates should be rejected');
 equal(staleResult.reason, 'entity_authoring_candidate_stale', 'stale rejection should remain explicit');
+
+const audioFocused = runtime.beginSession(openingAudio.targetId);
+assert(audioFocused.ok, audioFocused.reason);
+equal(app.state.paused, false, 'opening audio authoring should leave the audition runtime live');
+equal(app.state.opening.source, 'axiom_opening_audio_preview', 'opening audio focus should restart the real opening lifecycle for audition');
+const cutoffField = openingAudio.fields.find((entry) => entry.path === 'openingPerspective.sealedCutoffHz');
+const audioProposal = runtime.createCandidate({ targetId: openingAudio.targetId, path: cutoffField.path, value: cutoffField.value + 180 });
+assert(audioProposal.ok, audioProposal.reason);
+equal(audioProposal.candidate.tuningDomain, 'audio', 'audio candidates should declare their canonical tuning domain');
+const audioPreview = runtime.previewCandidate(audioProposal.candidate.candidateId);
+assert(audioPreview.ok, audioPreview.reason);
+equal(audioPreview.target.fields.find((entry) => entry.path === cutoffField.path).value, cutoffField.value + 180, 'Preview should refresh the live Audio Director tuning');
+runtime.revertCandidate(audioProposal.candidate.candidateId);
+equal(runtime.getTarget(openingAudio.targetId).fields.find((entry) => entry.path === cutoffField.path).value, cutoffField.value, 'audio candidate revert should restore canonical runtime tuning');
+
+const gainField = openingAudio.fields.find((entry) => entry.path === 'openingPerspective.sealedExteriorGain');
+const audioApplyProposal = runtime.createCandidate({ targetId: openingAudio.targetId, path: gainField.path, value: gainField.value - 0.08 });
+const audioApplied = await runtime.applyCandidate(audioApplyProposal.candidate.candidateId);
+assert(audioApplied.ok, audioApplied.reason);
+equal(audioApplied.receipt.persistedDestination, 'tuning/audio-overrides.json', 'audio Apply should report its dedicated canonical file');
+equal(audioApplied.receipt.readBack.status, 'verified', 'audio Apply should verify persistence readback');
+assert(persistedAudio, 'audio Apply should use the injected audio persistence authority');
+runtime.endSession();
 
 const dispatched = await runtime.dispatch('state.snapshot');
 assert(dispatched.ok && dispatched.result.targets.length >= 4, 'the bridge dispatcher should publish the provider snapshot');

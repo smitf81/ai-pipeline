@@ -16,6 +16,7 @@ export class AudioBusGraph {
     this.masterGain = null;
     this.muffleFilter = null;
     this.muffleIntensity = 0;
+    this.muffleCutoffHz = this.tuning.bodyState.muffle.maxCutoffHz;
     this.paused = false;
     if (this.context) this.createGraph(this.tuning);
     this.applyUserMix(this.userMix, 0);
@@ -91,12 +92,25 @@ export class AudioBusGraph {
     return true;
   }
 
-  setMuffleIntensity(intensity, rampSeconds = AUDIO_TUNING.bodyState.muffle.smoothingSeconds) {
+  setTuning(tuning, rampSeconds = 0.08) {
+    this.tuning = tuning ?? AUDIO_TUNING;
+    this.baseGains = { ...this.tuning.buses };
+    this.applyUserMix(this.userMix, rampSeconds, true);
+  }
+
+  setMuffleIntensity(intensity, rampSeconds = this.tuning.bodyState.muffle.smoothingSeconds) {
+    const profile = this.tuning.bodyState.muffle;
+    const normalized = clamp01(intensity);
+    const cutoffHz = profile.maxCutoffHz - (profile.maxCutoffHz - profile.minCutoffHz) * normalized;
+    this.setMuffleState(normalized, cutoffHz, rampSeconds);
+  }
+
+  setMuffleState(intensity, cutoffHz, rampSeconds = this.tuning.bodyState.muffle.smoothingSeconds) {
     this.muffleIntensity = clamp01(intensity);
+    const maximum = this.tuning.bodyState.muffle.maxCutoffHz;
+    this.muffleCutoffHz = Math.max(20, Math.min(maximum, Number(cutoffHz) || maximum));
     if (!this.muffleFilter) return;
-    const profile = AUDIO_TUNING.bodyState.muffle;
-    const cutoff = profile.maxCutoffHz - (profile.maxCutoffHz - profile.minCutoffHz) * this.muffleIntensity;
-    setAudioParam(this.muffleFilter.frequency, this.context.currentTime, cutoff, rampSeconds);
+    setAudioParam(this.muffleFilter.frequency, this.context.currentTime, this.muffleCutoffHz, rampSeconds);
   }
 
   snapshot() {
@@ -105,6 +119,7 @@ export class AudioBusGraph {
       paused: this.paused,
       pauseMode: this.tuning.pause?.mode ?? null,
       muffleIntensity: Number(this.muffleIntensity.toFixed(3)),
+      muffleCutoffHz: Math.round(this.muffleCutoffHz),
       userMix: { ...this.userMix },
       buses: Object.fromEntries(AUDIO_BUS_IDS.map((id) => [
         id,

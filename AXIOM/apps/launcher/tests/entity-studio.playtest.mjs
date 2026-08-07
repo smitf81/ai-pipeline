@@ -19,7 +19,8 @@ const bsbUrl = process.env.BSB_PROOF_URL || ownedBsbRuntime.url;
 const protectedPaths = [
   join(bsbRoot, 'tuning', 'creature-overrides.json'),
   join(launcherRoot, 'data', 'bsb-v2', 'maps', 'first_escape.authoring.json'),
-  join(bsbRoot, 'data', 'maps', 'axiom-first-escape.runtime-map.json')
+  join(bsbRoot, 'data', 'maps', 'axiom-first-escape.runtime-map.json'),
+  join(bsbRoot, 'tuning', 'audio-overrides.json')
 ];
 const protectedSnapshots = await Promise.all(protectedPaths.map(async (filePath) => ({ filePath, content: await readFile(filePath) })));
 const beforeHashes = hashSnapshots(protectedSnapshots);
@@ -42,6 +43,15 @@ try {
     const preview = window.ProjectPreviewRuntime.status();
     return authoring.active && authoring.revision != null && preview.project?.id === 'black-sky-bound-v2-demo';
   }, null, { timeout: 30000 });
+  if (!bsbUrl.startsWith('http://127.0.0.1:5177/')) {
+    await page.waitForFunction(() => document.getElementById('project-preview-frame')?.src.startsWith('http://127.0.0.1:5177/'));
+    const declaredRuntimeFrame = page.frames().find((frame) => frame.url().startsWith('http://127.0.0.1:5177/'))
+      ?? await page.waitForEvent('framenavigated', { predicate: (frame) => frame.url().startsWith('http://127.0.0.1:5177/'), timeout: 30000 });
+    await declaredRuntimeFrame.waitForFunction(() => Boolean(
+      window.BSB_V2_DEMO?.state?.game
+      && window.BSB_V2_DEMO?.audio?.getDebugState?.().assets?.requiredReady === true
+    ), null, { polling: 100, timeout: 30000 });
+  }
   await page.evaluate((url) => {
     const frame = document.getElementById('project-preview-frame');
     frame.src = `${url}?skipHatch=1&mamaAuto=0&renderer=webgl3d`;
@@ -71,6 +81,7 @@ try {
     return studio.open && studio.connection === 'ready'
       && targets.some((target) => target.runtimeIdentity?.kind === 'raider')
       && targets.some((target) => target.runtimeIdentity?.kind === 'werewolf')
+      && targets.some((target) => target.targetId === 'audio:opening-perspective')
       && targets.some((target) => target.targetClass === 'stationary_entity');
   }, null, { timeout: 60000 });
 
@@ -82,11 +93,14 @@ try {
         .filter((target) => target.runtimeIdentity?.kind === 'raider')
         .sort((left, right) => Number(left.runtimeProjection?.occlusionDensity ?? 1) - Number(right.runtimeProjection?.occlusionDensity ?? 1))[0],
       werewolf: targets.find((target) => target.runtimeIdentity?.kind === 'werewolf'),
+      audio: targets.find((target) => target.targetId === 'audio:opening-perspective'),
       geology: targets.find((target) => target.targetClass === 'stationary_entity')
     };
   });
   if (discovery.raider?.writeStatus !== 'ready' || !discovery.raider.recipeId) throw new Error('recipe_backed_raider_target_missing');
   if (discovery.werewolf?.writeStatus !== 'manifest_missing') throw new Error('werewolf_manifest_gap_not_exposed');
+  if (discovery.audio?.writeStatus !== 'ready' || discovery.audio.targetClass !== 'runtime_profile') throw new Error('opening_audio_provider_missing');
+  if (!discovery.audio.capabilities.some((entry) => entry.id === 'listener_relative_3d' && entry.status === 'not_connected')) throw new Error('opening_audio_spatial_boundary_missing');
   if (discovery.geology?.writeStatus !== 'ready') throw new Error('stationary_geology_provider_missing');
   proof.states.discovery = summarizeDiscovery(discovery);
 
@@ -188,6 +202,89 @@ try {
   await page.evaluate(() => window.EntityStudioRuntime.revertCandidate());
   await page.waitForFunction(() => !window.EntityStudioRuntime.status().candidate);
 
+  await selectTarget(page, discovery.audio.targetId);
+  await page.waitForFunction(() => /3D falloff not active/.test(document.querySelector('[data-testid="entity-studio-audio-perspective"]')?.textContent || ''));
+  await reloadedRuntimeFrame.waitForFunction(() => {
+    const snapshot = window.BSB_ENTITY_AUTHORING?.snapshot?.();
+    return snapshot?.session?.focusedTargetId === 'audio:opening-perspective'
+      && window.BSB_V2_DEMO?.state?.paused === false
+      && window.BSB_V2_DEMO?.state?.opening?.source === 'axiom_opening_audio_preview';
+  });
+  const audioHashBeforeCandidate = await currentHash(protectedPaths[3]);
+  const audioProposal = await page.evaluate((targetId) => {
+    const target = window.EntityStudioRuntime.getTarget(targetId);
+    const field = target.fields.find((entry) => entry.path === 'openingPerspective.sealedCutoffHz');
+    const value = Math.max(field.min, Number((field.value - field.step * 2).toFixed(3)));
+    return window.EntityStudioRuntime.propose({ targetId, path: field.path, value }).then((result) => ({ result, value, before: field.value }));
+  }, discovery.audio.targetId);
+  if (audioProposal.result.applied !== false || audioProposal.result.classification !== 'candidate') throw new Error('audio_edit_bypassed_candidate');
+  if ((await currentHash(protectedPaths[3])) !== audioHashBeforeCandidate) throw new Error('audio_candidate_mutated_file_before_apply');
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  await page.waitForFunction(() => window.EntityStudioRuntime.status().candidate?.status === 'previewing');
+  await reloadedRuntimeFrame.waitForFunction((expected) => {
+    const perspective = window.BSB_V2_DEMO?.audio?.getDebugState?.().audioPerspective;
+    return perspective?.tuning?.sealedCutoffHz === expected
+      && perspective.listenerRelativeAttenuation === false
+      && perspective.spatialEmitterCount === 0;
+  }, audioProposal.value);
+  await reloadedRuntimeFrame.locator('#game').click({ position: { x: 360, y: 320 } });
+  await reloadedRuntimeFrame.waitForFunction(() => window.BSB_V2_DEMO?.audio?.getDebugState?.().assets?.requiredReady === true, null, { timeout: 30000 });
+  await reloadedRuntimeFrame.evaluate(() => window.advanceTime(1500));
+  for (const key of ['KeyW', 'KeyD', 'KeyS', 'KeyA']) {
+    await page.keyboard.down(key);
+    await reloadedRuntimeFrame.evaluate(() => window.advanceTime(50));
+    await page.keyboard.up(key);
+    await reloadedRuntimeFrame.evaluate(() => window.advanceTime(500));
+  }
+  await reloadedRuntimeFrame.waitForFunction(() => {
+    const audio = window.BSB_V2_DEMO?.audio?.getDebugState?.();
+    return audio?.recentCues?.some((cue) => cue.soundscapeId === 'storm_answer_after_first_light')
+      && audio?.recentCues?.some((cue) => cue.soundscapeId === 'husk_beyond_shell')
+      && window.BSB_V2_DEMO?.state?.opening?.acceptedInputCount >= 4;
+  });
+  proof.states.audioPreview = await reloadedRuntimeFrame.evaluate(() => ({
+    opening: structuredClone(window.BSB_V2_DEMO.state.opening),
+    perspective: structuredClone(window.BSB_V2_DEMO.audio.getDebugState().audioPerspective),
+    pressure: structuredClone(window.BSB_V2_DEMO.audio.getDebugState().pressure),
+    shellCues: structuredClone(window.BSB_V2_DEMO.audio.getDebugState().recentCues.filter((cue) => cue.soundscapeId))
+  }));
+  const firstShellCue = proof.states.audioPreview.shellCues.find((cue) => cue.soundscapeId === 'storm_answer_after_first_light');
+  if (Math.abs(firstShellCue.gainScale - proof.states.audioPreview.perspective.effective.exteriorGain) > 0.01) throw new Error('audio_preview_exterior_gain_not_consumed');
+  if (firstShellCue.muffleAtPlay < 0.85 || proof.states.audioPreview.pressure.muffleCutoffHz !== audioProposal.value) throw new Error('audio_preview_shell_transmission_not_consumed');
+  proof.screenshots.audioPreview = join(outDir, 'entity-studio-opening-audio-preview.png');
+  await page.screenshot({ path: proof.screenshots.audioPreview, fullPage: true });
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await page.waitForFunction(() => {
+    const status = window.EntityStudioRuntime.status();
+    return !status.candidate
+      && status.lastReceipt?.persistedDestination === 'tuning/audio-overrides.json'
+      && status.lastReceipt?.readBack?.status === 'verified';
+  });
+  if ((await currentHash(protectedPaths[3])) === audioHashBeforeCandidate) throw new Error('audio_apply_did_not_persist');
+  proof.states.audioApply = await page.evaluate(() => window.EntityStudioRuntime.status().lastReceipt);
+
+  const audioResponseCountBeforeReload = await page.evaluate(() => window.EntityStudioRuntime.status().diagnostics.responseCount);
+  await page.evaluate((url) => {
+    const frame = document.getElementById('project-preview-frame');
+    frame.src = `${url}?skipHatch=1&mamaAuto=0&renderer=webgl3d&audioStudioReload=${Date.now()}`;
+  }, bsbUrl);
+  await page.waitForFunction((expected) => {
+    const status = window.EntityStudioRuntime.status();
+    const target = window.EntityStudioRuntime.getTarget('audio:opening-perspective');
+    const field = target?.fields?.find((entry) => entry.path === 'openingPerspective.sealedCutoffHz');
+    return status.connection === 'ready'
+      && status.diagnostics.responseCount > expected.responseCount
+      && field?.value === expected.value;
+  }, { value: audioProposal.value, responseCount: audioResponseCountBeforeReload }, { timeout: 30000 });
+  proof.states.audioReloadReadback = await page.evaluate(() => {
+    const target = window.EntityStudioRuntime.getTarget('audio:opening-perspective');
+    return {
+      value: target.fields.find((entry) => entry.path === 'openingPerspective.sealedCutoffHz').value,
+      source: target.canonicalSource,
+      projection: target.runtimeProjection.audioPerspective
+    };
+  });
+
   await selectTarget(page, discovery.werewolf.targetId);
   await page.waitForFunction(() => /No editable manifest exists/.test(document.querySelector('[data-testid="entity-studio-details"]')?.innerText || ''));
   proof.states.manifestGapText = await page.getByTestId('entity-studio-details').innerText();
@@ -277,6 +374,7 @@ function summarizeDiscovery(discovery) {
     status: discovery.status,
     raider: { targetId: discovery.raider.targetId, providerId: discovery.raider.providerId, recipeId: discovery.raider.recipeId, capabilities: discovery.raider.capabilities },
     werewolf: { targetId: discovery.werewolf.targetId, providerId: discovery.werewolf.providerId, writeStatus: discovery.werewolf.writeStatus },
+    audio: { targetId: discovery.audio.targetId, providerId: discovery.audio.providerId, capabilities: discovery.audio.capabilities },
     geology: { targetId: discovery.geology.targetId, providerId: discovery.geology.providerId, capabilities: discovery.geology.capabilities }
   };
 }

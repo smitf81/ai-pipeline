@@ -18,6 +18,7 @@ import { createPerformanceDiagnostics } from './debug/performance.js';
 import { applyPauseInput, applyPauseMenuInput, createPauseMenuState } from './game/pause.js';
 import { buildPauseMenuProjection } from './projection/tutorialProjection.js';
 import { setCreatureTuningValue } from './data/creatures/creatureTuning.js';
+import { normalizeAudioTuning } from './data/audio/audioTuning.js';
 import { saveCreatureTuningToServer } from './tuning/creatureTuningClient.js';
 import { createCreatureTuningOverlay } from './tuning/tuningOverlay.js';
 import { applyTuningInput,
@@ -93,8 +94,10 @@ export function createApp(canvas, options = {}) {
     : profileStore.load(profileOptions);
   const game = createInitialGameState(map, { creatureTuning: options.creatureTuning, playerProfile });
   const openingDragon = getDragon(game);
+  const audioTuning = normalizeAudioTuning(options.audioTuning).tuning;
   const audio = options.audioDirector ?? createAudioDirector({
     enabled: options.audioEnabled !== false,
+    tuning: audioTuning,
     ...(Object.hasOwn(options, 'audioContext') ? { context: options.audioContext } : {})
   });
   const state = {
@@ -108,6 +111,8 @@ export function createApp(canvas, options = {}) {
     paused: false,
     pauseMenu: createPauseMenuState(),
     playerProfile,
+    audioTuning,
+    audioTuningStatus: { source: options.audioTuningSource ?? 'not_loaded', loadStatus: options.audioTuningLoadStatus ?? 'idle', loadError: options.audioTuningLoadError ?? null },
     gameTime: createGameTimeState(),
     tutorial: createTutorialRuntime(),
     opening: createOpeningSequenceState({

@@ -1,5 +1,5 @@
 import { EventType } from '../constants/eventTypes.js';
-import { AUDIO_TUNING } from '../data/audio/audioTuning.js';
+import { AUDIO_TUNING, resolveAudioTuning } from '../data/audio/audioTuning.js';
 import { buildBodyStateProjection } from '../projection/bodyStateProjection.js';
 import { AudioAssetBank } from './audioAssetBank.js';
 import { startDecodedFileVoice } from './audioFileVoice.js';
@@ -15,6 +15,7 @@ import {
 } from './audioStateMath.js';
 import { createLightningThunderBridge } from './lightningThunder.js';
 import { createLoopState, isPlayerBodyLoopCue, loopVoiceIsActive, syncLoopSuspension } from './audioLoopLifecycle.js';
+import { resolveAudioPressureMix } from './audioPressureMix.js';
 import {
   buildProceduralLoop,
   buildProceduralOneShot,
@@ -55,7 +56,8 @@ export class AudioDirector {
   constructor(options = {}) {
     this.contract = 'black-sky-bound.audio-director.v0';
     this.enabled = options.enabled !== false;
-    const busOptions = { tuning: options.tuning ?? AUDIO_TUNING }; if (Object.hasOwn(options, 'context')) busOptions.context = options.context;
+    this.tuning = resolveAudioTuning(options.tuning);
+    const busOptions = { tuning: this.tuning }; if (Object.hasOwn(options, 'context')) busOptions.context = options.context;
     this.bus = new AudioBusGraph(busOptions);
     this.assets = options.assetBank ?? new AudioAssetBank({ context: this.bus.context, fetchImpl: options.fetchImpl });
     this.assets.preloadCues(SOUND_CUES);
@@ -83,6 +85,7 @@ export class AudioDirector {
       staminaPressure: 0,
       hitPulse: 0,
       muffleIntensity: 0,
+      muffleCutoffHz: this.tuning.bodyState.muffle.maxCutoffHz,
       breathStrain: 0,
       heartbeat: 0
     };
@@ -90,7 +93,8 @@ export class AudioDirector {
     this.opening = {
       active: false,
       phase: 'released',
-      observedAudioSequence: 0
+      observedAudioSequence: 0,
+      mix: resolveOpeningMix(null, this.tuning)
     };
     this.lightning = createLightningThunderBridge();
   }
@@ -110,8 +114,20 @@ export class AudioDirector {
   }
 
   unlock() {
-    this.unlocked = true;
-    return Promise.all([this.bus.resume(), this.assets.preloadCues(SOUND_CUES)]).then(([resumed]) => resumed);
+    return Promise.all([this.bus.resume(), this.assets.preloadCues(SOUND_CUES)]).then(([resumed]) => {
+      this.unlocked = true;
+      return resumed;
+    });
+  }
+
+  setTuning(overrides = null) {
+    this.tuning = resolveAudioTuning(overrides);
+    this.bus.setTuning(this.tuning);
+    return this.getDebugState().audioPerspective;
+  }
+
+  resetOpeningObservation() {
+    this.opening.observedAudioSequence = 0;
   }
 
   emit(type, payload = {}) {
@@ -155,7 +171,8 @@ export class AudioDirector {
           soundscapeId: null,
           perspective: null
         }];
-    const openingMix = resolveOpeningMix(opening);
+    const openingMix = resolveOpeningMix(opening, this.tuning);
+    this.opening.mix = openingMix;
     for (const event of events.sort((a, b) => a.sequence - b.sequence)) {
       this.opening.observedAudioSequence = Math.max(this.opening.observedAudioSequence, event.sequence);
       if (!event.cueId) continue;
@@ -165,7 +182,8 @@ export class AudioDirector {
         soundscapeId: event.soundscapeId,
         perspective: event.perspective,
         openingPhase: opening?.phase ?? 'released',
-        muffleAtPlay: openingMix.muffle
+        muffleAtPlay: openingMix.muffle,
+        gainScale: event.soundscapeId ? openingMix.exteriorGain : 1
       });
     }
   }
@@ -328,6 +346,7 @@ export class AudioDirector {
       pitch: rounded(voice.pitch ?? 1),
       durationMs: Math.round(voice.durationMs ?? proceduralDuration(cue)),
       intensity: Number((payload.intensity ?? 1).toFixed?.(3) ?? payload.intensity ?? 1),
+      gainScale: rounded(payload.gainScale ?? 1),
       muffleAtPlay: rounded(payload.muffleAtPlay ?? this.pressure.muffleIntensity),
       reason: payload.reason ?? null,
       soundscapeId: payload.soundscapeId ?? null,
@@ -350,40 +369,11 @@ export class AudioDirector {
   }
 
   updatePressureLoops(state) {
-    const bodyState = buildBodyStateProjection(state?.game, state?.time ?? state?.game?.renderTime ?? 0);
-    const muffleProfile = AUDIO_TUNING.bodyState.muffle;
-    const muffleIntensity = clamp01(
-      bodyState.health.pressure * muffleProfile.healthWeight
-      + bodyState.health.hitPulse * muffleProfile.hitPulseWeight
-    );
-    const breathProfile = AUDIO_TUNING.bodyState.breath;
-    const breathStrain = clamp01(
-      bodyState.stamina.pressure * breathProfile.staminaWeight
-      + bodyState.health.pressure * breathProfile.healthWeight
-      + bodyState.stamina.breathPulse * breathProfile.pulseWeight
-    );
-    const heartProfile = AUDIO_TUNING.bodyState.heartbeat;
-    const heartbeat = clamp01(
-      (bodyState.health.pressure - heartProfile.startsAtPressure) / Math.max(0.001, 1 - heartProfile.startsAtPressure)
-      + bodyState.health.hitPulse * heartProfile.hitPulseBoost
-    );
-    const openingMix = resolveOpeningMix(state?.opening);
-    const bodyLoopScale = state?.paused === true ? 0 : 1;
-
-    this.pressure = {
-      healthPressure: rounded(bodyState.health.pressure),
-      staminaPressure: rounded(bodyState.stamina.pressure),
-      hitPulse: rounded(bodyState.health.hitPulse),
-      muffleIntensity: rounded(Math.max(muffleIntensity, openingMix.muffle)),
-      breathStrain: rounded(breathStrain),
-      heartbeat: rounded(Math.max(heartbeat, openingMix.heartbeat))
-    };
-    this.bus.setMuffleIntensity(this.pressure.muffleIntensity);
-
-    this.setLoopGain('ambience.forest_night', getSoundCue('ambience.forest_night').volume * (1 - bodyState.health.pressure * 0.24) * openingMix.ambience);
-    this.setLoopGain('player.breath.calm', breathProfile.calmBaseGain * (1 - breathStrain * breathProfile.calmPressureDuck) * openingMix.breath * bodyLoopScale);
-    this.setLoopGain('player.breath.strained', breathProfile.strainedBaseGain * breathStrain * bodyLoopScale);
-    this.setLoopGain('player.heartbeat', heartProfile.baseGain * Math.max(heartbeat, openingMix.heartbeat) * bodyLoopScale);
+    const mix = resolveAudioPressureMix(state, this.tuning, getSoundCue('ambience.forest_night').volume);
+    this.opening.mix = mix.openingMix;
+    this.pressure = mix.pressure;
+    this.bus.setMuffleState(this.pressure.muffleIntensity, mix.muffleCutoffHz);
+    for (const [cueId, gain] of Object.entries(mix.loopGains)) this.setLoopGain(cueId, gain);
   }
 
   setLoopGain(cueId, value) {
@@ -430,7 +420,8 @@ export class AudioDirector {
     const gain = this.bus.createVoiceGain(cue.bus, 0);
     if (!gain) return null;
     const intensity = clamp01(payload.intensity ?? 1);
-    const volume = cue.volume * (0.54 + intensity * 0.46);
+    const gainScale = Math.max(0, Number(payload.gainScale ?? 1) || 0);
+    const volume = cue.volume * (0.54 + intensity * 0.46) * gainScale;
     setAudioParam(gain.gain, this.bus.context.currentTime, volume, 0.012);
     const voice = cue.source === 'file'
       ? startDecodedFileVoice(this, cue, gain, pitch, sequence)
@@ -479,6 +470,18 @@ export class AudioDirector {
       pressure: { ...this.pressure },
       nearestEnemy: this.nearestEnemy,
       opening: { ...this.opening },
+      audioPerspective: {
+        contract: 'black-sky-bound.audio-perspective-runtime.v0',
+        mode: this.tuning.openingPerspective.mode,
+        listenerRelativeAttenuation: this.tuning.openingPerspective.listenerRelativeAttenuation,
+        spatialEmitterCount: 0,
+        tuning: { ...this.tuning.openingPerspective },
+        effective: {
+          exposure: rounded(this.opening.mix?.exposure ?? 1),
+          exteriorGain: rounded(this.opening.mix?.exteriorGain ?? 1),
+          cutoffHz: Math.round(this.opening.mix?.cutoffHz ?? this.tuning.bodyState.muffle.maxCutoffHz)
+        }
+      },
       lightning: this.lightning.snapshot(),
       loops: Object.fromEntries([...this.loopVoices.entries()].map(([cueId, loop]) => [
         cueId,

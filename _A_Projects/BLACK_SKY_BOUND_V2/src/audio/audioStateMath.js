@@ -1,14 +1,28 @@
-export function resolveOpeningMix(opening) {
-  if (opening?.released !== false) return { ambience: 1, breath: 1, heartbeat: 0, muffle: 0 };
+import { AUDIO_TUNING } from '../data/audio/audioTuning.js';
+
+export function resolveOpeningMix(opening, tuning = AUDIO_TUNING) {
+  const profile = tuning?.openingPerspective ?? AUDIO_TUNING.openingPerspective;
+  const maxCutoffHz = tuning?.bodyState?.muffle?.maxCutoffHz ?? AUDIO_TUNING.bodyState.muffle.maxCutoffHz;
+  if (opening?.released !== false) {
+    return { ambience: 1, breath: 1, heartbeat: 0, muffle: 0, exteriorGain: 1, cutoffHz: maxCutoffHz, exposure: 1 };
+  }
   const shellOpening = clamp01(opening.openingProgress ?? 0);
   const emergence = clamp01(opening.emergenceProgress ?? 0);
   const settling = clamp01(opening.settleProgress ?? 0);
-  const exposure = Math.max(shellOpening * 0.42, clamp01(emergence * 1.32), settling);
+  const exposure = clamp01(Math.max(
+    shellOpening * profile.shellOpeningLeakWeight,
+    emergence * profile.emergenceExposureRate,
+    settling
+  ));
+  const sealedCutoffHz = Math.min(maxCutoffHz, Math.max(20, profile.sealedCutoffHz));
   return {
     ambience: 0.16 + exposure * 0.84,
     breath: 0.14 + exposure * 0.86,
     heartbeat: 0.9 - exposure * 0.42,
-    muffle: 0.8 * (1 - exposure)
+    muffle: profile.maxMuffleIntensity * (1 - exposure),
+    exteriorGain: profile.sealedExteriorGain + (1 - profile.sealedExteriorGain) * exposure,
+    cutoffHz: sealedCutoffHz + (maxCutoffHz - sealedCutoffHz) * exposure,
+    exposure
   };
 }
 

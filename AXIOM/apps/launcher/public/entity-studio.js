@@ -75,7 +75,7 @@ function mount() {
   });
   window.EDITOR?.events?.on?.('workspace:surfaceStateChanged', () => {
     if (state.open) {
-      mergeTargets(state.targets.filter((target) => target.targetClass === 'animated_entity'), stationaryTargets());
+      mergeTargets(state.targets.filter(isRuntimeTarget), stationaryTargets());
       render();
     }
   });
@@ -111,7 +111,7 @@ async function performRefresh() {
   state.connection = 'connecting';
   state.connectionLabel = 'Reading provider manifests';
   state.error = null;
-  mergeTargets(state.targets.filter((target) => target.targetClass === 'animated_entity'), stationaryTargets());
+  mergeTargets(state.targets.filter(isRuntimeTarget), stationaryTargets());
   render();
   try {
     const snapshot = await runtimeCommand('state.snapshot');
@@ -119,7 +119,7 @@ async function performRefresh() {
     acceptRuntimeSnapshot(snapshot);
     if (!state.selectionExplicit) state.selectedId = preferredTarget(state.targets)?.targetId ?? state.selectedId;
     const selected = state.targets.find((target) => target.targetId === state.selectedId);
-    if (selected?.targetClass === 'animated_entity') {
+    if (isRuntimeTarget(selected)) {
       const focused = await runtimeCommand('session.begin', { targetId: selected.targetId });
       replaceTarget(focused?.target);
     }
@@ -265,7 +265,7 @@ async function propose(payload = {}, options = {}) {
   state.error = null;
   if (state.candidate) await revertCandidate();
   const source = payload.source || options.source || { kind: 'human', id: 'axiom_entity_studio' };
-  if (target.targetClass === 'animated_entity') {
+  if (isRuntimeTarget(target)) {
     const result = await runtimeCommand('candidate.create', { targetId, path: payload.path, value: payload.value, source });
     if (result?.ok === false) throw new Error(result.reason);
     state.candidate = result.candidate;
@@ -308,7 +308,7 @@ function buildGeologyCandidate(target, path, value, source) {
 
 async function previewCandidate() {
   if (!state.candidate) return null;
-  if (state.candidate.targetClass === 'animated_entity') {
+  if (isRuntimeTarget(state.candidate)) {
     const result = await runtimeCommand('candidate.preview', { candidateId: state.candidate.candidateId });
     if (result?.ok === false) return blockCandidate(result.reason);
     state.candidate = result.candidate;
@@ -325,7 +325,7 @@ async function applyCandidate() {
   if (!state.candidate) return null;
   state.error = null;
   try {
-    if (state.candidate.targetClass === 'animated_entity') {
+    if (isRuntimeTarget(state.candidate)) {
       const result = await runtimeCommand('candidate.apply', { candidateId: state.candidate.candidateId });
       if (result?.ok === false) return blockCandidate(result.reason);
       state.lastReceipt = result.receipt;
@@ -334,7 +334,7 @@ async function applyCandidate() {
     } else {
       state.lastReceipt = await applyGeologyCandidate(state.candidate);
       state.candidate = null;
-      mergeTargets(state.targets.filter((target) => target.targetClass === 'animated_entity'), stationaryTargets());
+      mergeTargets(state.targets.filter(isRuntimeTarget), stationaryTargets());
     }
     render();
     return { ok: true, applied: true, receipt: clone(state.lastReceipt) };
@@ -381,7 +381,7 @@ async function applyGeologyCandidate(candidate) {
 
 async function revertCandidate() {
   if (!state.candidate) return { ok: true, reverted: false };
-  if (state.candidate.targetClass === 'animated_entity') {
+  if (isRuntimeTarget(state.candidate)) {
     const result = await runtimeCommand('candidate.revert', { candidateId: state.candidate.candidateId });
     if (result?.ok === false) throw new Error(result.reason);
   }
@@ -483,7 +483,7 @@ function renderTarget(target) {
   const dot = element('span', 'entity-studio__target-dot');
   dot.dataset.state = target.writeStatus === 'ready' ? 'ready' : 'blocked';
   const name = element('span', 'entity-studio__target-name', target.label || target.targetId);
-  const kind = element('span', 'entity-studio__target-kind', target.targetClass === 'animated_entity' ? shortIdentity(target) : 'Static');
+  const kind = element('span', 'entity-studio__target-kind', targetClassLabel(target));
   button.append(dot, name, kind);
   button.addEventListener('click', async () => {
     if (state.candidate && state.candidate.targetId !== target.targetId) await revertCandidate();
@@ -515,6 +515,16 @@ function shortIdentity(target) {
   return `#${suffix.slice(-8)}`;
 }
 
+function isRuntimeTarget(target) {
+  return target?.targetClass === 'animated_entity' || target?.targetClass === 'runtime_profile';
+}
+
+function targetClassLabel(target) {
+  if (target?.targetClass === 'runtime_profile') return 'Audio';
+  if (target?.targetClass === 'animated_entity') return shortIdentity(target);
+  return 'Static';
+}
+
 function renderDetails() {
   const section = element('section', 'entity-studio__section');
   section.dataset.testid = 'entity-studio-details';
@@ -534,6 +544,17 @@ function renderDetails() {
       const focus = projection.cameraVisibilityFocus;
       const notice = element('div', 'entity-studio__notice', `Camera focus · ${focus.active ? 'live on selection' : 'available'} · ${formatValue(focus.radiusMeters)} m traced sightline · ${Math.round(Number(focus.minimumOccluderOpacity) * 100)}% blockers · ${formatValue(focus.readabilityLightPower)} lm`);
       notice.dataset.testid = 'entity-studio-camera-focus';
+      selection.append(notice);
+    }
+    if (projection.audioPerspective) {
+      const audio = projection.audioPerspective;
+      const notice = element(
+        'div',
+        'entity-studio__notice',
+        `Opening audio · authored distance · non-positional · ${Math.round(Number(audio.effective?.cutoffHz || audio.tuning?.sealedCutoffHz || 0))} Hz shell · ${Math.round(Number(audio.effective?.exteriorGain || audio.tuning?.sealedExteriorGain || 0) * 100)}% exterior level · 3D falloff not active`
+      );
+      notice.dataset.testid = 'entity-studio-audio-perspective';
+      notice.dataset.tone = 'warn';
       selection.append(notice);
     }
   }
