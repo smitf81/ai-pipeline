@@ -166,13 +166,13 @@ const openingState = {
     emergenceProgress: 0,
     audio: {
       sequence: 2,
-      cueId: 'enemy.husk.distant_gargle',
+      cueId: 'opening.exterior.husk_through_shell',
       reason: 'test_husk',
       events: [
         { sequence: 1, cueId: 'opening.egg.crack', reason: 'test_crack', intensity: 0.72 },
         {
           sequence: 2,
-          cueId: 'enemy.husk.distant_gargle',
+          cueId: 'opening.exterior.husk_through_shell',
           reason: 'test_husk',
           intensity: 0.44,
           soundscapeId: 'husk_beyond_shell',
@@ -184,10 +184,10 @@ const openingState = {
 };
 debug = openingDirector.update(openingState, 1 / 60);
 assert(recentCue(debug, 'opening.egg.crack'), 'canonical opening audio state should route through the Audio Director');
-assert(recentCue(debug, 'enemy.husk.distant_gargle'), 'opening audio history should drain every unseen cue rather than dropping all but the latest one');
+assert(recentCue(debug, 'opening.exterior.husk_through_shell'), 'opening audio history should drain every unseen cue rather than dropping all but the latest one');
 equal(debug.opening.active, true, 'audio diagnostics should expose the active inside-egg mix');
 assert(debug.pressure.muffleIntensity > 0.7, 'inside-egg audio should use the bounded muffled mix');
-const huskCue = debug.recentCues.find((cue) => cue.cueId === 'enemy.husk.distant_gargle');
+const huskCue = debug.recentCues.find((cue) => cue.cueId === 'opening.exterior.husk_through_shell');
 assert(huskCue.muffleAtPlay > 0.7, 'opening cue diagnostics should prove the first husk voice was heard through shell muffling');
 equal(huskCue.soundscapeId, 'husk_beyond_shell', 'opening cue diagnostics should retain authored soundscape provenance');
 

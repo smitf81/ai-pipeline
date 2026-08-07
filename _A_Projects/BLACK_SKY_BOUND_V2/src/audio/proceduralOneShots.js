@@ -12,12 +12,7 @@ export function buildProceduralOneShot(context, cue, outputGain, pitch = 1) {
   if (profile.type === 'shellRock') return createShellRock(context, outputGain, frequencyHz, durationMs);
   if (profile.type === 'shellCrack') return createShellCrack(context, outputGain, frequencyHz, durationMs);
   if (profile.type === 'shellBreak') return createShellBreak(context, outputGain, frequencyHz, durationMs);
-  if (profile.type === 'thunderRoll') return createThunderRoll(context, outputGain, frequencyHz, durationMs);
-  if (profile.type === 'creatureHowl') return createCreatureHowl(context, outputGain, frequencyHz, durationMs);
-  if (profile.type === 'huskGargle') return createHuskGargle(context, outputGain, frequencyHz, durationMs);
-  if (['distantShout', 'distantCall'].includes(profile.type)) {
-    return createHumanVoice(context, outputGain, frequencyHz, durationMs, profile.type);
-  }
+  if (profile.type === 'distantCall') return createHumanVoice(context, outputGain, frequencyHz, durationMs);
   if (['smokeExhale', 'breathBurst', 'airSlice'].includes(profile.type)) {
     return createAirGesture(context, outputGain, frequencyHz, durationMs, profile.type);
   }
@@ -124,122 +119,7 @@ function createShellBreak(context, outputGain, frequencyHz, durationMs) {
   return voice(durationMs * 1.35, 'shell_crown_collapse_and_debris', nodes);
 }
 
-function createThunderRoll(context, outputGain, frequencyHz, durationMs) {
-  const nodes = [
-    ...connectNoiseLayer(context, outputGain, {
-      durationMs,
-      filterType: 'lowpass',
-      frequencyHz: 980,
-      endFrequencyHz: 105,
-      q: 0.55,
-      seed: 151,
-      envelope: [[0, 0.0001], [0.018, 0.98], [0.17, 0.42], [0.48, 0.63], [0.72, 0.3], [1, 0.0001]]
-    }),
-    ...connectOscillatorLayer(context, outputGain, {
-      frequencyHz: Math.max(25, frequencyHz),
-      endFrequencyHz: Math.max(20, frequencyHz * 0.58),
-      durationMs,
-      gain: 0.64,
-      type: 'sine',
-      envelope: [[0, 0.0001], [0.05, 0.72], [0.36, 0.44], [0.58, 0.61], [1, 0.0001]]
-    }),
-    ...connectOscillatorLayer(context, outputGain, {
-      frequencyHz: Math.max(21, frequencyHz * 0.56),
-      endFrequencyHz: 20,
-      durationMs: durationMs * 0.92,
-      offsetSeconds: 0.09,
-      gain: 0.32,
-      type: 'sine'
-    })
-  ];
-  return voice(durationMs, 'multi_front_storm_roll', nodes);
-}
-
-function createCreatureHowl(context, outputGain, frequencyHz, durationMs) {
-  const now = context.currentTime;
-  const end = now + durationMs / 1000;
-  const voiceA = context.createOscillator();
-  const voiceB = context.createOscillator();
-  const vibrato = context.createOscillator();
-  const vibratoDepth = context.createGain();
-  const throat = context.createBiquadFilter();
-  const envelope = context.createGain();
-  voiceA.type = 'triangle';
-  voiceB.type = 'sawtooth';
-  voiceA.frequency.setValueAtTime(frequencyHz * 0.74, now);
-  voiceA.frequency.exponentialRampToValueAtTime(frequencyHz * 1.38, now + durationMs / 3100);
-  voiceA.frequency.exponentialRampToValueAtTime(frequencyHz * 0.68, end);
-  voiceB.frequency.setValueAtTime(frequencyHz * 0.37, now);
-  voiceB.frequency.exponentialRampToValueAtTime(frequencyHz * 0.66, now + durationMs / 2900);
-  voiceB.frequency.exponentialRampToValueAtTime(frequencyHz * 0.31, end);
-  vibrato.type = 'sine';
-  vibrato.frequency.value = 4.7;
-  vibratoDepth.gain.value = frequencyHz * 0.035;
-  vibrato.connect(vibratoDepth);
-  vibratoDepth.connect(voiceA.frequency);
-  throat.type = 'bandpass';
-  throat.frequency.value = frequencyHz * 3.1;
-  throat.Q.value = 1.25;
-  scheduleEnvelope(envelope.gain, now, durationMs / 1000, [
-    [0, 0.0001], [0.11, 0.52], [0.34, 0.88], [0.68, 0.64], [1, 0.0001]
-  ]);
-  voiceA.connect(throat);
-  voiceB.connect(throat);
-  throat.connect(envelope);
-  envelope.connect(outputGain);
-  voiceA.start(now);
-  voiceB.start(now);
-  vibrato.start(now);
-  voiceA.stop(end + 0.04);
-  voiceB.stop(end + 0.04);
-  vibrato.stop(end + 0.04);
-  const breath = connectNoiseLayer(context, outputGain, {
-    durationMs,
-    filterType: 'bandpass',
-    frequencyHz: frequencyHz * 4.6,
-    q: 0.8,
-    gain: 0.18,
-    seed: 181
-  });
-  return voice(durationMs, 'layered_predator_throat_howl', [voiceA, voiceB, vibrato, vibratoDepth, throat, envelope, ...breath]);
-}
-
-function createHuskGargle(context, outputGain, frequencyHz, durationMs) {
-  const now = context.currentTime;
-  const end = now + durationMs / 1000;
-  const throat = context.createOscillator();
-  const filter = context.createBiquadFilter();
-  const envelope = context.createGain();
-  throat.type = 'sawtooth';
-  throat.frequency.setValueAtTime(frequencyHz * 0.72, now);
-  throat.frequency.linearRampToValueAtTime(frequencyHz * 1.16, now + durationMs / 3400);
-  throat.frequency.linearRampToValueAtTime(frequencyHz * 0.61, end);
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(frequencyHz * 4.1, now);
-  filter.frequency.exponentialRampToValueAtTime(frequencyHz * 1.7, end);
-  filter.Q.value = 3.2;
-  scheduleEnvelope(envelope.gain, now, durationMs / 1000, [
-    [0, 0.0001], [0.04, 0.48], [0.21, 0.23], [0.36, 0.62], [0.52, 0.18], [0.71, 0.55], [1, 0.0001]
-  ]);
-  throat.connect(filter);
-  filter.connect(envelope);
-  envelope.connect(outputGain);
-  throat.start(now);
-  throat.stop(end + 0.04);
-  const wet = connectNoiseLayer(context, outputGain, {
-    durationMs,
-    filterType: 'bandpass',
-    frequencyHz: frequencyHz * 2.15,
-    endFrequencyHz: frequencyHz * 1.3,
-    q: 2.7,
-    gain: 0.52,
-    seed: 211,
-    envelope: [[0, 0.0001], [0.05, 0.36], [0.28, 0.15], [0.41, 0.48], [0.63, 0.12], [0.78, 0.38], [1, 0.0001]]
-  });
-  return voice(durationMs, 'wet_airway_husk_gargle', [throat, filter, envelope, ...wet]);
-}
-
-function createHumanVoice(context, outputGain, frequencyHz, durationMs, mode) {
+function createHumanVoice(context, outputGain, frequencyHz, durationMs) {
   const now = context.currentTime;
   const end = now + durationMs / 1000;
   const fundamental = context.createOscillator();
@@ -249,7 +129,7 @@ function createHumanVoice(context, outputGain, frequencyHz, durationMs, mode) {
   fundamental.type = 'sawtooth';
   grit.type = 'triangle';
   const start = frequencyHz * 0.82;
-  const peak = mode === 'distantCall' ? frequencyHz * 1.34 : frequencyHz * 1.08;
+  const peak = frequencyHz * 1.34;
   fundamental.frequency.setValueAtTime(start, now);
   fundamental.frequency.linearRampToValueAtTime(peak, now + durationMs / 3500);
   fundamental.frequency.linearRampToValueAtTime(frequencyHz * 0.72, end);

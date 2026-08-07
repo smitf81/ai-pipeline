@@ -174,39 +174,115 @@ export const SOUND_CUES = Object.freeze({
   }),
   'enemy.raider.distant_shout': cue({
     id: 'enemy.raider.distant_shout',
+    files: [
+      `${productionAssetRoot}/raider_distant_shout_01.wav`,
+      `${productionAssetRoot}/raider_distant_shout_02.wav`
+    ],
+    source: 'file',
+    required: true,
     bus: 'enemies',
     volume: 0.56,
-    pitchRandom: [0.94, 1.04],
+    pitchRandom: [0.99, 1.01],
     cooldownMs: 1200,
-    maxVoices: 1,
-    procedural: { type: 'distantShout', frequencyHz: 190, durationMs: 560 }
+    maxVoices: 1
   }),
   'enemy.werewolf.distant_howl': cue({
     id: 'enemy.werewolf.distant_howl',
+    files: [
+      `${productionAssetRoot}/werewolf_distant_howl_01.wav`,
+      `${productionAssetRoot}/werewolf_distant_howl_02.wav`
+    ],
+    source: 'file',
+    required: true,
     bus: 'enemies',
     volume: 0.64,
-    pitchRandom: [0.96, 1.025],
+    pitchRandom: [0.995, 1.005],
     cooldownMs: 1800,
-    maxVoices: 1,
-    procedural: { type: 'creatureHowl', frequencyHz: 205, durationMs: 1320 }
+    maxVoices: 1
   }),
   'enemy.husk.distant_gargle': cue({
     id: 'enemy.husk.distant_gargle',
+    files: [
+      `${productionAssetRoot}/husk_distant_gargle_01.wav`,
+      `${productionAssetRoot}/husk_distant_gargle_02.wav`
+    ],
+    source: 'file',
+    required: true,
     bus: 'enemies',
     volume: 0.5,
-    pitchRandom: [0.92, 1.05],
+    pitchRandom: [0.99, 1.01],
     cooldownMs: 1400,
-    maxVoices: 1,
-    procedural: { type: 'huskGargle', frequencyHz: 96, durationMs: 820 }
+    maxVoices: 1
   }),
   'world.storm.thunder': cue({
     id: 'world.storm.thunder',
+    files: [
+      `${productionAssetRoot}/storm_thunder_distant_01.wav`,
+      `${productionAssetRoot}/storm_thunder_distant_02.wav`
+    ],
+    source: 'file',
+    required: true,
     bus: 'ambience',
     volume: 0.78,
-    pitchRandom: [0.94, 1.025],
+    pitchRandom: [0.995, 1.005],
     cooldownMs: 900,
-    maxVoices: 2,
-    procedural: { type: 'thunderRoll', frequencyHz: 46, durationMs: 1680 }
+    maxVoices: 2
+  }),
+  'opening.exterior.thunder_through_shell': cue({
+    id: 'opening.exterior.thunder_through_shell',
+    files: [
+      `${productionAssetRoot}/opening_through_shell_thunder_01.wav`,
+      `${productionAssetRoot}/opening_through_shell_thunder_02.wav`
+    ],
+    source: 'file',
+    required: true,
+    bus: 'ambience',
+    volume: 0.74,
+    pitchRandom: [0.998, 1.002],
+    cooldownMs: 900,
+    maxVoices: 1
+  }),
+  'opening.exterior.werewolf_through_shell': cue({
+    id: 'opening.exterior.werewolf_through_shell',
+    files: [
+      `${productionAssetRoot}/opening_through_shell_werewolf_01.wav`,
+      `${productionAssetRoot}/opening_through_shell_werewolf_02.wav`
+    ],
+    source: 'file',
+    required: true,
+    bus: 'enemies',
+    volume: 0.62,
+    pitchRandom: [0.998, 1.002],
+    cooldownMs: 1800,
+    maxVoices: 1
+  }),
+  'opening.exterior.husk_through_shell': cue({
+    id: 'opening.exterior.husk_through_shell',
+    files: [
+      `${productionAssetRoot}/opening_through_shell_husk_01.wav`,
+      `${productionAssetRoot}/opening_through_shell_husk_02.wav`
+    ],
+    source: 'file',
+    required: true,
+    bus: 'enemies',
+    volume: 0.54,
+    pitchRandom: [0.998, 1.002],
+    cooldownMs: 1400,
+    maxVoices: 1
+  }),
+  'opening.exterior.raider_through_shell': cue({
+    id: 'opening.exterior.raider_through_shell',
+    files: [
+      `${productionAssetRoot}/opening_through_shell_raider_01.wav`,
+      `${productionAssetRoot}/opening_through_shell_raider_02.wav`
+    ],
+    source: 'file',
+    required: true,
+    bus: 'enemies',
+    volume: 0.6,
+    pitchRandom: [0.998, 1.002],
+    cooldownMs: 1200,
+    maxVoices: 1
   }),
   'world.mama_wyvern.distant_roar': cue({
     id: 'world.mama_wyvern.distant_roar',

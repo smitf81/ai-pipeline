@@ -1,0 +1,768 @@
+{
+  "contract": "black-sky-bound.opening-exterior-production.v1",
+  "sampleRate": 48000,
+  "generator": "tools/audio/generate_opening_exterior_v1.py",
+  "designIntent": "Four reusable full-range weather/enemy palettes plus separately rendered, event-specific through-shell derivatives for the embodied hatch opening.",
+  "syntheticLayersInProductionAssets": 0,
+  "normalCueIds": [
+    "world.storm.thunder",
+    "enemy.werewolf.distant_howl",
+    "enemy.husk.distant_gargle",
+    "enemy.raider.distant_shout"
+  ],
+  "openingDerivativeCueIds": [
+    "opening.exterior.thunder_through_shell",
+    "opening.exterior.werewolf_through_shell",
+    "opening.exterior.husk_through_shell",
+    "opening.exterior.raider_through_shell"
+  ],
+  "runtimeShellBus": {
+    "sealedMuffle": 0.8,
+    "sealedCutoffHz": 4176,
+    "owner": "src/audio/audioStateMath.js + src/audio/audioBus.js"
+  },
+  "sources": [
+    {
+      "role": "thunder",
+      "file": "assets/audio/sources/opening_exterior_v1/originals/thunder-dry-distant-rolling-field-notl-2011-48804.mp3",
+      "sha256": "1bdcee5a164621d819aa0a3f8deb11df56994d3423a202993ad26c96324e76c6",
+      "durationSeconds": 155.52,
+      "provider": "Pixabay",
+      "artist": "TRP (Freesound)",
+      "providerPage": "https://pixabay.com/sound-effects/nature-thunder-dry-distant-rolling-field-notl-2011-48804/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "role": "wolf_solo",
+      "file": "assets/audio/sources/opening_exterior_v1/originals/wolf-howl-6310.mp3",
+      "sha256": "599a3742bd7ea1795f06bc7d3bd62f6f79a9d2b762e2c7f4d0f7a68dcdee564c",
+      "durationSeconds": 7.632,
+      "provider": "Pixabay",
+      "artist": "NaturesTemper (Freesound)",
+      "providerPage": "https://pixabay.com/sound-effects/nature-wolf-howl-6310/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "role": "wolf_pack",
+      "file": "assets/audio/sources/opening_exterior_v1/originals/wolves-76744.mp3",
+      "sha256": "c7bfae565921f6a77e7bf6d98bfc4a558d30468b3e030c49f4e8995fecfb00b7",
+      "durationSeconds": 33.36,
+      "provider": "Pixabay",
+      "artist": "Paresh (Freesound)",
+      "providerPage": "https://pixabay.com/sound-effects/nature-wolves-76744/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "role": "husk_voice",
+      "file": "assets/audio/sources/opening_exterior_v1/originals/gurgling-monster-65641.mp3",
+      "sha256": "7920e7ced0f96a5e254f299981dc523870024ac34110c10f2f141a846e83c7f2",
+      "durationSeconds": 51.648,
+      "provider": "Pixabay",
+      "artist": "Darsycho (Freesound)",
+      "providerPage": "https://pixabay.com/sound-effects/horror-gurgling-monster-65641/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "role": "husk_wet",
+      "file": "assets/audio/sources/opening_exterior_v1/originals/gargles-63643.mp3",
+      "sha256": "f1204543b182276eabd94750065312cc58becd9bcdf35075ec50a04dd11b4d10",
+      "durationSeconds": 27.4808,
+      "provider": "Pixabay",
+      "artist": "Bronxio (Freesound)",
+      "providerPage": "https://pixabay.com/sound-effects/people-gargles-63643/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "role": "raider",
+      "file": "assets/audio/sources/raider_warning_v1/originals/male-grunts-and-yells-65945.mp3",
+      "sha256": "4f72ee24f13d17ded8e1c62a179902477f36ebbf2a7879dcffc46784ac9bbb69",
+      "durationSeconds": 26.304,
+      "provider": "Pixabay",
+      "artist": "jozef_sound (Freesound)",
+      "providerPage": "https://pixabay.com/sound-effects/people-male-grunts-and-yells-65945/",
+      "license": "Pixabay Content License"
+    }
+  ],
+  "assets": [
+    {
+      "durationSeconds": 7.2,
+      "channels": 2,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -20.162,
+      "sideRmsDbfs": -30.707,
+      "spectralCentroidHz": 205.99,
+      "highFrequencyEnergyRatioAbove3k": 1e-06,
+      "dcOffset": 2.622e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 6.083,
+      "id": "storm_thunder_distant_01",
+      "family": "thunder",
+      "perspective": "normal_full_range",
+      "runtimeFile": "assets/audio/production/storm_thunder_distant_01.wav",
+      "runtimeSha256": "013930109d585b625d13eada97045849e8a2f8bb7076af3862b573050d37763f",
+      "masterFile": "assets/audio/masters/storm_thunder_distant_01_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/thunder_01/01_recorded_identity.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/thunder_01/02_source_derived_distance_and_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "thunder",
+          "startSeconds": 25.55,
+          "endSeconds": 32.75
+        }
+      ],
+      "process": [
+        "real recorded identity retained as the dominant layer",
+        "source-derived lower body support with no oscillator or generated vocal",
+        "source-derived staggered early reflections for normal in-world distance",
+        "full-range event ceiling 8500 Hz; no egg-shell filter baked into this asset"
+      ]
+    },
+    {
+      "durationSeconds": 7.2,
+      "channels": 2,
+      "peakDbfs": -4.7,
+      "rmsDbfs": -18.75,
+      "sideRmsDbfs": -48.195,
+      "spectralCentroidHz": 205.77,
+      "highFrequencyEnergyRatioAbove3k": 0.0,
+      "dcOffset": 4.552e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 7.542,
+      "id": "opening_through_shell_thunder_01",
+      "family": "thunder",
+      "perspective": "opening_through_shell",
+      "runtimeFile": "assets/audio/production/opening_through_shell_thunder_01.wav",
+      "runtimeSha256": "390e9878e347baaa38481ee4318d85a4beac3469cffa4b3e0d0da5b461e71427",
+      "masterFile": "assets/audio/masters/opening_through_shell_thunder_01_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/thunder_01/01_shell_wall_transmission.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/thunder_01/02_shell_body_conduction.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "thunder",
+          "startSeconds": 25.55,
+          "endSeconds": 32.75
+        }
+      ],
+      "process": [
+        "event-specific shell wall transmission ceiling 2250 Hz",
+        "source-derived body conduction retained below 320 Hz",
+        "source-derived cavity smears at 38 and 71 ms",
+        "stereo width collapsed to 0.025 before the live opening muffle bus",
+        "no generated noise, oscillator, replacement voice, or Mama-wyvern reuse"
+      ],
+      "normalAssetId": "storm_thunder_distant_01",
+      "shellProfile": {
+        "high": 2250,
+        "body_high": 320,
+        "body_gain": 0.31,
+        "width": 0.025,
+        "smear_ms": [
+          38,
+          71
+        ]
+      }
+    },
+    {
+      "durationSeconds": 7.2,
+      "channels": 2,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -21.088,
+      "sideRmsDbfs": -32.4,
+      "spectralCentroidHz": 215.43,
+      "highFrequencyEnergyRatioAbove3k": 1e-06,
+      "dcOffset": 5.503e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 5.896,
+      "id": "storm_thunder_distant_02",
+      "family": "thunder",
+      "perspective": "normal_full_range",
+      "runtimeFile": "assets/audio/production/storm_thunder_distant_02.wav",
+      "runtimeSha256": "ee6cf82e13e839160508b0be409c58c1f34126500cb0c6fecc7cfa4ee336e01b",
+      "masterFile": "assets/audio/masters/storm_thunder_distant_02_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/thunder_02/01_recorded_identity.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/thunder_02/02_source_derived_distance_and_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "thunder",
+          "startSeconds": 40.55,
+          "endSeconds": 47.75
+        }
+      ],
+      "process": [
+        "real recorded identity retained as the dominant layer",
+        "source-derived lower body support with no oscillator or generated vocal",
+        "source-derived staggered early reflections for normal in-world distance",
+        "full-range event ceiling 8200 Hz; no egg-shell filter baked into this asset"
+      ]
+    },
+    {
+      "durationSeconds": 7.2,
+      "channels": 2,
+      "peakDbfs": -4.7,
+      "rmsDbfs": -19.017,
+      "sideRmsDbfs": -48.84,
+      "spectralCentroidHz": 218.49,
+      "highFrequencyEnergyRatioAbove3k": 0.0,
+      "dcOffset": 6.188e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 6.833,
+      "id": "opening_through_shell_thunder_02",
+      "family": "thunder",
+      "perspective": "opening_through_shell",
+      "runtimeFile": "assets/audio/production/opening_through_shell_thunder_02.wav",
+      "runtimeSha256": "3da0a02456b53e2e234350a1980bcee5cf5591510baac8aae5cff3bd4ad8ece6",
+      "masterFile": "assets/audio/masters/opening_through_shell_thunder_02_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/thunder_02/01_shell_wall_transmission.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/thunder_02/02_shell_body_conduction.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "thunder",
+          "startSeconds": 40.55,
+          "endSeconds": 47.75
+        }
+      ],
+      "process": [
+        "event-specific shell wall transmission ceiling 2250 Hz",
+        "source-derived body conduction retained below 320 Hz",
+        "source-derived cavity smears at 38 and 71 ms",
+        "stereo width collapsed to 0.025 before the live opening muffle bus",
+        "no generated noise, oscillator, replacement voice, or Mama-wyvern reuse"
+      ],
+      "normalAssetId": "storm_thunder_distant_02",
+      "shellProfile": {
+        "high": 2250,
+        "body_high": 320,
+        "body_gain": 0.31,
+        "width": 0.025,
+        "smear_ms": [
+          38,
+          71
+        ]
+      }
+    },
+    {
+      "durationSeconds": 7.0,
+      "channels": 2,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -14.516,
+      "sideRmsDbfs": -27.611,
+      "spectralCentroidHz": 482.42,
+      "highFrequencyEnergyRatioAbove3k": 0.000517,
+      "dcOffset": 0.00015324,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 7.167,
+      "id": "werewolf_distant_howl_01",
+      "family": "werewolf",
+      "perspective": "normal_full_range",
+      "runtimeFile": "assets/audio/production/werewolf_distant_howl_01.wav",
+      "runtimeSha256": "300b6efcdda8e9f2c3b5ba0ecd69dee60126c7eb84b180b65f3264a44d83a24d",
+      "masterFile": "assets/audio/masters/werewolf_distant_howl_01_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/werewolf_01/01_recorded_identity.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/werewolf_01/02_source_derived_distance_and_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "wolf_solo",
+          "startSeconds": 0.34,
+          "endSeconds": 7.53
+        }
+      ],
+      "process": [
+        "real recorded identity retained as the dominant layer",
+        "source-derived lower body support with no oscillator or generated vocal",
+        "source-derived staggered early reflections for normal in-world distance",
+        "full-range event ceiling 9200 Hz; no egg-shell filter baked into this asset"
+      ]
+    },
+    {
+      "durationSeconds": 7.0,
+      "channels": 2,
+      "peakDbfs": -4.7,
+      "rmsDbfs": -14.467,
+      "sideRmsDbfs": -41.397,
+      "spectralCentroidHz": 450.42,
+      "highFrequencyEnergyRatioAbove3k": 1e-06,
+      "dcOffset": 0.0002032,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 53.229,
+      "id": "opening_through_shell_werewolf_01",
+      "family": "werewolf",
+      "perspective": "opening_through_shell",
+      "runtimeFile": "assets/audio/production/opening_through_shell_werewolf_01.wav",
+      "runtimeSha256": "7dd284f14fc14790ce349ac68e0eb35077492c7f3a4e82a272758bf554dae066",
+      "masterFile": "assets/audio/masters/opening_through_shell_werewolf_01_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/werewolf_01/01_shell_wall_transmission.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/werewolf_01/02_shell_body_conduction.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "wolf_solo",
+          "startSeconds": 0.34,
+          "endSeconds": 7.53
+        }
+      ],
+      "process": [
+        "event-specific shell wall transmission ceiling 2550 Hz",
+        "source-derived body conduction retained below 580 Hz",
+        "source-derived cavity smears at 27 and 52 ms",
+        "stereo width collapsed to 0.03 before the live opening muffle bus",
+        "no generated noise, oscillator, replacement voice, or Mama-wyvern reuse"
+      ],
+      "normalAssetId": "werewolf_distant_howl_01",
+      "shellProfile": {
+        "high": 2550,
+        "body_high": 580,
+        "body_gain": 0.24,
+        "width": 0.03,
+        "smear_ms": [
+          27,
+          52
+        ]
+      }
+    },
+    {
+      "durationSeconds": 7.0,
+      "channels": 2,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -18.194,
+      "sideRmsDbfs": -30.931,
+      "spectralCentroidHz": 948.79,
+      "highFrequencyEnergyRatioAbove3k": 0.001486,
+      "dcOffset": 2.468e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 1.875,
+      "id": "werewolf_distant_howl_02",
+      "family": "werewolf",
+      "perspective": "normal_full_range",
+      "runtimeFile": "assets/audio/production/werewolf_distant_howl_02.wav",
+      "runtimeSha256": "661a03d084cda9b9e7d51945d9ee668038ea5ae61af2e90dd5df596d946748b3",
+      "masterFile": "assets/audio/masters/werewolf_distant_howl_02_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/werewolf_02/01_recorded_identity.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/werewolf_02/02_source_derived_distance_and_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "wolf_pack",
+          "startSeconds": 7.15,
+          "endSeconds": 14.35
+        }
+      ],
+      "process": [
+        "real recorded identity retained as the dominant layer",
+        "source-derived lower body support with no oscillator or generated vocal",
+        "source-derived staggered early reflections for normal in-world distance",
+        "full-range event ceiling 8600 Hz; no egg-shell filter baked into this asset"
+      ]
+    },
+    {
+      "durationSeconds": 7.0,
+      "channels": 2,
+      "peakDbfs": -4.7,
+      "rmsDbfs": -17.864,
+      "sideRmsDbfs": -44.56,
+      "spectralCentroidHz": 852.48,
+      "highFrequencyEnergyRatioAbove3k": 9.8e-05,
+      "dcOffset": 1.162e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 5.583,
+      "id": "opening_through_shell_werewolf_02",
+      "family": "werewolf",
+      "perspective": "opening_through_shell",
+      "runtimeFile": "assets/audio/production/opening_through_shell_werewolf_02.wav",
+      "runtimeSha256": "c641d587255f952191464dbc67bf5e023f1774538d5f784ef868c21ea84ba2fd",
+      "masterFile": "assets/audio/masters/opening_through_shell_werewolf_02_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/werewolf_02/01_shell_wall_transmission.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/werewolf_02/02_shell_body_conduction.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "wolf_pack",
+          "startSeconds": 7.15,
+          "endSeconds": 14.35
+        }
+      ],
+      "process": [
+        "event-specific shell wall transmission ceiling 2550 Hz",
+        "source-derived body conduction retained below 580 Hz",
+        "source-derived cavity smears at 27 and 52 ms",
+        "stereo width collapsed to 0.03 before the live opening muffle bus",
+        "no generated noise, oscillator, replacement voice, or Mama-wyvern reuse"
+      ],
+      "normalAssetId": "werewolf_distant_howl_02",
+      "shellProfile": {
+        "high": 2550,
+        "body_high": 580,
+        "body_gain": 0.24,
+        "width": 0.03,
+        "smear_ms": [
+          27,
+          52
+        ]
+      }
+    },
+    {
+      "durationSeconds": 1.72,
+      "channels": 2,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -17.449,
+      "sideRmsDbfs": -32.949,
+      "spectralCentroidHz": 637.19,
+      "highFrequencyEnergyRatioAbove3k": 0.001744,
+      "dcOffset": 0.00022198,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 0.979,
+      "id": "husk_distant_gargle_01",
+      "family": "husk",
+      "perspective": "normal_full_range",
+      "runtimeFile": "assets/audio/production/husk_distant_gargle_01.wav",
+      "runtimeSha256": "e70304dfce3b5ce5d0b09d8890ee70a50009509788f9eb346169ed875ed917de",
+      "masterFile": "assets/audio/masters/husk_distant_gargle_01_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/husk_01/01_recorded_identity.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/husk_01/02_source_derived_distance_and_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "husk_voice",
+          "startSeconds": 0.12,
+          "endSeconds": 1.92
+        },
+        {
+          "sourceId": "husk_wet",
+          "startSeconds": 8.58,
+          "endSeconds": 10.2
+        }
+      ],
+      "process": [
+        "real recorded identity retained as the dominant layer",
+        "source-derived lower body support with no oscillator or generated vocal",
+        "source-derived staggered early reflections for normal in-world distance",
+        "full-range event ceiling 5800 Hz; no egg-shell filter baked into this asset"
+      ]
+    },
+    {
+      "durationSeconds": 1.72,
+      "channels": 2,
+      "peakDbfs": -4.7,
+      "rmsDbfs": -16.515,
+      "sideRmsDbfs": -46.876,
+      "spectralCentroidHz": 623.8,
+      "highFrequencyEnergyRatioAbove3k": 1.5e-05,
+      "dcOffset": 9.265e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 4.229,
+      "id": "opening_through_shell_husk_01",
+      "family": "husk",
+      "perspective": "opening_through_shell",
+      "runtimeFile": "assets/audio/production/opening_through_shell_husk_01.wav",
+      "runtimeSha256": "ed9ce194875bd68dc4e2b2383b6ac87c51a28de292ad2270fd209971d91c065e",
+      "masterFile": "assets/audio/masters/opening_through_shell_husk_01_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/husk_01/01_shell_wall_transmission.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/husk_01/02_shell_body_conduction.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "husk_voice",
+          "startSeconds": 0.12,
+          "endSeconds": 1.92
+        },
+        {
+          "sourceId": "husk_wet",
+          "startSeconds": 8.58,
+          "endSeconds": 10.2
+        }
+      ],
+      "process": [
+        "event-specific shell wall transmission ceiling 2750 Hz",
+        "source-derived body conduction retained below 720 Hz",
+        "source-derived cavity smears at 18 and 41 ms",
+        "stereo width collapsed to 0.02 before the live opening muffle bus",
+        "no generated noise, oscillator, replacement voice, or Mama-wyvern reuse"
+      ],
+      "normalAssetId": "husk_distant_gargle_01",
+      "shellProfile": {
+        "high": 2750,
+        "body_high": 720,
+        "body_gain": 0.22,
+        "width": 0.02,
+        "smear_ms": [
+          18,
+          41
+        ]
+      }
+    },
+    {
+      "durationSeconds": 1.72,
+      "channels": 2,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -17.953,
+      "sideRmsDbfs": -32.873,
+      "spectralCentroidHz": 1009.32,
+      "highFrequencyEnergyRatioAbove3k": 0.031194,
+      "dcOffset": 0.00016507,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 1.688,
+      "id": "husk_distant_gargle_02",
+      "family": "husk",
+      "perspective": "normal_full_range",
+      "runtimeFile": "assets/audio/production/husk_distant_gargle_02.wav",
+      "runtimeSha256": "fb9a63bc1519c223f066f071989c2cee1b34a6570e75599d7f5bb13deedb1315",
+      "masterFile": "assets/audio/masters/husk_distant_gargle_02_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/husk_02/01_recorded_identity.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/husk_02/02_source_derived_distance_and_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "husk_voice",
+          "startSeconds": 10.35,
+          "endSeconds": 12.18
+        },
+        {
+          "sourceId": "husk_wet",
+          "startSeconds": 12.82,
+          "endSeconds": 14.42
+        }
+      ],
+      "process": [
+        "real recorded identity retained as the dominant layer",
+        "source-derived lower body support with no oscillator or generated vocal",
+        "source-derived staggered early reflections for normal in-world distance",
+        "full-range event ceiling 5600 Hz; no egg-shell filter baked into this asset"
+      ]
+    },
+    {
+      "durationSeconds": 1.72,
+      "channels": 2,
+      "peakDbfs": -4.7,
+      "rmsDbfs": -17.804,
+      "sideRmsDbfs": -48.009,
+      "spectralCentroidHz": 813.34,
+      "highFrequencyEnergyRatioAbove3k": 0.000181,
+      "dcOffset": 0.00012256,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 4.562,
+      "id": "opening_through_shell_husk_02",
+      "family": "husk",
+      "perspective": "opening_through_shell",
+      "runtimeFile": "assets/audio/production/opening_through_shell_husk_02.wav",
+      "runtimeSha256": "01d09816fedb70b4b9dbfd789dc0364a1a7a17e3c6e2eb6950ba85fde83414d5",
+      "masterFile": "assets/audio/masters/opening_through_shell_husk_02_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/husk_02/01_shell_wall_transmission.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/husk_02/02_shell_body_conduction.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "husk_voice",
+          "startSeconds": 10.35,
+          "endSeconds": 12.18
+        },
+        {
+          "sourceId": "husk_wet",
+          "startSeconds": 12.82,
+          "endSeconds": 14.42
+        }
+      ],
+      "process": [
+        "event-specific shell wall transmission ceiling 2750 Hz",
+        "source-derived body conduction retained below 720 Hz",
+        "source-derived cavity smears at 18 and 41 ms",
+        "stereo width collapsed to 0.02 before the live opening muffle bus",
+        "no generated noise, oscillator, replacement voice, or Mama-wyvern reuse"
+      ],
+      "normalAssetId": "husk_distant_gargle_02",
+      "shellProfile": {
+        "high": 2750,
+        "body_high": 720,
+        "body_gain": 0.22,
+        "width": 0.02,
+        "smear_ms": [
+          18,
+          41
+        ]
+      }
+    },
+    {
+      "durationSeconds": 1.58,
+      "channels": 2,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -15.979,
+      "sideRmsDbfs": -28.957,
+      "spectralCentroidHz": 943.93,
+      "highFrequencyEnergyRatioAbove3k": 0.00113,
+      "dcOffset": 2.439e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 4.896,
+      "id": "raider_distant_shout_01",
+      "family": "raider",
+      "perspective": "normal_full_range",
+      "runtimeFile": "assets/audio/production/raider_distant_shout_01.wav",
+      "runtimeSha256": "cc59450d903428e7890e1e264cac498e8b5fce216dd4e4f437ca589c243b30d9",
+      "masterFile": "assets/audio/masters/raider_distant_shout_01_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/raider_01/01_recorded_identity.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/raider_01/02_source_derived_distance_and_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "raider",
+          "startSeconds": 8.72,
+          "endSeconds": 10.27
+        }
+      ],
+      "process": [
+        "real recorded identity retained as the dominant layer",
+        "source-derived lower body support with no oscillator or generated vocal",
+        "source-derived staggered early reflections for normal in-world distance",
+        "full-range event ceiling 7600 Hz; no egg-shell filter baked into this asset"
+      ]
+    },
+    {
+      "durationSeconds": 1.58,
+      "channels": 2,
+      "peakDbfs": -4.7,
+      "rmsDbfs": -15.513,
+      "sideRmsDbfs": -41.652,
+      "spectralCentroidHz": 906.15,
+      "highFrequencyEnergyRatioAbove3k": 0.000392,
+      "dcOffset": 4.198e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 7.938,
+      "id": "opening_through_shell_raider_01",
+      "family": "raider",
+      "perspective": "opening_through_shell",
+      "runtimeFile": "assets/audio/production/opening_through_shell_raider_01.wav",
+      "runtimeSha256": "80466a27273623d9c59f598e7b3d7946021ce6f5b9e58d3502bae0f2efba295c",
+      "masterFile": "assets/audio/masters/opening_through_shell_raider_01_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/raider_01/01_shell_wall_transmission.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/raider_01/02_shell_body_conduction.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "raider",
+          "startSeconds": 8.72,
+          "endSeconds": 10.27
+        }
+      ],
+      "process": [
+        "event-specific shell wall transmission ceiling 3450 Hz",
+        "source-derived body conduction retained below 820 Hz",
+        "source-derived cavity smears at 16 and 34 ms",
+        "stereo width collapsed to 0.03 before the live opening muffle bus",
+        "no generated noise, oscillator, replacement voice, or Mama-wyvern reuse"
+      ],
+      "normalAssetId": "raider_distant_shout_01",
+      "shellProfile": {
+        "high": 3450,
+        "body_high": 820,
+        "body_gain": 0.16,
+        "width": 0.03,
+        "smear_ms": [
+          16,
+          34
+        ]
+      }
+    },
+    {
+      "durationSeconds": 1.58,
+      "channels": 2,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -18.594,
+      "sideRmsDbfs": -31.397,
+      "spectralCentroidHz": 783.78,
+      "highFrequencyEnergyRatioAbove3k": 0.019575,
+      "dcOffset": 0.00010287,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 1.375,
+      "id": "raider_distant_shout_02",
+      "family": "raider",
+      "perspective": "normal_full_range",
+      "runtimeFile": "assets/audio/production/raider_distant_shout_02.wav",
+      "runtimeSha256": "9bd8eb6628696094b51c62f9c25a48fa9c1185e8fc3d6d6e5dea495cd8f00181",
+      "masterFile": "assets/audio/masters/raider_distant_shout_02_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/raider_02/01_recorded_identity.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/normal/raider_02/02_source_derived_distance_and_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "raider",
+          "startSeconds": 17.55,
+          "endSeconds": 19.1
+        }
+      ],
+      "process": [
+        "real recorded identity retained as the dominant layer",
+        "source-derived lower body support with no oscillator or generated vocal",
+        "source-derived staggered early reflections for normal in-world distance",
+        "full-range event ceiling 7300 Hz; no egg-shell filter baked into this asset"
+      ]
+    },
+    {
+      "durationSeconds": 1.58,
+      "channels": 2,
+      "peakDbfs": -4.7,
+      "rmsDbfs": -18.34,
+      "sideRmsDbfs": -45.131,
+      "spectralCentroidHz": 694.42,
+      "highFrequencyEnergyRatioAbove3k": 0.002484,
+      "dcOffset": 0.00011129,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 3.875,
+      "id": "opening_through_shell_raider_02",
+      "family": "raider",
+      "perspective": "opening_through_shell",
+      "runtimeFile": "assets/audio/production/opening_through_shell_raider_02.wav",
+      "runtimeSha256": "f53e67b8b142f7617daa73c1ac19861add6308cdb507cde9477f6b2ea5140d68",
+      "masterFile": "assets/audio/masters/opening_through_shell_raider_02_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/raider_02/01_shell_wall_transmission.wav",
+        "assets/audio/sources/opening_exterior_v1/processed_stems/through_shell/raider_02/02_shell_body_conduction.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "raider",
+          "startSeconds": 17.55,
+          "endSeconds": 19.1
+        }
+      ],
+      "process": [
+        "event-specific shell wall transmission ceiling 3450 Hz",
+        "source-derived body conduction retained below 820 Hz",
+        "source-derived cavity smears at 16 and 34 ms",
+        "stereo width collapsed to 0.03 before the live opening muffle bus",
+        "no generated noise, oscillator, replacement voice, or Mama-wyvern reuse"
+      ],
+      "normalAssetId": "raider_distant_shout_02",
+      "shellProfile": {
+        "high": 3450,
+        "body_high": 820,
+        "body_gain": 0.16,
+        "width": 0.03,
+        "smear_ms": [
+          16,
+          34
+        ]
+      }
+    }
+  ],
+  "audacitySession": "assets/audio/sources/opening_exterior_v1/audacity_session/opening_exterior_v1.lof",
+  "comparisonReel": "artifacts/opening-exterior-v1/normal-vs-through-shell-comparison-reel.wav",
+  "contactSheet": "artifacts/opening-exterior-v1/normal-vs-through-shell-contact-sheet.png",
+  "trackedAnalysis": "assets/audio/sources/opening_exterior_v1/PRODUCTION_ANALYSIS.json"
+}

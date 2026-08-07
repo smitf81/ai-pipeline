@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assert, equal } from './assert.mjs';
 import { getSoundCue } from '../src/audio/soundManifest.js';
@@ -26,6 +26,63 @@ const targets = [
     duration: [0.45, 0.55],
     firstSignalMaxMs: 5,
     bus: 'enemies'
+  },
+  {
+    cueId: 'enemy.raider.distant_shout',
+    fileCount: 2,
+    channels: 2,
+    duration: [1.57, 1.59],
+    bus: 'enemies'
+  },
+  {
+    cueId: 'opening.exterior.raider_through_shell',
+    fileCount: 2,
+    channels: 2,
+    duration: [1.57, 1.59],
+    bus: 'enemies'
+  },
+  {
+    cueId: 'enemy.husk.distant_gargle',
+    fileCount: 2,
+    channels: 2,
+    duration: [1.71, 1.73],
+    bus: 'enemies'
+  },
+  {
+    cueId: 'opening.exterior.husk_through_shell',
+    fileCount: 2,
+    channels: 2,
+    duration: [1.71, 1.73],
+    bus: 'enemies'
+  },
+  {
+    cueId: 'enemy.werewolf.distant_howl',
+    fileCount: 2,
+    channels: 2,
+    duration: [6.99, 7.01],
+    bus: 'enemies'
+  },
+  {
+    cueId: 'opening.exterior.werewolf_through_shell',
+    fileCount: 2,
+    channels: 2,
+    duration: [6.99, 7.01],
+    firstSignalMaxMs: 80,
+    bus: 'enemies'
+  },
+  {
+    cueId: 'world.storm.thunder',
+    fileCount: 2,
+    channels: 2,
+    duration: [7.19, 7.21],
+    bus: 'ambience'
+  },
+  {
+    cueId: 'opening.exterior.thunder_through_shell',
+    fileCount: 2,
+    channels: 2,
+    duration: [7.19, 7.21],
+    bus: 'ambience'
   },
   {
     cueId: 'player.heartbeat',
@@ -180,11 +237,37 @@ assert(
 equal(new Set(biteAnalysis.variants.map((variant) => variant.runtimeFile)).size, 3, 'each bite variant should own a distinct runtime file');
 equal(new Set(biteAnalysis.variants.map((variant) => variant.runtimeSha256)).size, 3, 'every bite variation should contain materially distinct audio');
 
+const openingExteriorRoot = join(root, 'assets', 'audio', 'sources', 'opening_exterior_v1');
+const openingExteriorLicence = readFileSync(join(openingExteriorRoot, 'SOURCE_AND_LICENSE.md'), 'utf8');
+assert(openingExteriorLicence.includes('Pixabay Content License'), 'opening exterior source notes should retain the provider licence');
+assert(openingExteriorLicence.includes('normal assets remain reusable after opening'), 'source notes should preserve the normal-gameplay versus shell-derivative boundary');
+equal(readdirSync(join(openingExteriorRoot, 'originals')).length, 5, 'all five newly downloaded source recordings should remain unchanged');
+const openingExteriorSession = join(openingExteriorRoot, 'audacity_session', 'opening_exterior_v1.lof');
+const openingExteriorSessionFiles = [...readFileSync(openingExteriorSession, 'utf8').matchAll(/^file "([^"]+)"/gm)].map((match) => match[1]);
+equal(openingExteriorSessionFiles.length, 48, 'portable Audacity session should open two aligned stems and one master for every production asset');
+assert(openingExteriorSessionFiles.every((file) => existsSync(join(dirname(openingExteriorSession), file))), 'every portable Audacity session reference should resolve from the retained session directory');
+const openingExteriorAnalysis = JSON.parse(readFileSync(join(openingExteriorRoot, 'PRODUCTION_ANALYSIS.json'), 'utf8'));
+equal(openingExteriorAnalysis.contract, 'black-sky-bound.opening-exterior-production.v1', 'opening exterior analysis should identify its production contract');
+equal(openingExteriorAnalysis.syntheticLayersInProductionAssets, 0, 'opening exterior production assets should contain no generated replacement layers');
+equal(openingExteriorAnalysis.sources.length, 6, 'opening exterior provenance should cover five new sources and the reused retained raider recording');
+equal(openingExteriorAnalysis.assets.length, 16, 'four families should expose two normal and two through-shell assets each');
+assert(openingExteriorAnalysis.sources.every((source) => source.provider === 'Pixabay' && source.license === 'Pixabay Content License'), 'every opening exterior source should retain provider and licence metadata');
+const openingExteriorById = new Map(openingExteriorAnalysis.assets.map((asset) => [asset.id, asset]));
+for (const shellAsset of openingExteriorAnalysis.assets.filter((asset) => asset.perspective === 'opening_through_shell')) {
+  const normalAsset = openingExteriorById.get(shellAsset.normalAssetId);
+  assert(normalAsset?.perspective === 'normal_full_range', `${shellAsset.id} should derive from a retained normal full-range asset`);
+  assert(shellAsset.highFrequencyEnergyRatioAbove3k < normalAsset.highFrequencyEnergyRatioAbove3k, `${shellAsset.id} should lose high-frequency air through the authored shell wall`);
+  assert(shellAsset.sideRmsDbfs < normalAsset.sideRmsDbfs - 6, `${shellAsset.id} should collapse stereo width before the live opening muffle bus`);
+}
+
 const legacyGeneratorSource = readFileSync(join(root, 'tools', 'audio', 'generate_production_sfx.py'), 'utf8');
 const biteGeneratorSource = readFileSync(join(root, 'tools', 'audio', 'generate_player_bite_v2.py'), 'utf8');
+const openingExteriorGeneratorSource = readFileSync(join(root, 'tools', 'audio', 'generate_opening_exterior_v1.py'), 'utf8');
 assert(!legacyGeneratorSource.includes('make_bite'), 'legacy procedural generator must not retain a callable bite renderer');
 assert(!legacyGeneratorSource.includes('player_bite_snap'), 'legacy procedural generator must not overwrite source-based bite assets');
 assert(biteGeneratorSource.includes('player_bite_snap'), 'the source-based bite generator should own the production files');
+assert(openingExteriorGeneratorSource.includes('opening_through_shell'), 'the source-based opening exterior generator should own its normal/shell asset pairs');
+assert(!readFileSync(join(root, 'src', 'audio', 'proceduralOneShots.js'), 'utf8').match(/thunderRoll|creatureHowl|huskGargle|distantShout/), 'removed opening placeholders should have no callable procedural implementation');
 
 const directorSource = readFileSync(join(root, 'src', 'audio', 'audioDirector.js'), 'utf8');
 const fileVoiceSource = readFileSync(join(root, 'src', 'audio', 'audioFileVoice.js'), 'utf8');
