@@ -5925,3 +5925,36 @@ Next audio ownership:
 
 - Opening Exterior Soundscape v1 is now the active slice: replace procedural thunder, husk, werewolf and distant-raider cues with recorded sources authored through the closed-shell perspective.
 - The dedicated hatchling first cry follows separately. The current full Mama roar must stop owning that newborn release beat; Mama may answer later if the story mix supports it.
+
+## 2026-08-07 - Opening exterior soundscape v1
+
+Production replacement:
+
+- Replaced the oscillator/noise thunder roll, werewolf howl, husk gargle and distant raider shout with recorded-source required file cues. Deleted their four callable procedural renderers rather than leaving hidden fallback paths.
+- Retained five new unchanged Pixabay downloads: a dry rolling field thunder, a solo wolf, a second wolf-pack performance, a human-performed gurgling creature vocal and a real gargle recording. Reused the already retained `(Male) Grunts and Yells` raider source and its existing licence record.
+- Authored two reusable stereo normal variations per family first, then two separately rendered opening-only shell derivatives per family. No generated vocal, oscillator, synthetic noise layer or Mama-wyvern vocal is present in the sixteen new production files.
+
+Perspective ownership:
+
+- Normal cues remain `world.storm.thunder`, `enemy.werewolf.distant_howl`, `enemy.husk.distant_gargle` and `enemy.raider.distant_shout`; they retain full useful bandwidth and source-derived normal-distance reflections for post-opening events.
+- Added four explicit opening cue identities under `opening.exterior.*_through_shell`. Each has a family-specific wall-transmission ceiling, body-conduction band, source-derived cavity smear and narrowed stereo field.
+- Kept `resolveOpeningMix()` and the Audio Bus low-pass as the live shell-opening transition. The first four exterior events use the shell derivatives; `husk_now_exposed` switches back to the normal husk cue as the hatchling emerges.
+
+Source and editability evidence:
+
+- Retained provider pages, artist names, Pixabay Content License, hashes, exact source windows, processing notes and master/runtime hashes in `assets/audio/sources/opening_exterior_v1/`.
+- Added 32 aligned 24-bit source-derived stems, 16 lossless masters, 16 runtime WAVs, a portable 48-reference Audacity LOF, a normal-versus-shell A/B reel and a waveform/spectrum comparison sheet.
+- Added the deterministic source-based generator `tools/audio/generate_opening_exterior_v1.py` and pinned dependency list.
+
+Validation:
+
+- Focused opening, Audio Director and production-SFX tests pass; the production test proves every cue is required file audio, every shell asset loses high-frequency air and at least 6 dB of stereo-side energy versus its normal parent, every LOF reference resolves, and the removed placeholder modes have no callable implementation.
+- Full `npm test`, `npm run test:launcher`, `npm run build:playtest` and syntax checks pass. The curated package now contains 31 manifest-derived production audio files among 38 total files, with no raw source or source maps; the existing Vite large-chunk advisory remains unchanged.
+- Fresh exact-Desktop launcher proof drove the real six-input opening. It observed the four shell cues in authored order at live muffle values `0.800`, `0.800`, `0.800` and `0.748`, then the exposed normal husk at `0.334`.
+- The same browser run decoded all sixteen new assets as required stereo 48 kHz files, rotated both normal variants of every family at zero muffle after release, received HTTP 200 plus `Cache-Control: no-store` for every file, and reported zero audio, console, page, request or HTTP errors.
+- Evidence is in `artifacts/opening-exterior-v1/`; design and reproduction notes are in `docs/OPENING_EXTERIOR_SOUNDSCAPE_V1.md`.
+
+Next audio ownership:
+
+- The dedicated hatchling first cry remains next. It must be a newborn baby-wyvern identity and must not reuse or pitch-shift the Mama roar.
+- Egg rock/crack/break production replacements follow separately, then the opening mix/transition pass and remaining combat palette.

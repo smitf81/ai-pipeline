@@ -1,0 +1,67 @@
+# Black Sky Bound opening exterior v1 - real-source normal and through-shell pairs
+# Each window opens two aligned source-derived stems plus the 24-bit production master.
+# The normal assets remain reusable after opening; shell assets are opening-only derivatives.
+window offset 0 duration 7.2
+file "../processed_stems/normal/thunder_01/01_recorded_identity.wav"
+file "../processed_stems/normal/thunder_01/02_source_derived_distance_and_body.wav"
+file "../../../masters/storm_thunder_distant_01_master.wav"
+window offset 0 duration 7.2
+file "../processed_stems/through_shell/thunder_01/01_shell_wall_transmission.wav"
+file "../processed_stems/through_shell/thunder_01/02_shell_body_conduction.wav"
+file "../../../masters/opening_through_shell_thunder_01_master.wav"
+window offset 0 duration 7.2
+file "../processed_stems/normal/thunder_02/01_recorded_identity.wav"
+file "../processed_stems/normal/thunder_02/02_source_derived_distance_and_body.wav"
+file "../../../masters/storm_thunder_distant_02_master.wav"
+window offset 0 duration 7.2
+file "../processed_stems/through_shell/thunder_02/01_shell_wall_transmission.wav"
+file "../processed_stems/through_shell/thunder_02/02_shell_body_conduction.wav"
+file "../../../masters/opening_through_shell_thunder_02_master.wav"
+window offset 0 duration 7.0
+file "../processed_stems/normal/werewolf_01/01_recorded_identity.wav"
+file "../processed_stems/normal/werewolf_01/02_source_derived_distance_and_body.wav"
+file "../../../masters/werewolf_distant_howl_01_master.wav"
+window offset 0 duration 7.0
+file "../processed_stems/through_shell/werewolf_01/01_shell_wall_transmission.wav"
+file "../processed_stems/through_shell/werewolf_01/02_shell_body_conduction.wav"
+file "../../../masters/opening_through_shell_werewolf_01_master.wav"
+window offset 0 duration 7.0
+file "../processed_stems/normal/werewolf_02/01_recorded_identity.wav"
+file "../processed_stems/normal/werewolf_02/02_source_derived_distance_and_body.wav"
+file "../../../masters/werewolf_distant_howl_02_master.wav"
+window offset 0 duration 7.0
+file "../processed_stems/through_shell/werewolf_02/01_shell_wall_transmission.wav"
+file "../processed_stems/through_shell/werewolf_02/02_shell_body_conduction.wav"
+file "../../../masters/opening_through_shell_werewolf_02_master.wav"
+window offset 0 duration 1.72
+file "../processed_stems/normal/husk_01/01_recorded_identity.wav"
+file "../processed_stems/normal/husk_01/02_source_derived_distance_and_body.wav"
+file "../../../masters/husk_distant_gargle_01_master.wav"
+window offset 0 duration 1.72
+file "../processed_stems/through_shell/husk_01/01_shell_wall_transmission.wav"
+file "../processed_stems/through_shell/husk_01/02_shell_body_conduction.wav"
+file "../../../masters/opening_through_shell_husk_01_master.wav"
+window offset 0 duration 1.72
+file "../processed_stems/normal/husk_02/01_recorded_identity.wav"
+file "../processed_stems/normal/husk_02/02_source_derived_distance_and_body.wav"
+file "../../../masters/husk_distant_gargle_02_master.wav"
+window offset 0 duration 1.72
+file "../processed_stems/through_shell/husk_02/01_shell_wall_transmission.wav"
+file "../processed_stems/through_shell/husk_02/02_shell_body_conduction.wav"
+file "../../../masters/opening_through_shell_husk_02_master.wav"
+window offset 0 duration 1.58
+file "../processed_stems/normal/raider_01/01_recorded_identity.wav"
+file "../processed_stems/normal/raider_01/02_source_derived_distance_and_body.wav"
+file "../../../masters/raider_distant_shout_01_master.wav"
+window offset 0 duration 1.58
+file "../processed_stems/through_shell/raider_01/01_shell_wall_transmission.wav"
+file "../processed_stems/through_shell/raider_01/02_shell_body_conduction.wav"
+file "../../../masters/opening_through_shell_raider_01_master.wav"
+window offset 0 duration 1.58
+file "../processed_stems/normal/raider_02/01_recorded_identity.wav"
+file "../processed_stems/normal/raider_02/02_source_derived_distance_and_body.wav"
+file "../../../masters/raider_distant_shout_02_master.wav"
+window offset 0 duration 1.58
+file "../processed_stems/through_shell/raider_02/01_shell_wall_transmission.wav"
+file "../processed_stems/through_shell/raider_02/02_shell_body_conduction.wav"
+file "../../../masters/opening_through_shell_raider_02_master.wav"

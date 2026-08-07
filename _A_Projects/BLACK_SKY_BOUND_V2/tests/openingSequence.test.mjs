@@ -40,7 +40,7 @@ assert(opening.movementPulse > 0.9 && opening.lightPulse > 0.9, 'accepted moveme
 updateOpeningSequence({ opening, input, realDt: OPENING_SEQUENCE.timing.inputCooldownSeconds + 0.1 });
 equal(opening.acceptedInputCount, 1, 'held or unpressed input must not skip crack stages after cooldown');
 assert(
-  opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.THUNDER),
+  opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.THUNDER_THROUGH_SHELL),
   'first opened light path should be followed by a deeply muffled storm answer after audio unlock'
 );
 
@@ -55,15 +55,15 @@ equal(opening.audio.cueId, 'opening.egg.break', 'final edge should publish the s
 equal(opening.movementHistory.length, 6, 'bounded movement history should preserve all six authored struggle directions');
 assert(opening.movementHistory.every((entry) => Number.isFinite(entry.atRealSeconds)), 'movement history should timestamp authored sound anchors');
 assert(
-  opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.HUSK_GARGLE)
-    && opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.WEREWOLF_HOWL),
+  opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.HUSK_THROUGH_SHELL)
+    && opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.WEREWOLF_THROUGH_SHELL),
   'inside-shell struggle should expose distinct muffled husk and werewolf voices'
 );
 
 updateOpeningSequence({ opening, input, realDt: OPENING_SEQUENCE.timing.openingSeconds * 0.55 });
 assert(opening.openingProgress > 0.5 && opening.phase === OpeningSequencePhase.OPENING, 'shell opening should remain visible for a substantial beat');
 assert(
-  opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.RAIDER_SHOUT)
+  opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.RAIDER_THROUGH_SHELL)
     && opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.MAMA_ROAR),
   'shell opening should reveal the raider alarm before Mama answers through the widening crown'
 );
@@ -72,11 +72,8 @@ equal(opening.phase, OpeningSequencePhase.EMERGING, 'shell opening should hand o
 assert(opening.emergenceProgress > 0, 'large deterministic steps should carry overflow into emergence');
 updateOpeningSequence({ opening, input, realDt: OPENING_SEQUENCE.timing.emergenceSeconds * 0.45 });
 assert(opening.emergenceProgress > 0.5 && opening.egressProgress > 0, 'emergence should progressively move the hatchling beyond the egg anchor');
-equal(
-  opening.audio.events.filter((event) => event.cueId === OpeningSoundscapeCueId.HUSK_GARGLE).length,
-  2,
-  'the same husk voice should return after shell exposure so muffled noise becomes a readable in-game threat'
-);
+equal(opening.audio.events.filter((event) => event.cueId === OpeningSoundscapeCueId.HUSK_THROUGH_SHELL).length, 1, 'the trapped husk beat should use one opening-only shell derivative');
+equal(opening.audio.events.filter((event) => event.cueId === OpeningSoundscapeCueId.HUSK_GARGLE).length, 1, 'the exposed husk beat should return as the reusable normal gameplay cue');
 updateOpeningSequence({
   opening,
   input,

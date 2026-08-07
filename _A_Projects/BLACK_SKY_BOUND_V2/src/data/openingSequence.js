@@ -15,9 +15,13 @@ export const OpeningAudioCueId = Object.freeze({
 
 export const OpeningSoundscapeCueId = Object.freeze({
   THUNDER: 'world.storm.thunder',
+  THUNDER_THROUGH_SHELL: 'opening.exterior.thunder_through_shell',
   RAIDER_SHOUT: 'enemy.raider.distant_shout',
+  RAIDER_THROUGH_SHELL: 'opening.exterior.raider_through_shell',
   WEREWOLF_HOWL: 'enemy.werewolf.distant_howl',
+  WEREWOLF_THROUGH_SHELL: 'opening.exterior.werewolf_through_shell',
   HUSK_GARGLE: 'enemy.husk.distant_gargle',
+  HUSK_THROUGH_SHELL: 'opening.exterior.husk_through_shell',
   MAMA_ROAR: 'world.mama_wyvern.distant_roar'
 });
 
@@ -52,28 +56,28 @@ export const OPENING_SEQUENCE = Object.freeze({
   soundscape: Object.freeze([
     openingSound({
       id: 'storm_answer_after_first_light',
-      cueId: OpeningSoundscapeCueId.THUNDER,
+      cueId: OpeningSoundscapeCueId.THUNDER_THROUGH_SHELL,
       anchor: { kind: 'movement_edge', stage: 1, delaySeconds: 0.38 },
       intensity: 0.58,
       perspective: 'deeply_muffled_outside_storm'
     }),
     openingSound({
       id: 'husk_beyond_shell',
-      cueId: OpeningSoundscapeCueId.HUSK_GARGLE,
+      cueId: OpeningSoundscapeCueId.HUSK_THROUGH_SHELL,
       anchor: { kind: 'movement_edge', stage: 2, delaySeconds: 0.34 },
       intensity: 0.44,
       perspective: 'deeply_muffled_nearby_threat'
     }),
     openingSound({
       id: 'werewolf_far_ridge',
-      cueId: OpeningSoundscapeCueId.WEREWOLF_HOWL,
+      cueId: OpeningSoundscapeCueId.WEREWOLF_THROUGH_SHELL,
       anchor: { kind: 'movement_edge', stage: 4, delaySeconds: 0.28 },
       intensity: 0.5,
       perspective: 'muffled_distant_predator'
     }),
     openingSound({
       id: 'raider_alarm_at_break',
-      cueId: OpeningSoundscapeCueId.RAIDER_SHOUT,
+      cueId: OpeningSoundscapeCueId.RAIDER_THROUGH_SHELL,
       anchor: { kind: 'shell_break', delaySeconds: 0.42 },
       intensity: 0.6,
       perspective: 'partially_exposed_human_alarm'
