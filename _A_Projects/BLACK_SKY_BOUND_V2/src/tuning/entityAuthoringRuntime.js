@@ -378,6 +378,7 @@ export function createEntityAuthoringRuntime(app, options = {}) {
       eggExitAngle: anchor.exitAngle,
       exitDistanceTiles: anchor.exitDistanceTiles,
       exitDistanceWorld: anchor.exitDistanceWorld,
+      playerEntityId: app.state.game.dragonId,
       tileSize: CONFIG.tileSize
     });
     app.audio.resetOpeningObservation();

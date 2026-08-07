@@ -1,67 +1,65 @@
 # Black Sky Bound Active Slice
 
-Status: Spatial Audio Ownership Foundation v1 completed 2026-08-07. Active production slice: Baby Wyvern First Cry v1.
+Status: Baby Wyvern First Cry v1 completed 2026-08-07. Active production slice: Egg Shell Interaction Palette v1.
 
 ## Interpreted Task
 
-Continue the production-audio replacement list with the dedicated hatchling first cry. Author a normal, reusable newborn vocal first. The opening uses the same positioned point source and derives its through-egg perspective from the live enclosure, not a hand-faked distance asset.
+Continue the production-audio replacement list with the egg rock, crack and crown-break interactions. Preserve the existing embodied six-input opening timing while replacing its remaining procedural shell layers with recorded mineral, ceramic, membrane and debris sources.
 
-The spatial prerequisite is complete: player, actors, SceneObjects and world events now own transforms and audio components; point playback resolves through real listener/emitter positions, HRTF, inverse attenuation, Doppler, occlusion and shell transmission.
+Spatial ownership and Baby Wyvern First Cry are complete. The egg interaction source should be an opening-owned point/compact-area emitter at the canonical egg anchor; the player voice remains separate.
 
 ## Scope Risks
 
-- Reusing or pitch-shifting Mama's roar would preserve the current identity error.
-- A generic high-pitched fantasy squeal could sound comic or stock rather than newborn, reptilian and physically grounded.
-- Rendering a baked muffled duplicate would create two competing truths now that the egg enclosure owns transmission.
-- Mixing egg rock/crack/break replacement into the vocal slice would make in-context judgment harder.
+- A single brittle glass snap would make the thick shell feel weightless.
+- Baked stereo perspective would conflict with the egg's world-space ownership.
+- Replacing timing together with assets would obscure whether the production palette itself works.
+- Reusing one crack repeatedly across six inputs would expose stock repetition immediately.
 
 ## Best Next Slice
 
-### Baby Wyvern First Cry v1
+### Egg Shell Interaction Palette v1
 
-Objective: replace the Mama-like release roar with a production newborn baby-wyvern point cue that remains reusable after emergence and naturally acquires the opening perspective through its emitter and the egg enclosure.
+Objective: replace `opening.egg.rock`, `opening.egg.crack` and `opening.egg.break` procedural placeholders with a coherent recorded shell palette that communicates mass, layered mineral/membrane construction and escalating structural failure.
 
 Required landing points:
 
 - commercial-use-compatible source search with retained originals and provenance;
-- two or more real-source performance variations if repeat ownership justifies them;
-- a normal full-bandwidth hatchling identity authored first;
-- player-owned mouth/throat emitter placement at the release beat;
-- no Mama-vocal, procedural-vocal or centred-2D fallback;
-- in-context proof against heartbeat, positioned exterior threats, shell transition and Mama's later presence.
+- distinct recorded rock, stress/crack and crown-collapse layers;
+- enough crack variation to cover the five repeated crack inputs without an obvious cycle;
+- egg-owned spatial source at the canonical anchor;
+- no procedural shell fallback or baked stereo position;
+- in-context proof against heartbeat, exterior threats and the new hatchling first cry.
 
 Identity target:
 
-- newborn and effortful rather than dominant;
-- small reptilian chest/body, wet breath and first-use-of-lungs strain;
-- emotionally readable as the player's own first cry;
-- distinct from dinosaur, bird chirp, human baby, generic dragon and Mama.
+- thick, chalky and mineral rather than bottle glass;
+- subtle leathery/membrane strain beneath the hard shell;
+- escalating fracture density across movement stages;
+- crown break carries weight and debris without masking the first cry.
 
 Explicit exclusions:
 
-- no reuse, pitch-shift or disguised derivative of Mama's roar;
-- no baked fake-distance or baked through-shell direct layer;
-- no egg rock/crack/break replacement in this slice;
-- no broad opening remix unless required for audibility and narrative timing;
-- no procedural vocal fallback.
+- no change to opening input count or phase timing;
+- no broad opening remix beyond bounded gain/headroom needed for the new shell palette;
+- no inferno area-emitter work;
+- no replacement of heartbeat, breath or exterior threat assets.
 
 ## Definition of Done
 
 - Retained sources, licence notes, deterministic edit recipe, masters and runtime mono direct WAVs are complete.
-- The normal vocal works outside the egg; live enclosure diagnostics prove the same direct cue receives the correct closed/cracked/open transmission.
-- The release beat invokes the hatchling's stable source ref and no Mama/procedural fallback remains callable.
-- A real exact-root browser run reaches the release beat, observes a player-owned Panner voice and records zero audio, console, page, request or HTTP failures.
-- BSB unit, launcher and curated-build gates pass; human A/B material is easy to audition.
+- All six movement edges use the authored palette with no procedural fallback and no obvious immediate crack repetition.
+- Rock, crack and break resolve from the stable egg source and preserve opening timing.
+- A real exact-root browser run completes the opening, observes the spatial shell voices and records zero audio, console, page, request or HTTP failures.
+- BSB unit, launcher and curated-build gates pass; progression A/B material is easy to audition.
 
 ## Likely Follow-up Slices
 
-1. **Egg Shell Interaction Palette v1:** recorded shell/mineral/membrane rock, crack and break layers.
-2. **Opening Mix and Transition v1:** final balance across exterior threats, shell movement, first cry, Mama answer, heartbeat and ambience.
-3. **Area Emitter Projection v1:** segment/nearest-point ownership for broad sources such as the inferno wall.
+1. **Opening Mix and Transition v1:** final balance across exterior threats, shell movement, first cry, later Mama presence, heartbeat and ambience.
+2. **Area Emitter Projection v1:** segment/nearest-point ownership for broad sources such as the inferno wall.
 
 ## Confidence / Uncertainty
 
-- High confidence: the current release vocal reads as Mama and breaks player identity.
-- High confidence: normal-first plus live spatial/enclosure processing preserves reuse and a single asset truth.
-- High confidence: the completed AXIOM emitter and egg controls can tune the opening context without re-rendering the vocal.
-- Medium confidence: two normal variations are needed; determine from repeat ownership before producing unnecessary variants.
+- High confidence: the current procedural shell cues read as synthetic and underweight next to the production exterior/creature palette.
+- High confidence: the repeated crack action needs multiple source-derived variations.
+- High confidence: egg-owned mono sources plus the existing enclosure/spatial graph preserve a single perspective truth.
+- Medium confidence: ceramic and mineral sources will need a restrained membrane layer; judge from the first progression A/B rather than assuming it is always necessary.

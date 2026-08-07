@@ -31,7 +31,7 @@ const app = {
     game,
     tuning: createTuningState(),
     audioTuning: createEmptyAudioTuning(),
-    opening: createOpeningSequenceState({ enabled: true, eggTileX: 8, eggTileY: 9, tileSize: 32 }),
+    opening: createOpeningSequenceState({ enabled: true, eggTileX: 8, eggTileY: 9, playerEntityId: game.dragonId, tileSize: 32 }),
     paused: false,
     camera: { x: 4, y: 5, zoom: 2.75 }
   }

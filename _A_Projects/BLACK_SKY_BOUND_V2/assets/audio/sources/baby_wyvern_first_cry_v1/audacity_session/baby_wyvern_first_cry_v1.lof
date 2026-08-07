@@ -1,0 +1,13 @@
+# Black Sky Bound - Baby Wyvern First Cry v1
+# Normal mono point-source performances. Egg perspective is applied live by the enclosure.
+# Every stem is aligned to a 1.85 second session window.
+window offset 0 duration 1.85
+file "baby_wyvern_first_cry_01_01_strained_breath_edge.wav"
+file "baby_wyvern_first_cry_01_02_tiny_croc_distress_contour.wav"
+file "baby_wyvern_first_cry_01_03_gecko_throat_body.wav"
+file "baby_wyvern_first_cry_01_reference_mix.wav"
+window offset 0 duration 1.85
+file "baby_wyvern_first_cry_02_01_strained_breath_edge.wav"
+file "baby_wyvern_first_cry_02_02_tiny_croc_distress_contour.wav"
+file "baby_wyvern_first_cry_02_03_gecko_throat_body.wav"
+file "baby_wyvern_first_cry_02_reference_mix.wav"

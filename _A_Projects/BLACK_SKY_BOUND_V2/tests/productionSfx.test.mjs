@@ -7,6 +7,14 @@ import { getSoundCue } from '../src/audio/soundManifest.js';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const targets = [
   {
+    cueId: 'player.voice.first_cry',
+    fileCount: 2,
+    channels: 1,
+    duration: [1.84, 1.86],
+    firstSignalMaxMs: 110,
+    bus: 'player'
+  },
+  {
     cueId: 'player.bite.snap',
     fileCount: 3,
     channels: 1,

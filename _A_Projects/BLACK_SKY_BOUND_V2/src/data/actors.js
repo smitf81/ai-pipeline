@@ -28,6 +28,7 @@ export const ACTORS = Object.freeze({
     silhouette: 'grounded_wyvern',
     lightReadabilityProfileId: ACTOR_LIGHT_READABILITY_PROFILE_BY_KIND[EntityKind.YOUNG_DRAGON],
     locomotionProfileId: ACTOR_LOCOMOTION_PROFILE_IDS[EntityKind.YOUNG_DRAGON],
+    audioCueIds: Object.freeze({ firstCry: 'player.voice.first_cry' }),
     physics: {
       mass: 1.15,
       separationMass: 1.5,

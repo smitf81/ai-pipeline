@@ -125,6 +125,7 @@ export function createApp(canvas, options = {}) {
       eggWorldY: (openingDragon?.y ?? 0) * CONFIG.tileSize,
       eggRotation: openingDragon?.rotation ?? 0,
       eggExitAngle: (openingDragon?.rotation ?? 0) - Math.PI / 7.2,
+      playerEntityId: game.dragonId,
       tileSize: CONFIG.tileSize
     }),
     smokeAwakening: createSmokeAwakeningState(),

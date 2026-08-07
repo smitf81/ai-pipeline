@@ -217,6 +217,27 @@ const huskCue = debug.recentCues.find((cue) => cue.cueId === 'opening.exterior.h
 assert(huskCue.spatial?.distanceMeters > 0, 'opening cue diagnostics should prove the husk voice resolved from a world-space owner');
 equal(huskCue.soundscapeId, 'husk_beyond_shell', 'opening cue diagnostics should retain authored soundscape provenance');
 
+const playerVoiceRef = { ownerKind: 'actor', ownerId: harness.game.dragonId, emitterId: 'voice' };
+openingState.opening.phase = 'emerging';
+openingState.opening.openingProgress = 1;
+openingState.opening.emergenceProgress = 0;
+openingState.opening.audio.sequence = 3;
+openingState.opening.audio.events.push({
+  sequence: 3,
+  cueId: 'player.voice.first_cry',
+  reason: 'hatchling_first_cry_on_emergence',
+  intensity: 1,
+  soundscapeId: 'hatchling_first_cry',
+  perspective: 'newborn_voice_inside_opening_shell',
+  sourceRef: playerVoiceRef
+});
+debug = openingDirector.update(openingState, 1 / 60);
+const firstCryCue = debug.recentCues.find((cue) => cue.cueId === 'player.voice.first_cry');
+assert(firstCryCue?.spatial?.distanceMeters < 0.2, 'hatchling first cry should resolve at the player mouth instead of a distant or centred fallback');
+equal(firstCryCue.sourceRef.ownerId, harness.game.dragonId, 'hatchling first cry should retain the exact player actor source ref');
+equal(debug.recentCues.some((cue) => cue.reason === 'hatchling_first_cry_on_emergence' && cue.cueId.includes('mama')), false, 'first-cry transition must not invoke a Mama cue');
+assert(debug.audioPerspective.effective.cutoffHz < 4000, 'the normal first-cry asset should receive live opening-enclosure filtering at emergence');
+
 const lightningHarness = createHarness();
 const lightningDirector = createAudioDirector({ context: null });
 const lightningPlayer = lightningHarness.game.actors.find((actor) => actor.id === lightningHarness.game.dragonId);
