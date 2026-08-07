@@ -61,6 +61,7 @@ export function createWorldEventAudioBridge(audio) {
         observedSequence = Math.max(observedSequence, receipt.sequence);
         audio.emit(receipt.eventType ?? AudioEventType.MAMA_WYVERN_ROAR, {
           sourceEventId: receipt.sourceEventId,
+          sourceRef: receipt.sourceRef,
           cueId: receipt.cueId,
           intensity: 1
         });

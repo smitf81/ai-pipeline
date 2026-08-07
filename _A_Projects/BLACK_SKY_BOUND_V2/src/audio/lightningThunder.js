@@ -11,6 +11,7 @@ class LightningThunderBridge {
     this.pending = [];
     this.recent = [];
     this.thunderCount = 0;
+    this.emitters = new Map();
   }
 
   collect(game, timeMs) {
@@ -30,8 +31,17 @@ class LightningThunderBridge {
         delayMs,
         distanceTiles: rounded(distanceTiles),
         intensity: clamp01(0.56 + (light.intensity ?? 0.6) * 0.44),
-        sourceEventId: event.sourceEventId ?? null
+        sourceEventId: event.sourceEventId ?? null,
+        sourceRef: { ownerKind: 'worldEvent', ownerId: `lightning:${key}`, emitterId: 'thunder' }
       };
+      this.emitters.set(pending.sourceRef.ownerId, {
+        sourceRef: pending.sourceRef,
+        profileId: 'storm_spatial_v1',
+        emitterId: 'thunder',
+        x: Number(light.x) || 0,
+        y: Number(light.y) || 0,
+        heightMeters: 7
+      });
       this.pending.push(pending);
       this.pending.sort((a, b) => a.dueAtMs - b.dueAtMs);
       while (this.pending.length > 8) this.pending.shift();
@@ -56,6 +66,7 @@ class LightningThunderBridge {
         intensity: entry.intensity,
         reason: 'lightning_flash_delayed_thunder',
         lightningKey: entry.key,
+        sourceRef: entry.sourceRef,
         muffleAtPlay: muffleIntensity
       });
       const recent = this.recent.find((candidate) => candidate.key === entry.key);
@@ -76,6 +87,30 @@ class LightningThunderBridge {
       recentStrikes: this.recent.map((entry) => ({ ...entry })),
       thunderCount: this.thunderCount
     };
+  }
+
+  getSpatialEmitters() {
+    return [...this.emitters.values()].map((entry) => ({
+      sourceRef: entry.sourceRef,
+      profile: {
+        profileId: entry.profileId,
+        emitterId: entry.emitterId,
+        referenceDistanceMeters: 8,
+        maxDistanceMeters: 160,
+        rolloffFactor: 0.45,
+        panningModel: 'HRTF',
+        distanceModel: 'inverse',
+        coneInnerAngle: 360,
+        coneOuterAngle: 360,
+        coneOuterGain: 1,
+        dopplerScale: 0,
+        priority: 88,
+        transmissionClass: 'exterior_world',
+        enabled: true
+      },
+      position: { x: entry.x * 0.5, y: entry.heightMeters, z: entry.y * 0.5 },
+      forward: { x: 0, y: -1, z: 0 }
+    }));
   }
 
   rememberKey(key) {

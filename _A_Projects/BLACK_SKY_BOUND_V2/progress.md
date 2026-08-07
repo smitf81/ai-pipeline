@@ -5986,3 +5986,32 @@ Next audio ownership:
 
 - Baby Wyvern First Cry v1 is active again. It must start from a normal, reusable newborn hatchling vocal and derive any through-shell opening variation from it; it must not reuse or pitch-shift Mama's roar.
 - Spatial Audio Emitter Foundation v1 follows as a separate infrastructure slice for listener/source coordinates, reference distance, rolloff and panning.
+
+## 2026-08-07 - Spatial Audio Ownership Foundation v1
+
+Canonical ownership and runtime:
+
+- Added player-owned `AudioListener` and actor/SceneObject/world-event-owned `AudioEmitter` components. Emitters reference owner transforms through stable `{ ownerKind, ownerId, emitterId }` source refs; they do not carry duplicate world coordinates or authored distance.
+- Added one central spatial projection at the existing `0.5 m/tile` scale. It resolves listener/source positions, fixed-camera-relative bearing, distance, inverse attenuation, cones, world-geometry occlusion and radial-velocity Doppler with teleport/frame-gap rejection.
+- Rebuilt point playback as mono direct source -> voice gain -> enclosure/occlusion filter -> `PannerNode` -> bus. Listener-local heartbeat/breath/UI bypass the spatial graph; selected stereo reflections remain separate environment returns.
+- Point cues with missing owners are suppressed and diagnosed. One-shots freeze at the last valid position if their owner disappears; loops fade out.
+
+Production migrations:
+
+- Mama warning, flyover and napalm now follow her canonical trajectory and altitude; the warning begins at the off-screen path origin.
+- Raider, husk and werewolf voices plus actor impacts resolve from actor emitters and head/mouth or impact anchors.
+- Smouldering fern, bramble and fire-arrow loops resolve from SceneObjects, with a six-nearest voice budget, deterministic phase, hysteresis and 200 ms fades.
+- Lightning thunder resolves from the actual strike source. Opening enemies use their authored actor IDs, while storm/Mama opening events own explicit world-event emitters.
+- The egg is a live acoustic enclosure. Exterior voices receive shell transmission; listener-internal heartbeat and breath remain clear.
+- Retained licensed sources were re-exported as 19 mono direct assets and four stereo environment returns. Point-direct stereo assets are rejected by contract.
+
+Authoring and evidence:
+
+- AXIOM Map Forge now edits selected entity/SceneObject/spawner emitter overrides and preserves them through source -> runtime bake -> reload. Entity Studio reports the active listener, positioned emitter/Panner counts and resolved distance, pan, gain, Doppler, occlusion and virtualization state.
+- BSB unit/contract/integration tests, launcher test and curated build pass. Real-browser proof observed 119 emitters and a live Mama `PannerNode` whose position, pan, attenuation and Doppler changed during flight, with no audio/console/page/request failures.
+- The normal `LAUNCH_BSB.bat` exact-root path served the same live-source revision and all migrated audio successfully. Browser evidence is in `artifacts/spatial-audio-foundation/`; architecture and tuning ownership are recorded in `docs/SPATIAL_AUDIO_OWNERSHIP_FOUNDATION_V1.md`.
+
+Next audio ownership:
+
+- Baby Wyvern First Cry v1 resumes through the new emitter/enclosure contract: author the normal newborn vocal first, then let live shell transmission produce the opening perspective.
+- Segmented/nearest-point area emitters for the inferno wall remain explicitly deferred; its cue is classified `area` rather than disguised as a point source.

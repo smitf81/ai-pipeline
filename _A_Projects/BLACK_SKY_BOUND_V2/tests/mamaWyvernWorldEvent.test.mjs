@@ -165,9 +165,14 @@ assert(wall.damageScale < initialDamageScale && wall.damageScale >= MAMA_WYVERN_
 assert(wall.lightScale < 1 && wall.smokeScale > 0, 'residual light and smoke should burn down gradually');
 
 const director = createAudioDirector({ context: null });
-director.emit(AudioEventType.MAMA_WYVERN_ROAR, { intensity: 1 });
-director.emit(AudioEventType.MAMA_WYVERN_FLYOVER, { intensity: 1 });
-director.emit(AudioEventType.MAMA_WYVERN_NAPALM, { intensity: 1 });
+game.worldEvents.activeEvent = {
+  id: 'test_mama_audio_owner', worldX: 8, worldY: 6, forwardX: 1, forwardY: 0,
+  audioEmitter: { ...MAMA_WYVERN_WORLD_EVENT.audio.emitter }
+};
+const mamaSourceRef = { ownerKind: 'worldEvent', ownerId: 'test_mama_audio_owner', emitterId: 'voice' };
+director.emit(AudioEventType.MAMA_WYVERN_ROAR, { intensity: 1, sourceRef: mamaSourceRef });
+director.emit(AudioEventType.MAMA_WYVERN_FLYOVER, { intensity: 1, sourceRef: mamaSourceRef });
+director.emit(AudioEventType.MAMA_WYVERN_NAPALM, { intensity: 1, sourceRef: mamaSourceRef });
 director.emit(AudioEventType.MAMA_WYVERN_AFTERMATH, { intensity: 1 });
 const audioState = director.update({ game, time: 0, paused: false }, 1 / 60);
 assert(audioState.recentCues.some((cue) => cue.cueId === 'world.mama_wyvern.distant_roar'), 'audio director should resolve the distant mama roar cue');

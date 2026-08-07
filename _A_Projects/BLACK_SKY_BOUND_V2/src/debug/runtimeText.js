@@ -435,7 +435,7 @@ function buildUnitSpawnerText(spawner) {
     spawnRadiusTiles: spawner.spawnRadiusTiles,
     hitPoints: spawner.hitPoints,
     fixtureRadiusTiles: spawner.fixtureRadiusTiles,
-    fixtureEntityId: spawner.fixtureEntityId ?? null,
+    audioEmitter: spawner.audioEmitter ? { ...spawner.audioEmitter } : null, fixtureEntityId: spawner.fixtureEntityId ?? null,
     destroyed: spawner.destroyed === true,
     destroyedAt: spawner.destroyedAt ?? null,
     cooldownSeconds: Number((spawner.cooldownSeconds ?? 0).toFixed(3)),
@@ -514,5 +514,4 @@ function buildRuntimeMaterialSummary(state) {
 function uniqueProfiles(values) {
   return [...new Set(values.filter(Boolean))].sort();
 }
-
 function roundPoint(point) { return { x: Number(point.x.toFixed(3)), y: Number(point.y.toFixed(3)) }; }

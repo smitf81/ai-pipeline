@@ -100,7 +100,7 @@ try {
   if (discovery.raider?.writeStatus !== 'ready' || !discovery.raider.recipeId) throw new Error('recipe_backed_raider_target_missing');
   if (discovery.werewolf?.writeStatus !== 'manifest_missing') throw new Error('werewolf_manifest_gap_not_exposed');
   if (discovery.audio?.writeStatus !== 'ready' || discovery.audio.targetClass !== 'runtime_profile') throw new Error('opening_audio_provider_missing');
-  if (!discovery.audio.capabilities.some((entry) => entry.id === 'listener_relative_3d' && entry.status === 'not_connected')) throw new Error('opening_audio_spatial_boundary_missing');
+  if (!discovery.audio.capabilities.some((entry) => entry.id === 'listener_relative_3d' && entry.status === 'ready')) throw new Error('opening_audio_spatial_path_missing');
   if (discovery.geology?.writeStatus !== 'ready') throw new Error('stationary_geology_provider_missing');
   proof.states.discovery = summarizeDiscovery(discovery);
 
@@ -224,7 +224,7 @@ try {
   await reloadedRuntimeFrame.waitForFunction((expected) => {
     const perspective = window.BSB_V2_DEMO?.audio?.getDebugState?.().audioPerspective;
     return perspective?.tuning?.sealedCutoffHz === expected
-      && perspective.listenerRelativeAttenuation === false
+      && perspective.listenerRelativeAttenuation === true
       && perspective.spatialEmitterCount === 0;
   }, audioProposal.value);
   await reloadedRuntimeFrame.locator('#game').click({ position: { x: 360, y: 320 } });

@@ -4,6 +4,8 @@ import { buildBodyStateProjection } from '../projection/bodyStateProjection.js';
 import { AudioAssetBank } from './audioAssetBank.js';
 import { startDecodedFileVoice } from './audioFileVoice.js';
 import { AudioBusGraph, setAudioParam } from './audioBus.js';
+import { audioSourceRefKey, buildAudioSpatialFrame } from './audioSpatialFrame.js';
+import { cloneSpatialListener, startSpatialAwareOneShot, summarizeEmitter, syncSpatialLoops, updateSpatialVoices } from './audioSpatialRuntime.js';
 import {
   clamp01,
   damageIntensity,
@@ -18,9 +20,7 @@ import { createLoopState, isPlayerBodyLoopCue, loopVoiceIsActive, syncLoopSuspen
 import { resolveAudioPressureMix } from './audioPressureMix.js';
 import {
   buildProceduralLoop,
-  buildProceduralOneShot,
-  proceduralDuration,
-  randomPitch
+  proceduralDuration
 } from './proceduralAudio.js';
 import { getSoundCue, SOUND_CUES } from './soundManifest.js';
 import { AudioEventType, createAudioEventQueue, resolveActionAudioEvent } from './soundEvents.js';
@@ -64,6 +64,7 @@ export class AudioDirector {
     this.queue = createAudioEventQueue();
     this.seenWorldEvents = new WeakSet();
     this.loopVoices = new Map();
+    this.spatialLoopVoices = new Map();
     this.activeVoices = new Map();
     this.lastCueTimes = new Map();
     this.lastActionId = null;
@@ -79,7 +80,8 @@ export class AudioDirector {
     this.recentCues = [];
     this.recentErrors = [];
     this.reportedErrorKeys = new Set();
-    this.suppressed = { cooldown: 0, maxVoices: 0, disabled: 0, paused: 0 };
+    this.suppressed = { cooldown: 0, maxVoices: 0, disabled: 0, paused: 0, missingSpatialOwner: 0, virtualized: 0 };
+    this.spatialFrame = null;
     this.pressure = {
       healthPressure: 0,
       staminaPressure: 0,
@@ -142,7 +144,10 @@ export class AudioDirector {
     this.timeMs += Math.max(0, Number(dt) || 0) * 1000;
     this.bus.setPaused(paused);
     this.bus.applyUserMix(state?.playerProfile?.settings?.audio);
+    this.spatialFrame = buildAudioSpatialFrame(state, this.spatialFrame, dt, this.lightning.getSpatialEmitters());
+    this.bus.updateListener(this.spatialFrame.listener);
     this.ensureLoops(paused);
+    syncSpatialLoops(this, paused);
     this.updatePressureLoops(state);
     this.collectOpeningState(state?.opening);
     if (!paused) this.lightning.collect(state?.game, this.timeMs);
@@ -153,6 +158,7 @@ export class AudioDirector {
     this.processQueuedEvents(paused);
     if (!paused) this.lightning.process(this.timeMs, this.pressure.muffleIntensity, (cueId, payload) => this.playCue(cueId, payload));
     this.cleanupVoices();
+    updateSpatialVoices(this);
     return this.getDebugState();
   }
 
@@ -180,10 +186,11 @@ export class AudioDirector {
         intensity: event.intensity ?? (event.cueId.endsWith('.break') ? 1 : 0.72),
         reason: event.reason,
         soundscapeId: event.soundscapeId,
-        perspective: event.perspective,
+          perspective: event.perspective,
+          sourceRef: event.sourceRef,
         openingPhase: opening?.phase ?? 'released',
         muffleAtPlay: openingMix.muffle,
-        gainScale: event.soundscapeId ? openingMix.exteriorGain : 1
+        gainScale: 1
       });
     }
   }
@@ -211,6 +218,7 @@ export class AudioDirector {
         this.emit(AudioEventType.COMBAT_ENEMY_HIT, {
           cueId: game.actors?.find((actor) => actor.id === payload.target)?.creatureRecipe?.gameplay?.audioCueIds?.receivedHit, intensity: damageIntensity(payload.amount),
           target: payload.target,
+          sourceRef: { ownerKind: 'actor', ownerId: payload.target, emitterId: 'voice' },
           killed: payload.killed === true,
           damageType: payload.damageType
         });
@@ -278,6 +286,7 @@ export class AudioDirector {
           cueId: nearest.actor.creatureRecipe?.gameplay?.audioCueIds?.proximity, actorId: nearest.actor.id,
           actorType: nearest.actor.type,
           distance: nearest.distance,
+          sourceRef: { ownerKind: 'actor', ownerId: nearest.actor.id, emitterId: 'voice' },
           intensity: proximityIntensity(nearest.distance)
         });
       }
@@ -294,6 +303,7 @@ export class AudioDirector {
           cueId: actor.creatureRecipe?.gameplay?.audioCueIds?.attackWarning, actorId: actor.id,
           actorType: actor.type,
           profileId: ai.activeAttackProfileId,
+          sourceRef: { ownerKind: 'actor', ownerId: actor.id, emitterId: 'voice' },
           intensity: 0.82
         });
       }
@@ -320,6 +330,12 @@ export class AudioDirector {
     const cue = getSoundCue(cueId);
     if (!cue || !this.enabled) {
       this.suppressed.disabled += 1;
+      return false;
+    }
+    const sourceKey = audioSourceRefKey(payload.sourceRef);
+    if (cue.spatialization === 'point_mono' && !this.spatialFrame?.emitters?.[sourceKey]) {
+      this.suppressed.missingSpatialOwner += 1;
+      this.recordPlaybackError(cue, null, `unresolved_spatial_owner:${sourceKey ?? 'missing_source_ref'}`);
       return false;
     }
     const now = this.timeMs;
@@ -352,6 +368,13 @@ export class AudioDirector {
       soundscapeId: payload.soundscapeId ?? null,
       perspective: payload.perspective ?? null,
       openingPhase: payload.openingPhase ?? null,
+      sourceRef: payload.sourceRef ? { ...payload.sourceRef } : null,
+      spatial: voice.spatial ? {
+        distanceMeters: rounded(voice.spatial.distanceMeters),
+        pan: rounded(voice.spatial.pan),
+        attenuationGain: rounded(voice.spatial.attenuationGain),
+        dopplerRatio: rounded(voice.spatial.dopplerRatio)
+      } : null,
       atMs: Math.round(now)
     }, 20);
     voices.push(voice);
@@ -405,38 +428,7 @@ export class AudioDirector {
   }
 
   startOneShot(cue, payload, sequence = 0) {
-    const pitch = randomPitch(cue, payload, sequence);
-    if (!this.bus.context || !this.unlocked) {
-      const durationMs = proceduralDuration(cue);
-      return {
-        headless: true,
-        source: 'headless',
-        pitch,
-        durationMs,
-        endsAtMs: this.timeMs + durationMs,
-        startedAtMs: this.timeMs
-      };
-    }
-    const gain = this.bus.createVoiceGain(cue.bus, 0);
-    if (!gain) return null;
-    const intensity = clamp01(payload.intensity ?? 1);
-    const gainScale = Math.max(0, Number(payload.gainScale ?? 1) || 0);
-    const volume = cue.volume * (0.54 + intensity * 0.46) * gainScale;
-    setAudioParam(gain.gain, this.bus.context.currentTime, volume, 0.012);
-    const voice = cue.source === 'file'
-      ? startDecodedFileVoice(this, cue, gain, pitch, sequence)
-      : buildProceduralOneShot(this.bus.context, cue, gain, pitch);
-    if (!voice) return null;
-    return {
-      gain,
-      nodes: voice.nodes,
-      source: voice.source ?? cue.source,
-      file: voice.file ?? null,
-      pitch,
-      durationMs: voice.durationMs,
-      startedAtMs: this.timeMs,
-      endsAtMs: this.timeMs + voice.durationMs
-    };
+    return startSpatialAwareOneShot(this, cue, payload, sequence);
   }
 
   recordPlaybackError(cue, file, reason) {
@@ -471,10 +463,13 @@ export class AudioDirector {
       nearestEnemy: this.nearestEnemy,
       opening: { ...this.opening },
       audioPerspective: {
-        contract: 'black-sky-bound.audio-perspective-runtime.v0',
+        contract: 'black-sky-bound.audio-perspective-runtime.v1',
         mode: this.tuning.openingPerspective.mode,
         listenerRelativeAttenuation: this.tuning.openingPerspective.listenerRelativeAttenuation,
-        spatialEmitterCount: 0,
+        spatialEmitterCount: this.spatialFrame?.emitterCount ?? 0,
+        activePannerVoiceCount: [...this.activeVoices.values()].flat().filter((voice) => !!voice.panner).length + this.spatialLoopVoices.size,
+        listener: this.spatialFrame ? cloneSpatialListener(this.spatialFrame.listener) : null,
+        emitters: this.spatialFrame ? Object.fromEntries(Object.entries(this.spatialFrame.emitters).map(([key, emitter]) => [key, summarizeEmitter(emitter, this.spatialLoopVoices.has(key))])) : {},
         tuning: { ...this.tuning.openingPerspective },
         effective: {
           exposure: rounded(this.opening.mix?.exposure ?? 1),
@@ -495,6 +490,10 @@ export class AudioDirector {
           tonal: loop.voice?.tonal ?? false
         }
       ])),
+      spatialLoops: Object.fromEntries([...this.spatialLoopVoices.entries()].map(([key, loop]) => [key, {
+        cueId: 'world.fire.smoulder_loop', active: true, distanceMeters: rounded(loop.spatial?.distanceMeters),
+        deterministicPhaseSeconds: rounded(loop.deterministicPhaseSeconds)
+      }])),
       recentEvents: [...this.recentEvents],
       recentCues: [...this.recentCues],
       recentErrors: [...this.recentErrors],

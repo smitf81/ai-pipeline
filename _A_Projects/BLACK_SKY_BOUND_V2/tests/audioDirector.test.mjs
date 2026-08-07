@@ -202,6 +202,7 @@ const openingState = {
           intensity: 0.44,
           soundscapeId: 'husk_beyond_shell',
           perspective: 'deeply_muffled_nearby_threat'
+          ,sourceRef: { ownerKind: 'actor', ownerId: harness.game.actors.find((actor) => actor.team !== 'player').id, emitterId: 'voice' }
         }
       ]
     }
@@ -211,9 +212,9 @@ debug = openingDirector.update(openingState, 1 / 60);
 assert(recentCue(debug, 'opening.egg.crack'), 'canonical opening audio state should route through the Audio Director');
 assert(recentCue(debug, 'opening.exterior.husk_through_shell'), 'opening audio history should drain every unseen cue rather than dropping all but the latest one');
 equal(debug.opening.active, true, 'audio diagnostics should expose the active inside-egg mix');
-assert(debug.pressure.muffleIntensity > 0.7, 'inside-egg audio should use the bounded muffled mix');
+assert(debug.audioPerspective.effective.cutoffHz < 3000, 'inside-egg exterior voices should use the bounded shell-transmission filter');
 const huskCue = debug.recentCues.find((cue) => cue.cueId === 'opening.exterior.husk_through_shell');
-assert(huskCue.muffleAtPlay > 0.7, 'opening cue diagnostics should prove the first husk voice was heard through shell muffling');
+assert(huskCue.spatial?.distanceMeters > 0, 'opening cue diagnostics should prove the husk voice resolved from a world-space owner');
 equal(huskCue.soundscapeId, 'husk_beyond_shell', 'opening cue diagnostics should retain authored soundscape provenance');
 
 const lightningHarness = createHarness();

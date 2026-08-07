@@ -11,6 +11,7 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.52,
     loop: true,
     maxVoices: 1,
+    spatialization: 'stereo_bed',
     procedural: { type: 'forestNightLoop', colour: 'low_wind_ash', rateHz: 0.08 }
   }),
   'player.breath.calm': cue({
@@ -19,6 +20,7 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.52,
     loop: true,
     maxVoices: 1,
+    spatialization: 'listener_local',
     procedural: { type: 'breathCycleLoop', mode: 'calm', rateHz: 0.34 }
   }),
   'player.breath.strained': cue({
@@ -27,6 +29,7 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.72,
     loop: true,
     maxVoices: 1,
+    spatialization: 'listener_local',
     procedural: { type: 'breathCycleLoop', mode: 'strained', rateHz: 0.78 }
   }),
   'player.heartbeat': cue({
@@ -38,6 +41,7 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.62,
     loop: true,
     maxVoices: 1
+    ,spatialization: 'listener_local'
   }),
   'player.hit.light': cue({
     id: 'player.hit.light',
@@ -137,32 +141,38 @@ export const SOUND_CUES = Object.freeze({
   }),
   'combat.enemy.hit.flesh': cue({
     id: 'combat.enemy.hit.flesh',
-    files: [`${productionAssetRoot}/enemy_hit_flesh_01.wav`, `${productionAssetRoot}/enemy_hit_flesh_02.wav`],
+    files: [`${productionAssetRoot}/enemy_hit_flesh_direct_mono_01.wav`, `${productionAssetRoot}/enemy_hit_flesh_direct_mono_02.wav`],
     source: 'file',
     required: true,
     bus: 'combat',
     volume: 0.67,
     pitchRandom: [0.965, 1.035],
     cooldownMs: 70,
-    maxVoices: 4
+    maxVoices: 4,
+    spatialization: 'point_mono',
+    profileId: 'creature_impact_spatial_v1'
   }),
   'enemy.raider.near': cue({
     id: 'enemy.raider.near',
+    files: [`${productionAssetRoot}/raider_voice_direct_mono_01.wav`, `${productionAssetRoot}/raider_voice_direct_mono_02.wav`],
+    source: 'file',
+    required: true,
     bus: 'enemies',
     volume: 0.46,
     pitchRandom: [0.94, 1.08],
     cooldownMs: 900,
     maxVoices: 2,
-    procedural: { type: 'distantCall', frequencyHz: 210, durationMs: 420 }
+    spatialization: 'point_mono',
+    profileId: 'creature_voice_spatial_v1'
   }),
   'enemy.raider.warn': cue({
     id: 'enemy.raider.warn',
     files: [
-      `${productionAssetRoot}/enemy_raider_warning_01.wav`,
-      `${productionAssetRoot}/enemy_raider_warning_02.wav`,
-      `${productionAssetRoot}/enemy_raider_warning_03.wav`,
-      `${productionAssetRoot}/enemy_raider_warning_04.wav`,
-      `${productionAssetRoot}/enemy_raider_warning_05.wav`
+      `${productionAssetRoot}/enemy_raider_warning_direct_mono_01.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_direct_mono_02.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_direct_mono_03.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_direct_mono_04.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_direct_mono_05.wav`
     ],
     source: 'file',
     required: true,
@@ -170,13 +180,15 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.7,
     pitchRandom: [0.985, 1.015],
     cooldownMs: 360,
-    maxVoices: 3
+    maxVoices: 3,
+    spatialization: 'point_mono',
+    profileId: 'creature_voice_spatial_v1'
   }),
   'enemy.raider.distant_shout': cue({
     id: 'enemy.raider.distant_shout',
     files: [
-      `${productionAssetRoot}/raider_distant_shout_01.wav`,
-      `${productionAssetRoot}/raider_distant_shout_02.wav`
+      `${productionAssetRoot}/raider_voice_direct_mono_01.wav`,
+      `${productionAssetRoot}/raider_voice_direct_mono_02.wav`
     ],
     source: 'file',
     required: true,
@@ -184,13 +196,15 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.56,
     pitchRandom: [0.99, 1.01],
     cooldownMs: 1200,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono',
+    profileId: 'creature_voice_spatial_v1'
   }),
   'enemy.werewolf.distant_howl': cue({
     id: 'enemy.werewolf.distant_howl',
     files: [
-      `${productionAssetRoot}/werewolf_distant_howl_01.wav`,
-      `${productionAssetRoot}/werewolf_distant_howl_02.wav`
+      `${productionAssetRoot}/werewolf_voice_direct_mono_01.wav`,
+      `${productionAssetRoot}/werewolf_voice_direct_mono_02.wav`
     ],
     source: 'file',
     required: true,
@@ -198,13 +212,15 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.64,
     pitchRandom: [0.995, 1.005],
     cooldownMs: 1800,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono',
+    profileId: 'creature_voice_spatial_v1'
   }),
   'enemy.husk.distant_gargle': cue({
     id: 'enemy.husk.distant_gargle',
     files: [
-      `${productionAssetRoot}/husk_distant_gargle_01.wav`,
-      `${productionAssetRoot}/husk_distant_gargle_02.wav`
+      `${productionAssetRoot}/husk_voice_direct_mono_01.wav`,
+      `${productionAssetRoot}/husk_voice_direct_mono_02.wav`
     ],
     source: 'file',
     required: true,
@@ -212,13 +228,15 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.5,
     pitchRandom: [0.99, 1.01],
     cooldownMs: 1400,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono',
+    profileId: 'creature_voice_spatial_v1'
   }),
   'world.storm.thunder': cue({
     id: 'world.storm.thunder',
     files: [
-      `${productionAssetRoot}/storm_thunder_distant_01.wav`,
-      `${productionAssetRoot}/storm_thunder_distant_02.wav`
+      `${productionAssetRoot}/storm_thunder_direct_mono_01.wav`,
+      `${productionAssetRoot}/storm_thunder_direct_mono_02.wav`
     ],
     source: 'file',
     required: true,
@@ -226,13 +244,15 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.78,
     pitchRandom: [0.995, 1.005],
     cooldownMs: 900,
-    maxVoices: 2
+    maxVoices: 2,
+    spatialization: 'point_mono',
+    profileId: 'storm_spatial_v1'
   }),
   'opening.exterior.thunder_through_shell': cue({
     id: 'opening.exterior.thunder_through_shell',
     files: [
-      `${productionAssetRoot}/opening_through_shell_thunder_01.wav`,
-      `${productionAssetRoot}/opening_through_shell_thunder_02.wav`
+      `${productionAssetRoot}/storm_thunder_direct_mono_01.wav`,
+      `${productionAssetRoot}/storm_thunder_direct_mono_02.wav`
     ],
     source: 'file',
     required: true,
@@ -240,13 +260,14 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.74,
     pitchRandom: [0.998, 1.002],
     cooldownMs: 900,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono', profileId: 'storm_spatial_v1'
   }),
   'opening.exterior.werewolf_through_shell': cue({
     id: 'opening.exterior.werewolf_through_shell',
     files: [
-      `${productionAssetRoot}/opening_through_shell_werewolf_01.wav`,
-      `${productionAssetRoot}/opening_through_shell_werewolf_02.wav`
+      `${productionAssetRoot}/werewolf_voice_direct_mono_01.wav`,
+      `${productionAssetRoot}/werewolf_voice_direct_mono_02.wav`
     ],
     source: 'file',
     required: true,
@@ -254,13 +275,14 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.62,
     pitchRandom: [0.998, 1.002],
     cooldownMs: 1800,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono', profileId: 'creature_voice_spatial_v1'
   }),
   'opening.exterior.husk_through_shell': cue({
     id: 'opening.exterior.husk_through_shell',
     files: [
-      `${productionAssetRoot}/opening_through_shell_husk_01.wav`,
-      `${productionAssetRoot}/opening_through_shell_husk_02.wav`
+      `${productionAssetRoot}/husk_voice_direct_mono_01.wav`,
+      `${productionAssetRoot}/husk_voice_direct_mono_02.wav`
     ],
     source: 'file',
     required: true,
@@ -268,13 +290,14 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.54,
     pitchRandom: [0.998, 1.002],
     cooldownMs: 1400,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono', profileId: 'creature_voice_spatial_v1'
   }),
   'opening.exterior.raider_through_shell': cue({
     id: 'opening.exterior.raider_through_shell',
     files: [
-      `${productionAssetRoot}/opening_through_shell_raider_01.wav`,
-      `${productionAssetRoot}/opening_through_shell_raider_02.wav`
+      `${productionAssetRoot}/raider_voice_direct_mono_01.wav`,
+      `${productionAssetRoot}/raider_voice_direct_mono_02.wav`
     ],
     source: 'file',
     required: true,
@@ -282,40 +305,47 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.6,
     pitchRandom: [0.998, 1.002],
     cooldownMs: 1200,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono', profileId: 'creature_voice_spatial_v1'
   }),
   'world.mama_wyvern.distant_roar': cue({
     id: 'world.mama_wyvern.distant_roar',
-    files: [`${productionAssetRoot}/mama_wyvern_distant_roar_02.wav`],
+    files: [`${productionAssetRoot}/mama_wyvern_distant_roar_direct_mono_01.wav`],
+    environmentFiles: [`${productionAssetRoot}/mama_wyvern_distant_roar_environment_return_01.wav`],
     source: 'file',
     required: true,
     bus: 'enemies',
     volume: 0.7,
     pitchRandom: [0.985, 1.01],
     cooldownMs: 1200,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono', profileId: 'mama_voice_spatial_v1'
   }),
   'world.mama_wyvern.flyover_roar': cue({
     id: 'world.mama_wyvern.flyover_roar',
-    files: [`${productionAssetRoot}/mama_wyvern_flyover_roar_01.wav`],
+    files: [`${productionAssetRoot}/mama_wyvern_flyover_roar_direct_mono_01.wav`],
+    environmentFiles: [`${productionAssetRoot}/mama_wyvern_flyover_environment_return_01.wav`],
     source: 'file',
     required: true,
     bus: 'enemies',
     volume: 1,
     pitchRandom: [0.985, 1.01],
     cooldownMs: 1200,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono', profileId: 'mama_voice_spatial_v1'
   }),
   'world.mama_wyvern.napalm_projection': cue({
     id: 'world.mama_wyvern.napalm_projection',
-    files: [`${productionAssetRoot}/mama_wyvern_napalm_projection_01.wav`],
+    files: [`${productionAssetRoot}/mama_wyvern_napalm_direct_mono_01.wav`],
+    environmentFiles: [`${productionAssetRoot}/mama_wyvern_napalm_environment_return_01.wav`],
     source: 'file',
     required: true,
     bus: 'combat',
     volume: 0.96,
     pitchRandom: [0.98, 1.015],
     cooldownMs: 900,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'point_mono', profileId: 'mama_voice_spatial_v1'
   }),
   'world.mama_wyvern.inferno_aftermath': cue({
     id: 'world.mama_wyvern.inferno_aftermath',
@@ -326,7 +356,15 @@ export const SOUND_CUES = Object.freeze({
     volume: 0.58,
     pitchRandom: [0.995, 1.005],
     cooldownMs: 1600,
-    maxVoices: 1
+    maxVoices: 1,
+    spatialization: 'area'
+  }),
+  'world.fire.smoulder_loop': cue({
+    id: 'world.fire.smoulder_loop',
+    files: [`${productionAssetRoot}/smoulder_fire_direct_mono_loop_01.wav`],
+    environmentFiles: [`${productionAssetRoot}/smoulder_fire_environment_return_01.wav`],
+    source: 'file', required: true, bus: 'ambience', volume: 0.42,
+    loop: true, maxVoices: 6, spatialization: 'point_mono', profileId: 'smoulder_fire_spatial_v1'
   }),
   'ui.pause.breath_stop': cue({
     id: 'ui.pause.breath_stop',
@@ -384,7 +422,8 @@ export function validateSoundManifest(cues = SOUND_CUES) {
     if (cueDef.source === 'file' && cueDef.files.length === 0) errors.push(`file_source_missing_files:${id}`);
     if (cueDef.source === 'procedural_sfx' && !cueDef.procedural?.type) errors.push(`missing_procedural_profile:${id}`);
     if (cueDef.required && cueDef.source !== 'file') errors.push(`required_cue_must_be_file:${id}`);
-    if (cueDef.loop && cueDef.maxVoices !== 1) errors.push(`loop_must_be_single_voice:${id}`);
+    if (cueDef.loop && cueDef.maxVoices !== 1 && cueDef.spatialization !== 'point_mono') errors.push(`loop_must_be_single_voice:${id}`);
+    if (cueDef.spatialization === 'point_mono' && cueDef.source !== 'file') errors.push(`point_source_must_be_file:${id}`);
   }
   return {
     ok: errors.length === 0,
@@ -407,5 +446,7 @@ function cue(definition) {
     files: Object.freeze([...(definition.files ?? [])]),
     pitchRandom: Object.freeze([...(definition.pitchRandom ?? AUDIO_TUNING.cueDefaults.pitchRandom)]),
     procedural: definition.procedural ? Object.freeze({ ...definition.procedural }) : null
+    ,spatialization: definition.spatialization ?? 'listener_local',
+    environmentFiles: Object.freeze([...(definition.environmentFiles ?? [])])
   });
 }

@@ -47,7 +47,8 @@ export function createOpeningSequenceState(options = {}) {
       cueId: null,
       reason: null,
       events: [],
-      soundscapeFired: []
+      soundscapeFired: [],
+      emitters: createOpeningAudioEmitters(options)
     },
     diagnostics: {
       acceptedInputEdges: enabled ? 0 : required,
@@ -249,6 +250,7 @@ function queueAuthoredOpeningSoundscape(opening) {
       intensity: sound.intensity,
       soundscapeId: sound.id,
       perspective: sound.perspective
+      ,sourceRef: sound.sourceRef
     });
   }
   opening.audio.soundscapeFired = fired;
@@ -271,6 +273,7 @@ function queueOpeningAudio(opening, cueId, reason, options = {}) {
     intensity: options.intensity ?? null,
     soundscapeId: options.soundscapeId ?? null,
     perspective: options.perspective ?? null,
+    sourceRef: options.sourceRef ?? null,
     atRealSeconds: round3(opening.elapsedReal)
   };
   const events = [...(opening.audio.events ?? []), event];
@@ -281,6 +284,21 @@ function queueOpeningAudio(opening, cueId, reason, options = {}) {
     cueId,
     reason,
     events
+  };
+}
+
+function createOpeningAudioEmitters(options) {
+  const x = finite(options.eggWorldX, 0);
+  const y = finite(options.eggWorldY, 0);
+  return {
+    'opening-storm': {
+      sourceRef: { ownerKind: 'openingEvent', ownerId: 'opening-storm', emitterId: 'thunder' },
+      profileId: 'storm_spatial_v1', emitterId: 'thunder', x: x - 36, y: y - 24, anchorHeightMeters: 7
+    },
+    'opening-mama-answer': {
+      sourceRef: { ownerKind: 'openingEvent', ownerId: 'opening-mama-answer', emitterId: 'voice' },
+      profileId: 'mama_voice_spatial_v1', emitterId: 'voice', x: x + 56, y: y - 42, anchorHeightMeters: 9.2
+    }
   };
 }
 

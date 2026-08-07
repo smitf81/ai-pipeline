@@ -43,11 +43,15 @@ export function createActorView(game, entity) {
   const proceduralPose = getComponent(world, entity, ComponentType.ProceduralPose);
   const rigPose = getComponent(world, entity, ComponentType.CreatureRigPose);
   const enemyPressureAI = getComponent(world, entity, ComponentType.EnemyPressureAI);
+  const audioListener = getComponent(world, entity, ComponentType.AudioListener);
+  const audioEmitter = getComponent(world, entity, ComponentType.AudioEmitter);
   if (!kind || !transform || !health || !collider || !team) return null;
   if (kind.type === EntityKind.UNIT_SPAWNER) return null;
   return {
     id: entity,
     authoredId: game.entityAuthoredIds?.[entity] ?? null,
+    audioListener: cloneData(audioListener),
+    audioEmitter: cloneData(audioEmitter),
     type: kind.type,
     team: team.id,
     label: kind.label,

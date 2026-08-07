@@ -98,6 +98,9 @@ export function createSceneObject(entry, index = 0) {
       ...(entry.emitter ?? {})
     }
     : null;
+  const audioEmitter = def.audioEmitter || entry.audioEmitter
+    ? normalizeSceneObjectAudioEmitter({ ...(def.audioEmitter ?? {}), ...(entry.audioEmitter ?? {}) }, id)
+    : null;
   const visualTileX = tileX + visualOffsetX;
   const visualTileY = tileY + visualOffsetY;
   const blocksMovement = entry.blocksMovement ?? def.collision.blocksMovement;
@@ -167,9 +170,17 @@ export function createSceneObject(entry, index = 0) {
     traversalModifiers,
     render,
     emitter,
+    audioEmitter,
     occlusion,
     source: entry.source ?? 'scenario.sceneObjects'
   };
+}
+
+function normalizeSceneObjectAudioEmitter(value, id) {
+  if (['x', 'y', 'z', 'position'].some((field) => Object.hasOwn(value, field))) {
+    throw new Error(`scene_object_audio_emitter_duplicate_position:${id}`);
+  }
+  return { ...value };
 }
 
 function buildSceneObjectCollisionShape({ treeDefinition, treeSpatialRecipe, geologyDefinition, def, entry, x, y, widthTiles, heightTiles, id }) {

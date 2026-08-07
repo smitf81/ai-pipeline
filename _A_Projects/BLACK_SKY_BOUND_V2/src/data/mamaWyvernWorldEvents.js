@@ -66,6 +66,14 @@ export const MAMA_WYVERN_WORLD_EVENT = Object.freeze({
     smokeNodeCount: 7
   }),
   audio: Object.freeze({
+    emitter: Object.freeze({
+      emitterId: 'voice',
+      profileId: 'mama_voice_spatial_v1',
+      anchor: 'transform',
+      anchorHeightMeters: 9.2,
+      shape: 'point',
+      enabled: true
+    }),
     warningEventType: 'world.mama_wyvern.roar',
     warningCueId: 'world.mama_wyvern.distant_roar',
     flyoverEventType: 'world.mama_wyvern.flyover',
@@ -97,6 +105,7 @@ export function createMamaWyvernWorldEventState() {
       eventType: null,
       cueId: null,
       sourceEventId: null,
+      sourceRef: null,
       events: []
     },
     diagnostics: {

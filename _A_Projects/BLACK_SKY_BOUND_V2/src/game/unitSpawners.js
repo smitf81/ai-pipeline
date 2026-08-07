@@ -49,6 +49,7 @@ export function normalizeUnitSpawner(entry = {}, index = 0) {
     spawnRadiusTiles: clampNumber(entry.spawnRadiusTiles, DEFAULT_SPAWNER.spawnRadiusTiles, 0, 8),
     hitPoints: clampInteger(entry.hitPoints ?? entry.hp ?? entry.maxHp, DEFAULT_SPAWNER.hitPoints, 1, 999),
     fixtureRadiusTiles: clampNumber(entry.fixtureRadiusTiles ?? entry.fixtureRadius ?? entry.radius, DEFAULT_SPAWNER.fixtureRadiusTiles, 0.15, 3),
+    ...(entry.audioEmitter ? { audioEmitter: normalizeAudioEmitterOverride(entry.audioEmitter) } : {}),
     ...(creature ? { creature } : {})
   };
 }
@@ -90,7 +91,16 @@ export function serializeUnitSpawner(entry = {}) {
     hitPoints: normalized.hitPoints,
     fixtureRadiusTiles: normalized.fixtureRadiusTiles,
     ...(normalized.creature ? { creature: { ...normalized.creature } } : {})
+    ,...(normalized.audioEmitter ? { audioEmitter: { ...normalized.audioEmitter } } : {})
   };
+}
+
+function normalizeAudioEmitterOverride(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('unit_spawner_audio_emitter_invalid');
+  if (Object.hasOwn(value, 'x') || Object.hasOwn(value, 'y') || Object.hasOwn(value, 'z') || Object.hasOwn(value, 'position')) {
+    throw new Error('unit_spawner_audio_emitter_duplicate_position');
+  }
+  return { ...value };
 }
 
 export function cloneRuntimeUnitSpawners(entries = []) {

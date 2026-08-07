@@ -182,6 +182,24 @@ const SCENE_OBJECT_NUMBER_FIELDS = Object.freeze({
   visualOffsetX: Object.freeze({ min: -6, max: 6, fallback: 0, decimals: 3 }),
   visualOffsetY: Object.freeze({ min: -6, max: 6, fallback: 0, decimals: 3 })
 });
+const AUDIO_EMITTER_NUMBER_FIELDS = Object.freeze({
+  anchorHeightMeters: Object.freeze({ min: 0, max: 30, decimals: 3 }),
+  referenceDistanceMeters: Object.freeze({ min: 0.1, max: 160, decimals: 3 }),
+  maxDistanceMeters: Object.freeze({ min: 1, max: 500, decimals: 3 }),
+  rolloffFactor: Object.freeze({ min: 0, max: 8, decimals: 3 }),
+  coneInnerAngle: Object.freeze({ min: 0, max: 360, decimals: 2 }),
+  coneOuterAngle: Object.freeze({ min: 0, max: 360, decimals: 2 }),
+  coneOuterGain: Object.freeze({ min: 0, max: 1, decimals: 3 }),
+  dopplerScale: Object.freeze({ min: 0, max: 1, decimals: 3 }),
+  priority: Object.freeze({ min: 0, max: 255, integer: true })
+});
+const AUDIO_EMITTER_PROFILE_OPTIONS = Object.freeze([
+  ['creature_voice_spatial_v1', 'Creature voice'],
+  ['creature_impact_spatial_v1', 'Creature impact'],
+  ['smoulder_fire_spatial_v1', 'Smoulder / fire'],
+  ['mama_voice_spatial_v1', 'Mama voice'],
+  ['storm_spatial_v1', 'Storm']
+]);
 
 export const BSB_V2_AUTHORING_TOOLS = Object.freeze([
   ...Object.entries(TERRAIN).map(([id, value]) => Object.freeze({ id: `terrain:${id}`, kind: 'terrain', value: id, label: value.label, color: value.color })),
@@ -1754,6 +1772,30 @@ function createRuntime() {
     }
   }
 
+  function updateSelectedAudioEmitterField(field, value) {
+    if (!state.document || !state.selectedRecord) return status();
+    try {
+      const selected = selectedRecordData();
+      const defaults = defaultAudioEmitterForRecord(selected.kind, selected.record.type);
+      const audioEmitter = { ...defaults, ...(selected.record.audioEmitter ?? {}) };
+      if (field === 'enabled') audioEmitter.enabled = value === true || value === 'true';
+      else if (AUDIO_EMITTER_NUMBER_FIELDS[field]) audioEmitter[field] = value;
+      else audioEmitter[field] = String(value ?? '').trim();
+      state.document = patchBsbV2AuthoringRecord(
+        state.document,
+        state.selectedRecord.kind,
+        state.selectedRecord.id,
+        { audioEmitter }
+      );
+      state.saveReceipt = null;
+      state.bakeReceipt = null;
+      markDirty();
+      return status();
+    } catch (error) {
+      return fail(error?.message || error);
+    }
+  }
+
   function applyTreeOperation(operation = {}) {
     if (!state.document) throw new Error('bsb_tree_authoring_document_unavailable');
     const selectedTreeId = state.selectedRecord?.kind === 'sceneObject'
@@ -2691,8 +2733,55 @@ function createRuntime() {
       <summary>Inspector · ${escapeHtml(title)}</summary>
       <div class="bsb-v2-inspector-grid">
         ${kind === 'sceneObject' ? sceneObjectInspectorFields(record, doc) : unitInspectorFields(record, kind, doc)}
+        ${audioEmitterInspectorFields(kind, record)}
       </div>
     </details>`;
+  }
+
+  function audioEmitterInspectorFields(kind, record) {
+    const emitter = { ...defaultAudioEmitterForRecord(kind, record.type), ...(record.audioEmitter ?? {}) };
+    return `<details id="bsb-v2-audio-emitter-inspector" class="bsb-v2-card bsb-v2-audio-emitter" ${record.audioEmitter ? 'open' : ''}>
+      <summary>Audio emitter <small>${escapeHtml(emitter.profileId)}</small></summary>
+      <div class="bsb-v2-inspector-grid">
+        ${audioCheckboxField('enabled', emitter.enabled !== false)}
+        ${audioSelectField('profileId', emitter.profileId, AUDIO_EMITTER_PROFILE_OPTIONS)}
+        ${audioTextField('emitterId', emitter.emitterId)}
+        ${audioTextField('anchor', emitter.anchor)}
+        ${audioNumberField('anchorHeightMeters', emitter.anchorHeightMeters, 0, 30, 0.05)}
+        ${audioNumberField('referenceDistanceMeters', emitter.referenceDistanceMeters, 0.1, 160, 0.1)}
+        ${audioNumberField('maxDistanceMeters', emitter.maxDistanceMeters, 1, 500, 1)}
+        ${audioNumberField('rolloffFactor', emitter.rolloffFactor, 0, 8, 0.05)}
+        ${audioNumberField('coneInnerAngle', emitter.coneInnerAngle, 0, 360, 1)}
+        ${audioNumberField('coneOuterAngle', emitter.coneOuterAngle, 0, 360, 1)}
+        ${audioNumberField('coneOuterGain', emitter.coneOuterGain, 0, 1, 0.01)}
+        ${audioNumberField('dopplerScale', emitter.dopplerScale, 0, 1, 0.01)}
+        ${audioNumberField('priority', emitter.priority, 0, 255, 1)}
+      </div>
+      <p class="bsb-v2-muted">Position is resolved from this owner’s Transform. Coordinate copies are rejected.</p>
+    </details>`;
+  }
+
+  function defaultAudioEmitterForRecord(kind, type) {
+    const fire = kind === 'sceneObject' && ['fire_arrow_cluster', 'smouldering_fern', 'smouldering_bramble'].includes(type);
+    return fire
+      ? { emitterId: 'fire', profileId: 'smoulder_fire_spatial_v1', anchor: 'transform', enabled: true, anchorHeightMeters: 0.35, referenceDistanceMeters: 1.5, maxDistanceMeters: 28, rolloffFactor: 1.35, coneInnerAngle: 360, coneOuterAngle: 360, coneOuterGain: 1, dopplerScale: 0, priority: 32 }
+      : { emitterId: 'voice', profileId: 'creature_voice_spatial_v1', anchor: type === 'werewolf' ? 'mouth' : 'head', enabled: kind !== 'sceneObject', anchorHeightMeters: type === 'werewolf' ? 0.82 : 1.42, referenceDistanceMeters: 2, maxDistanceMeters: 45, rolloffFactor: 1.15, coneInnerAngle: 220, coneOuterAngle: 300, coneOuterGain: 0.42, dopplerScale: 0.65, priority: 70 };
+  }
+
+  function audioTextField(field, value) {
+    return `<label>${escapeHtml(fieldLabel(field))}<input id="bsb-v2-audio-${escapeAttr(field)}" value="${escapeAttr(value)}" onchange="BsbV2MapAuthoring.updateSelectedAudioEmitterField('${escapeAttr(field)}', this.value)"></label>`;
+  }
+
+  function audioNumberField(field, value, min, max, step) {
+    return `<label>${escapeHtml(fieldLabel(field))}<input id="bsb-v2-audio-${escapeAttr(field)}" type="number" min="${min}" max="${max}" step="${step}" value="${escapeAttr(value)}" onchange="BsbV2MapAuthoring.updateSelectedAudioEmitterField('${escapeAttr(field)}', this.value)"></label>`;
+  }
+
+  function audioSelectField(field, value, options) {
+    return `<label>${escapeHtml(fieldLabel(field))}<select id="bsb-v2-audio-${escapeAttr(field)}" onchange="BsbV2MapAuthoring.updateSelectedAudioEmitterField('${escapeAttr(field)}', this.value)">${options.map(([id, label]) => `<option value="${escapeAttr(id)}" ${id === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select></label>`;
+  }
+
+  function audioCheckboxField(field, value) {
+    return `<label class="bsb-v2-checkbox">${escapeHtml(fieldLabel(field))}<input id="bsb-v2-audio-${escapeAttr(field)}" type="checkbox" ${value ? 'checked' : ''} onchange="BsbV2MapAuthoring.updateSelectedAudioEmitterField('${escapeAttr(field)}', this.checked)"></label>`;
   }
 
   function sceneObjectInspectorFields(record, doc) {
@@ -2983,7 +3072,7 @@ function createRuntime() {
     setUndergrowthBrushField, setUndergrowthBrushSpeciesWeight, randomiseUndergrowthBrushSeed,
     clearUndergrowthBrushPreview, commitUndergrowthBrushPreview, undoLastUndergrowthBrush,
     resizeMap, resizeMapFromUI, fitViewport, zoomViewport,
-    updateTitle, selectRecord, updateSelectedRecord, removeRecord, syncProject,
+    updateTitle, selectRecord, updateSelectedRecord, updateSelectedAudioEmitterField, removeRecord, syncProject,
     updateSelectedTreeField, operateSelectedTree, updateSelectedUndergrowthField, operateSelectedUndergrowth,
     updateSelectedGeologyField, operateSelectedGeology,
     applyTransitionSequenceOperation, updateTransitionSequencePhase, updateTransitionSequenceLanding,
@@ -3176,6 +3265,7 @@ function normalizeRecords(entries, label, width, height, allowedTypes, withTeam 
       ...point(entry, width, height, `${label}:${index}`)
     };
     if (withTeam) normalized.team = normalizeAuthoringUnitTeam(entry, entry.type);
+    if (entry.audioEmitter) normalized.audioEmitter = normalizeAudioEmitter(entry.audioEmitter, `${label}:${index}`);
     if (label === 'sceneObjects' && isBsbV2TreeRecord(normalized)) return normalizeBsbV2TreeRecord(normalized);
     if (label === 'sceneObjects' && isBsbV2UndergrowthRecord(normalized)) return normalizeBsbV2UndergrowthRecord(normalized);
     if (label === 'sceneObjects' && isBsbV2GeologyRecord(normalized)) return normalizeBsbV2GeologyRecord(normalized);
@@ -3213,6 +3303,10 @@ function normalizeRecordPatch(document, kind, current, patch) {
   if (Object.hasOwn(patch, 'x')) next.x = integer(patch.x, `${kind}.x`, 0, document.width - 1);
   if (Object.hasOwn(patch, 'y')) next.y = integer(patch.y, `${kind}.y`, 0, document.height - 1);
   if (collection.withTeam && Object.hasOwn(patch, 'team')) next.team = normalizeAuthoringUnitTeam({ team: patch.team }, next.type);
+  if (Object.hasOwn(patch, 'audioEmitter')) {
+    if (patch.audioEmitter == null) delete next.audioEmitter;
+    else next.audioEmitter = normalizeAudioEmitter(patch.audioEmitter, `${kind}:${next.id}`);
+  }
 
   if (kind === 'spawner') {
     if (Object.hasOwn(patch, 'enabled')) next.enabled = boolean(patch.enabled);
@@ -3242,6 +3336,26 @@ function normalizeRecordPatch(document, kind, current, patch) {
     delete next.tree;
     delete next.undergrowth;
     delete next.geology;
+  }
+  return next;
+}
+
+function normalizeAudioEmitter(value, label) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`bsb_authoring_audio_emitter_invalid:${label}`);
+  if (['x', 'y', 'z', 'position'].some((field) => Object.hasOwn(value, field))) {
+    throw new Error(`bsb_authoring_audio_emitter_duplicate_position:${label}`);
+  }
+  const next = {
+    contract: 'black-sky-bound.audio-emitter.v1',
+    emitterId: text(value.emitterId, 'voice'),
+    profileId: text(value.profileId, 'creature_voice_spatial_v1'),
+    anchor: text(value.anchor, 'transform'),
+    enabled: value.enabled !== false,
+    ...cloneRecord(value)
+  };
+  for (const [field, spec] of Object.entries(AUDIO_EMITTER_NUMBER_FIELDS)) {
+    if (next[field] == null || next[field] === '') { delete next[field]; continue; }
+    next[field] = normalizeEditableNumber(next[field], `audioEmitter.${field}`, spec);
   }
   return next;
 }

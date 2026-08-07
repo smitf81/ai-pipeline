@@ -7,6 +7,7 @@ export function resolveOpeningMix(opening, tuning = AUDIO_TUNING) {
     return { ambience: 1, breath: 1, heartbeat: 0, muffle: 0, exteriorGain: 1, cutoffHz: maxCutoffHz, exposure: 1 };
   }
   const shellOpening = clamp01(opening.openingProgress ?? 0);
+  const shellStrain = clamp01(opening.strainProgress ?? 0);
   const emergence = clamp01(opening.emergenceProgress ?? 0);
   const settling = clamp01(opening.settleProgress ?? 0);
   const exposure = clamp01(Math.max(
@@ -15,13 +16,22 @@ export function resolveOpeningMix(opening, tuning = AUDIO_TUNING) {
     settling
   ));
   const sealedCutoffHz = Math.min(maxCutoffHz, Math.max(20, profile.sealedCutoffHz));
+  const crackedCutoffHz = Math.min(maxCutoffHz, Math.max(sealedCutoffHz, profile.crackedCutoffHz ?? 2600));
+  const crackExposure = clamp01(Math.max(shellOpening, shellStrain * profile.shellOpeningLeakWeight));
+  const openExposure = clamp01(Math.max(emergence * profile.emergenceExposureRate, settling));
+  const crackedStageCutoff = sealedCutoffHz + (crackedCutoffHz - sealedCutoffHz) * crackExposure;
+  const shellCutoff = crackedStageCutoff + (maxCutoffHz - crackedStageCutoff) * openExposure;
+  const closedGain = profile.sealedExteriorGain;
+  const crackedGain = Math.max(closedGain, profile.crackedExteriorGain ?? 0.72);
+  const crackedStageGain = closedGain + (crackedGain - closedGain) * crackExposure;
+  const shellGain = crackedStageGain + (1 - crackedStageGain) * openExposure;
   return {
     ambience: 0.16 + exposure * 0.84,
-    breath: 0.14 + exposure * 0.86,
-    heartbeat: 0.9 - exposure * 0.42,
+    breath: 1,
+    heartbeat: 0.9,
     muffle: profile.maxMuffleIntensity * (1 - exposure),
-    exteriorGain: profile.sealedExteriorGain + (1 - profile.sealedExteriorGain) * exposure,
-    cutoffHz: sealedCutoffHz + (maxCutoffHz - sealedCutoffHz) * exposure,
+    exteriorGain: shellGain,
+    cutoffHz: shellCutoff,
     exposure
   };
 }
@@ -35,6 +45,7 @@ export function summarizePayload(payload) {
   for (const [key, value] of Object.entries(payload ?? {})) {
     if (typeof value === 'number') summary[key] = rounded(value);
     else if (typeof value === 'string' || typeof value === 'boolean' || value == null) summary[key] = value;
+    else if (key === 'sourceRef' && value?.ownerKind && value?.ownerId) summary[key] = { ...value };
   }
   return summary;
 }

@@ -14,7 +14,7 @@ import { resolveOpeningMix } from '../src/audio/audioStateMath.js';
 import { readAudioTuningFile, writeAudioTuningFile } from '../tools/tuningApi.mjs';
 
 let tuning = createEmptyAudioTuning();
-equal(getOpeningAudioTuningFields().length, 5, 'opening audio provider should expose only the five real runtime controls');
+equal(getOpeningAudioTuningFields().length, 8, 'egg enclosure provider should expose closed/cracked transmission and transition controls');
 
 const unknown = setAudioTuningValue(tuning, 'openingPerspective.fakeDistance', 2);
 equal(unknown.ok, false, 'unknown audio tuning paths should fail before persistence');
@@ -31,7 +31,7 @@ equal(listAudioTuningOverridePaths(tuning).join(','), 'openingPerspective.sealed
 
 const resolved = resolveAudioTuning(tuning);
 equal(resolved.openingPerspective.sealedCutoffHz, 240, 'resolved runtime tuning should consume the override');
-equal(resolved.openingPerspective.listenerRelativeAttenuation, false, 'opening perspective must not claim listener-relative 3D attenuation');
+equal(resolved.openingPerspective.listenerRelativeAttenuation, true, 'opening perspective should expose the connected listener-relative 3D path');
 
 const sealed = resolveOpeningMix({ released: false, openingProgress: 0, emergenceProgress: 0, settleProgress: 0 }, resolved);
 equal(sealed.cutoffHz, 240, 'fully sealed opening mix should use the authored shell cutoff');

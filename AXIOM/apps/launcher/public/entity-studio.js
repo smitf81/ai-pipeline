@@ -551,10 +551,16 @@ function renderDetails() {
       const notice = element(
         'div',
         'entity-studio__notice',
-        `Opening audio · authored distance · non-positional · ${Math.round(Number(audio.effective?.cutoffHz || audio.tuning?.sealedCutoffHz || 0))} Hz shell · ${Math.round(Number(audio.effective?.exteriorGain || audio.tuning?.sealedExteriorGain || 0) * 100)}% exterior level · 3D falloff not active`
+        `World audio · ${Number(audio.spatialEmitterCount || 0)} transform-owned emitters · listener ${formatVector(audio.listener?.position)} · ${Math.round(Number(audio.effective?.cutoffHz || audio.tuning?.sealedCutoffHz || 0))} Hz egg shell · ${Number(audio.activePannerVoiceCount || 0)} live HRTF voices`
       );
       notice.dataset.testid = 'entity-studio-audio-perspective';
-      notice.dataset.tone = 'warn';
+      notice.dataset.tone = 'ready';
+      selection.append(notice);
+    }
+    if (projection.audioEmitter) {
+      const emitter = projection.audioEmitter;
+      const notice = element('div', 'entity-studio__notice', `Audio emitter · ${emitter.profileId} · ${formatValue(emitter.distanceMeters)} m · pan ${formatValue(emitter.pan)} · gain ${formatValue(emitter.attenuationGain)} · Doppler ${formatValue(emitter.dopplerRatio)}`);
+      notice.dataset.testid = 'entity-studio-audio-emitter';
       selection.append(notice);
     }
   }
@@ -716,6 +722,11 @@ function pathValue(source, path) {
 
 function formatValue(value) {
   return typeof value === 'number' ? Number(value.toFixed(4)).toString() : String(value);
+}
+
+function formatVector(vector) {
+  if (!vector) return 'unresolved';
+  return `${formatValue(vector.x)}, ${formatValue(vector.y)}, ${formatValue(vector.z)} m`;
 }
 
 function element(tag, className = '', text = null) {

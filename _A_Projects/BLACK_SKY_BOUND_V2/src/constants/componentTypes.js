@@ -1,6 +1,8 @@
 export const ComponentType = Object.freeze({
   Kind: 'Kind',
   Transform: 'Transform',
+  AudioListener: 'AudioListener',
+  AudioEmitter: 'AudioEmitter',
   Motion: 'Motion',
   Stamina: 'Stamina',
   DodgeState: 'DodgeState',

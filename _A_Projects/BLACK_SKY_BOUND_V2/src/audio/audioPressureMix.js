@@ -21,7 +21,7 @@ export function resolveAudioPressureMix(state, tuning, ambienceVolume) {
   );
   const openingMix = resolveOpeningMix(state?.opening, tuning);
   const healthCutoffHz = muffle.maxCutoffHz - (muffle.maxCutoffHz - muffle.minCutoffHz) * muffleIntensity;
-  const muffleCutoffHz = Math.min(healthCutoffHz, openingMix.cutoffHz);
+  const muffleCutoffHz = healthCutoffHz;
   const bodyLoopScale = state?.paused === true ? 0 : 1;
   return {
     openingMix,
@@ -30,7 +30,7 @@ export function resolveAudioPressureMix(state, tuning, ambienceVolume) {
       healthPressure: rounded(bodyState.health.pressure),
       staminaPressure: rounded(bodyState.stamina.pressure),
       hitPulse: rounded(bodyState.health.hitPulse),
-      muffleIntensity: rounded(Math.max(muffleIntensity, openingMix.muffle)),
+      muffleIntensity: rounded(muffleIntensity),
       muffleCutoffHz: Math.round(muffleCutoffHz),
       breathStrain: rounded(breathStrain),
       heartbeat: rounded(Math.max(heartbeat, openingMix.heartbeat))

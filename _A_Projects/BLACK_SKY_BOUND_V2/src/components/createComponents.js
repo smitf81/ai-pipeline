@@ -7,6 +7,7 @@ import { createBodyContactRig } from './bodyContactComponents.js';
 export const Components = Object.freeze({
   kind(type, label) { return { type, label }; },
   transform(x, y, rotation = 0) { return { x, y, rotation }; },
+  audioListener(data = {}) { return { contract: 'black-sky-bound.audio-listener.v1', earHeightMeters: 0.35, orientationPolicy: 'fixed_camera_planar_bearing', ...data }; }, audioEmitter(data = {}) { return { contract: 'black-sky-bound.audio-emitter.v1', emitterId: 'voice', anchor: 'head', enabled: true, ...data }; },
   motion(speed) { return { speed }; },
   stamina(profile) {
     const max = Math.max(0, finiteNumber(profile?.stamina?.max, 0));
@@ -498,6 +499,4 @@ function finiteNumber(value, fallback) {
   return Number.isFinite(numeric) ? numeric : fallback;
 }
 
-function clamp01(value) {
-  return Math.max(0, Math.min(1, value));
-}
+function clamp01(value) { return Math.max(0, Math.min(1, value)); }
