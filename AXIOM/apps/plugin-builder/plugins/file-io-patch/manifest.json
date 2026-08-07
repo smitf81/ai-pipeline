@@ -1,0 +1,76 @@
+{
+  "id": "file-io-patch",
+  "name": "Viewport Navigation Plugin",
+  "version": "0.1.0",
+  "description": "Implementation-bearing plugin proposal for: BoundedSkillDocumentSaver is currently only a stub. Generate implementation-bearing code for a bounded document saver command that accepts path, content, and overwrite, enforces safe relative paths, and returns a save receipt.",
+  "author": {
+    "name": "AXIOM Agent",
+    "source": "axiom-agent"
+  },
+  "entrypoint": "src/index.js",
+  "capabilities": [
+    "ui-command-palette",
+    "event-subscribe"
+  ],
+  "permissions": {
+    "editor": {
+      "commands": [
+        "register"
+      ]
+    },
+    "storage": {
+      "namespaces": [
+        "plugin-local"
+      ]
+    }
+  },
+  "mcp_tools": [],
+  "lifecycle_hooks": {
+    "on_load": "onLoad",
+    "on_activate": "onActivate",
+    "on_deactivate": "onDeactivate",
+    "on_unload": "onUnload"
+  },
+  "event_subscriptions": [],
+  "ui_surfaces": [],
+  "axiom_runtime": {
+    "min_version": "1.0.0",
+    "apis": []
+  },
+  "lifecycle": {
+    "status": "rejected",
+    "created_at": "2026-05-11T15:00:55.779Z",
+    "rejected_at": "2026-05-18T12:59:03.263Z"
+  },
+  "safety": {
+    "may_modify_core": false,
+    "sandboxed": true,
+    "timeout_ms": 30000
+  },
+  "provenance": {
+    "request_id": "53643697-5645-49ee-85a4-5d2cca1af426",
+    "generated_by": "axiom-plugin-builder",
+    "template_used": "editor",
+    "generated_from": "capability_gap"
+  },
+  "compatibility": {
+    "os": [
+      "any"
+    ],
+    "node_version": ">=18"
+  },
+  "validation_status": {
+    "passed": false,
+    "validator_version": "1.0.0",
+    "schema_version": "1.0.0",
+    "errors": [
+      {
+        "code": "PLACEHOLDER_ONLY_UNSUPPORTED_GAP",
+        "message": "Placeholder scaffold only; no implementation contract, validation, package, registration, activation, or persistence evidence.",
+        "severity": "error"
+      }
+    ],
+    "warnings": [],
+    "checksum": null
+  }
+}

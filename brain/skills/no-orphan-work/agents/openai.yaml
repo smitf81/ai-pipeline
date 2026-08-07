@@ -1,0 +1,5 @@
+interface:
+  display_name: "No Orphan Work"
+  short_description: "Prevent disconnected artifacts and routes."
+  default_prompt: "Use $no-orphan-work to prove this artifact has an owner, consumer, activation path, and validation path."
+

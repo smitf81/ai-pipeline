@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ACE SafeBoot Dev Console</title>
+  <style>
+    :root {
+      --bg:#060914; --panel:#0d1320; --panel2:#121c2f; --panel3:#17243b;
+      --border:#26364f; --text:#e8f0ff; --muted:#91a3bf;
+      --accent:#55d7ff; --violet:#b388ff; --ok:#6be89e; --warn:#ffd166; --bad:#ff6b7a;
+      --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+      --sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;height:100vh;overflow:hidden;color:var(--text);font-family:var(--sans);
+      background:radial-gradient(circle at top left,rgba(85,215,255,.14),transparent 34rem),
+                 radial-gradient(circle at bottom right,rgba(179,136,255,.11),transparent 36rem),var(--bg);
+    }
+    button,input,textarea{font:inherit;color:inherit}
+    button{border:1px solid var(--border);background:linear-gradient(180deg,var(--panel3),var(--panel2));border-radius:12px;padding:8px 11px;cursor:pointer}
+    button:hover{border-color:var(--accent)}
+    button.primary{border-color:rgba(85,215,255,.65)}
+    button.ok{border-color:rgba(107,232,158,.65)}
+    button.bad{border-color:rgba(255,107,122,.65)}
+    input,textarea{width:100%;border:1px solid var(--border);background:rgba(3,7,15,.55);border-radius:12px;padding:8px 10px;outline:none}
+    textarea{resize:vertical;min-height:82px}
+    h1{margin:0;font-size:16px}
+    h2{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.09em}
+    .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .app{display:grid;grid-template-columns:330px 1fr 500px;grid-template-rows:62px 1fr;gap:10px;height:100vh;padding:10px}
+    header{grid-column:1/4;border:1px solid var(--border);background:rgba(13,19,32,.9);border-radius:18px;padding:9px 13px;display:flex;justify-content:space-between;align-items:center}
+    .panel{min-height:0;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:rgba(13,19,32,.86);display:flex;flex-direction:column}
+    .bar{padding:10px 11px;border-bottom:1px solid var(--border);background:rgba(18,28,47,.75);display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .content{padding:10px;overflow:auto;min-height:0}
+    .row{display:flex;gap:7px;align-items:center}
+    .field{margin-bottom:9px}
+    label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+    .pill{padding:4px 8px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-size:11px;white-space:nowrap}
+    .pill.ok{color:var(--ok);border-color:rgba(107,232,158,.45)}
+    .pill.bad{color:var(--bad);border-color:rgba(255,107,122,.45)}
+    .pill.warn{color:var(--warn);border-color:rgba(255,209,102,.45)}
+    .mono{font-family:var(--mono);font-size:12px;line-height:1.45;white-space:pre-wrap}
+    .main{display:grid;grid-template-rows:auto 1fr auto;min-height:0}
+    .history{overflow:auto;padding:13px;display:flex;flex-direction:column;gap:10px}
+    .msg{border:1px solid var(--border);background:rgba(18,28,47,.72);border-radius:15px;padding:10px;white-space:pre-wrap;line-height:1.42;max-width:94%}
+    .msg.user{align-self:flex-end;border-color:rgba(85,215,255,.4);background:rgba(85,215,255,.12)}
+    .msg.sys{align-self:stretch;max-width:100%;border-color:rgba(255,209,102,.3);background:rgba(255,209,102,.07);color:#fff0bf}
+    .meta{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+    .composer{border-top:1px solid var(--border);background:rgba(18,28,47,.72);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+    .right{display:grid;grid-template-rows:1fr 1fr;gap:10px;min-height:0}
+    .tabs{display:flex;gap:5px}
+    .tab.active{border-color:rgba(85,215,255,.55);background:rgba(85,215,255,.08)}
+    .hidden{display:none!important}
+    .card{border:1px solid var(--border);border-radius:14px;background:rgba(18,28,47,.58);padding:9px;margin-bottom:8px}
+    .card h3{margin:0 0 6px;font-size:13px}
+    .kv{display:grid;grid-template-columns:120px 1fr;gap:5px;font-size:12px}
+    .key{color:var(--muted)}
+    .treeItem{padding:6px 8px;border:1px solid transparent;border-radius:10px;cursor:pointer;font-family:var(--mono);font-size:12px;color:#c8d8f3}
+    .treeItem:hover{border-color:var(--border);background:rgba(85,215,255,.06)}
+    .treeItem.selected{border-color:rgba(85,215,255,.5);background:rgba(85,215,255,.12)}
+    .editor{width:100%;height:100%;min-height:260px;font-family:var(--mono);font-size:12px}
+    pre{margin:0}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>ACE SafeBoot Dev Console v0</h1>
+      <div class="sub">Independent repair cockpit · ACE intent injection · boot/QA observability · workspace-scoped emergency tools</div>
+    </div>
+    <div class="row">
+      <span id="acePill" class="pill warn">ACE unknown</span>
+      <span id="bootPill" class="pill warn">Boot unknown</span>
+      <button id="snapshotBtn">Refresh</button>
+      <button id="pollBtn" class="primary">Auto-poll: off</button>
+    </div>
+  </header>
+
+  <aside class="panel">
+    <div class="bar"><h2>SafeBoot config</h2><button id="saveBtn" class="primary">Save</button></div>
+    <div class="content">
+      <div class="field"><label>ACE endpoint</label><input id="aceEndpoint" placeholder="http://127.0.0.1:3000"/></div>
+      <div class="field"><label>Workspace folder path</label><input id="workspacePath" placeholder="C:\Users\felix\Desktop\Automated_AI_Pipeline"/></div>
+      <div class="row">
+        <button id="treeBtn">Load tree</button>
+        <button id="eventsBtn">Events</button>
+      </div>
+      <hr style="border-color:var(--border);opacity:.5;margin:12px 0">
+      <div class="field">
+        <label>Selected/open file</label>
+        <div id="openFile" class="mono pill">No file open</div>
+      </div>
+      <div id="tree" class="mono"></div>
+    </div>
+  </aside>
+
+  <main class="panel main">
+    <div class="bar">
+      <h2>Intent injection / repair cockpit</h2>
+      <div class="row">
+        <button id="bootStatusBtn">Boot</button>
+        <button id="repairStateBtn">Repair loop</button>
+        <button id="qaLeadBtn">QA lead</button>
+      </div>
+    </div>
+    <div id="history" class="history"></div>
+    <div class="composer">
+      <textarea id="intentText" placeholder="Inject intent into ACE. Example: Boot UI is broken; inspect current boot-status and repair missing client asset through the approved UI boot integrity lane."></textarea>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <button id="sendIntentBtn" class="primary">Send intent</button>
+        <button id="triggerRepairBtn" class="ok">Trigger repair state</button>
+      </div>
+    </div>
+  </main>
+
+  <aside class="right">
+    <section class="panel">
+      <div class="bar">
+        <h2>ACE state / canonical receipts</h2>
+        <div class="tabs">
+          <button class="tab active" data-tab="snapshot">Snapshot</button>
+          <button class="tab" data-tab="file">File</button>
+          <button class="tab" data-tab="cli">CLI</button>
+        </div>
+      </div>
+      <div id="snapshotTab" class="content mono"></div>
+      <div id="fileTab" class="content hidden">
+        <div class="row" style="margin-bottom:8px">
+          <button id="saveFileBtn" class="ok">Save file</button>
+          <span id="fileHash" class="pill">hash unknown</span>
+        </div>
+        <textarea id="editor" class="editor"></textarea>
+      </div>
+      <div id="cliTab" class="content hidden">
+        <div class="field">
+          <label>Command runs from workspace only</label>
+          <input id="cliCommand" placeholder="git status --short"/>
+        </div>
+        <button id="runCliBtn">Run command</button>
+        <pre id="cliOut" class="mono" style="margin-top:10px"></pre>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="bar"><h2>Visible debug</h2><span id="statePill" class="pill">idle</span></div>
+      <pre id="debug" class="content mono"></pre>
+    </section>
+  </aside>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const state = {
+  settings:null,
+  snapshot:null,
+  pollTimer:null,
+  openPath:null,
+  openHash:null
+};
+
+function time(){return new Date().toLocaleTimeString();}
+function debug(msg,obj){
+  $("debug").textContent += `[${time()}] ${msg}` + (obj ? `\n${typeof obj === "string" ? obj : JSON.stringify(obj,null,2)}` : "") + "\n\n";
+  $("debug").scrollTop = $("debug").scrollHeight;
+}
+function message(kind, who, text){
+  const div=document.createElement("div");
+  div.className=`msg ${kind}`;
+  div.innerHTML=`<div class="meta"><span>${esc(who)}</span><span>${time()}</span></div><div></div>`;
+  div.lastChild.textContent=text;
+  $("history").appendChild(div);
+  $("history").scrollTop=$("history").scrollHeight;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function api(route, opts={}){
+  const res=await fetch(route,{...opts,headers:{"Content-Type":"application/json",...(opts.headers||{})}});
+  const data=await res.json();
+  if(!res.ok||data.ok===false) throw new Error(data.details||data.error||res.statusText);
+  return data;
+}
+async function loadSettings(){
+  const data=await api("/api/settings");
+  state.settings=data.settings;
+  $("aceEndpoint").value=data.settings.aceEndpoint||"";
+  $("workspacePath").value=data.settings.workspacePath||"";
+  debug("Settings loaded", data.settings);
+}
+async function saveSettings(){
+  const settings={
+    aceEndpoint:$("aceEndpoint").value.trim(),
+    workspacePath:$("workspacePath").value.trim()
+  };
+  const data=await api("/api/settings",{method:"POST",body:JSON.stringify({settings})});
+  state.settings=data.settings;
+  debug("Settings saved", data.settings);
+}
+function summarizeRoute(result){
+  if(!result) return "missing";
+  return `${result.ok ? "OK" : "FAIL"} ${result.status || ""} ${result.statusText || ""}`.trim();
+}
+function classifyBoot(snapshot){
+  const boot=snapshot?.routes?.["/api/spatial/boot-status"];
+  const health=snapshot?.routes?.["/api/health"];
+  const data=boot?.data || health?.data || {};
+  const text=JSON.stringify(data).toLowerCase();
+  if(!snapshot?.reachable) return "offline";
+  if(text.includes("safe") || text.includes("blocked") || text.includes("missing_client_asset") || text.includes("failure")) return "degraded";
+  return "reachable";
+}
+function renderSnapshot(snapshot){
+  state.snapshot=snapshot;
+  const boot=classifyBoot(snapshot);
+  $("acePill").className=`pill ${snapshot.reachable?"ok":"bad"}`;
+  $("acePill").textContent=snapshot.reachable?"ACE reachable":"ACE offline";
+  $("bootPill").className=`pill ${boot==="reachable"?"ok":boot==="degraded"?"warn":"bad"}`;
+  $("bootPill").textContent=`Boot ${boot}`;
+
+  const compact={
+    checkedAt:snapshot.checkedAt,
+    endpoint:snapshot.endpoint,
+    reachable:snapshot.reachable,
+    bootStatus:summarizeRoute(snapshot.routes["/api/spatial/boot-status"]),
+    health:summarizeRoute(snapshot.routes["/api/health"]),
+    runtime:summarizeRoute(snapshot.routes["/api/spatial/runtime"]),
+    workspace:summarizeRoute(snapshot.routes["/api/spatial/workspace"]),
+    truthKernel:summarizeRoute(snapshot.routes["/api/spatial/truth-kernel"]),
+    repairLoop:summarizeRoute(snapshot.routes["/api/qa/repair-loop/state"]),
+    qaLead:summarizeRoute(snapshot.routes["/api/qa/lead/state"]),
+    qaRuns:summarizeRoute(snapshot.routes["/api/spatial/qa/runs"]),
+    raw:snapshot
+  };
+  $("snapshotTab").textContent=JSON.stringify(compact,null,2);
+}
+async function refreshSnapshot(){
+  $("statePill").textContent="refreshing";
+  const data=await api("/api/ace/snapshot");
+  renderSnapshot(data.snapshot);
+  $("statePill").textContent="idle";
+}
+async function sendIntent(){
+  const text=$("intentText").value.trim();
+  if(!text) return;
+  message("user","SafeBoot intent",text);
+  $("statePill").textContent="posting intent";
+  try{
+    const data=await api("/api/ace/intent",{method:"POST",body:JSON.stringify({text,meta:{channel:"safeboot-console"}})});
+    message("sys","ACE",`Intent posted to /api/spatial/intent.\nStatus: ${data.result?.status}\nBody variant: ${JSON.stringify(data.usedBody,null,2)}`);
+    debug("Intent post result", data);
+    await refreshSnapshot();
+  }catch(err){
+    message("sys","ACE intent failed",err.message);
+    debug("Intent post failed",err.message);
+  }finally{
+    $("statePill").textContent="idle";
+  }
+}
+async function triggerRoute(route, method="GET", body={}){
+  $("statePill").textContent=`triggering ${route}`;
+  try{
+    const data=await api("/api/ace/trigger",{method:"POST",body:JSON.stringify({route,method,body})});
+    message("sys","ACE route",`${route}\n${JSON.stringify(data.result,null,2)}`);
+    debug(`Route ${route}`, data.result);
+    await refreshSnapshot();
+  }catch(err){
+    message("sys","Route failed",`${route}\n${err.message}`);
+  }finally{
+    $("statePill").textContent="idle";
+  }
+}
+async function loadTree(){
+  await saveSettings();
+  const data=await api("/api/workspace/tree?depth=2");
+  const host=$("tree");
+  host.innerHTML="";
+  data.tree.forEach(item=>{
+    const div=document.createElement("div");
+    div.className="treeItem";
+    div.textContent=`${item.type==="dir"?"📁":"📄"} ${item.path}`;
+    div.onclick=()=>{ if(item.type==="file") openFile(item.path); };
+    host.appendChild(div);
+  });
+  debug("Tree loaded",{count:data.tree.length});
+}
+async function openFile(path){
+  const data=await api("/api/workspace/read",{method:"POST",body:JSON.stringify({path})});
+  state.openPath=path;
+  state.openHash=data.file.hash;
+  $("openFile").textContent=path;
+  $("fileHash").textContent=data.file.hash.slice(0,12);
+  $("editor").value=data.file.content;
+  switchTab("file");
+}
+async function saveFile(){
+  if(!state.openPath) return alert("No file open.");
+  const data=await api("/api/workspace/write",{method:"POST",body:JSON.stringify({path:state.openPath,content:$("editor").value,expectedHash:state.openHash})});
+  state.openHash=data.written.hash;
+  $("fileHash").textContent=state.openHash.slice(0,12);
+  debug("File saved",data.written);
+  message("sys","Workspace write",`Saved ${data.written.path}\nBackup: ${data.written.backup || "new file"}`);
+}
+async function runCli(){
+  const command=$("cliCommand").value.trim();
+  if(!command) return;
+  $("cliOut").textContent="running...";
+  try{
+    const data=await api("/api/cli/run",{method:"POST",body:JSON.stringify({command})});
+    $("cliOut").textContent=JSON.stringify(data.result,null,2);
+    debug("CLI result",data.result);
+  }catch(err){
+    $("cliOut").textContent=err.message;
+    debug("CLI failed",err.message);
+  }
+}
+async function loadEvents(){
+  const data=await api("/api/events");
+  debug("SafeBoot events",data.events);
+}
+function switchTab(tab){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===tab));
+  $("snapshotTab").classList.toggle("hidden",tab!=="snapshot");
+  $("fileTab").classList.toggle("hidden",tab!=="file");
+  $("cliTab").classList.toggle("hidden",tab!=="cli");
+}
+function togglePoll(){
+  if(state.pollTimer){
+    clearInterval(state.pollTimer); state.pollTimer=null;
+    $("pollBtn").textContent="Auto-poll: off";
+    return;
+  }
+  state.pollTimer=setInterval(()=>refreshSnapshot().catch(err=>debug("Poll failed",err.message)), state.settings?.pollIntervalMs || 5000);
+  $("pollBtn").textContent="Auto-poll: on";
+  refreshSnapshot().catch(err=>debug("Poll failed",err.message));
+}
+
+$("saveBtn").onclick=()=>saveSettings().catch(e=>debug("Save failed",e.message));
+$("snapshotBtn").onclick=()=>refreshSnapshot().catch(e=>debug("Snapshot failed",e.message));
+$("pollBtn").onclick=togglePoll;
+$("sendIntentBtn").onclick=sendIntent;
+$("treeBtn").onclick=()=>loadTree().catch(e=>debug("Tree failed",e.message));
+$("saveFileBtn").onclick=()=>saveFile().catch(e=>debug("Save file failed",e.message));
+$("runCliBtn").onclick=runCli;
+$("eventsBtn").onclick=()=>loadEvents().catch(e=>debug("Events failed",e.message));
+$("bootStatusBtn").onclick=()=>triggerRoute("/api/spatial/boot-status","GET");
+$("repairStateBtn").onclick=()=>triggerRoute("/api/qa/repair-loop/state","GET");
+$("qaLeadBtn").onclick=()=>triggerRoute("/api/qa/lead/state","GET");
+$("triggerRepairBtn").onclick=()=>triggerRoute("/api/qa/repair-loop/state","GET");
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
+$("intentText").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")sendIntent();});
+
+message("sys","SafeBoot console","Ready. This console is intentionally plain: if full ACE Studio UI breaks, use this to inspect boot state, inject intent, run repair/QA routes, and perform bounded emergency file/CLI work.");
+loadSettings().then(refreshSnapshot).catch(e=>debug("Boot failed",e.message));
+</script>
+</body>
+</html>

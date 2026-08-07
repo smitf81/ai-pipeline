@@ -1,0 +1,5 @@
+interface:
+  display_name: "Literal Vs Useful Completion"
+  short_description: "Check technical done against useful done."
+  default_prompt: "Use $literal-vs-useful-completion to decide whether this task is only technically complete or actually useful."
+

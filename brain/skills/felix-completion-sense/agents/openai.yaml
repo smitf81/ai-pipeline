@@ -1,0 +1,5 @@
+interface:
+  display_name: "Felix Completion Sense"
+  short_description: "Judge whether ACE/AXIOM work feels done."
+  default_prompt: "Use $felix-completion-sense to check whether the result is visible, wired, useful, testable, and honestly reported for Felix."
+

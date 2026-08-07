@@ -9,6 +9,7 @@ const STRUCTURED_QA_RELATIVE_DIR = path.join(QA_RELATIVE_DIR, 'structured');
 const LOCAL_GATE_RELATIVE_DIR = path.join(QA_RELATIVE_DIR, 'local-gates');
 const QA_BROWSER_PRIMARY_TARGET = 'chromium';
 const QA_BROWSER_FALLBACK_TARGET = 'firefox';
+const QA_SYSTEM_BROWSER_TARGET = 'system-chromium';
 
 const STUDIO_SIZE = { width: 1200, height: 800 };
 const STUDIO_ROOM = { x: 72, y: 86, width: 1056, height: 642 };
@@ -123,6 +124,7 @@ function summarizeQARun(run) {
     trigger: run.trigger,
     status: run.status,
     verdict: run.verdict,
+    error: run.error || null,
     createdAt: run.createdAt,
     finishedAt: run.finishedAt,
     findingCount: Array.isArray(run.findings) ? run.findings.length : 0,
@@ -144,6 +146,7 @@ function summarizeQARun(run) {
       status: step.status,
       verdict: step.verdict,
     })),
+    findings: Array.isArray(run.findings) ? run.findings.slice(0, 12) : [],
     linked: run.linked || {},
   };
 }
@@ -207,6 +210,10 @@ function createQARun({ scenario, mode, trigger, prompt, baseUrl, linked = {} }) 
     findings: [],
     artifacts: {
       screenshots: [],
+      screenshotCapture: {
+        status: 'not_requested',
+        reason: 'Screenshot capture is opt-in for browser QA runs.',
+      },
       domSnapshot: null,
       consoleLog: null,
       networkSummary: null,
@@ -276,7 +283,37 @@ function summarizeBrowserLaunchAttempts(attempts = []) {
   )).join(' -> ')}.`;
 }
 
+function resolveWorkspacePlaywrightBrowsersPath(rootPath = null) {
+  if (!rootPath) return null;
+  const candidate = path.join(rootPath, '.playwright-browsers');
+  return fs.existsSync(candidate) ? candidate : null;
+}
+
+function ensurePlaywrightBrowserRuntime(rootPath = null) {
+  const existing = String(process.env.PLAYWRIGHT_BROWSERS_PATH || '').trim();
+  if (existing) return { source: 'env', path: existing, applied: false };
+  const workspacePath = resolveWorkspacePlaywrightBrowsersPath(rootPath);
+  if (!workspacePath) return { source: 'default', path: null, applied: false };
+  process.env.PLAYWRIGHT_BROWSERS_PATH = workspacePath;
+  return { source: 'workspace', path: workspacePath, applied: true };
+}
+
+function resolveSystemBrowserExecutable(explicitPath = null) {
+  const candidates = [
+    explicitPath,
+    process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : null,
+    process.platform === 'win32' ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' : null,
+    process.platform === 'win32' ? 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe' : null,
+    process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : null,
+    process.platform === 'linux' ? '/usr/bin/google-chrome' : null,
+    process.platform === 'linux' ? '/usr/bin/chromium' : null,
+    process.platform === 'linux' ? '/usr/bin/chromium-browser' : null,
+  ].map((candidate) => String(candidate || '').trim()).filter(Boolean);
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
 async function launchManagedBrowser(options = {}) {
+  const runtime = ensurePlaywrightBrowserRuntime(options.rootPath);
   const playwrightModule = options.playwrightModule || require('playwright');
   const targets = buildBrowserLaunchTargets(options);
   const launchOptions = {
@@ -304,10 +341,13 @@ async function launchManagedBrowser(options = {}) {
       attempts.push({
         target,
         ok: true,
+        browsersPath: runtime.path,
       });
       return {
         browser,
         usedTarget: target,
+        browsersPath: runtime.path,
+        browsersPathSource: runtime.source,
         attempts,
       };
     } catch (error) {
@@ -316,8 +356,37 @@ async function launchManagedBrowser(options = {}) {
         ok: false,
         code: normalizeBrowserFailureCode(error, 'launch'),
         summary: String(error?.message || error),
+        browsersPath: runtime.path,
       });
       lastError = error;
+    }
+  }
+
+  if (options.systemBrowserFallback !== false) {
+    const executablePath = resolveSystemBrowserExecutable(options.systemBrowserExecutable);
+    const browserType = playwrightModule?.chromium;
+    if (executablePath && browserType && typeof browserType.launch === 'function') {
+      try {
+        const browser = await browserType.launch({ ...launchOptions, executablePath });
+        attempts.push({ target: QA_SYSTEM_BROWSER_TARGET, ok: true, executablePath });
+        return {
+          browser,
+          usedTarget: QA_SYSTEM_BROWSER_TARGET,
+          executablePath,
+          browsersPath: runtime.path,
+          browsersPathSource: 'system',
+          attempts,
+        };
+      } catch (error) {
+        attempts.push({
+          target: QA_SYSTEM_BROWSER_TARGET,
+          ok: false,
+          code: normalizeBrowserFailureCode(error, 'launch'),
+          summary: String(error?.message || error),
+          executablePath,
+        });
+        lastError = error;
+      }
     }
   }
 
@@ -543,15 +612,15 @@ function buildScenarioActions(scenario = 'layout-pass') {
 async function performAction(page, action) {
   if (!action) return;
   if (action.type === 'click') {
-    await page.locator(action.selector).click();
+    await clickVisiblePoint(page, action.selector);
     return;
   }
   if (action.type === 'select-desk') {
-    await page.locator(`[data-qa="desk-${action.deskId}"]`).click();
+    await clickVisiblePoint(page, `[data-qa="desk-${action.deskId}"]`);
     return;
   }
   if (action.type === 'switch-graph-layer') {
-    await page.locator(`[data-qa="graph-layer-${action.layer}"]`).click();
+    await clickVisiblePoint(page, `[data-qa="graph-layer-${action.layer}"]`);
     return;
   }
   if (action.type === 'type') {
@@ -559,10 +628,7 @@ async function performAction(page, action) {
     return;
   }
   if (action.type === 'wait-visible') {
-    await page.locator(action.selector).waitFor({
-      state: 'visible',
-      timeout: Number(action.timeoutMs || 10000),
-    });
+    await waitForDomVisible(page, action.selector, { timeout: Number(action.timeoutMs || 10000) });
     return;
   }
   if (action.type === 'drag') {
@@ -590,6 +656,58 @@ async function performAction(page, action) {
     return;
   }
   throw new Error(`Unsupported QA action type: ${action.type}`);
+}
+
+async function clickVisiblePoint(page, selector, { timeout = 10000 } = {}) {
+  const baseLocator = page.locator(selector);
+  const locator = typeof baseLocator.first === 'function' ? baseLocator.first() : baseLocator;
+  if (typeof page.mouse?.click !== 'function') {
+    await locator.waitFor({ state: 'visible', timeout });
+    if (typeof locator.click === 'function') {
+      await locator.click();
+      return;
+    }
+    throw new Error(`Cannot click ${selector}; pointer click support unavailable.`);
+  }
+  const target = await waitForDomVisible(page, selector, { timeout, scrollIntoView: true });
+  if (!target.hitTarget) {
+    throw new Error(`Cannot click ${selector}; another element is above its center point.`);
+  }
+  await page.mouse.click(target.x, target.y);
+}
+
+async function waitForDomVisible(page, selector, { timeout = 10000, scrollIntoView = false } = {}) {
+  if (typeof page.mouse?.click !== 'function') {
+    await page.locator(selector).waitFor({ state: 'visible', timeout });
+    return { exists: true, visible: true, hitTarget: true, x: 0, y: 0 };
+  }
+  const startedAt = Date.now();
+  let latest = null;
+  while ((Date.now() - startedAt) < timeout) {
+    latest = await page.evaluate(({ targetSelector, shouldScroll }) => {
+      const target = document.querySelector(targetSelector);
+      if (!target) return { exists: false, visible: false, hitTarget: false, x: 0, y: 0 };
+      if (shouldScroll && typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ block: 'center', inline: 'center' });
+      }
+      const rect = target.getBoundingClientRect();
+      const style = getComputedStyle(target);
+      const x = rect.x + (rect.width / 2);
+      const y = rect.y + (rect.height / 2);
+      const top = document.elementFromPoint(x, y);
+      return {
+        exists: true,
+        visible: rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity || 1) !== 0,
+        hitTarget: Boolean(top && (top === target || target.contains(top))),
+        x,
+        y,
+      };
+    }, { targetSelector: selector, shouldScroll: scrollIntoView });
+    if (latest.visible) return latest;
+    await page.waitForTimeout(50);
+  }
+  const reason = latest?.exists ? 'target was not visible' : 'target was not found';
+  throw new Error(`Timed out waiting for ${selector}; ${reason}.`);
 }
 
 function buildSeverityFinding(kind, entries, severity, summary) {
@@ -624,7 +742,10 @@ async function runQARun(options = {}) {
     playwrightModule,
     browserRuntimeTargets,
     browserRuntimeFallback = true,
+    systemBrowserFallback = true,
+    systemBrowserExecutable = null,
     browserDisabled = false,
+    captureScreenshots = false,
   } = options;
 
   if (!rootPath) throw new Error('rootPath is required for QA runs.');
@@ -659,16 +780,21 @@ async function runQARun(options = {}) {
 
     beginStep(run, 'launch');
     const launched = await launchManagedBrowser({
+      rootPath,
       playwrightModule,
       browserRuntimeTargets,
       browserRuntimeFallback,
+      systemBrowserFallback,
+      systemBrowserExecutable,
     });
     browser = launched.browser;
     run.browser.engine = launched.usedTarget || QA_BROWSER_PRIMARY_TARGET;
     run.browser_runtime_target.attempted = launched.attempts.map((attempt) => attempt.target);
     run.browser_runtime_target.used = launched.usedTarget || null;
-    run.browser_runtime_target.fallbackUsed = launched.usedTarget === QA_BROWSER_FALLBACK_TARGET;
-    run.browser.executablePath = null;
+    run.browser_runtime_target.fallbackUsed = launched.usedTarget !== QA_BROWSER_PRIMARY_TARGET;
+    run.browser_runtime_target.browsersPath = launched.browsersPath || null;
+    run.browser_runtime_target.browsersPathSource = launched.browsersPathSource || null;
+    run.browser.executablePath = launched.executablePath || null;
     context = await browser.newContext({
       viewport: { width: 1600, height: 1100 },
       ignoreHTTPSErrors: true,
@@ -681,17 +807,28 @@ async function runQARun(options = {}) {
     const consoleEntries = [];
     const networkFailures = [];
     async function captureScreenshotArtifact(fileName, label) {
+      if (!captureScreenshots) {
+        run.artifacts.screenshotCapture = {
+          status: 'skipped',
+          reason: 'Screenshot capture was not requested for this browser QA run.',
+        };
+        return null;
+      }
       try {
-        const binary = await page.screenshot({ fullPage: true, timeout: 10000 });
+        const binary = await page.screenshot({ fullPage: false, timeout: 5000, animations: 'disabled' });
+        run.artifacts.screenshotCapture = {
+          status: 'pass',
+          reason: '',
+        };
         return {
           ...saveArtifact(rootPath, run, fileName, binary, 'binary'),
           label,
         };
       } catch (error) {
-        consoleEntries.push({
-          type: 'warning',
-          text: `Screenshot capture skipped for ${fileName}: ${String(error?.message || error)}`,
-        });
+        run.artifacts.screenshotCapture = {
+          status: 'failed',
+          reason: `Screenshot capture skipped for ${fileName}: ${String(error?.message || error)}`,
+        };
         return null;
       }
     }
@@ -718,7 +855,7 @@ async function runQARun(options = {}) {
 
     beginStep(run, 'open');
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
-    await page.locator('[data-qa="spatial-root"]').waitFor({ state: 'visible', timeout: 15000 });
+    await waitForDomVisible(page, '[data-qa="spatial-root"]', { timeout: 15000 });
     {
       const screenshotArtifact = await captureScreenshotArtifact('01-initial.png', 'Initial ACE render');
       if (screenshotArtifact) run.artifacts.screenshots.push(screenshotArtifact);
@@ -727,8 +864,8 @@ async function runQARun(options = {}) {
     persist();
 
     beginStep(run, 'studio');
-    await page.locator('[data-qa="scene-studio-button"]').click();
-    await page.locator('[data-qa="studio-room"]').waitFor({ state: 'visible', timeout: 10000 });
+    await clickVisiblePoint(page, '[data-qa="scene-studio-button"]');
+    await waitForDomVisible(page, '[data-qa="studio-room"]', { timeout: 10000 });
     await page.waitForTimeout(250);
     finishStep(run, 'studio', 'pass');
     persist();

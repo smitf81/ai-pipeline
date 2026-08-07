@@ -1,0 +1,5 @@
+interface:
+  display_name: "Dead-End Detection"
+  short_description: "Detect repeated failure and pivot cleanly."
+  default_prompt: "Use $dead-end-detection to identify repeated failing paths, record what was ruled out, and choose the next discriminating test."
+

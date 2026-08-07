@@ -1,0 +1,5 @@
+interface:
+  display_name: "Goal-Preserving Initiative"
+  short_description: "Take the necessary extra mile, not a new road."
+  default_prompt: "Use $goal-preserving-initiative to decide whether adjacent extra work is necessary to satisfy the user's intended outcome."
+

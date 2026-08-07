@@ -351,9 +351,7 @@ function buildDepartmentHealthRecord({
     status = 'blocked';
   } else if (isSupportDepartment) {
     status = 'support-only';
-    if (!statusReasons.length) {
-      statusReasons.push('Support department operating in support-only mode.');
-    }
+    statusReasons.unshift('Support department operating in support-only mode.');
   } else if (totalDeskCount === 0) {
     status = 'draft';
     statusReasons.push('Department is still in draft with no desks added.');
@@ -557,7 +555,7 @@ export function buildStudioOrgHealthModel(layout = {}, agentSnapshots = []) {
     healthByDeskId: healthDesks,
     summary: {
       totalDepartments: departments.length,
-      activeCount: departments.filter((entry) => entry.health.status === 'active').length,
+      activeCount: departments.filter((entry) => ['active', 'support-only'].includes(entry.health.status)).length,
       draftCount: departments.filter((entry) => entry.health.status === 'draft').length,
       understaffedCount: departments.filter((entry) => entry.health.status === 'understaffed').length,
       blockedCount: departments.filter((entry) => entry.health.status === 'blocked').length,

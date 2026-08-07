@@ -1,0 +1,4 @@
+interface:
+  display_name: "ACE Canonical Truth Map"
+  short_description: "Map ACE canonical truth owners."
+  default_prompt: "Identify the canonical owner, allowed projections, divergent paths, and validation checks for the ACE domain being changed."

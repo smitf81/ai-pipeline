@@ -1,0 +1,14 @@
+[
+  {
+    "event": "created",
+    "status": "generated",
+    "note": "Created from template editor",
+    "timestamp": "2026-05-11T15:01:02.475Z"
+  },
+  {
+    "event": "rejected_placeholder",
+    "status": "rejected",
+    "reason": "Placeholder scaffold only; no implementation contract, validation, package, registration, activation, or persistence evidence.",
+    "timestamp": "2026-05-18T12:58:53.027Z"
+  }
+]

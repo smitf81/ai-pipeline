@@ -1,0 +1,4 @@
+interface:
+  display_name: "ACE Intended Abstraction"
+  short_description: "Guard ACE outputs against abstraction-tier naming drift."
+  default_prompt: "Use $ace-intended-abstraction to define or review ACE work so exported structures match their actual abstraction tier."

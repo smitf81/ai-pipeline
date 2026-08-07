@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Runtime Performance QA"
+  short_description: "Deterministic FPS, tick, and RTS perf QA."
+  default_prompt: "Create or audit game runtime QA tests for fixed timestep, interpolation, mass entities, pathfinding bottlenecks, spatial culling, and action-ready performance reports."

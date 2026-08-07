@@ -325,6 +325,56 @@ function buildQATestRegistry({
     }
   }
 
+  for (const runtimeTest of runtimeLookup.values()) {
+    const id = `${runtimeTest.deskId}.${runtimeTest.testName}`;
+    if (entries.some((entry) => entry.id === id)) continue;
+    if (entries.some((entry) => entry.testName === runtimeTest.testName && entry.owner?.kind === 'unknown')) continue;
+    const reportAgeMs = reportFinishedAtMs == null ? null : Math.max(0, now - reportFinishedAtMs);
+    const validity = classifyValidity({
+      ownerKnown: true,
+      deprecated: false,
+      runtimeTest,
+      reportAgeMs,
+      staleAfterMs,
+    });
+    entries.push({
+      id,
+      deskId: runtimeTest.deskId,
+      deskLabel: normalizeDeskLabel(runtimeTest.deskId),
+      testId: runtimeTest.testName,
+      testName: runtimeTest.testName,
+      owner: {
+        kind: 'runtime',
+        id: runtimeTest.deskId,
+        label: normalizeDeskLabel(runtimeTest.deskId),
+        module: null,
+      },
+      source: {
+        kind: 'runtime-report',
+        modulePath: null,
+        runtimePath: 'data/spatial/qa/structured/latest.json',
+        runtimeTestPath: `${runtimeTest.deskId}:${runtimeTest.testName}`,
+      },
+      currentStatus: runtimeTest.status || 'missing',
+      lastExecutionAt: runtimeTest.qualityCard?.updatedAt
+        || report?.finishedAt
+        || runtimeTest?.updatedAt
+        || report?.updatedAt
+        || report?.createdAt
+        || null,
+      runtimeReason: runtimeTest.reason || null,
+      validityClass: validity.validityClass,
+      validityReason: validity.validityReason,
+      deprecated: false,
+      runtimeTest: {
+        status: runtimeTest.status,
+        reason: runtimeTest.reason,
+        qualityCard: runtimeTest.qualityCard || null,
+      },
+      reportFinishedAt: report?.finishedAt || null,
+    });
+  }
+
   entries.sort((left, right) => {
     const ownerLeft = String(left.owner?.id || left.deskId || '').localeCompare(String(right.owner?.id || right.deskId || ''));
     if (ownerLeft !== 0) return ownerLeft;

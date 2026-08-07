@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EFE Native Cockpit</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#101316;
+  --panel:#171b20;
+  --panel-2:#12161a;
+  --line:#2c3640;
+  --text:#eef2f4;
+  --muted:#94a2ad;
+  --blue:#4aa3df;
+  --green:#80c77a;
+  --gold:#d7ad4a;
+  --red:#e45f56;
+  --violet:#9b80d7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+.app{min-height:100vh;display:grid;grid-template-rows:auto 1fr;gap:10px;padding:12px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
+h1{font-size:18px;line-height:1.1;margin:0 0 4px}
+.sub{font-size:12px;color:var(--muted)}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+button,select,.link-button{height:32px;border:1px solid var(--line);background:#20262d;color:var(--text);border-radius:6px;padding:0 10px;font:inherit;text-decoration:none}
+button,.link-button{cursor:pointer}
+button:hover,.link-button:hover,select:hover{background:#28313a}
+button.on{border-color:rgba(74,163,223,.75);background:rgba(74,163,223,.18)}
+button:disabled{opacity:.45;cursor:not-allowed}
+select{min-width:190px}
+.grid{display:grid;grid-template-columns:minmax(420px,1.4fr) minmax(310px,.6fr);gap:10px;min-height:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-height:0}
+.stage{position:relative;overflow:hidden}
+canvas{display:block;width:100%;height:100%;min-height:640px;cursor:grab;touch-action:none}
+canvas.dragging{cursor:grabbing}
+.legend{position:absolute;left:12px;bottom:12px;display:flex;gap:10px;flex-wrap:wrap;background:rgba(16,19,22,.84);border:1px solid var(--line);border-radius:7px;padding:8px;font-size:11px;color:var(--muted)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.metrics{padding:12px;display:grid;gap:10px;align-content:start;overflow:auto}
+.kicker{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--panel-2)}
+.label{font-size:11px;color:var(--muted)}
+.value{font-size:18px;margin-top:2px}
+.bar{height:7px;background:#29323a;border-radius:999px;overflow:hidden;margin-top:6px}
+.fill{height:100%;background:var(--blue)}
+.list{display:grid;gap:5px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;font-size:12px;color:var(--muted)}
+.row strong{color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.state-row{height:auto;min-height:28px;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;text-align:left;gap:8px;font-size:12px;background:var(--panel-2)}
+.state-row span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.state-row small{color:var(--muted)}
+.todo{margin:0;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.45}
+.missing{padding:18px;color:var(--red)}
+@media (max-width:940px){
+  .top,.grid{grid-template-columns:1fr}
+  .controls{justify-content:flex-start}
+  canvas{min-height:480px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <h1>EFE Native Cockpit</h1>
+      <div class="sub" id="subtitle">Waiting for native snapshot</div>
+    </div>
+    <div class="controls">
+      <button id="play" title="Run or pause frame playback">run</button>
+      <button id="step" title="Step one exported frame">step</button>
+      <button id="reset" title="Reset frame and view">reset</button>
+      <button id="viewMode" title="Toggle orbit or pan drag mode">orbit</button>
+      <button id="prev" title="Previous frame">&lt;</button>
+      <select id="frameSelect" aria-label="Native frame"></select>
+      <button id="next" title="Next frame">&gt;</button>
+      <a class="link-button" href="wyvern_efe_musculotendon_v4.html">legacy sandbox</a>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="panel stage">
+      <canvas id="view" width="1240" height="760"></canvas>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--blue)"></i>constraints</span>
+        <span><i class="sw" style="background:var(--gold)"></i>membranes</span>
+        <span><i class="sw" style="background:var(--red)"></i>muscles/damage</span>
+        <span><i class="sw" style="background:var(--green)"></i>aero vectors</span>
+      </div>
+    </div>
+    <aside class="panel metrics">
+      <section>
+        <div class="kicker">native frame</div>
+        <div class="cards" id="cards"></div>
+      </section>
+      <section>
+        <div class="kicker">layers</div>
+        <div class="controls" style="justify-content:flex-start">
+          <button class="on" data-layer="constraints">graph</button>
+          <button class="on" data-layer="membranes">skin</button>
+          <button class="on" data-layer="muscles">muscles</button>
+          <button class="on" data-layer="vectors">vectors</button>
+          <button class="on" data-layer="nodes">nodes</button>
+        </div>
+      </section>
+      <section>
+        <div class="kicker">exported states</div>
+        <div class="list" id="states"></div>
+      </section>
+      <section>
+        <div class="kicker">active muscles</div>
+        <div class="list" id="muscles"></div>
+      </section>
+      <section>
+        <div class="kicker">runner / fields</div>
+        <div class="list" id="runtime"></div>
+      </section>
+      <section>
+        <div class="kicker">still to do</div>
+        <ul class="todo" id="todo"></ul>
+      </section>
+    </aside>
+  </div>
+</div>
+<script src="efe_native_snapshot.js"></script>
+<script>
+const data=window.EFE_NATIVE_SNAPSHOT;
+const canvas=document.getElementById('view');
+const ctx=canvas.getContext('2d');
+const select=document.getElementById('frameSelect');
+const layers={constraints:true,membranes:true,muscles:true,vectors:true,nodes:true};
+const camera={yaw:.42,pitch:.22,zoom:1,panX:0,panY:0,mode:'orbit'};
+let frameIndex=0;
+let playing=false;
+let playTimer=null;
+let dragging=false;
+let lastPointer={x:0,y:0,mode:'orbit'};
+window.EFE_NATIVE_COCKPIT={
+  camera,
+  layers,
+  get frameIndex(){return frameIndex;},
+  get playing(){return playing;}
+};
+
+function fmt(v){return Number.isFinite(v)?v.toFixed(Math.abs(v)>=100?0:2):'0';}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function currentFrame(){return data.frames[frameIndex];}
+function nodeMap(frame){const m=new Map();frame.nodes.forEach(n=>m.set(n.id,n));return m;}
+function damagedCount(frame){return frame.nodes.filter(n=>n.hp<.99).length;}
+function activeMuscles(frame){return frame.muscles.filter(m=>m.force>1||m.activation>.01).length;}
+function boundsFor(frame){
+  let min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+  frame.nodes.forEach(n=>n.pos.forEach((v,i)=>{min[i]=Math.min(min[i],v);max[i]=Math.max(max[i],v);}));
+  const cx=(min[0]+max[0])*.5,cy=(min[1]+max[1])*.5,cz=(min[2]+max[2])*.5;
+  const sx=max[0]-min[0],sy=max[1]-min[1],sz=max[2]-min[2];
+  return {cx,cy,cz,size:Math.max(1,sx,sy,sz)+3};
+}
+function project(p,bounds){
+  const x=p[0]-bounds.cx,y=p[1]-bounds.cy,z=p[2]-bounds.cz;
+  const cy=Math.cos(camera.yaw),sy=Math.sin(camera.yaw);
+  const cp=Math.cos(camera.pitch),sp=Math.sin(camera.pitch);
+  const rx=x*cy-z*sy;
+  const rz=x*sy+z*cy;
+  const ry=y*cp-rz*sp;
+  const rz2=y*sp+rz*cp;
+  const scale=Math.min(canvas.width,canvas.height)/bounds.size*.82*camera.zoom;
+  return [canvas.width*.5+rx*scale+camera.panX,canvas.height*.55-ry*scale+camera.panY,rz2];
+}
+function line(a,b,color,width=2,alpha=1){
+  ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;
+  ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.globalAlpha=1;
+}
+function drawVector(origin,vec,bounds,color,label){
+  const mag=Math.hypot(vec[0],vec[1],vec[2]);
+  if(mag<.001)return;
+  const s=.004;
+  const start=project(origin,bounds);
+  const end=project([origin[0]+vec[0]*s,origin[1]+vec[1]*s,origin[2]+vec[2]*s],bounds);
+  line(start,end,color,3,.9);
+  ctx.fillStyle=color;ctx.font='12px ui-sans-serif';ctx.fillText(label,end[0]+5,end[1]-5);
+}
+function draw(frame){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const g=ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0,'#111820');g.addColorStop(1,'#0d1013');
+  ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+  const bounds=boundsFor(frame);
+  const nodes=nodeMap(frame);
+
+  if(layers.membranes){
+    frame.wingPanels.forEach(p=>{
+      const pts=[project(p.inner,bounds),project(p.leading,bounds),project(p.outer,bounds),project(p.trailing,bounds)];
+      ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
+      pts.slice(1).forEach(pt=>ctx.lineTo(pt[0],pt[1]));
+      ctx.closePath();
+      ctx.fillStyle=p.stall>.2?'rgba(228,95,86,.26)':'rgba(215,173,74,.24)';
+      ctx.strokeStyle=p.left?'rgba(215,173,74,.70)':'rgba(128,199,122,.55)';
+      ctx.lineWidth=1;ctx.fill();ctx.stroke();
+    });
+  }
+
+  if(layers.constraints){
+    frame.constraints.forEach(c=>{
+      const a=nodes.get(c.a),b=nodes.get(c.b);if(!a||!b)return;
+      const color=c.membrane?'#8a7650':c.spinal?'#4aa3df':'#53616d';
+      line(project(a.pos,bounds),project(b.pos,bounds),color,c.spinal?3:1.4,c.hp<.6?.55:.9);
+    });
+  }
+
+  if(layers.muscles){
+    frame.muscles.filter(m=>m.force>1||m.activation>.01).forEach(m=>{
+      const a=nodes.get(m.origin),b=nodes.get(m.insertion);if(!a||!b)return;
+      const intensity=clamp(m.activation+m.force/1200,0,1);
+      line(project(a.pos,bounds),project(b.pos,bounds),'#e45f56',1.5+intensity*4,.35+intensity*.5);
+    });
+  }
+
+  if(layers.nodes){
+    frame.nodes.map(n=>({n,p:project(n.pos,bounds)})).sort((a,b)=>a.p[2]-b.p[2]).forEach(({n,p})=>{
+      const dmg=1-n.hp;
+      ctx.beginPath();ctx.arc(p[0],p[1],4+Math.sqrt(Math.max(n.hp,0))*3,0,Math.PI*2);
+      ctx.fillStyle=dmg>.55?'#e45f56':dmg>.25?'#d7ad4a':'#dbe7ee';
+      ctx.fill();ctx.strokeStyle='#0b0d0f';ctx.lineWidth=1;ctx.stroke();
+    });
+  }
+
+  if(layers.vectors){
+    drawVector(frame.vectors.centreOfLift,frame.vectors.lift,bounds,'#80c77a','lift');
+    drawVector(frame.vectors.com,frame.vectors.drag,bounds,'#9b80d7','drag');
+  }
+  const com=project(frame.vectors.com,bounds);
+  ctx.strokeStyle='#ffffff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(com[0],com[1],9,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#ffffff';ctx.font='12px ui-sans-serif';ctx.fillText('COM',com[0]+10,com[1]+4);
+}
+function metricCard(label,value,ratio,color){
+  return `<div class="card"><div class="label">${label}</div><div class="value">${value}</div><div class="bar"><div class="fill" style="width:${clamp(ratio,0,1)*100}%;background:${color}"></div></div></div>`;
+}
+function renderStates(){
+  document.getElementById('states').innerHTML=data.frames.map((frame,i)=>{
+    const bits=[];
+    if(frame.metrics.inAir>0)bits.push('air');
+    if(frame.metrics.aeroLiftTotal>0)bits.push('aero');
+    if(activeMuscles(frame)>0)bits.push('muscle');
+    if(damagedCount(frame)>0)bits.push('damage');
+    if(frame.label.includes('wind'))bits.push('wind');
+    return `<button class="state-row ${i===frameIndex?'on':''}" data-frame="${i}"><span>${frame.label}</span><small>${bits.join(' / ')||'pose'}</small></button>`;
+  }).join('');
+  document.querySelectorAll('[data-frame]').forEach(btn=>{
+    btn.addEventListener('click',()=>show(Number(btn.dataset.frame)));
+  });
+}
+function renderSide(frame){
+  const m=frame.metrics;
+  document.getElementById('subtitle').textContent=`${data.source} - ${frame.label}`;
+  document.getElementById('cards').innerHTML=[
+    metricCard('nodes',m.nodeCount,m.nodeCount/80,'var(--blue)'),
+    metricCard('muscles',m.muscleCount,m.muscleCount/30,'var(--red)'),
+    metricCard('lift reserve',fmt(m.aeroLiftReserve),m.aeroLiftReserve,'var(--green)'),
+    metricCard('muscle force',fmt(m.muscleForceTotal),m.muscleForceTotal/1800,'var(--red)'),
+    metricCard('damage nodes',damagedCount(frame),damagedCount(frame)/m.nodeCount,'var(--gold)'),
+    metricCard('wing panels',m.wingPanelCount,m.wingPanelCount/16,'var(--gold)')
+  ].join('');
+  const topMuscles=frame.muscles.slice().sort((a,b)=>(b.force+b.activation*100)-(a.force+a.activation*100)).slice(0,8);
+  document.getElementById('muscles').innerHTML=topMuscles.map(m=>`<div class="row"><strong>${m.label}</strong><span>${fmt(m.activation)} / ${fmt(m.force)}N</span></div>`).join('');
+  document.getElementById('runtime').innerHTML=[
+    ['runner steps',data.runner.stepsRun],
+    ['dropped steps',data.runner.droppedSteps],
+    ['clamped nodes',data.runner.clampedNodes],
+    ['field cells',data.fieldStats.processedCells],
+    ['active cells',data.fieldStats.activeCells],
+    ['budget capped',data.fieldStats.budgetCapped?'yes':'no']
+  ].map(([k,v])=>`<div class="row"><strong>${k}</strong><span>${v}</span></div>`).join('');
+  document.getElementById('todo').innerHTML=data.todo.map(t=>`<li>${t}</li>`).join('');
+  renderStates();
+}
+function show(i){
+  frameIndex=(i+data.frames.length)%data.frames.length;
+  select.value=String(frameIndex);
+  const frame=currentFrame();
+  draw(frame);
+  renderSide(frame);
+}
+function setPlaying(next){
+  playing=next;
+  const btn=document.getElementById('play');
+  btn.textContent=playing?'pause':'run';
+  btn.classList.toggle('on',playing);
+  clearTimeout(playTimer);
+  if(playing){
+    const tick=()=>{if(!playing)return;show(frameIndex+1);playTimer=setTimeout(tick,650);};
+    playTimer=setTimeout(tick,650);
+  }
+}
+function resetView(){
+  camera.yaw=.42;camera.pitch=.22;camera.zoom=1;camera.panX=0;camera.panY=0;camera.mode='orbit';
+  document.getElementById('viewMode').textContent='orbit';
+}
+function redraw(){draw(currentFrame());}
+
+if(!data||!data.frames||!data.frames.length){
+  document.body.innerHTML='<div class="missing">Missing native snapshot. Run efe_slice6_8_snapshot_export.exe to generate efe_native_snapshot.js.</div>';
+}else{
+  data.frames.forEach((f,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=f.label;select.appendChild(o);});
+  document.getElementById('play').addEventListener('click',()=>setPlaying(!playing));
+  document.getElementById('step').addEventListener('click',()=>{setPlaying(false);show(frameIndex+1);});
+  document.getElementById('reset').addEventListener('click',()=>{setPlaying(false);resetView();show(0);});
+  document.getElementById('prev').addEventListener('click',()=>{setPlaying(false);show(frameIndex-1);});
+  document.getElementById('next').addEventListener('click',()=>{setPlaying(false);show(frameIndex+1);});
+  document.getElementById('viewMode').addEventListener('click',e=>{
+    camera.mode=camera.mode==='orbit'?'pan':'orbit';
+    e.currentTarget.textContent=camera.mode;
+  });
+  select.addEventListener('change',e=>{setPlaying(false);show(Number(e.target.value));});
+  document.querySelectorAll('[data-layer]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const key=btn.dataset.layer;
+      layers[key]=!layers[key];
+      btn.classList.toggle('on',layers[key]);
+      redraw();
+    });
+  });
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  canvas.addEventListener('pointerdown',e=>{
+    dragging=true;
+    lastPointer={x:e.clientX,y:e.clientY,mode:(e.shiftKey||e.button===2)?'pan':camera.mode};
+    canvas.classList.add('dragging');
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointerup',e=>{
+    dragging=false;
+    canvas.classList.remove('dragging');
+    canvas.releasePointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    const dx=e.clientX-lastPointer.x,dy=e.clientY-lastPointer.y;
+    if(lastPointer.mode==='pan'){
+      camera.panX+=dx;camera.panY+=dy;
+    }else{
+      camera.yaw+=dx*.006;
+      camera.pitch=clamp(camera.pitch+dy*.006,-1.05,1.05);
+    }
+    lastPointer.x=e.clientX;lastPointer.y=e.clientY;
+    redraw();
+  });
+  canvas.addEventListener('wheel',e=>{
+    camera.zoom=clamp(camera.zoom*Math.exp(-e.deltaY*.001),.32,4);
+    e.preventDefault();
+    redraw();
+  },{passive:false});
+  resetView();
+  show(0);
+}
+</script>
+</body>
+</html>

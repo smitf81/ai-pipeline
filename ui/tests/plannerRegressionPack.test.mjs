@@ -131,6 +131,15 @@ function createClassList() {
   return {
     add: (...items) => items.forEach((item) => classes.add(item)),
     remove: (...items) => items.forEach((item) => classes.delete(item)),
+    toggle: (item, force = undefined) => {
+      const shouldAdd = force === undefined ? !classes.has(item) : Boolean(force);
+      if (shouldAdd) {
+        classes.add(item);
+      } else {
+        classes.delete(item);
+      }
+      return shouldAdd;
+    },
     contains: (item) => classes.has(item),
   };
 }

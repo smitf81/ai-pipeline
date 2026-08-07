@@ -1,0 +1,5 @@
+interface:
+  display_name: "Implementation Gravity"
+  short_description: "Find every landing point a change needs."
+  default_prompt: "Use $implementation-gravity to map where this change must land across source, runtime, persistence, UI, and proof."
+

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AXIOM Plugin Builder MCP Response Contract",
+  "type": "object",
+  "required": [
+    "ok",
+    "tool",
+    "request_id",
+    "plugin_id",
+    "status",
+    "result",
+    "validation",
+    "errors",
+    "warnings",
+    "receipt"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "tool": {
+      "type": "string"
+    },
+    "request_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "plugin_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "result": {
+      "type": "object"
+    },
+    "validation": {
+      "type": "object"
+    },
+    "errors": {
+      "type": "array"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "receipt": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  }
+}

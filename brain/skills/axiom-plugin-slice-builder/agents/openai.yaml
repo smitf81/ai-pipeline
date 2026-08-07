@@ -1,0 +1,4 @@
+interface:
+  display_name: "AXIOM Plugin Slice Builder"
+  short_description: "Build governed AXIOM plugin slices."
+  default_prompt: "Build or audit an AXIOM plugin slice through proposal, validation, packaging, registration, and smoke checks without bypassing plugin governance."

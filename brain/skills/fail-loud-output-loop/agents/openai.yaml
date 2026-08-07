@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fail Loud Output Loop"
+  short_description: "Fail early, loudly, and with evidence."
+  default_prompt: "Use $fail-loud-output-loop to make a bold evidence-producing attempt, surface failures explicitly, and register what was ruled out."

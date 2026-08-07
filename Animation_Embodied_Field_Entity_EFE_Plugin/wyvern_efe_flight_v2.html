@@ -1,0 +1,976 @@
+<h2 class="sr-only">Wyvern EFE visualiser with proper wing flap cycle, triangulated membrane, and FABRIK IK for legs and
+  neck</h2>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0
+  }
+
+  #wrap {
+    background: #0b0d11;
+    border-radius: 8px;
+    overflow: hidden;
+    user-select: none
+  }
+
+  #c {
+    display: block;
+    width: 100%;
+    cursor: grab
+  }
+
+  #c.drag {
+    cursor: grabbing
+  }
+
+  #bar {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 7px 8px;
+    background: #0f1117;
+    border-top: 1px solid rgba(255, 255, 255, 0.05)
+  }
+
+  #bar button,
+  #bar select {
+    font-size: 11px;
+    font-family: monospace;
+    padding: 3px 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(195, 215, 240, 0.85);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .1s
+  }
+
+  #bar button:hover {
+    background: rgba(255, 255, 255, 0.09)
+  }
+
+  #bar button:active {
+    transform: scale(0.96)
+  }
+
+  #bar button.on {
+    background: rgba(70, 140, 220, 0.22);
+    border-color: rgba(70, 140, 220, 0.45);
+    color: #7ab8ef
+  }
+
+  .sep {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.07);
+    flex-shrink: 0;
+    margin: 0 1px
+  }
+
+  #sb {
+    font-size: 10px;
+    font-family: monospace;
+    color: rgba(130, 155, 195, 0.45);
+    margin-left: auto
+  }
+
+  #toast {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 20, 32, 0.93);
+    border: 1px solid rgba(70, 140, 220, 0.3);
+    color: rgba(175, 210, 255, 0.9);
+    font-size: 10px;
+    font-family: monospace;
+    padding: 4px 12px;
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .18s;
+    white-space: nowrap;
+    z-index: 10
+  }
+</style>
+
+<div id="wrap" style="position:relative">
+  <canvas id="c" width="680" height="410"></canvas>
+  <div id="toast"></div>
+  <div id="bar">
+    <button id="bPlay">⏵ run</button>
+    <button id="bStep">step</button>
+    <button id="bReset">↺ reset</button>
+    <div class="sep"></div>
+    <select id="selI">
+      <option value="idle">idle</option>
+      <option value="glide">glide</option>
+      <option value="flap">flap climb</option>
+      <option value="dive">dive</option>
+      <option value="land">land</option>
+      <option value="strike">strike</option>
+      <option value="intimidate">intimidate</option>
+    </select>
+    <div class="sep"></div>
+    <button id="bDL">dmg L</button>
+    <button id="bDR">dmg R</button>
+    <button id="bDS">dmg spine</button>
+    <button id="bW">wind</button>
+    <div class="sep"></div>
+    <button id="bG" class="on">graph</button>
+    <button id="bM" class="on">membrane</button>
+    <button id="bIK" class="on">IK</button>
+    <button id="bH" class="on">HUD</button>
+    <span id="sb">t=0.0s</span>
+  </div>
+</div>
+
+<script>
+  const CV = document.getElementById('c'), ctx = CV.getContext('2d');
+  const W = 680, H = 410; CV.width = W; CV.height = H;
+  const TAU = Math.PI * 2;
+
+  // ── Math ──────────────────────────────────────────────────────────────────
+  const v3 = (x, y, z) => ({ x, y, z });
+  const add = (a, b) => v3(a.x + b.x, a.y + b.y, a.z + b.z);
+  const sub = (a, b) => v3(a.x - b.x, a.y - b.y, a.z - b.z);
+  const scl = (a, s) => v3(a.x * s, a.y * s, a.z * s);
+  const vlen = (a) => Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+  const nrm = (a) => { const l = vlen(a) || 1e-6; return scl(a, 1 / l); };
+  const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const cross = (a, b) => v3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const copy = (p) => ({ x: p.x, y: p.y, z: p.z });
+
+  // ── Camera ────────────────────────────────────────────────────────────────
+  let camYaw = 0.42, camPitch = 0.20, camDist = 17;
+  let drag = false, lmx = 0, lmy = 0;
+  CV.addEventListener('mousedown', e => { drag = true; lmx = e.clientX; lmy = e.clientY; CV.classList.add('drag'); });
+  window.addEventListener('mouseup', () => { drag = false; CV.classList.remove('drag'); });
+  window.addEventListener('mousemove', e => {
+    if (!drag) return;
+    camYaw += (e.clientX - lmx) * 0.007;
+    camPitch = clamp(camPitch + (e.clientY - lmy) * 0.007, -0.55, 0.85);
+    lmx = e.clientX; lmy = e.clientY;
+    if (!SIM.running) draw();
+  });
+  CV.addEventListener('wheel', e => {
+    camDist = clamp(camDist + e.deltaY * 0.016, 5, 34);
+    e.preventDefault();
+    if (!SIM.running) draw();
+  }, { passive: false });
+
+  function proj(p) {
+    const cy = Math.cos(camYaw), sy = Math.sin(camYaw);
+    const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
+    const rx = p.x * cy - p.z * sy, rz = p.x * sy + p.z * cy;
+    const ry = p.y * cp - rz * sp, rz2 = p.y * sp + rz * cp;
+    const fov = 450, d = rz2 + camDist;
+    if (d < 0.2) return null;
+    return { sx: W / 2 + rx * fov / d, sy: H / 2 - ry * fov / d, depth: d, sc: fov / d };
+  }
+
+  // ── Simulation state ──────────────────────────────────────────────────────
+  const SIM = {
+    t: 0, tick: 0, running: false, intent: 'idle',
+    showGraph: true, showMem: true, showIK: true, showHUD: true,
+    wind: 0, windDir: v3(1, 0, 0),
+    nodes: [], edges: [], triangles: [],
+    // IK chains
+    ikNeck: [], ikLegL: [], ikLegR: [],
+    ikTargetNeck: v3(0, 0.5, -3.8),
+    ikTargetLegL: v3(-1.4, -2.5, -0.1),
+    ikTargetLegR: v3(1.4, -2.5, -0.1),
+    motor: {
+      fatigue: 0,
+      breathPhase: 0,
+      // Per-wing flap state
+      flapPhaseL: 0,   // 0-1 cycle position
+      flapPhaseR: 0.5, // start out of phase for natural look
+      flapRate: 0,     // cycles/sec; 0=soaring, 2=climbing
+      flapAmpL: 1,     // 0-1 health multiplier
+      flapAmpR: 1,
+      inFlight: false,
+      altitude: 0,
+      targetAlt: 0,
+    },
+    expr: { speed: 0, alertness: 0, exhaustion: 0, wdL: 0, wdR: 0, pain: 0, liftL: 0, liftR: 0 },
+    particles: [],
+  };
+
+  // ── Node / edge builders ──────────────────────────────────────────────────
+  function node(id, label, pos, mass, role) {
+    return { id, label, pos: copy(pos), rest: copy(pos), vel: v3(0, 0, 0), hp: 1, mass, role };
+  }
+  function edge(a, b, nodes, type, stiff, side) {
+    const r = vlen(sub(nodes[b].rest, nodes[a].rest));
+    return { a, b, rest: r, type, stiff: stiff ?? 0.9, side: side ?? -1 };
+  }
+
+  // ── Build wyvern ──────────────────────────────────────────────────────────
+  function buildWyvern() {
+    const N = [], E = [], T = [];
+
+    // SPINE — neutral pose: slight upward curve, head dips at front
+    const spinePos = [
+      v3(0, -0.10, 8.5),  // 0 tail_tip
+      v3(0, 0.10, 6.0),  // 1 tail_2
+      v3(0, 0.30, 3.0),  // 2 tail_1
+      v3(0, 0.50, 0.0),  // 3 spine_root  (pelvis) ← anchor
+      v3(0, 0.60, -1.5),  // 4 spine_mid   (torso)
+      v3(0, 0.60, -2.8),  // 5 neck_base
+      v3(0, 0.45, -4.0),  // 6 neck_tip
+      v3(0, 0.30, -5.0),  // 7 head
+    ];
+    const spL = ['tail_tip', 'tail_2', 'tail_1', 'spine_root', 'spine_mid', 'neck_base', 'neck_tip', 'head'];
+    const spR = ['tail_tip', 'tail', 'tail', 'root', 'spine', 'neck', 'neck', 'head'];
+    const spM = [10, 20, 40, 100, 90, 15, 10, 25];
+    spinePos.forEach((p, i) => N.push(node(i, spL[i], p, spM[i], spR[i])));
+    for (let i = 0; i < spinePos.length - 1; i++)
+      E.push(edge(i, i + 1, N, 'spine', 0.85));
+
+    // WINGS — proper anatomical rest pose: spread at ~30° droop from horizontal
+    // Segments: shoulder, humerus, radius, carpals, 3 finger bones
+    // Each side mirrored. Side 0=L(x<0), Side 1=R(x>0)
+    const wingDef = [
+      // [x, y, z, label, mass]  in body-local space
+      [2.0, 0.60, -1.5, 'shoulder', 8],
+      [5.0, 0.60, -1.2, 'humerus', 6],
+      [8.0, 0.60, -0.8, 'radius', 4],
+      [11.0, 0.60, -0.4, 'carpals', 3],
+      [11.5, 0.60, -0.8, 'thumb', 1],
+      [16.0, 0.60, -0.2, 'finger2', 2],
+      [14.5, 0.60, 2.0, 'finger3', 1.5],
+      [12.0, 0.60, 4.0, 'finger4', 1.2],
+      [9.0, 0.60, 5.5, 'finger5', 1.0],
+    ];
+
+    // We'll store wing node id ranges for each side
+    const wingStart = [N.length, -1];
+
+    [0, 1].forEach(si => {
+      const sx = si === 0 ? -1 : 1;
+      wingStart[si] = N.length;
+      const attachIdx = 4; // spine_mid
+      const pelvisIdx = 3; // spine_root
+
+      wingDef.forEach(([wx, wy, wz, wlabel, wm], wi) => {
+        const id = N.length;
+        const role = wi === 5 ? (si === 0 ? 'wingL_tip' : 'wingR_tip') : 'wing';
+        N.push(node(id, `w${si === 0 ? 'L' : 'R'}_${wlabel}`, v3(sx * wx, wy, wz), wm, role));
+      });
+
+      const wn = wingStart[si];
+
+      // ── Bones (Stiff Edges) ──
+      // Arm
+      E.push(edge(attachIdx, wn + 0, N, 'wing', 0.95, si)); // spine_mid to shoulder
+      E.push(edge(wn + 0, wn + 1, N, 'wing', 0.95, si));      // shoulder to humerus
+      E.push(edge(wn + 1, wn + 2, N, 'wing', 0.95, si));      // humerus to radius
+      E.push(edge(wn + 2, wn + 3, N, 'wing', 0.95, si));      // radius to carpals
+
+      // Fingers radiate from carpals
+      E.push(edge(wn + 3, wn + 4, N, 'wing', 0.92, si)); // carpals to thumb
+      E.push(edge(wn + 3, wn + 5, N, 'wing', 0.92, si)); // carpals to finger2
+      E.push(edge(wn + 3, wn + 6, N, 'wing', 0.92, si)); // carpals to finger3
+      E.push(edge(wn + 3, wn + 7, N, 'wing', 0.92, si)); // carpals to finger4
+      E.push(edge(wn + 3, wn + 8, N, 'wing', 0.92, si)); // carpals to finger5
+
+      // ── Membrane (Loose Edges) ──
+      // Scalloped trailing edge between finger tips
+      E.push(edge(wn + 5, wn + 6, N, 'membrane', 0.35, si)); // f2 to f3
+      E.push(edge(wn + 6, wn + 7, N, 'membrane', 0.35, si)); // f3 to f4
+      E.push(edge(wn + 7, wn + 8, N, 'membrane', 0.35, si)); // f4 to f5
+
+      // Anchor to body (pelvis to f5)
+      E.push(edge(pelvisIdx, wn + 8, N, 'membrane', 0.35, si));
+
+      // Cross-braces for structural integrity of the membrane
+      E.push(edge(wn + 6, wn + 2, N, 'membrane', 0.05, si)); // f3 to radius
+      E.push(edge(wn + 7, wn + 1, N, 'membrane', 0.05, si)); // f4 to humerus
+      E.push(edge(wn + 8, wn + 0, N, 'membrane', 0.05, si)); // f5 to shoulder
+      E.push(edge(wn + 8, pelvisIdx + 1, N, 'membrane', 0.04, si)); // f5 to spine midway
+
+      // ── Triangles ──
+      // Arm to body
+      T.push([attachIdx, wn + 0, wn + 1, si]); // spine_mid, shoulder, humerus
+      T.push([attachIdx, wn + 1, pelvisIdx, si]); // spine_mid, humerus, pelvis
+      T.push([pelvisIdx, wn + 1, wn + 8, si]); // pelvis, humerus, f5
+      T.push([wn + 1, wn + 2, wn + 8, si]); // humerus, radius, f5
+      T.push([wn + 2, wn + 3, wn + 8, si]); // radius, carpals, f5
+
+      // Between fingers
+      T.push([wn + 3, wn + 5, wn + 6, si]); // carpals, f2, f3
+      T.push([wn + 3, wn + 6, wn + 7, si]); // carpals, f3, f4
+      T.push([wn + 3, wn + 7, wn + 8, si]); // carpals, f4, f5
+    });
+
+    // LEGS — two-bone IK chains from pelvis
+    // Leg: hip→knee→foot (indices stored for IK)
+    const legDef = [
+      { side: 'L', hip: v3(-1.1, 0.0, 0.0), knee: v3(-1.3, -1.3, 0.3), foot: v3(-1.4, -2.5, 0.7) },
+      { side: 'R', hip: v3(1.1, 0.0, 0.0), knee: v3(1.3, -1.3, 0.3), foot: v3(1.4, -2.5, 0.7) },
+    ];
+    const legChains = [];
+    legDef.forEach((lg, li) => {
+      const pelvis = 3;
+      const hipID = N.length;
+      N.push(node(hipID, `hip_${lg.side}`, lg.hip, 6, `hip${lg.side}`));
+      E.push(edge(pelvis, hipID, N, 'leg', 0.97));
+      const kneeID = N.length;
+      N.push(node(kneeID, `knee_${lg.side}`, lg.knee, 4, `knee${lg.side}`));
+      E.push(edge(hipID, kneeID, N, 'leg', 0.95));
+      const footID = N.length;
+      N.push(node(footID, `foot_${lg.side}`, lg.foot, 2, `foot${lg.side}`));
+      E.push(edge(kneeID, footID, N, 'leg', 0.95));
+      legChains.push([pelvis, hipID, kneeID, footID]);
+    });
+
+    SIM.nodes = N; SIM.edges = E; SIM.triangles = T;
+    SIM.ikLegL = legChains[0];
+    SIM.ikLegR = legChains[1];
+    SIM.ikNeck = [3, 4, 5, 6, 7]; // pelvis→spine_mid→neck_base→neck_tip→head
+    SIM.wingStartL = wingStart[0];
+    SIM.wingStartR = wingStart[1];
+    SIM.ikWingArmL = [4, wingStart[0], wingStart[0] + 1, wingStart[0] + 2, wingStart[0] + 3];
+    SIM.ikWingArmR = [4, wingStart[1], wingStart[1] + 1, wingStart[1] + 2, wingStart[1] + 3];
+    SIM.ikWingTipL = [wingStart[0] + 3, wingStart[0] + 5];
+    SIM.ikWingTipR = [wingStart[1] + 3, wingStart[1] + 5];
+    SIM.wingDef = wingDef;
+  }
+
+  // ── FABRIK IK ─────────────────────────────────────────────────────────────
+  // chain: array of node IDs. target: v3. iterations: number
+  // Solves in world space, writes directly to node positions.
+  function fabrik(chain, target, nodes, iterations) {
+    const n = chain.length;
+    if (n < 2) return;
+    const segs = [];
+    for (let i = 0; i < n - 1; i++)segs.push(vlen(sub(nodes[chain[i + 1]].pos, nodes[chain[i]].pos)));
+
+    const pos = chain.map(id => copy(nodes[id].pos));
+    const anchor = copy(pos[0]);
+
+    for (let it = 0; it < iterations; it++) {
+      // Forward pass (tip→root)
+      pos[n - 1].x = target.x; pos[n - 1].y = target.y; pos[n - 1].z = target.z;
+      for (let i = n - 2; i >= 0; i--) {
+        const dir = nrm(sub(pos[i], pos[i + 1]));
+        pos[i] = add(pos[i + 1], scl(dir, segs[i]));
+      }
+      // Backward pass (root→tip)
+      pos[0].x = anchor.x; pos[0].y = anchor.y; pos[0].z = anchor.z;
+      for (let i = 1; i < n; i++) {
+        const dir = nrm(sub(pos[i], pos[i - 1]));
+        pos[i] = add(pos[i - 1], scl(dir, segs[i - 1]));
+      }
+    }
+    // Write back (skip root, it's anchored by constraint solver)
+    for (let i = 1; i < n; i++) {
+      nodes[chain[i]].pos.x = lerp(nodes[chain[i]].pos.x, pos[i].x, 0.5);
+      nodes[chain[i]].pos.y = lerp(nodes[chain[i]].pos.y, pos[i].y, 0.5);
+      nodes[chain[i]].pos.z = lerp(nodes[chain[i]].pos.z, pos[i].z, 0.5);
+    }
+  }
+
+  // ── Wing flap aerodynamics inline in simulate ───────────────────────────
+
+  // ── Reset ─────────────────────────────────────────────────────────────────
+  function resetSim() {
+    buildWyvern();
+    SIM.t = 0; SIM.tick = 0; SIM.wind = 0; SIM.particles = [];
+    SIM.motor = {
+      fatigue: 0, breathPhase: 0, flapPhaseL: 0, flapPhaseR: 0.5,
+      flapRate: 0, flapAmpL: 1, flapAmpR: 1, inFlight: false, altitude: 0, targetAlt: 0
+    };
+    SIM.expr = { speed: 0, alertness: 0, exhaustion: 0, wdL: 0, wdR: 0, pain: 0, liftL: 0, liftR: 0 };
+    document.getElementById('selI').value = 'idle';
+    SIM.intent = 'idle';
+    camYaw = 0.42; camPitch = 0.20; camDist = 17;
+    toast('reset');
+  }
+
+  // ── Main simulate ─────────────────────────────────────────────────────────
+  function simulate(dt) {
+    const N = SIM.nodes, E = SIM.edges, ms = SIM.motor;
+    const intent = SIM.intent;
+    SIM.t += dt; SIM.tick++;
+
+    // Breathing rhythm
+    ms.breathPhase = (ms.breathPhase + lerp(0.20, 0.52, ms.fatigue) * dt) % 1;
+    const breathY = Math.sin(ms.breathPhase * TAU) * lerp(0.06, 0.18, ms.fatigue);
+
+    // Determine flight mode
+    const inFlight = intent === 'glide' || intent === 'flap' || intent === 'dive';
+    ms.inFlight = inFlight;
+
+    // Fatigue
+    const fDelta = intent === 'flap' ? 0.005 : intent === 'strike' ? 0.18 : inFlight ? 0.001 : -0.012;
+    ms.fatigue = clamp(ms.fatigue + fDelta * dt, 0, 1);
+
+    // Wing health → flap amplitude
+    const tipL = N.find(n => n.role === 'wingL_tip');
+    const tipR = N.find(n => n.role === 'wingR_tip');
+    ms.flapAmpL = tipL ? clamp(tipL.hp, 0, 1) : 0;
+    ms.flapAmpR = tipR ? clamp(tipR.hp, 0, 1) : 0;
+
+    // Flap rate by intent
+    ms.flapRate = intent === 'flap' ? 2.2 : intent === 'glide' ? 0.35 : 0;
+
+    // Advance flap phases
+    const flapHz = ms.flapRate;
+    ms.flapPhaseL = (ms.flapPhaseL + flapHz * dt) % 1;
+    ms.flapPhaseR = (ms.flapPhaseR + flapHz * dt) % 1;
+
+    // True Gravity (9.81 m/s^2)
+    N.forEach(n => { if (n.hp <= 0) return; n.vel.y -= 9.8 * dt; });
+
+    // Root (pelvis) position target
+    const root = N[3];
+    const airspeed = vlen(root.vel);
+
+    // Target altitude per intent
+    const altTarget = intent === 'flap' ? 2.8 : intent === 'glide' ? 1.8 : intent === 'dive' ? -0.5 : intent === 'land' ? -1.8 : 0.0;
+    const altErr = altTarget - root.pos.y;
+
+    // Stabilise root toward target altitude (Severely nerfed so flap handles the weight)
+    if (intent === 'land' || intent === 'glide') {
+      root.vel.y += clamp(altErr * 0.5, -1, 1) * dt;
+    }
+
+    // ── Wing Flap & Aerodynamics ─────────────────────────────────────────
+    if (inFlight || intent === 'glide') {
+      [0, 1].forEach(si => {
+        const phase = si === 0 ? ms.flapPhaseL : ms.flapPhaseR;
+        const amp = si === 0 ? ms.flapAmpL : ms.flapAmpR;
+        const wS = si === 0 ? SIM.wingStartL : SIM.wingStartR;
+
+        // Motor: Drives Arm and Finger2
+        // Upstroke (raise): Pull up and back. Downstroke (strike): Drive down and forward.
+        const downFrac = 0.40;
+        const isDown = phase < downFrac;
+        const strokeT = isDown ? (phase / downFrac) : (1 - (phase - downFrac) / (1 - downFrac));
+        const strokeCurve = Math.sin(strokeT * Math.PI);
+
+        // 1. Newtonian Muscle Motor (Action & Reaction)
+        // Muscles push wing away from chest.
+        // Downstroke: push wing down and back. Upstroke: pull wing up and forward.
+        const flapRateMult = ms.flapRate > 0.1 ? 1.0 : 0.0;
+        const baseMotorY = isDown ? -30000 : 10000;
+        const baseMotorZ = isDown ? 5000 : -2000;
+
+        const motorForceY = baseMotorY * strokeCurve * amp * flapRateMult;
+        const motorForceZ = baseMotorZ * strokeCurve * amp * flapRateMult;
+
+        const driveShares = [0.25, 0.35, 0.25, 0.15, 0, 0, 0, 0, 0]; // Applied to arm bones
+
+        driveShares.forEach((share, wi) => {
+          if (share > 0) {
+            const nid = wS + wi;
+            if (nid < N.length && N[nid].hp > 0) {
+              const fY = motorForceY * share;
+              const fZ = motorForceZ * share;
+              // Apply force to Wing
+              N[nid].vel.y += (fY / N[nid].mass) * dt;
+              N[nid].vel.z += (fZ / N[nid].mass) * dt;
+              // Equal & Opposite force to Chest (Newton's 3rd Law)
+              N[4].vel.y -= (fY / N[4].mass) * dt;
+              N[4].vel.z -= (fZ / N[4].mass) * dt;
+            }
+          }
+        });
+
+        // 2. True Aerodynamics (Drag & Aerofoil Lift)
+        // Air resistance creates lift automatically when pushed against.
+        const areaShares = [0.05, 0.1, 0.15, 0.1, 0.02, 0.1, 0.25, 0.4, 0.5];
+        const dragCoeff = 450;
+
+        let totalLift = 0; // For HUD & Roll calculation
+
+        areaShares.forEach((area, wi) => {
+          const nid = wS + wi;
+          if (nid < N.length && N[nid].hp > 0) {
+            const node = N[nid];
+            const v = node.vel;
+
+            // Parasitic Drag (Quadratic)
+            let dragY = -Math.sign(v.y) * (v.y * v.y) * dragCoeff * area;
+            const dragZ = -Math.sign(v.z) * (v.z * v.z) * dragCoeff * area;
+            const dragX = -Math.sign(v.x) * (v.x * v.x) * dragCoeff * area;
+
+            // Feathering: during upstroke, wings angle to slice through air
+            if (!isDown && v.y > 0) dragY *= 0.15;
+
+            // Aerofoil Lift: Forward velocity generates upward lift
+            const fwdSpeed = v.z < 0 ? -v.z : 0;
+            const aerofoilLift = (fwdSpeed * fwdSpeed) * 120 * area;
+
+            // Apply forces
+            node.vel.x += (dragX / node.mass) * dt;
+            node.vel.y += ((dragY + aerofoilLift) / node.mass) * dt;
+            node.vel.z += (dragZ / node.mass) * dt;
+
+            totalLift += Math.max(0, dragY + aerofoilLift);
+          }
+        });
+
+        // Differential lift → roll
+        const rollMoment = totalLift * 0.005 * (si === 0 ? 1 : -1);
+        N[wS].vel.y += rollMoment * dt;
+
+        // Store for HUD
+        if (si === 0) SIM.expr.liftL = totalLift / 200;
+        else SIM.expr.liftR = totalLift / 200;
+
+        // Emit airflow particles on downstroke
+        if (isDown && strokeCurve > 0.6 && Math.random() < 0.15) {
+          const wt = N[wS + 2];
+          if (wt) spawnP(wt.pos, v3((Math.random() - 0.5) * 2, strokeCurve * 2, -(1 + Math.random())), 'rgba(100,175,255,', 0.5);
+        }
+
+        // Glide aerofoil drag
+        if (intent === 'glide' && airspeed > 0.1 && si === 0) { // Apply once
+          const dragDir = nrm(scl(root.vel, -1));
+          N[3].vel = add(N[3].vel, scl(dragDir, airspeed * 0.12 * 0.5 * dt));
+        }
+      });
+    }
+
+    // ── Dive ──────────────────────────────────────────────────────────────
+    if (intent === 'dive') {
+      N[3].vel.z += 2.5 * dt; N[3].vel.y -= 2 * dt;
+      N[7].vel.z += 1.5 * dt; // head leads
+    }
+
+    // ── Strike ────────────────────────────────────────────────────────────
+    if (intent === 'strike') {
+      N[7].vel.z += 8 * dt; N[6].vel.z += 5 * dt; N[7].vel.y += 0.5 * dt;
+      ms.fatigue = clamp(ms.fatigue + 0.2 * dt, 0, 1);
+      if (Math.random() < 0.2) spawnP(N[7].pos, v3((Math.random() - 0.5) * 3, Math.random() * 2, 4 + Math.random() * 4), 'rgba(230,90,40,', 0.6);
+    }
+
+    // ── Intimidate ────────────────────────────────────────────────────────
+    if (intent === 'intimidate') {
+      N[7].vel.y += 1.5 * dt; N[7].vel.z -= 0.8 * dt;
+      N[0].vel.y -= 1.0 * dt; // tail drops
+      [SIM.wingStartL, SIM.wingStartR].forEach(ws => {
+        if (ws < N.length) N[ws].vel.y += 1.2 * dt; // shoulders rise
+      });
+      if (Math.random() < 0.08) spawnP(N[3].pos, v3((Math.random() - 0.5) * 5, Math.random() * 3, (Math.random() - 0.5) * 5), 'rgba(90,210,80,', 0.5);
+    }
+
+    // ── Breathing displacement on torso ───────────────────────────────────
+    N[3].vel.y += breathY * 3 * dt;
+    N[4].vel.y += breathY * 2 * dt;
+
+    // ── Wind ──────────────────────────────────────────────────────────────
+    if (SIM.wind > 0) {
+      SIM.wind = Math.max(0, SIM.wind - dt);
+      N.forEach(n => n.vel = add(n.vel, scl(SIM.windDir, 7.5 * dt)));
+      if (Math.random() < 0.3) {
+        const rn = N[Math.floor(Math.random() * N.length)];
+        spawnP(rn.pos, add(scl(SIM.windDir, 3 + Math.random() * 4), v3((Math.random() - 0.5), (Math.random() - 0.5), 0)), 'rgba(100,178,255,', 0.5);
+      }
+    }
+
+    // ── Integrate ─────────────────────────────────────────────────────────
+    N.forEach(n => {
+      if (n.hp <= 0) return;
+      n.pos = add(n.pos, scl(n.vel, dt));
+      n.vel = scl(n.vel, 0.98); // Realistic aerodynamic drag, previously 0.78
+    });
+
+    // ── Constraint solve ─────────────────────────────────────────────────
+    // 10 iterations — enough for stiff spine + floppy membrane
+    for (let it = 0; it < 10; it++) {
+      E.forEach(e => {
+        const a = N[e.a], b = N[e.b];
+        if (!a || !b || a.hp <= 0 || b.hp <= 0) return;
+        const d = sub(b.pos, a.pos);
+        const dist = vlen(d) || 1e-5;
+        const err = dist - e.rest;
+        const dmgMult = Math.min(a.hp, b.hp);
+        const corr = err * e.stiff * dmgMult;
+        const dir = scl(d, 1 / dist);
+        const tw = a.mass + b.mass;
+        a.pos = add(a.pos, scl(dir, corr * (b.mass / tw) * 0.5));
+        b.pos = sub(b.pos, scl(dir, corr * (a.mass / tw) * 0.5));
+      });
+
+      // Floor Collision
+      N.forEach(n => {
+        if (n.pos.y < -2.4) {
+          n.pos.y = -2.4;
+          n.vel.y = Math.max(0, n.vel.y) * 0.5; // bounce damp
+          n.vel.x *= 0.8; // friction
+          n.vel.z *= 0.8;
+        }
+        if (n.pos.y < -6) { n.pos.y = -6; n.vel.y = 0; } // Failsafe
+      });
+    }
+
+    // ── IK pass (after constraint solve) ─────────────────────────────────
+    // Neck targets relative to spine_mid
+    const spinePos = N[4].pos;
+    const localNeckTgt = intent === 'strike' ? v3(0, -0.3, -3.1) :
+      intent === 'intimidate' ? v3(0, 0.6, -2.1) :
+        intent === 'dive' ? v3(0, -0.8, -2.8) : v3(0, -0.25, -2.6);
+    const neckTgt = add(spinePos, localNeckTgt);
+    if (SIM.showIK) fabrik(SIM.ikNeck, neckTgt, N, 3);
+
+    // Legs: IK targets relative to hips
+    if (!ms.inFlight) {
+      const gaitPhase = (SIM.t * 0.8) % 1;
+      const stepL = Math.sin(gaitPhase * TAU) * 0.3;
+      const stepR = Math.sin(gaitPhase * TAU + Math.PI) * 0.3;
+
+      // Hip nodes
+      const hipL = N[SIM.ikLegL[1]].pos;
+      const hipR = N[SIM.ikLegR[1]].pos;
+
+      // Target the floor with step offset
+      const tgtL = v3(hipL.x - 0.3, -2.4, hipL.z + 0.7 + stepL);
+      const tgtR = v3(hipR.x + 0.3, -2.4, hipR.z + 0.7 + stepR);
+
+      fabrik(SIM.ikLegL, tgtL, N, 4);
+      fabrik(SIM.ikLegR, tgtR, N, 4);
+
+      // ── Wing Crawl IK ──
+      const spineMid = N[4].pos;
+      // Reverse gait phase for front legs
+      const wStepL = Math.sin(gaitPhase * TAU + Math.PI) * 0.3;
+      const wStepR = Math.sin(gaitPhase * TAU) * 0.3;
+
+      // Wrist targets the ground in front and to the side
+      const wristTgtL = v3(spineMid.x - 2.5, -2.4, spineMid.z - 1.5 + wStepL);
+      const wristTgtR = v3(spineMid.x + 2.5, -2.4, spineMid.z - 1.5 + wStepR);
+
+      if (SIM.showIK) {
+        fabrik(SIM.ikWingArmL, wristTgtL, N, 3);
+        fabrik(SIM.ikWingArmR, wristTgtR, N, 3);
+
+        // Wing tips fold up and back from the planted wrist
+        const carpalsL = N[SIM.ikWingArmL[4]].pos;
+        const carpalsR = N[SIM.ikWingArmR[4]].pos;
+        const foldTgtL = add(carpalsL, v3(0.5, 1.5, 2.5));
+        const foldTgtR = add(carpalsR, v3(-0.5, 1.5, 2.5));
+
+        fabrik(SIM.ikWingTipL, foldTgtL, N, 2);
+        fabrik(SIM.ikWingTipR, foldTgtR, N, 2);
+      }
+    } else {
+      // Legs tuck during flight relative to hips
+      const hipL = N[SIM.ikLegL[1]].pos;
+      const hipR = N[SIM.ikLegR[1]].pos;
+      const tuckL = add(hipL, v3(0.1, -0.7, 0.3));
+      const tuckR = add(hipR, v3(-0.1, -0.7, 0.3));
+      fabrik(SIM.ikLegL, tuckL, N, 3);
+      fabrik(SIM.ikLegR, tuckR, N, 3);
+    }
+
+    // ── Structural stress → HP drain ─────────────────────────────────────
+    E.forEach(e => {
+      const a = N[e.a], b = N[e.b]; if (!a || !b) return;
+      const dist = vlen(sub(b.pos, a.pos));
+      const strain = Math.abs(dist - e.rest) / Math.max(e.rest, 0.01);
+      if (strain > 0.4 && e.type !== 'membrane') {
+        const dmg = strain * 0.003 * dt;
+        a.hp = clamp(a.hp - dmg, 0, 1); b.hp = clamp(b.hp - dmg, 0, 1);
+      }
+    });
+
+    // ── Expression frame ─────────────────────────────────────────────────
+    const avgHP = N.reduce((s, n) => s + n.hp, 0) / N.length;
+    SIM.expr = {
+      speed: clamp(vlen(root.vel) / 5, 0, 1),
+      alertness: intent === 'strike' ? 0.95 : intent === 'intimidate' ? 0.7 : inFlight ? 0.5 : 0.2,
+      exhaustion: ms.fatigue,
+      wdL: tipL ? 1 - tipL.hp : 0, wdR: tipR ? 1 - tipR.hp : 0,
+      pain: clamp(1 - avgHP, 0, 1),
+      liftL: SIM.expr.liftL ?? 0,
+      liftR: SIM.expr.liftR ?? 0,
+    };
+
+    SIM.particles = SIM.particles.filter(p => {
+      p.pos = add(p.pos, scl(p.vel, dt)); p.vel = scl(p.vel, 0.90); p.life -= dt; return p.life > 0;
+    });
+  }
+
+  function spawnP(pos, vel, col, life) {
+    SIM.particles.push({ pos: copy(pos), vel: copy(vel), color: col, life, maxLife: life });
+  }
+
+  // ── Drawing ───────────────────────────────────────────────────────────────
+  function hpStroke(hp) {
+    if (hp > 0.7) return '#4a9fe0';
+    if (hp > 0.4) return '#e0a030';
+    if (hp > 0.1) return '#e05030';
+    return '#772020';
+  }
+  function hpFill(hp) {
+    if (hp > 0.7) return 'rgba(74,159,224,0.14)';
+    if (hp > 0.4) return 'rgba(224,160,48,0.14)';
+    if (hp > 0.1) return 'rgba(224,80,48,0.14)';
+    return 'rgba(100,25,25,0.20)';
+  }
+
+  const ESTYLE = {
+    spine: { w: 2.8, dash: [], base: 'rgba(155,200,240,' },
+    wing: { w: 1.8, dash: [], base: 'rgba(75,150,220,' },
+    membrane: { w: 0.9, dash: [3, 4], base: 'rgba(50,110,190,' },
+    leg: { w: 1.7, dash: [], base: 'rgba(90,175,100,' },
+  };
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0b0d11'; ctx.fillRect(0, 0, W, H);
+
+    // Floor grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.8;
+    for (let x = -14; x <= 14; x += 2) {
+      const a = proj(v3(x, -2.4, -15)), b = proj(v3(x, -2.4, 15));
+      if (a && b) { ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke(); }
+    }
+    for (let z = -15; z <= 15; z += 2) {
+      const a = proj(v3(-14, -2.4, z)), b = proj(v3(14, -2.4, z));
+      if (a && b) { ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke(); }
+    }
+
+    // Ground shadow
+    const rp = proj(v3(SIM.nodes[3]?.pos.x ?? 0, -2.58, SIM.nodes[3]?.pos.z ?? 0));
+    if (rp) {
+      ctx.beginPath(); ctx.ellipse(rp.sx, rp.sy, 30, 7, 0, 0, TAU);
+      ctx.fillStyle = `rgba(0,0,0,${SIM.motor.inFlight ? 0.15 : 0.38})`; ctx.fill();
+    }
+
+    const N = SIM.nodes;
+    const P = N.map(n => proj(n.pos));
+
+    // ── Membrane triangles ────────────────────────────────────────────────
+    if (SIM.showMem) {
+      SIM.triangles.forEach(([ia, ib, ic, si]) => {
+        const pa = P[ia], pb = P[ib], pc = P[ic];
+        if (!pa || !pb || !pc) return;
+        const na = N[ia], nb = N[ib], nc = N[ic];
+        const avgHp = (na.hp + nb.hp + nc.hp) / 3;
+        const alpha = clamp(avgHp * 0.13, 0.02, 0.15);
+        const col = avgHp > 0.5 ? `rgba(60,120,200,${alpha})` : `rgba(160,60,40,${alpha})`;
+        ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy); ctx.lineTo(pc.sx, pc.sy); ctx.closePath();
+        ctx.fillStyle = col; ctx.fill();
+      });
+    }
+
+    // ── Particles ─────────────────────────────────────────────────────────
+    SIM.particles.forEach(p => {
+      const pp = proj(p.pos); if (!pp) return;
+      const a = p.life / p.maxLife;
+      ctx.beginPath(); ctx.arc(pp.sx, pp.sy, 3 * a + 0.3, 0, TAU);
+      ctx.fillStyle = p.color + (a * 0.9) + ')'; ctx.fill();
+    });
+
+    // ── Edges ─────────────────────────────────────────────────────────────
+    if (SIM.showGraph) {
+      const sortedEdges = [...SIM.edges].sort((a, b) => {
+        const da = (P[a.a]?.depth ?? 0 + P[a.b]?.depth ?? 0);
+        const db = (P[b.a]?.depth ?? 0 + P[b.b]?.depth ?? 0);
+        return db - da;
+      });
+      sortedEdges.forEach(e => {
+        const pa = P[e.a], pb = P[e.b]; if (!pa || !pb) return;
+        const na = N[e.a], nb = N[e.b];
+        const avgHp = (na.hp + nb.hp) * 0.5;
+        const st = ESTYLE[e.type] || ESTYLE.spine;
+        const alpha = e.type === 'membrane' ? 0.38 : 0.65;
+        const col = avgHp < 0.4 ? `rgba(210,65,45,${alpha})` : st.base + alpha + ')';
+        ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy);
+        ctx.strokeStyle = col; ctx.lineWidth = st.w; ctx.setLineDash(st.dash); ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+
+    // ── IK chain highlights ───────────────────────────────────────────────
+    if (SIM.showIK) {
+      [[SIM.ikNeck, 'rgba(180,220,120,0.5)'], [SIM.ikLegL, 'rgba(120,200,140,0.5)'], [SIM.ikLegR, 'rgba(120,200,140,0.5)']].forEach(([chain, col]) => {
+        ctx.beginPath();
+        chain.forEach((id, i) => {
+          const p = P[id]; if (!p) return;
+          if (i === 0) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
+        });
+        ctx.strokeStyle = col; ctx.lineWidth = 1.0; ctx.setLineDash([2, 3]); ctx.stroke(); ctx.setLineDash([]);
+      });
+    }
+
+    // ── Nodes (back to front) ─────────────────────────────────────────────
+    const sorted = P.map((p, i) => ({ p, n: N[i] })).filter(x => x.p).sort((a, b) => b.p.depth - a.p.depth);
+    sorted.forEach(({ p, n }) => {
+      if (n.hp <= 0) {
+        ctx.beginPath(); ctx.arc(p.sx, p.sy, 3.5, 0, TAU);
+        ctx.fillStyle = 'rgba(130,30,25,0.55)'; ctx.fill(); return;
+      }
+      const r = n.role === 'root' || n.role === 'spine' ? 7 : n.role === 'head' ? 10 :
+        n.role === 'neck' ? 5 : n.role.startsWith('wing') ? 4 : 5;
+      ctx.beginPath();
+      if (n.role === 'head') { ctx.ellipse(p.sx, p.sy, r * 1.75, r * 1.05, 0, 0, TAU); }
+      else if (n.role === 'root' || n.role === 'spine') { ctx.ellipse(p.sx, p.sy, r * 1.3, r * 0.85, 0, 0, TAU); }
+      else { ctx.arc(p.sx, p.sy, r, 0, TAU); }
+      ctx.fillStyle = hpFill(n.hp); ctx.fill();
+      ctx.strokeStyle = hpStroke(n.hp); ctx.lineWidth = 1.3; ctx.stroke();
+
+      // HP arc
+      if (n.hp < 0.99) {
+        ctx.beginPath(); ctx.arc(p.sx, p.sy, r + 3, -Math.PI / 2, -Math.PI / 2 + n.hp * TAU);
+        ctx.strokeStyle = 'rgba(220,75,45,0.7)'; ctx.lineWidth = 1.8; ctx.stroke();
+      }
+
+      // Eyes
+      if (n.role === 'head') {
+        [-0.4, 0.4].forEach(xo => {
+          const ep = proj(add(n.pos, v3(xo, 0.22, 0.3)));
+          if (ep) { ctx.beginPath(); ctx.arc(ep.sx, ep.sy, 2.3, 0, TAU); ctx.fillStyle = '#ff4411'; ctx.fill(); }
+        });
+      }
+
+      // Flap ring on wing tips
+      if (n.role === 'wingL_tip' || n.role === 'wingR_tip') {
+        const fl = n.role === 'wingL_tip' ? SIM.motor.flapPhaseL : SIM.motor.flapPhaseR;
+        const isDown = fl < 0.5;
+        const ring = Math.sin(fl * TAU) * 0.5 + 0.5;
+        if (SIM.motor.flapRate > 0.1) {
+          ctx.beginPath(); ctx.arc(p.sx, p.sy, r + 5, 0, TAU);
+          ctx.strokeStyle = `rgba(${isDown ? '100,185,255' : '180,140,255'},${ring * 0.45})`;
+          ctx.lineWidth = 2.5; ctx.stroke();
+        }
+      }
+
+      // Label for key nodes
+      const showLbl = n.role === 'head' || n.role === 'root' || n.role === 'wingL_tip' || n.role === 'wingR_tip' || n.role === 'tail_tip';
+      if (SIM.showGraph && showLbl) {
+        ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(160,200,245,0.55)';
+        ctx.fillText(n.label, p.sx + r + 3, p.sy + 3);
+      }
+    });
+
+    if (SIM.showHUD) drawHUD();
+  }
+
+  function drawHUD() {
+    const ef = SIM.expr, ms = SIM.motor;
+    const x = 10, y = 10, bw = 75, bh = 5, gap = 13;
+    ctx.font = '9px monospace';
+    const rows = [
+      ['speed', ef.speed, '#4a9fe0'],
+      ['lift L', clamp(ef.liftL, 0, 1), '#60b8f0'],
+      ['lift R', clamp(ef.liftR, 0, 1), '#60b8f0'],
+      ['alertness', ef.alertness, '#e0c840'],
+      ['exhaustion', ef.exhaustion, '#e07030'],
+      ['pain', ef.pain, '#e03535'],
+      ['wing L', ef.wdL, '#c05525'],
+      ['wing R', ef.wdR, '#c05525'],
+      ['breath', ms.breathPhase, '#50c0a0'],
+      ['fatigue', ms.fatigue, '#b03020'],
+    ];
+    ctx.fillStyle = 'rgba(8,12,20,0.75)';
+    ctx.fillRect(x - 4, y - 4, 150, rows.length * gap + 20);
+    rows.forEach(([label, val, col], i) => {
+      const ry = y + i * gap;
+      ctx.fillStyle = 'rgba(165,200,238,0.55)'; ctx.fillText(label, x, ry + 8);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(x + 50, ry + 1, bw, bh);
+      ctx.fillStyle = col; ctx.fillRect(x + 50, ry + 1, bw * clamp(val, 0, 1), bh);
+    });
+    const iy = y + rows.length * gap + 4;
+    ctx.fillStyle = 'rgba(175,215,255,0.7)';
+    ctx.fillText(`▶ ${SIM.intent}  flapHz ${ms.flapRate.toFixed(1)}`, x, iy + 8);
+
+    // Flap phase indicators
+    const phaseX = x + 50, phaseY = iy + 16;
+    ['L', 'R'].forEach((s, i) => {
+      const ph = i === 0 ? ms.flapPhaseL : ms.flapPhaseR;
+      const isDown = ph < 0.5;
+      ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(phaseX, phaseY + i * 11, bw, 4);
+      ctx.fillStyle = isDown ? 'rgba(100,185,255,0.8)' : 'rgba(180,140,255,0.6)';
+      ctx.fillRect(phaseX, phaseY + i * 11, bw * ph, 4);
+      ctx.fillStyle = 'rgba(165,200,238,0.45)'; ctx.fillText(`flap ${s} ${isDown ? '↓' : '↑'}`, x, phaseY + i * 11 + 9);
+    });
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(130,155,195,0.32)';
+    ctx.fillText('drag · scroll', W - 8, H - 8);
+    ctx.textAlign = 'left';
+  }
+
+  let toastT = null;
+  function toast(m) {
+    const el = document.getElementById('toast'); el.textContent = m; el.style.opacity = '1';
+    clearTimeout(toastT); toastT = setTimeout(() => el.style.opacity = '0', 1500);
+  }
+  function updateSB() {
+    document.getElementById('sb').textContent =
+      `t=${SIM.t.toFixed(1)}s · tick ${SIM.tick} · fat ${Math.round(SIM.motor.fatigue * 100)}%`;
+  }
+
+  let running = false, raf = null, lts = null;
+  function loop(ts) {
+    if (!lts) lts = ts;
+    const dt = Math.min((ts - lts) / 1000, 0.05); lts = ts;
+    simulate(dt); draw(); updateSB();
+    if (running) raf = requestAnimationFrame(loop);
+  }
+
+  function tog(btn, key) {
+    SIM[key] = !SIM[key];
+    document.getElementById(btn).classList.toggle('on', SIM[key]);
+    if (!running) draw();
+  }
+
+  document.getElementById('bPlay').addEventListener('click', () => {
+    running = !running;
+    document.getElementById('bPlay').textContent = running ? '⏸ pause' : '⏵ run';
+    document.getElementById('bPlay').classList.toggle('on', running);
+    if (running) { lts = null; raf = requestAnimationFrame(loop); }
+    else { cancelAnimationFrame(raf); toast('paused'); }
+  });
+  document.getElementById('bStep').addEventListener('click', () => {
+    if (running) return; simulate(0.016); draw(); updateSB(); toast('+16ms');
+  });
+  document.getElementById('bReset').addEventListener('click', () => {
+    if (running) {
+      running = false; cancelAnimationFrame(raf);
+      document.getElementById('bPlay').textContent = '⏵ run'; document.getElementById('bPlay').classList.remove('on');
+    }
+    resetSim(); draw(); updateSB();
+  });
+  document.getElementById('selI').addEventListener('change', e => {
+    SIM.intent = e.target.value; toast('→ ' + SIM.intent); if (!running) { simulate(0.001); draw(); }
+  });
+  document.getElementById('bDL').addEventListener('click', () => {
+    const t = SIM.nodes.find(n => n.role === 'wingL_tip'); if (t) t.hp = clamp(t.hp - 0.4, 0, 1);
+    SIM.nodes.filter(n => n.role === 'wing' && n.pos.x < 0).forEach(n => n.hp = clamp(n.hp - 0.15, 0, 1));
+    toast('wing L hit'); if (!running) draw();
+  });
+  document.getElementById('bDR').addEventListener('click', () => {
+    const t = SIM.nodes.find(n => n.role === 'wingR_tip'); if (t) t.hp = clamp(t.hp - 0.4, 0, 1);
+    SIM.nodes.filter(n => n.role === 'wing' && n.pos.x > 0).forEach(n => n.hp = clamp(n.hp - 0.15, 0, 1));
+    toast('wing R hit'); if (!running) draw();
+  });
+  document.getElementById('bDS').addEventListener('click', () => {
+    SIM.nodes.filter(n => n.role === 'spine' || n.role === 'root').forEach(n => n.hp = clamp(n.hp - 0.22, 0, 1));
+    toast('spine stressed'); if (!running) draw();
+  });
+  document.getElementById('bW').addEventListener('click', () => {
+    SIM.wind = 2.2; SIM.windDir = nrm(v3(Math.random() - 0.5, 0.05, Math.random() - 0.5));
+    for (let i = 0; i < 25; i++) {
+      const rn = SIM.nodes[Math.floor(Math.random() * SIM.nodes.length)];
+      spawnP(rn.pos, add(scl(SIM.windDir, 2 + Math.random() * 5), v3((Math.random() - 0.5), (Math.random() - 0.5), 0)), 'rgba(100,178,255,', 0.4 + Math.random() * 0.7);
+    }
+    toast('wind burst');
+  });
+  document.getElementById('bG').addEventListener('click', () => tog('bG', 'showGraph'));
+  document.getElementById('bM').addEventListener('click', () => tog('bM', 'showMem'));
+  document.getElementById('bIK').addEventListener('click', () => tog('bIK', 'showIK'));
+  document.getElementById('bH').addEventListener('click', () => tog('bH', 'showHUD'));
+
+  resetSim(); draw(); updateSB();
+</script>

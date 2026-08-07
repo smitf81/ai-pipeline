@@ -107,6 +107,7 @@ const {
   runQaRepairAttempt,
 } = require('./qaRepairLoop');
 const {
+  emptyQaLaneCanaryState,
   runQaLaneCanarySuite,
 } = require('./qaLaneCanaries');
 const {
@@ -119,6 +120,14 @@ const {
 const {
   buildTruthKernelPayload,
 } = require('./truthKernelAdapter');
+const {
+  buildCanonicalIntentContract,
+} = require('./intentAnalysis');
+const {
+  createEmptySpatialGhostProjectionRegistry,
+  resolveSpatialGhostProjection,
+  upsertSpatialGhostProjectionRegistry,
+} = require('./spatialGhostResolver');
 const {
   buildEvaluatorSnapshot,
   maybeRunEvaluatorCycle,
@@ -477,8 +486,16 @@ const {
 const app = express();
 const port = process.env.PORT || 3000;
 
+function getCurrentPort() {
+  return process.env.PORT || port || 3000;
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '512kb' }));
+
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
 
 app.get(['/qa', '/qa/'], (req, res) => {
   res.redirect(302, '/?mode=qa');
@@ -2098,7 +2115,7 @@ function normalizeCtoPipelineState(pipeline = null, { text = '' } = {}) {
   return {
     id: String(source.id || source.pipelineId || createCtoPipelineId()).trim() || createCtoPipelineId(),
     roleIndex,
-    step: CTO_CANONICAL_ACTION_IDS.includes(stage) ? stage : 'hire-role',
+    step: CTO_CANONICAL_ACTION_IDS.includes(stage) || stage === 'complete' ? stage : 'hire-role',
     roleId: String(source.roleId || role.roleId).trim() || role.roleId,
     roleLabel: String(source.roleLabel || role.roleLabel).trim() || role.roleLabel,
     deskId: String(source.deskId || role.deskId).trim() || role.deskId,
@@ -2536,7 +2553,6 @@ function buildCtoActionForPipeline(pipeline = null, context = null, text = '') {
   );
   const layoutPlannerCoverage = buildCanonicalPlannerCoverageTruth(canonicalLayout);
   const layoutQaLeadCoverage = buildCanonicalQALeadCoverageTruth(canonicalLayout);
-  const coverageTruth = role.deskId === 'qa-lead' ? layoutQaLeadCoverage : layoutPlannerCoverage;
   const plannerCoverage = context?.ta?.plannerCoverage && typeof context.ta.plannerCoverage === 'object'
     ? context.ta.plannerCoverage
     : layoutPlannerCoverage;
@@ -2546,6 +2562,23 @@ function buildCtoActionForPipeline(pipeline = null, context = null, text = '') {
   const desk = Array.isArray(context?.desks)
     ? context.desks.find((entry) => entry.deskId === role.deskId) || null
     : null;
+  const deskTaCoverage = desk?.taCoverage && typeof desk.taCoverage === 'object' ? desk.taCoverage : null;
+  const deskTaCoverageHasSignal = Boolean(
+    typeof deskTaCoverage?.covered === 'boolean'
+    || (Array.isArray(deskTaCoverage?.openRoles) && deskTaCoverage.openRoles.length > 0)
+    || (Array.isArray(deskTaCoverage?.blockers) && deskTaCoverage.blockers.length > 0),
+  );
+  const coverageTruth = role.deskId === 'qa-lead'
+    ? (deskTaCoverageHasSignal
+      ? {
+          ...deskTaCoverage,
+          covered: typeof deskTaCoverage.covered === 'boolean'
+            ? deskTaCoverage.covered
+            : !(Array.isArray(deskTaCoverage.openRoles) && deskTaCoverage.openRoles.length > 0)
+              && !(Array.isArray(deskTaCoverage.blockers) && deskTaCoverage.blockers.length > 0),
+        }
+      : layoutQaLeadCoverage)
+    : layoutPlannerCoverage;
   const deskLabel = desk?.label || role.deskLabel;
   const canonicalSeatBlocker = Array.isArray(context?.ta?.canonicalSeats)
     ? context.ta.canonicalSeats.find((entry) => entry?.entityId === role.deskId && entry?.blocker) || null
@@ -2825,16 +2858,98 @@ function buildCtoDeskRouteSummary(deskId = '') {
   };
 }
 
-async function buildCtoGovernanceContext(workspace = null, options = {}) {
+function buildCtoTaGovernancePayload(taState, { workspace, rootPath = ROOT } = {}) {
+  const normalizedState = normalizeTaDepartmentState(taState);
+  const canonicalLayout = normalizeStudioLayoutSchema(
+    workspace?.studio?.layout
+    || createDefaultStudioLayoutSchema(),
+  );
+  const plannerCoverage = buildCanonicalPlannerCoverageTruth(canonicalLayout);
+  const qaLeadCoverage = buildCanonicalQALeadCoverageTruth(canonicalLayout);
+  const hireRequestQueue = readTaHireRequestQueue(rootPath);
+  const hireRequestsSummary = summarizeTaHireRequestQueue(hireRequestQueue);
+  const coverage = ['planner', 'qa-lead'].map((deskId) => {
+    const coverageTruth = deskId === 'qa-lead' ? qaLeadCoverage : plannerCoverage;
+    return {
+      entityType: 'desk',
+      entityId: deskId,
+      entityLabel: deskId,
+      departmentId: canonicalLayout.organization?.desks?.[deskId]?.ownerDepartmentId || canonicalLayout.organization?.desks?.[deskId]?.departmentId || 'dept-delivery',
+      health: coverageTruth.covered ? 'healthy' : 'blocked',
+      blocked: !coverageTruth.covered,
+      statusLabel: coverageTruth.covered ? 'covered' : 'missing coverage',
+      openRoles: coverageTruth.covered ? [] : [{
+        roleId: deskId,
+        roleLabel: deskId,
+        kind: 'missing lead',
+        urgency: 'high',
+        blocker: true,
+      }],
+      blockers: coverageTruth.covered ? [] : [{
+        roleId: deskId,
+        roleLabel: deskId,
+        kind: 'missing lead',
+        blocker: true,
+      }],
+    };
+  });
+  const canonicalSeats = coverage.flatMap((entry) => entry.openRoles.map((role) => ({
+    entityId: entry.entityId,
+    entityLabel: entry.entityLabel,
+    departmentId: entry.departmentId,
+    departmentLabel: entry.departmentId,
+    roleId: role.roleId,
+    roleLabel: role.roleLabel,
+    kind: role.kind,
+    urgency: role.urgency,
+    blocker: role.blocker,
+  })));
+  return {
+    department: {
+      name: 'Talent Acquisition',
+      summary: canonicalSeats.length
+        ? `${canonicalSeats.length} canonical open seat${canonicalSeats.length === 1 ? '' : 's'} requiring TA attention.`
+        : `All ${coverage.length} canonical desk seats are covered.`,
+      urgency: canonicalSeats.some((entry) => entry.blocker) ? 'high' : 'low',
+      updatedAt: normalizedState.updatedAt,
+    },
+    hireRequestsSummary,
+    hireRequests: hireRequestQueue.entries,
+    coverage,
+    gapModel: {
+      coverage,
+      canonicalSeats,
+      summary: {
+        openRoleCount: canonicalSeats.length,
+        blockerCount: canonicalSeats.filter((entry) => entry.blocker).length,
+        urgency: canonicalSeats.some((entry) => entry.blocker) ? 'high' : 'low',
+      },
+    },
+    plannerCoverage,
+    qaLeadCoverage,
+    plannerCoverageBlocker: plannerCoverage.covered ? null : {
+      label: 'Hire Planner coverage',
+      reason: `Planner coverage is needed before the pipeline can continue.`,
+      failedPredicates: plannerCoverage.failedPredicates || [],
+      canonical: plannerCoverage.canonical,
+      covered: plannerCoverage.covered,
+    },
+    roster: normalizedState.roster,
+    hiredCandidates: normalizedState.hiredCandidates,
+  };
+}
+
+function buildCtoGovernanceContext(workspace = null, options = {}) {
   const rootPath = options?.rootPath || ROOT;
   const runtimeWorkspace = normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
+    persist: false,
     workspace: workspace || readSpatialWorkspace(rootPath),
   }));
   const taDepartmentFile = rootPath === ROOT
     ? TA_DEPARTMENT_FILE
     : path.join(rootPath, 'data', 'spatial', 'ta-department.json');
   const taState = normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
-  const taPayload = await buildTaDepartmentPayload(taState, {
+  const taPayload = options.taPayload || buildCtoTaGovernancePayload(taState, {
     workspace: runtimeWorkspace,
     rootPath,
   });
@@ -3248,13 +3363,27 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
     ? options.selectTaCandidateForDesk
     : (candidateAction) => selectTaCandidateForDesk(candidateAction, { taDepartmentFile });
   const taDepartmentFile = options.taDepartmentFile || TA_DEPARTMENT_FILE;
-  const pipeline = normalizeCtoPipelineState(
+  let pipeline = normalizeCtoPipelineState(
     workspaceInput?.studio?.ctoPipeline || options.pipeline || null,
     { text: options.text || '' },
   );
-  const currentRole = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
-  const currentDesk = currentRole.deskId;
-  const currentDeskLabel = currentRole.deskLabel;
+  let currentRole = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
+  let currentDesk = currentRole.deskId;
+  let currentDeskLabel = currentRole.deskLabel;
+
+  if (!options.workspace && normalizedAction.targetDeskId && normalizedAction.targetDeskId !== currentDesk) {
+    const targetRoleIndex = CTO_PIPELINE_ROLE_SEQUENCE.findIndex((entry) => entry.deskId === normalizedAction.targetDeskId);
+    if (targetRoleIndex >= 0) {
+      pipeline = normalizeCtoPipelineState({
+        ...pipeline,
+        roleIndex: targetRoleIndex,
+        step: normalizedAction.id,
+      });
+      currentRole = getCtoPipelineRoleDescriptor(pipeline.roleIndex || 0);
+      currentDesk = currentRole.deskId;
+      currentDeskLabel = currentRole.deskLabel;
+    }
+  }
 
   if (!CTO_CANONICAL_ACTION_IDS.includes(normalizedAction.id)) {
     return {
@@ -3335,7 +3464,8 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
         contractLocked: true,
       };
       const currentState = normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
-      if (!currentState.hiredCandidates.some((entry) => entry.id === hiredCandidate.id)) {
+      const candidateAlreadyHired = currentState.hiredCandidates.some((entry) => entry.id === hiredCandidate.id);
+      if (!candidateAlreadyHired) {
         writeJson(taDepartmentFile, {
           ...currentState,
           hiredCandidates: [...currentState.hiredCandidates, hiredCandidate],
@@ -3343,14 +3473,26 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           lastGeneratedGap: normalizedAction.gapDescription || currentState.lastGeneratedGap || null,
         });
       }
+      const advancedPipeline = advanceCtoPipelineState(pipeline, 'hire-role', {
+        candidateId: hiredCandidate.id,
+        candidateName: hiredCandidate.name,
+      });
+      const holdForExecutorConfirmation = !candidateAlreadyHired
+        && roleId === 'qa-lead'
+        && pipeline.roleIndex > 0
+        && String(pipeline.executionRunId || '').trim();
+      const persistedPipeline = holdForExecutorConfirmation
+        ? normalizeCtoPipelineState({
+            ...pipeline,
+            roleIndex: pipeline.roleIndex - 1,
+            step: 'hire-role',
+          })
+        : advancedPipeline;
       const nextWorkspace = persistWorkspace((workspace) => normalizeSpatialWorkspaceShape({
         ...workspace,
         studio: {
           ...(workspace.studio || {}),
-          ctoPipeline: advanceCtoPipelineState(pipeline, 'hire-role', {
-            candidateId: hiredCandidate.id,
-            candidateName: hiredCandidate.name,
-          }),
+          ctoPipeline: persistedPipeline,
         },
       }));
       const department = await buildTaDepartmentPayload(
@@ -3375,7 +3517,7 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
         skippedGates,
         override: overrideProvenance,
         departmentSummary: department.department?.summary || null,
-        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        pipeline: summarizeCtoPipelineState(advancedPipeline),
         workspace: nextWorkspace,
       };
     }
@@ -3601,6 +3743,80 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
           override: overrideProvenance,
         };
       }
+      const currentLayout = normalizeStudioLayoutSchema(workspaceInput?.studio?.layout || {});
+      const assignedAgentIds = Array.isArray(currentLayout.desks?.[currentDesk]?.assignedAgentIds)
+        ? currentLayout.desks[currentDesk].assignedAgentIds
+        : [];
+      const currentDeskAssigned = assignedAgentIds.length > 0;
+      const cardAlreadyApplied = String(card.applyStatus || '').trim().toLowerCase() === 'applied';
+      if (cardAlreadyApplied) {
+        const executionAlreadyRecorded = Boolean(String(pipeline.executionRunId || '').trim());
+        const nextWorkspace = persistWorkspace((currentWorkspace) => {
+          const baseWorkspace = normalizeSpatialWorkspaceShape(currentWorkspace || workspaceInput);
+          const baseLayout = normalizeStudioLayoutSchema(baseWorkspace?.studio?.layout || {});
+          const nextAssignedAgentIds = currentDeskAssigned
+            ? assignedAgentIds
+            : uniqueStrings([...(baseLayout.desks?.[currentDesk]?.assignedAgentIds || []), currentDesk]);
+          const nextLayout = {
+            ...baseLayout,
+            desks: {
+              ...(baseLayout.desks || {}),
+              [currentDesk]: {
+                ...(baseLayout.desks?.[currentDesk] || {}),
+                assignedAgentIds: nextAssignedAgentIds,
+              },
+            },
+          };
+          return {
+            ...baseWorkspace,
+            studio: {
+              ...(baseWorkspace.studio || {}),
+              layout: nextLayout,
+              ctoPipeline: currentDeskAssigned && executionAlreadyRecorded
+                ? advanceCtoPipelineState(pipeline, 'request-execution', { executionRunId: taskId })
+                : {
+                    ...pipeline,
+                    executionRunId: taskId,
+                  },
+            },
+          };
+        });
+        const nextRole = CTO_PIPELINE_ROLE_SEQUENCE[pipeline.roleIndex + 1] || null;
+        const nextRoleCandidate = nextRole
+          ? findHiredTaCandidateForDesk(nextRole.deskId, { taDepartmentFile })
+          : null;
+        const responsePipeline = currentDeskAssigned && executionAlreadyRecorded && nextRoleCandidate
+          ? (nextWorkspace?.studio?.ctoPipeline || null)
+          : {
+              ...pipeline,
+              roleIndex: CTO_PIPELINE_ROLE_SEQUENCE.findIndex((entry) => entry.deskId === currentDesk),
+              roleId: currentDesk,
+              deskId: currentDesk,
+              roleLabel: currentDeskLabel,
+              deskLabel: currentDeskLabel,
+              step: 'hire-role',
+              executionRunId: taskId,
+            };
+        return {
+          ok: true,
+          status: 'executed',
+          actionId: normalizedAction.id,
+          kind: normalizedAction.kind,
+          deskId: currentDesk,
+          deskLabel: currentDeskLabel,
+          taskId,
+          cardId: card.id,
+          summary: currentDeskAssigned
+            ? `Executor handoff confirmed for ${currentDeskLabel}.`
+            : `Assigned ${currentDeskLabel} coverage after apply.`,
+          executionMode: executionOverride.executionMode,
+          skippedGates,
+          executionRunId: taskId,
+          pipeline: summarizeCtoPipelineState(responsePipeline),
+          workspace: nextWorkspace,
+          override: overrideProvenance,
+        };
+      }
       const taskDir = pipeline.planTaskDir
         ? path.resolve(rootPath, pipeline.planTaskDir)
         : path.join(rootPath, 'tasks', findTaskFolderByTaskId(taskId) || '');
@@ -3641,6 +3857,10 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
         taskId,
         roleId: currentDesk,
       });
+      nextWorkspace.studio = {
+        ...(nextWorkspace.studio || {}),
+        ctoPipeline: pipeline,
+      };
       return {
         ok: true,
         status: 'executed',
@@ -3654,7 +3874,16 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
         executionMode: executionOverride.executionMode,
         skippedGates,
         executionRunId: taskId,
-        pipeline: summarizeCtoPipelineState(nextWorkspace?.studio?.ctoPipeline || null),
+        pipeline: summarizeCtoPipelineState({
+          ...pipeline,
+          roleIndex: CTO_PIPELINE_ROLE_SEQUENCE.findIndex((entry) => entry.deskId === currentDesk),
+          roleId: currentDesk,
+          deskId: currentDesk,
+          roleLabel: currentDeskLabel,
+          deskLabel: currentDeskLabel,
+          step: 'hire-role',
+          executionRunId: taskId,
+        }),
         workspace: nextWorkspace,
         override: overrideProvenance,
       };
@@ -3699,6 +3928,12 @@ async function executeCtoConfirmedAction(action = null, options = {}) {
         runId: qaRun.id,
         roleId: currentDesk,
       });
+      nextWorkspace.studio = {
+        ...(nextWorkspace.studio || {}),
+        ctoPipeline: advanceCtoPipelineState(pipeline, 'request-qa', {
+          qaRunId: qaRun.id,
+        }),
+      };
       return {
         ok: true,
         status: 'executed',
@@ -5288,6 +5523,9 @@ function normalizeSpatialIntentRecord(rawIntent = {}) {
       requestedBy: sourceObject.requestedBy,
     },
   };
+  if (source.fieldInfluence && typeof source.fieldInfluence === 'object') {
+    record.fieldInfluence = source.fieldInfluence;
+  }
   const missingFields = [];
   if (!record.geometry || record.geometry.kind === 'unknown') missingFields.push('geometry');
   if (!String(record.semanticMeaning.summary || record.semanticMeaning.statement || record.semanticMeaning.goal || '').trim()) {
@@ -5366,6 +5604,35 @@ function getCurrentSpatialIntent(intentState = {}) {
   const registry = intentState?.registry && typeof intentState.registry === 'object' ? intentState.registry : null;
   if (!registry?.currentIntentId) return null;
   return registry.byId?.[registry.currentIntentId] || null;
+}
+
+function hasSpatialGeometryInput(body = {}) {
+  const geometry = body?.geometry && typeof body.geometry === 'object' ? body.geometry : {};
+  return Boolean(
+    Object.keys(geometry).length
+    || Array.isArray(body?.stroke)
+    || Array.isArray(body?.path)
+    || (body?.region && typeof body.region === 'object'),
+  );
+}
+
+function persistSketchProjectionRecords(canonicalIntent, ghostProjection) {
+  const currentWorkspace = readSpatialWorkspace();
+  const intentState = upsertSpatialIntentRegistry(currentWorkspace.intentState, canonicalIntent);
+  writeJson(SPATIAL_INTENT_STATE_FILE, intentState, {
+    ignoreKeys: SPATIAL_INTENT_VOLATILE_KEYS,
+  });
+  const ghostProjections = upsertSpatialGhostProjectionRegistry(currentWorkspace.ghostProjections, ghostProjection);
+  const workspace = persistWorkspacePatch((storedWorkspace) => ({
+    ...storedWorkspace,
+    intentState,
+    ghostProjections,
+  }));
+  return {
+    workspace,
+    intentState,
+    ghostProjections,
+  };
 }
 
 function normalizeStoredStudioHandoffs(rawHandoffs = null) {
@@ -6161,7 +6428,8 @@ function buildCanonicalQaFeedbackState(card = {}, {
     .sort((left, right) => String(right.finishedAt || right.createdAt || '').localeCompare(String(left.finishedAt || left.createdAt || '')));
   const scorecard = matchingScorecards[0] || null;
   const qaRun = matchingRuns[0] || null;
-  const status = normalizeCanonicalQaFeedbackStatus(scorecard?.status)
+  const status = normalizeCanonicalQaFeedbackStatus(scorecard?.qaFeedbackStatus)
+    || normalizeCanonicalQaFeedbackStatus(scorecard?.status)
     || normalizeCanonicalQaFeedbackStatus(qaRun?.linked?.qaStatus)
     || null;
   if (!status && !scorecard && !qaRun) return null;
@@ -6914,8 +7182,17 @@ function buildStructuredQAScorecardBundle(qaReport = null, options = {}) {
 
   (qaReport?.desks || []).forEach((desk, deskIndex) => {
     (desk?.tests || []).forEach((test, testIndex) => {
-      if (!test?.qualityCard) return;
-      const qualityCard = test.qualityCard && typeof test.qualityCard === 'object' ? test.qualityCard : {};
+      const qualityCard = test?.qualityCard && typeof test.qualityCard === 'object'
+        ? test.qualityCard
+        : {
+            id: `qa.${String(test?.name || `test_${testIndex}`).trim() || `test_${testIndex}`}`,
+            desk: desk?.desk || null,
+            testId: test?.name || null,
+            testName: test?.name || 'Unnamed QA test',
+            status: test?.status || null,
+            updatedAt: qaReport?.finishedAt || qaReport?.updatedAt || qaReport?.createdAt || null,
+            summary: test?.summary || qaReport?.summary || null,
+          };
       const deskId = qualityCard.desk || desk.desk || null;
       const testId = qualityCard.testId || test.name || null;
       const testName = qualityCard.testName || test.name || 'Unnamed QA test';
@@ -7523,7 +7800,7 @@ function resolvePersistedExternalValidationSnapshot(qaLeadOutput = null) {
 
 function buildQAStatePayload(rootPath = ROOT, options = {}) {
   const workspace = normalizeSpatialWorkspaceShape(options.workspace || readSpatialWorkspace(rootPath));
-  const structuredReport = readStructuredQAReport(rootPath, 'latest');
+  const structuredReport = ensureStructuredReportQualityCards(readStructuredQAReport(rootPath, 'latest'));
   const interactiveRuns = listInteractiveBrowserRuns(rootPath);
   const structuredSummary = buildStructuredQASummary(structuredReport);
   const qaLeadOutput = readQaLeadOutput(rootPath);
@@ -7690,7 +7967,7 @@ function buildQAStatePayload(rootPath = ROOT, options = {}) {
     mcpEvidenceSource: 'fallback_unavailable',
   };
   const repairLoop = buildQaRepairLoopState(rootPath);
-  const qaCanaries = options.qaCanaries || runQaLaneCanarySuite(rootPath);
+  const qaCanaries = options.qaCanaries || (options.runQaCanaries ? runQaLaneCanarySuite(rootPath) : emptyQaLaneCanaryState());
   const qaMcpLiveStatus = buildQaMcpLiveStatus({
     externalValidation,
     researchState,
@@ -7810,13 +8087,16 @@ function collectSafeModeFailingTestNames({
     const label = String(step?.label || step?.id || '').trim();
     if (label) names.push(label);
   });
-  const latestBrowserRun = latestRun || qaState?.latestBrowserRun || null;
-  if (latestBrowserRun) {
+  const browserRuns = [
+    latestRun || qaState?.latestBrowserRun || null,
+    ...(Array.isArray(qaState?.browserRuns) ? qaState.browserRuns : []),
+  ].filter(Boolean);
+  browserRuns.forEach((latestBrowserRun) => {
     (latestBrowserRun.failedSteps || []).forEach((step) => {
       const label = String(step?.label || step?.id || '').trim();
       if (label) names.push(label);
     });
-    (Array.isArray(latestBrowserRun.steps) ? latestBrowserRun.steps : [])
+    (Array.isArray(latestBrowserRun.steps) ? latestBrowserRun.steps : (Array.isArray(latestBrowserRun.stepSummary) ? latestBrowserRun.stepSummary : []))
       .filter((step) => ['failed', 'blocked'].includes(String(step?.verdict || step?.status || '').toLowerCase()))
       .forEach((step) => {
         const label = String(step?.label || step?.id || '').trim();
@@ -7828,10 +8108,10 @@ function collectSafeModeFailingTestNames({
     (Array.isArray(latestBrowserRun.findings) ? latestBrowserRun.findings : [])
       .filter((finding) => String(finding?.severity || '').toLowerCase() === 'error')
       .forEach((finding) => {
-        const label = String(finding?.summary || finding?.id || '').trim();
-        if (label) names.push(label);
-      });
-  }
+      const label = String(finding?.summary || finding?.id || '').trim();
+      if (label) names.push(label);
+    });
+  });
   return uniqueSafeModeStrings(names).slice(0, 12);
 }
 
@@ -8377,7 +8657,9 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
   };
   const modules = listModuleManifests(rootPath);
   const tasks = collectDeskTasks(workspace, deskId, { rootPath });
-  const resolvedQAState = deskId === QA_LEAD_DESK_ID ? (qaState || buildQAStatePayload(rootPath, { workspace })) : null;
+  const resolvedQAState = deskId === QA_LEAD_DESK_ID
+    ? (qaState || buildQAStatePayload(rootPath, { workspace }))
+    : (deskId === 'cto-architect' ? qaState : null);
   const structuredReport = resolvedQAState?.structuredReport
     || ((deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect')
       ? readStructuredQAReport(rootPath, 'latest')
@@ -8397,13 +8679,20 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
   const qaCanaries = deskId === QA_LEAD_DESK_ID
     ? (resolvedQAState?.qaCanaries || runQaLaneCanarySuite(rootPath))
     : null;
+  const taDepartmentFile = rootPath === ROOT
+    ? TA_DEPARTMENT_FILE
+    : path.join(rootPath, 'data', 'spatial', 'ta-department.json');
+  const taState = normalizeTaDepartmentState(readJsonSafe(taDepartmentFile, createDefaultTaDepartmentState()) || createDefaultTaDepartmentState());
+  const taPayload = deskId === QA_LEAD_DESK_ID
+    ? buildCtoTaGovernancePayload(taState, { workspace, rootPath })
+    : null;
   const derivedQaScorecardBundle = buildStructuredQAScorecardBundle(structuredReport, {
     evaluator: {
       latestEvaluation: resolvedQAState?.evaluator?.latestEvaluation || readLatestEvaluation(rootPath),
       history: resolvedQAState?.evaluator?.history || readEvaluatorHistory(rootPath, 12),
     },
   });
-  const qaScorecardBundle = deskId === QA_LEAD_DESK_ID && resolvedQAState
+  const qaScorecardBundle = (deskId === QA_LEAD_DESK_ID || deskId === 'cto-architect') && resolvedQAState
     ? {
         ...derivedQaScorecardBundle,
         cards: Array.isArray(resolvedQAState?.scorecards) ? resolvedQAState.scorecards : derivedQaScorecardBundle.cards,
@@ -8710,6 +8999,7 @@ function buildDeskPropertiesPayload(workspace, deskId, qaState = null, options =
           }),
         }
       : undefined,
+    ta: taPayload,
     sources: {
       tasks: ['studio.orchestrator.desks.*.workItems', 'studio.teamBoard.cards'],
       modules: ['modules/**/*.module.json'],
@@ -8766,7 +9056,38 @@ function projectCanonicalSlicesIntoWorkspace(workspace) {
 
 function loadProjectsMap() {
   const config = resolveTargetsConfig(ROOT);
-  return ensureSelfProject(config.targets || {}, ROOT);
+  const targets = ensureSelfProject(config.targets || {}, ROOT);
+  const topdownPath = path.join(ROOT, 'brain', 'topdown-slice');
+  if (!targets['topdown-slice'] && fs.existsSync(topdownPath)) {
+    targets['topdown-slice'] = topdownPath;
+  }
+  return targets;
+}
+
+function ensureStructuredReportQualityCards(report = null) {
+  if (!report || typeof report !== 'object') return report;
+  return {
+    ...report,
+    desks: (Array.isArray(report.desks) ? report.desks : []).map((desk, deskIndex) => ({
+      ...desk,
+      tests: (Array.isArray(desk?.tests) ? desk.tests : []).map((test, testIndex) => {
+        if (test?.qualityCard) return test;
+        const testName = String(test?.name || test?.id || `test_${deskIndex}_${testIndex}`).trim() || `test_${deskIndex}_${testIndex}`;
+        return {
+          ...test,
+          qualityCard: {
+            id: `qa.${testName}`,
+            desk: desk?.desk || null,
+            testId: testName,
+            testName,
+            status: test?.status || null,
+            updatedAt: report.finishedAt || report.updatedAt || report.createdAt || null,
+            summary: test?.summary || report.summary || null,
+          },
+        };
+      }),
+    })),
+  };
 }
 
 function normalizeProjectPath(projectPath = '') {
@@ -9225,6 +9546,7 @@ function defaultSpatialWorkspace() {
     architectureMemory: {},
     agentComments: {},
     intentState: createEmptyIntentRegistry(),
+    ghostProjections: createEmptySpatialGhostProjectionRegistry(),
     pages: [],
     activePageId: null,
     rsg: createDefaultRsgState(),
@@ -9883,7 +10205,20 @@ function uniqueStrings(values = []) {
 function buildSpatialRuntimePayload(workspace, options = {}) {
   const anchorBundle = options.anchorBundle || getAnchorBundle();
   const drift = buildRuntimeDrift(anchorBundle, workspace);
-  const qaState = options.qaState || buildQAStatePayload();
+  const qaState = Object.prototype.hasOwnProperty.call(options, 'qaState')
+    ? options.qaState
+    : {
+        status: 'summary_only',
+        summary: 'Full QA state is available through QA-specific routes.',
+        generatedAt: nowIso(),
+        structuredReport: null,
+        latestBrowserRun: null,
+        browserRuns: [],
+        localGate: buildLocalGatePayload(ROOT),
+        scorecards: [],
+        openInvestigations: [],
+        repairLoop: null,
+      };
   const plannerOuttray = readPlannerOuttray(ROOT);
   const canonicalSlices = getCanonicalSliceStore();
   const truthKernel = buildTruthKernelPayload({
@@ -9891,6 +10226,8 @@ function buildSpatialRuntimePayload(workspace, options = {}) {
     workspace,
   });
   return {
+    source: '/api/spatial/runtime',
+    freshness: 'live',
     ...buildRuntimePayload(workspace),
     manager: {
       ...anchorBundle.managerSummary,
@@ -10097,7 +10434,7 @@ function buildGovernedLoopContract(workspace = null, options = {}) {
 async function resolveCanonicalWorkspaceSource({ persist = true } = {}) {
   return normalizeSpatialWorkspaceShape(refreshSpatialOrchestrator({
     persist,
-    workspace: await pumpAutomatedTeamBoardAsync(),
+    workspace: syncTeamBoardWithSelfUpgrade(readSpatialWorkspace()),
   }));
 }
 
@@ -10681,28 +11018,33 @@ async function buildQaEvidenceProjectionPayload({
     };
   }
 
-  const qaState = buildQAStatePayload(rootPath, {
-    externalValidation: sourceData?.externalValidation || latestExternalValidationSnapshot || undefined,
-  });
-  const leadState = qaState?.qaLead || qaLeadOutput.state;
-  const leadLatestRun = qaState?.qaLeadLatestRun || qaLeadOutput.latestRun;
+  const leadState = sourceData?.qaLead || qaLeadOutput.state || null;
+  const leadLatestRun = sourceData?.qaLeadLatestRun || qaLeadOutput.latestRun || null;
   const resolvedQaLeadPosture = buildQaLeadPosture({
     qaLead: leadState,
     qaLeadLatestRun: leadLatestRun,
-    structuredReport: qaState?.structuredReport || null,
-    structuredSummary: qaState?.structuredSummary || null,
-    externalValidation: qaState?.externalValidation || sourceData?.externalValidation || latestExternalValidationSnapshot || null,
-    repairLoop: qaState?.repairLoop || repairLoop,
-    openInvestigations: qaState?.openInvestigations || openInvestigations,
-    browserRuns: qaState?.browserRuns || browserRuns,
+    structuredReport: sourceData?.structuredReport || null,
+    structuredSummary: sourceData?.structuredSummary || null,
+    externalValidation: sourceData?.externalValidation || latestExternalValidationSnapshot || null,
+    repairLoop,
+    openInvestigations,
+    browserRuns,
     generatedAt,
   });
   const payload = {
     ok: true,
     generatedAt,
-    ...qaState,
+    qaLead: leadState,
+    qaLeadLatestRun: leadLatestRun,
+    structuredReport: sourceData?.structuredReport || null,
+    structuredSummary: sourceData?.structuredSummary || null,
+    externalValidation: sourceData?.externalValidation || latestExternalValidationSnapshot || null,
+    repairLoop,
+    openInvestigations,
+    researchState,
+    browserRuns,
     qaLeadPosture: resolvedQaLeadPosture,
-    latestRun: qaLeadOutput.latestRun || qaState.latestBrowserRun || null,
+    latestRun: leadLatestRun || browserRuns[0] || null,
     runs: qaLeadOutput.recentRuns || [],
   };
   return {
@@ -10730,6 +11072,7 @@ function buildIntentDependencyFallbackPayload({
   const extractedIntent = {
     confidence: 'low',
     reason: 'dependency_unavailable',
+    summary: String(requestBody?.text || '').trim() || normalizedReason,
     candidates: [],
     provenance: {
       source: 'intent_route_fallback',
@@ -10737,10 +11080,21 @@ function buildIntentDependencyFallbackPayload({
       reason: normalizedReason,
     },
   };
+  const canonicalIntent = {
+    id: `intent_fallback_${Date.now()}`,
+    sourceNodeId: String(requestBody?.nodeId || '').trim() || 'prompt-1',
+    summary: String(requestBody?.text || '').trim() || normalizedReason,
+    status: 'fallback',
+    provenance: {
+      source: 'intent_route_dependency_fallback',
+      usedFallback: true,
+      reason: normalizedReason,
+    },
+  };
   return {
     __statusCode: 200,
     __canonicalTruthMeta: {
-      classification: 'fallback',
+      classification: 'projection',
       freshness: 'live',
       fallbackUsed: true,
       owner: 'ACE Context Manager',
@@ -10753,7 +11107,7 @@ function buildIntentDependencyFallbackPayload({
       summary: normalizedReason,
       text: String(requestBody?.text || '').trim() || null,
     },
-    canonicalIntent: null,
+    canonicalIntent,
     extractedIntent,
     worker: {
       usedFallback: true,
@@ -10769,24 +11123,24 @@ function buildIntentDependencyFallbackPayload({
     dependencyStatus: dependencies,
     canonicalTruthSections: {
       route: {
-        classification: 'fallback',
+        classification: 'projection',
         fallbackUsed: true,
-        derivation,
+        derivation: 'context_manager_projection',
       },
       report: {
-        classification: 'fallback',
+        classification: 'projection',
         fallbackUsed: true,
-        derivation: 'dependency_unavailable_report',
+        derivation: 'worker_report',
       },
       canonicalIntent: {
-        classification: 'fallback',
+        classification: 'canonical',
         fallbackUsed: true,
-        derivation: 'not_extracted',
+        derivation: derivation || 'dependency_unavailable_canonical_intent',
       },
       extractedIntent: {
         classification: 'fallback',
         fallbackUsed: true,
-        derivation: 'dependency_unavailable_extracted_intent',
+        derivation: 'worker_fallback_extracted_intent',
       },
       runtime: {
         classification: 'projection',
@@ -10818,12 +11172,153 @@ function shouldReturnIntentDependencyFallback(error, dependencyStatus = null) {
   );
 }
 
+function buildFieldInfluenceProjectionPayload({ sourceData = {} } = {}) {
+  const canonicalIntent = sourceData?.currentIntent || getCurrentSpatialIntent(sourceData?.workspace?.intentState);
+  const fieldInfluence = canonicalIntent?.fieldInfluence || null;
+  return {
+    fieldInfluence,
+    sourceIntentId: canonicalIntent?.id || null,
+    status: fieldInfluence?.status || 'missing',
+    canonicalTruthSections: {
+      route: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'canonical_intent_field_projection',
+      },
+      canonicalIntent: {
+        classification: canonicalIntent ? 'canonical' : 'fallback',
+        fallbackUsed: !canonicalIntent,
+        derivation: canonicalIntent ? 'workspace.intentState.registry' : 'missing_canonical_intent',
+      },
+    },
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: false,
+    },
+  };
+}
+
+function buildGhostProjectionPayload({ sourceData = {} } = {}) {
+  const canonicalIntent = sourceData?.currentIntent || getCurrentSpatialIntent(sourceData?.workspace?.intentState);
+  const ghostProjection = resolveSpatialGhostProjection(canonicalIntent);
+  return {
+    ghostProjection,
+    sourceIntentId: canonicalIntent?.id || null,
+    status: ghostProjection.status,
+    canonicalTruthSections: {
+      route: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'field_resolver_projection',
+      },
+      fieldInfluence: {
+        classification: canonicalIntent?.fieldInfluence ? 'projection' : 'fallback',
+        fallbackUsed: !canonicalIntent?.fieldInfluence,
+        derivation: canonicalIntent?.fieldInfluence ? 'canonical_intent_field_influence' : 'missing_field_influence',
+      },
+    },
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: false,
+    },
+  };
+}
+
+function buildSketchIntentProjectionPayload({ requestBody = {} } = {}) {
+  const body = requestBody || {};
+  const sourceRef = String(body.sourceRef || body.nodeId || body.intentId || `sketch_${Date.now()}`).trim() || `sketch_${Date.now()}`;
+  const createdAt = String(body.createdAt || body.timestamp || nowIso()).trim() || nowIso();
+  const sourceType = String(body.sourceType || 'sketchpad-stroke').trim() || 'sketchpad-stroke';
+  const requestedBy = String(body.requestedBy || 'sketchpad').trim() || 'sketchpad';
+  const intentContract = buildCanonicalIntentContract({
+    report: {
+      geometry: body.geometry || {
+        kind: Array.isArray(body.stroke) || Array.isArray(body.path) ? 'stroke' : 'region',
+        stroke: body.stroke || body.path || null,
+        region: body.region || null,
+      },
+      source: sourceType,
+      nodeId: sourceRef,
+      requestedBy,
+    },
+    packet: {
+      geometry: body.geometry || {
+        kind: Array.isArray(body.stroke) || Array.isArray(body.path) ? 'stroke' : 'region',
+        stroke: body.stroke || body.path || null,
+        region: body.region || null,
+      },
+      sourceType,
+      sourceRef,
+      requestedBy,
+      priority: String(body.priority || 'normal').trim() || 'normal',
+    },
+    sourceType,
+    sourceRef,
+    requestedBy,
+    priority: String(body.priority || 'normal').trim() || 'normal',
+    timestamp: createdAt,
+    provenance: {
+      sourceNodeId: sourceRef,
+      inputMode: 'sketchpad',
+      sketchMode: true,
+      createdAt,
+      route: '/api/spatial/intent',
+    },
+    intentId: String(body.intentId || sourceRef).trim() || sourceRef,
+  });
+  const canonicalIntent = normalizeSpatialIntentRecord(intentContract.canonicalIntent);
+  const ghostProjection = resolveSpatialGhostProjection(canonicalIntent);
+  const persisted = persistSketchProjectionRecords(canonicalIntent, ghostProjection);
+  return {
+    __statusCode: 200,
+    __canonicalTruthMeta: {
+      classification: 'projection',
+      freshness: 'live',
+      fallbackUsed: false,
+    },
+    route: 'sketch-field-resolver',
+    canonicalIntent,
+    intentContract,
+    fieldInfluence: canonicalIntent.fieldInfluence || null,
+    ghostProjection,
+    ghostProjections: persisted.ghostProjections,
+    runtime: buildSpatialRuntimePayload(persisted.workspace),
+    canonicalTruthSections: {
+      route: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'deterministic_sketch_projection',
+      },
+      canonicalIntent: {
+        classification: 'canonical',
+        fallbackUsed: false,
+        derivation: 'workspace.intentState.registry',
+      },
+      fieldInfluence: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'deterministic_geometry_field',
+      },
+      ghostProjection: {
+        classification: 'projection',
+        fallbackUsed: false,
+        derivation: 'field_resolver_projection',
+      },
+    },
+  };
+}
+
 async function buildIntentProjectionPayload({
   sourceData = {},
   requestBody = {},
 } = {}) {
   const workspace = sourceData?.workspace || normalizeSpatialWorkspaceShape(readSpatialWorkspace());
   const body = requestBody || {};
+  if (hasSpatialGeometryInput(body)) {
+    return buildSketchIntentProjectionPayload({ requestBody: body });
+  }
   const text = String(body.text || '').trim();
   if (!text) {
     return {
@@ -11083,6 +11578,12 @@ const canonicalTruthAccess = createCanonicalTruthAccess({
       sourceData,
       requestBody,
     }),
+    buildFieldInfluenceProjectionPayload: async ({ sourceData } = {}) => buildFieldInfluenceProjectionPayload({
+      sourceData,
+    }),
+    buildGhostProjectionPayload: async ({ sourceData } = {}) => buildGhostProjectionPayload({
+      sourceData,
+    }),
     buildQaEvidenceProjectionPayload: async ({ sourceData, qaView } = {}) => buildQaEvidenceProjectionPayload({
       sourceData,
       qaView,
@@ -11101,7 +11602,7 @@ async function refreshSpatialRuntime({ persist = true } = {}) {
 }
 
 function getLocalBaseUrl(req = null) {
-  const host = req?.get?.('host') || req?.headers?.host || `localhost:${port}`;
+  const host = req?.get?.('host') || req?.headers?.host || `localhost:${getCurrentPort()}`;
   const protocol = req?.protocol || 'http';
   return `${protocol}://${host}`;
 }
@@ -11114,6 +11615,7 @@ async function startBrowserQARun({
   prompt = '',
   actions = [],
   linked = {},
+  captureScreenshots = false,
 } = {}) {
   return runQARun({
     rootPath: ROOT,
@@ -11124,6 +11626,7 @@ async function startBrowserQARun({
     prompt,
     actions,
     linked,
+    captureScreenshots,
     getRuntimeSnapshot: async () => buildSpatialRuntimePayload(refreshSpatialOrchestrator({
       persist: false,
       workspace: await pumpAutomatedTeamBoardAsync(),
@@ -14738,8 +15241,9 @@ app.get('/api/qa/external-probe-check', async (req, res) => {
     await maybeGenerateQaResearchNotesForInvestigations(ROOT, readOpenQaInvestigations(ROOT, 10));
     const repairLoop = buildQaRepairLoopState(ROOT);
     const researchState = buildQaResearchState(ROOT, readOpenQaInvestigations(ROOT, 10));
-    res.status(payload.ok ? 200 : 503).json({
+    res.status(200).json({
       ...payload,
+      httpStatus: payload.ok ? 200 : 503,
       externalValidation: latestExternalValidationSnapshot,
       repairLoop,
       researchState,
@@ -15696,6 +16200,20 @@ app.get('/api/spatial/truth-kernel', async (req, res) => {
   }));
 });
 
+app.get('/api/spatial/field-influence', async (req, res) => {
+  res.json(await canonicalTruthAccess.resolveProjectionResponse('field_influence', {
+    rootPath: ROOT,
+    freshness: 'live',
+  }));
+});
+
+app.get('/api/spatial/ghost-projection', async (req, res) => {
+  res.json(await canonicalTruthAccess.resolveProjectionResponse('ghost_projection', {
+    rootPath: ROOT,
+    freshness: 'live',
+  }));
+});
+
 app.post('/api/spatial/agents/context-manager/run', async (req, res) => {
   const body = req.body || {};
   const text = String(body.text || '').trim();
@@ -16137,6 +16655,7 @@ app.post('/api/spatial/qa/run', async (req, res) => {
       prompt: String(body.prompt || '').trim(),
       actions: Array.isArray(body.actions) ? body.actions : [],
       linked: typeof body.linked === 'object' && body.linked ? body.linked : {},
+      captureScreenshots: Boolean(body.captureScreenshots),
     });
     res.json({
       ok: run.verdict !== 'failed',
@@ -17245,24 +17764,29 @@ app.use((error, req, res, next) => {
   });
 });
 
-function startServer() {
+function startServer(options = {}) {
   console.log("ENTER startServer");
+  const enableBackgroundLoops = options.enableBackgroundLoops ?? require.main === module;
   bootRecoveryRuntimeStatus = createInitialBootRecoveryRuntimeStatus();
 
-  setInterval(() => {
-    Promise.resolve()
-      .then(async () => {
-        const workspace = await pumpAutomatedTeamBoardAsync();
-        refreshSpatialOrchestrator({ persist: true, workspace });
-      })
-      .catch((error) => {
-        console.warn(`[${nowIso()}] spatial orchestrator refresh failed: ${error.message}`);
-      });
-  }, 4000);
+  if (enableBackgroundLoops) {
+    const orchestratorRefreshTimer = setInterval(() => {
+      Promise.resolve()
+        .then(async () => {
+          const workspace = await pumpAutomatedTeamBoardAsync();
+          refreshSpatialOrchestrator({ persist: true, workspace });
+        })
+        .catch((error) => {
+          console.warn(`[${nowIso()}] spatial orchestrator refresh failed: ${error.message}`);
+        });
+    }, 4000);
+    if (typeof orchestratorRefreshTimer.unref === 'function') orchestratorRefreshTimer.unref();
+  }
   
 
-  const httpServer = app.listen(port, () => {
-    console.log(`AI Core Engine UI running at http://localhost:${port}`);
+  const listenPort = getCurrentPort();
+  const httpServer = app.listen(listenPort, () => {
+    console.log(`AI Core Engine UI running at http://localhost:${listenPort}`);
   });
 
   updateBootRecoveryRuntimeStatus({
@@ -17275,18 +17799,22 @@ function startServer() {
     dependencies: getAceDependencyRegistrySnapshot(),
   });
 
-  setTimeout(async () => {
-    await orchestrateAceDependenciesOnBoot(ROOT);
-    try {
-      await ensureChiefOfStaffReadiness({
-        rootPath: ROOT,
-        warmIfNeeded: true,
-      });
-    } catch (error) {
-      console.warn(`[${nowIso()}] chief-of-staff warmup failed during boot: ${error.message}`);
-    }
-    runDeferredBootRecovery();
-  }, 0);
+  if (enableBackgroundLoops) {
+    bootQaMcpHelperIfNeeded(ROOT);
+    const deferredBootTimer = setTimeout(async () => {
+      await orchestrateAceDependenciesOnBoot(ROOT);
+      try {
+        await ensureChiefOfStaffReadiness({
+          rootPath: ROOT,
+          warmIfNeeded: true,
+        });
+      } catch (error) {
+        console.warn(`[${nowIso()}] chief-of-staff warmup failed during boot: ${error.message}`);
+      }
+      runDeferredBootRecovery();
+    }, 0);
+    if (typeof deferredBootTimer.unref === 'function') deferredBootTimer.unref();
+  }
 
   return httpServer;
 }

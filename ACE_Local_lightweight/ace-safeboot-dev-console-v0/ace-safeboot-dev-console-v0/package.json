@@ -1,0 +1,12 @@
+{
+  "name": "ace-safeboot-dev-console-v0",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Independent SafeBoot Dev Console for ACE: intent injection, boot/QA observability, workspace-scoped emergency file and CLI tools.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "UNLICENSED"
+}

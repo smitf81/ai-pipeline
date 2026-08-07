@@ -1,0 +1,127 @@
+{
+  "contract": "black-sky-bound.player-bite-production.v2",
+  "sampleRate": 48000,
+  "generator": "tools/audio/generate_player_bite_v2.py",
+  "designIntent": "A small predatory reptile: a restrained real breath/snarl load, organic jaw-and-bone closure at animation contact, and a quiet wet mouth detail. Confirmed damage remains owned by combat.enemy.hit.flesh.",
+  "contactSeconds": 0.195,
+  "animationContactSeconds": 0.1972,
+  "syntheticLayersInProductionAssets": 0,
+  "sourceCount": 3,
+  "sources": [
+    {
+      "role": "snarl",
+      "file": "assets/audio/sources/player_bite_v2/originals/dog-snarl-self-made-105738.mp3",
+      "sha256": "b6a767242b4c51f2a5c88db693da5c1847ae3132157a3e440b82ba81c781a9b6",
+      "durationSeconds": 5.184,
+      "provider": "Pixabay",
+      "license": "Pixabay Content License"
+    },
+    {
+      "role": "jaw",
+      "file": "assets/audio/sources/player_bite_v2/originals/dog-eating-a-bone-and-growling-76746.mp3",
+      "sha256": "2660d00e4c0a67da41a7adca3d626b1c7b32048543ff19cb0322197f952770b4",
+      "durationSeconds": 24.6,
+      "provider": "Pixabay",
+      "license": "Pixabay Content License"
+    },
+    {
+      "role": "wet",
+      "file": "assets/audio/sources/player_bite_v2/originals/eating-juicy-meat-7024.mp3",
+      "sha256": "4be03411ab3778eba2871b5c021477585b16fa8ed192cab79443bcc4c040011b",
+      "durationSeconds": 17.424,
+      "provider": "Pixabay",
+      "license": "Pixabay Content License"
+    }
+  ],
+  "legacyProceduralReferences": [
+    "assets/audio/sources/player_bite_v2/legacy_procedural/player_bite_snap_01_rejected_v1.wav",
+    "assets/audio/sources/player_bite_v2/legacy_procedural/player_bite_snap_02_rejected_v1.wav"
+  ],
+  "variants": [
+    {
+      "durationSeconds": 0.48,
+      "channels": 1,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -13.648,
+      "dcOffset": 1.303e-05,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 31.938,
+      "id": "player_bite_snap_01",
+      "runtimeFile": "assets/audio/production/player_bite_snap_01.wav",
+      "runtimeSha256": "ce5134a44b84f46f1900d3dd2f58828113671ca7b32e38b1d0d5722944987faf",
+      "masterFile": "assets/audio/masters/player_bite_snap_01_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/player_bite_v2/processed_stems/01_01_breath_snarl_load.wav",
+        "assets/audio/sources/player_bite_v2/processed_stems/01_02_jaw_bone_closure.wav",
+        "assets/audio/sources/player_bite_v2/processed_stems/01_03_wet_mouth_detail.wav"
+      ],
+      "contactSeconds": 0.195,
+      "jawSourcePeakSeconds": 14.33,
+      "wetSourcePeakSeconds": 5.73,
+      "process": [
+        "real recorded animal breath/snarl pitch-shaped and band-limited for a smaller reptilian throat load",
+        "real recorded jaw-on-bone transient aligned to the 195 ms animation contact point",
+        "restrained real recorded wet-food detail after closure; intentionally below the separate confirmed-hit cue",
+        "38 Hz high-pass, 7.2 kHz low-pass, mild soft saturation, 4/30 ms fades, -3.8 dBFS peak"
+      ]
+    },
+    {
+      "durationSeconds": 0.48,
+      "channels": 1,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -14.661,
+      "dcOffset": 4.83e-06,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 10.458,
+      "id": "player_bite_snap_02",
+      "runtimeFile": "assets/audio/production/player_bite_snap_02.wav",
+      "runtimeSha256": "d2f3ed23029a9b7e9f596735a5286cc777e68aad806cfe89d25317e39cf40a9f",
+      "masterFile": "assets/audio/masters/player_bite_snap_02_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/player_bite_v2/processed_stems/02_01_breath_snarl_load.wav",
+        "assets/audio/sources/player_bite_v2/processed_stems/02_02_jaw_bone_closure.wav",
+        "assets/audio/sources/player_bite_v2/processed_stems/02_03_wet_mouth_detail.wav"
+      ],
+      "contactSeconds": 0.195,
+      "jawSourcePeakSeconds": 19.29,
+      "wetSourcePeakSeconds": 3.28,
+      "process": [
+        "real recorded animal breath/snarl pitch-shaped and band-limited for a smaller reptilian throat load",
+        "real recorded jaw-on-bone transient aligned to the 195 ms animation contact point",
+        "restrained real recorded wet-food detail after closure; intentionally below the separate confirmed-hit cue",
+        "38 Hz high-pass, 7.2 kHz low-pass, mild soft saturation, 4/30 ms fades, -3.8 dBFS peak"
+      ]
+    },
+    {
+      "durationSeconds": 0.48,
+      "channels": 1,
+      "peakDbfs": -3.8,
+      "rmsDbfs": -12.867,
+      "dcOffset": 3.95e-06,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 13.792,
+      "id": "player_bite_snap_03",
+      "runtimeFile": "assets/audio/production/player_bite_snap_03.wav",
+      "runtimeSha256": "82b13779c097eff1151cee92913e10fe83d52b3749ad71ecd35504d26fdea08d",
+      "masterFile": "assets/audio/masters/player_bite_snap_03_master.wav",
+      "stemFiles": [
+        "assets/audio/sources/player_bite_v2/processed_stems/03_01_breath_snarl_load.wav",
+        "assets/audio/sources/player_bite_v2/processed_stems/03_02_jaw_bone_closure.wav",
+        "assets/audio/sources/player_bite_v2/processed_stems/03_03_wet_mouth_detail.wav"
+      ],
+      "contactSeconds": 0.195,
+      "jawSourcePeakSeconds": 20.11,
+      "wetSourcePeakSeconds": 7.72,
+      "process": [
+        "real recorded animal breath/snarl pitch-shaped and band-limited for a smaller reptilian throat load",
+        "real recorded jaw-on-bone transient aligned to the 195 ms animation contact point",
+        "restrained real recorded wet-food detail after closure; intentionally below the separate confirmed-hit cue",
+        "38 Hz high-pass, 7.2 kHz low-pass, mild soft saturation, 4/30 ms fades, -3.8 dBFS peak"
+      ]
+    }
+  ],
+  "audacitySession": "assets/audio/sources/player_bite_v2/audacity_session/player_bite_v2.lof",
+  "comparisonReel": "artifacts/player-bite-v2/legacy-vs-production-comparison-reel.wav",
+  "contactSheet": "artifacts/player-bite-v2/waveform-spectral-contact-sheet.png",
+  "trackedAnalysis": "assets/audio/sources/player_bite_v2/PRODUCTION_ANALYSIS.json"
+}

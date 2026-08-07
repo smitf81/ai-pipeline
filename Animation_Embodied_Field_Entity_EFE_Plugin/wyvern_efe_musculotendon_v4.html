@@ -1,0 +1,946 @@
+
+<h2 class="sr-only">Wyvern EFE v4 — musculotendon actuation with force-length curves, antagonist pairs, and tendon elasticity</h2>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+#wrap{background:#0b0d11;border-radius:8px;overflow:hidden;user-select:none}
+#c{display:block;width:100%;cursor:grab}
+#c.drag{cursor:grabbing}
+#bar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;padding:7px 8px;background:#0f1117;border-top:1px solid rgba(255,255,255,0.05)}
+#bar button,#bar select{font-size:11px;font-family:monospace;padding:3px 9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(195,215,240,0.85);border-radius:4px;cursor:pointer;transition:background .1s}
+#bar button:hover{background:rgba(255,255,255,0.09)}
+#bar button:active{transform:scale(0.96)}
+#bar button.on{background:rgba(70,140,220,0.22);border-color:rgba(70,140,220,0.45);color:#7ab8ef}
+.sep{width:1px;height:18px;background:rgba(255,255,255,0.07);flex-shrink:0;margin:0 1px}
+#sb{font-size:10px;font-family:monospace;color:rgba(130,155,195,0.45);margin-left:auto}
+#toast{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(15,20,32,0.93);border:1px solid rgba(70,140,220,0.3);color:rgba(175,210,255,0.9);font-size:10px;font-family:monospace;padding:4px 12px;border-radius:4px;pointer-events:none;opacity:0;transition:opacity .18s;white-space:nowrap;z-index:10}
+</style>
+<div id="wrap" style="position:relative">
+<canvas id="c" width="680" height="410"></canvas>
+<div id="toast"></div>
+<div id="bar">
+  <button id="bPlay">⏵ run</button>
+  <button id="bStep">step</button>
+  <button id="bReset">↺ reset</button>
+  <div class="sep"></div>
+  <select id="selI">
+    <option value="idle">idle</option>
+    <option value="glide">glide</option>
+    <option value="flap">flap climb</option>
+    <option value="dive">dive</option>
+    <option value="land">land</option>
+    <option value="strike">strike</option>
+    <option value="intimidate">intimidate</option>
+  </select>
+  <div class="sep"></div>
+  <button id="bDL">dmg wing L</button>
+  <button id="bDR">dmg wing R</button>
+  <button id="bDS">dmg spine</button>
+  <button id="bW">wind</button>
+  <div class="sep"></div>
+  <button id="bG" class="on">graph</button>
+  <button id="bM" class="on">membrane</button>
+  <button id="bMuscle" class="on">muscles</button>
+  <button id="bH" class="on">HUD</button>
+  <span id="sb">t=0.0s</span>
+</div>
+</div>
+<script>
+const CV=document.getElementById('c'),ctx=CV.getContext('2d');
+const W=680,H=410;CV.width=W;CV.height=H;
+const TAU=Math.PI*2;
+const v3=(x,y,z)=>({x,y,z});
+const add=(a,b)=>v3(a.x+b.x,a.y+b.y,a.z+b.z);
+const sub=(a,b)=>v3(a.x-b.x,a.y-b.y,a.z-b.z);
+const scl=(a,s)=>v3(a.x*s,a.y*s,a.z*s);
+const vlen=(a)=>Math.sqrt(a.x*a.x+a.y*a.y+a.z*a.z);
+const nrm=(a)=>{const l=vlen(a)||1e-6;return scl(a,1/l);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const copy=(p)=>({x:p.x,y:p.y,z:p.z});
+
+// ── Camera ─────────────────────────────────────────────────────────────────
+let camYaw=0.42,camPitch=0.20,camDist=22;
+let drag=false,lmx=0,lmy=0;
+CV.addEventListener('mousedown',e=>{drag=true;lmx=e.clientX;lmy=e.clientY;CV.classList.add('drag');});
+window.addEventListener('mouseup',()=>{drag=false;CV.classList.remove('drag');});
+window.addEventListener('mousemove',e=>{
+  if(!drag)return;
+  camYaw+=(e.clientX-lmx)*0.007;
+  camPitch=clamp(camPitch+(e.clientY-lmy)*0.007,-0.55,0.85);
+  lmx=e.clientX;lmy=e.clientY;
+  if(!SIM.running)draw();
+});
+CV.addEventListener('wheel',e=>{camDist=clamp(camDist+e.deltaY*0.016,5,42);e.preventDefault();if(!SIM.running)draw();},{passive:false});
+function proj(p){
+  const cy=Math.cos(camYaw),sy=Math.sin(camYaw);
+  const cp=Math.cos(camPitch),sp=Math.sin(camPitch);
+  const rx=p.x*cy-p.z*sy,rz=p.x*sy+p.z*cy;
+  const ry=p.y*cp-rz*sp,rz2=p.y*sp+rz*cp;
+  const fov=420,d=rz2+camDist;
+  if(d<0.2)return null;
+  return{sx:W/2+rx*fov/d,sy:H/2-ry*fov/d,depth:d,sc:fov/d};
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// MUSCULOTENDON MODEL
+// ══════════════════════════════════════════════════════════════════════════
+//
+// A MuscleUnit connects two nodes (origin → insertion), like a real muscle.
+// It has:
+//   - optimalLength: length at which it generates peak force
+//   - maxForce: peak isometric force (Newtons, scaled to sim units)
+//   - activation: 0-1 neural drive (set by motor solver)
+//   - fatigue: accumulates with use, reduces effective maxForce
+//
+// Force-length relationship (Hill-type approximation):
+//   fl(l) = exp(-((l - l0) / (w * l0))^2)
+//   Gaussian centred on optimalLength, width = w (typically 0.45)
+//   This means the muscle is weakest when very short or very stretched.
+//
+// Force-velocity relationship (simplified):
+//   Concentric (shortening): force reduces as shortening speed increases
+//   Eccentric (lengthening): force increases slightly (passive resistance)
+//
+// Tendon:
+//   In series with muscle. Non-linear stiffness — toe region (slack) then
+//   linear. This stores energy during loading and releases it.
+//   tendonSlack: length below which tendon is slack (zero force)
+//   tendonStiff: stiffness in N/m once past slack
+//
+// The net force applied to origin/insertion nodes:
+//   F = activation × fl(L_muscle) × fv(dL/dt) × maxForce × healthMult
+//   Applied along the muscle line of action (insertion - origin).
+//   Equal and opposite at each end (Newton 3rd).
+
+function makeMuscle(cfg){
+  return {
+    id:          cfg.id,
+    label:       cfg.label,
+    originNode:  cfg.origin,      // node index — fixed attachment (e.g. sternum)
+    insertNode:  cfg.insert,      // node index — moving attachment (e.g. humerus)
+    // Optional routing waypoint — simulates tendon-over-pulley (e.g. supracoracoideus)
+    // If set, force direction is computed origin→waypoint→insertion
+    waypointPos: cfg.waypoint || null,
+    optimalLength: cfg.optLen,    // metres (sim units) for peak force
+    maxForce:    cfg.maxF,        // sim-unit Newtons
+    tendonSlack: cfg.tendonSlack || cfg.optLen * 0.05,
+    tendonStiff: cfg.tendonStiff || cfg.maxF * 8,
+    widthFactor: cfg.width || 0.45, // Gaussian width of force-length curve
+    activation:  0,               // 0-1, written each frame by motor solver
+    targetActivation: 0,          // smooth ramping target
+    length:      cfg.optLen,      // current muscle length (computed each frame)
+    prevLength:  cfg.optLen,      // for velocity calculation
+    force:       0,               // current output force magnitude
+    tendonForce: 0,               // current tendon elastic force
+    fatigue:     0,               // 0-1 fatigue level
+    health:      1,               // 0-1 damage state
+    colour:      cfg.colour || 'rgba(200,80,60,',
+    role:        cfg.role || 'generic', // 'downstroke','upstroke','leg','neck','tail'
+  };
+}
+
+// Force-length: Gaussian centred on optimalLength
+function forceLengthFactor(muscle){
+  const ratio=(muscle.length - muscle.optimalLength) / (muscle.widthFactor * muscle.optimalLength);
+  return Math.exp(-(ratio*ratio));
+}
+
+// Force-velocity: simplified Hill curve
+// shortening (dL<0) → concentric, force < isometric
+// lengthening (dL>0) → eccentric, force > isometric (up to ~1.5×)
+function forceVelocityFactor(dL_dt, optLen){
+  const vNorm = dL_dt / (optLen * 4); // normalise by max shortening speed
+  if(vNorm <= 0){
+    // Concentric: f = (1 + vNorm) / (1 - vNorm/0.25) (Hill)
+    return Math.max(0, (1 + vNorm) / (1 - vNorm / 0.25));
+  } else {
+    // Eccentric: slight force enhancement, capped at 1.5
+    return Math.min(1.5, 1 + 0.5 * vNorm);
+  }
+}
+
+// Tendon non-linear spring (toe region + linear)
+// Returns tensile force given current length > slackLength
+function tendonForce(length, slackLen, stiff){
+  const strain = length - slackLen;
+  if(strain <= 0) return 0;
+  // Toe region: quadratic for first 2% of slack, then linear
+  const toeEnd = slackLen * 0.02;
+  if(strain < toeEnd){
+    return stiff * (strain * strain) / (2 * toeEnd);
+  }
+  return stiff * (strain - toeEnd * 0.5);
+}
+
+// Apply one muscle's force to the simulation nodes
+function applyMuscleForce(m, nodes, dt){
+  const orig = nodes[m.originNode];
+  const ins  = nodes[m.insertNode];
+  if(!orig || !ins || orig.hp <= 0 || ins.hp <= 0) return;
+
+  // Compute current length along line of action
+  // If waypoint exists, length = origin→waypoint + waypoint→insertion
+  let lineDir, currentLen;
+  if(m.waypointPos){
+    const segA = sub(m.waypointPos, orig.pos);
+    const segB = sub(ins.pos, m.waypointPos);
+    currentLen = vlen(segA) + vlen(segB);
+    // Force direction at insertion is waypoint→insertion
+    lineDir = nrm(segB);
+  } else {
+    const seg = sub(ins.pos, orig.pos);
+    currentLen = vlen(seg);
+    lineDir = nrm(seg);
+  }
+
+  // Update length tracking
+  const dL_dt = (currentLen - m.prevLength) / Math.max(dt, 1e-4);
+  m.prevLength = m.length;
+  m.length = currentLen;
+
+  // Smooth activation toward target (neural delay ~50ms)
+  const activationRate = 12.0;
+  m.activation = lerp(m.activation, m.targetActivation, activationRate * dt);
+
+  // Fatigue accumulates during activation, recovers at rest
+  m.fatigue = clamp(m.fatigue + (m.activation * 0.08 - 0.03) * dt, 0, 1);
+
+  // Effective max force reduced by fatigue and damage
+  const healthMult = m.health * (1 - m.fatigue * 0.5);
+
+  // Muscle force (Hill model)
+  const fl  = forceLengthFactor(m);
+  const fv  = forceVelocityFactor(dL_dt, m.optimalLength);
+  m.force   = m.activation * fl * fv * m.maxForce * healthMult;
+
+  // Tendon elastic force (in series — always transmits muscle force + passive)
+  // Passive elastic element: resistance when muscle is stretched beyond optLen
+  const passiveStrain = Math.max(0, currentLen - m.optimalLength * 1.1);
+  const passive = passiveStrain * m.maxForce * 0.8;
+  m.tendonForce = tendonForce(currentLen, m.tendonSlack, m.tendonStiff);
+
+  const totalForce = m.force + passive + m.tendonForce;
+
+  // Apply force along line of action (pull-only — muscles don't push)
+  // Origin pulled toward insertion, insertion pulled toward origin
+  const impulse = scl(lineDir, totalForce * dt);
+  orig.vel = add(orig.vel, scl(impulse,  1 / Math.max(orig.mass, 0.001)));
+  ins.vel  = add(ins.vel,  scl(impulse, -1 / Math.max(ins.mass,  0.001)));
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// MOTOR SOLVER — sets muscle activations from intent + phase
+// This is the EFE Intent→Motor layer: no direct velocity writes,
+// everything goes through muscle activation.
+// ══════════════════════════════════════════════════════════════════════════
+
+function setMuscleDrive(muscles, intent, motor){
+  const ph = motor.flapPhaseL; // symmetric drive for now
+  const phR = motor.flapPhaseR;
+  const isFlapping = intent === 'flap' || intent === 'glide';
+
+  muscles.forEach(m => {
+    let act = 0;
+
+    if(m.role === 'downstroke_L'){
+      // Pectoralis: fires hard on downstroke (phase 0→0.4), ramps off quickly
+      const t = ph < 0.40 ? ph / 0.40 : 0;
+      act = isFlapping ? Math.sin(t * Math.PI) : 0;
+      // Bias by intent — glide uses lower activation (soaring vs climbing)
+      act *= intent === 'flap' ? 1.0 : 0.45;
+    }
+    if(m.role === 'downstroke_R'){
+      const t = phR < 0.40 ? phR / 0.40 : 0;
+      act = isFlapping ? Math.sin(t * Math.PI) : 0;
+      act *= intent === 'flap' ? 1.0 : 0.45;
+    }
+    if(m.role === 'upstroke_L'){
+      // Supracoracoideus: fires on upstroke (phase 0.4→1.0)
+      const t = ph >= 0.40 ? (ph - 0.40) / 0.60 : 0;
+      act = isFlapping ? Math.sin(t * Math.PI) * 0.65 : 0;
+      // Upstroke muscle is weaker — recovery, not power
+    }
+    if(m.role === 'upstroke_R'){
+      const t = phR >= 0.40 ? (phR - 0.40) / 0.60 : 0;
+      act = isFlapping ? Math.sin(t * Math.PI) * 0.65 : 0;
+    }
+    if(m.role === 'wrist_extensor_L' || m.role === 'wrist_extensor_R'){
+      // Keeps fingers extended on downstroke, relaxes on upstroke
+      const p = m.role.endsWith('L') ? ph : phR;
+      act = isFlapping ? (p < 0.40 ? 0.8 : 0.15) : 0.3; // idle: slight extension
+    }
+    if(m.role === 'wrist_flexor_L' || m.role === 'wrist_flexor_R'){
+      // Folds carpals inward on upstroke
+      const p = m.role.endsWith('L') ? ph : phR;
+      act = isFlapping ? (p >= 0.40 ? Math.sin(((p-0.40)/0.60)*Math.PI) * 0.7 : 0) : 0;
+    }
+    if(m.role === 'neck_extensor'){
+      act = intent === 'intimidate' ? 0.85 : intent === 'strike' ? 0.3 : 0.25;
+    }
+    if(m.role === 'neck_flexor'){
+      act = intent === 'strike' ? 0.8 : intent === 'dive' ? 0.7 : 0.1;
+    }
+    if(m.role === 'tail_elevator'){
+      act = intent === 'dive' ? 0.7 : intent === 'glide' ? 0.35 : 0.15;
+    }
+    if(m.role === 'tail_depressor'){
+      act = intent === 'intimidate' ? 0.6 : intent === 'land' ? 0.5 : 0.1;
+    }
+    if(m.role === 'hip_extensor_L' || m.role === 'hip_extensor_R'){
+      // Leg push-off gait
+      const gait = (SIM.t * 2.2) % 1;
+      const phase = m.role.endsWith('L') ? gait : (gait + 0.5) % 1;
+      act = (!motor.inFlight && intent !== 'idle') ? Math.max(0, Math.sin(phase * Math.PI)) * 0.7 : 0;
+    }
+    if(m.role === 'leg_tuck'){
+      act = motor.inFlight ? 0.7 : 0;
+    }
+
+    m.targetActivation = clamp(act * (1 - m.fatigue * 0.4), 0, 1);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SIMULATION STATE
+// ══════════════════════════════════════════════════════════════════════════
+const SIM={
+  t:0,tick:0,running:false,intent:'idle',
+  showGraph:true,showMem:true,showMuscles:true,showHUD:true,
+  wind:0,windDir:v3(1,0,0),
+  nodes:[],edges:[],triangles:[],muscles:[],
+  ikNeck:[],ikLegL:[],ikLegR:[],ikWingArmL:[],ikWingArmR:[],ikWingTipL:[],ikWingTipR:[],
+  wingStartL:0,wingStartR:0,wingDef:[],
+  motor:{
+    fatigue:0,breathPhase:0,
+    flapPhaseL:0,flapPhaseR:0.5,
+    flapHz:0,inFlight:false,
+  },
+  expr:{speed:0,alertness:0,exhaustion:0,wdL:0,wdR:0,pain:0,liftL:0,liftR:0},
+  particles:[],
+};
+
+// ── Node / edge builders ──────────────────────────────────────────────────
+function node(id,label,pos,mass,role){
+  return{id,label,pos:copy(pos),rest:copy(pos),vel:v3(0,0,0),hp:1,mass,role};
+}
+function mkEdge(a,b,nodes,type,stiff,side){
+  const r=vlen(sub(nodes[b].rest,nodes[a].rest));
+  return{a,b,rest:r,type,stiff:stiff??0.9,side:side??-1};
+}
+
+// ── Build ─────────────────────────────────────────────────────────────────
+function buildWyvern(){
+  const N=[],E=[],T=[],M=[];
+
+  // SPINE
+  const spinePos=[
+    v3(0,-0.10,8.5),v3(0,0.10,6.0),v3(0,0.30,3.0),
+    v3(0,0.50,0.0),v3(0,0.60,-1.5),v3(0,0.60,-2.8),
+    v3(0,0.45,-4.0),v3(0,0.30,-5.0),
+  ];
+  const spL=['tail_tip','tail_2','tail_1','spine_root','spine_mid','neck_base','neck_tip','head'];
+  const spR=['tail_tip','tail','tail','root','spine','neck','neck','head'];
+  const spM=[10,20,40,100,90,15,10,25];
+  spinePos.forEach((p,i)=>N.push(node(i,spL[i],p,spM[i],spR[i])));
+  for(let i=0;i<spinePos.length-1;i++)E.push(mkEdge(i,i+1,N,'spine',0.90));
+
+  // WINGS
+  const wingDef=[
+    [2.0,0.60,-1.5,'shoulder',8],[5.0,0.60,-1.2,'humerus',6],
+    [8.0,0.60,-0.8,'radius',4],[11.0,0.60,-0.4,'carpals',3],
+    [11.5,0.60,-0.8,'thumb',1],[16.0,0.60,-0.2,'finger2',2],
+    [14.5,0.60,2.0,'finger3',1.5],[12.0,0.60,4.0,'finger4',1.2],
+    [9.0,0.60,5.5,'finger5',1.0],
+  ];
+  const wingStart=[N.length,-1];
+  [0,1].forEach(si=>{
+    const sx=si===0?-1:1;
+    wingStart[si]=N.length;
+    const attachIdx=4,pelvisIdx=3;
+    wingDef.forEach(([wx,wy,wz,wlabel,wm],wi)=>{
+      const id=N.length;
+      const role=wi===5?(si===0?'wingL_tip':'wingR_tip'):'wing';
+      N.push(node(id,`w${si===0?'L':'R'}_${wlabel}`,v3(sx*wx,wy,wz),wm,role));
+    });
+    const wn=wingStart[si];
+    // Bone edges
+    E.push(mkEdge(attachIdx,wn+0,N,'wing',0.95,si));
+    E.push(mkEdge(wn+0,wn+1,N,'wing',0.95,si));
+    E.push(mkEdge(wn+1,wn+2,N,'wing',0.95,si));
+    E.push(mkEdge(wn+2,wn+3,N,'wing',0.95,si));
+    E.push(mkEdge(wn+3,wn+4,N,'wing',0.92,si));
+    E.push(mkEdge(wn+3,wn+5,N,'wing',0.92,si));
+    E.push(mkEdge(wn+3,wn+6,N,'wing',0.92,si));
+    E.push(mkEdge(wn+3,wn+7,N,'wing',0.92,si));
+    E.push(mkEdge(wn+3,wn+8,N,'wing',0.92,si));
+    // Membrane
+    E.push(mkEdge(wn+5,wn+6,N,'membrane',0.35,si));
+    E.push(mkEdge(wn+6,wn+7,N,'membrane',0.35,si));
+    E.push(mkEdge(wn+7,wn+8,N,'membrane',0.35,si));
+    E.push(mkEdge(pelvisIdx,wn+8,N,'membrane',0.35,si));
+    E.push(mkEdge(wn+6,wn+2,N,'membrane',0.06,si));
+    E.push(mkEdge(wn+7,wn+1,N,'membrane',0.06,si));
+    E.push(mkEdge(wn+8,wn+0,N,'membrane',0.06,si));
+    E.push(mkEdge(wn+8,pelvisIdx+1,N,'membrane',0.05,si));
+    // Triangles
+    T.push([attachIdx,wn+0,wn+1,si]);T.push([attachIdx,wn+1,pelvisIdx,si]);
+    T.push([pelvisIdx,wn+1,wn+8,si]);T.push([wn+1,wn+2,wn+8,si]);
+    T.push([wn+2,wn+3,wn+8,si]);T.push([wn+3,wn+5,wn+6,si]);
+    T.push([wn+3,wn+6,wn+7,si]);T.push([wn+3,wn+7,wn+8,si]);
+
+    // ── MUSCLES ──────────────────────────────────────────────────────────
+    const sideLabel = si===0?'L':'R';
+    const optLen_shoulder = vlen(sub(N[wn+1].rest, N[attachIdx].rest));
+    const optLen_humerus  = vlen(sub(N[wn+2].rest, N[wn+0].rest));
+    const optLen_carpals  = vlen(sub(N[wn+5].rest, N[wn+3].rest));
+
+    // Pectoralis major: sternum (spine_mid) → humerus
+    // PRIMARY downstroke driver — the big chest muscle
+    M.push(makeMuscle({
+      id: M.length, label:`pectoralis_${sideLabel}`,
+      origin: attachIdx, insert: wn+1,
+      optLen: optLen_shoulder * 0.85,
+      maxF: 280,
+      tendonSlack: optLen_shoulder * 0.04,
+      tendonStiff: 280 * 6,
+      role: `downstroke_${sideLabel}`,
+      colour: 'rgba(220,60,60,',
+    }));
+
+    // Supracoracoideus: routes OVER the shoulder as a pulley → pulls wing UP
+    // The waypoint is above the shoulder joint (bony process / acromion)
+    // This is what makes upstroke mechanically correct — ventral muscle, dorsal effect
+    const acromion = add(N[wn+0].rest, v3(sx*0.3, 1.2, 0)); // virtual pulley point
+    M.push(makeMuscle({
+      id: M.length, label:`supracoracoideus_${sideLabel}`,
+      origin: attachIdx, insert: wn+0,
+      waypoint: acromion,
+      optLen: vlen(sub(acromion, N[attachIdx].rest)) + vlen(sub(N[wn+0].rest, acromion)) * 0.75,
+      maxF: 140,
+      tendonSlack: 0.3,
+      tendonStiff: 140 * 5,
+      role: `upstroke_${sideLabel}`,
+      colour: 'rgba(80,160,220,',
+    }));
+
+    // Extensor digitorum: along dorsal surface, keeps fingers spread on downstroke
+    // Origin: carpals, inserts at finger2 tip
+    M.push(makeMuscle({
+      id: M.length, label:`extensor_digit_${sideLabel}`,
+      origin: wn+3, insert: wn+5,
+      optLen: optLen_carpals * 0.90,
+      maxF: 45,
+      tendonSlack: optLen_carpals * 0.06,
+      tendonStiff: 45 * 10, // tendons much stiffer than muscle
+      role: `wrist_extensor_${sideLabel}`,
+      colour: 'rgba(200,180,60,',
+    }));
+
+    // Flexor digitorum: folds fingers inward on upstroke (reduces drag)
+    M.push(makeMuscle({
+      id: M.length, label:`flexor_digit_${sideLabel}`,
+      origin: wn+1, insert: wn+6,   // humerus to finger3 — pull arc
+      optLen: vlen(sub(N[wn+6].rest, N[wn+1].rest)) * 0.88,
+      maxF: 30,
+      tendonSlack: 0.5,
+      tendonStiff: 30 * 8,
+      role: `wrist_flexor_${sideLabel}`,
+      colour: 'rgba(160,100,220,',
+    }));
+  });
+
+  // NECK muscles — antagonist pair
+  // Extensor (raises head): spine_mid → head, dorsal routing
+  M.push(makeMuscle({
+    id:M.length, label:'neck_extensor',
+    origin:4, insert:7,
+    optLen: vlen(sub(N[7].rest,N[4].rest)) * 0.95,
+    maxF: 60,
+    tendonSlack: 0.3, tendonStiff: 60*6,
+    role:'neck_extensor', colour:'rgba(180,140,80,',
+  }));
+  // Flexor (drops head forward): spine_mid → head, ventral routing
+  M.push(makeMuscle({
+    id:M.length, label:'neck_flexor',
+    origin:5, insert:7,
+    optLen: vlen(sub(N[7].rest,N[5].rest)) * 0.90,
+    maxF: 50,
+    tendonSlack: 0.2, tendonStiff: 50*7,
+    role:'neck_flexor', colour:'rgba(80,160,140,',
+  }));
+
+  // TAIL muscles — elevator/depressor for pitch control
+  M.push(makeMuscle({
+    id:M.length, label:'tail_elevator',
+    origin:3, insert:0,
+    optLen: vlen(sub(N[0].rest,N[3].rest)) * 0.88,
+    maxF: 35, tendonSlack:0.4, tendonStiff:35*5,
+    role:'tail_elevator', colour:'rgba(180,120,60,',
+  }));
+  M.push(makeMuscle({
+    id:M.length, label:'tail_depressor',
+    origin:2, insert:0,
+    optLen: vlen(sub(N[0].rest,N[2].rest)) * 0.92,
+    maxF: 28, tendonSlack:0.3, tendonStiff:28*5,
+    role:'tail_depressor', colour:'rgba(120,80,160,',
+  }));
+
+  // LEGS
+  const legDef=[
+    {side:'L',hip:v3(-1.1,0.0,0.0),knee:v3(-1.3,-1.3,0.3),foot:v3(-1.4,-2.5,0.7)},
+    {side:'R',hip:v3( 1.1,0.0,0.0),knee:v3( 1.3,-1.3,0.3),foot:v3( 1.4,-2.5,0.7)},
+  ];
+  const legChains=[];
+  legDef.forEach((lg,li)=>{
+    const pelvis=3;
+    const hipID=N.length;N.push(node(hipID,`hip_${lg.side}`,lg.hip,6,`hip${lg.side}`));
+    E.push(mkEdge(pelvis,hipID,N,'leg',0.97));
+    const kneeID=N.length;N.push(node(kneeID,`knee_${lg.side}`,lg.knee,4,`knee${lg.side}`));
+    E.push(mkEdge(hipID,kneeID,N,'leg',0.95));
+    const footID=N.length;N.push(node(footID,`foot_${lg.side}`,lg.foot,2,`foot${lg.side}`));
+    E.push(mkEdge(kneeID,footID,N,'leg',0.95));
+    legChains.push([pelvis,hipID,kneeID,footID]);
+
+    // Hip extensor — drives leg swing
+    M.push(makeMuscle({
+      id:M.length, label:`hip_ext_${lg.side}`,
+      origin:pelvis, insert:kneeID,
+      optLen: vlen(sub(N[kneeID].rest,N[pelvis].rest)) * 0.90,
+      maxF:80, tendonSlack:0.2, tendonStiff:80*6,
+      role:`hip_extensor_${lg.side}`, colour:'rgba(100,200,120,',
+    }));
+    // Leg tuck — pulls knee toward body during flight
+    M.push(makeMuscle({
+      id:M.length, label:`leg_tuck_${lg.side}`,
+      origin:pelvis, insert:footID,
+      optLen: vlen(sub(N[footID].rest,N[pelvis].rest)) * 0.65,
+      maxF:50, tendonSlack:0.3, tendonStiff:50*7,
+      role:'leg_tuck', colour:'rgba(140,200,160,',
+    }));
+  });
+
+  SIM.nodes=N;SIM.edges=E;SIM.triangles=T;SIM.muscles=M;
+  SIM.ikLegL=legChains[0];SIM.ikLegR=legChains[1];
+  SIM.ikNeck=[3,4,5,6,7];
+  SIM.wingStartL=wingStart[0];SIM.wingStartR=wingStart[1];
+  SIM.ikWingArmL=[4,wingStart[0],wingStart[0]+1,wingStart[0]+2,wingStart[0]+3];
+  SIM.ikWingArmR=[4,wingStart[1],wingStart[1]+1,wingStart[1]+2,wingStart[1]+3];
+  SIM.ikWingTipL=[wingStart[0]+3,wingStart[0]+5];
+  SIM.ikWingTipR=[wingStart[1]+3,wingStart[1]+5];
+  SIM.wingDef=wingDef;
+}
+
+// ── FABRIK ────────────────────────────────────────────────────────────────
+function fabrik(chain,target,nodes,iters){
+  const n=chain.length;if(n<2)return;
+  const segs=[];
+  for(let i=0;i<n-1;i++)segs.push(vlen(sub(nodes[chain[i+1]].pos,nodes[chain[i]].pos)));
+  const pos=chain.map(id=>copy(nodes[id].pos));
+  const anchor=copy(pos[0]);
+  for(let it=0;it<iters;it++){
+    pos[n-1].x=target.x;pos[n-1].y=target.y;pos[n-1].z=target.z;
+    for(let i=n-2;i>=0;i--){const dir=nrm(sub(pos[i],pos[i+1]));pos[i]=add(pos[i+1],scl(dir,segs[i]));}
+    pos[0].x=anchor.x;pos[0].y=anchor.y;pos[0].z=anchor.z;
+    for(let i=1;i<n;i++){const dir=nrm(sub(pos[i],pos[i-1]));pos[i]=add(pos[i-1],scl(dir,segs[i-1]));}
+  }
+  for(let i=1;i<n;i++){
+    nodes[chain[i]].pos.x=lerp(nodes[chain[i]].pos.x,pos[i].x,0.5);
+    nodes[chain[i]].pos.y=lerp(nodes[chain[i]].pos.y,pos[i].y,0.5);
+    nodes[chain[i]].pos.z=lerp(nodes[chain[i]].pos.z,pos[i].z,0.5);
+  }
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────
+function resetSim(){
+  buildWyvern();
+  SIM.t=0;SIM.tick=0;SIM.wind=0;SIM.particles=[];
+  SIM.motor={fatigue:0,breathPhase:0,flapPhaseL:0,flapPhaseR:0.5,flapHz:0,inFlight:false};
+  SIM.expr={speed:0,alertness:0,exhaustion:0,wdL:0,wdR:0,pain:0,liftL:0,liftR:0};
+  document.getElementById('selI').value='idle';
+  SIM.intent='idle';camYaw=0.42;camPitch=0.20;camDist=22;
+  toast('reset');
+}
+
+// ── Simulate ──────────────────────────────────────────────────────────────
+function simulate(dt){
+  const N=SIM.nodes,E=SIM.edges,M=SIM.muscles,ms=SIM.motor;
+  const intent=SIM.intent;
+  SIM.t+=dt;SIM.tick++;
+
+  ms.breathPhase=(ms.breathPhase+lerp(0.20,0.48,ms.fatigue)*dt)%1;
+  const breathY=Math.sin(ms.breathPhase*TAU)*lerp(0.04,0.12,ms.fatigue);
+  const inFlight=intent==='glide'||intent==='flap'||intent==='dive';
+  ms.inFlight=inFlight;
+  const fDelta=intent==='flap'?0.004:intent==='strike'?0.15:inFlight?0.001:-0.010;
+  ms.fatigue=clamp(ms.fatigue+fDelta*dt,0,1);
+
+  ms.flapHz=intent==='flap'?3.2:intent==='glide'?1.0:0;
+  ms.flapPhaseL=(ms.flapPhaseL+ms.flapHz*dt)%1;
+  ms.flapPhaseR=(ms.flapPhaseR+ms.flapHz*dt)%1;
+
+  // ── Gravity ───────────────────────────────────────────────────────────
+  N.forEach(n=>{if(n.hp<=0)return;n.vel.y-=9.8*dt;});
+
+  // ── Motor solver: set muscle activations from intent ─────────────────
+  setMuscleDrive(M, intent, ms);
+
+  // ── Apply all muscle forces ───────────────────────────────────────────
+  M.forEach(m=>applyMuscleForce(m,N,dt));
+
+  // ── Aerodynamic lift from membrane velocity ───────────────────────────
+  // Membrane nodes moving downward generate lift proportional to area and v².
+  // This is emergent — the muscles drive the bones, bones drag the membrane,
+  // membrane hits air, air pushes back. No magic lift constants.
+  if(inFlight){
+    let liftL=0,liftR=0;
+    const areaW=[0.02,0.04,0.06,0.06,0.01,0.12,0.20,0.28,0.35];
+    const dragCoeff=52;
+    [0,1].forEach(si=>{
+      const wS=si===0?SIM.wingStartL:SIM.wingStartR;
+      areaW.forEach((area,wi)=>{
+        const nid=wS+wi;if(nid>=N.length||N[nid].hp<=0)return;
+        const nd=N[nid];
+        const downVel=Math.max(0,-nd.vel.y);
+        const fwdVel=Math.max(0,-nd.vel.z);
+        const lift=((downVel*downVel*dragCoeff)+(fwdVel*fwdVel*7))*area;
+        nd.vel.y+=(lift/nd.mass)*dt;
+        nd.vel.x-=nd.vel.x*Math.abs(nd.vel.x)*0.7*area*dt;
+        nd.vel.z-=nd.vel.z*Math.abs(nd.vel.z)*0.7*area*dt;
+        if(si===0)liftL+=lift;else liftR+=lift;
+      });
+    });
+    SIM.expr.liftL=clamp(liftL/500,0,1);
+    SIM.expr.liftR=clamp(liftR/500,0,1);
+
+    // Altitude stabiliser
+    if(intent!=='dive'){
+      const altT=intent==='flap'?2.8:1.8;
+      N[3].vel.y+=clamp((altT-N[3].pos.y)*1.0,-2.5,2.5)*dt;
+    }
+  } else {
+    SIM.expr.liftL*=0.92;SIM.expr.liftR*=0.92;
+  }
+
+  // Other intents (direct pushes only for non-flight behaviours)
+  if(intent==='dive'){N[3].vel.z+=2.5*dt;N[3].vel.y-=1.5*dt;N[7].vel.z+=1.5*dt;}
+  if(intent==='strike'){
+    N[7].vel.z+=8*dt;N[6].vel.z+=5*dt;
+    if(Math.random()<0.2)spawnP(N[7].pos,v3((Math.random()-0.5)*3,Math.random()*2,4+Math.random()*4),'rgba(230,90,40,',0.6);
+  }
+  if(intent==='intimidate'){
+    if(Math.random()<0.08)spawnP(N[3].pos,v3((Math.random()-0.5)*5,Math.random()*3,(Math.random()-0.5)*5),'rgba(90,210,80,',0.5);
+  }
+
+  // Breathing
+  N[3].vel.y+=breathY*2*dt;N[4].vel.y+=breathY*1.5*dt;
+
+  // Wind
+  if(SIM.wind>0){
+    SIM.wind=Math.max(0,SIM.wind-dt);
+    N.forEach(n=>n.vel=add(n.vel,scl(SIM.windDir,7.5*dt)));
+    if(Math.random()<0.3){
+      spawnP(N[Math.floor(Math.random()*N.length)].pos,
+        add(scl(SIM.windDir,3+Math.random()*4),v3((Math.random()-0.5),(Math.random()-0.5),0)),
+        'rgba(100,178,255,',0.5);
+    }
+  }
+
+  // ── Integrate ─────────────────────────────────────────────────────────
+  N.forEach(n=>{
+    if(n.hp<=0)return;
+    n.pos=add(n.pos,scl(n.vel,dt));
+    const damp=n.role==='root'||n.role==='spine'?0.88:
+               n.role==='wing'||n.role==='wingL_tip'||n.role==='wingR_tip'?0.93:0.90;
+    n.vel=scl(n.vel,damp);
+  });
+
+  // ── Constraint solve ─────────────────────────────────────────────────
+  for(let it=0;it<12;it++){
+    E.forEach(e=>{
+      const a=N[e.a],b=N[e.b];if(!a||!b||a.hp<=0||b.hp<=0)return;
+      const d=sub(b.pos,a.pos);const dist=vlen(d)||1e-5;
+      const err=dist-e.rest;const dmgM=Math.min(a.hp,b.hp);
+      const corr=err*e.stiff*dmgM;const dir=scl(d,1/dist);
+      const tw=a.mass+b.mass;
+      a.pos=add(a.pos,scl(dir,corr*(b.mass/tw)*0.5));
+      b.pos=sub(b.pos,scl(dir,corr*(a.mass/tw)*0.5));
+    });
+    N.forEach(n=>{
+      if(n.pos.y<-2.4){n.pos.y=-2.4;n.vel.y=Math.max(0,n.vel.y)*0.4;n.vel.x*=0.82;n.vel.z*=0.82;}
+      if(n.pos.y<-6){n.pos.y=-6;n.vel.y=0;}
+    });
+  }
+
+  // ── IK ───────────────────────────────────────────────────────────────
+  fabrik(SIM.ikNeck,add(N[4].pos,
+    intent==='strike'?v3(0,-0.3,-3.1):intent==='intimidate'?v3(0,0.6,-2.1):
+    intent==='dive'?v3(0,-0.8,-2.8):v3(0,-0.25,-2.6)),N,3);
+  if(!ms.inFlight){
+    const g=(SIM.t*0.8)%1;
+    fabrik(SIM.ikLegL,v3(N[SIM.ikLegL[1]].pos.x-0.3,-2.4,N[SIM.ikLegL[1]].pos.z+0.7+Math.sin(g*TAU)*0.3),N,4);
+    fabrik(SIM.ikLegR,v3(N[SIM.ikLegR[1]].pos.x+0.3,-2.4,N[SIM.ikLegR[1]].pos.z+0.7+Math.sin(g*TAU+Math.PI)*0.3),N,4);
+  } else {
+    fabrik(SIM.ikLegL,add(N[SIM.ikLegL[1]].pos,v3(0.1,-0.7,0.3)),N,3);
+    fabrik(SIM.ikLegR,add(N[SIM.ikLegR[1]].pos,v3(-0.1,-0.7,0.3)),N,3);
+  }
+
+  // Structural stress
+  E.forEach(e=>{
+    const a=N[e.a],b=N[e.b];if(!a||!b)return;
+    const strain=Math.abs(vlen(sub(b.pos,a.pos))-e.rest)/Math.max(e.rest,0.01);
+    if(strain>0.45&&e.type!=='membrane'){
+      const dmg=strain*0.002*dt;a.hp=clamp(a.hp-dmg,0,1);b.hp=clamp(b.hp-dmg,0,1);
+    }
+  });
+  // Muscle damage propagates to attached nodes when overstressed
+  M.forEach(m=>{
+    if(m.force>m.maxForce*1.3){
+      const dmg=0.001*dt;
+      N[m.originNode].hp=clamp(N[m.originNode].hp-dmg,0,1);
+      N[m.insertNode].hp=clamp(N[m.insertNode].hp-dmg,0,1);
+    }
+  });
+
+  const tipL=N.find(n=>n.role==='wingL_tip');
+  const tipR=N.find(n=>n.role==='wingR_tip');
+  const avgHP=N.reduce((s,n)=>s+n.hp,0)/N.length;
+  SIM.expr.speed=clamp(vlen(N[3].vel)/5,0,1);
+  SIM.expr.alertness=intent==='strike'?0.95:intent==='intimidate'?0.7:inFlight?0.5:0.2;
+  SIM.expr.exhaustion=ms.fatigue;
+  SIM.expr.wdL=tipL?1-tipL.hp:0;SIM.expr.wdR=tipR?1-tipR.hp:0;
+  SIM.expr.pain=clamp(1-avgHP,0,1);
+
+  SIM.particles=SIM.particles.filter(p=>{
+    p.pos=add(p.pos,scl(p.vel,dt));p.vel=scl(p.vel,0.90);p.life-=dt;return p.life>0;
+  });
+}
+
+function spawnP(pos,vel,col,life){SIM.particles.push({pos:copy(pos),vel:copy(vel),color:col,life,maxLife:life});}
+
+// ── Drawing ───────────────────────────────────────────────────────────────
+function hpStroke(hp){return hp>0.7?'#4a9fe0':hp>0.4?'#e0a030':hp>0.1?'#e05030':'#772020';}
+function hpFill(hp){return hp>0.7?'rgba(74,159,224,0.13)':hp>0.4?'rgba(224,160,48,0.13)':hp>0.1?'rgba(224,80,48,0.13)':'rgba(100,25,25,0.18)';}
+
+const ESTYLE={
+  spine:{w:2.8,dash:[],base:'rgba(155,200,240,'},
+  wing:{w:1.8,dash:[],base:'rgba(75,150,220,'},
+  membrane:{w:0.9,dash:[3,4],base:'rgba(50,110,190,'},
+  leg:{w:1.7,dash:[],base:'rgba(90,175,100,'},
+};
+
+function draw(){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0b0d11';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=0.8;
+  for(let x=-14;x<=14;x+=2){
+    const a=proj(v3(x,-2.4,-15)),b=proj(v3(x,-2.4,15));
+    if(a&&b){ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke();}
+  }
+  for(let z=-15;z<=15;z+=2){
+    const a=proj(v3(-14,-2.4,z)),b=proj(v3(14,-2.4,z));
+    if(a&&b){ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke();}
+  }
+  const rp=proj(v3(SIM.nodes[3]?.pos.x??0,-2.58,SIM.nodes[3]?.pos.z??0));
+  if(rp){ctx.beginPath();ctx.ellipse(rp.sx,rp.sy,35,9,0,0,TAU);ctx.fillStyle=`rgba(0,0,0,${SIM.motor.inFlight?0.12:0.35})`;ctx.fill();}
+
+  const N=SIM.nodes,P=N.map(n=>proj(n.pos));
+
+  // Membrane
+  if(SIM.showMem){
+    SIM.triangles.forEach(([ia,ib,ic,si])=>{
+      const pa=P[ia],pb=P[ib],pc=P[ic];if(!pa||!pb||!pc)return;
+      const avgHp=(N[ia].hp+N[ib].hp+N[ic].hp)/3;
+      const ph=si===0?SIM.motor.flapPhaseL:SIM.motor.flapPhaseR;
+      const pulse=ph<0.40?Math.sin((ph/0.40)*Math.PI)*0.06:0;
+      const alpha=clamp(avgHp*0.14+pulse,0.02,0.18);
+      ctx.beginPath();ctx.moveTo(pa.sx,pa.sy);ctx.lineTo(pb.sx,pb.sy);ctx.lineTo(pc.sx,pc.sy);ctx.closePath();
+      ctx.fillStyle=avgHp>0.5?`rgba(60,${120+Math.round(pulse*80)},${200+Math.round(pulse*55)},${alpha})`:`rgba(160,60,40,${alpha})`;
+      ctx.fill();
+    });
+  }
+
+  // Particles
+  SIM.particles.forEach(p=>{
+    const pp=proj(p.pos);if(!pp)return;
+    const a=p.life/p.maxLife;
+    ctx.beginPath();ctx.arc(pp.sx,pp.sy,3*a+0.3,0,TAU);
+    ctx.fillStyle=p.color+(a*0.9)+')';ctx.fill();
+  });
+
+  // Skeleton edges
+  if(SIM.showGraph){
+    [...SIM.edges].sort((a,b)=>((P[b.a]?.depth??0)+(P[b.b]?.depth??0))-((P[a.a]?.depth??0)+(P[a.b]?.depth??0)))
+    .forEach(e=>{
+      const pa=P[e.a],pb=P[e.b];if(!pa||!pb)return;
+      const avgHp=(N[e.a].hp+N[e.b].hp)*0.5;
+      const st=ESTYLE[e.type]||ESTYLE.spine;
+      const alpha=e.type==='membrane'?0.38:0.65;
+      ctx.beginPath();ctx.moveTo(pa.sx,pa.sy);ctx.lineTo(pb.sx,pb.sy);
+      ctx.strokeStyle=avgHp<0.4?`rgba(210,65,45,${alpha})`:st.base+alpha+')';
+      ctx.lineWidth=st.w;ctx.setLineDash(st.dash);ctx.stroke();ctx.setLineDash([]);
+    });
+  }
+
+  // ── Muscles ───────────────────────────────────────────────────────────
+  if(SIM.showMuscles){
+    SIM.muscles.forEach(m=>{
+      const pa=P[m.originNode],pb=P[m.insertNode];if(!pa||!pb)return;
+      const act=m.activation;
+      if(act<0.01&&m.tendonForce<0.5)return; // skip inactive
+      const alpha=clamp(0.15+act*0.7,0.1,0.85);
+      // Line width scales with activation — you can see which muscles are working
+      const lw=clamp(0.8+act*3.5,0.8,4.5);
+      ctx.beginPath();
+      if(m.waypointPos){
+        // Routed tendon — draw bend at waypoint
+        const pw=proj(m.waypointPos);
+        if(pw){ctx.moveTo(pa.sx,pa.sy);ctx.lineTo(pw.sx,pw.sy);ctx.lineTo(pb.sx,pb.sy);}
+        else{ctx.moveTo(pa.sx,pa.sy);ctx.lineTo(pb.sx,pb.sy);}
+      } else {
+        ctx.moveTo(pa.sx,pa.sy);ctx.lineTo(pb.sx,pb.sy);
+      }
+      ctx.strokeStyle=m.colour+alpha+')';
+      ctx.lineWidth=lw;ctx.setLineDash([]);ctx.stroke();
+
+      // Tendon force glow — bright flash when tendon loads
+      if(m.tendonForce>5){
+        const tAlpha=clamp(m.tendonForce/m.maxForce*0.6,0,0.6);
+        ctx.beginPath();ctx.moveTo(pa.sx,pa.sy);ctx.lineTo(pb.sx,pb.sy);
+        ctx.strokeStyle=`rgba(255,255,200,${tAlpha})`;ctx.lineWidth=lw*0.4;ctx.stroke();
+      }
+    });
+  }
+
+  // Nodes
+  const sorted=P.map((p,i)=>({p,n:N[i]})).filter(x=>x.p).sort((a,b)=>b.p.depth-a.p.depth);
+  sorted.forEach(({p,n})=>{
+    if(n.hp<=0){ctx.beginPath();ctx.arc(p.sx,p.sy,3.5,0,TAU);ctx.fillStyle='rgba(130,30,25,0.55)';ctx.fill();return;}
+    const r=n.role==='root'||n.role==='spine'?7:n.role==='head'?10:n.role==='neck'?5:n.role.startsWith('wing')?4:5;
+    ctx.beginPath();
+    if(n.role==='head')ctx.ellipse(p.sx,p.sy,r*1.75,r*1.05,0,0,TAU);
+    else if(n.role==='root'||n.role==='spine')ctx.ellipse(p.sx,p.sy,r*1.3,r*0.85,0,0,TAU);
+    else ctx.arc(p.sx,p.sy,r,0,TAU);
+    ctx.fillStyle=hpFill(n.hp);ctx.fill();ctx.strokeStyle=hpStroke(n.hp);ctx.lineWidth=1.3;ctx.stroke();
+    if(n.hp<0.99){
+      ctx.beginPath();ctx.arc(p.sx,p.sy,r+3,-Math.PI/2,-Math.PI/2+n.hp*TAU);
+      ctx.strokeStyle='rgba(220,75,45,0.7)';ctx.lineWidth=1.8;ctx.stroke();
+    }
+    if(n.role==='head'){
+      [-0.4,0.4].forEach(xo=>{
+        const ep=proj(add(n.pos,v3(xo,0.22,0.3)));
+        if(ep){ctx.beginPath();ctx.arc(ep.sx,ep.sy,2.3,0,TAU);ctx.fillStyle='#ff4411';ctx.fill();}
+      });
+    }
+    const showLbl=n.role==='head'||n.role==='root'||n.role==='wingL_tip'||n.role==='wingR_tip'||n.role==='tail_tip';
+    if(SIM.showGraph&&showLbl){ctx.font='9px monospace';ctx.fillStyle='rgba(160,200,245,0.55)';ctx.fillText(n.label,p.sx+r+3,p.sy+3);}
+  });
+
+  if(SIM.showHUD)drawHUD();
+}
+
+function drawHUD(){
+  const ef=SIM.expr,ms=SIM.motor,M=SIM.muscles;
+  const x=10,y=10,bw=72,bh=4,gap=12;
+  ctx.font='9px monospace';
+
+  // Expression frame
+  const rows=[
+    ['speed',ef.speed,'#4a9fe0'],['lift L',clamp(ef.liftL,0,1),'#60b8f0'],
+    ['lift R',clamp(ef.liftR,0,1),'#60b8f0'],['alertness',ef.alertness,'#e0c840'],
+    ['exhaustion',ef.exhaustion,'#e07030'],['pain',ef.pain,'#e03535'],
+    ['wing L',ef.wdL,'#c05525'],['wing R',ef.wdR,'#c05525'],
+    ['fatigue',ms.fatigue,'#b03020'],
+  ];
+  const panelH=rows.length*gap+12;
+  ctx.fillStyle='rgba(8,12,20,0.78)';ctx.fillRect(x-4,y-4,152,panelH);
+  rows.forEach(([label,val,col],i)=>{
+    const ry=y+i*gap;
+    ctx.fillStyle='rgba(165,200,238,0.55)';ctx.fillText(label,x,ry+8);
+    ctx.fillStyle='rgba(255,255,255,0.06)';ctx.fillRect(x+52,ry+1,bw,bh);
+    ctx.fillStyle=col;ctx.fillRect(x+52,ry+1,bw*clamp(val,0,1),bh);
+  });
+
+  // Muscle activation panel
+  const mx=W-165,my=10,mw=150;
+  const keyMuscles=M.filter(m=>m.activation>0.02||m.force>1).slice(0,10);
+  ctx.fillStyle='rgba(8,12,20,0.78)';ctx.fillRect(mx-4,my-4,mw+8,keyMuscles.length*gap+22);
+  ctx.fillStyle='rgba(165,200,238,0.45)';ctx.fillText('muscle activation',mx,my+8);
+  keyMuscles.forEach((m,i)=>{
+    const ry=my+12+i*gap;
+    const shortLabel=m.label.replace('_L','L').replace('_R','R').replace('pectoralis','pect').replace('supracoracoideus','supra').replace('extensor_digit','ext').replace('flexor_digit','flex').replace('hip_extensor','hipExt').replace('leg_tuck','tuck');
+    ctx.fillStyle=m.colour+'0.6)';ctx.fillText(shortLabel,mx,ry+8);
+    ctx.fillStyle='rgba(255,255,255,0.06)';ctx.fillRect(mx+70,ry+1,70,bh);
+    ctx.fillStyle=m.colour+'0.85)';ctx.fillRect(mx+70,ry+1,70*m.activation,bh);
+    // Tendon flash
+    if(m.tendonForce>3){
+      ctx.fillStyle='rgba(255,255,180,0.7)';ctx.fillText('T',mx+143,ry+8);
+    }
+  });
+
+  // Phase bars
+  const py=y+panelH+4;
+  ctx.fillStyle='rgba(8,12,20,0.78)';ctx.fillRect(x-4,py-2,152,32);
+  ['L','R'].forEach((s,i)=>{
+    const ph=i===0?ms.flapPhaseL:ms.flapPhaseR;
+    const isDown=ph<0.40;
+    const pry=py+i*12;
+    ctx.fillStyle='rgba(255,255,255,0.06)';ctx.fillRect(x+52,pry+1,bw,bh);
+    ctx.fillStyle='rgba(255,255,255,0.10)';ctx.fillRect(x+52,pry+1,bw*0.40,bh);
+    ctx.fillStyle=isDown?'rgba(100,185,255,0.85)':'rgba(160,120,255,0.7)';
+    ctx.fillRect(x+52,pry+1,bw*ph,bh);
+    ctx.fillStyle='rgba(165,200,238,0.45)';
+    ctx.fillText(`${s}:${isDown?'↓':'↑'} ${ms.flapHz.toFixed(1)}Hz`,x,pry+9);
+  });
+
+  ctx.textAlign='right';ctx.fillStyle='rgba(130,155,195,0.32)';ctx.fillText('drag·scroll',W-8,H-8);ctx.textAlign='left';
+}
+
+let toastT=null;
+function toast(m){const el=document.getElementById('toast');el.textContent=m;el.style.opacity='1';clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity='0',1500);}
+function updateSB(){document.getElementById('sb').textContent=`t=${SIM.t.toFixed(1)}s · tick ${SIM.tick} · fat ${Math.round(SIM.motor.fatigue*100)}%`;}
+
+let running=false,raf=null,lts=null;
+function loop(ts){if(!lts)lts=ts;const dt=Math.min((ts-lts)/1000,0.05);lts=ts;simulate(dt);draw();updateSB();if(running)raf=requestAnimationFrame(loop);}
+function tog(btn,key){SIM[key]=!SIM[key];document.getElementById(btn).classList.toggle('on',SIM[key]);if(!running)draw();}
+
+document.getElementById('bPlay').addEventListener('click',()=>{
+  running=!running;document.getElementById('bPlay').textContent=running?'⏸ pause':'⏵ run';
+  document.getElementById('bPlay').classList.toggle('on',running);
+  if(running){lts=null;raf=requestAnimationFrame(loop);}else{cancelAnimationFrame(raf);toast('paused');}
+});
+document.getElementById('bStep').addEventListener('click',()=>{if(running)return;simulate(0.016);draw();updateSB();toast('+16ms');});
+document.getElementById('bReset').addEventListener('click',()=>{
+  if(running){running=false;cancelAnimationFrame(raf);document.getElementById('bPlay').textContent='⏵ run';document.getElementById('bPlay').classList.remove('on');}
+  resetSim();draw();updateSB();
+});
+document.getElementById('selI').addEventListener('change',e=>{SIM.intent=e.target.value;toast('→ '+SIM.intent);if(!running){simulate(0.001);draw();}});
+document.getElementById('bDL').addEventListener('click',()=>{
+  const t=SIM.nodes.find(n=>n.role==='wingL_tip');if(t)t.hp=clamp(t.hp-0.4,0,1);
+  SIM.nodes.filter(n=>n.role==='wing'&&n.pos.x<0).forEach(n=>n.hp=clamp(n.hp-0.15,0,1));
+  SIM.muscles.filter(m=>m.label.endsWith('_L')).forEach(m=>m.health=clamp(m.health-0.3,0,1));
+  toast('wing L hit');if(!running)draw();
+});
+document.getElementById('bDR').addEventListener('click',()=>{
+  const t=SIM.nodes.find(n=>n.role==='wingR_tip');if(t)t.hp=clamp(t.hp-0.4,0,1);
+  SIM.nodes.filter(n=>n.role==='wing'&&n.pos.x>0).forEach(n=>n.hp=clamp(n.hp-0.15,0,1));
+  SIM.muscles.filter(m=>m.label.endsWith('_R')).forEach(m=>m.health=clamp(m.health-0.3,0,1));
+  toast('wing R hit');if(!running)draw();
+});
+document.getElementById('bDS').addEventListener('click',()=>{
+  SIM.nodes.filter(n=>n.role==='spine'||n.role==='root').forEach(n=>n.hp=clamp(n.hp-0.22,0,1));
+  toast('spine stressed');if(!running)draw();
+});
+document.getElementById('bW').addEventListener('click',()=>{
+  SIM.wind=2.2;SIM.windDir=nrm(v3(Math.random()-0.5,0.05,Math.random()-0.5));
+  for(let i=0;i<25;i++){
+    const rn=SIM.nodes[Math.floor(Math.random()*SIM.nodes.length)];
+    spawnP(rn.pos,add(scl(SIM.windDir,2+Math.random()*5),v3((Math.random()-0.5),(Math.random()-0.5),0)),'rgba(100,178,255,',0.4+Math.random()*0.7);
+  }
+  toast('wind burst');
+});
+document.getElementById('bG').addEventListener('click',()=>tog('bG','showGraph'));
+document.getElementById('bM').addEventListener('click',()=>tog('bM','showMem'));
+document.getElementById('bMuscle').addEventListener('click',()=>tog('bMuscle','showMuscles'));
+document.getElementById('bH').addEventListener('click',()=>tog('bH','showHUD'));
+
+resetSim();draw();updateSB();
+</script>

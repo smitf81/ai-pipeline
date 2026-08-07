@@ -146,9 +146,15 @@ function stopPid(pid) {
   } catch {}
 }
 
+function resolveUiServerSourcePath() {
+  const cwdServerPath = path.resolve(process.cwd(), 'server.js');
+  if (fs.existsSync(cwdServerPath)) return cwdServerPath;
+  return path.resolve(process.cwd(), 'ui', 'server.js');
+}
+
 export default async function runQaMcpLauncherTests() {
   const testRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-qa-mcp-launcher-'));
-  const serverSource = fs.readFileSync(path.resolve(process.cwd(), 'ui', 'server.js'), 'utf8');
+  const serverSource = fs.readFileSync(resolveUiServerSourcePath(), 'utf8');
   assert.match(serverSource, /bootQaMcpHelperIfNeeded\(ROOT\);/);
   assert.equal(resolveQaMcpHelperPath(path.join(testRoot, 'repo')), path.join(testRoot, 'repo', 'qa_mcp_helper.py'));
 

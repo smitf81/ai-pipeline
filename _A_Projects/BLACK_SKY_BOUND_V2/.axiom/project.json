@@ -1,0 +1,93 @@
+{
+  "schema": "axiom.project.v1",
+  "projectId": "black-sky-bound-v2-demo",
+  "name": "Black Sky Bound v2 Demo",
+  "root": ".",
+  "scenes": [],
+  "plugins": [],
+  "skills": [],
+  "configs": [
+    {
+      "path": "package.json",
+      "registeredAs": "config",
+      "status": "registered",
+      "source": "axiom.project.bootstrap"
+    }
+  ],
+  "assets": [],
+  "filePolicy": {
+    "trustedRoots": [
+      "."
+    ],
+    "externalReadRoots": [],
+    "writeBlockedGlobs": [
+      "node_modules/**",
+      ".git/**"
+    ]
+  },
+  "workspace": {
+    "contract": "axiom.project-workspace.v0",
+    "surfaceId": "bsb-v2-map-authoring",
+    "scene": {
+      "kind": "map",
+      "manifestPath": "data/maps/manifest.json"
+    },
+    "authoring": {
+      "owner": "AXIOM",
+      "projectId": "axiom",
+      "root": ".",
+      "pathSource": "map_manifest.authoringPath"
+    },
+    "runtimeBake": {
+      "owner": "Black Sky Bound V2",
+      "projectId": "black-sky-bound-v2-demo",
+      "root": "_A_Projects/BLACK_SKY_BOUND_V2",
+      "pathSource": "map_manifest.runtimePath",
+      "explicit": true
+    }
+  },
+  "lastOpened": {
+    "root": ".",
+    "files": [
+      "README.md",
+      "GCD.md",
+      "docs/FIRST_PLAYABLE_SPEC.md",
+      "docs/TECH_BOUNDARIES.md",
+      "progress.md",
+      "src/app.js"
+    ],
+    "manifestPath": ".axiom/project.json",
+    "updatedAt": "2026-06-15T10:55:00.000Z",
+    "source": "files_panel"
+  },
+  "createdAt": "2026-06-15T00:00:00.000Z",
+  "updatedAt": "2026-06-30T00:00:00.000Z",
+  "entrypoints": [
+    {
+      "id": "demo-canvas",
+      "name": "BSB v2 Canvas Demo",
+      "path": "index.html",
+      "url": "http://127.0.0.1:5177/",
+      "runtime": {
+        "url": "http://127.0.0.1:5177/",
+        "healthcheckUrl": "http://127.0.0.1:5177/",
+        "port": 5177,
+        "cwd": ".",
+        "start": {
+          "command": "npm.cmd",
+          "args": [
+            "start"
+          ]
+        },
+        "probeTimeoutMs": 1500,
+        "readinessTimeoutMs": 15000
+      }
+    }
+  ],
+  "provenance": {
+    "registeredBy": "AXIOM File Manager project-root management",
+    "sourceProject": "_A_Projects/BLACK_SKY_BOUND_V2",
+    "consolidatedFrom": "_A_Projects/BLACK_SKY_BOUND_V2_ATMOSPHERIC_SCATTER_SMOOTHING_v1",
+    "runtimePolicy": "AXIOM owns authoring and bakes runtime-map JSON; BSB has no AXIOM dependency and only consumes validated runtime content."
+  }
+}

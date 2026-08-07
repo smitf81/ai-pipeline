@@ -5,6 +5,7 @@
     "attribute": "data-boot",
     "value": "studio-mounted"
   },
+  "asset_probe_timeout_ms": 2500,
   "blank_render_timeout_ms": 5000,
   "entry_module_import": "./spatialApp.js",
   "assets": [

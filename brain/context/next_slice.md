@@ -1,60 +1,69 @@
-# Next Slice
+# Black Sky Bound Active Slice
 
-Generated: 2026-03-30T08:54:32.1008763+01:00
+Status: Baby Wyvern Bite Production Replacement v2 completed 2026-08-06. Immediate audio successor: Opening Exterior Soundscape v1.
 
 ## Interpreted Task
 
-The repo already has deterministic preflight guard logic plus failure-memory plumbing, and the next useful slice is to surface guard-blocked reasons in a human-visible review surface before planner or executor work starts.
+Continue replacing placeholder-feeling BSB audio with grounded production assets. The combat bite now has a real-source three-variant palette; the opening remains the next most visible identity break because its storm and exterior creatures are procedural oscillators heard through a runtime muffle filter.
 
-## Scope Risks
+The practical goal is an authored inside-egg soundscape: recognisable physical events outside a closed shell, obscured by distance, shell mass and the hatchling's bodily perspective without becoming dull or unintelligible.
 
-- This can easily sprawl across server gating, desk UI, and failure-memory presentation.
-- If the slice changes guard criteria instead of just surfacing guard output, it will blur diagnosis with policy changes.
-- The smallest safe pass is visibility first: show why work was blocked, do not change the block logic.
+## Completed Predecessor
+
+### Baby Wyvern Bite Production Replacement v2
+
+- Three real-source 0.48-second variations replaced the rejected two-file synthetic palette.
+- Jaw closure moved from 128-142 ms to 195 ms, matching the 197 ms animation contact point.
+- The old procedural generator no longer owns or can overwrite `player_bite_snap`.
+- Masters, originals, aligned stems, portable Audacity session, source/licence record, comparison reel, analysis and browser proof are retained.
+- Full tests, launcher regression, curated build and exact-Desktop-root browser playtest passed.
 
 ## Best Next Slice
 
-Objective: expose structured preflight guard failures in one existing review surface so humans can see why a run was skipped.
+### Opening Exterior Soundscape v1
 
-Exact focus: wire the current `ui/preflightGuards.js` output into the nearest existing planner or archivist view, keeping the trusted prompt path unchanged.
+Objective: replace the four synthetic exterior cues heard before shell release with recorded-source production assets and author their closed-shell perspective in the assets as well as through the existing runtime muffle state.
 
-Likely systems involved:
+Target cue set:
 
-- `ui/server.js`
-- `ui/preflightGuards.js`
-- `ui/public/spatial/spatialApp.js`
-- `ui/archivistWriteback.js`
-- `ui/tests/preflightGuards.test.mjs`
-- `brain/context/`
+- `world.storm.thunder`;
+- `enemy.husk.distant_gargle`;
+- `enemy.werewolf.distant_howl`;
+- `enemy.raider.distant_shout`.
 
-Why this comes first:
+Canonical owner and landing points:
 
-- The guard helper already exists, so surfacing it is a real next step rather than new policy work.
-- It reduces wasted retries by making deterministic blocks obvious to humans.
-- It preserves the current separation between trusted prompt content and review-only diagnostics.
+- event order, narrative intent and shell state: `_A_Projects/BLACK_SKY_BOUND_V2/src/data/openingSequence.js`;
+- cue identity and file palette: `_A_Projects/BLACK_SKY_BOUND_V2/src/audio/soundManifest.js`;
+- dynamic perspective mix: existing opening-state path in `src/audio/audioDirector.js`;
+- runtime/master/source/session assets: `assets/audio/{production,masters,sources}`;
+- proof: opening-sequence event order plus a real browser hatch run with decoded-file and `muffleAtPlay` diagnostics.
 
-Explicitly leave out:
+Explicit exclusions:
 
-- changing the guard rules themselves
-- auto-fixing blocked runs
-- broad prompt architecture changes
-- UI redesign beyond a small diagnostics surface
+- no baby-first-cry implementation in this slice;
+- no reuse or pitch-shift derivation of Mama's voice for the baby;
+- no shell crack/break replacement unless source research exposes a uniquely coherent, low-risk companion set;
+- no changes to opening input timing, egg-break progression, creature spawning or combat;
+- no generic fantasy ambience bed pasted under the entire sequence.
 
 ## Definition of Done
 
-- Blocked runs show the structured guard reason and the relevant input context in a reviewable place.
-- The trusted worker prompt path still excludes review-only diagnostics.
-- Tests cover the surfaced block state, not just the guard helper internals.
+- Every target cue uses recorded-source layers and retains source URL, provider, artist, licence, unaltered original and editable aligned material.
+- Each event remains individually legible through a closed-shell perspective: attenuated upper frequencies, transmitted low/body energy, constrained stereo width and event-specific distance, without merely applying one blanket low-pass preset.
+- Runtime cues remain file-backed and required, with bounded variation and no silent procedural fallback.
+- The real opening sequence emits the target cues in authored order, decoded files play, `muffleAtPlay` follows shell state, and the exact Desktop launcher/browser diagnostics report no errors.
+- Full tests and the curated build pass; source materials do not enter the public playtest package.
 
-## Likely Follow-up Slices
+## Follow-up Slices
 
-1. Add a compact review panel for recent guard blocks and their counts.
-2. Link repeated guard blocks to failure history and candidate fixes for manual review.
-3. Add a manual acknowledge or dismiss action for blocked diagnostics.
-4. Only then consider expanding the matcher or consolidating more preflight signals.
+1. **Baby Wyvern First Cry v1:** add a dedicated newborn vocal at the release beat and remove Mama's full roar from that narrative role. Mama may answer later, but must not mask the hatchling identity beat.
+2. **Egg Shell Interaction Palette v1:** replace rock, crack and break with recorded shell/mineral/organic membrane layers authored from the hatchling's internal perspective.
+3. **Opening Mix and Transition v1:** A/B the full sequence, expose the high-frequency world as the shell opens, and balance exterior threats, shell movement, first cry, Mama answer, heartbeat and ambience in context.
+4. **Remaining Combat Palette:** review claw swipe, lunge body, enemy flesh impacts and player-hit cues in frequency-of-use order.
 
 ## Confidence / Uncertainty
 
-- Assumption: the next highest-value gap is visibility, not new guard logic.
-- Assumption: the existing planner or archivist surface is the right place to show blocks.
-- Unclear: whether the review view should live in the archivist desk, Spatial Studio, or both.
+- High confidence: the current thunder, husk, werewolf and distant-raider opening cues are procedural and runtime muffling alone cannot provide recorded physical identity.
+- High confidence: no baby-first-cry cue currently exists, while `mama_answering_roar` schedules the full Mama cue after release.
+- Medium confidence: the four exterior events belong in one soundscape slice because their perspective must translate consistently; shell-contact transients are safer as a separate palette.

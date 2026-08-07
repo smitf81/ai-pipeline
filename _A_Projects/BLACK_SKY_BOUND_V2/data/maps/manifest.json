@@ -1,0 +1,31 @@
+{
+  "contract": "black-sky-bound.map-manifest.v0",
+  "defaultMapId": "first_flightless_night",
+  "maps": [
+    {
+      "id": "first_flightless_night",
+      "title": "First Flightless Night",
+      "scenarioId": "first_escape",
+      "runtimeMapId": "axiom_first_escape",
+      "runtimePath": "/data/maps/axiom-first-escape.runtime-map.json",
+      "authoringPath": "data/bsb-v2/maps/first_escape.authoring.json",
+      "nextMapId": "ash_road_threshold"
+    },
+    {
+      "id": "ash_road_threshold",
+      "title": "Ash Road Threshold",
+      "scenarioId": "first_escape",
+      "runtimeMapId": "axiom_second_approach",
+      "runtimePath": "/data/maps/axiom-second-approach.runtime-map.json",
+      "authoringPath": "data/bsb-v2/maps/second_approach.authoring.json"
+    },
+    {
+      "id": "crown_of_cinders_demo",
+      "title": "The Crown of Cinders",
+      "scenarioId": "demo_arena",
+      "runtimeMapId": "axiom_crown_of_cinders",
+      "runtimePath": "/data/maps/axiom-crown-of-cinders.runtime-map.json",
+      "authoringPath": "data/bsb-v2/maps/crown_of_cinders.authoring.json"
+    }
+  ]
+}

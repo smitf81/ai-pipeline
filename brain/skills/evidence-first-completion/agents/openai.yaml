@@ -1,0 +1,5 @@
+interface:
+  display_name: "Evidence-First Completion"
+  short_description: "Require proof before claiming done."
+  default_prompt: "Use $evidence-first-completion to choose the proof needed before reporting this task as complete."
+

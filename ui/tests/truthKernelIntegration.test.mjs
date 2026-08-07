@@ -14,8 +14,11 @@ export default async function runTruthKernelIntegrationTests() {
   assert.equal(typeof spatialApp.resolveTruthKernelToggleState, 'function');
   assert.equal(typeof spatialApp.summarizeTruthKernelPositionOrigin, 'function');
   assert.equal(typeof spatialApp.summarizeTruthKernelSpread, 'function');
+  assert.equal(typeof spatialApp.normalizeTruthKernelStageBounds, 'function');
   assert.equal(spatialApp.resolveCanvasBackgroundFill(false), '#08111d');
   assert.equal(spatialApp.resolveCanvasBackgroundFill(true), 'rgba(8, 17, 29, 0.72)');
+  assert.deepEqual(spatialApp.normalizeTruthKernelStageBounds({ width: 1012.4, height: 703.7 }), { width: 1012, height: 704 });
+  assert.deepEqual(spatialApp.normalizeTruthKernelStageBounds(null), { width: 1600, height: 920 });
   assert.equal(spatialApp.formatTruthKernelTimestamp(0), 'Unknown');
   assert.match(spatialApp.formatTruthKernelTimestamp(1712572800000), /^2024-04-08T/);
   const loadingToggle = spatialApp.resolveTruthKernelToggleState();

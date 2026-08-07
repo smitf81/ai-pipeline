@@ -1,0 +1,5 @@
+interface:
+  display_name: "Projection Vs Truth Discipline"
+  short_description: "Separate previews from canonical truth."
+  default_prompt: "Use $projection-vs-truth-discipline to classify candidate, advisory, historical, fallback, and canonical state before treating it as truth."
+

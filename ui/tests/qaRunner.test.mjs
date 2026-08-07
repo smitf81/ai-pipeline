@@ -210,6 +210,7 @@ export default async function runQARunnerTests() {
             },
             firefox: { launch: createMockBrowserFactory() },
           },
+          systemBrowserFallback: false,
         });
         assert.equal(firefoxRun.browser_status, 'pass');
         assert.deepEqual(firefoxRun.browser_runtime_target.attempted, ['chromium', 'firefox']);
@@ -244,6 +245,7 @@ export default async function runQARunnerTests() {
               },
             },
           },
+          systemBrowserFallback: false,
         });
         assert.equal(blockedRun.status, 'failed');
         assert.equal(blockedRun.browser_status, 'blocked_machine_launch');
@@ -256,6 +258,38 @@ export default async function runQARunnerTests() {
         assert.match(blockedRun.browser_failure_summary || '', /firefox/i);
       } finally {
         fs.rmSync(blockedLaunchRoot, { recursive: true, force: true });
+      }
+
+      const systemFallbackRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-qa-runtime-system-browser-'));
+      try {
+        const systemExecutable = path.join(systemFallbackRoot, 'chrome.exe');
+        fs.writeFileSync(systemExecutable, '', 'utf8');
+        const systemRun = await runQARun({
+          rootPath: systemFallbackRoot,
+          baseUrl: 'http://127.0.0.1:3000',
+          scenario: 'studio-smoke',
+          mode: 'observation',
+          trigger: 'test',
+          getRuntimeSnapshot: async () => ({ teamBoard: { summary: { review: 0 } } }),
+          getHealthSnapshot: async () => ({ ok: true }),
+          systemBrowserExecutable: systemExecutable,
+          playwrightModule: {
+            chromium: {
+              launch: async (options = {}) => {
+                if (options.executablePath === systemExecutable) return createMockBrowserFactory()();
+                throw new Error('managed chromium missing');
+              },
+            },
+            firefox: { launch: async () => { throw new Error('managed firefox missing'); } },
+          },
+        });
+        assert.equal(systemRun.browser_status, 'pass');
+        assert.deepEqual(systemRun.browser_runtime_target.attempted, ['chromium', 'firefox', 'system-chromium']);
+        assert.equal(systemRun.browser_runtime_target.used, 'system-chromium');
+        assert.equal(systemRun.browser_runtime_target.fallbackUsed, true);
+        assert.equal(systemRun.browser.executablePath, systemExecutable);
+      } finally {
+        fs.rmSync(systemFallbackRoot, { recursive: true, force: true });
       }
 
       const skippedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ace-qa-runtime-skipped-'));

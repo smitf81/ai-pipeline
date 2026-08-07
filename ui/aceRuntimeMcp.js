@@ -237,6 +237,7 @@ async function callAceTool(name, args = {}, options = {}) {
         prompt: args.prompt,
         actions: Array.isArray(args.actions) ? args.actions : [],
         linked: args.linked && typeof args.linked === 'object' ? args.linked : {},
+        captureScreenshots: Boolean(args.captureScreenshots),
       });
     case 'get_qa_run':
       return client.get(`/api/spatial/qa/runs/${encodeURIComponent(args.runId)}`);
@@ -364,6 +365,7 @@ function createAceRuntimeMcpServer(options = {}) {
         prompt: z.string().optional(),
         actions: z.array(z.any()).optional(),
         linked: z.record(z.any()).optional(),
+        captureScreenshots: z.boolean().optional(),
       },
     },
     async (args) => {

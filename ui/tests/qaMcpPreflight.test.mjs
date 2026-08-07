@@ -117,6 +117,12 @@ function buildQaLeadStubOptions(helperUrl) {
   };
 }
 
+function resolveUiServerSourcePath() {
+  const cwdServerPath = path.resolve(process.cwd(), 'server.js');
+  if (fs.existsSync(cwdServerPath)) return cwdServerPath;
+  return path.resolve(process.cwd(), 'ui', 'server.js');
+}
+
 export default async function runQaMcpPreflightTests() {
   const badConfig = await buildQaMcpPreflightCheck({
     qaState: makeQaState(),
@@ -218,7 +224,7 @@ export default async function runQaMcpPreflightTests() {
     assert.equal(cycle.live_status.mcp_reachable, true);
     assert.ok(['live', 'reachable_but_idle', 'processing'].includes(cycle.status));
 
-    const serverSource = fs.readFileSync(path.resolve(process.cwd(), 'ui', 'server.js'), 'utf8');
+    const serverSource = fs.readFileSync(resolveUiServerSourcePath(), 'utf8');
     assert.match(serverSource, /app\.get\('\/api\/qa\/mcp\/preflight'/);
     assert.ok(app);
   } finally {

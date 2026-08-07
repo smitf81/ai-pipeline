@@ -22,6 +22,16 @@
       "notes": "Operational runtime projection consumed by Studio and automation refresh flows."
     },
     {
+      "domainId": "axiom_workspace_context",
+      "label": "AXIOM Active Project Workspace Context",
+      "classificationDefault": "projection",
+      "systemOfRecord": "AXIOM FileManagerState activeProject/projectRoot/projectManifest + active project's .axiom/project.json workspace declaration + explicit surface-owned state projections",
+      "canonicalOwner": "AXIOM/apps/launcher/public/axiom-editor.html::FileManagerRuntime.getActiveProject + FileManagerRuntime.getWorkspaceContext",
+      "mutationAuthority": "FileManagerRuntime governed project-open/manifest flows; scene, authoring, viewport, and connection owners retain mutation authority over their contributed state",
+      "allowedProjections": ["axiom_workspace_context"],
+      "notes": "Single read-only active workspace aggregate used by Project Preview, BSB Map Forge, workspace identity chrome, and agent/tool context. UI consumers may not guess project identity, roots, source paths, or bake owners independently."
+    },
+    {
       "domainId": "truth_kernel",
       "label": "Truth Kernel",
       "classificationDefault": "projection",
@@ -38,8 +48,28 @@
       "systemOfRecord": "workspace.intentState.registry + workspace.studio.intake.records",
       "canonicalOwner": "ui/server.js::maybeRunContextManagerWorker + ui/server.js::getCurrentSpatialIntent",
       "mutationAuthority": "ui/server.js::maybeRunContextManagerWorker + ui/server.js::persistCanonicalIntakeRecord",
-      "allowedProjections": ["intent"],
-      "notes": "Canonical authored/request intent state surfaced through the live intent route, workspace intent registry, and canonical intake persistence."
+      "allowedProjections": ["intent", "field_influence", "ghost_projection"],
+      "notes": "Canonical authored/request intent state surfaced through the live intent route, workspace intent registry, canonical intake persistence, and read-only downstream field/resolver projections."
+    },
+    {
+      "domainId": "field_influence",
+      "label": "Spatial Field Influence",
+      "classificationDefault": "projection",
+      "systemOfRecord": "canonical intent geometry projected through deriveSpatialIntentFieldInfluence",
+      "canonicalOwner": "ui/intentAnalysis.js::deriveSpatialIntentFieldInfluence",
+      "mutationAuthority": "read-only projection from current canonical intent",
+      "allowedProjections": ["field_influence"],
+      "notes": "First governed spatial field: buildDesirability only, traceable to one canonical intent."
+    },
+    {
+      "domainId": "ghost_projection",
+      "label": "Ghost Projection",
+      "classificationDefault": "projection",
+      "systemOfRecord": "canonical intent fieldInfluence resolved through resolveSpatialGhostProjection",
+      "canonicalOwner": "ui/spatialGhostResolver.js::resolveSpatialGhostProjection",
+      "mutationAuthority": "read-only uncommitted projection; execution remains separately governed",
+      "allowedProjections": ["ghost_projection"],
+      "notes": "Non-committing resolver candidate generated from buildDesirability pressure; never committed world truth."
     },
     {
       "domainId": "desk_properties",

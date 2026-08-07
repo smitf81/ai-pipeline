@@ -1,0 +1,5 @@
+interface:
+  display_name: "Cognitive Skill Kernel"
+  short_description: "Route ACE/AXIOM reasoning contracts."
+  default_prompt: "Use $cognitive-skill-kernel to choose the cognitive operating skills that should govern this ACE/AXIOM task."
+

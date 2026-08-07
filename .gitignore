@@ -2,8 +2,95 @@ __pycache__/
 *.log
 work/logs/
 .venv/
-Old/
-legacy/Old/
-ui/node_modules/
-**/node_modules/
-npm-debug.log*
+.python-tools/
+node_modules/
+.npm-cache/
+.playwright-browsers/
+.tmp.driveupload/
+*.zip
+*.tmp
+*.bak
+*.sqlite
+*.db
+coverage/
+dist/
+build/
+.pytest_cache/
+.playwright/
+.playwright-cli/
+/output/
+test-results/
+ui/public/qa-runs/
+AXIOM/apps/launcher/logs/
+AXIOM/apps/launcher/data/project-diary/
+.codex/.skill-staging/
+**/.git/
+**/.vs/
+data/spatial/qa/
+data/spatial/agent-runs/
+data/spatial/throughput/
+Projects/*/output/
+Projects/*/qa-output/
+Projects/*/playtests/
+Projects/*/artifacts/
+brain/*/output/
+Animation_Embodied_Field_Entity_EFE_Plugin/.slice1_build/
+Animation_Embodied_Field_Entity_EFE_Plugin/output/
+AXIOM/apps/launcher/runtime/
+AXIOM/apps/launcher/artifacts/
+AXIOM/apps/launcher/output/
+AXIOM/apps/launcher/.playwright-cli/
+AXIOM/apps/launcher/Version history/
+AXIOM/apps/launcher/public/*_DEGRADED.html
+AXIOM/apps/plugin-builder/packages/*.axpkg
+AXIOM/apps/plugin-builder/docs/skills/*.audit.jsonl
+ui/.tmp_*
+ui/**/.tmp_*
+ui/tmp-*
+.tmp-*.png
+runCli_output.json
+tmp_extract.js
+server-boot-log.txt
+
+# Nested historical checkout retained locally for reference only.
+dev/ai-pipeline/
+
+# Local project snapshots retained for comparison, not active source.
+Projects/*_OLD/
+
+# Local Git preservation store used until active metadata is writable.
+.recovery/
+
+# Locked pre-recovery Git metadata retained for audit/rollback only.
+.git.locked-legacy-*/
+.git.failed-init-*/
+
+# Historical runtime receipts are not archive source.
+legacy/runtime/
+
+# Generated proof remains on disk but stays out of Git and routine context scans.
+_A_Projects/*
+!_A_Projects/BLACK_SKY_BOUND_V2/
+!_A_Projects/BLACK_SKY_BOUND_V2/**
+_A_Projects/BLACK_SKY_BOUND_V2/artifacts/
+_A_Projects/BLACK_SKY_BOUND_V2/output/
+_A_Projects/BLACK_SKY_BOUND_V2/node_modules/
+_A_Projects/BLACK_SKY_BOUND_V2/**/*.zip
+
+# Local ACE run state is evidence, not repository source.
+ACE_Local_lightweight/**/.ace-local-agent-ide/
+ACE_Local_lightweight/**/.ace-safeboot/
+
+# Historical Axiom material is retained locally, outside active source and indexing.
+AXIOM/archives/
+
+# Advisory observer outputs are regenerated from canonical sources.
+brain/context/subconscious/observer-index.txt
+brain/context/subconscious/observer-toggle.txt
+brain/context/subconscious/observer-events.txt
+brain/context/subconscious/observer-ledger.txt
+brain/context/subconscious/latest-observation.md
+brain/context/subconscious/observation-history.md
+brain/context/subconscious/subconscious-memory.md
+brain/context/subconscious/memory-events.jsonl
+brain/context/subconscious/memory-snapshots/

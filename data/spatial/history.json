@@ -1,6 +1,6 @@
 [
   {
-    "at": "2026-04-13T10:24:05.233Z",
+    "at": "2026-05-28T09:56:08.679Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -11,7 +11,7 @@
     }
   },
   {
-    "at": "2026-04-13T10:24:05.343Z",
+    "at": "2026-05-28T09:57:35.365Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -22,7 +22,7 @@
     }
   },
   {
-    "at": "2026-04-13T10:24:05.447Z",
+    "at": "2026-05-28T10:07:29.106Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -33,7 +33,7 @@
     }
   },
   {
-    "at": "2026-04-13T10:28:17.487Z",
+    "at": "2026-05-28T10:08:51.904Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -44,7 +44,7 @@
     }
   },
   {
-    "at": "2026-04-13T10:29:41.322Z",
+    "at": "2026-06-01T10:47:34.161Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -55,7 +55,7 @@
     }
   },
   {
-    "at": "2026-04-13T10:53:54.073Z",
+    "at": "2026-06-01T10:47:41.689Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -66,27 +66,29 @@
     }
   },
   {
-    "at": "2026-04-13T11:02:46.383Z",
-    "type": "planner-worker-start",
+    "at": "2026-06-01T10:48:02.225Z",
+    "type": "workspace-save",
     "summary": {
-      "handoffId": "handoff_1774615405452_2yc7",
-      "runId": "planner_1776078166369_d0skt0",
-      "mode": "auto"
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-04-13T11:02:46.413Z",
-    "type": "planner-worker-skipped",
+    "at": "2026-06-01T10:48:09.197Z",
+    "type": "workspace-save",
     "summary": {
-      "handoffId": "handoff_1774615405452_2yc7",
-      "runId": "planner_1776078166369_d0skt0",
-      "reason": "Planner worker is already running.",
-      "producedCardIds": [],
-      "proposalArtifactRefs": []
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-04-13T12:16:07.944Z",
+    "at": "2026-06-01T10:48:16.656Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -97,7 +99,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:16:08.314Z",
+    "at": "2026-06-01T10:52:07.549Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -108,7 +110,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:25:50.144Z",
+    "at": "2026-06-01T11:07:41.122Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -119,7 +121,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:25:55.499Z",
+    "at": "2026-06-01T11:27:40.993Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -130,7 +132,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:26:46.743Z",
+    "at": "2026-06-01T11:47:41.101Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -141,7 +143,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:26:46.856Z",
+    "at": "2026-06-15T08:18:02.534Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -152,7 +154,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:26:46.980Z",
+    "at": "2026-06-30T08:23:57.378Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -163,7 +165,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:26:47.291Z",
+    "at": "2026-06-30T08:27:05.089Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -174,7 +176,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:28:38.108Z",
+    "at": "2026-06-30T08:31:58.757Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -185,7 +187,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:28:38.343Z",
+    "at": "2026-06-30T08:32:13.930Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -196,7 +198,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:28:38.514Z",
+    "at": "2026-06-30T08:32:55.694Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -207,7 +209,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:28:38.672Z",
+    "at": "2026-06-30T08:33:50.115Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -218,7 +220,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:28:38.796Z",
+    "at": "2026-06-30T08:35:24.451Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -229,7 +231,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:28:38.939Z",
+    "at": "2026-06-30T08:36:07.196Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -240,7 +242,7 @@
     }
   },
   {
-    "at": "2026-04-13T12:28:39.066Z",
+    "at": "2026-06-30T08:36:25.487Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -251,28 +253,29 @@
     }
   },
   {
-    "at": "2026-04-13T12:54:00.489Z",
-    "type": "context-manager-worker-start",
+    "at": "2026-06-30T08:36:43.487Z",
+    "type": "workspace-save",
     "summary": {
-      "sourceNodeId": "context-manager-node",
-      "runId": "context_manager_1776084840461_kh71ts",
-      "mode": "manual",
-      "source": "context-intake"
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-04-13T12:54:00.572Z",
-    "type": "context-manager-worker-degraded",
+    "at": "2026-06-30T08:51:47.395Z",
+    "type": "workspace-save",
     "summary": {
-      "sourceNodeId": "context-manager-node",
-      "runId": "context_manager_1776084840461_kh71ts",
-      "reason": "fetch failed | fetch failed",
-      "handoffId": null,
-      "usedFallback": true
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-04-13T13:56:17.747Z",
+    "at": "2026-06-30T08:53:02.560Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -283,7 +286,7 @@
     }
   },
   {
-    "at": "2026-04-13T13:57:57.597Z",
+    "at": "2026-06-30T09:03:41.767Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -294,7 +297,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:02:16.692Z",
+    "at": "2026-06-30T09:03:42.227Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -305,7 +308,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:03:38.012Z",
+    "at": "2026-06-30T09:03:54.590Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -316,7 +319,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:03:38.231Z",
+    "at": "2026-06-30T09:23:35.939Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -327,7 +330,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:03:38.452Z",
+    "at": "2026-06-30T09:44:02.171Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -338,7 +341,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:03:38.595Z",
+    "at": "2026-06-30T10:03:49.031Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -349,7 +352,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:36:35.609Z",
+    "at": "2026-06-30T10:23:54.085Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -360,7 +363,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:36:35.821Z",
+    "at": "2026-06-30T11:04:09.544Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -371,7 +374,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:37:42.665Z",
+    "at": "2026-07-14T09:26:36.746Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -382,7 +385,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:37:42.798Z",
+    "at": "2026-07-14T09:26:44.976Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -393,7 +396,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:37:42.902Z",
+    "at": "2026-07-14T09:30:57.014Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -404,7 +407,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:37:43.006Z",
+    "at": "2026-07-14T09:30:57.125Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -415,7 +418,7 @@
     }
   },
   {
-    "at": "2026-04-13T14:37:43.109Z",
+    "at": "2026-07-14T09:30:57.305Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -426,7 +429,7 @@
     }
   },
   {
-    "at": "2026-04-14T10:30:32.847Z",
+    "at": "2026-07-14T09:31:03.076Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -437,7 +440,7 @@
     }
   },
   {
-    "at": "2026-04-14T11:40:42.788Z",
+    "at": "2026-07-14T09:31:03.188Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -448,7 +451,7 @@
     }
   },
   {
-    "at": "2026-04-14T11:55:59.480Z",
+    "at": "2026-07-14T09:31:03.293Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -459,7 +462,7 @@
     }
   },
   {
-    "at": "2026-05-04T07:49:35.106Z",
+    "at": "2026-07-14T09:31:36.747Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -470,7 +473,7 @@
     }
   },
   {
-    "at": "2026-05-04T07:56:57.002Z",
+    "at": "2026-07-14T09:31:36.898Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -481,7 +484,7 @@
     }
   },
   {
-    "at": "2026-05-04T08:06:33.155Z",
+    "at": "2026-07-14T09:31:37.119Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -492,7 +495,7 @@
     }
   },
   {
-    "at": "2026-05-04T08:07:29.403Z",
+    "at": "2026-07-14T09:31:37.232Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -503,15 +506,18 @@
     }
   },
   {
-    "at": "2026-05-04T08:14:56.937Z",
-    "type": "team-board-builder-preflight-blocked",
+    "at": "2026-07-14T09:31:37.343Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0001",
-      "taskId": null
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-05-04T09:33:24.442Z",
+    "at": "2026-07-14T09:31:37.458Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -522,7 +528,7 @@
     }
   },
   {
-    "at": "2026-05-04T10:11:09.330Z",
+    "at": "2026-07-14T09:32:22.203Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -533,7 +539,7 @@
     }
   },
   {
-    "at": "2026-05-04T10:12:12.501Z",
+    "at": "2026-07-14T09:32:28.004Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -544,15 +550,18 @@
     }
   },
   {
-    "at": "2026-05-04T10:54:15.565Z",
-    "type": "team-board-builder-preflight-blocked",
+    "at": "2026-07-14T09:46:39.693Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0001",
-      "taskId": null
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-05-04T11:56:01.373Z",
+    "at": "2026-07-14T09:46:59.656Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -563,7 +572,7 @@
     }
   },
   {
-    "at": "2026-05-04T12:11:09.770Z",
+    "at": "2026-07-14T10:06:46.863Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -574,7 +583,7 @@
     }
   },
   {
-    "at": "2026-05-04T12:12:14.781Z",
+    "at": "2026-07-14T10:26:40.785Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -585,7 +594,7 @@
     }
   },
   {
-    "at": "2026-05-04T14:16:07.736Z",
+    "at": "2026-07-14T10:46:40.825Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -596,7 +605,7 @@
     }
   },
   {
-    "at": "2026-05-04T15:35:05.566Z",
+    "at": "2026-07-14T11:06:41.388Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -607,23 +616,29 @@
     }
   },
   {
-    "at": "2026-05-04T16:16:10.004Z",
-    "type": "team-board-builder-preflight-blocked",
+    "at": "2026-07-14T11:46:40.207Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0001",
-      "taskId": null
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-05-04T16:36:13.852Z",
-    "type": "team-board-builder-preflight-blocked",
+    "at": "2026-07-14T12:06:39.397Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0001",
-      "taskId": null
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-05-04T16:36:13.853Z",
+    "at": "2026-07-14T12:26:39.675Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -634,7 +649,7 @@
     }
   },
   {
-    "at": "2026-05-05T04:25:05.550Z",
+    "at": "2026-07-14T12:46:40.020Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -645,7 +660,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:03:45.261Z",
+    "at": "2026-07-14T13:06:39.341Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -656,7 +671,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:18:54.293Z",
+    "at": "2026-07-14T13:26:39.200Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -667,7 +682,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:18:54.470Z",
+    "at": "2026-07-14T13:46:40.047Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -678,7 +693,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:18:54.610Z",
+    "at": "2026-07-14T14:46:39.453Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -689,7 +704,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:20:12.770Z",
+    "at": "2026-07-14T15:06:39.734Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -700,7 +715,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:20:13.033Z",
+    "at": "2026-07-14T15:26:39.410Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -711,15 +726,18 @@
     }
   },
   {
-    "at": "2026-05-05T05:22:32.955Z",
-    "type": "team-board-builder-preflight-blocked",
+    "at": "2026-07-14T16:06:41.013Z",
+    "type": "workspace-save",
     "summary": {
-      "cardId": "0001",
-      "taskId": null
+      "nodes": 0,
+      "edges": 0,
+      "versions": [],
+      "sketches": 0,
+      "annotations": 0
     }
   },
   {
-    "at": "2026-05-05T05:22:33.124Z",
+    "at": "2026-07-14T16:26:40.604Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -730,7 +748,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:22:33.275Z",
+    "at": "2026-07-14T16:46:40.163Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -741,7 +759,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:24:45.870Z",
+    "at": "2026-07-14T17:06:39.959Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -752,7 +770,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:50.774Z",
+    "at": "2026-07-14T17:26:40.458Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -763,7 +781,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:50.901Z",
+    "at": "2026-07-14T17:46:39.673Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -774,7 +792,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:51.407Z",
+    "at": "2026-07-14T18:06:39.600Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -785,7 +803,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:51.517Z",
+    "at": "2026-07-14T18:26:41.523Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -796,7 +814,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:51.621Z",
+    "at": "2026-07-14T18:47:08.558Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -807,7 +825,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:52.165Z",
+    "at": "2026-07-14T19:07:02.942Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -818,7 +836,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:52.277Z",
+    "at": "2026-07-15T10:28:48.830Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -829,7 +847,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:52.373Z",
+    "at": "2026-07-15T10:31:03.343Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -840,7 +858,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:52.478Z",
+    "at": "2026-07-15T10:37:06.247Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,
@@ -851,7 +869,7 @@
     }
   },
   {
-    "at": "2026-05-05T05:25:53.016Z",
+    "at": "2026-07-15T10:42:06.200Z",
     "type": "workspace-save",
     "summary": {
       "nodes": 0,

@@ -29,9 +29,9 @@ function resolveLatestCompletedCycle(qaLeadOutput = null) {
 
 function resolveLiveStatus(qaState = {}, qaLeadOutput = null) {
   const operatorState = resolveOperatorState(qaLeadOutput);
-  return qaState?.qaMcpLiveStatus && typeof qaState.qaMcpLiveStatus === 'object'
-    ? qaState.qaMcpLiveStatus
-    : (operatorState?.live_status && typeof operatorState.live_status === 'object' ? operatorState.live_status : null);
+  return operatorState?.live_status && typeof operatorState.live_status === 'object'
+    ? operatorState.live_status
+    : (qaState?.qaMcpLiveStatus && typeof qaState.qaMcpLiveStatus === 'object' ? qaState.qaMcpLiveStatus : null);
 }
 
 function resolveExternalValidation(qaState = {}, qaLeadOutput = null) {

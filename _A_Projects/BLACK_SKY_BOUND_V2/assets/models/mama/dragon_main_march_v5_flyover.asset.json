@@ -1,0 +1,33 @@
+{
+  "contract": "black-sky-bound.mesh-asset-provenance.v1",
+  "id": "mama_wyvern_dragon_main_march_v5_flyover",
+  "source": {
+    "filename": "Dragon_Main_March_V5.blend",
+    "object": "Cube",
+    "sceneHadUnsavedChanges": true,
+    "dimensionsMeters": [9.873, 7.97, 0.963],
+    "objectScale": [0.274394, 0.274394, 0.274394],
+    "basePolygonCount": 982,
+    "modifiers": ["MIRROR", "SUBSURF"]
+  },
+  "export": {
+    "filename": "dragon_main_march_v5_flyover.glb",
+    "format": "GLB",
+    "blenderVersion": "5.2.0 LTS",
+    "generator": "Khronos glTF Blender I/O v5.2.39",
+    "selectionOnly": true,
+    "applyModifiers": true,
+    "animations": false,
+    "materials": "NONE",
+    "bytes": 1571404,
+    "sha256": "FB5F27E44470E1B3575792E3D969997A92CFCE32B3F901FD63CF60EBE71327BE"
+  },
+  "mesh": {
+    "primitiveCount": 1,
+    "vertexCount": 37286,
+    "indexCount": 188544,
+    "triangleCount": 62848,
+    "materialCount": 0,
+    "animationCount": 0
+  }
+}

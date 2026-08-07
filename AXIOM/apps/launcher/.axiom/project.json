@@ -1,0 +1,18 @@
+{
+  "schema": "axiom.project.v1",
+  "projectId": "axiom_project_1a",
+  "name": "AXIOM Project",
+  "root": ".",
+  "scenes": [],
+  "plugins": [],
+  "skills": [],
+  "configs": [],
+  "assets": [],
+  "filePolicy": {},
+  "lastOpened": {
+    "root": ".",
+    "manifestPath": ".axiom/project.json",
+    "updatedAt": "2026-06-15T10:35:30.301Z",
+    "source": "files_panel"
+  }
+}
