@@ -30,7 +30,9 @@ equal(postLayer.statsFields().postEnabled, false, 'post polish should support an
 globalThis.location = oldLocation;
 
 const rendererSource = readFileSync(new URL('../src/render/renderer.js', import.meta.url), 'utf8');
-assert(rendererSource.includes('backend.renderProjection(buildRenderProjection'), 'renderer should hand projection packets to the WebGL backend');
+assert(rendererSource.includes('createRenderProjection3DCompiler'), 'live renderer should own the lifecycle-scoped 3D projection compiler');
+assert(rendererSource.includes('backend.renderProjection(projection)'), 'renderer should hand compiled projection packets to the Three.js backend');
+assert(!rendererSource.includes("from '../projection/renderProjection.js'"), 'live renderer must not import the broad legacy projection builder');
 assert(!rendererSource.includes('drawSmokeFieldLayer'), 'renderer should not call the removed Canvas smoke layer');
 assert(!rendererSource.includes('drawPostProcessLayer'), 'renderer should not call the removed Canvas post-process layer');
 assert(!rendererSource.includes('drawHudOverlay'), 'renderer should not call the removed Canvas HUD layer');

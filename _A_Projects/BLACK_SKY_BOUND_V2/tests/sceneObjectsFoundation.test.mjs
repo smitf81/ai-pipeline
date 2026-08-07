@@ -50,7 +50,9 @@ assert(trees.every((object) => object.visualWidthTiles >= 6 && object.visualHeig
 assert(boulders.every((object) => object.widthTiles === 2 && object.heightTiles === 2), 'boulders should now occupy a readable 2x2 collision footprint');
 assert(fireArrowProps.every((object) => object.visualWidthTiles <= 1 && object.visualHeightTiles <= 0.8), 'fire arrows should stay tiny emitter sockets rather than barrier-scale props');
 assert(fireArrowProps.every((object) => object.physical.heightMeters <= 0.2), 'fire arrows should remain low embedded arrowheads in the half-meter tile scale');
-assert(blockingObjects.every((object) => object.collisionPolicy === 'coarse_tile_footprint_blocker_v0'), 'blocking scene objects should keep Pokemon-simple multi-tile collision');
+assert(blockingObjects.every((object) => ['recipe_derived_spatial_shape_v1', 'recipe_derived_trunk_circle_root_traversal_v2'].includes(object.collisionPolicy)), 'blocking scene objects should use geometry-recipe-derived collision');
+assert(trees.every((object) => object.collisionPolicy === 'recipe_derived_trunk_circle_root_traversal_v2' && object.traversalModifiers.length > 0), 'trees should separate trunk hard collision from visible root traversal slowdown');
+assert(blockingObjects.every((object) => object.collisionShape?.contract === 'black-sky-bound.collision-shape-2d.v1'), 'blocking scene objects should expose the shared spatial collision contract');
 assert(visualDetails.every((object) => !object.blocksMovement), 'undergrowth and ground decals should stay nonblocking scene detail');
 assert(visualDetails.every((object) => object.collisionPolicy.startsWith('non_blocking_')), 'visual-only scene objects should declare nonblocking collision policy');
 assert(groundDecals.every((object) => !object.blocksMovement && object.physical.heightMeters <= 0.03), 'leaf/root ground decals should not create hard movement stops');
@@ -69,7 +71,7 @@ assert(blockers.every((blocker) => blocker.height > 0 && blocker.radius > 0), 's
 const game = createInitialGameState(map);
 equal(game.sceneObjects.length, map.sceneObjects.length, 'game state should expose map-owned scene objects');
 equal(game.occlusionBlockers.length, shadowCasters.length, 'game state should expose only scene object shadow blockers');
-assert(game.occlusionBlockers.some((blocker) => blocker.shadowSilhouette?.primitives?.length > 1), 'scene object blockers should carry compound SDF shadow silhouette profiles');
+assert(game.occlusionBlockers.some((blocker) => blocker.shadowShape?.primitives?.length > 1), 'scene object blockers should carry compound declarative shadow-shape profiles');
 assert(game.actors.every((actor) => !isSceneObjectBlocked(map, actor.x, actor.y)), 'scaled scene objects should not overlap actor spawn tiles');
 
 const transform = getComponent(game.world, game.dragonId, ComponentType.Transform);
@@ -129,9 +131,10 @@ lightingLayer.update(projection, context);
 equal(lightingLayer.occlusionShadowMode, WEBGL_SHADOW_MODE, 'lighting layer should use the SDF-ready WebGL shadow field mode');
 equal(lightingLayer.shadowCompositeMode, WEBGL_SHADOW_COMPOSITE_MODE, 'lighting layer should use the profiled light/shadow composite mode');
 assert(lightingLayer.occlusionShadowRenderable, 'lighting layer should mark projected shadows renderable');
-assert(lightingLayer.shadowTriangles.length >= projection.occlusionShadows.approximateShadowRegions * 16, 'shadow regions should render penumbra, segmented core, and contact screen-space triangles');
-assert(lightingLayer.shadowContactTriangleCount >= projection.occlusionShadows.approximateShadowRegions * 8, 'shadow regions should render an anchored contact patch');
-assert(lightingLayer.shadowSegmentCount >= projection.occlusionShadows.approximateShadowRegions * 3, 'shadow regions should render distance falloff segments');
+assert(lightingLayer.shadowContactTriangleCount > 0, 'shadow casters should render authored contact footprints');
+equal(lightingLayer.shadowContactFootprintCount, projection.occlusionShadows.contactFootprintCount, 'contact footprints should be rendered once per visible caster');
+equal(lightingLayer.shadowPenumbraTriangleCount + lightingLayer.shadowCoreTriangleCount, 0, 'the renderer should not duplicate SDF streaks with coarse projected wedges');
+equal(lightingLayer.shadowSegmentCount, 0, 'distance falloff should be owned by the projected SDF streak');
 equal(lightingLayer.shadowShaderPacketCount, projection.occlusionShadows.shadowFieldPacketCount, 'shadow shader should consume SDF-ready field packets');
 equal(lightingLayer.shadowShaderPrimitiveCount, projection.occlusionShadows.shadowFieldPacketCount, 'shadow shader should render one bounded primitive per SDF field packet');
 equal(lightingLayer.shadowFieldPrimitiveCount, lightingLayer.shadowShaderPrimitiveCount, 'field primitive diagnostics should report the active shader primitive count');

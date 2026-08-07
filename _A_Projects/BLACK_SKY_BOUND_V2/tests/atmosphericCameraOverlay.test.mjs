@@ -118,7 +118,8 @@ assert(layer.rainStreakCount > 40, 'rain should produce a restrained field of st
 assert(layer.sparkActiveCount > 0, 'high proof spark rate should produce sporadic warm sparks');
 equal(layer.rainPrimitiveCount, layer.rainStreakCount, 'rain should batch one tapered triangle per streak');
 equal(layer.sparkPrimitiveCount, layer.sparkActiveCount * 2, 'sparks should batch one glow and one small streak');
-assert(layer.triangles.every((triangle) => triangle.color[3] <= 0.16), 'screen-space overlay alpha should stay low for readability');
+assert(layer.triangles.slice(0, layer.rainPrimitiveCount).every((triangle) => triangle.color[3] <= 0.26), 'rain alpha should respect the authored weather ceiling');
+assert(layer.triangles.slice(layer.rainPrimitiveCount).every((triangle) => triangle.color[3] <= 0.24), 'spark streak alpha should respect its independent authored ceiling');
 const rainTriangle = layer.triangles[0];
 assert(rainTriangle.cy > (rainTriangle.ay + rainTriangle.by) * 0.5, 'rain streaks should travel from top/north toward lower screen space');
 

@@ -7,6 +7,7 @@ import {
   createEmptyCreatureTuning,
   listProfileOverridePaths,
   normalizeCreatureTuning,
+  resolveCreatureProfile,
   setCreatureTuningValue
 } from '../src/data/creatures/creatureTuning.js';
 import { GroundedWyvernProportionProfileId } from '../src/data/creatures/groundedWyvernProportions.js';
@@ -14,6 +15,9 @@ import { readCreatureTuningFile, writeCreatureTuningFile } from '../tools/tuning
 
 const profileId = GroundedWyvernProportionProfileId.HATCHLING_SKELETAL_GAIT_V0;
 let tuning = createEmptyCreatureTuning();
+const cacheFixture = { id: profileId, visual: { scale: 1 } };
+const cachedProfile = resolveCreatureProfile(cacheFixture, tuning);
+equal(resolveCreatureProfile(cacheFixture, tuning), cachedProfile, 'stable tuning identity should reuse its frozen resolved profile');
 const unknown = setCreatureTuningValue(tuning, profileId, 'tail.unboundedMystery', 2);
 equal(unknown.ok, false, 'unknown tuning path should be rejected before persistence');
 
@@ -21,7 +25,12 @@ const clamped = setCreatureTuningValue(tuning, profileId, 'visual.scale', 99);
 assert(clamped.ok, 'known tuning path should be accepted');
 equal(clamped.value, 2.2, 'visual scale should clamp to manifest max');
 tuning = clamped.tuning;
+assert(resolveCreatureProfile(cacheFixture, tuning) !== cachedProfile, 'replace-on-write tuning should invalidate the identity cache');
 equal(listProfileOverridePaths(tuning, profileId).join(','), 'visual.scale', 'override paths should be observable for AI inspection');
+
+const focusRadius = setCreatureTuningValue(tuning, profileId, 'visibilityFocus.radiusMeters', 99);
+assert(focusRadius.ok, 'camera visibility focus should use the same validated profile tuning path');
+equal(focusRadius.value, 2.5, 'sightline cut radius should clamp to its editor manifest maximum');
 
 const recipe = resolveCreatureProjectionRecipe(CreatureProjectionId.GROUNDED_WYVERN_HATCHLING, tuning);
 equal(recipe.proportionProfile.visual.scale, 2.2, 'resolved profile should consume file-backed override values');

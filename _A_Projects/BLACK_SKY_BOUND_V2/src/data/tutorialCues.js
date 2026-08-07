@@ -64,22 +64,24 @@ export const TUTORIAL_CUES = Object.freeze({
     id: TutorialCueId.SMOKE_ESCAPE,
     trigger: 'smoke_instinct_scene_released_into_hunting_party',
     requiredAbilities: [AbilityId.SMOKE_BURST],
+    persistenceScope: 'run',
     priority: 110,
     presentationType: 'single_action',
     inputActions: [InputActionId.SMOKE],
     title: 'EXHALE',
-    supportingText: 'BREAK SIGHT · RUN',
-    dismissConditions: { acceptedAction: InputActionId.SMOKE, timeoutRealSeconds: 7.5 }
+    supportingText: 'BREAK SIGHT · THEN RUN NORTH',
+    dismissConditions: { acceptedAction: InputActionId.SMOKE, semanticEvent: 'smoke_pursuit_broken', timeoutRealSeconds: 9.5 }
   }),
   [TutorialCueId.SMOKE_VEIL]: cue({
     id: TutorialCueId.SMOKE_VEIL,
     trigger: 'dragon_smoke_breaks_enemy_pursuit',
     requiredAbilities: [AbilityId.SMOKE_BURST],
+    persistenceScope: 'run',
     priority: 55,
     presentationType: 'message',
     inputActions: [],
     title: 'PURSUIT BROKEN',
-    supportingText: 'MOVE BEFORE THEY FIND YOU',
+    supportingText: 'RUN NORTH BEFORE THEY FIND YOU',
     dismissConditions: { timeoutRealSeconds: 2.05 }
   }),
   [TutorialCueId.CHARGE_INSTINCT]: cue({

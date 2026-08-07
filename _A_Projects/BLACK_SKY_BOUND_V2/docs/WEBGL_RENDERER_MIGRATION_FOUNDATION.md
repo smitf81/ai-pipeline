@@ -1,5 +1,7 @@
 # WebGL Renderer Migration Foundation
 
+> Historical migration record. Its darkness-overlay passages describe the retired renderer. Current lighting ownership is defined by [Illumination-Primary Rendering v1](./ILLUMINATION_PRIMARY_RENDERING.md).
+
 ## Current decision
 
 WebGL is now the default runtime backend.

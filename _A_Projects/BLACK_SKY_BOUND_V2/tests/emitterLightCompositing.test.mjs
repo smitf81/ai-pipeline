@@ -55,12 +55,12 @@ equal(lightingLayer.localRevealInfluences.length, lightingLayer.localGlowInfluen
 equal(lightingLayer.localGlowInfluences.length, lightingLayer.localCoreInfluences.length, 'local glow/core buckets should stay paired');
 assert(lightingLayer.localRevealInfluences.every((influence, index) => influence.radius > lightingLayer.localGlowInfluences[index].radius), 'reveal primitives should be broader than visible glow primitives');
 assert(lightingLayer.localCoreInfluences.every((influence, index) => influence.radius < lightingLayer.localGlowInfluences[index].radius * 0.45), 'core primitives should stay tiny relative to glow');
-assert(lightingLayer.localGlowInfluences.every((influence) => influence.color[3] <= 0.15), 'visible glow alpha should stay capped for overlap');
+assert(lightingLayer.localGlowInfluences.every((influence) => influence.color[3] <= 0.42), 'additive glow illumination should stay capped for overlap');
 
 const lightingSource = readFileSync(new URL('../src/render/backends/webgl/layers/WebGLLightingLayer.js', import.meta.url), 'utf8');
 const sceneRootSource = readFileSync(new URL('../src/render/backends/webgl/WebGLSceneRoot.js', import.meta.url), 'utf8');
-assert(lightingSource.includes('drawWorldRadialSaturatedLights'), 'local emitter lights should use saturated radial compositing');
-assert(sceneRootSource.includes('drawWorldRadialSaturatedLights'), 'WebGL scene root should expose the saturated radial light draw path');
+assert(lightingSource.includes('context.illumination.compositeWorld'), 'local emitters should feed the shared illumination field');
+assert(sceneRootSource.includes('drawWorldRadialLights'), 'WebGL scene root should expose the additive radial illumination draw path');
 
 function fakeLightingContext(camera) {
   return {

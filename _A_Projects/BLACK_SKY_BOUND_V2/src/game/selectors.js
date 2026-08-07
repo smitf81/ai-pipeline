@@ -23,7 +23,10 @@ export function createActorView(game, entity) {
   const abilityProgression = getComponent(world, entity, ComponentType.AbilityProgression);
   const health = getComponent(world, entity, ComponentType.Health);
   const collider = getComponent(world, entity, ComponentType.Collider);
+  const bodyContactRig = getComponent(world, entity, ComponentType.BodyContactRig);
   const renderable = getComponent(world, entity, ComponentType.Renderable);
+  const creatureRecipe = getComponent(world, entity, ComponentType.CreatureRecipe);
+  const raiderPhysicalMotion = getComponent(world, entity, ComponentType.RaiderPhysicalMotion);
   const team = getComponent(world, entity, ComponentType.Team);
   const cooldowns = getComponent(world, entity, ComponentType.Cooldowns) ?? {};
   const status = getComponent(world, entity, ComponentType.StatusEffects) ?? {};
@@ -44,6 +47,7 @@ export function createActorView(game, entity) {
   if (kind.type === EntityKind.UNIT_SPAWNER) return null;
   return {
     id: entity,
+    authoredId: game.entityAuthoredIds?.[entity] ?? null,
     type: kind.type,
     team: team.id,
     label: kind.label,
@@ -59,7 +63,15 @@ export function createActorView(game, entity) {
     speedMultiplier: motion?.speedMultiplier ?? 1,
     corpseSlowdownMultiplier: motion?.corpseSlowdownMultiplier ?? 1,
     radius: collider.radius,
+    bodyContactRig: cloneData(bodyContactRig),
+    colour: renderable?.colour ?? '#d8d8d8',
+    stroke: renderable?.stroke ?? '#111111',
     materialProfileId: renderable?.materialProfileId ?? null,
+    role: renderable?.role ?? 'actor',
+    silhouette: renderable?.silhouette ?? 'marker',
+    lightReadabilityProfileId: renderable?.lightReadabilityProfileId ?? null,
+    creatureRecipe: cloneData(creatureRecipe),
+    raiderPhysicalMotion: cloneData(raiderPhysicalMotion),
     alive: health.alive,
     attackTimer: cooldowns.attack ?? 0,
     biteCooldown: cooldowns.bite ?? 0,

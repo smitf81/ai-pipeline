@@ -1,11 +1,11 @@
 import { parseWebGLColor, withAlpha } from './WebGLColor.js';
 
-export const EMITTER_LIGHT_COMPOSITE_MODE = 'split_reveal_saturated_glow_core_v0';
+export const EMITTER_LIGHT_COMPOSITE_MODE = 'split_additive_illumination_reveal_glow_core_v1';
 
 export function buildEmitterLightInfluences(light, profile, composite) {
   const outer = parseWebGLColor(light.colour, [1, 0.5, 0.22, 1]);
   const inner = parseWebGLColor(light.innerColour, [1, 0.76, 0.38, 1]);
-  const revealNeutral = parseWebGLColor(profile.emitterRevealColour ?? 'rgba(168, 158, 132, 1)', [0.66, 0.62, 0.52, 1]);
+  const revealNeutral = parseWebGLColor(profile.emitterRevealColour ?? 'rgba(226, 220, 202, 1)', [0.89, 0.86, 0.79, 1]);
   const revealWarmth = clampRange(light.revealWarmth ?? 0.1, 0, 0.34);
   const revealTint = mixColor(revealNeutral, mixColor(outer, inner, 0.2), revealWarmth);
   const warmCore = mixColor(inner, outer, 0.34);
@@ -26,7 +26,7 @@ export function buildEmitterLightInfluences(light, profile, composite) {
       y: light.worldY,
       radius: revealRadius,
       softness: Math.max(0.86, softness),
-      color: withAlpha(revealTint, contributionAlpha(revealStrength * profileReveal * 0.145 * composite.haloBlendScale * alphaScale, 0.16))
+      color: withAlpha(revealTint, contributionAlpha(revealStrength * profileReveal * 0.72 * composite.haloBlendScale * alphaScale, 0.78))
     },
     {
       role: 'glow',
@@ -34,7 +34,7 @@ export function buildEmitterLightInfluences(light, profile, composite) {
       y: light.worldY,
       radius: glowRadius,
       softness: Math.max(0.72, softness),
-      color: withAlpha(mixColor(outer, inner, 0.1), contributionAlpha(glowStrength * profileReveal * (0.082 + bloom * 0.055) * composite.outerBlendScale * alphaScale, 0.15))
+      color: withAlpha(mixColor(outer, inner, 0.1), contributionAlpha(glowStrength * profileReveal * (0.34 + bloom * 0.16) * composite.outerBlendScale * alphaScale, 0.42))
     },
     {
       role: 'core',
@@ -42,7 +42,7 @@ export function buildEmitterLightInfluences(light, profile, composite) {
       y: light.worldY,
       radius: coreRadius,
       softness: Math.max(0.34, softness * 0.52),
-      color: withAlpha(warmCore, contributionAlpha(coreStrength * profileReveal * (0.13 + bloom * 0.08) * composite.coreBlendScale * alphaScale, 0.18))
+      color: withAlpha(warmCore, contributionAlpha(coreStrength * profileReveal * (0.4 + bloom * 0.18) * composite.coreBlendScale * alphaScale, 0.46))
     }
   ];
 }

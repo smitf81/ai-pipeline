@@ -7,6 +7,8 @@ import { EnemyAttackPhase, EnemyAttackProfileId, getEnemyAttackProfile } from '.
 import { getImpactReactionProfile } from '../data/impactReactionProfiles.js';
 import { buildImpactPoseState } from './impactResponseState.js';
 import { isRaiderGuardActive, isRaiderGuardRecovering } from './raiderGuardState.js';
+import { resolveCreatureHumanoidProfile } from '../data/creatures/creatureRecipes.js';
+import { buildRaiderPhysicalPose } from './raiderPhysicalPoseSolver.js';
 
 const TAU = Math.PI * 2;
 const READY_PHASE = 'ready';
@@ -20,11 +22,16 @@ export function humanoidProjectionSystem({ game, dt }) {
     const projection = getComponent(game.world, entity, ComponentType.HumanoidProjection);
     if (!transform || !collider || !projection) continue;
 
-    const profile = getHumanoidProjectionProfile(projection.profileId, game.creatureTuning);
+    const creatureRecipe = getComponent(game.world, entity, ComponentType.CreatureRecipe);
+    const profile = resolveCreatureHumanoidProfile(
+      getHumanoidProjectionProfile(projection.profileId, game.creatureTuning),
+      creatureRecipe
+    );
     const health = getComponent(game.world, entity, ComponentType.Health);
     const enemyAI = getComponent(game.world, entity, ComponentType.EnemyPressureAI);
     const impactResponse = getComponent(game.world, entity, ComponentType.ImpactResponse);
     const dodgeState = getComponent(game.world, entity, ComponentType.DodgeState);
+    const physicalMotion = getComponent(game.world, entity, ComponentType.RaiderPhysicalMotion);
     const alive = health?.alive !== false;
     const guardState = alive ? buildGuardProjectionState(enemyAI) : null;
     const attackState = alive && !guardState ? buildAttackProjectionState(enemyAI) : null;
@@ -33,21 +40,32 @@ export function humanoidProjectionSystem({ game, dt }) {
     const moved = Math.hypot(dx, dy);
     const speed = dt > 0 ? moved / dt : 0;
     const moving = moved > 0.0001;
-    const facing = attackState || guardState || dodgeState?.active
+    const physicalFacingActive = physicalMotion?.poseEnabled === true && physicalMotion.updateCount > 0 && !guardState && !dodgeState?.active
+      && (!attackState || attackState.profileId === EnemyAttackProfileId.RAIDER_SPEAR_JAB);
+    const facing = physicalFacingActive
+      ? physicalMotion.attention.chestFacing
+      : attackState || guardState || dodgeState?.active
       ? (transform.rotation ?? projection.facing ?? 0)
       : (moving ? Math.atan2(dy, dx) : (transform.rotation ?? projection.facing ?? 0));
     const reactionState = alive ? buildImpactPoseState(impactResponse, facing) : null;
     transform.rotation = facing;
 
-    projection.movement01 = alive ? clamp(speed / profile.gait.maxMovementForFullGait, 0, 1) : 0;
-    projection.gaitPhase = (projection.gaitPhase + moved * profile.gait.phasePerWorldUnit) % TAU;
+    const physicalPoseActive = physicalFacingActive && alive && !reactionState;
+    projection.movement01 = physicalPoseActive
+      ? physicalMotion.locomotion.speed01
+      : (alive ? clamp(speed / profile.gait.maxMovementForFullGait, 0, 1) : 0);
+    projection.gaitPhase = physicalPoseActive
+      ? physicalMotion.locomotion.stepPhase * TAU
+      : (projection.gaitPhase + moved * profile.gait.phasePerWorldUnit) % TAU;
     projection.idlePhase = (projection.idlePhase + Math.max(0, dt) * profile.gait.idlePhaseSpeed) % TAU;
     projection.facing = facing;
     projection.motionState = resolveMotionState({ alive, dodgeState, reactionState, attackState, guardState, projection, profile });
     projection.lastX = transform.x;
     projection.lastY = transform.y;
 
-    const pose = buildHumanoidPose(transform, collider.radius, projection, profile, attackState, reactionState, guardState);
+    const pose = physicalPoseActive
+      ? buildRaiderPhysicalPose({ transform, radius: collider.radius, projection, profile, attackState, intent: physicalMotion })
+      : buildHumanoidPose(transform, collider.radius, projection, profile, attackState, reactionState, guardState);
     if (alive) updateMotionTrails(projection, pose.points, attackState, Math.max(0, dt));
     else projection.motionTrails = [];
     projection.points = pose.points;
@@ -62,6 +80,7 @@ export function humanoidProjectionSystem({ game, dt }) {
     projection.reactionState = reactionState;
     projection.profileLabel = profile.label;
     projection.scaleProfileId = profile.scaleProfileId;
+    projection.physicalMotion = physicalMotion ?? null;
   }
 }
 
@@ -351,7 +370,11 @@ function buildHumanoidSockets(points, forward, right, torchForward) {
     rightHand: socket(points.rightHand, forward, right, 'right_hand_socket'),
     leftElbow: socket(points.leftElbow, forward, right, 'left_elbow_socket'),
     rightElbow: socket(points.rightElbow, forward, right, 'right_elbow_socket'),
+    leftShoulder: socket(points.leftShoulder, forward, right, 'left_shoulder_socket'),
+    rightShoulder: socket(points.rightShoulder, forward, right, 'right_shoulder_socket'),
     chest: socket(points.chest, forward, right, 'chest_socket'),
+    hips: socket(points.hips, forward, right, 'hips_socket'),
+    back: socket(add(points.chest, forward, -0.1), forward, right, 'back_socket'),
     head: socket(points.head, forward, right, 'head_socket'),
     leftFoot: socket(points.leftFoot, forward, right, 'left_foot_socket'),
     rightFoot: socket(points.rightFoot, forward, right, 'right_foot_socket'),

@@ -11,6 +11,7 @@ export const ABILITY_UNLOCK_EVENTS = Object.freeze({
     grants: Object.freeze([AbilityId.SMOKE_BURST]),
     trigger: 'level_transition_instinct_scene',
     once: true,
+    persistenceScope: 'run',
     presentation: 'smoke_instinct_v1'
   }),
   [AbilityUnlockEventId.INSTINCT_CHARGE_AWAKENED]: Object.freeze({
@@ -18,6 +19,7 @@ export const ABILITY_UNLOCK_EVENTS = Object.freeze({
     grants: Object.freeze([AbilityId.CHARGE_COUNTER]),
     trigger: 'scenario_event',
     once: true,
+    persistenceScope: 'player_profile',
     presentation: 'charge_instinct_v0'
   })
 });

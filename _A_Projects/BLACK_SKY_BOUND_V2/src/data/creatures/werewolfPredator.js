@@ -1,3 +1,5 @@
+import { DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE } from '../cameraVisibilityFocusProfile.js';
+
 export const PredatorProjectionId = Object.freeze({
   WEREWOLF_TOP_DOWN: 'werewolf_top_down_predator_v0'
 });
@@ -16,6 +18,7 @@ const BASE_WEREWOLF_PROFILE = Object.freeze({
     shadowScale: 1.58,
     detailTier: 2
   },
+  visibilityFocus: DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE,
   body: {
     chestForward: 0.25,
     hipBack: 0.42,

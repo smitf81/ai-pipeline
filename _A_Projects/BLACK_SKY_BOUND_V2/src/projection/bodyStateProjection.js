@@ -43,6 +43,8 @@ function buildHealthPressure(player) {
     critical: ratio <= PROFILE.health.criticalHealthThreshold,
     critical01,
     recovering: player?.health?.recovering === true,
+    recoveryBlockedByThreat: player?.health?.recoveryBlockedByThreat === true,
+    directPursuerCount: player?.health?.directPursuerCount ?? 0,
     regenDelayRemainingMs: player?.health?.recoveryDelayRemainingMs ?? 0,
     desaturation: critical01 * PROFILE.postProcess.criticalDesaturation,
     contrast: critical01 * PROFILE.postProcess.criticalContrast

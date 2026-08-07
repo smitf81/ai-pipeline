@@ -48,7 +48,7 @@ const dodge = component(harness, player, ComponentType.DodgeState);
 const charge = component(harness, player, ComponentType.ChargeCounterState);
 const stamina = component(harness, player, ComponentType.Stamina);
 assert(dodge.active, 'first Space press should begin dodge in the same update');
-equal(stamina.current, 80, 'immediate dodge should spend 20 stamina from the 100-point pool');
+equal(stamina.current, 36, 'immediate dodge should spend 24 stamina from the bounded 60-point pool');
 equal(Number(charge.followupWindowRemaining.toFixed(2)), 0.32, 'dodge start should open the charge follow-up buffer');
 
 press(harness, ' ', ['d']);
@@ -56,7 +56,7 @@ intent = component(harness, player, ComponentType.PlayerIntent);
 assert(!intent.dodge && intent.dodgeFollowup, 'second Space during dodge should become the distinct follow-up intent');
 staminaSystem({ game: harness.game, dt: 0 });
 assert(charge.queued && !charge.active, 'follow-up should queue while the immediate dodge is still active');
-equal(stamina.current, 44, 'accepted follow-up should reserve its 36 stamina immediately');
+equal(stamina.current, 0, 'accepted follow-up should commit the rest of a fresh escape pool immediately');
 
 const dodgeStartX = component(harness, player, ComponentType.Transform).x;
 dodgeSystem({ game: harness.game, map: harness.map, dt: dodge.duration });
@@ -113,7 +113,7 @@ staminaSystem({ game: lowStamina.game, dt: 0 });
 press(lowStamina, ' ', ['d']);
 staminaSystem({ game: lowStamina.game, dt: 0 });
 equal(component(lowStamina, lowStamina.game.dragonId, ComponentType.ChargeCounterState).lastDeniedReason, 'insufficient_stamina', 'second press should fail loudly before accepting an unaffordable charge');
-equal(component(lowStamina, lowStamina.game.dragonId, ComponentType.Stamina).current, 35, 'denied charge should not create negative stamina or spend its cost');
+equal(component(lowStamina, lowStamina.game.dragonId, ComponentType.Stamina).current, 31, 'denied charge should not create negative stamina or spend its cost');
 
 const unlock = createHarness();
 const unlockProgression = component(unlock, unlock.game.dragonId, ComponentType.AbilityProgression);

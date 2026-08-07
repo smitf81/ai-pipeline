@@ -1,59 +1,69 @@
-# AXIOM / Black Sky Bound Next Slice
+# Black Sky Bound Active Slice
 
-Status: Procedural Geology DNA v1 completed 2026-07-21. Canonical architectural authority remains in `brain/emergence/`. The recommended next slice is **Unified Procedural Scene Painting UX v1**.
+Status: Baby Wyvern Bite Production Replacement v2 completed 2026-08-06. Immediate audio successor: Opening Exterior Soundscape v1.
 
-## Completed Slice
+## Interpreted Task
 
-Boulders now use one compact authored geology family rather than a fixed renderer shape.
+Continue replacing placeholder-feeling BSB audio with grounded production assets. The combat bite now has a real-source three-variant palette; the opening remains the next most visible identity break because its storm and exterior creatures are procedural oscillators heard through a runtime muffle filter.
 
-Delivered behavior:
+The practical goal is an authored inside-egg soundscape: recognisable physical events outside a closed shell, obscured by distance, shell mass and the hatchling's bodily perspective without becoming dull or unintelligible.
 
-- `axiom.geology-dna.v1` intent containing seed, formation, palette, scale, height, angularity, strata direction/density, erosion, crack density, fracture, moss, wetness, and colours;
-- Fieldstone, Fractured Basalt, and Weathered Outcrop recipes;
-- deterministic renderer-neutral hull points, facets, strata polylines, crack polylines, moss patches, and wet edges;
-- semantic create, collision-aware cluster, set-formation, set-scale, randomise, erode, fracture, moss, weather, and patch operations;
-- Map Forge Geology DNA controls plus `EDITOR.procedural.geology`, `axiom_geology_apply`, and a local-agent `geology_action` lane;
-- one-revision cluster receipts with requested/created/skipped counts and deterministic ids/positions;
-- legacy `type: boulder` normalization without rewriting canonical maps;
-- preserved 2x2 blocking collision, `stone_moss` material, occlusion role, authored ids, and runtime-map bake shape;
-- removal of the fixed WebGL `buildBoulder` lit-detail path and addition of generated geology diagnostics.
+## Completed Predecessor
 
-## Canonical Ownership
+### Baby Wyvern Bite Production Replacement v2
 
-- `bsb-v2-geology-authoring.js` owns Axiom recipes, compact authoring normalization, and per-record semantic mutation.
-- `bsb-v2-map-authoring.js` owns document transactions, collision-aware clusters, selection, dirty/freshness state, inspector controls, and editor API receipts.
-- `proceduralGeology.js` owns BSB runtime recipe resolution and scene profiles.
-- `proceduralGeologyGenerator.js` owns disposable renderer-neutral formation projections.
-- `geologyGeometry.js` owns WebGL adaptation only. It cannot become an authored-shape owner.
-- Existing scene-object collision, material, and occlusion systems remain canonical for those concerns.
+- Three real-source 0.48-second variations replaced the rejected two-file synthetic palette.
+- Jaw closure moved from 128-142 ms to 195 ms, matching the 197 ms animation contact point.
+- The old procedural generator no longer owns or can overwrite `player_bite_snap`.
+- Masters, originals, aligned stems, portable Audacity session, source/licence record, comparison reel, analysis and browser proof are retained.
+- Full tests, launcher regression, curated build and exact-Desktop-root browser playtest passed.
 
-## Completion Evidence
+## Best Next Slice
 
-- Axiom's complete launcher suite passes with deterministic DNA, legacy migration, semantic operation, cluster, runtime-bake, MCP, and local-lane coverage.
-- Focused BSB geology, scene-object, collision, material, visibility, runtime-map, renderer, architecture, and LOC tests pass.
-- The complete BSB runner reaches only the previously recorded unrelated `atmosphericCameraOverlay.test.mjs` readability-alpha baseline; all post-baseline modules pass separately.
-- The shared web-game client completed its real input and text-state loop. Its known WebGL backing-store capture remains black, so dedicated Playwright screenshots provide visual acceptance.
-- Real Chromium rendered three formations as 3 generated rocks with 35 hull points, 26 strata segments, 28 crack segments, and 10 moss patches through WebGL with zero browser issues.
-- Real Chromium Axiom proof routed natural language through `geology_action`/MCP, applied erode/fracture/moss operations, created five collision-aware outcrops in one cluster receipt, displayed the selected Geology DNA, then reloaded the original source.
-- Both authoring maps and both BSB runtime maps retained their exact protected SHA-256 hashes.
+### Opening Exterior Soundscape v1
 
-## Recommended Next Slice: Unified Procedural Scene Painting UX v1
+Objective: replace the four synthetic exterior cues heard before shell release with recorded-source production assets and author their closed-shell perspective in the assets as well as through the existing runtime muffle state.
 
-Turn the proven undergrowth brush into one human-facing semantic painting system for the three procedural families.
+Target cue set:
 
-Suggested bounded scope:
+- `world.storm.thunder`;
+- `enemy.husk.distant_gargle`;
+- `enemy.werewolf.distant_howl`;
+- `enemy.raider.distant_shout`.
 
-- extract a shared deterministic brush kernel from `bsb-v2-undergrowth-brush.js` instead of copying its sampling, revision, collision, preview, commit, or undo logic;
-- add explicit Tree / Undergrowth / Geology brush modes, with one family selected per stroke;
-- share radius, falloff, density, deterministic seed, drag batching, revision-bound preview, commit, and receipt-guarded undo behavior;
-- expose recipe/species mixes appropriate to the active family and preserve emitter-capable undergrowth variants;
-- preview the actual collision footprint separately from the visual marker, especially the geology 2x2 blocker and nonblocking undergrowth;
-- show stable blocked-reason counts for terrain, map bounds, spawn/escape, scene objects, units, and spawners;
-- commit one semantic batch revision through the existing family APIs and keep all generated geometry out of the editor document;
-- retain direct single-object inspector operations as a precise alternative to painting.
+Canonical owner and landing points:
 
-Explicitly do not combine terrain painting, root/leaf decals, dead snags, fire-arrow emitters, or mesh editing into the shared procedural brush in this slice.
+- event order, narrative intent and shell state: `_A_Projects/BLACK_SKY_BOUND_V2/src/data/openingSequence.js`;
+- cue identity and file palette: `_A_Projects/BLACK_SKY_BOUND_V2/src/audio/soundManifest.js`;
+- dynamic perspective mix: existing opening-state path in `src/audio/audioDirector.js`;
+- runtime/master/source/session assets: `assets/audio/{production,masters,sources}`;
+- proof: opening-sequence event order plus a real browser hatch run with decoded-file and `muffleAtPlay` diagnostics.
+
+Explicit exclusions:
+
+- no baby-first-cry implementation in this slice;
+- no reuse or pitch-shift derivation of Mama's voice for the baby;
+- no shell crack/break replacement unless source research exposes a uniquely coherent, low-risk companion set;
+- no changes to opening input timing, egg-break progression, creature spawning or combat;
+- no generic fantasy ambience bed pasted under the entire sequence.
+
+## Definition of Done
+
+- Every target cue uses recorded-source layers and retains source URL, provider, artist, licence, unaltered original and editable aligned material.
+- Each event remains individually legible through a closed-shell perspective: attenuated upper frequencies, transmitted low/body energy, constrained stereo width and event-specific distance, without merely applying one blanket low-pass preset.
+- Runtime cues remain file-backed and required, with bounded variation and no silent procedural fallback.
+- The real opening sequence emits the target cues in authored order, decoded files play, `muffleAtPlay` follows shell state, and the exact Desktop launcher/browser diagnostics report no errors.
+- Full tests and the curated build pass; source materials do not enter the public playtest package.
+
+## Follow-up Slices
+
+1. **Baby Wyvern First Cry v1:** add a dedicated newborn vocal at the release beat and remove Mama's full roar from that narrative role. Mama may answer later, but must not mask the hatchling identity beat.
+2. **Egg Shell Interaction Palette v1:** replace rock, crack and break with recorded shell/mineral/organic membrane layers authored from the hatchling's internal perspective.
+3. **Opening Mix and Transition v1:** A/B the full sequence, expose the high-frequency world as the shell opens, and balance exterior threats, shell movement, first cry, Mama answer, heartbeat and ambience in context.
+4. **Remaining Combat Palette:** review claw swipe, lunge body, enemy flesh impacts and player-hit cues in frequency-of-use order.
 
 ## Confidence / Uncertainty
 
-Confidence is high in the truth flow: all three procedural families now expose compact authoring contracts and semantic APIs. The main design risk is interaction density in the left panel. The next slice should prioritize a clear mode switch, compact recipe controls, honest footprint preview, and one reusable transaction kernel over adding more per-family sliders.
+- High confidence: the current thunder, husk, werewolf and distant-raider opening cues are procedural and runtime muffling alone cannot provide recorded physical identity.
+- High confidence: no baby-first-cry cue currently exists, while `mama_answering_roar` schedules the full Mama cue after release.
+- Medium confidence: the four exterior events belong in one soundscape slice because their perspective must translate consistently; shell-contact transients are safer as a separate palette.

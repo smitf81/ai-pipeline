@@ -3,6 +3,7 @@ import { ComponentType } from '../src/constants/componentTypes.js';
 import { EnemyPressureState } from '../src/constants/enemyPressureStates.js';
 import { EntityKind } from '../src/constants/entityKinds.js';
 import { Faction } from '../src/constants/factions.js';
+import { EnemyAttackProfileId, getEnemyAttackProfile } from '../src/data/enemyAttackProfiles.js';
 import { getComponent, removeComponent, setComponent } from '../src/ecs/world.js';
 import { createInitialGameState } from '../src/game/createGame.js';
 import { spawnActor } from '../src/game/spawn.js';
@@ -12,6 +13,7 @@ import { enemyAttackSystem } from '../src/systems/enemyAttackSystem.js';
 import { createDemoMap } from '../src/world/map.js';
 
 const harness = createEmptyHarness();
+const spearDamage = getEnemyAttackProfile(EnemyAttackProfileId.RAIDER_SPEAR_JAB).damage;
 const dragon = harness.game.dragonId;
 const dragonTransform = component(harness, dragon, ComponentType.Transform);
 const dragonHealth = component(harness, dragon, ComponentType.Health);
@@ -78,7 +80,7 @@ equal(ai.state, EnemyPressureState.ATTACK, 'enemy should enter attack inside con
 equal(ai.targetId, dragon, 'attacking enemy should retain its target');
 equal(dragonHealth.hp, hpBeforeAttack, 'attack state should begin with a non-damaging windup');
 enemyAttackSystem({ game: harness.game, dt: 0.35 });
-equal(dragonHealth.hp, hpBeforeAttack - 9, 'attack state should apply raider damage after windup');
+equal(dragonHealth.hp, hpBeforeAttack - spearDamage, 'attack state should apply profiled raider damage after windup');
 
 dragonHealth.hp = 0;
 dragonHealth.alive = false;

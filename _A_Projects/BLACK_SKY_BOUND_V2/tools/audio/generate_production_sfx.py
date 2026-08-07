@@ -24,8 +24,6 @@ def main() -> None:
 
     mama_exploration = render_mama_roar_exploration()
     rendered = [
-        render_asset("player_bite_snap_01", make_bite(seed=1401, variant=0), target_peak_db=-2.8),
-        render_asset("player_bite_snap_02", make_bite(seed=1402, variant=1), target_peak_db=-2.8),
         render_asset("enemy_hit_flesh_01", make_flesh_impact(seed=2301, variant=0), target_peak_db=-2.3),
         render_asset("enemy_hit_flesh_02", make_flesh_impact(seed=2302, variant=1), target_peak_db=-2.3),
         render_asset(
@@ -47,59 +45,6 @@ def main() -> None:
     report_path = REPORT_DIR / "audio-analysis.json"
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
-
-
-def make_bite(seed: int, variant: int) -> np.ndarray:
-    rng = np.random.default_rng(seed)
-    duration = 0.43
-    count = seconds_to_samples(duration)
-    t = np.arange(count) / SAMPLE_RATE
-    snap_at = 0.128 + variant * 0.014
-    signal = np.zeros(count, dtype=np.float64)
-
-    throat_env = envelope(
-        count,
-        [(0.0, 0.0), (0.018, 0.18), (0.072, 0.72), (snap_at, 0.52), (0.24, 0.12), (0.38, 0.0)],
-    )
-    throat_noise = spectral_filter(rng.normal(0, 1, count), low_hz=75, high_hz=1180 + variant * 90, order=4)
-    throat_tone = chirp(205 + variant * 11, 142 + variant * 6, duration, wobble_hz=24, wobble_depth=0.035)
-    signal += throat_env * (throat_noise * 0.24 + throat_tone * 0.22)
-
-    rush_env = envelope(
-        count,
-        [(0.022, 0.0), (0.052, 0.16), (snap_at - 0.012, 0.62), (snap_at + 0.025, 0.0)],
-    )
-    rush = spectral_filter(rng.normal(0, 1, count), low_hz=620, high_hz=7200, order=3)
-    signal += rush * rush_env * (0.24 + variant * 0.025)
-
-    jaw_noise = spectral_filter(rng.normal(0, 1, seconds_to_samples(0.13)), low_hz=65, high_hz=1850, order=3)
-    jaw_noise *= envelope(
-        len(jaw_noise),
-        [(0.0, 0.0), (0.0015, 1.0), (0.018, 0.55), (0.07, 0.12), (0.13, 0.0)],
-    )
-    add_at(signal, jaw_noise * 0.58, snap_at)
-
-    resonances = (
-        (168 + variant * 9, 0.18, 0.42),
-        (476 + variant * 24, 0.095, 0.23),
-        (1360 + variant * 70, 0.038, 0.13),
-    )
-    for frequency, decay, gain in resonances:
-        add_at(signal, resonant_hit(frequency, decay, gain), snap_at)
-
-    tooth_gap = 0.008 + variant * 0.002
-    for offset, gain in ((0.0, 0.44), (tooth_gap, 0.31), (tooth_gap + 0.007, 0.16)):
-        click = spectral_filter(rng.normal(0, 1, seconds_to_samples(0.025)), low_hz=1800, high_hz=12_000, order=2)
-        click *= exponential_decay(len(click), 0.006)
-        add_at(signal, click * gain, snap_at + offset)
-
-    tail_env = envelope(
-        count,
-        [(snap_at, 0.0), (snap_at + 0.025, 0.38), (0.25, 0.2), (0.42, 0.0)],
-    )
-    tail = spectral_filter(rng.normal(0, 1, count), low_hz=110, high_hz=900, order=4)
-    signal += tail * tail_env * 0.14
-    return finish(signal, highpass_hz=32, saturation=1.45)
 
 
 def make_flesh_impact(seed: int, variant: int) -> np.ndarray:

@@ -58,7 +58,9 @@ assert(
 enemyPressureSystem({ game: pursuit.game, map: pursuit.map, dt: 0.9 });
 equal(pursuit.ai.targetId, null, 'enemy should not immediately reacquire during the smoke reposition window');
 removeSmoke(pursuit.game);
-enemyPressureSystem({ game: pursuit.game, map: pursuit.map, dt: 2.5 });
+for (let elapsed = 0; elapsed < 2.5; elapsed += 0.1) {
+  enemyPressureSystem({ game: pursuit.game, map: pursuit.map, dt: 0.1 });
+}
 equal(pursuit.ai.targetId, pursuit.player, 'enemy should recover and reacquire after the bounded search expires');
 
 const closeContact = createHarness(SMOKE_TACTICS.closeRevealDistanceTiles - 0.08);

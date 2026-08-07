@@ -1,4 +1,5 @@
 import { writePixelText } from '../WebGLPixelFont.js';
+import { buildPauseMenuLayout } from '../../../../game/pauseMenuLayout.js';
 
 const IVORY = [0.88, 0.86, 0.76, 0.96];
 const ASH = [0.58, 0.61, 0.6, 0.9];
@@ -150,55 +151,61 @@ export class WebGLTutorialLayer {
   buildPauseMenu(menu, context) {
     const w = context.camera.viewportW;
     const h = context.camera.viewportH;
-    const compact = w < 820 || h < 620;
+    const layout = menu.layout ?? buildPauseMenuLayout(menu, { viewportW: w, viewportH: h });
+    const compact = layout.compact;
     this.rects.push(rect(0, 0, w, h, [0.012, 0.016, 0.019, 0.86]));
     this.radials.push({ x: w * 0.18, y: h * 0.12, radiusX: Math.max(220, w * 0.36), radiusY: Math.max(160, h * 0.42), radius: 260, softness: 0.95, color: [0.16, 0.12, 0.07, 0.18] });
     this.rects.push(rect(42, 38, Math.min(520, w - 84), 1, [0.91, 0.58, 0.28, 0.42]));
     this.write(menu.title, 48, 52, compact ? 2 : 3, IVORY);
     this.write('PAUSED', w - (compact ? 104 : 140), 54, 2, ASH);
 
-    const rowGap = compact ? 35 : 43;
-    const startY = compact ? 94 : 116;
-    const keyX = 50;
-    const labelX = compact ? 148 : 176;
-    menu.controls.forEach((control, index) => {
-      const rowY = startY + index * rowGap;
-      const scale = compact ? 1 : 2;
-      this.drawKey(control.bindings, keyX, rowY, false, 0.92, scale);
-      this.write(control.label, labelX, rowY + 3, scale, IVORY);
-      if (control.detail) this.write(control.detail, labelX, rowY + (compact ? 17 : 22), 1, ASH, Math.max(180, w * 0.42));
+    layout.controls.forEach((control) => {
+      this.drawKey(control.bindings, control.x, control.y, false, 0.92, control.scale);
+      this.write(control.label, control.labelX, control.y + 3, control.scale, IVORY);
+      if (control.detail) this.write(control.detail, control.labelX, control.y + (compact ? 17 : 22), 1, ASH, Math.max(180, w * 0.42));
     });
 
-    const settingsX = compact ? 48 : Math.max(620, w * 0.62);
-    let settingsY = compact ? startY + menu.controls.length * rowGap + 12 : 118;
-    let section = null;
-    menu.settings.forEach((setting, index) => {
-      if (setting.section !== section) {
-        section = setting.section;
-        this.write(section, settingsX, settingsY, 2, ASH);
-        settingsY += compact ? 24 : 29;
+    layout.sections.forEach((section) => {
+      this.write(section.label, section.x, section.y, 2, ASH);
+      if (section.label === 'SOUND') {
+        const hintX = section.x + layout.settingsRows[0].width - pixelWidth(menu.pointerHint, 1);
+        this.write(menu.pointerHint, hintX, section.y + 4, 1, [0.64, 0.54, 0.4, 0.8]);
       }
-      const rowY = settingsY;
-      const selected = menu.selectedSettingIndex === index;
-      const availableWidth = Math.max(210, w - settingsX - 50);
-      if (selected) {
-        this.rects.push(rect(settingsX - 14, rowY - 5, 2, setting.kind === 'level' ? 29 : 20, EMBER));
-        this.rects.push(rect(settingsX - 8, rowY - 6, availableWidth, setting.kind === 'level' ? 30 : 21, [0.19, 0.15, 0.1, 0.18]));
-      }
-      this.write(setting.label, settingsX, rowY, 1, selected ? IVORY : ASH);
-      const valueX = settingsX + availableWidth - pixelWidth(setting.value, 1) - 8;
-      this.write(setting.value, valueX, rowY, 1, selected ? EMBER : IVORY);
-      if (setting.kind === 'level') {
-        const railWidth = Math.min(216, availableWidth - 8);
-        this.rects.push(rect(settingsX, rowY + 16, railWidth, 3, [0.34, 0.35, 0.33, 0.48]));
-        this.rects.push(rect(settingsX, rowY + 16, railWidth * setting.level, 3, selected ? EMBER : [0.66, 0.51, 0.3, 0.72]));
-        for (let step = 0; step <= 10; step += 1) {
-          this.rects.push(rect(settingsX + railWidth * step / 10, rowY + 14, 1, 7, [0.66, 0.62, 0.52, step / 10 <= setting.level ? 0.42 : 0.18]));
-        }
-      }
-      settingsY += setting.kind === 'level' ? (compact ? 31 : 35) : (compact ? 24 : 29);
     });
-    this.write(menu.footer, 48, h - 42, compact ? 1 : 2, ASH, w - 96);
+    layout.settingsRows.forEach((setting) => {
+      const selected = menu.selectedSettingIndex === setting.index;
+      if (selected) {
+        this.rects.push(rect(setting.bounds.x, setting.bounds.y + 2, 2, setting.bounds.h - 4, EMBER));
+        this.rects.push(rect(setting.bounds.x + 6, setting.bounds.y, setting.bounds.w - 6, setting.bounds.h, [0.19, 0.15, 0.1, 0.18]));
+      }
+      this.write(setting.label, setting.x, setting.y, 1, selected ? IVORY : ASH);
+      const valueX = setting.x + setting.width - pixelWidth(setting.value, 1);
+      this.write(setting.value, valueX, setting.y, 1, selected ? EMBER : IVORY);
+      if (setting.kind === 'level') {
+        this.drawMiniButton('-', setting.minusBounds, selected);
+        this.drawMiniButton('+', setting.plusBounds, selected);
+        this.rects.push(rect(setting.rail.x, setting.rail.y, setting.rail.w, setting.rail.h, [0.31, 0.33, 0.32, 0.58]));
+        this.rects.push(rect(setting.rail.x, setting.rail.y, setting.rail.w * setting.level, setting.rail.h, selected ? EMBER : [0.66, 0.51, 0.3, 0.78]));
+        for (let step = 0; step <= 10; step += 1) {
+          this.rects.push(rect(setting.rail.x + setting.rail.w * step / 10, setting.rail.y - 2, 1, setting.rail.h + 4, [0.76, 0.71, 0.6, step / 10 <= setting.level ? 0.52 : 0.2]));
+        }
+        const knobX = setting.rail.x + setting.rail.w * setting.level;
+        this.rects.push(rect(knobX - 2, setting.rail.y - 3, 5, setting.rail.h + 6, selected ? [0.98, 0.72, 0.39, 1] : [0.78, 0.68, 0.5, 0.88]));
+      }
+    });
+    this.write(menu.footer, layout.footer.x, layout.footer.y, layout.footer.scale, ASH, layout.footer.maxWidth);
+  }
+
+  drawMiniButton(label, target, selected) {
+    const edge = selected ? EMBER : ASH;
+    this.rects.push(rect(target.x, target.y, target.w, target.h, [0.1, 0.11, 0.11, 0.74]));
+    this.rects.push(
+      rect(target.x, target.y, target.w, 1, edge),
+      rect(target.x, target.y + target.h - 1, target.w, 1, withAlpha(edge, 0.62)),
+      rect(target.x, target.y, 1, target.h, withAlpha(edge, 0.74)),
+      rect(target.x + target.w - 1, target.y, 1, target.h, withAlpha(edge, 0.74))
+    );
+    this.writeCenteredAt(label, target.x, target.w, target.y + 5, 1, selected ? EMBER : IVORY);
   }
 
   addAshStreaks(centerX, y, elapsed, opacity, reducedMotion) {

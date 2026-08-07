@@ -3,7 +3,8 @@ import { SceneObjectType } from './sceneObjects.js';
 import { TerrainType } from '../world/terrain.js';
 
 export const ScenarioId = Object.freeze({
-  FIRST_ESCAPE: 'first_escape'
+  FIRST_ESCAPE: 'first_escape',
+  DEMO_ARENA: 'demo_arena'
 });
 
 export const SCENARIOS = Object.freeze({
@@ -61,6 +62,24 @@ export const SCENARIOS = Object.freeze({
       { from: { x: 28, y: 13 }, to: { x: 33, y: 13 } },
       { from: { x: 33, y: 10 }, to: { x: 33, y: 15 } }
     ]
+  }),
+  [ScenarioId.DEMO_ARENA]: Object.freeze({
+    id: ScenarioId.DEMO_ARENA,
+    label: 'The Crown of Cinders',
+    map: { width: 64, height: 48 },
+    spawn: { x: 32, y: 24 },
+    escapeZone: { x: 1, y: 1, w: 1, h: 1 },
+    startMessage: 'Hold the Crown. Survive each assault and awaken a new instinct.',
+    winMessage: 'The Crown holds. Demo complete.',
+    lossMessage: 'The black sky closes over the Crown.',
+    objective: {
+      id: 'hold_the_crown',
+      text: 'Survive five escalating waves'
+    },
+    enemySpawns: [],
+    sceneObjects: [],
+    terrainBlobs: [],
+    waterRuns: []
   })
 });
 

@@ -16,12 +16,25 @@ import { getNapalmDribbleRecipe } from '../data/napalmDribble.js';
 import { addDecalStamp } from '../projection/renderLayerState.js';
 import { getLocomotionProfile } from '../data/locomotionProfiles.js';
 import { getBodyStateProfile } from '../data/bodyStateFeedback.js';
+import { getCreatureRecipe, resolveCreatureRecipeInstance } from '../data/creatures/creatureRecipes.js';
+import { createRaiderPhysicalMotionIntent } from '../components/raiderPhysicalMotionComponents.js';
 
-export function spawnActor(world, type, x, y, team = null) {
-  const def = ACTORS[type];
-  if (!def) throw new Error(`Unknown actor type: ${type}`);
-  const entity = createEntity(world, type);
+export function spawnActor(world, type, x, y, team = null, options = {}) {
+  const actorDef = ACTORS[type];
+  if (!actorDef) throw new Error(`Unknown actor type: ${type}`);
   const teamId = team ?? getDefaultActorFaction(type);
+  const sourceId = options.sourceId ?? `direct:${type}:${teamId}:${stableCoordinate(x)}:${stableCoordinate(y)}`;
+  const creatureRecipe = resolveCreatureRecipeInstance({
+    defaultRecipeId: actorDef.defaultCreatureRecipeId,
+    creature: options.creature,
+    sourceId,
+    sourceKind: options.sourceKind ?? (options.sourceId ? 'stable_source_id' : 'direct_spawn_source')
+  });
+  if (creatureRecipe && creatureRecipe.actorKind !== type) {
+    throw new Error(`creature_recipe_actor_kind_mismatch:${creatureRecipe.recipeId}:${type}`);
+  }
+  const def = creatureRecipe ? buildRecipeActorDefinition(actorDef, getCreatureRecipe(creatureRecipe.recipeId), creatureRecipe) : actorDef;
+  const entity = createEntity(world, type);
   const isPlayerDragon = teamId === Faction.PLAYER && type === EntityKind.YOUNG_DRAGON;
   addComponent(world, entity, ComponentType.Kind, Components.kind(type, def.label));
   addComponent(world, entity, ComponentType.Transform, Components.transform(x, y));
@@ -35,13 +48,20 @@ export function spawnActor(world, type, x, y, team = null) {
   const bodyStateProfile = def.bodyStateProfileId ? getBodyStateProfile(def.bodyStateProfileId) : null;
   addComponent(world, entity, ComponentType.Health, Components.health(def.hp, bodyStateProfile?.health));
   addComponent(world, entity, ComponentType.Collider, Components.collider(def.radius));
+  addComponent(world, entity, ComponentType.BodyContactRig, Components.bodyContactRig(def.radius));
   addComponent(world, entity, ComponentType.Team, Components.team(teamId));
   addComponent(world, entity, ComponentType.Renderable, Components.renderable(def));
+  if (creatureRecipe) addComponent(world, entity, ComponentType.CreatureRecipe, Components.creatureRecipe(creatureRecipe));
+  if (creatureRecipe && def.humanoidProjection) {
+    addComponent(world, entity, ComponentType.RaiderPhysicalMotion, createRaiderPhysicalMotionIntent(x, y, 0));
+  }
   addComponent(world, entity, ComponentType.Cooldowns, Components.cooldowns({ attack: 0, bite: 0, lunge: 0, smoke: 0 }));
   addComponent(world, entity, ComponentType.StatusEffects, Components.statusEffects());
   addComponent(world, entity, ComponentType.ImpactResponse, Components.impactResponse(def.physics));
   if (def.humanoidProjection) {
-    addComponent(world, entity, ComponentType.HumanoidProjection, Components.humanoidProjection(def.humanoidProjection, x, y));
+    const projection = Components.humanoidProjection(def.humanoidProjection, x, y);
+    projection.idlePhase = creatureRecipe?.appearance?.idlePhaseOffset ?? 0;
+    addComponent(world, entity, ComponentType.HumanoidProjection, projection);
   }
   if (def.predatorProjection) {
     addComponent(world, entity, ComponentType.PredatorProjection, Components.predatorProjection(def.predatorProjection, x, y));
@@ -49,7 +69,7 @@ export function spawnActor(world, type, x, y, team = null) {
 
   if (def.lightEmitter) {
     const light = { ...getLightEmitterRecipe(def.lightEmitter) };
-    light.flickerPhase = (entity.length * 0.73 + x * 1.37 + y * 2.11) % (Math.PI * 2);
+    light.flickerPhase = ((creatureRecipe?.seed ?? entity.length * 0.73) + x * 1.37 + y * 2.11) % (Math.PI * 2);
     addComponent(world, entity, ComponentType.LightEmitter, Components.lightEmitter(light));
   }
 
@@ -86,6 +106,33 @@ export function spawnActor(world, type, x, y, team = null) {
   }
 
   return entity;
+}
+
+function buildRecipeActorDefinition(actorDef, recipe, instance) {
+  const primaryRole = recipe.surface.primaryMaterialRole;
+  const primaryMaterial = recipe.surface.materialRoles[primaryRole];
+  return {
+    ...actorDef,
+    hp: recipe.physical.health,
+    speed: recipe.physical.speed,
+    radius: recipe.physical.collider.radius,
+    colour: instance.appearance.palette[primaryRole] ?? recipe.surface.colour,
+    stroke: recipe.surface.stroke,
+    materialProfileId: primaryMaterial.profileId,
+    silhouette: recipe.surface.silhouette,
+    lightReadabilityProfileId: recipe.surface.lightReadabilityProfileId,
+    humanoidProjection: recipe.bodyPlan.profileId,
+    lightEmitter: instance.gameplay.lightEmitterId,
+    locomotionProfileId: recipe.locomotion.profileId,
+    attackProfileIds: recipe.attacks.map((entry) => entry.profileId),
+    physics: recipe.physical.physics,
+    ai: recipe.behaviour.parameters
+  };
+}
+
+function stableCoordinate(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(4) : 'invalid';
 }
 
 export function spawnSmokeCloud(world, x, y, smokeData, diagnostics = null) {

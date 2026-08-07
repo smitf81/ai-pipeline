@@ -46,6 +46,10 @@ export function getDeathAftermathProfile(entityKind) {
   return DEATH_AFTERMATH_PROFILES[entityKind] ?? null;
 }
 
+export function getDeathAftermathProfileById(profileId) {
+  return Object.values(DEATH_AFTERMATH_PROFILES).find((profile) => profile.id === profileId) ?? null;
+}
+
 function profile(data) {
   return Object.freeze({
     classification: 'actor_type_death_aftermath_profile_v0',

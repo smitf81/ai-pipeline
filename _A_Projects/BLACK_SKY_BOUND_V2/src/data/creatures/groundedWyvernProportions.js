@@ -1,3 +1,5 @@
+import { DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE } from '../cameraVisibilityFocusProfile.js';
+
 export const GroundedWyvernProportionProfileId = Object.freeze({
   HATCHLING_SKELETAL_GAIT_V0: 'grounded_wyvern_hatchling_skeletal_gait_v0'
 });
@@ -17,6 +19,7 @@ export const GROUNDED_WYVERN_HATCHLING_PROPORTIONS = Object.freeze({
     scale: 1.42,
     boundsPadding: 0.18
   }),
+  visibilityFocus: DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE,
   skeleton: Object.freeze({
     classification: 'wyvern_skeletal_profile',
     solverId: 'grounded_wyvern_skeletal_gait_solver_v0',

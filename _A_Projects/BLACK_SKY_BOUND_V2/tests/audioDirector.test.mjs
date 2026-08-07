@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { assert, equal } from './assert.mjs';
 import { createAudioDirector } from '../src/audio/audioDirector.js';
-import { validateSoundManifest } from '../src/audio/soundManifest.js';
+import { startDecodedFileVoice } from '../src/audio/audioFileVoice.js';
+import { AudioAssetBank } from '../src/audio/audioAssetBank.js';
+import { getSoundCue, validateSoundManifest } from '../src/audio/soundManifest.js';
 import { AudioEventType } from '../src/audio/soundEvents.js';
 import { ComponentType } from '../src/constants/componentTypes.js';
 import { EventType } from '../src/constants/eventTypes.js';
@@ -34,8 +36,32 @@ assert(debug.loops['ambience.forest_night'], 'audio director should own the ambi
 assert(debug.loops['player.breath.calm'], 'audio director should own the calm breath loop');
 assert(debug.loops['player.breath.strained'], 'audio director should own the strained breath loop');
 assert(debug.loops['player.heartbeat'], 'audio director should own the heartbeat loop');
-equal(debug.loops['player.heartbeat'].source, 'procedural_sfx', 'heartbeat diagnostics should expose its procedural source');
+equal(debug.loops['player.heartbeat'].source, 'file', 'heartbeat diagnostics should expose decoded production playback');
+equal(debug.loops['player.heartbeat'].file, 'assets/audio/production/player_heartbeat_01.wav', 'heartbeat diagnostics should expose the authored runtime asset');
 equal(debug.loops['player.heartbeat'].tonal, false, 'heartbeat diagnostics should prove the loop is not a monitor-like tone');
+
+const decodedHeartbeatSource = {
+  buffer: null,
+  loop: false,
+  playbackRate: { setValueAtTime: (value) => { decodedHeartbeatSource.playbackRateValue = value; } },
+  connect: (target) => { decodedHeartbeatSource.connectedTo = target; },
+  start: (at) => { decodedHeartbeatSource.startedAt = at; }
+};
+const decodedHeartbeatOutput = {};
+const decodedHeartbeatVoice = startDecodedFileVoice({
+  assets: {
+    select: () => ({
+      file: 'assets/audio/production/player_heartbeat_01.wav',
+      entry: { status: 'ready', buffer: { duration: 8.23025 } }
+    })
+  },
+  bus: { context: { currentTime: 3.5, createBufferSource: () => decodedHeartbeatSource } },
+  recordPlaybackError: () => { throw new Error('ready heartbeat asset should not record a playback error'); }
+}, getSoundCue('player.heartbeat'), decodedHeartbeatOutput, 1, 0, true);
+equal(decodedHeartbeatSource.loop, true, 'decoded heartbeat buffer source should be configured to loop');
+equal(decodedHeartbeatSource.connectedTo, decodedHeartbeatOutput, 'decoded heartbeat should connect to the existing player-body gain');
+equal(decodedHeartbeatSource.startedAt, 3.5, 'decoded heartbeat should begin at the current audio-context time');
+equal(decodedHeartbeatVoice.mode, 'decoded_file_buffer_loop', 'decoded heartbeat diagnostics should identify the loop playback mode');
 
 const stamina = getComponent(harness.game.world, harness.game.dragonId, ComponentType.Stamina);
 stamina.current = 2;
@@ -95,12 +121,38 @@ ai.activeAttackProfileId = 'raider_spear_thrust';
 syncGameViews(pressureHarness.game);
 debug = pressureDirector.update({ game: pressureHarness.game, time: 0.1, paused: false }, 1 / 60);
 assert(recentCue(debug, 'enemy.raider.warn'), 'enemy attack windups should emit warning audio');
+const warningCue = getSoundCue('enemy.raider.warn');
+equal(warningCue.source, 'file', 'attack windups should resolve to recorded raider warnings');
+equal(warningCue.required, true, 'raider warning assets should fail visibly rather than synthesize a fallback');
+equal(warningCue.files.length, 5, 'raider warnings should expose enough recorded variants to avoid immediate repetition');
+const warningBank = new AudioAssetBank({ context: null, fetchImpl: null });
+const warningRotation = Array.from({ length: 10 }, (_, sequence) => warningBank.select(warningCue, sequence).file);
+equal(new Set(warningRotation.slice(0, 5)).size, 5, 'the first warning cycle should select every authored variant once');
+equal(warningRotation[5], warningRotation[0], 'raider warning selection should repeat only after a complete deterministic cycle');
+const nearCueCountBeforePause = recentCueCount(debug, 'enemy.raider.near');
+const warningCueCountBeforePause = recentCueCount(debug, 'enemy.raider.warn');
+debug = pressureDirector.update({ game: pressureHarness.game, time: 0.1, paused: true }, 2);
+equal(recentCueCount(debug, 'enemy.raider.near'), nearCueCountBeforePause, 'frozen nearby enemies must not repeat phantom proximity cues behind pause');
+equal(recentCueCount(debug, 'enemy.raider.warn'), warningCueCountBeforePause, 'frozen attack windups must not repeat warning cues behind pause');
+equal(debug.nearestEnemy, null, 'paused audio diagnostics should not imply a currently evaluated threat');
+equal(debug.buses.enemies, 0, 'pause mix should silence active creature voices');
+equal(debug.buses.combat, 0, 'pause mix should silence active combat voices');
+assert(debug.buses.ambience > 0, 'pause mix should retain a quiet environmental bed for settings context');
+assert(debug.buses.ui > 0, 'pause mix should retain UI feedback');
+equal(debug.loops['player.heartbeat'].targetGain, 0, 'pause should zero the heartbeat voice target rather than only hiding it behind a bus');
+equal(debug.loops['player.heartbeat'].active, false, 'pause should report the heartbeat voice as genuinely inactive');
+equal(debug.loops['player.heartbeat'].suspended, true, 'pause diagnostics should expose the body-loop suspension contract');
+equal(debug.loops['player.breath.calm'].active, false, 'calm breath should stop with the rest of the player body loops');
+equal(debug.loops['player.breath.strained'].active, false, 'strained breath should stop with the rest of the player body loops');
+equal(debug.pauseMix.active, true, 'audio diagnostics should expose that pause ducking is active');
+equal(debug.pauseMix.mode, 'ui_live_ambience_duck_gameplay_silent', 'audio diagnostics should name the pause mix policy');
 
 const appSource = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+const browserBootSource = readFileSync(new URL('../src/bootstrap/browserBoot.js', import.meta.url), 'utf8');
 const runtimeTextSource = readFileSync(new URL('../src/debug/runtimeText.js', import.meta.url), 'utf8');
 assert(appSource.includes("import { createAudioDirector } from './audio/audioDirector.js';"), 'app should import the audio director');
 assert(appSource.includes('state.audio = audio.update(state, dt);'), 'app update loop should keep the audio director live');
-assert(appSource.includes('window.render_game_to_text = () => renderGameToText(app);'), 'app should route runtime text through the debug serializer');
+assert(browserBootSource.includes('window.render_game_to_text = () => renderGameToText(app);'), 'browser boot should route runtime text through the debug serializer');
 assert(runtimeTextSource.includes('audio: app.audio.getDebugState()'), 'runtime text output should expose audio debug state');
 
 const openingDirector = createAudioDirector({ context: null });

@@ -2,6 +2,59 @@
 
 Original prompt: Inside BLACK_SKY_BOUND_V2_ATMOSPHERIC_SCATTER_SMOOTHING_v1, shouldn't we still be getting a lot more headway from only needing to render what's in our light bubbles?
 
+## 2026-07-31 - Tree trunk/root structural reconstruction (complete)
+
+Current request:
+
+- Treat the referenced Tree Mesh Fix conversation as the acceptance brief: replace the apparent half-shell trunk and intersecting triangular roots with a coherent, closed, economical low-poly trunk/root form, then prove it from isolated and gameplay views rather than applying a cosmetic smoothing pass.
+
+Pre-change audit:
+
+- Documented the active tree DNA -> spatial recipe -> scenery projection -> Three.js factory/cache path in `docs/TREE_MESH_RENDERING_BASELINE.md` before editing tree geometry.
+- Confirmed the apparent half trunk is caused by reversed sweep winding: the first ancient-oak trunk face points inward (`radial dot = -0.609177`) and is culled by the normal front-side material.
+- Confirmed roots are individually capped six-sided tubes that begin inside the trunk. They are closed components, but their hidden caps/intersections create the visible spike assembly instead of one root plate.
+- Locked the existing reference-grove baseline at 9 calls and 11,354 triangles for three trees; reported CPU render-path p95 is 0.8-1.4 ms and browser GPU timer queries are unavailable.
+
+Implementation and validation:
+
+- Rejected the first welded polar root-plate prototype after screenshots still read as a starfish skirt; the completed path polygonises trunk, roots and major branches as one deterministic implicit manifold.
+- Replaced disconnected capped sweeps with one indexed outward-wound woody surface. All three species report one component, zero boundary/non-manifold/degenerate faces and positive signed volume.
+- Preserved trunk-circle hard collision, root-only soft traversal slowdown, renderer-neutral projection, one bark draw, per-tree instanced foliage, shadows, full-signature caches and explicit disposal.
+- Added isolated front/rear/left/right root views, full canopy-hidden, wireframe, normal-shaded and normal gameplay proof. The 12-view Playwright report contains zero console, page or request errors.
+- Ancient oak is now 1,764 bark vertices / 3,524 triangles / one woody component, versus 744 / 1,376 / 28 components. The three-tree grove remains 9 calls and measures 17,698 triangles with 0.7-0.9 ms CPU p95.
+- Generation medians are 18.232/7.766/13.581 ms cold and 0.338/0.166/0.309 ms cached for pine/birch/oak respectively.
+- Live-world proof passed at 209 calls, 112,418 triangles, 6.5 ms CPU p95 and 7.745 ms GPU p95. The isolated stress rerun passed at 16.6/16.8 ms frame-interval p95 for DPR 1/1.5 with zero long frames; one preceding machine-DPR run transiently measured 20.8 ms and is recorded in the report.
+- Full unit, collision, scene-object, line-count, reference-browser, live-world, stress, production-build and packaged-browser gates pass. See `docs/TREE_MESH_FIX_REPORT.md`.
+
+## 2026-07-31 - Three-material terrain foundation (complete)
+
+Current request:
+
+- Replace the flat-looking active Three.js floor with a coherent, performant layered material foundation for dark wild grass, compacted dirt/path, and scorched earth while preserving Map Forge terrain IDs, collision/gameplay semantics, batching, deterministic detail placement, and illumination-led art direction.
+
+Pre-change audit and baseline:
+
+- Documented the complete Map Forge -> runtime-map tile ID -> terrain definition/material profile -> renderer-neutral projection -> static 3D compiler -> ThreeLiveWorld instanced-box path in `docs/TERRAIN_MATERIAL_RENDERING_BASELINE.md` before changing terrain source or assets.
+- Confirmed the active renderer has no tilesheet/atlas or PBR maps. It issues one instanced draw per terrain type using constant-colour `MeshStandardMaterial`; default box UVs are currently irrelevant because no maps are bound.
+- Confirmed the retired legacy WebGL terrain layer contains a cached procedural colour texture and 16-mask dirt boundary experiment, but it is unreachable from the default Three.js backend.
+- Captured and visually inspected the locked Playwright baseline under `artifacts/terrain-material-v1/baseline/`: 155 calls, 130,168 triangles, 2.4 ms manual render-path p95, 8.816 ms GPU p95, and zero browser errors at 1440x900 DPR 1.
+
+Implementation boundary:
+
+- Derive renderer-only textures, blend masks, and detail scatter from canonical IDs; do not add biome/gameplay truth to Map Forge or runtime JSON.
+- Use seamless same-density procedural PBR layers and a renderer-owned splat mask rather than a decorative tile atlas.
+- Keep non-target terrain on its current presentation path and avoid displacement.
+
+Implementation progress:
+
+- Added three explicit material-layer definitions and deterministic periodic PBR texture-array generation. Base colour, OpenGL normal, and packed roughness/AO/height layers share 128x128 dimensions, 1.6 m world scale, repeat wrapping, trilinear mipmaps, and anisotropy.
+- Replaced the three separate target terrain batches with one shared instanced plane batch. A renderer-only 8-pixels-per-tile organic contour mask uses rounded cores, path/region capsules, multi-scale domain warp, variable shoulders, and edge lobes without changing authored tile IDs.
+- Kept forest, water, and rock on their prior instanced `MeshStandardMaterial` path. Blocked rock collision and raised presentation remain unchanged.
+- Added deterministic sparse grass clumps with one 30-triangle reusable tapered-blade geometry, static-object/spawn/escape exclusions, dirt/scorch clearance, natural-feature and forest/rock boundary bias, density tuning, distance culling, and one draw call.
+- Added F6 lit/material-ID/normal-only cycling, F7 detail toggle, F3 grass cull-bounds/count reporting, runtime methods for browser proof, and explicit magenta diagnostic rendering for missing material data.
+- Final reference-gated browser proof is error-free. At the clear material camera detail off/on measures 123/124 calls, 130,432/139,522 triangles, and 8.768/8.886 ms GPU p95; 303 visible clumps add exactly 9,090 triangles. Full unit, LOC, fixed-camera browser, stress, production-build, and packaged-browser gates pass.
+- Recorded asset provenance in `docs/TERRAIN_MATERIAL_ASSET_PROVENANCE.md`; there are no external assets or external licences in this slice.
+
 ## 2026-06-15 — GCD anchor
 
 Created the focused Black Sky Bound GCD:
@@ -5116,3 +5169,759 @@ Evidence:
 Next slice:
 
 - Unified Procedural Scene Painting UX v1: extract a shared deterministic brush kernel and add family-aware Tree, Undergrowth, and Geology modes with footprint-honest preview, recipe mixes, one-revision batch commit, and receipt-guarded undo.
+
+## 2026-07-27 - Smoke instinct first-beat diagnostic playtest
+
+Current request:
+
+- Properly playtest and visually analyse the first half of the scene-one to scene-two smoke unlock, stopping before redesigning the destination breathing/reveal segment.
+
+Observed runtime truth:
+
+- The map swaps to `axiom_second_approach` before the impact beat starts, so scenario-one geography is absent from the entire landing, raider, and smoke sequence.
+- The player is recreated at the destination spawn facing east instead of retaining the north-facing scene-one endpoint.
+- Impact debris is an 18-triangle screen-space cluster confined to the upper-right of the destination view; it travels downward but does not establish one offscreen-north landing source across the scene.
+- The first raider frame appears only in `scatter`, approximately 1.05 seconds after impact. Four screen-space stick silhouettes are selected from the nearest living destination-map raiders, ignore their authored world positions, and travel outward rather than charging north toward Mama.
+- Smoke coverage begins during `impact`, grows during `scatter`, and reaches the explicit `smoke_roll` phase only after the raiders have already started fleeing. This weakens the requested cause-and-effect order.
+- The dedicated vignette is therefore internally consistent with its existing `impact -> scatter -> smoke_roll` contract, but that contract encodes the wrong story beat and wrong map ownership.
+
+Recommended bounded repair:
+
+- Run a pre-transition `impact -> authored_raider_charge -> mama_smoke_cover` segment while the first runtime map and north-facing player transform remain live.
+- Use authored first-map raider ids and explicit world-space path nodes toward an offscreen-north landing anchor; temporarily gate their ordinary combat AI during the authored charge.
+- Emit rumble and a broad north-to-south debris cascade from that anchor, then let Mama's smoke enter from the north only after the charge reads.
+- Delay the actual map load until scenario one is substantially obscured, preserving the existing destination breathing/reveal work for the requested second pass.
+
+Validation:
+
+- Real Chromium at `http://127.0.0.1:5177/?skipHatch=1`, 1440x900, project-local Playwright 1.61.0.
+- Eight screenshots and matching `render_game_to_text()` captures were inspected under `artifacts/playtest/smoke-awakening-first-beat-2026-07-27/`.
+- No page errors or application console errors. Chromium emitted only expected `ReadPixels` GPU-stall warnings while screenshots were captured.
+- Diagnostic only: no gameplay source, map, timing, or test behavior changed in this pass.
+
+## 2026-07-27 - Smoke awakening handoff v2 implementation
+
+Current request:
+
+- Repair the second half of the first transition so Smoke Attack is earned during the Level 1-to-2 breathing scene, the player re-emerges south-to-north through a held blackout, and the subsequent raider charge teaches a genuine smoke line-of-sight break followed by escape.
+
+Implemented runtime truth:
+
+- Smoke Attack and its awakening receipt are now run-scoped. Legacy saved copies are stripped during profile normalization, profile capture excludes them, and a transient run snapshot carries live abilities across later map transitions.
+- The destination arrival now starts in a dedicated 2.6-second `blackout_hold` phase at 98.5% full-screen smoke opacity. Three deliberate exhale edges progressively open the view; the third grants Smoke Attack without prematurely deploying tactical smoke.
+- The outgoing first-map smoke threshold increased from 0.92 to 0.995 and the renderer's full-screen smoke alpha increased to 0.98 before handoff.
+- AXIOM's second-region source now owns a south-edge spawn at `(24, 31)` facing north and a five-raider pursuit line at y 22-24. Both runtime maps were regenerated through AXIOM's canonical builder.
+- The post-release EXHALE cue no longer completes on input acceptance alone. It completes only after the semantic `smoke_pursuit_broken` event, then hands off to `RUN NORTH BEFORE THEY FIND YOU`. Both smoke teaching cues are run-scoped so they replay when the ability is earned in a future run.
+
+Validation so far:
+
+- Focused BSB smoke-awakening, tutorial, runtime-map, authored-transition, map-transition, and smoke-tactics tests pass.
+- AXIOM `bsb-v2-map-authoring.test.mjs` passes, including exact second-source-to-runtime bake equivalence.
+- Full-suite and real-browser visual/playtest evidence are pending.
+
+Final validation:
+
+- Real Chromium completed the full stopped-loop transition with actual RMB and W input at 1440x900. Twelve fresh frames and matching runtime state were captured under `artifacts/playtest/smoke-awakening-handoff-v2/`.
+- Inspected visual sequence: outgoing map almost completely black at 0.982 pre-threshold coverage; destination geometry absent during the 0.985-opacity hold; progressive pocket values 0.14, 0.36, and 0.62; north-side five-raider line charging south; explicit `BREAK SIGHT · THEN RUN NORTH`; visible pursuit-break markers; and bright `RUN NORTH BEFORE THEY FIND YOU` feedback during northward movement.
+- Runtime proof: Level 1 smoke locked even after seeding a legacy persisted receipt; destination spawn `24.5,31.5` at rotation `-1.571`; Smoke Attack absent through breaths one and two and granted on breath three; five authored raiders acquired and then entered search; player moved 3.1 tiles north inside the search window; reload returned to a fresh locked Level 1.
+- Browser issues: zero console errors, page errors, and request failures.
+- Focused BSB smoke-awakening, tutorial, runtime-map, authored-transition, map-transition, and smoke-tactics tests pass after the final visual tune.
+- Full AXIOM `npm test` passes. Both AXIOM sources compare exactly with their regenerated BSB runtime-map JSON.
+- Full BSB `npm test` remains blocked by the unrelated pre-existing `atmosphericCameraOverlay.test.mjs` alpha baseline. An explicit all-tests-except-that run additionally exposes pre-existing production LoC budget failures in `src/app.js` and `src/debug/runtimeText.js`; all other BSB test files pass.
+- `self_validate_change` passes all mandatory checks in `artifacts/playtest/smoke-awakening-handoff-v2/self-validation.json`.
+
+Deferred by design:
+
+- Global hatchling health/regeneration, enemy speed, and anti-run-past pressure remain a separate balance slice so this transition proof is not confounded by unrelated combat tuning.
+
+## 2026-07-27 - Vulnerable Hatchling Pressure v1 and dormant transition raiders
+
+Current request:
+
+- Make the freshly hatched wyvern feel vulnerable enough that head-on combat and running directly through enemies are losing decisions, using subjective browser playtesting to tune the connected variables.
+- Keep the two authored Mama-charge raiders completely absent before the transition cue, then make them read as entering from behind the player under a slightly tighter impact camera.
+
+Implemented runtime truth:
+
+- Player health is 56. Spear/torch attacks deal 12/10 damage, with readable wind-ups, stronger hit pressure, bounded hostile body-contact slowing, and attack tracking through wind-up before the strike locks.
+- Raider approach speed is 3.1 against player speed 4.65, but hatchling stamina is a constrained 60 with a 1.42 sprint multiplier, 30-per-second drain, and 24-cost dodge. The player can escape through committed movement but cannot safely body-run through a line.
+- Health recovery waits 9 seconds, ramps slowly, is suppressed while sprinting/acting, and is fully re-armed while a living hostile AI directly pursues or attacks the player.
+- Reserved transition placements no longer spawn actors, render projections, lights, colliders, or AI during normal Level 1 play. They materialise once from their AXIOM-authored records when the departure sequence begins and immediately enter their authored tracks.
+- AXIOM owns the 3.25 impact zoom and behind-player track starts. The canonical first-map runtime bake is asserted equal to the AXIOM source.
+
+Subjective and measured playtest result:
+
+- Baseline single-raider idle lethality was 9 hits / 13.45 seconds; final is 5 hits / 7.35 seconds. The raider now feels dangerous without becoming an instant or unreadable kill.
+- Baseline two-raider idle lethality was 6.1 seconds; final is about 3.8 seconds. Trading into a pair is decisively losing.
+- A 2.4-second straight sprint through two spear raiders changed from 0 damage and 10.1 tiles of progress to 24 of 56 health lost, 7.51 tiles, and zero stamina. Contact visibly holds the hatchling in the weapon line before both spears land.
+- An early lateral dodge followed by continued diagonal escape takes 0 damage and still gains about 9.84 tiles north. The successful lesson is therefore route commitment, not dodge-button immunity.
+- Active pursuit recovery changed from 5.225 health regained to zero; after a full safe delay the same scenario regains 1.695 health, preserving slow recovery without erasing pursuit pressure.
+- Before the scene, both reserved raider bindings and rendered actors are absent. At impact exactly two authored actors exist at zoom 3.25 but remain outside the visible frame; during the charge the lead spear enters from the bottom edge, reading as emergence from behind rather than a pop-in.
+
+Validation:
+
+- The final real Chromium gate passed twice consecutively at 1440x900 with zero console errors, page errors, or request failures. Evidence and inspected frames live under `artifacts/playtest/vulnerability-pressure-v1/final/`.
+- The complete smoke-awakening browser handoff still passes with 12 captures and zero browser issues, preserving the blackout, breaths, unlock timing, Level 2 reveal, smoke LoS break, and run-north lesson.
+- All 83 BSB tests outside the two known repository baselines pass. Full `npm test` reaches the unrelated pre-existing atmospheric overlay alpha assertion. The LoC gate now reports only the pre-existing `src/app.js` 532-line excess.
+- Full AXIOM launcher `npm test` passes, including exact first- and second-map source/runtime bake equivalence.
+
+## 2026-07-28 - Illumination-primary rendering v1
+
+Current request:
+
+- "Refactor the lighting system so illumination is the primary quantity and darkness is represented only by the absence of illumination. Remove any global darkness overlay from the lighting model, preserving atmospheric effects as a separate post-process. Validate visually with side-by-side captures in the same scenes under torchlight, moonlight, rain, and lightning, ensuring light reveals the world rather than punching holes through a black layer."
+
+Implemented runtime truth:
+
+- Added a WebGL-owned RGB illumination framebuffer and a fullscreen `scene colour × illumination` shader composite. The field starts from low profile-owned ambient RGB, adds bounded local/scene light contributions, clamps at one, and hands the illuminated scene target back to the central post-process pipeline.
+- Removed the lighting profile's global `darknessOpacity` / `darknessColour`, the lighting layer's full-screen black rectangle, and retired darkness diagnostics. Runtime proof now reports `overlayCount: 0` and `scene_colour_times_additive_illumination_field_v1`.
+- Moonlight is broad cold illumination; cloud bands attenuate that contribution inside the field. Torch, fire, and lightning values are additive illumination rather than translucent glow stickers over a black veil.
+- Preserved world events, fog/smoke, camera rain/sparks, post-processing, overlays, and HUD downstream of the illumination composite. Non-emissive leaf drift now renders with world materials before illumination, while sparks/embers and readability effects remain post-illumination.
+- Replaced the stale blanket atmospheric-alpha assertion with effect-kind ceilings matching the authored rain and spark contracts. Added ownership, wiring, stage-order, profile, diagnostics, and particle-stage tests plus a deterministic real-browser proof harness.
+
+Validation:
+
+- All 85 registered BSB tests outside the known LoC gate pass. Full `npm test` reaches only `src/app.js: 532`, the pre-existing 500-line budget failure; the former atmospheric-overlay failure is resolved.
+- All changed/new JavaScript files pass `node --check`; the scoped tracked diff passes `git diff --check`. Every touched production module remains at or below 500 nonblank lines (`WebGLGameRenderer.js` and `renderProjection.js` are exactly 500).
+- Real Edge/Chromium at a local free-port URL rendered deterministic 1440x900 torch, moonlight, rain plus smoke, and lightning scenes. All four report active illumination compositing, zero darkness overlays, and the required downstream atmosphere ordering.
+- Captured pixel evidence is non-zero and scenario-distinct: mean luma 24.11 torch, 8.17 moonlight, 27.53 rain/smoke, and 46.57 lightning; lightning mean chroma is 29.1. Browser proof reports zero console errors/warnings, page errors, or request failures.
+- Fresh paired before/after captures and structured runtime evidence live under `C:/Users/felix/Documents/Codex/2026-07-28/bsb-v2-smoke-unlock-fix-chatgpt/outputs/illumination-primary-v1/`.
+
+Remaining unrelated baseline:
+
+- `src/app.js` is still 532 nonblank lines against the 500-line budget. It was deliberately not mixed into this renderer slice.
+
+## 2026-07-29 - Illumination performance policy v1
+
+Current request:
+
+- Measure the post-refactor renderer before reducing visual quality, then cull illuminators before GPU preparation, introduce dormant/static/dynamic/critical illumination states, cache static work, and limit which lights cast geometric shadows. Preserve fog, smoke, rain, moonlight, lightning, and the illumination-first visual contract.
+
+Measured cause:
+
+- A deterministic 1440x900 Edge/Chromium benchmark recorded CPU projection/backend timings and opt-in asynchronous `EXT_disjoint_timer_query_webgl2` timings for every render layer.
+- The composite-only case cost 0.640 ms GPU. Shadow stress cost 3.220 ms total GPU, including 1.542 ms in shadows, with 8 lights producing 80 fields. Adding 24 off-screen lights still projected all 32 sources. Atmosphere was not the primary regression.
+- Both `shadows` and `lighting` layer instances were preparing the same shadow geometry even though the illumination instance never rendered it.
+
+Implemented runtime truth:
+
+- Camera-expanded influence culling now runs before light projection. Dormant sources never reach renderer packets; an off-screen stress scene now projects only the 8 sources whose illumination reaches the viewport.
+- Projected lights carry `nearby_static`, `active_dynamic`, or `critical` state. Critical sources win the active budget; nearby-static reveal/glow/core payloads are cached; dynamic lights continue to update.
+- Minor smoulder, ember, and spark sources illuminate without geometric shadows. Shadow work is capped at 4 lights, 8 blockers per light, and 2 lights per blocker.
+- Static blocker silhouette normalization and stable nearby-static light/blocker WebGL geometry are cached with invalidation signatures. The illumination-only layer no longer builds unused shadow triangles or SDF fields.
+- GPU timing remains opt-in through `?gpuTiming=1`; normal play performs no timer-query work. Fog, smoke, rain, and all illumination quality settings were preserved.
+
+Validation:
+
+- Same-scenario shadow stress improved from 12.70 to 10.80 ms CPU median (-15.0%) and 2.494 to 1.833 ms steady-layer GPU median (-26.5%); its targeted shadow pass fell from 1.542 to 0.828 ms (-46.3%). The off-screen case improved from 12.30 to 10.55 ms CPU (-14.2%) and 2.460 to 1.831 ms steady GPU (-25.6%). Atmosphere stress improved from 12.40 to 10.70 ms CPU (-13.7%) and 2.607 to 2.019 ms steady GPU (-22.6%) while retaining 204 rain streaks and the smoke workload.
+- The final stress projection is bounded at 4 shadow lights and 32 fields instead of 80. It reports 96 static blocker-cache hits, a stable geometry-cache hit, and four static light-cache hits.
+- A second complete optimized benchmark confirmed steady GPU totals of 1.791 ms shadow stress, 1.787 ms off-screen stress, and 1.957 ms atmosphere stress with the same workloads. Composite-only returned to 0.646 ms versus 0.640 ms baseline; visible-light-only varied upward and is explicitly treated as inconclusive rather than a claimed win.
+- All registered functional BSB tests pass. Full `npm test` reaches only the known unrelated `src/app.js: 532` line-budget failure. Changed JavaScript passes syntax checks and the scoped diff passes whitespace validation.
+- Fresh real-browser torch, moonlight, rain/smoke, lightning, and five performance-stress captures pass with zero console errors, page errors, or request failures. All visual captures were inspected; the illumination-first contrast and downstream atmospheric treatment remain intact.
+- Torch, moonlight, rain/smoke, and lightning retain their exact pre-performance mean luma/chroma pairs: 24.11/15.00, 8.17/5.79, 27.53/14.57, and 46.57/29.10.
+- Raw evidence lives under `C:/Users/felix/Documents/Codex/2026-07-28/bsb-v2-smoke-unlock-fix-chatgpt/outputs/illumination-performance-v1/`.
+
+Next slice:
+
+- Define and implement families of shadow shapes on top of this bounded participation and cache policy.
+
+## 2026-07-29 - Declarative shadow-shape families v1
+
+Current request:
+
+- Replace square/chunky caster roots with authored ground footprints, separate contact shadow from projected shadow, use a small family vocabulary, avoid automatic sprite-derived geometry, and preserve the graphic streaks.
+
+Implemented runtime truth:
+
+- Added the shared `black-sky-bound.shadow-shape-profile.v1` registry with broad-tree, narrow-trunk, rock, creature, tent, wall-segment, and no-shadow families. Pine, birch, dead snag, boulder, wyvern, humanoid, and generic actor paths now resolve family data rather than owning scattered shape records.
+- Contact footprint and projected streak are separate contracts. Contact is a short soft capsule/ellipse/polygon rendered once per caster; projection starts beyond its root inset and continues through the existing compound tapered-capsule SDF fields.
+- Retired the duplicate broad penumbra/core wedge. It now reports zero coarse projected triangles while retaining renderer-neutral region bounds for diagnostics.
+- Replaced the dead snag's literal rectangular painted base with a small elliptical grounding patch. No sprite analysis or per-pixel height subsystem was added.
+
+Validation:
+
+- Deterministic 1440x900 real-browser captures pass for broad pine, airy birch, dead snag, rock, and the player wyvern. Each reports one contact footprint, its expected family ID, active projected SDF fields, zero coarse projected triangles, and zero browser errors/page errors/request failures.
+- The full functional suite passes; `npm test` reaches only the known unrelated `src/app.js: 532` line-budget baseline. The two shadow modules previously at risk are exactly 500 nonblank lines.
+- The illumination-first torch, moonlight, rain/smoke, and lightning browser gate still passes. A fresh performance benchmark retains 32 bounded shadow fields and records 1.622 ms shadow stress, 1.363 ms off-screen stress, and 1.587 ms atmosphere stress steady GPU medians.
+- Evidence lives under `C:/Users/felix/Documents/Codex/2026-07-28/bsb-v2-smoke-unlock-fix-chatgpt/outputs/shadow-shape-families-v1/`.
+
+Next slice:
+
+- Expose family selection plus anchor/scale/rotation overrides in Forge only if authoring variation is needed; keep the current small declarative vocabulary as canonical truth.
+
+## 2026-07-29 - Sound/pause reconciliation into launcher-owned Desktop checkout (in progress)
+
+Current request:
+
+- The pause-menu sound UX, paused heartbeat shutdown, and sampled Mama flyover/napalm work were not visible when launching `LAUNCH_BSB.bat` from the Desktop project.
+
+Root cause and integration seam:
+
+- The completed work had landed in a separate Documents checkout, while `LAUNCH_BSB.bat` resolves and serves `C:/Users/felix/Desktop/Automated_AI_Pipeline/_A_Projects/BLACK_SKY_BOUND_V2`.
+- This is an `apply_activation_gap`: valid source changes and browser proof existed, but not in the launcher-owned runtime copy the user was exercising.
+- The Desktop checkout contains newer illumination, transition, and shadow work plus uncommitted changes, so the reconciliation is being applied as focused module-level patches rather than replacing the project tree.
+
+Checkpoint:
+
+- Ported the audio bus, Audio Director, sampled-cue manifest/events/tuning, input actions, pause control, shared pause layout, world-event audio bridge, Mama scheduling/event flow, renderer projection/layer, runtime diagnostics, and focused tests into the Desktop tree.
+- Preserved the Desktop-only authored-transition suppression in `tutorialProjection.js` while adding the shared pause-menu projection/layout contract.
+- Copied the four runtime WAVs, four 24-bit masters, processed/source palette, and both editable Audacity projects into the Desktop checkout without overwriting any existing asset.
+
+Completion and proof:
+
+- The launch path remains `LAUNCH_BSB.bat -> tools/launch.mjs -> the Desktop project root`; both browser proofs spawned that exact Desktop launcher module with browser auto-open disabled and isolated local ports.
+- Desktop pause-menu browser proof passed at 1280x720 and 760x600. It exercised rail click, plus click, drag scrubbing, wheel stepping, arrow selection/stepping, and Home/End; the live mix reached 50% master / 90% ambience / 90% effects.
+- Paused buses were master 0.410, ambience 0.049, player 0, enemies 0, combat 0, UI 0.495, and music 0.019. The controls remained legible and non-overlapping in all three inspected screenshots.
+- Desktop audio-activation proof changed the low-health heartbeat from active at gain 0.089 to stopped/suspended at gain 0 during pause, then recreated it at gain 0.088 after resume. Calm and strained breathing were also inactive and suspended while paused.
+- The first natural Mama event was `mama_wyvern_inferno`. Distant roar, close flyover roar, napalm projection, and aftermath all resolved as `source: file`; every production WAV returned HTTP 200 on its intended enemy/combat/ambience bus.
+- Both proofs reported zero console/page errors, Audio Director errors, and failed requests. Five fresh screenshots from the Desktop tree were opened and visually inspected.
+- The user's already-running default launcher on port 5177 was also probed directly. Its served `app.js` contains the Desktop-only authored-transition wiring plus the new pause projection, and a real Edge pass at `http://127.0.0.1:5177/?skipHatch=1&mamaAuto=0` exposed the shared pause layout and all four sampled Mama manifest files with zero browser/request errors. Its fresh screenshot was inspected.
+- Focused Audio Director, production-SFX, Mama lifecycle/directional/finish/inferno, tutorial/pause, and architecture tests pass; `src/app.js` imports successfully.
+- Full `npm test` runs all functional modules and stops only at the unchanged pre-existing `src/app.js: 532` line-budget baseline. The reconciliation removed its temporary size increase and leaves `runtimeText.js` at the 500-line limit.
+- Scoped `git diff --check` reports no whitespace errors. Existing unrelated Desktop modifications were preserved.
+
+Evidence:
+
+- `artifacts/pause-menu-sound-ux-v1/playtest-report.json`
+- `artifacts/pause-menu-sound-ux-v1/01-pause-desktop.png`
+- `artifacts/pause-menu-sound-ux-v1/02-pause-edited.png`
+- `artifacts/pause-menu-sound-ux-v1/03-pause-compact.png`
+- `artifacts/audio-activation-followup-v1/playtest-report.json`
+- `artifacts/audio-activation-followup-v1/01-paused-body-loops-off.png`
+- `artifacts/audio-activation-followup-v1/02-first-natural-inferno-sampled.png`
+- `artifacts/launcher-5177-reconciliation-v1/playtest-report.json`
+- `artifacts/launcher-5177-reconciliation-v1/01-live-launcher-pause.png`
+
+Remaining unrelated baseline:
+
+- `src/app.js` remains 532 nonblank lines against the repository's 500-line gate, exactly matching the Desktop baseline before this reconciliation. No audio, pause, Mama, renderer, or browser proof gap remains.
+
+## 2026-07-29 - Crown of Cinders public-demo arena slice
+
+Original request:
+
+- "Could you follow-up in the next pass on those recommendations now please, can you evidence this particularly for me by authoring with axiom a nice lofty interesting demo arena map with spawners, increasing difficulty over time for the published available playtest, I'll leave you to decide creatively how to increase difficulty over time, maybe waves, maybe extra spawners(?) i think maybe we make the instincts unlock per wave rather than givinng the playtester everything from open, but we still allow for progression. i don't think we worry about the invite code yet, think we worry about that when we have a complete game we want to share more publically but a demo is just a demo"
+
+Canonical ownership and implemented checkpoint:
+
+- AXIOM now owns `data/bsb-v2/maps/crown_of_cinders.authoring.json`; the BSB runtime owns only the explicit bake at `data/maps/axiom-crown-of-cinders.runtime-map.json`.
+- The 64x48 Crown of Cinders is an irregular elevated eyrie with a rock rim, scorched central crown, four pressure approaches, cover islands, dead snags, embers, boulders, and fifteen authored spawners.
+- The arena contract groups those spawners into five finite waves. Only the current wave's fixtures exist at runtime, preventing future-wave foreknowledge or early destruction.
+- Starting progression is Move + Bite/Claw. Wave clears award Dodge, Body Lunge, Smoke Burst, then Dodge Charge; bounded health recovery and full stamina refill make each intermission useful without erasing attrition.
+- Focused Axiom authoring/bake tests, runtime-map/manifest tests, arena progression tests, and ECS architecture tests pass. The full BSB suite reaches only the unchanged pre-existing `src/app.js: 532` line-budget failure.
+
+Published completion and external proof:
+
+- The curated export contains one minified game bundle, the Crown runtime map, its single-entry manifest, and eight required production WAVs. It contains no raw `src` tree, source maps, First Escape map, or Ash Road map.
+- Sites version 2 was saved from pushed source commit `76641a192c54fd9c46f9cae68f81313203555389` and deployed successfully to `https://black-sky-bound-playtest.kerrypain.chatgpt.site` while retaining public access.
+- A fresh Playwright pass against that production URL confirmed the Crown as the immutable manifest default, campaign maps and `/play/src/app.js` as HTTP 404, Wave I as two fixtures / six threats, Dodge awarded at the first clear, and Wave II as three fixtures / ten threats at the compact viewport.
+- The production browser proof reported zero console issues, page errors, or failed requests. The Axiom Map Forge proof independently loaded the 64x48 source, fifteen spawners, five waves, four rewards, and baked the exact unchanged runtime hash through `safe_write_project_file`.
+- Both the canonical BSB package and the Sites wrapper report zero npm vulnerabilities. The Sites production build and its two packaging/render tests pass. The only full-suite stop remains the pre-existing `src/app.js: 532` line-budget baseline; all targeted arena, authoring, map-loader, manifest, ECS, and live-browser checks pass.
+
+Evidence:
+
+- `artifacts/public-demo-arena-v1/playtest-report.json`
+- `artifacts/public-demo-arena-v1/03-wave-one-active.png`
+- `artifacts/public-demo-arena-v1/04-dodge-unlocked.png`
+- `artifacts/public-demo-arena-v1/05-compact-wave-hud.png`
+- `AXIOM/apps/launcher/output/playwright/bsb-demo-arena-v1/playtest-report.json`
+- `AXIOM/apps/launcher/output/playwright/bsb-demo-arena-v1/01-crown-of-cinders-axiom-source.png`
+## 2026-07-30 — Full 3D isometric migration, Slice 1
+
+- Added the opt-in `webgl3d` Three.js backend and the runtime-integrated `?renderer=webgl3d&reference=tree-grove` regression scene. The legacy renderer remains the default and candidate initialization failures are surfaced without fallback.
+- Added `black-sky-bound.world-transform-3d.v1`, deterministic `black-sky-bound.procedural-tree-spatial-recipe.v1`, and `black-sky-bound.collision-shape-2d.v1` contracts.
+- Existing Tree DNA now produces shared 3D trunk/branch/root/foliage geometry plus a trunk/root convex gameplay footprint; foliage is deliberately excluded from collision.
+- Added a fixed 45-degree / 50-degree orthographic camera, wheel zoom support, Three.js resource caches/disposal, physical moon/torch/lightning sources, real cast/receive shadows, ACES tone mapping, sRGB output, and F3 diagnostics.
+- Added focused unit coverage and a real-browser 1440x900 grove gate. Four locked lighting-state captures pass with zero console, page, or request failures. Visual inspection rejected the first underexposed pass; the accepted pass uses data-owned physical source values and camera exposure.
+- Evidence: `artifacts/webgl3d-reference-grove-v1/{01-moon,02-torch-a,03-torch-b,04-lightning}.png` and `playtest-report.json`.
+
+## 2026-07-30 - Full 3D isometric migration, Slices 2-4 and default cutover
+
+Landscape and collision:
+
+- The candidate backend now consumes live runtime-map projections. Terrain is instanced, blocked tiles are raised into visible cliff shelves, and every authored scenery kind is converted; unsupported kinds become visible magenta diagnostics and block the browser gate.
+- Static collision now comes from bucketed circles, capsules, and convex polygons emitted by terrain and scenery recipes. Tree trunk/root footprints block; canopy does not. The old tile-centre prop test and invisible one-tile map inset are no longer movement authority.
+- Physical moon and local source profiles replace reveal discs and global darkness. Local point-shadow ownership is capped at two with criticality/proximity selection and 500 ms hysteresis.
+
+Actors, contact, and effects:
+
+- Added simulation-owned body contact rigs after procedural pose solving and before contact resolution. Broad-phase locomotion capsules, pose-following hurt volumes, and fixed-step swept attack/weapon capsules now feed player, enemy, and separation contact.
+- Added faceted articulated Three.js wyvern, humanoid, and predator bodies from the existing solved poses.
+- Ported decals, hazards, projectiles, smoke, rain, particles, dropped torches, tree fire, dragonfire, lightning, Mama flyovers, fog, the opening egg, authored transitions, smoke awakening, tutorial, HUD, pause, and player death/respawn presentation.
+- Added terrain/rain instancing, normal frustum culling, static-shadow invalidation, bounded scenery/actor caster LODs, transparent-effect diagnostics, asynchronous GPU timing, and explicit resource disposal.
+
+Cutover:
+
+- `webgl3d` is now the default backend. `renderer=webgl` maps to Three.js for compatibility, initialization fails visibly without fallback, and the legacy WebGL2D scene root is absent from the runtime import graph and production bundle.
+- The production graph fell from 274 to 221 modules and the minified JavaScript bundle from about 1.425 MB to 1.139 MB after runtime retirement of the old scene root.
+- The pre-existing dirty legacy renderer source remains on disk, unregistered and unbundled, to preserve unrelated in-progress illumination work as required by the implementation boundary.
+
+Validation:
+
+- Complete `npm test`, LoC, and JavaScript syntax gates pass. `src/app.js` is back inside the 500-nonblank-line budget after browser boot extraction.
+- The 1440x900 live forest gate passes with 4,800 terrain tiles, 996 cliffs, 293 scenery objects, 107 procedural trees, 28 actors, 178 draw calls, about 104k triangles, CPU p95 5.1 ms, and GPU p95 11.565 ms. Pause, live dodge, death fade, canonical respawn, and screen-relative movement pass with zero browser/page/request errors.
+- The smoke-awakening/map-handoff gate passes all 12 captures in Three.js; the Mama flyover gate passes and resumes live movement; the representative contact timings remain about 7.4 s for one idle raider and 3.8 s for two.
+- The standalone built-package gate boots the Crown of Cinders with Three.js as the default, starts Wave I, moves screen-relative, displays the pause UI, serves no raw source, requests no `node_modules`, and reports zero browser/page/request errors.
+- Accepted evidence lives in `artifacts/webgl3d-reference-grove-v1/`, `artifacts/webgl3d-live-world-v1/`, `artifacts/webgl3d-built-package-v1/`, `artifacts/playtest/smoke-awakening-handoff-v2/`, and `artifacts/mama-wyvern-flyover-smoke/`.
+
+## 2026-07-30 - 3D stabilisation and visual completion
+
+Performance truth and runtime retirement:
+
+- Replaced the live broad 2D-era projection builder with lifecycle-owned `black-sky-bound.renderer-neutral-3d-projection.v1`. Static terrain, connected tiles, immutable scenery transforms, Tree DNA, geology, undergrowth, fixtures, and collision-visible metadata are cached by map signature; actors, lights, effects, hazards, particles, opening state, and changed scenery material state remain dynamic.
+- Added full-frame `black-sky-bound.render-frame-timing.v2` diagnostics for simulation, static/dynamic projection, Three world update, overlay, submission, GPU, frame interval, cold start, cache activity, allocations, and long frames. F3 explicitly reports `legacy2DProjectionActive: false`.
+- The production bundle now fails its build if `WebGLGameRenderer`, `WebGLOpeningLayer`, the old SDF occlusion builder, or light-space culling enters the emitted graph. Dirty legacy source remains preserved on disk and has no runtime cost.
+
+Allocation and visual completion:
+
+- Replaced per-frame effect reconstruction with bounded pools and instancing; actor topology and pose buffers are reused; HUD/pause DOM updates are signature-diffed; static shadow-caster selection is spatial-cell invalidated; effect variants and 32 unshadowed/two shadow-proxy light slots are prewarmed to prevent runtime shader recompilation stalls.
+- Added `black-sky-bound.procedural-wyvern-mesh-recipe.v1`: a reusable faceted hatchling with chest, torso, haunches, neck, head, jaw, muzzle, tail, articulated wing-forelimbs, hind legs, feet, claws, eyes, and mutable double-sided membranes. It consumes the authoritative solved rig for idle, crawl, dodge, bite, alternating claws, smoke, impact, death, and hatch emergence. F3 contact capsules remain simulation-owned overlays.
+- Restored the opening through `renderer_neutral_embodied_hatch_projection_v2`: persistent world-space shell pieces plus a separate camera-space shell interior for trapped/cracking phases, including authored cracks, rays, fragments, opacity, impulses, reduced motion, emergence, and control release.
+
+Validation and measured boundary:
+
+- Unit suite, line-count gate, JavaScript syntax checks, bundle inspection, built-package launch, live world, wyvern pose matrix, cold hatch flow, smoke handoff, Mama event, and reference-grove lighting gates pass with zero console, page, request, renderer, unsupported-scenery, or resource-growth errors.
+- Locked 1440x900 DPR 1 stress result: frame interval p95 12.5 ms, projection p95 1.6 ms, full CPU render-path p95 4.4 ms, GPU p95 8.134 ms, and zero post-ready frames above 50 ms. Resources remain stable after warm-up at 116 geometries, 3 textures, 2,418 meshes, 586 materials, and 10 overlay DOM nodes.
+- The same stress run at the machine's actual DPR 1.5 reports projection p95 1.6 ms, render-path p95 4.2 ms, GPU p95 16.426 ms, zero frames above 50 ms, but frame-interval p95 20.9 ms. This high-DPI cadence miss is retained as an explicit future quality/performance slice; no hidden render-scale reduction, weaker lighting, or shadow-slot reduction was introduced.
+- Evidence: `artifacts/webgl3d-performance-v2/`, `artifacts/webgl3d-wyvern-poses-v1/`, `artifacts/webgl3d-opening-wyvern-v1/`, `artifacts/webgl3d-live-world-v1/`, `artifacts/webgl3d-reference-grove-v1/`, `artifacts/mama-wyvern-flyover-smoke/`, and `artifacts/webgl3d-built-package-v1/`.
+
+## 2026-07-30 - Native-DPR lighting and hatchling refinement
+
+Measured cause and correction:
+
+- A fresh unchanged DPR 1.5 run failed at GPU p95 18.635 ms. Three.js was compiling 32 permanent unshadowed point-light slots to avoid runtime shader churn even though the full inferno stress scene uses 22 local sources. Every fragment therefore paid for ten unused light evaluations.
+- The renderer-neutral selection budget remains 32, while the Three.js shader now owns 24 fixed content-complete slots. The inferno proof retains all 22 sources: eight wall flames, four napalm-pool lights, seven raid flames, and three smoulder patches, plus the moon and both local point-shadow slots.
+- Overflow is not silent: diagnostics expose capacity, occupancy, source families, dropped count, and `qualityState`; exceeding 24 automatically opens F3 in `degraded_visible` state.
+- The final native 2160x1350 DPR 1.5 run reaches frame-interval p95 16.7 ms and GPU p95 15.037 ms, down from the previous 20.9 ms cadence and today's fresh 18.635 ms GPU failure. DPR 1 remains 12.5 ms frame p95 / 7.199 ms GPU p95. Projection is 1.8 ms and CPU render path 4.9 ms in both profiles, with no frame above 50 ms or warm resource growth.
+
+Playable hatchling refinement:
+
+- Added batched paired hornlets, a seven-spine dorsal taper, separate shoulder/haunch silhouette plates, three grounded toes per hind foot, and paired talons on each wing wrist. The old six separate claw draws became reusable instanced anatomy, so the richer silhouette adds only three net draw calls in the contact-debug pose scene.
+- Added deterministic per-face tonal variation to every reusable body geometry and both membranes. Physical `MeshStandardMaterial` lighting remains authoritative, but bright torch/lightning exposure no longer erases all low-poly facet structure.
+- Clean pose captures now keep F3 hidden for idle, crawl, both claw sides, bite, smoke, moon, and lightning, followed by one explicit contact-alignment frame. Simulation pose and body/attack contacts are unchanged.
+
+Evidence and boundary:
+
+- `artifacts/webgl3d-performance-v2/report.json`
+- `artifacts/webgl3d-performance-v2/{locked-1x,machine-dpr}.png`
+- `artifacts/webgl3d-wyvern-poses-v1/report.json`
+- `artifacts/webgl3d-wyvern-poses-v1/{01-idle-torch,02-crawl-torch,03-left_claw_swipe-torch,05-bite_attack-torch,07-idle-moon,08-idle-lightning,09-contact-alignment}.png`
+- Mama and non-player creature-family mesh refinement remains outside this bounded pass.
+
+Final gates:
+
+- Complete `npm test`, line-count, targeted shader-budget/wyvern tests, and JavaScript syntax checks pass; scoped `git diff --check` has no whitespace errors.
+- `npm run build:playtest` transforms 221 modules and emits the curated 14-file Crown package with no raw source, source maps, campaign maps, legacy renderer, opening layer, or 2D shadow modules.
+- The standalone built-package browser gate passes movement, Wave I, pause, raw-source 404, and no-`node_modules` runtime at 124 calls / 43,780 triangles with zero console, page, request, or HTTP errors.
+- Live First Escape movement, the complete pose/action matrix, the real six-input hatch/release flow, and final DPR 1 / DPR 1.5 stress captures were visually inspected. No new dependencies or browsers were installed.
+
+## 2026-07-30 - Three.js screen-space parity restoration
+
+Restored presentation paths:
+
+- Replaced the minimal Three overlay with bounded, independently disposable screen layers for the authored pause menu, typed tutorial cues, authored map-transition/smoke-awakening vignettes, arena and instinct banners, and health/stamina body-state feedback. Gameplay, projection, opening, combat, and pause-input state remain authoritative outside the renderer.
+- The pause layer now renders the canonical `pauseMenu.layout` geometry used by pointer hit-testing, including responsive compact layout, exact rails, knobs, increment/decrement targets, tutorial toggles, learned controls, and the restored footer guidance.
+- Tutorial presentation preserves movement key groups, combo progress, dodge/charge sequencing, message-only cues, pressed/completed state, fade phases, and reduced-motion updates. Smoke awakening now consumes nested authored smoke coverage, full blackout opacity, breath-pocket growth, accepted-breath stages, and canonical prompt timing without raw debug phase labels.
+- Added quiet top-centred arena banners, including a dedicated `NEW INSTINCT` treatment for authored unlock rewards, and bounded screen feedback for recent damage, critical-health desaturation/contrast, stamina pressure, and breath pulse.
+- Three diagnostics now include screen-layer contracts and active state, while live resize synchronises the gameplay camera viewport so canonical pause geometry remains aligned after viewport changes.
+
+Validation:
+
+- `npm test`, line-count and JavaScript syntax gates pass. The focused Three presentation test covers all screen-layer view models and the live test proves pause pointer control, compact geometry, body-state feedback, dodge, death, and respawn.
+- Browser captures prove fresh movement onboarding, Crown countdown, first-wave Dodge awakening, all twelve smoke-handoff stages, and the full hatch/release flow with zero console, page, request, renderer, or unsupported-content errors.
+- The current stress result passes at both DPR 1 and DPR 1.5: respectively 5.4/7.255 ms and 4.6/14.112 ms CPU/GPU p95, projection p95 at or below 2.1 ms, no post-ready frame above 50 ms, and stable resource bounds.
+- `npm run build:playtest` emits the curated 14-file package. The emitted graph contains no `WebGLGameRenderer`, `WebGLOpeningLayer`, old occlusion/light-culling builders, or other checked 2D scene-root symbols; the packaged browser requests no `node_modules` and serves raw source as 404.
+
+Evidence:
+
+- `artifacts/webgl3d-screen-presentation-v1/`
+- `artifacts/webgl3d-live-world-v1/`
+- `artifacts/playtest/smoke-awakening-handoff-v2/`
+- `artifacts/webgl3d-opening-wyvern-v1/`
+- `artifacts/webgl3d-performance-v2/`
+- `artifacts/webgl3d-built-package-v1/`
+
+## 2026-07-30 - Tree Family v2 and live shadow grounding (in progress)
+
+- Replaced segment-by-segment woody prisms with one coherent capped sweep per trunk, branch, and root. Rings now share joints, use transported frames, retain deterministic low-poly facets, and ground-clamp the trunk/root base instead of showing disconnected rectangular fins.
+- Tree DNA now emits a trunk-only circle as hard collision plus `black-sky-bound.traversal-modifier-2d.v1` capsules along each visible root. Movement consumes the compiled root field at an explicit 0.88 multiplier; canopy and root gaps remain nonblocking.
+- Focused tree-recipe and environment-collision tests pass. Live-map shadow centring, visible lightning embodiment, browser captures, performance, build, and full-suite gates remain to be completed in this slice.
+- Live directional-shadow coverage now follows the player in bounded spatial cells, and changing the selected nearby static caster set explicitly refreshes Three.js's deliberately frozen shadow maps. Unit coverage proves both invalidation rules without restoring per-frame shadow rendering.
+- Storm scheduler origins remain canonical, while the renderer-neutral projection publishes a deterministic camera-local high-cloud strike plus its scheduled-origin provenance. The Three effects layer reuses two prewarmed jagged emissive bolt groups; the physical lightning point light continues to pre-empt a local shadow slot.
+- Fresh reference-grove and live-map/wyvern browser gates pass with zero console, page, or request errors. Inspected grove captures show continuous trunk silhouettes and real torch/lightning shadows changing direction; the live lightning capture contains world-space bolts and physical-light shadow ownership. Full suite currently passes; final performance/build packaging gates remain.
+- Removed an allocation-heavy dynamic path exposed by the new root metadata: changing tree-fire material and fire-placement packets no longer rebuild full scenery projections or clone static collision/traversal arrays.
+- Final `npm test`, line-count, syntax, reference-grove, live-world, wyvern/lightning, build, and standalone built-package gates pass. The packaged Crown scene moves and pauses at 124 calls / 43,780 triangles with zero console, page, request, or HTTP errors; raw source remains a 404 and the bundle-content retirement assertion passes.
+- The strict performance gate is the one incomplete proof. Repeated locked-DPR runs currently settle at 20.8 ms frame interval with 9.9 ms render-path CPU, 3.6 ms projection, and 7.732 ms GPU. A report-only measurement at DPR 1.5 records 20.9 ms frame interval, 11.1 ms render-path CPU, 3.7 ms projection, and 14.679 ms GPU. Both profiles have zero >50 ms frames and stable resources. This is a CPU cadence/projection miss relative to the last accepted 12.5/16.8 ms frame results; no render scale, light slot, shadow quality, or threshold was reduced to conceal it.
+
+Next recommended action:
+
+- Treat the current CPU-wide cadence change as a separate measured performance investigation. Preserve the accepted Tree Family v2 visuals and first profile whether the fixed-step catch-up loop, actor projection cloning, or current workstation/browser scheduling is producing the roughly 1.7-2x CPU-phase increase while GPU timing remains stable.
+
+## 2026-07-30 - Post-migration CPU cadence stabilisation
+
+Measured root cause and repair:
+
+- A fresh locked-DPR failure reproduced the Tree Family v2 boundary at 20.8 ms frame-interval p95, 7.4 ms simulation p95, 3.4 ms projection p95, and 9.9 ms render-path p95 while GPU p95 remained healthy at 7.822 ms.
+- An 8-second Chromium CPU profile identified repeated JSON cloning in the compatibility actor view and renderer-neutral actor compiler, repeated immutable creature-profile resolution, and twice-per-frame percentile sorting as the dominant avoidable CPU paths. Root traversal collision was measured but was not the primary regression.
+- Creature profiles now cache by immutable base profile and replace-on-write tuning identity. A new tuning object produces a new resolved profile, so tuning edits remain immediately truthful.
+- The Three.js compiler now reuses the already-detached compatibility-view state for read-only nested actor packets instead of serialising it again. World-space point and creature-rig projection remains freshly derived, and ECS simulation state remains the canonical owner.
+- Frame timing continues to record every phase every frame, but warm percentile summaries publish every four frames and only once per browser frame. F3 remains a one-action optional debug surface rather than a hidden frame-budget tax.
+- `tools/profileWebgl3dCpu.mjs` preserves the repeatable CDP sampling lane and writes raw/summary evidence to `artifacts/webgl3d-cpu-profile-v1/`.
+
+Validation and final boundary:
+
+- The strict two-profile browser gate passes. Locked 1440x900 DPR 1 is 12.6 ms frame p95 / 6.6 ms simulation / 1.2 ms projection / 7.4 ms render path / 7.566 ms GPU. Native 2160x1350 DPR 1.5 is 16.8 ms frame p95 / 6.5 ms simulation / 1.1 ms projection / 7.8 ms render path / 14.769 ms GPU.
+- Both profiles retain native DPR, all 24 physical-light slots, both local shadow slots, 32 smoke packets, 96 particles, and the accepted Tree Family v2 scene. Neither profile records a post-ready frame above 50 ms or warm resource growth.
+- The complete unit suite, line-count and syntax gates, production playtest build, and standalone packaged-browser gate pass. The package moves, pauses, rejects raw source with 404, and reports zero console, page, request, or HTTP errors.
+- Inspected DPR 1 and DPR 1.5 stress screenshots preserve the accepted scene composition, tree silhouettes, physical lighting, rain, smoke, hatchling, tutorial, and body-state presentation.
+
+Next recommended slice:
+
+- Keep actor compatibility-view cloning as a separately measured reserve optimisation. It remains the largest CPU scripting leaf, but the accepted 60 FPS/native-DPR boundary is restored and changing that ownership seam now would add risk without a current user-visible payoff.
+
+## 2026-07-30 - Blender V5 Mama flyover mesh proof
+
+- Exported the selected evaluated `Cube` from the open, unsaved `Dragon_Main_March_V5.blend` scene as a selection-only GLB. Mirror and subdivision output are baked; Blender materials, armature data, and animation are excluded. The source scene was not saved or otherwise rewritten.
+- Replaced the temporary Three.js capsule/cone Mama with the real one-mesh V5 silhouette. Runtime diagnostics fail visibly through `status`/`error` instead of substituting the removed procedural placeholder.
+- Kept world-event timing, heading, crossing anchor, and scale canonical. The existing `0.46` scale produces a measured 4.542 m wingspan and 3.666 m length; the new 9.2 m altitude clears the authored 8 m mature canopy.
+- Added fixed-camera orthographic parallax compensation so the high mesh still crosses the canonical screen anchor. Inferno breath retains its ground target and applies the same compensation to its elevated source.
+- The runtime owns an unlit near-black translucent `MeshBasicMaterial`; the stale retired WebGL shader path remains excluded.
+- Asset provenance records 37,286 vertices, 62,848 triangles, 1,571,404 bytes, and SHA-256 `FB5F27E44470E1B3575792E3D969997A92CFCE32B3F901FD63CF60EBE71327BE`.
+
+Validation:
+
+- `npm test`, targeted GLB/Three/Mama tests, JavaScript syntax, and scoped diff checks pass.
+- `npm run smoke:mama-flyover` proves the imported mesh is ready and visible through the complete event with zero console, page, or request failures, followed by continued player movement.
+- `npm run build:playtest` emits the hashed GLB in the curated 15-file package. The standalone built-package browser proof confirms the asset request succeeds, raw source remains 404, and no browser/HTTP errors occur.
+- Visual evidence: `artifacts/mama-wyvern-flyover-smoke/02-during.png`.
+
+## 2026-07-30 - Blender V5 skinned baby wyvern proof
+
+- Added a reproducible Blender pipeline at `tools/blender/rig_baby_wyvern_v5.py`. It duplicates the open `Dragon_Main_March_V5` source non-destructively, bakes Mirror plus the unsubdivided source cage, creates a named 29-bone runtime armature (28 deform segments), assigns deterministic four-influence skin weights, exports a GLB, and saves a separate rigged `.blend` without overwriting the source scene.
+- The accepted player asset is one real `SkinnedMesh`, 2,048 authored vertices / 3,928 triangles, 2.47 m wingspan, 1.996 m nose-to-tail, and 157,940 bytes. The first 15,712-triangle subdivision-one attempt was rejected after the native-DPR stress gate exposed a GPU regression.
+- Replaced the 58-surface primitive hatchling renderer with the imported mesh. `black-sky-bound.wyvern-bone-pose-adapter.v1` maps the existing canonical axial, jaw, tail, wing-forelimb/digit, and hind-leg pose targets into the GLB's named bones; gameplay actions, swept contacts, hurt volumes, sockets, and progression remain unchanged.
+- Grounded idle/crawl preserves a coherent whole-body transform and restrained folded-wing articulation. Left/right claw states raise articulation only on the attacking wing and digits; bite retains full neck/head/jaw authority. No flap cycle or authored animation clip was added.
+- The player uses the stale-shader direction as a cheap fogged unlit hide silhouette. This prevents nearby torch volumes from bleaching the entire mesh and avoids running a tiny skinned player through the full 24-light fragment shader.
+- Asset SHA-256: GLB `261276C473EEFAFE68BDFCBA4D1497AA369176677A6B9E6AAA26A6561166D896`; rigged blend `58C21BFCC594D782092945AE4B7048F08A2752F85938A305D37B576CE7746AAD`.
+
+Validation and measured boundary:
+
+- `npm test`, the focused GLB/skin/bone test, `npm run build:playtest`, the complete nine-state pose/action browser matrix, and the real opening/emergence browser path pass. Both browser gates report zero console, page, or request errors; the production package emits the hashed 157.94 kB GLB.
+- Pose-proof comparison reduces the player from 58 draw surfaces to one and moves final contact-debug CPU render-path p95 from 9.5 ms to 7.7 ms. The same comparison moves GPU p95 from 12.401 ms to 13.356 ms, so this is a CPU/draw-submission improvement, not a blanket GPU win.
+- The broader inferno stress gate remains red on the current workstation state: 182 calls / 113,872 triangles at the failed native-DPR sample, with frame p95 29.2 ms and GPU p95 21.055 ms. The last accepted pre-slice stress report was 239 calls / 112,076 triangles / 14.769 ms GPU. No threshold, native DPR, light capacity, shadow count, or fallback was weakened to conceal the regression.
+- Evidence: `artifacts/webgl3d-wyvern-poses-v2/`, `artifacts/webgl3d-opening-wyvern-v1/`, and `assets/models/player/dragon_main_march_v5_baby_rig.json`.
+
+## 2026-07-30 - Baby wyvern visual rig remediation v2 (active)
+
+Hard visual baseline:
+
+- Added a dedicated close-up browser diagnostic covering clean idle, two crawl samples, windup/contact for both claw sides, windup/contact for bite, and F3 contact alignment. It zooms the real gameplay camera and walks the live actor away from its spawn before capturing; no isolated model viewer or substitute animation path is used.
+- Fresh evidence at `artifacts/webgl3d-wyvern-rig-diagnostic/baseline-independent-bones-v2/` passes mechanically with one skinned mesh, 3,928 triangles, 28 driven bones, active canonical attack volumes, and zero browser errors, but fails visual acceptance.
+- Inspection confirms the current player does not read as a grounded hatchling: the broad membrane collapses into a cape/slab, the torso and head merge, the tail becomes a rigid spear, crawl samples are difficult to distinguish, claw reach is expressed through whole-silhouette stretching, and bite lacks a legible jaw/head lead.
+- Root cause is structural. The v1 Blender script parents every deform bone directly to the armature while each continuous vertex blends up to four influences. Runtime then writes unrelated absolute transforms into those bones, so blended membrane/body vertices shear between disconnected frames. This cannot be accepted as pose tuning alone; the next correction is a real anatomical hierarchy plus hierarchy-aware armature-space solving and stricter regional skin ownership.
+
+## 2026-07-30 - Baby wyvern visual rig remediation v2 (complete)
+
+Visual diagnosis and repair:
+
+- The failed proof combined a flying source bind, disconnected deform ownership, and an absolute point-to-bone solver. That forced one continuous surface toward unrelated primitive targets, producing the observed star/cape silhouette, rigid tail spear, membrane shearing, and nearly indistinguishable attacks.
+- Rebuilt the export as `black-sky-bound.skinned-baby-wyvern.v2`: a grounded crawl bind, real axial/tail/wing/hind anatomical hierarchy, regional skin ownership with no more than three influences, a folded wing-forelimb stance, lowered contacts, and a curved tail. The open source `Dragon_Main_March_V5.blend` was not overwritten; the accepted GLB, rigged Blend, and provenance JSON are separate outputs.
+- Replaced absolute deformation with `black-sky-bound.wyvern-bone-pose-adapter.v3`. Every frame now resets exact authored local rest transforms, aligns the whole bind to actor heading/scale, and applies bounded hierarchy-aware aims. Crawl retains the crouched authored silhouette; claw and bite changes are driven by the canonical action id and phase rather than a renderer-owned animation state machine.
+- Added low-cost anatomical vertex colour separation to the unlit hide material and a head-attached dark mouth accent during bite contact. This preserves the dark BSB read while keeping head, torso, folded wings, hindquarters, and tail separable under close inspection.
+- Added an explicit `rigDiagnostic=1` browser lane that suppresses unrelated effects only for close rig evidence. It removes the torch/smoke obstruction seen in the normal pose matrix without changing the production scene path.
+
+Hard visual gate:
+
+- Fresh close captures at `artifacts/webgl3d-wyvern-rig-diagnostic/current/` cover idle, two crawl plants, left/right claw windup and contact, bite windup and contact, and F3 alignment. All ten screenshots were manually inspected after the final code edit.
+- The accepted result reads as one low, continuous grounded animal with a preserved head/torso, folded wing-forelimbs, hind contacts, and curved tail. Crawl changes weight without slab collapse; claw contacts create clear side-specific raised reaches; bite leads with the head and mouth cue; F3 volumes remain under the embodied contacts.
+- The live diagnostic reports one skinned mesh, 3,928 triangles, 28 driven deform bones, active canonical contact volumes for every captured attack contact, and zero console, page, or request failures.
+
+Post-edit validation:
+
+- `npm test`, `tests/threeWyvernMesh.test.mjs`, the ten-state close rig diagnostic, the nine-state normal-world pose matrix, the complete hatch/opening path, `npm run build:playtest`, and the standalone built-package browser gate pass.
+- The packaged scene loads the hashed rig, moves the player, returns raw source as 404, and reports zero console, page, request, HTTP, or asset errors. Vite retains its existing large-chunk warning.
+- Final asset SHA-256: GLB `2DE6EBCD2534C244D0039F20218EBC0431DD809618345796197E11DFB9597D20`; rigged Blend `E9FD959B85218B2C83F40CE7734C2DFFDA1A1DADCC27843329BA3895C79A6B15`; metadata `3B14D2B1CEC8B47B5D5405F4DB21B149297274526446261906C59652DE2C5680`.
+- The separate machine-DPR inferno stress run remains red at 29.1 ms frame-interval p95 / 20.688 ms GPU p95 with 182 calls and 113,872 triangles. The baby is one 3,928-triangle skin plus one tiny bite accent, so this broader renderer stress boundary is recorded honestly rather than attributed to or concealed inside the accepted visual-rig slice.
+
+Next recommended slice:
+
+- Preserve this accepted baby silhouette and investigate the renderer-wide native-DPR stress regression as its own measured performance slice, targeting frame and GPU p95 without lowering DPR, scene density, light capacity, or shadow quality.
+
+## 2026-07-31 - Selective baby-wyvern Blender rollback
+
+Production embodiment:
+
+- Rejected the Blender V5 skinned baby experiment on visual grounds and restored the exact previously accepted `black-sky-bound.procedural-wyvern-mesh-recipe.v1` implementation. The live player is again the 58-surface faceted hatchling with reusable body topology, two mutable wing membranes, instanced toes, talons, hornlets, dorsal spines, and silhouette plates.
+- Simulation-owned pose, sockets, hurt volumes, swept attack capsules, combat semantics, opening state, and gameplay balance were not changed. Actor diagnostics again report procedural mesh, membrane, and pose-update counts rather than loader, skin, bone, or imported-triangle state.
+- Removed the Blender-remediation-only `rigDiagnostic` effects suppression from the runtime. The generated player GLB, rigged Blend, metadata, export script, and bone adapter remain preserved as rejected research evidence on disk, but the browser entry graph does not import or bundle them.
+- Preserved the successful Mama boundary unchanged. `ThreeMamaFlyoverMesh` still loads `dragon_main_march_v5_flyover.glb`, and the live flyover smoke gate proves the imported silhouette completes its event and returns control to normal play.
+- No terrain, tile, floor-material, map, or PBR asset source was edited in this rollback, keeping the parallel floor-texture slice isolated.
+
+Learning encoded as gates:
+
+- The focused player test now fails if the production embodiment imports `GLTFLoader`, references the rejected baby-rig asset, or introduces `SkinnedMesh` before a replacement clears comparative visual acceptance.
+- `npm run smoke:wyvern-visual` is now a reusable close live-game acceptance lane covering idle, two crawl plants, bilateral claw windup/contact, bite windup/contact, and F3 contact alignment. It uses the real gameplay camera, authoritative action state, and real contact volumes rather than an isolated model viewer.
+- The production build now fails if the rejected baby rig or adapter enters the emitted graph, if the procedural player contract disappears, or if the accepted Mama GLB/contract is lost. This makes the selective import boundary executable rather than relying on implementation notes.
+
+Validation:
+
+- `npm test`, `npm run test:loc`, JavaScript syntax checks, the focused procedural-player and Mama-asset tests, the close visual-acceptance lane, the nine-state world pose matrix, the complete hatch/opening route, and `npm run smoke:mama-flyover` pass.
+- All fresh player/opening/Mama screenshots were visually inspected. Browser gates report zero console, page, or request failures.
+- `npm run build:playtest` emits the procedural player plus exactly one hashed `dragon_main_march_v5_flyover` GLB; no baby-rig asset or adapter symbol is emitted. The standalone package moves the player at 123 calls / 43,700 triangles, serves raw source as 404, and reports zero console, page, request, or HTTP failures.
+
+Evidence:
+
+- `artifacts/webgl3d-wyvern-visual-acceptance/procedural-baseline/`
+- `artifacts/webgl3d-wyvern-poses-v1/`
+- `artifacts/webgl3d-opening-wyvern-v1/`
+- `artifacts/mama-wyvern-flyover-smoke/`
+- `artifacts/webgl3d-built-package-v1/`
+
+Next boundary:
+
+- Keep the procedural hatchling as the production reference. Any future imported-player candidate must first run beside it through the comparative visual lane and receive an explicit visual acceptance decision before production wiring or performance claims can promote it.
+
+## 2026-07-31 - Three-material terrain foundation and organic contour remediation
+
+Architecture and ownership:
+
+- Audited the real Map Forge-to-Three path before implementation. Map Forge and runtime maps retain stable terrain string IDs; collision, movement, blocking, and obscuring semantics are unchanged. Renderer-neutral projection remains the only handoff into the cached Three static world.
+- Replaced the flat constant-colour Three floor only for grass, dirt, and scorched earth with one instanced layered PBR batch. Forest, water, and rock remain on their prior instanced scalar-material path.
+- Added deterministic project-authored 128x128x3 base-colour, OpenGL-normal, and packed roughness/AO/detail-height arrays with repeat wrapping, trilinear mipmaps, equal world texel density, and no atlas gutters. Height is normal detail only; no displacement was introduced.
+
+Reference-driven visual correction:
+
+- The first proof was rejected as visually inadequate. Reviewed official No Rest for the Wicked, V Rising, Last Epoch, and Diablo IV screenshots and recorded the reference links/lessons without packaging or copying their imagery.
+- Reduced and reshaped grass into sparse deterministic 30-triangle clumps with coherent prevailing lean, patch-density variation, natural-boundary bias, travelled/occupied/spawn/escape suppression, distance culling, and one additional draw call.
+- Replaced tile-edge interpolation with `black-sky-bound.organic-terrain-contour-mask.v2`: rounded cores, cardinal/diagonal path capsules, region merging, variable shoulders, multi-scale per-material domain warps, and opposing edge lobes. The final 640x480 renderer-only field moves 6,546 sampled pixels across authored tile ownership while retaining the correct dominant material at all authored target tile centres.
+
+Diagnostics and evidence:
+
+- F6 cycles lit/material-ID/normal-only views; F7 toggles ground detail; F3 reports grass instance counts and culling bounds. Missing material data remains an explicit magenta diagnostic failure, never a hidden flat-colour fallback.
+- Final browser evidence at `artifacts/terrain-material-v1/final-reference-gated/` covers close grass, normal gameplay height, organic grass/dirt and scorch boundaries, moving light, low-light readability, broad repetition, debug views, and original locked baseline coordinates. The real browser reports zero console, page, and request failures.
+- At the clear proof camera detail off/on is 123/124 calls, 130,432/139,522 triangles, 10.2/10.3 ms frame p95, and 8.768/8.886 ms GPU p95; 303 visible clumps add exactly 9,090 triangles. At the original locked camera 159 clumps add one call and 4,770 triangles.
+- The full stress gate passes at locked DPR 1 (16.7 ms frame, 7.615 ms GPU) and native DPR 1.5 (16.8 ms frame, 14.213 ms GPU), preserving quality budgets.
+- `npm test`, `npm run test:loc`, focused terrain tests, the final material browser lane, production build, standalone package smoke, and both performance profiles pass. Completion detail is in `docs/TERRAIN_MATERIAL_FOUNDATION_COMPLETION.md`.
+
+## 2026-08-03 - Procedural raider recipe-to-gameplay pipeline (in progress)
+
+Current request:
+
+- Implement the approved two-slice deterministic creature-recipe pipeline for raiders, carrying recipe identity and seed through map/spawner spawning, ECS, pose, 3D rendering, gameplay consumers, audio, lighting, and death aftermath.
+- Replace the live Three.js stick figure with a visibly stronger faceted low-poly raider, then prove a coherent seeded family at population scale while leaving AXIOM recipe controls for a later slice.
+
+Pre-change boundary:
+
+- Preserve raider HP, speed, collider, stamina/dodge, attack timings/damage, guard behavior, torch lighting, faction AI, blood/corpse aftermath, map layouts, and all non-raider creatures.
+- Treat `src/data/creatures` as recipe truth, runtime-map/spawner records as optional recipe references, ECS as the resolved instance owner, humanoid projection as pose authority, and Three.js as presentation only.
+- Require contract/determinism/integration/renderer tests plus fresh Playwright captures, screenshot inspection, browser error inspection, and the existing frame-budget gates before completion.
+
+Recipe/runtime implementation:
+
+- Added `black-sky-bound.creature-recipe.v1` and immutable `black-sky-bound.creature-recipe-instance.v1` contracts. `ACTORS.raider` now owns only identity/faction/role/default-recipe selection; the canonical recipe owns the unchanged 42 HP, 3.1 speed, 0.28 collider, stamina profile, attacks, guard AI, impact response, materials, equipment, audio, torch light, and death profile.
+- Added deterministic palette/proportion/head/shoulder/wrap/belt/pack/spear/torch selection with stable variant signatures. Sequential explicit seeds 1-100 now produce 100 signatures and exercise all four restrained palette families while retaining required spear and torch slots.
+- Preserved optional `{ creature: { recipeId, seed } }` through runtime-map placements, reserved transition actors, unit spawners, serialization, ECS actor views, and renderer-neutral 3D projection. Authored ids and spawner id+ordinal now provide stable seed provenance; invalid ids, seeds, kind mismatches, registry references, and sockets fail loudly.
+- Routed recipe cues through existing audio events and recipe death profiles through corpse creation, preserving recipe/signature provenance in aftermath state.
+
+Procedural Three implementation:
+
+- Added a shared instanced faceted humanoid layer. Recipe-backed raiders bypass the legacy cylinder-and-white-joint path and render solid torso/hips/head/limbs/hands/feet, cloth shell, head covering/mask, asymmetric shoulder armour, torso wrap, belt, optional pack/bedroll, spear variants, torch variants, role-separated materials, emissive flame, and real shadows from the existing solved pose and sockets.
+- F3 diagnostics now expose recipe ids, seed provenance, variant signatures, attachments, primitive/draw-family counts, pool allocations/topology builds, and missing-socket errors while remaining hidden in normal play.
+- Focused contract, determinism, pipeline, gameplay-regression, death-provenance, and 100-raider instanced-renderer tests pass. The 100-raider test verifies finite matrices, bounded draw families, required equipment, zero missing sockets, stable topology after pose updates, and clean disposal.
+
+Visual refinement and browser evidence:
+
+- Added `npm run smoke:raider-visual`, a real Edge/Chromium gameplay lane with a twelve-seed lineup; close idle, walk, spear, torch, guard, and impact poses; smoke/lightning; live faction combat; death aftermath; a 100-raider stress scene; and F3 diagnostics.
+- Manual inspection rejected the first mechanically passing contact sheet because existing exposure and torch shadows crushed the new body into black silhouettes. Added recipe-owned per-material night readability, separated shadowed/unshadowed instancing for bounded core body masses, and moved the carried-torch shadow near plane past the carrier to retain real shadows without screen-filling self-shadow.
+- The accepted contact sheet at `artifacts/webgl3d-raider-visual-v1/contact-sheet.png` shows solid faceted raiders without white joint spheres. The browser report records zero console/page/request failures, 100 stable variants, 2,786 active primitives, 80 bounded draw families, zero missing sockets, and stable topology after warm-up.
+- Final measured 100-raider proof: 4.4 ms CPU render-path p95, 8.4 ms frame-interval p95, 1.6 ms projection p95, and 5.714 ms GPU p95 on the captured run. Full regression/build/browser validation follows this log entry.
+
+Final validation:
+
+- `npm test`, `npm run test:loc`, and `npm run build:playtest` pass. The final bundle contains 15 curated files, no raw source or source maps, and retains the existing Vite large-chunk warning.
+- `webgl3dLiveWorld`, `webgl3dBuiltPackage`, `smokeAwakeningHandoff`, and the accepted procedural-wyvern visual lane pass with zero browser errors in their final standalone runs.
+- The full performance lane passes at DPR 1 and DPR 1.5. Final native-DPR p95 is 16.9 ms frame interval, 9.9 ms CPU render path, 1.8 ms projection, and 14.34 ms GPU with zero new long frames. The first native-DPR attempt sampled 20.8 ms frame interval despite sub-budget CPU/GPU and was recorded as red; its immediate isolated repeat produced the passing result above.
+- A combined built-package/transition command aborted outstanding model/audio requests between browser suites; the transition lane passed with zero failures when rerun alone. No threshold, quality setting, content count, or fallback was weakened for either retry.
+- Completion evidence and the exact self-validation contract are stored beside the visual report in `artifacts/webgl3d-raider-visual-v1/`.
+
+## 2026-08-03 - Raider Physical Motion Greybox v0 (in progress)
+
+Current correction:
+
+- The recipe pipeline, deterministic family, and instanced renderer are retained as delivery infrastructure, but the prior visual acceptance is explicitly rejected as character-motion proof. This slice freezes recipe variation and targets one fixed-seed, one-spear raider on flat terrain.
+- The acceptance authority is now visible physical intention at the real gameplay camera: persistent foot contacts, pelvis/weight continuity, independent travel/chest/head attention, and a spear jab with anticipation, bounded lead prediction, a frozen commit point, contact recoil, and recovery over the planted feet.
+
+Implementation boundary and first landing:
+
+- Added `black-sky-bound.raider-physical-motion-intent.v0` as a recipe-raider ECS component. It owns filtered/measured velocity, pelvis shift, persistent left/right contacts, support/swing state, attention headings, target velocity tracking, predicted/frozen impact, recoil, and continuity counters.
+- Inserted the intent solver between movement/AI and humanoid projection in normal system order and the authored-transition special path. Recipe-backed raiders receive it at spawn; non-recipe humanoids retain their compatibility path.
+- The real spear attack transition now freezes the most recent bounded prediction as wind-up becomes active. Existing body-contact volumes consume the solved spear-tip socket, so dodge fairness is on the gameplay damage path rather than a debug-only line.
+- Added a 3D two-bone physical pose mapping for idle, locomotion, spear ready/wind-up/active/recovery. Torch, guard, dodge, reaction, and death remain on their established compatibility poses in this deliberately narrow v0.
+- Added the renderer-neutral physical-motion projection and an optional `raiderMotionGreybox=1` Three.js lane. It suppresses finished recipe attachments and unrelated actors, drawing one coloured 14-point body, planted/support markers, CoM marker, travel/chest/head axes, one spear, and predicted/frozen attack path.
+
+Checks so far:
+
+- Pre-change focused raider pose, enemy attack, and procedural-humanoid renderer tests passed.
+- Initial integration correctly tripped the 500-line gate and a legacy direct-pose test. Diagnostics were extracted into their own serializer, and the physical pose activates only after the intent owner has solved a frame; live system order still activates it immediately while direct legacy test callers remain compatible.
+- Added focused motion, two-bone IK, bounded prediction, frozen-commit, real contact, fair-dodge, recoil, renderer topology, disposal, and projection tests. The solved support contact retains identical x/y coordinates while its plant id is unchanged; a post-commit dodge preserves 56 HP, while a static target is damaged and registers recoil.
+
+Visual rejection and refinement:
+
+- Rejected the first mechanically passing browser capture because the black terrain, oversized head, weak torso, and near-invisible spear made the physical states unreadable. Rebalanced the coloured masses, widened and staggered the stance, increased the pose-only anticipation/drive shift, added a controlled flat proof stage, distinct spearhead, ground attack-line/impact marker, and a 1.55 m proof spear whose tip remains the real gameplay socket.
+- Rejected the first video artifact because Playwright had recorded browser boot/setup rather than the proof interval. Replaced it with post-setup `canvas.captureStream` recording and added a sampled normal/slow video contact sheet. The final still and video sheets were inspected at original resolution; idle/locomotion, red wind-up, yellow frozen commitment, active miss, contact recoil, and recovery are visually separable at gameplay zoom.
+- Added an explicit promotion hold: recipe raiders compute physical intent in shadow mode, but `poseEnabled` defaults false. Only the fixed-seed proof actor opts in. The finished faceted body, masks, armour, packs, and recipe variation therefore remain on their established compatibility pose until human visual approval promotes this solver.
+
+Final browser and performance evidence:
+
+- `npm run smoke:raider-motion-greybox` passes with 13 still captures, normal-speed and slow-motion WebM captures, sampled video frames, one topology build, zero finished-body actors in the proof lane, and zero console/page/request failures. The report is `artifacts/raider-physical-motion-greybox-v0/report.json`.
+- The full 3D performance lane passes at DPR 1 and 1.5 with 16.8 ms frame-interval p95, 2.1/1.0 ms projection p95, 9.4/4.5 ms CPU render-path p95, 8.19/15.031 ms GPU p95, and zero post-ready long frames.
+- `npm test`, `npm run test:loc`, `npm run build:playtest`, live-world, rebuilt-package, and smoke-awakening transition browser gates pass. Final browser runs report zero console, page, request, or HTTP errors; the built package exposes no raw source.
+
+Next boundary:
+
+- Hold recipe/family variation and production-body pose promotion. The next decision is human acceptance or one more greybox motion-tuning pass; only an accepted result may enable the solver for the finished faceted raider.
+
+## 2026-08-03 - AXIOM Entity Studio Foundation v0
+
+Delivered foundation:
+
+- Added a versioned BSB entity-authoring bridge with provider-backed target discovery, exact field manifests, non-committed candidates, reversible runtime preview, stale-write rejection, persistence, runtime refresh, and hash/readback-verified apply receipts.
+- Added an entity-agnostic AXIOM Entity Studio module. The same Outliner, contextual Details, capability states, candidate diff, Preview/Apply/Revert controls, and receipt footer now serve the baby wyvern, raiders, husks, the explicit werewolf manifest gap, and procedural geology records without a universal guessed schema.
+- Human edits and `axiom_entity_tuning_propose` agent proposals enter the same candidate contract. Agent proposals cannot apply automatically or mutate canonical files before review.
+- Animated selection pauses and focuses the real BSB runtime while temporarily suspending the hatch/pause/tuning overlays, then restores the prior camera and state when the studio closes. A low-occlusion live raider is preferred for inspection. Stationary geology selection switches to the real Map Forge authoring viewport and frames its canonical record.
+- Reused the existing hidden tuning hold only as a simulation/cinematic ownership seam; its old panel is suppressed during the AXIOM session and is not a second authoring authority.
+- Hardened `LAUNCH_BSB.bat`'s live-source server: port 5177 is now accepted only when the existing process returns the matching BSB project/root identity. Stale or unrelated port occupants fail loudly instead of being opened as a successful launch.
+
+UX validation and evidence:
+
+- Compared the tail-end layout with Epic's official Unreal Editor/Outliner/Details documentation. The final surface keeps the runtime/map viewport dominant, bounds the searchable Outliner, keeps selection framed, places context-sensitive categorized Details immediately below it, and pins unapplied candidate actions visibly above connection/readback status.
+- `npm run test:entity-studio` proves animated target discovery, live focus, human candidate preview, persisted apply/readback, a genuine iframe reload round-trip, non-committed agent proposals, an explicit werewolf manifest gap, stationary geology candidate non-mutation, panel salience bounds, protected-file restoration, and zero unexpected browser errors.
+- Evidence: `AXIOM/apps/launcher/output/playwright/entity-studio/entity-studio-proof.json` plus the raider, agent-candidate, and stationary-candidate screenshots in the same directory.
+
+Honest boundary:
+
+- This foundation does not make the current raider production ready. The live studio deliberately exposes the existing faceted body and reports motion as `shadow_only_pending_visual_acceptance`; it does not promote the rejected greybox solver, add new shaders/materials, or pretend the existing silhouette has passed visual review.
+- Immediate next slice remains one fixed-seed production raider: rebuild its canonical silhouette around the accepted physical-intention/contact architecture, make the motion readable at gameplay zoom, and require normal-speed plus slow-motion human visual acceptance before family variation returns.
+
+## 2026-08-03 - Camera visibility focus sphere v0 (superseded)
+
+Current request:
+
+- Keep the player wyvern visible when tree canopy, cave ceilings, or other scenery crosses the camera line of sight, and make the same focus treatment available for the currently selected entity in AXIOM Entity Studio.
+- Expose the useful visual parameters through the existing provider-backed candidate/Preview/Apply workflow so they are live in the runtime viewport and persist through the canonical tuning owner.
+
+Implementation boundary:
+
+- Add one explicit runtime camera-visibility-focus component with a stable target entity id; normal gameplay targets the player and Entity Studio temporarily targets the selected animated entity.
+- Keep per-entity focus presentation values in the existing creature-profile tuning/readback path rather than creating browser-local editor truth.
+- Apply a feathered dither-opacity sphere only to scenery materials and add one fixed-slot, non-shadow readability light. Preserve terrain, collision, simulation, gameplay lighting selection, and shared material reuse.
+- Require focused projection/renderer tests plus real BSB canopy and AXIOM candidate-preview browser evidence with screenshot and console/page-error inspection.
+
+Implementation progress:
+
+- Added `black-sky-bound.camera-visibility-focus-state.v0` as the single runtime camera target owner. Fresh games target the exact player entity id; Entity Studio selection temporarily retargets it with explicit provenance and restores the prior player component on close.
+- Added provider-owned `Camera focus` fields for reveal radius, edge softness, minimum occluder opacity, and readability-light power. They resolve through the existing creature-profile tuning file, candidate preview, persistence, and readback path.
+- Added a renderer-neutral focus packet and `ThreeCameraVisibilityFocus`. Cached scenery materials are shader-patched once with a feathered world-space sphere and stable screen-space dither discard; terrain and actor materials are not patched. One fixed non-shadow point light follows the target for low-light legibility without entering gameplay light selection or shadow ownership.
+- Focused camera projection, shader patching, cloned-material registration, light lifecycle, creature tuning, Entity Studio session, candidate preview/revert, render-projection, and AXIOM static tests pass.
+
+Final validation and evidence:
+
+- `npm test` passes in BSB V2, `npm test` passes in the AXIOM launcher, and `npm run build:playtest` produces the curated 15-file package with no raw source or source maps. The existing Vite large-chunk advisory remains unchanged.
+- `npm run smoke:camera-focus` passes in a fresh real WebGL runtime. The disabled capture loses the hatchling beneath the authored canopy; the enabled capture reveals and lights the exact `young_dragon_1` target through ten patched scenery materials. The report and inspected images are in `artifacts/camera-visibility-focus-v0/`, with zero console, page, request, or HTTP failures.
+- `npm run test:entity-studio` passes against a fresh isolated BSB runtime. It proves exact selection retargeting, live camera-focus candidate preview, persisted Apply/readback after iframe reload, protected tuning-file restoration, and zero unexpected browser errors. Evidence is in `AXIOM/apps/launcher/output/playwright/entity-studio/`.
+- The full performance lane was run twice and remained red for nondeterministic whole-simulation gates: first for a 20.7 ms frame-interval p95 despite sub-budget 9.9 ms CPU and 11.765 ms GPU p95, then for a tail mesh-count fluctuation as live actor/effect counts changed. The focus owner adds zero meshes; a focused test now asserts its only scene object is one fixed non-shadow point light. No threshold or visual quality setting was weakened.
+
+Operational note:
+
+- A BSB server that was already running on port 5177 before this slice retains Node's old tuning-validator module cache and must be restarted before manual AXIOM Apply accepts the new fields. Fresh launches, including the hermetic AXIOM proof server, accept and persist them correctly.
+
+## 2026-08-03 - Camera visibility focus visual correction
+
+Rejected result:
+
+- Human review correctly rejected the target-centred v0 sphere. Although its bridge, persistence, and shader wiring worked, it faded every eligible fragment around the actor without proving that the fragment lay between the camera and target. At close authoring zoom this produced a broad stippled clearing rather than a deliberate visibility cut.
+
+Correction implemented:
+
+- Replaced sphere semantics with a camera-to-target corridor appropriate to the orthographic renderer. Nine parallel rays sample the target-sized circular cross-section; only exact static occluder objects hit before the target activate their existing material uniforms.
+- The fragment shader now measures distance to the finite camera-target segment. Objects beside the corridor and surfaces behind the target stay opaque even when they share a patched material.
+- All projected scenery is registered with stable object identity. Terrain surfaces must opt in as camera occluders; current ordinary ground is excluded, while blocked terrain obstacles and future eligible ceiling surfaces use the same trace registry.
+- Retuned the default cross-section from a 3.6 m sphere to a 1.15 m sightline cut with a 0.3 m feather, 4% blocker opacity, and 650 lm readability light. AXIOM now labels the control as a traced sightline rather than a sphere.
+
+Proof so far:
+
+- Focused projection, cross-section trace, off-sight rejection, behind-target rejection, ceiling-role, shader, light, tuning, Entity Studio runtime, and AXIOM static tests pass.
+- `npm run smoke:camera-focus` passes in a fresh real WebGL runtime. It identifies the exact authored canopy tree plus two additional trees crossing the sampled corridor, activates two shared blocker materials, and reports zero browser errors. The inspected v1 capture visibly reveals the full hatchling through a localized circular cut while the surrounding canopy remains solid.
+- A first v1 browser attempt failed because normalization allowed 2.5% opacity while the tuning manifest still clamped to 3%; the bounds were unified and the proof was rerun successfully. No silent fallback was accepted.
+
+Final validation:
+
+- The complete BSB V2 `npm test` suite and `npm run build:playtest` pass after the trace correction. The curated playtest remains 15 files with no raw source or source maps; the existing Vite large-chunk advisory is unchanged.
+- The final `npm run smoke:camera-focus` browser run passes against the corrected source with a 9-sample trace, 17 broad-phase candidates, three exact tree blockers, two active blocker materials, and zero console, page, or request failures. Evidence is in `artifacts/camera-visibility-focus-v1/`.
+- The final AXIOM static and Playwright Entity Studio gates pass. The selected runtime entity remains visible through its localized sightline cut while candidate radius edits preview in the real embedded runtime; protected tuning files are restored. Evidence is in `AXIOM/apps/launcher/output/playwright/entity-studio/`.
+- Hidden-iframe readiness now uses time-based polling and a 30-second cold-WebGL command window. Redundant delayed bridge forwarding was removed because `postMessage` already provides the required asynchronous boundary; direct snapshot measurement remains only a few milliseconds once the runtime is ready.
+
+## 2026-08-04 - Baby-wyvern drool visual approval candidate
+
+Regression and ownership:
+
+- The pre-3D WebGL drool used stretched liquid triangles, a previous-position trail, contact shadow, and layered irregular pool radials. The first Three.js path collapsed that into detached emissive icosahedra and one circular ground disc, ignored the forming/separation stages and real height, and lost most pool material metadata.
+- The baby source remains the canonical `WyvernProjection.sockets.mouth` plus bounded napalm render-layer state. Mama flyovers, projected breath, fire walls, tree fire, and inferno pools remain on their existing world-event path and were not changed.
+
+Focused implementation:
+
+- Added an explicit forming/hanging/separated lifecycle that follows the live mouth until separation, then freezes its separation anchor and falls through real Three.js height with motion carry. Cadence and optional every-fourth secondary splits use deterministic variation; secondary liquid lands and may merge into a nearby bounded patch.
+- Added a dedicated baby-only Three.js presentation root with twelve fixed instanced families for contact shadow, strand, weighted body/core, short smoke, two-to-three pool lobes, active edge/hot root, impact crown/beads, rooted flame, and sparks. It reuses the existing budgets and physical-light seam, owns no per-frame mesh/material construction, and disposes its fixed geometry/material set.
+- Shortened the baby pool lifecycle to 6.8 s, limited flame to 2.4 s and heat to 3.1 s, reduced the local light to 0.42 tile radius / 0.10 intensity, retained dark viscous/cooling colours, and preserved the legacy WebGL material and irregular-pool contracts.
+
+Visual and performance proof:
+
+- The fixed pre-change proof is `artifacts/baby-wyvern-drool-visual-approval/baseline-pre-upgrade/report.json`. The inspected candidate proof is `artifacts/baby-wyvern-drool-visual-approval/approval-candidate-final/report.json`, with nine captures covering mouth formation, stretch, airborne travel, impact, deposit/flame, cooling, moving/turning at normal and close zoom, and sustained use. Both runs use 1440x900, the same clear arena and renderer path; the candidate reports zero console, page, request, droplet-budget, or pool-budget failures and zero Mama flyovers.
+- In the same 720-frame deterministic moving/turning scenario, P95 frame interval stayed at 17 ms, measured tick P95 improved from 13.2 to 10.7 ms, and render-path P95 improved from 9.1 to 6.2 ms. Draw calls fell from 241 to 125, pooled objects from 559 to 487, meshes from 699 to 639, and materials from 598 to 538. The candidate adds a small triangle cost (43,710 to 45,644) for the liquid silhouettes; GPU-query P95 was 8.628 ms versus 7.507 ms in this individual run while repeat candidate runs varied materially, so frame interval and end-to-end tick/render path remain the acceptance signals.
+
+Validation and remaining boundary:
+
+- `npm test` and `npm run build:playtest` pass. Focused mouth-follow, turn/separation, real-height fall, secondary landing, pool stage, instancing/capacity, renderer reuse, light, smoke, Mama event, and Mama mesh tests pass. The curated build remains dependency-free beyond the existing project and retains the existing Vite large-chunk advisory.
+- The intentionally tiny effect remains subtle in a single still and its smoke is visibly faceted at close inspection because the renderer uses bounded low-poly instancing rather than soft-particle shaders. The artificial 12.24 s orbit stress frame exposes the full live 15-pool/75-ember envelope, but counts stay capped, no emissions are dropped, and the 6.8 s lifecycle cleans old droplets, pools, lights, and fading scorch decals. Final aesthetic approval remains human-owned.
+
+## 2026-08-06 - Desktop launcher consolidation and production threat audio
+
+Runtime repair:
+
+- Consolidated the accepted heartbeat and raider-warning work into the Desktop checkout owned by `LAUNCH_BSB.bat`; normal playtesting no longer depends on selecting a Codex worktree.
+- Replaced the procedural heartbeat with one decoded 8.23-second mono production loop and the oscillator raider warning with five short recorded human variants. Both cues are required file assets, expose decoded-file provenance in runtime diagnostics, and have no synthetic fallback branch.
+- Retained 24-bit masters, the editable Audacity heartbeat project, a portable Audacity raider session, unaltered source recordings, processed stems, and Pixabay licence notes beside the runtime assets.
+- Extracted shared decoded-buffer playback so file-backed one-shots and loops use the same asset bank, error reporting, pitch, routing, and lifecycle contract.
+
+Launcher durability:
+
+- `tools/launch.mjs` now verifies both project identity and exact checkout root before reusing an occupied port. A different worktree or unrelated process is skipped automatically; the launcher advances to a free local port and opens the correct Desktop checkout.
+- Runtime identity reports the preferred and active ports. Every served source and audio response retains `Cache-Control: no-store`.
+- Added a deterministic launcher regression covering wrong-worktree collision recovery, exact-root reuse, runtime identity, production-audio HTTP availability, and cache policy.
+
+Validation:
+
+- The full `npm test` suite, focused production-audio tests, syntax checks, `git diff --check`, and `npm run test:launcher` pass.
+- Real Edge/Chromium proof launched the Desktop root with a deliberately occupied preferred port, recovered from port 53702 to 53703, decoded all six new runtime files at 48 kHz, activated the low-health file-backed heartbeat, and exercised all five raider-warning variants.
+- The browser proof reports zero console errors, page errors, failed requests, HTTP errors, or audio errors. Evidence is in `artifacts/local-launcher-consolidation-v1/`.
+
+## 2026-08-06 - Baby wyvern bite production replacement v2
+
+Playtest correction:
+
+- Rejected the two seeded procedural bite files as cartoon-like and bonk-y. Their generated noise, chirps, resonances and tooth clicks were not retuned or disguised; `make_bite` and both legacy output calls were removed from the old production generator.
+- Built three new 0.48-second mono variants from retained real recordings: animal breath/snarl, jaw-on-bone closure and a restrained wet-food detail. Original downloads, Pixabay source/artist/licence notes, source hashes, aligned 24-bit stems, 24-bit masters and a portable Audacity LOF session are retained.
+- Moved the authored jaw closure from the old 128-142 ms range to 195 ms, matching the bite profile's 0.34 s duration x 0.58 hit timing (197 ms). Kept the wet layer quiet because the bite action can miss and `combat.enemy.hit.flesh` separately owns confirmed contact.
+- Added a third real variation and narrowed runtime pitch randomisation from `0.96-1.035` to `0.985-1.015`, so variation comes from actual source performance rather than cartoon pitch movement.
+
+Evidence and validation:
+
+- The deterministic source-based generator emits masters, runtime assets, aligned stems, comparison reel, contact sheet and a machine-readable analysis contract with zero synthetic production layers.
+- The exact Desktop launcher browser proof used the real third-combo `bite_attack` input, observed the decoded file cue, rotated all three variants, and verified every asset as 0.48-second mono 48 kHz audio served with HTTP 200 and `Cache-Control: no-store`.
+- Browser proof reported zero audio, console, page, request or HTTP errors. `npm test`, `npm run test:launcher`, `npm run build:playtest` and `git diff --check` pass; the curated build contains all three bite files among 15 manifest-derived production audio files.
+- Evidence is in `artifacts/player-bite-v2/`; design, provenance and reproduction notes are in `docs/PLAYER_BITE_PRODUCTION_V2.md`.
+
+Next audio ownership:
+
+- Opening Exterior Soundscape v1 is now the active slice: replace procedural thunder, husk, werewolf and distant-raider cues with recorded sources authored through the closed-shell perspective.
+- The dedicated hatchling first cry follows separately. The current full Mama roar must stop owning that newborn release beat; Mama may answer later if the story mix supports it.

@@ -1,4 +1,6 @@
-export const ACTOR_SHADOW_SILHOUETTE_CONTRACT = 'visual_actor_shadow_silhouette.v1';
+import { resolveShadowShapeProfile, SHADOW_SHAPE_PROFILE_CONTRACT, ShadowShapeProfileId } from '../data/shadowShapeProfiles.js';
+
+export const ACTOR_SHADOW_SILHOUETTE_CONTRACT = SHADOW_SHAPE_PROFILE_CONTRACT;
 
 export function buildActorShadowBlockers(actors = []) {
   if (!Array.isArray(actors)) return [];
@@ -65,8 +67,10 @@ function buildGenericActorShadowBlocker(actor) {
 }
 
 function createActorBlocker(actor, blockerKind, radius, height, silhouette) {
-  const primitives = silhouette.primitives?.length ? silhouette.primitives : buildGenericActorShadowBlocker(actor)?.shadowSilhouette?.primitives;
+  const primitives = silhouette.primitives?.length ? silhouette.primitives : null;
   if (!primitives?.length) return null;
+  const variantId = blockerKind.includes('wyvern') ? 'grounded_wyvern'
+    : blockerKind.includes('humanoid') ? 'humanoid' : 'generic';
   return {
     id: `actor_shadow:${actor.id}`,
     entityId: actor.id,
@@ -80,11 +84,10 @@ function createActorBlocker(actor, blockerKind, radius, height, silhouette) {
     height,
     castsShadow: true,
     static: false,
-    shadowSilhouette: {
-      contract: ACTOR_SHADOW_SILHOUETTE_CONTRACT,
-      shape: silhouette.shape,
-      primitives
-    }
+    shadowShape: resolveShadowShapeProfile(
+      { profileId: ShadowShapeProfileId.CREATURE, variantId },
+      { primitives, rotation: Number(actor.rotation) || 0 }
+    )
   };
 }
 

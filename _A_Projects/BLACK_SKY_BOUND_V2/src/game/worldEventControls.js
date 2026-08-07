@@ -54,13 +54,18 @@ export function createWorldEventAudioBridge(audio) {
       }
       const event = game?.worldEvents?.audio;
       if (!event || event.sequence <= observedSequence) return false;
-      observedSequence = event.sequence;
-      audio.emit(AudioEventType.MAMA_WYVERN_ROAR, {
-        sourceEventId: event.sourceEventId,
-        cueId: event.cueId,
-        intensity: 1
-      });
-      return true;
+      const unseen = Array.isArray(event.events) && event.events.length
+        ? event.events.filter((receipt) => receipt.sequence > observedSequence)
+        : [event];
+      for (const receipt of unseen.sort((a, b) => a.sequence - b.sequence)) {
+        observedSequence = Math.max(observedSequence, receipt.sequence);
+        audio.emit(receipt.eventType ?? AudioEventType.MAMA_WYVERN_ROAR, {
+          sourceEventId: receipt.sourceEventId,
+          cueId: receipt.cueId,
+          intensity: 1
+        });
+      }
+      return unseen.length > 0;
     }
   };
 }

@@ -7,6 +7,7 @@ import { createInitialGameState } from '../src/game/state.js';
 import { ScenarioId, getScenario } from '../src/data/scenarios.js';
 import { ACTORS } from '../src/data/actors.js';
 import { EntityKind } from '../src/constants/entityKinds.js';
+import { CreatureRecipeId, getCreatureRecipe } from '../src/data/creatures/creatureRecipes.js';
 
 const map = createDemoMap();
 const game = createInitialGameState(map);
@@ -25,6 +26,7 @@ assert(ACTION_SYSTEM_NAMES.indexOf('wyvernAttackContactSystem') < ACTION_SYSTEM_
 assert(ACTION_SYSTEM_NAMES.indexOf('deathLifecycleSystem') < ACTION_SYSTEM_NAMES.indexOf('unitSpawnerSystem'), 'spawners should recover live capacity after death cleanup');
 equal(getScenario(ScenarioId.FIRST_ESCAPE).enemySpawns.length, 5, 'scenario data should own enemy spawn list');
 equal(getScenario(ScenarioId.FIRST_ESCAPE).sceneObjects.length, 22, 'scenario data should own the broadened forest-plus-raid-emitter scene object list');
-assert(ACTORS[EntityKind.RAIDER].ai.attackRange > 0, 'enemy AI tuning should live in actor data');
+equal(ACTORS[EntityKind.RAIDER].defaultCreatureRecipeId, CreatureRecipeId.RAIDER_SCAVENGER, 'actor identity should point at canonical raider recipe truth');
+assert(getCreatureRecipe(CreatureRecipeId.RAIDER_SCAVENGER).behaviour.parameters.attackRange > 0, 'raider AI tuning should live in creature recipe data');
 assert(map.blobMasks.water.length > 0, 'terrain masks should include painted water runs');
 equal(map.sceneObjects.length, 22, 'map should instantiate explicit scene objects from scenario data');

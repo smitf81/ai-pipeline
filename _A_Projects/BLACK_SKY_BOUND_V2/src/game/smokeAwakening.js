@@ -7,6 +7,10 @@ import {
 
 export function createSmokeAwakeningState(options = {}) {
   const enabled = options.enabled === true;
+  const requestedStartPhase = Object.values(SmokeAwakeningPhase).includes(options.startPhase)
+    ? options.startPhase
+    : SmokeAwakeningPhase.EXHALE;
+  const startPhase = enabled ? requestedStartPhase : SmokeAwakeningPhase.INACTIVE;
   return {
     contract: SMOKE_AWAKENING.contract,
     classification: SMOKE_AWAKENING.classification,
@@ -14,14 +18,14 @@ export function createSmokeAwakeningState(options = {}) {
     source: options.source ?? (enabled ? 'level_transition' : 'not_requested'),
     fromMapId: options.fromMapId ?? null,
     mapId: options.mapId ?? null,
-    phase: enabled ? SmokeAwakeningPhase.IMPACT : SmokeAwakeningPhase.INACTIVE,
+    phase: startPhase,
     elapsedReal: 0,
     phaseElapsedReal: 0,
     acceptedInputCount: 0,
     requiredInputCount: SMOKE_AWAKENING.requiredExhaleEdges,
     promptVisible: false,
     inputCooldownRemaining: 0,
-    impactPulse: enabled ? 1 : 0,
+    impactPulse: startPhase === SmokeAwakeningPhase.IMPACT ? 1 : 0,
     exhalePulse: 0,
     lastInputLabel: null,
     exhaleHistory: [],
@@ -34,7 +38,7 @@ export function createSmokeAwakeningState(options = {}) {
     radialSmokeEmitted: false,
     released: !enabled,
     releasedAtRealSeconds: null,
-    audio: createAudioState(enabled),
+    audio: createAudioState(startPhase === SmokeAwakeningPhase.IMPACT),
     diagnostics: {
       acceptedInputEdges: 0,
       rejectedBeforePrompt: 0,
@@ -131,6 +135,10 @@ function advancePhase(scene) {
     return;
   }
   if (scene.phase === SmokeAwakeningPhase.SMOKE_ROLL) {
+    scene.phase = SmokeAwakeningPhase.BLACKOUT_HOLD;
+    return;
+  }
+  if (scene.phase === SmokeAwakeningPhase.BLACKOUT_HOLD) {
     scene.phase = SmokeAwakeningPhase.EXHALE;
     return;
   }
@@ -151,6 +159,7 @@ function phaseDuration(phase) {
   if (phase === SmokeAwakeningPhase.IMPACT) return SMOKE_AWAKENING.timing.impactSeconds;
   if (phase === SmokeAwakeningPhase.SCATTER) return SMOKE_AWAKENING.timing.scatterSeconds;
   if (phase === SmokeAwakeningPhase.SMOKE_ROLL) return SMOKE_AWAKENING.timing.smokeRollSeconds;
+  if (phase === SmokeAwakeningPhase.BLACKOUT_HOLD) return SMOKE_AWAKENING.timing.blackoutHoldSeconds;
   if (phase === SmokeAwakeningPhase.CLEARING) return SMOKE_AWAKENING.timing.clearingSeconds;
   return 0;
 }

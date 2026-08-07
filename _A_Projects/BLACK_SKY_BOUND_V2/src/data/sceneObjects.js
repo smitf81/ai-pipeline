@@ -3,6 +3,7 @@ import { MaterialProfileId } from './materialProfiles.js';
 import { LightEmitterId } from '../constants/lightEmitterIds.js';
 import { SmokeSourceKind } from './smokeSources.js';
 import { buildRaidEmitterSceneObjects } from './sceneObjectRaidEmitterDefs.js';
+import { ShadowShapeProfileId } from './shadowShapeProfiles.js';
 
 export const SceneObjectType = Object.freeze({
   TREE: 'tree',
@@ -97,17 +98,7 @@ export const SCENE_OBJECTS = Object.freeze({
       castsShadow: true,
       radius: 1.25,
       height: 2.2,
-      shadowSilhouette: {
-        contract: 'scene_object_shadow_silhouette.v1',
-        shape: 'compound_tree_crown_trunk_sdf_v0',
-        primitives: [
-          { id: 'trunk', kind: 'trunk_core', offsetX: 0, offsetY: 0, widthScale: 0.46, lengthScale: 0.74, tailWidthScale: 0.42, dimnessScale: 1.18, softnessScale: 0.78 },
-          { id: 'crown_nw', kind: 'crown_lobe', offsetX: -0.55, offsetY: -0.72, widthScale: 0.58, lengthScale: 1.04, tailWidthScale: 0.62, dimnessScale: 0.78, softnessScale: 1.08 },
-          { id: 'crown_ne', kind: 'crown_lobe', offsetX: 0.52, offsetY: -0.66, widthScale: 0.54, lengthScale: 0.96, tailWidthScale: 0.58, dimnessScale: 0.72, softnessScale: 1.12 },
-          { id: 'crown_s', kind: 'crown_lobe', offsetX: -0.08, offsetY: 0.48, widthScale: 0.48, lengthScale: 0.88, tailWidthScale: 0.52, dimnessScale: 0.7, softnessScale: 1.04 },
-          { id: 'canopy_gap', kind: 'negative_space_hint', offsetX: 0.28, offsetY: -0.1, widthScale: 0.25, lengthScale: 0.72, tailWidthScale: 0.34, dimnessScale: 0.42, softnessScale: 1.2 }
-        ]
-      }
+      shadowShape: { profileId: ShadowShapeProfileId.BROAD_TREE, variantId: 'dense_pine' }
     },
     render: {
       kind: 'tree',
@@ -148,15 +139,7 @@ export const SCENE_OBJECTS = Object.freeze({
       castsShadow: true,
       radius: 1.05,
       height: 2,
-      shadowSilhouette: {
-        contract: 'scene_object_shadow_silhouette.v1',
-        shape: 'compound_airier_tree_crown_trunk_sdf_v0',
-        primitives: [
-          { id: 'trunk', kind: 'trunk_core', offsetX: 0, offsetY: 0.08, widthScale: 0.36, lengthScale: 0.78, tailWidthScale: 0.34, dimnessScale: 1.05, softnessScale: 0.78 },
-          { id: 'crown_l', kind: 'crown_lobe', offsetX: -0.42, offsetY: -0.54, widthScale: 0.46, lengthScale: 0.9, tailWidthScale: 0.5, dimnessScale: 0.66, softnessScale: 1.12 },
-          { id: 'crown_r', kind: 'crown_lobe', offsetX: 0.42, offsetY: -0.46, widthScale: 0.42, lengthScale: 0.84, tailWidthScale: 0.46, dimnessScale: 0.62, softnessScale: 1.16 }
-        ]
-      }
+      shadowShape: { profileId: ShadowShapeProfileId.BROAD_TREE, variantId: 'airy_birch' }
     },
     render: {
       kind: 'tree',
@@ -199,15 +182,7 @@ export const SCENE_OBJECTS = Object.freeze({
       castsShadow: true,
       radius: 0.74,
       height: 1.35,
-      shadowSilhouette: {
-        contract: 'scene_object_shadow_silhouette.v1',
-        shape: 'dead_snag_branch_sdf_v0',
-        primitives: [
-          { id: 'trunk', kind: 'trunk_core', offsetX: 0, offsetY: 0.05, widthScale: 0.42, lengthScale: 0.9, tailWidthScale: 0.28, dimnessScale: 1.02, softnessScale: 0.76 },
-          { id: 'branch_left', kind: 'dead_branch', offsetX: -0.32, offsetY: -0.34, widthScale: 0.18, lengthScale: 0.58, tailWidthScale: 0.16, dimnessScale: 0.54, softnessScale: 0.9 },
-          { id: 'branch_right', kind: 'dead_branch', offsetX: 0.38, offsetY: -0.22, widthScale: 0.16, lengthScale: 0.5, tailWidthScale: 0.14, dimnessScale: 0.5, softnessScale: 0.92 }
-        ]
-      }
+      shadowShape: { profileId: ShadowShapeProfileId.NARROW_TRUNK, variantId: 'dead_snag' }
     },
     render: {
       kind: 'dead_snag',
@@ -242,15 +217,7 @@ export const SCENE_OBJECTS = Object.freeze({
       castsShadow: true,
       radius: 0.95,
       height: 0.92,
-      shadowSilhouette: {
-        contract: 'scene_object_shadow_silhouette.v1',
-        shape: 'faceted_boulder_sdf_v0',
-        primitives: [
-          { id: 'mass_core', kind: 'stone_mass', offsetX: 0, offsetY: 0, widthScale: 0.72, lengthScale: 0.86, tailWidthScale: 0.5, dimnessScale: 1.05, softnessScale: 0.86 },
-          { id: 'left_facet', kind: 'stone_facet', offsetX: -0.34, offsetY: -0.12, widthScale: 0.42, lengthScale: 0.76, tailWidthScale: 0.36, dimnessScale: 0.78, softnessScale: 0.74 },
-          { id: 'right_facet', kind: 'stone_facet', offsetX: 0.36, offsetY: 0.18, widthScale: 0.38, lengthScale: 0.68, tailWidthScale: 0.32, dimnessScale: 0.7, softnessScale: 0.78 }
-        ]
-      }
+      shadowShape: { profileId: ShadowShapeProfileId.ROCK, variantId: 'faceted' }
     },
     render: {
       kind: 'procedural_geology',

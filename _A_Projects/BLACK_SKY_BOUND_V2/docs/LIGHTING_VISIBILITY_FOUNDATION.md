@@ -1,5 +1,7 @@
 # Lighting & Visibility Foundation v1
 
+> Historical document. The darkness-overlay model described below was retired by [Illumination-Primary Rendering v1](./ILLUMINATION_PRIMARY_RENDERING.md). Do not use this document as the current renderer contract.
+
 ## Purpose
 
 This slice introduces a darkness-first lighting foundation without making it night-specific.

@@ -3,6 +3,7 @@ import { ComponentType } from '../src/constants/componentTypes.js';
 import { EntityKind } from '../src/constants/entityKinds.js';
 import { Faction } from '../src/constants/factions.js';
 import { COMBAT_BALANCE } from '../src/data/combatBalance.js';
+import { EnemyAttackProfileId, getEnemyAttackProfile } from '../src/data/enemyAttackProfiles.js';
 import { getComponent, removeComponent } from '../src/ecs/world.js';
 import { createInitialGameState } from '../src/game/createGame.js';
 import { spawnActor } from '../src/game/spawn.js';
@@ -14,6 +15,7 @@ import { enemyAttackSystem } from '../src/systems/enemyAttackSystem.js';
 import { createDemoMap } from '../src/world/map.js';
 
 const nonPlayerHarness = createEmptyHarness();
+const spearDamage = getEnemyAttackProfile(EnemyAttackProfileId.RAIDER_SPEAR_JAB).damage;
 const dragonTransform = component(nonPlayerHarness, nonPlayerHarness.game.dragonId, ComponentType.Transform);
 dragonTransform.x = 10;
 dragonTransform.y = 10;
@@ -37,7 +39,7 @@ const neutralHealth = component(nonPlayerHarness, neutralHusk, ComponentType.Hea
 enemyPressureSystem({ game: nonPlayerHarness.game, map: nonPlayerHarness.map, dt: 0 });
 equal(hostileHealth.hp, hostileHealth.maxHp, 'target selection should begin windup without immediate damage');
 enemyAttackSystem({ game: nonPlayerHarness.game, dt: 0.35 });
-equal(hostileHealth.hp, hostileHealth.maxHp - scaledEnemyDamage(9), 'raider spear jab should damage the selected hostile with enemy-vs-enemy scaling after windup');
+equal(hostileHealth.hp, hostileHealth.maxHp - scaledEnemyDamage(spearDamage), 'raider spear jab should damage the selected hostile with enemy-vs-enemy scaling after windup');
 equal(dragonHealth.hp, dragonHealth.maxHp, 'farther dragon should not be targeted when a hostile non-player unit is closer');
 equal(friendlyHealth.hp, friendlyHealth.maxHp, 'friendly entities should be ignored');
 equal(neutralHealth.hp, neutralHealth.maxHp, 'neutral entities should be ignored');
@@ -51,7 +53,7 @@ const compatibilityDragonHealth = component(compatibilityHarness, compatibilityH
 spawnActor(compatibilityHarness.game.world, EntityKind.RAIDER, 7, 7, Faction.ENEMY);
 enemyPressureSystem({ game: compatibilityHarness.game, map: compatibilityHarness.map, dt: 0 });
 enemyAttackSystem({ game: compatibilityHarness.game, dt: 0.35 });
-equal(compatibilityDragonHealth.hp, compatibilityDragonHealth.maxHp - 9, 'generic enemy faction should retain profiled pressure against player');
+equal(compatibilityDragonHealth.hp, compatibilityDragonHealth.maxHp - spearDamage, 'generic enemy faction should retain profiled pressure against player');
 
 function createEmptyHarness() {
   const map = createDemoMap();

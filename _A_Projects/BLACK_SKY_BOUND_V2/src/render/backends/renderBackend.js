@@ -1,7 +1,8 @@
-import { WebGLGameRenderer } from './webgl/WebGLGameRenderer.js';
+import { ThreeGameRenderer } from './three/ThreeGameRenderer.js';
 
 export const RenderBackendId = Object.freeze({
   WEBGL: 'webgl',
+  WEBGL3D: 'webgl3d',
   UNSUPPORTED: 'unsupported_renderer'
 });
 
@@ -14,29 +15,27 @@ export function createRenderBackend(canvas, policy = {}) {
     preferenceSource: preference.source
   };
 
-  if (preference.backend === RenderBackendId.WEBGL) {
+  if (preference.backend === RenderBackendId.WEBGL3D) {
     try {
-      const renderer = new WebGLGameRenderer(canvas, selectedPolicy);
+      const renderer = new ThreeGameRenderer(canvas, selectedPolicy);
       return {
-        id: RenderBackendId.WEBGL,
-        mode: 'webgl_real_layers',
+        id: RenderBackendId.WEBGL3D,
+        mode: 'three3d_real_scene',
         status: renderer.status,
-        beginFrame(camera) {
-          return renderer.beginFrame(camera);
-        },
-        renderProjection(projection) {
-          renderer.renderProjection(projection);
-        },
-        present() {
-          renderer.present();
-        },
-        recordDiagnostics(stats) {
-          renderer.recordDiagnostics(stats);
-        }
+        projectionRequired: !renderer.referenceId,
+        beginFrame(camera) { return renderer.beginFrame(camera); },
+        renderProjection(projection) { renderer.renderProjection(projection); },
+        present() { renderer.present(); },
+        recordDiagnostics(stats) { renderer.recordDiagnostics(stats); },
+        setExternalFrameTiming(timing) { renderer.setExternalFrameTiming(timing); },
+        setTerrainDebugMode(mode) { return renderer.setTerrainDebugMode(mode); },
+        setGroundDetailEnabled(enabled) { return renderer.setGroundDetailEnabled(enabled); },
+        setTerrainProofCanopyVisible(visible) { return renderer.setTerrainProofCanopyVisible(visible); },
+        dispose() { renderer.dispose(); }
       };
     } catch (error) {
-      const backend = createWebGLErrorBackend(canvas, selectedPolicy, error);
-      console.error(`Black Sky Bound WebGL renderer failed to initialize: ${backend.status.initializationError}`);
+      const backend = createWebGL3DErrorBackend(canvas, selectedPolicy, error);
+      console.error(`Black Sky Bound WebGL3D renderer failed to initialize: ${backend.status.initializationError}`);
       return backend;
     }
   }
@@ -46,18 +45,19 @@ export function createRenderBackend(canvas, policy = {}) {
   return backend;
 }
 
-function createWebGLErrorBackend(canvas, policy, error) {
+function createWebGL3DErrorBackend(canvas, policy, error) {
   const status = createBaseStatus(policy, {
-    activeBackend: RenderBackendId.WEBGL,
+    activeBackend: RenderBackendId.WEBGL3D,
+    candidateBackend: RenderBackendId.WEBGL3D,
     backendStatus: 'error',
-    fallbackReason: 'webgl_initialization_failed',
-    initializationError: error?.message ?? 'webgl_renderer_unavailable',
+    fallbackReason: 'webgl3d_initialization_failed',
+    initializationError: error?.message ?? 'webgl3d_renderer_unavailable',
     webglContext: 'unavailable',
-    rendererMode: 'webgl_error',
-    webglMigrationCoverageStatus: 'webgl_boot_error_no_renderer_fallback'
+    rendererMode: 'webgl3d_error',
+    webglMigrationCoverageStatus: 'webgl3d_candidate_boot_error_no_renderer_fallback',
+    webgl3dActive: false
   });
-
-  return createNoopBackend(canvas, RenderBackendId.WEBGL, 'webgl_error', status);
+  return createNoopBackend(canvas, RenderBackendId.WEBGL3D, 'webgl3d_error', status);
 }
 
 function createUnsupportedRendererBackend(canvas, policy) {
@@ -66,7 +66,7 @@ function createUnsupportedRendererBackend(canvas, policy) {
     activeBackend: RenderBackendId.UNSUPPORTED,
     backendStatus: 'error',
     fallbackReason: 'unsupported_renderer_backend',
-    initializationError: `Renderer "${requested}" is unsupported. Canvas 2D runtime rendering was culled; use renderer=webgl.`,
+    initializationError: `Renderer "${requested}" is unsupported. Legacy 2D rendering is retired; use renderer=webgl3d.`,
     webglContext: 'not_requested',
     rendererMode: 'unsupported_renderer',
     webglMigrationCoverageStatus: 'unsupported_renderer_request_no_canvas2d_runtime'
@@ -92,16 +92,17 @@ function createNoopBackend(canvas, id, mode, status) {
     present() {},
     recordDiagnostics(stats) {
       writeBackendStats(stats, status);
-    }
+    },
+    dispose() {}
   };
 }
 
 function createBaseStatus(policy, overrides = {}) {
   return {
-    preferredBackend: policy.preferredBackend ?? RenderBackendId.WEBGL,
-    candidateBackend: policy.candidateBackend ?? RenderBackendId.WEBGL,
-    requestedBackend: policy.requestedBackend ?? policy.preferredBackend ?? RenderBackendId.WEBGL,
-    activeBackend: RenderBackendId.WEBGL,
+    preferredBackend: policy.preferredBackend ?? RenderBackendId.WEBGL3D,
+    candidateBackend: policy.candidateBackend ?? RenderBackendId.WEBGL3D,
+    requestedBackend: policy.requestedBackend ?? policy.preferredBackend ?? RenderBackendId.WEBGL3D,
+    activeBackend: RenderBackendId.WEBGL3D,
     backendStatus: 'pending',
     fallbackReason: null,
     initializationError: null,
@@ -111,20 +112,20 @@ function createBaseStatus(policy, overrides = {}) {
     rendererMode: 'pending',
     legacyCompositeActive: false,
     preferenceSource: policy.preferenceSource ?? 'budget_default',
-    activationPolicy: policy.activationPolicy ?? 'webgl_only_no_renderer_fallback',
-    migrationPolicy: policy.migrationPolicy ?? 'canvas2d_renderer_culled_webgl_only_v1',
-    sceneLayerPolicy: policy.sceneLayerPolicy ?? 'webgl_owned_layer_registry_with_renderer_neutral_projection',
+    activationPolicy: policy.activationPolicy ?? 'webgl3d_default_no_renderer_fallback',
+    migrationPolicy: policy.migrationPolicy ?? 'three3d_default_legacy_webgl_alias_retired_v1',
+    sceneLayerPolicy: policy.sceneLayerPolicy ?? 'three_scene_graph_consumes_renderer_neutral_projection',
     unsupportedRendererPolicy: policy.unsupportedRendererPolicy ?? 'explicit_error_no_fallback',
     hiddenCanvasRenderLoopActive: false,
     canvas2dRuntimeAvailable: false,
     layerOrder: [],
     webglLayerOrder: [],
     layerStats: {},
-    webglMigrationCoverageStatus: policy.migrationCoverageStatus ?? 'webgl_only_canvas2d_renderer_culled',
-    webglDarknessLayerActive: false,
+    webglMigrationCoverageStatus: policy.migrationCoverageStatus ?? 'three3d_default_legacy_scene_root_unregistered',
+    webglIlluminationCompositeActive: false,
     webglLightCount: 0,
-    webglDarknessRenderMs: 0,
-    webglDarknessMode: null,
+    webglIlluminationRenderMs: 0,
+    webglIlluminationCompositeMode: null,
     webglDecalLayerActive: false,
     webglDecalMode: null,
     webglDecalSourceCount: 0,
@@ -184,7 +185,7 @@ function resolveBackendPreference(policy) {
     };
   }
 
-  const policyBackend = policy.preferredBackend ?? RenderBackendId.WEBGL;
+  const policyBackend = policy.preferredBackend ?? RenderBackendId.WEBGL3D;
   const backend = normalizeBackendPreference(policyBackend);
   return {
     backend: backend ?? RenderBackendId.UNSUPPORTED,
@@ -207,7 +208,8 @@ function readRuntimeBackendPreference() {
 }
 
 function normalizeBackendPreference(value) {
-  if (value === RenderBackendId.WEBGL || value === 'webgl') return RenderBackendId.WEBGL;
+  if (value === RenderBackendId.WEBGL || value === 'webgl') return RenderBackendId.WEBGL3D;
+  if (value === RenderBackendId.WEBGL3D || value === 'webgl3d') return RenderBackendId.WEBGL3D;
   return null;
 }
 
@@ -236,10 +238,10 @@ function writeBackendStats(stats, status) {
   stats.webglLayerOrder = [...(status.webglLayerOrder ?? [])];
   stats.layerStats = { ...(status.layerStats ?? {}) };
   stats.webglMigrationCoverageStatus = status.webglMigrationCoverageStatus ?? null;
-  stats.webglDarknessLayerActive = !!status.webglDarknessLayerActive;
+  stats.webglIlluminationCompositeActive = !!status.webglIlluminationCompositeActive;
   stats.webglLightCount = status.webglLightCount ?? 0;
-  stats.webglDarknessRenderMs = status.webglDarknessRenderMs ?? 0;
-  stats.webglDarknessMode = status.webglDarknessMode ?? null;
+  stats.webglIlluminationRenderMs = status.webglIlluminationRenderMs ?? 0;
+  stats.webglIlluminationCompositeMode = status.webglIlluminationCompositeMode ?? null;
   stats.webglDecalLayerActive = !!status.webglDecalLayerActive;
   stats.webglDecalMode = status.webglDecalMode ?? null;
   stats.webglDecalSourceCount = status.webglDecalSourceCount ?? 0;
@@ -273,4 +275,9 @@ function writeBackendStats(stats, status) {
   stats.webglFogSmokeRenderMs = status.webglFogSmokeRenderMs ?? 0;
   stats.backendPresentMs = status.backendPresentMs ?? 0;
   stats.totalRenderMs = status.totalRenderMs ?? 0;
+  stats.webgl3dActive = !!status.webgl3dActive;
+  stats.webgl3dReferenceScene = status.webgl3dReferenceScene ?? null;
+  stats.webgl3dWorldTransformContract = status.webgl3dWorldTransformContract ?? null;
+  stats.webgl3dTreeSpatialRecipeContract = status.webgl3dTreeSpatialRecipeContract ?? null;
+  stats.webgl3dDiagnostics = status.webgl3dDiagnostics ?? null;
 }

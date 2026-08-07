@@ -2,6 +2,7 @@ import { WebGLSceneRoot } from './WebGLSceneRoot.js';
 import { WebGLCamera2D } from './WebGLCamera2D.js';
 import { WebGLRenderLayerRegistry } from './WebGLRenderLayerRegistry.js';
 import { WebGLPostProcessPipeline } from './WebGLPostProcessPipeline.js';
+import { WebGLIlluminationPipeline } from './WebGLIlluminationPipeline.js';
 import { buildWebGLStatsSummary, timeWebGLPhase } from './WebGLRenderStats.js';
 import { WebGLTerrainLayer } from './layers/WebGLTerrainLayer.js';
 import { WebGLDecalLayer } from './layers/WebGLDecalLayer.js';
@@ -17,14 +18,15 @@ import { WebGLWorldEventLayer } from './layers/WebGLWorldEventLayer.js';
 import { WebGLTutorialLayer } from './layers/WebGLTutorialLayer.js';
 import { WebGLOpeningLayer } from './layers/WebGLOpeningLayer.js';
 import { WebGLSmokeAwakeningLayer } from './layers/WebGLSmokeAwakeningLayer.js';
+import { WebGLAuthoredTransitionLayer } from './layers/WebGLAuthoredTransitionLayer.js';
 
-export const WEBGL_LIGHTING_WORLD_DEPTH_COMPOSITE_CONTRACT = 'black-sky-bound.webgl-ground-shadows-under-world-depth-light-over-world-depth.v0';
+export const WEBGL_ILLUMINATION_WORLD_DEPTH_COMPOSITE_CONTRACT = 'black-sky-bound.webgl-world-depth-times-additive-illumination.v1';
 
 export const WEBGL_LAYER_ORDER = Object.freeze([
   'terrain',
   'decals',
   'shadows',
-  'worldDepth',
+  'worldDepth', 'worldParticles',
   'lighting',
   'worldEvents',
   'effects',
@@ -33,6 +35,7 @@ export const WEBGL_LAYER_ORDER = Object.freeze([
   'atmosphere',
   'gameplayOverlay',
   'opening',
+  'authoredTransition',
   'smokeAwakening',
   'tutorial',
   'hudDebug'
@@ -45,24 +48,26 @@ export function createWebGLLayers() {
     new WebGLLightingLayer({
       id: 'shadows',
       mode: WEBGL_GROUND_SHADOW_UNDERLAY_MODE,
-      renderDarkness: false,
+      renderIllumination: false,
       renderLights: false,
       renderShadows: true
     }),
     new WebGLWorldDepthLayer(),
+    new WebGLEffectLayer({ id: 'worldParticles', stage: 'pre_illumination_materials' }),
     new WebGLLightingLayer({
       id: 'lighting',
-      renderDarkness: true,
+      renderIllumination: true,
       renderLights: true,
       renderShadows: false
     }),
     new WebGLWorldEventLayer(),
-    new WebGLEffectLayer(),
+    new WebGLEffectLayer({ stage: 'post_illumination_effects' }),
     new WebGLFogSmokeLayer(),
     new WebGLPostProcessLayer(),
     new WebGLAtmosphericOverlayLayer(),
     new WebGLGameplayOverlayLayer(),
     new WebGLOpeningLayer(),
+    new WebGLAuthoredTransitionLayer(),
     new WebGLSmokeAwakeningLayer(),
     new WebGLTutorialLayer(),
     new WebGLHudDebugLayer()
@@ -75,9 +80,10 @@ export class WebGLGameRenderer {
     this.scene = new WebGLSceneRoot(canvas);
     this.camera = new WebGLCamera2D(canvas);
     this.postProcess = new WebGLPostProcessPipeline(this.scene.gl);
+    this.illumination = new WebGLIlluminationPipeline(this.scene.gl);
     this.renderTargetWidth = canvas.clientWidth || 1280;
     this.renderTargetHeight = canvas.clientHeight || 720;
-    this.registry = new WebGLRenderLayerRegistry(createWebGLLayers());
+    this.registry = new WebGLRenderLayerRegistry(createWebGLLayers(), this.scene.gl);
     this.renderFrame = 0;
     this.sceneObjectVisibilityStates = new Map();
     this.status = {
@@ -104,10 +110,10 @@ export class WebGLGameRenderer {
       webglLayerOrder: this.registry.getLayerIds(),
       layerStats: {},
       webglMigrationCoverageStatus: policy.migrationCoverageStatus ?? 'webgl_only_canvas2d_renderer_culled',
-      webglDarknessLayerActive: false,
+      webglIlluminationCompositeActive: false,
       webglLightCount: 0,
-      webglDarknessRenderMs: 0,
-      webglDarknessMode: null,
+      webglIlluminationRenderMs: 0,
+      webglIlluminationCompositeMode: null,
       webglLightingProfileId: null,
       webglLightingInfluenceCount: 0,
       webglEmitterCompositeMode: null,
@@ -240,7 +246,7 @@ export class WebGLGameRenderer {
     this.recordDecalDiagnostics(summary.layers.decals);
     this.recordActorDiagnostics(summary.layers.worldDepth);
     this.recordEffectDiagnostics(summary.layers.effects);
-    this.recordDarknessDiagnostics(summary.layers.lighting, summary.layers.shadows);
+    this.recordIlluminationDiagnostics(summary.layers.lighting, summary.layers.shadows);
     this.recordLightSpaceDiagnostics(summary.layers);
     this.recordFogSmokeDiagnostics(summary.layers.fogSmoke);
     this.recordPostProcessDiagnostics(summary.layers.postProcess);
@@ -275,10 +281,10 @@ export class WebGLGameRenderer {
       webglLayerOrder: [...this.status.webglLayerOrder],
       layerStats: { ...this.status.layerStats },
       webglMigrationCoverageStatus: this.status.webglMigrationCoverageStatus,
-      webglDarknessLayerActive: this.status.webglDarknessLayerActive,
+      webglIlluminationCompositeActive: this.status.webglIlluminationCompositeActive,
       webglLightCount: this.status.webglLightCount,
-      webglDarknessRenderMs: this.status.webglDarknessRenderMs,
-      webglDarknessMode: this.status.webglDarknessMode,
+      webglIlluminationRenderMs: this.status.webglIlluminationRenderMs,
+      webglIlluminationCompositeMode: this.status.webglIlluminationCompositeMode,
       webglLightingProfileId: this.status.webglLightingProfileId,
       webglLightingInfluenceCount: this.status.webglLightingInfluenceCount,
       webglEmitterCompositeMode: this.status.webglEmitterCompositeMode,
@@ -396,12 +402,12 @@ export class WebGLGameRenderer {
     this.status.webglActorShadowLodPrimitiveCount = layerStats?.actorShadowLodPrimitiveCount ?? 0;
   }
 
-  recordDarknessDiagnostics(lightLayerStats, shadowLayerStats = null) {
+  recordIlluminationDiagnostics(lightLayerStats, shadowLayerStats = null) {
     const shadowStats = shadowLayerStats ?? lightLayerStats;
-    this.status.webglDarknessLayerActive = lightLayerStats?.status === 'active';
+    this.status.webglIlluminationCompositeActive = !!lightLayerStats?.illuminationCompositeActive;
     this.status.webglLightCount = lightLayerStats?.activeLightCount ?? lightLayerStats?.objectCount ?? 0;
-    this.status.webglDarknessRenderMs = (lightLayerStats?.renderMs ?? 0) + (shadowLayerStats?.renderMs ?? 0);
-    this.status.webglDarknessMode = lightLayerStats?.darknessMode ?? null;
+    this.status.webglIlluminationRenderMs = (lightLayerStats?.renderMs ?? 0) + (shadowLayerStats?.renderMs ?? 0);
+    this.status.webglIlluminationCompositeMode = lightLayerStats?.illuminationCompositeMode ?? null;
     this.status.webglLightingProfileId = lightLayerStats?.lightingProfileId ?? shadowStats?.lightingProfileId ?? null;
     this.status.webglLightingInfluenceCount = lightLayerStats?.influenceCount ?? 0;
     this.status.webglEmitterCompositeMode = lightLayerStats?.emitterCompositeMode ?? null;
@@ -499,6 +505,7 @@ export class WebGLGameRenderer {
       gl: this.scene.gl,
       scene: this.scene,
       postProcess: this.postProcess,
+      illumination: this.illumination,
       camera: this.camera,
       renderTargetWidth: this.renderTargetWidth,
       renderTargetHeight: this.renderTargetHeight,

@@ -77,6 +77,15 @@ assert(layer.particlePrimitiveCount > 0, 'WebGL effect layer should batch partic
 assert(layer.radials.length > 0, 'spark/smoke particles should produce radial primitives');
 assert(layer.triangles.length > 0, 'leaf/ash particles should produce triangle primitives');
 
+const materialParticles = projection.particles.filter((particle) => particle.visualRole === 'leaf_drift');
+const worldParticleLayer = new WebGLEffectLayer({ id: 'worldParticles', stage: 'pre_illumination_materials' });
+worldParticleLayer.update(projection, fakeContext());
+equal(worldParticleLayer.particleCount, materialParticles.length, 'pre-illumination particle stage should own only non-emissive material particles');
+equal(worldParticleLayer.radials.length, 0, 'pre-illumination leaf materials should not create emissive radial glow');
+const postIlluminationLayer = new WebGLEffectLayer({ stage: 'post_illumination_effects' });
+postIlluminationLayer.update(projection, fakeContext());
+equal(postIlluminationLayer.particleCount, projection.particles.length - materialParticles.length, 'post-illumination stage should exclude leaf materials from self-lit effects');
+
 function fakeContext() {
   return {
     camera: {

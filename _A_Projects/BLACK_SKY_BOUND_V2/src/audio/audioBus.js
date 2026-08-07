@@ -16,6 +16,7 @@ export class AudioBusGraph {
     this.masterGain = null;
     this.muffleFilter = null;
     this.muffleIntensity = 0;
+    this.paused = false;
     if (this.context) this.createGraph(this.tuning);
     this.applyUserMix(this.userMix, 0);
   }
@@ -61,9 +62,11 @@ export class AudioBusGraph {
     setAudioParam(gain.gain, this.context.currentTime, Math.max(0, Number(value) || 0), rampSeconds);
   }
 
-  applyUserMix(mix, rampSeconds = 0.08) {
+  applyUserMix(mix, rampSeconds = 0.08, force = false) {
     const next = normalizeAudioMix(mix);
     if (
+      !force
+      &&
       this.effectiveGains.size > 0
       && next.master === this.userMix.master
       && next.ambience === this.userMix.ambience
@@ -74,8 +77,17 @@ export class AudioBusGraph {
       const group = id === 'master' ? 'master'
         : id === 'ambience' || id === 'music' ? 'ambience'
           : 'effects';
-      this.setBusGain(id, (this.baseGains[id] ?? 1) * this.userMix[group], rampSeconds);
+      const pauseScale = this.paused ? (this.tuning.pause?.busMultipliers?.[id] ?? 0) : 1;
+      this.setBusGain(id, (this.baseGains[id] ?? 1) * this.userMix[group] * pauseScale, rampSeconds);
     }
+    return true;
+  }
+
+  setPaused(paused, rampSeconds = 0.06) {
+    const next = paused === true;
+    if (next === this.paused && this.effectiveGains.size > 0) return false;
+    this.paused = next;
+    this.applyUserMix(this.userMix, rampSeconds, true);
     return true;
   }
 
@@ -90,6 +102,8 @@ export class AudioBusGraph {
   snapshot() {
     return {
       available: this.available,
+      paused: this.paused,
+      pauseMode: this.tuning.pause?.mode ?? null,
       muffleIntensity: Number(this.muffleIntensity.toFixed(3)),
       userMix: { ...this.userMix },
       buses: Object.fromEntries(AUDIO_BUS_IDS.map((id) => [

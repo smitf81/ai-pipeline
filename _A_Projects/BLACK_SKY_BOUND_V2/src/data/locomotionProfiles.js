@@ -10,11 +10,11 @@ export const LocomotionProfileId = Object.freeze({
 export const LOCOMOTION_PROFILES = Object.freeze({
   [LocomotionProfileId.BABY_WYVERN]: profile({
     id: LocomotionProfileId.BABY_WYVERN,
-    max: 100,
-    regenPerSecond: 18,
-    recoveryDelay: 0.9,
-    sprint: { enabled: true, multiplier: 1.48, drainPerSecond: 28, resumeThreshold: 12 },
-    dodge: { enabled: true, cost: 20, distance: 1.12, duration: 0.16, cooldown: 0.38, visualRecoveryDuration: 0.12, visualRecoveryStartPhase: 0.5, aiStyle: null, aiTriggerRange: 0 }
+    max: 60,
+    regenPerSecond: 11,
+    recoveryDelay: 1.4,
+    sprint: { enabled: true, multiplier: 1.42, drainPerSecond: 30, resumeThreshold: 18 },
+    dodge: { enabled: true, cost: 24, distance: 1.12, duration: 0.16, cooldown: 0.55, visualRecoveryDuration: 0.12, visualRecoveryStartPhase: 0.5, aiStyle: null, aiTriggerRange: 0 }
   }),
   [LocomotionProfileId.RAIDER]: profile({
     id: LocomotionProfileId.RAIDER,

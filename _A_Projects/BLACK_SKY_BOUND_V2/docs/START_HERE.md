@@ -10,11 +10,13 @@ On Windows, double-click:
 LAUNCH_BSB.bat
 ```
 
-The launcher starts a small local Node server and opens the game at:
+The launcher starts a small local Node server and normally opens the game at:
 
 ```txt
 http://127.0.0.1:5177
 ```
+
+If that port belongs to another checkout or local process, the launcher automatically selects the next free port and opens this Desktop checkout. If this exact checkout is already running, it safely reuses it. No Git worktree selection is required for normal playtesting.
 
 Stop it with `Ctrl+C` in the launcher window.
 

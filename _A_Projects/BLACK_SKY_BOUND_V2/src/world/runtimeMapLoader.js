@@ -11,6 +11,9 @@ import {
 } from './runtimeMapContract.js';
 import { createSceneObjects } from './sceneObjects.js';
 import { TerrainType } from './terrain.js';
+import { normalizeRuntimeTransitionSequences } from './transitionSequences.js';
+import { normalizeDemoArenaDefinition } from '../game/arenaEncounter.js';
+import { getCreatureRecipe, normalizeCreatureRecipeReference } from '../data/creatures/creatureRecipes.js';
 
 const TERRAIN_TYPES = new Set(Object.values(TerrainType));
 const ENTITY_KINDS = new Set([EntityKind.RAIDER, EntityKind.HUSK, EntityKind.WEREWOLF]);
@@ -97,6 +100,17 @@ export function normalizeRuntimeMap(source) {
   const tiles = normalizeTiles(source.tiles, width, height);
   const scenarioId = normalizeId(source.scenarioId, 'scenarioId');
   getScenario(scenarioId);
+  const unitPlacements = normalizeUnitPlacements(source.unitPlacements, width, height);
+  const unitSpawners = normalizeUnitSpawnerList(source.unitSpawners).map((entry) => ({ ...entry }));
+  const arena = normalizeDemoArenaDefinition(source.arena, unitSpawners);
+  const transitions = normalizeRuntimeTransitions(source.transitions);
+  const sceneSequences = normalizeRuntimeTransitionSequences(source.sceneSequences, {
+    actorIds: unitPlacements.map((entry) => entry.id)
+  });
+  const departureSequenceId = transitions.escapeZone?.departureSequenceId;
+  if (departureSequenceId && !sceneSequences.some((entry) => entry.id === departureSequenceId)) {
+    throw new Error(`runtime_map_departure_sequence_missing:${departureSequenceId}`);
+  }
 
   const map = {
     contract: RUNTIME_MAP_CONTRACT,
@@ -107,13 +121,15 @@ export function normalizeRuntimeMap(source) {
     height,
     tiles,
     revision: boundedInteger(source.revision, 'revision', 0, Number.MAX_SAFE_INTEGER),
-    spawn: normalizePoint(source.spawn, width, height, 'spawn'),
+    spawn: normalizeSpawnPoint(source.spawn, width, height, 'spawn'),
     escapeZone: normalizeRect(source.escapeZone, width, height, 'escapeZone'),
-    transitions: normalizeRuntimeTransitions(source.transitions),
+    transitions,
     enemySpawns: normalizeUnitPlacements(source.enemySpawns, width, height, Faction.ENEMY),
-    unitPlacements: normalizeUnitPlacements(source.unitPlacements, width, height),
-    unitSpawners: normalizeUnitSpawnerList(source.unitSpawners).map((entry) => ({ ...entry })),
-    sceneObjects: createSceneObjects(normalizeSceneObjectInputs(source.sceneObjects))
+    unitPlacements,
+    unitSpawners,
+    sceneObjects: createSceneObjects(normalizeSceneObjectInputs(source.sceneObjects)),
+    sceneSequences,
+    ...(arena ? { arena } : {})
   };
   map.blobMasks = buildAllBlobMasks(map);
   return deepFreeze(map);
@@ -148,13 +164,18 @@ function normalizeUnitPlacements(entries, width, height, compatibilityTeam = nul
       ? entry.team
       : compatibilityTeam ?? getDefaultActorFaction(entry.type);
     const point = normalizePoint(entry, width, height, `unit:${index}`);
+    const creature = normalizeCreatureRecipeReference(entry.creature);
+    if (creature && getCreatureRecipe(creature.recipeId).identity.actorKind !== entry.type) {
+      throw new Error(`runtime_map_unit_creature_kind_mismatch:${index}:${creature.recipeId}:${entry.type}`);
+    }
     return {
       id: normalizeText(entry.id, `unit_${index + 1}`),
       label: normalizeText(entry.label, entry.type),
       type: entry.type,
       team,
       x: point.x,
-      y: point.y
+      y: point.y,
+      ...(creature ? { creature } : {})
     };
   });
 }
@@ -179,6 +200,7 @@ function normalizeEscapeZoneTransition(source) {
     mode,
     nextMapPath: normalizeRuntimeMapPath(source.nextMapPath, 'runtime_map_escape_transition_path_invalid'),
     nextMapId: source.nextMapId == null ? null : normalizeId(source.nextMapId, 'transitions.escapeZone.nextMapId'),
+    departureSequenceId: source.departureSequenceId == null ? null : normalizeId(source.departureSequenceId, 'transitions.escapeZone.departureSequenceId'),
     arrivalSequenceId: source.arrivalSequenceId == null ? null : normalizeId(source.arrivalSequenceId, 'transitions.escapeZone.arrivalSequenceId'),
     label: normalizeText(source.label, 'Next region')
   };
@@ -188,6 +210,13 @@ function normalizePoint(value, width, height, label) {
   const x = boundedInteger(value?.x, `${label}.x`, 0, width - 1);
   const y = boundedInteger(value?.y, `${label}.y`, 0, height - 1);
   return { x, y };
+}
+
+function normalizeSpawnPoint(value, width, height, label) {
+  const point = normalizePoint(value, width, height, label);
+  const rotation = value?.rotation == null ? 0 : Number(value.rotation);
+  if (!Number.isFinite(rotation)) throw new Error(`runtime_map_number_invalid:${label}.rotation`);
+  return { ...point, rotation };
 }
 
 function normalizeRect(value, width, height, label) {

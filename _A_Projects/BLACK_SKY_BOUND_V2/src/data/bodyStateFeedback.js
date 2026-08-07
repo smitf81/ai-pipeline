@@ -7,17 +7,17 @@ export const BODY_STATE_PROFILES = Object.freeze({
     id: BodyStateProfileId.YOUNG_DRAGON_SURVIVAL,
     enabled: true,
     health: Object.freeze({
-      maxHealth: 80,
+      maxHealth: 56,
       maxPressure: 1,
       regenEnabled: true,
-      regenDelayMs: 3600,
-      regenPerSecond: 6.5,
-      regenRampMs: 2800,
-      regenStartMultiplier: 0.28,
-      regenSprintingMultiplier: 0.42,
-      regenActionMultiplier: 0.62,
-      hitPulseDurationMs: 360,
-      criticalHealthThreshold: 0.34
+      regenDelayMs: 9000,
+      regenPerSecond: 2.25,
+      regenRampMs: 5000,
+      regenStartMultiplier: 0.15,
+      regenSprintingMultiplier: 0,
+      regenActionMultiplier: 0.25,
+      hitPulseDurationMs: 520,
+      criticalHealthThreshold: 0.43
     }),
     stamina: Object.freeze({
       lowThreshold: 0.38,

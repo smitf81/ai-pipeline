@@ -44,6 +44,7 @@ syncGameViews(harness.game);
 const hitBodyState = buildBodyStateProjection(harness.game, 0.25);
 assert(hitBodyState.health.pressure > 0, 'body-state projection should expose health pressure');
 assert(hitBodyState.health.hitPulse > 0, 'body-state projection should expose recent-damage pulse');
+equal(hitBodyState.health.recoveryBlockedByThreat, false, 'non-hostile test damage should not invent a pursuit blocker');
 healthSystem({ game: harness.game, dt: (profile.health.regenDelayMs - 100) / 1000 });
 equal(playerHealth.hp, hpBeforeResetHit - 5, 'reset delay should prevent immediate regen after a new hit');
 

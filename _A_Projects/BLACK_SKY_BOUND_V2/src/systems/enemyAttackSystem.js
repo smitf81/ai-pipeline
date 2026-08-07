@@ -13,9 +13,11 @@ import { spawnEffect } from '../game/spawn.js';
 import { isPlayerInteractiveLifecycle } from '../data/playerLifecycle.js';
 import { applyDamageToEntity } from './healthSystem.js';
 import { applyImpactToReceiver } from './impactResponseState.js';
+import { collisionShapesIntersect } from '../physics/collisionShapes.js';
 import { canAttackFromGuardState } from './raiderGuardState.js';
 import { EventType } from '../constants/eventTypes.js';
 import { emitEvent } from '../ecs/events.js';
+import { commitRaiderSpearImpact, registerRaiderSpearRecoil } from './raiderPhysicalMotionSystem.js';
 
 export function enemyAttackSystem({ game, dt }) {
   const delta = Math.max(0, Number(dt) || 0);
@@ -27,6 +29,7 @@ export function enemyAttackSystem({ game, dt }) {
     ComponentType.Cooldowns
   ])) {
     const ai = getComponent(game.world, attacker, ComponentType.EnemyPressureAI);
+    if (ai.disabled === true) continue;
     const health = getComponent(game.world, attacker, ComponentType.Health);
     const cooldowns = getComponent(game.world, attacker, ComponentType.Cooldowns);
     ai.cooldownTimer = Math.max(0, Number(cooldowns.attack) || 0);
@@ -89,6 +92,7 @@ function advanceEnemyAttack(game, attacker, ai, cooldowns, delta) {
   let remaining = Math.max(0, delta);
   for (let transitionCount = 0; transitionCount < 4 && isEnemyAttackBusy(ai); transitionCount += 1) {
     const profile = resolveAttackProfile(ai, ai.activeAttackProfileId);
+    if (ai.attackPhase === EnemyAttackPhase.WINDUP) trackCommittedTargetDuringWindup(game.world, attacker, ai.pendingAttackTargetId);
     const duration = phaseDuration(profile, ai.attackPhase);
     const timerBefore = Math.max(0, Number(ai.attackTimer) || 0);
     const consumed = Math.min(timerBefore, remaining);
@@ -104,6 +108,7 @@ function advanceEnemyAttack(game, attacker, ai, cooldowns, delta) {
     if (ai.attackTimer > 0) return;
 
     if (ai.attackPhase === EnemyAttackPhase.WINDUP) {
+      commitRaiderSpearImpact(game.world, attacker, ai);
       ai.attackPhase = EnemyAttackPhase.ACTIVE;
       ai.attackTimer = Math.max(0, profile.active ?? 0);
       ai.attackDamageApplied = false;
@@ -119,12 +124,24 @@ function advanceEnemyAttack(game, attacker, ai, cooldowns, delta) {
   }
 }
 
+function trackCommittedTargetDuringWindup(world, attacker, target) {
+  if (!isIntentionalEnemyTarget(world, attacker, target)) return;
+  const source = getComponent(world, attacker, ComponentType.Transform);
+  const destination = getComponent(world, target, ComponentType.Transform);
+  if (!source || !destination) return;
+  const physical = getComponent(world, attacker, ComponentType.RaiderPhysicalMotion);
+  source.rotation = physical?.weapon?.predictedImpact
+    ? physical.attention.chestFacing
+    : Math.atan2(destination.y - source.y, destination.x - source.x);
+}
+
 function resolveEnemyAttackDamage(game, attacker, ai, cooldowns, profile) {
   if (ai.attackDamageApplied) return;
   const target = ai.pendingAttackTargetId;
   const targetValid = ai.targetId === target && isIntentionalEnemyTarget(game.world, attacker, target);
   const hitIds = targetValid ? resolveEnemyAttackHits(game.world, attacker, target, profile) : [];
   for (const hitId of hitIds) applyEnemyAttackHit(game, attacker, hitId, profile);
+  registerRaiderSpearRecoil(game.world, attacker, hitIds.length);
   spawnEnemyStrikeVisual(game, attacker, profile, hitIds.length);
   ai.attackDamageApplied = true;
   ai.lastAttackAt = ai.elapsed;
@@ -224,6 +241,11 @@ function resolveAttackProfile(ai, profileId) {
 }
 
 function isInsideEnemyAttackShape(world, attacker, candidate, hitShape) {
+  const attackerRig = getComponent(world, attacker, ComponentType.BodyContactRig);
+  const candidateRig = getComponent(world, candidate, ComponentType.BodyContactRig);
+  if (attackerRig?.attackVolumes?.length && candidateRig?.hurtVolumes?.length) {
+    return attackerRig.attackVolumes.some((attack) => candidateRig.hurtVolumes.some((hurt) => collisionShapesIntersect(attack, hurt)));
+  }
   const source = getComponent(world, attacker, ComponentType.Transform);
   const target = getComponent(world, candidate, ComponentType.Transform);
   const collider = getComponent(world, candidate, ComponentType.Collider);

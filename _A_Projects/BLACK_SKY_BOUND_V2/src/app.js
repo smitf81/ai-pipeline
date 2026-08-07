@@ -13,15 +13,14 @@ import { ScenarioPhase } from './constants/scenarioPhases.js';
 import { TerrainType } from './world/terrain.js';
 import { paintTerrainBlob } from './terrain/blobRules.js';
 import { createDebugSnapshot } from './debug/snapshot.js';
-import { renderGameToText } from './debug/runtimeText.js';
 import { validateWorldState } from './debug/validation.js';
 import { createPerformanceDiagnostics } from './debug/performance.js';
 import { applyPauseInput, applyPauseMenuInput, createPauseMenuState } from './game/pause.js';
+import { buildPauseMenuProjection } from './projection/tutorialProjection.js';
 import { setCreatureTuningValue } from './data/creatures/creatureTuning.js';
-import { loadCreatureTuningFromServer, saveCreatureTuningToServer } from './tuning/creatureTuningClient.js';
+import { saveCreatureTuningToServer } from './tuning/creatureTuningClient.js';
 import { createCreatureTuningOverlay } from './tuning/tuningOverlay.js';
-import {
-  applyTuningInput,
+import { applyTuningInput,
   applyTuningSelectionInput,
   createTuningState,
   refreshCreatureRigForTuning,
@@ -29,11 +28,9 @@ import {
 } from './tuning/tuningRuntime.js';
 import {
   createProgrammaticRuntimeMapLoad,
-  loadRuntimeMapTransition,
-  loadStandaloneRuntimeMap,
-  logRuntimeMapLoad
+  loadRuntimeMapTransition
 } from './world/runtimeMapBootstrap.js';
-import { applyWorldEventDebugQuery, createWorldEventAudioBridge, createWorldEventDebugControls } from './game/worldEventControls.js';
+import { createWorldEventAudioBridge, createWorldEventDebugControls } from './game/worldEventControls.js';
 import {
   captureAbilityProgressionInProfile,
   createPlayerProfileStore,
@@ -69,8 +66,20 @@ import {
 } from './game/smokeAwakening.js';
 import { AbilityId } from './constants/abilityIds.js';
 import { AbilityUnlockEventId } from './data/abilityUnlockEvents.js';
-import { applyAbilityUnlockEvent, canUseAbility } from './game/playerAbilities.js';
-import { emitRadialSmokeBurst } from './systems/smokeSystem.js';
+import {
+  applyAbilityUnlockEvent,
+  canUseAbility,
+  captureRunAbilityProgression
+} from './game/playerAbilities.js';
+import {
+  createAuthoredTransitionSequenceState,
+  isAuthoredTransitionSequenceBlockingGameplay,
+  startAuthoredTransitionSequence,
+  updateAuthoredTransitionSequence
+} from './game/authoredTransitionSequence.js';
+import { buildAuthoredTransitionSequenceProjection } from './projection/authoredTransitionSequenceProjection.js';
+import { humanoidProjectionSystem } from './systems/humanoidProjectionSystem.js';
+import { raiderPhysicalMotionSystem } from './systems/raiderPhysicalMotionSystem.js';
 
 export function createApp(canvas, options = {}) {
   const map = options.map ?? createDemoMap();
@@ -114,6 +123,7 @@ export function createApp(canvas, options = {}) {
       tileSize: CONFIG.tileSize
     }),
     smokeAwakening: createSmokeAwakeningState(),
+    authoredTransitionSequence: createAuthoredTransitionSequenceState(),
     diagnostics: {
       frame: 0,
       performance: createPerformanceDiagnostics(),
@@ -133,6 +143,7 @@ export function createApp(canvas, options = {}) {
   const worldEvents = createWorldEventDebugControls(state);
   const worldEventAudio = createWorldEventAudioBridge(audio);
   const smokeAwakeningAudio = createSmokeAwakeningAudioBridge(audio);
+  const authoredTransitionAudio = createSmokeAwakeningAudioBridge(audio);
   audio.attachUnlockTarget(canvas);
   let saveTimer = null;
   let saveSequence = 0;
@@ -216,8 +227,36 @@ export function createApp(canvas, options = {}) {
       return;
     }
 
+    if (isAuthoredTransitionSequenceBlockingGameplay(state.authoredTransitionSequence)) {
+      const sequenceUpdate = updateAuthoredTransitionSequence({
+        scene: state.authoredTransitionSequence,
+        game: state.game,
+        realDt: dt
+      });
+      raiderPhysicalMotionSystem({ game: state.game, dt });
+      humanoidProjectionSystem({ game: state.game, dt });
+      wyvernProjectionSystem({ state, game: state.game, dt });
+      syncGameViews(state.game);
+      snapCameraToDragon(state);
+      if (sequenceUpdate.handoffNow) {
+        state.game.mapTransition = {
+          ...state.game.mapTransition,
+          status: 'requested',
+          departureSequenceCompleted: true
+        };
+        processMapTransitionRequest();
+      }
+      state.diagnostics.validation = validateWorldState(state.game.world);
+      state.diagnostics.snapshot = createDebugSnapshot(state.game);
+      syncTuningSummary(state);
+      overlay.update();
+      updateAudio(dt);
+      input.afterUpdate();
+      return;
+    }
+
     applyPauseInput(state, input);
-    applyPauseMenuInput(state, input);
+    applyPauseMenuInput(state, input, state.paused ? buildPauseMenuProjection(state) : null, canvas);
     if (state.pauseMenu.settingsChanged) {
       persistPlayerProfile();
       if (state.pauseMenu.lastChangedSettingId?.startsWith('tutorial_')) {
@@ -262,6 +301,7 @@ export function createApp(canvas, options = {}) {
 
   function updateAudio(dt) {
     worldEventAudio.sync(state.game);
+    authoredTransitionAudio.sync(state.authoredTransitionSequence);
     smokeAwakeningAudio.sync(state.smokeAwakening);
     state.audio = audio.update(state, dt);
   }
@@ -273,16 +313,30 @@ export function createApp(canvas, options = {}) {
       state.playerProfile = captureAbilityProgressionInProfile(state.game.world, state.game.dragonId, state.playerProfile);
       persistPlayerProfile();
     }
-    const spawned = emitRadialSmokeBurst(state.game, state.game.dragonId, {
-      actionId: 'smoke_instinct_exhale',
-      reason: 'first_uncontrolled_radial_exhale'
-    });
-    state.smokeAwakening.radialSmokeEmitted = spawned.length > 0;
+    state.smokeAwakening.radialSmokeEmitted = false;
   }
 
   function processMapTransitionRequest() {
     const request = state.game.mapTransition;
     if (!request || request.status !== 'requested' || transitionLoad) return;
+    if (request.departureSequenceId && request.departureSequenceCompleted !== true) {
+      const started = startAuthoredTransitionSequence({
+        scene: state.authoredTransitionSequence,
+        game: state.game,
+        map: state.map,
+        sequenceId: request.departureSequenceId
+      });
+      if (!started.ok) {
+        state.game.mapTransition = { ...request, status: 'failed', error: started.reason };
+        state.game.status = ScenarioPhase.PLAYING;
+        state.game.message = `Transition scene failed: ${started.reason}`;
+        return;
+      }
+      state.game.mapTransition = { ...request, status: 'sequencing', sequenceStartedAt: state.time };
+      state.game.status = ScenarioPhase.TRANSITIONING;
+      state.game.message = state.authoredTransitionSequence.sequence.label;
+      return;
+    }
     state.game.mapTransition = { ...request, status: 'loading', startedAt: state.time };
     state.game.status = ScenarioPhase.TRANSITIONING;
     state.game.message = `Loading ${request.label || 'next region'}...`;
@@ -307,6 +361,7 @@ export function createApp(canvas, options = {}) {
   function applyRuntimeMapTransition(result, request) {
     const previousLoad = state.runtimeMapLoad;
     const creatureTuning = state.game.creatureTuning;
+    const runAbilityProgression = captureRunAbilityProgression(state.game.world, state.game.dragonId);
     state.map = result.map;
     state.runtimeMapSource = result.load.path;
     state.runtimeMapLoad = Object.freeze({
@@ -320,7 +375,12 @@ export function createApp(canvas, options = {}) {
       })
     });
     state.camera = createCamera(canvas, result.map);
-    state.game = createInitialGameState(result.map, { creatureTuning, playerProfile: state.playerProfile });
+    state.game = createInitialGameState(result.map, {
+      creatureTuning,
+      playerProfile: state.playerProfile,
+      runAbilityProgression
+    });
+    state.authoredTransitionSequence = createAuthoredTransitionSequenceState();
     state.game.message = `Entered ${result.map.title}.`;
     state.time = 0;
     state.diagnostics.architecture = state.game.architecture;
@@ -331,6 +391,7 @@ export function createApp(canvas, options = {}) {
     const smokeAwakeningRequested = request.arrivalSequenceId === SMOKE_AWAKENING.arrivalSequenceId;
     state.smokeAwakening = createSmokeAwakeningState({
       enabled: smokeAwakeningRequested && !canUseAbility(state.game.world, state.game.dragonId, AbilityId.SMOKE_BURST),
+      startPhase: 'blackout_hold',
       source: request.arrivalSequenceId ?? 'not_requested',
       fromMapId: previousLoad.mapId,
       mapId: result.map.id,
@@ -378,7 +439,23 @@ export function createApp(canvas, options = {}) {
     }, 90);
   }
 
-  const loop = createFixedStepLoop({ stepMs: CONFIG.fixedStepMs, update, render });
+  const loop = createFixedStepLoop({
+    stepMs: CONFIG.fixedStepMs,
+    update,
+    render,
+    onFrameTiming: renderer.recordLoopTiming
+  });
+  let disposed = false;
+  function stop() { loop.stop(); }
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    stop();
+    if (saveTimer) clearTimeout(saveTimer);
+    renderer.dispose();
+    overlay.destroy();
+    input.destroy();
+  }
   return {
     state,
     input,
@@ -391,7 +468,8 @@ export function createApp(canvas, options = {}) {
     get profile() { return state.playerProfile; },
     persistPlayerProfile,
     start: loop.start,
-    stop: loop.stop
+    stop,
+    dispose
   };
 }
 
@@ -403,47 +481,14 @@ function detectReducedMotion() {
   }
 }
 
-const canvas = typeof document !== 'undefined' ? document.getElementById('game') : null;
-if (canvas) {
-  bootBrowserApp(canvas);
-}
-
-async function bootBrowserApp(canvas) {
-  const search = globalThis.location?.search ?? '';
-  const runtimeResult = await loadStandaloneRuntimeMap(search);
-  logRuntimeMapLoad(runtimeResult);
-  window.BSB_V2_MAP_LOAD = runtimeResult.load;
-  if (!runtimeResult.ok) {
-    window.BSB_V2_BOOT_ERROR = runtimeResult.load;
-    renderBootError(canvas, runtimeResult.load.reason);
-    return;
-  }
-  const map = runtimeResult.map;
-  const runtimeMapLoad = runtimeResult.load;
-  const loaded = await loadCreatureTuningFromServer();
-  const app = createApp(canvas, {
-    map,
-    runtimeMapLoad,
-    creatureTuning: loaded.tuning,
-    tuningSource: loaded.source,
-    tuningLoadStatus: loaded.ok ? 'loaded' : 'blocked',
-    tuningLoadError: loaded.ok ? null : loaded.reason,
-    openingEnabled: !queryFlag(search, 'skipHatch'),
-    openingSource: queryFlag(search, 'skipHatch') ? 'debug_query_skip_hatch' : 'fresh_launch'
-  });
-  window.BSB_V2_DEMO = app;
-  applyWorldEventDebugQuery(app.worldEvents, globalThis.location?.search ?? '');
-  window.advanceTime = (ms = CONFIG.fixedStepMs) => app.loop.tickForTest(Math.max(0, Number(ms) || 0));
-  window.render_game_to_text = () => renderGameToText(app);
-  app.start();
-}
-
 function snapCameraToDragon(state) {
+  const transition = buildAuthoredTransitionSequenceProjection(state);
+  const transitionCamera = transition?.active ? transition.camera : null;
   const instinct = buildSmokeAwakeningProjection(state);
   const instinctCamera = instinct?.active ? instinct.camera : null;
   const opening = buildOpeningSequenceProjection(state);
   const openingCamera = opening?.active ? opening.camera : null;
-  const camera = instinctCamera ?? openingCamera;
+  const camera = transitionCamera ?? instinctCamera ?? openingCamera;
   if (camera) {
     state.camera.x = camera.anchorWorldX + camera.impulseWorldX;
     state.camera.y = camera.anchorWorldY + camera.impulseWorldY;
@@ -468,28 +513,4 @@ function applyOpeningPlayerTransform(state) {
   transform.x = egg.tileX + Math.cos(egg.exitAngle) * distance;
   transform.y = egg.tileY + Math.sin(egg.exitAngle) * distance;
   transform.rotation = egg.rotation;
-}
-
-function queryFlag(search, key) {
-  const value = new URLSearchParams(search).get(key);
-  return ['1', 'true', 'on'].includes(String(value ?? '').toLowerCase());
-}
-
-function renderBootError(canvas, reason) {
-  const dpr = Math.max(1, Math.min(2, globalThis.devicePixelRatio || 1));
-  const width = Math.max(1, Math.floor((canvas.clientWidth || 1280) * dpr));
-  const height = Math.max(1, Math.floor((canvas.clientHeight || 720) * dpr));
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#08090b';
-  ctx.fillRect(0, 0, width / dpr, height / dpr);
-  ctx.fillStyle = '#ff8f8f';
-  ctx.font = '600 18px ui-monospace, monospace';
-  ctx.fillText('BLACK SKY BOUND V2 — MAP LOAD BLOCKED', 32, 52);
-  ctx.fillStyle = '#c8ccd4';
-  ctx.font = '14px ui-monospace, monospace';
-  ctx.fillText(reason.slice(0, 120), 32, 82);
 }

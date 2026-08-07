@@ -2,6 +2,7 @@ import { EnemyPressureState } from '../constants/enemyPressureStates.js';
 import { EnemyAttackPhase, EnemyAttackProfileId, getEnemyAttackRange } from '../data/enemyAttackProfiles.js';
 import { PlayerLifecycleState, PLAYER_LIFECYCLE_PROFILE } from '../data/playerLifecycle.js';
 import { createAbilityProgression, createChargeCounterState } from './abilityComponents.js';
+import { createBodyContactRig } from './bodyContactComponents.js';
 
 export const Components = Object.freeze({
   kind(type, label) { return { type, label }; },
@@ -84,6 +85,8 @@ export const Components = Object.freeze({
       hitPulseRemainingMs: 0,
       pressure: 0,
       recovering: false,
+      recoveryBlockedByThreat: false,
+      directPursuerCount: 0,
       regeneratedTotal: 0,
       lastDamageAmount: 0,
       lastDamageType: null,
@@ -92,8 +95,10 @@ export const Components = Object.freeze({
     };
   },
   collider(radius, blocksMovement = true) { return { radius, blocksMovement }; },
+  bodyContactRig: createBodyContactRig,
   team(id) { return { id }; },
-  renderable({ label, colour, stroke, radius, layer = 'actors', materialProfileId = null }) { return { label, colour, stroke, radius, layer, materialProfileId }; },
+  renderable({ label, colour, stroke, radius, layer = 'actors', materialProfileId = null, role = 'actor', silhouette = 'marker', lightReadabilityProfileId = null }) { return { label, colour, stroke, radius, layer, materialProfileId, role, silhouette, lightReadabilityProfileId }; },
+  creatureRecipe(instance) { return instance; },
   playerControlled() { return {}; },
   playerLifecycle() {
     return {
@@ -219,6 +224,7 @@ export const Components = Object.freeze({
       classification: 'bounded_corpse_aftermath_v0',
       sourceEntityId: data.sourceEntityId ?? null,
       sourceKind: data.sourceKind ?? 'unknown',
+      sourceRecipeId: data.sourceRecipeId ?? null, sourceVariantSignature: data.sourceVariantSignature ?? null,
       profileId: data.profileId ?? 'unknown_corpse',
       createdOrder: finiteNumber(data.createdOrder, 0),
       bodyLength: finiteNumber(data.bodyLength, 1),
@@ -298,7 +304,7 @@ export const Components = Object.freeze({
       enabled: true,
       recipeId: data?.id,
       cooldown: 0,
-      idleCooldown: 0,
+      idleCooldown: 0, emissionSerial: 0,
       lastSocketX: null,
       lastSocketY: null,
       ...data

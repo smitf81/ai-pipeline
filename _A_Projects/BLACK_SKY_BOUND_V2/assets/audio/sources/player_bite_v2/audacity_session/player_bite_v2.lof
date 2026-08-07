@@ -1,0 +1,18 @@
+# Black Sky Bound player bite v2 - aligned real-source stems and reference mixes
+# Open this LOF in Audacity; every stem is full-length and already aligned to animation contact.
+# Jaw closure target: 0.195 seconds
+window offset 0 duration 0.48
+file "01_01_breath_snarl_load.wav"
+file "01_02_jaw_bone_closure.wav"
+file "01_03_wet_mouth_detail.wav"
+file "player_bite_snap_01_reference_mix.wav"
+window offset 0 duration 0.48
+file "02_01_breath_snarl_load.wav"
+file "02_02_jaw_bone_closure.wav"
+file "02_03_wet_mouth_detail.wav"
+file "player_bite_snap_02_reference_mix.wav"
+window offset 0 duration 0.48
+file "03_01_breath_snarl_load.wav"
+file "03_02_jaw_bone_closure.wav"
+file "03_03_wet_mouth_detail.wav"
+file "player_bite_snap_03_reference_mix.wav"

@@ -4,6 +4,7 @@ import { isFaction } from '../constants/factions.js';
 import { getDefaultActorFaction } from '../data/actors.js';
 import { Components } from '../components/createComponents.js';
 import { addComponent, createEntity, getComponent } from '../ecs/world.js';
+import { getCreatureRecipe, normalizeCreatureRecipeReference } from '../data/creatures/creatureRecipes.js';
 
 export const UNIT_SPAWNER_CONTRACT = 'black-sky-bound.unit-spawner.v0';
 
@@ -27,6 +28,10 @@ export function normalizeUnitSpawner(entry = {}, index = 0) {
   const team = isFaction(entry.team) ? entry.team : getDefaultActorFaction(type);
   const x = roundTile(entry.x ?? entry.tileX, 0);
   const y = roundTile(entry.y ?? entry.tileY, 0);
+  const creature = normalizeCreatureRecipeReference(entry.creature);
+  if (creature && getCreatureRecipe(creature.recipeId).identity.actorKind !== type) {
+    throw new Error(`unit_spawner_creature_kind_mismatch:${creature.recipeId}:${type}`);
+  }
   return {
     contract: UNIT_SPAWNER_CONTRACT,
     id: normalizeText(entry.id, `spawner_${String(index + 1).padStart(2, '0')}`),
@@ -43,7 +48,8 @@ export function normalizeUnitSpawner(entry = {}, index = 0) {
     limit: clampInteger(entry.limit, DEFAULT_SPAWNER.limit, 0, 999),
     spawnRadiusTiles: clampNumber(entry.spawnRadiusTiles, DEFAULT_SPAWNER.spawnRadiusTiles, 0, 8),
     hitPoints: clampInteger(entry.hitPoints ?? entry.hp ?? entry.maxHp, DEFAULT_SPAWNER.hitPoints, 1, 999),
-    fixtureRadiusTiles: clampNumber(entry.fixtureRadiusTiles ?? entry.fixtureRadius ?? entry.radius, DEFAULT_SPAWNER.fixtureRadiusTiles, 0.15, 3)
+    fixtureRadiusTiles: clampNumber(entry.fixtureRadiusTiles ?? entry.fixtureRadius ?? entry.radius, DEFAULT_SPAWNER.fixtureRadiusTiles, 0.15, 3),
+    ...(creature ? { creature } : {})
   };
 }
 
@@ -82,7 +88,8 @@ export function serializeUnitSpawner(entry = {}) {
     limit: normalized.limit,
     spawnRadiusTiles: normalized.spawnRadiusTiles,
     hitPoints: normalized.hitPoints,
-    fixtureRadiusTiles: normalized.fixtureRadiusTiles
+    fixtureRadiusTiles: normalized.fixtureRadiusTiles,
+    ...(normalized.creature ? { creature: { ...normalized.creature } } : {})
   };
 }
 

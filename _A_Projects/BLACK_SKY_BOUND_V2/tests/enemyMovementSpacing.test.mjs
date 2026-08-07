@@ -3,6 +3,7 @@ import { ComponentType } from '../src/constants/componentTypes.js';
 import { EntityKind } from '../src/constants/entityKinds.js';
 import { Faction } from '../src/constants/factions.js';
 import { COMBAT_BALANCE } from '../src/data/combatBalance.js';
+import { EnemyAttackProfileId, getEnemyAttackProfile } from '../src/data/enemyAttackProfiles.js';
 import { getComponent, removeComponent } from '../src/ecs/world.js';
 import { createInitialGameState } from '../src/game/createGame.js';
 import { spawnActor } from '../src/game/spawn.js';
@@ -41,8 +42,8 @@ assert(!isPositionBlocked(steeringHarness.map, steeringTransform.x, steeringTran
 const pinchHarness = createTreeRockPinchHarness();
 const pinchDragonTransform = component(pinchHarness, pinchHarness.game.dragonId, ComponentType.Transform);
 pinchDragonTransform.x = 8;
-pinchDragonTransform.y = 10.5;
-const pinchedRaider = spawnActor(pinchHarness.game.world, EntityKind.RAIDER, 12.35, 10.5, Faction.RAIDERS);
+pinchDragonTransform.y = 9;
+const pinchedRaider = spawnActor(pinchHarness.game.world, EntityKind.RAIDER, 12.75, 9, Faction.RAIDERS);
 const pinchedTransform = component(pinchHarness, pinchedRaider, ComponentType.Transform);
 const pinchedRadius = component(pinchHarness, pinchedRaider, ComponentType.Collider).radius;
 const pinchedAI = component(pinchHarness, pinchedRaider, ComponentType.EnemyPressureAI);
@@ -51,7 +52,7 @@ pinchedAI.decisionCooldown = 0.4;
 pinchedAI.timeSinceMeaningfulProgress = 0.24;
 pinchedAI.failedMoveCount = 2;
 const pinchedStart = { x: pinchedTransform.x, y: pinchedTransform.y };
-assert(!isPositionBlocked(pinchHarness.map, pinchedTransform.x, pinchedTransform.y, pinchedRadius), 'tree-rock pinch fixture should begin just outside coarse blockers');
+assert(!isPositionBlocked(pinchHarness.map, pinchedTransform.x, pinchedTransform.y, pinchedRadius), 'tree-rock pinch fixture should begin just outside visible recipe blockers');
 for (let frame = 0; frame < 8; frame += 1) {
   enemyPressureSystem({ game: pinchHarness.game, map: pinchHarness.map, dt: 0.1 });
   assert(!isPositionBlocked(pinchHarness.map, pinchedTransform.x, pinchedTransform.y, pinchedRadius), 'stuck recovery should respect tree and boulder blockers');
@@ -64,8 +65,8 @@ assert(pinchedAI.blockedMoveCount < 8, 'held unstick direction should avoid hamm
 const retreatHarness = createTreeRockPinchHarness();
 const retreatDragonTransform = component(retreatHarness, retreatHarness.game.dragonId, ComponentType.Transform);
 retreatDragonTransform.x = 8;
-retreatDragonTransform.y = 10.5;
-const retreatRaider = spawnActor(retreatHarness.game.world, EntityKind.RAIDER, 12.35, 10.5, Faction.RAIDERS);
+retreatDragonTransform.y = 9;
+const retreatRaider = spawnActor(retreatHarness.game.world, EntityKind.RAIDER, 12.75, 9, Faction.RAIDERS);
 const retreatAI = component(retreatHarness, retreatRaider, ComponentType.EnemyPressureAI);
 retreatAI.targetId = retreatHarness.game.dragonId;
 retreatAI.decisionCooldown = 0.4;
@@ -149,7 +150,7 @@ actorSeparationSystem({ game: facingHarness.game, map: facingHarness.map, dt: 0.
 humanoidProjectionSystem({ game: facingHarness.game, dt: 0.1 });
 assert(Math.abs(component(facingHarness, facingRaider, ComponentType.Transform).rotation) < 0.001, 'separation movement should not overwrite committed attack facing');
 enemyAttackSystem({ game: facingHarness.game, dt: 0.35 });
-equal(component(facingHarness, facingTarget, ComponentType.Health).hp, 28 - scaledEnemyDamage(9), 'separated attacker should still resolve its committed scaled spear hit');
+equal(component(facingHarness, facingTarget, ComponentType.Health).hp, 28 - scaledEnemyDamage(getEnemyAttackProfile(EnemyAttackProfileId.RAIDER_SPEAR_JAB).damage), 'separated attacker should still resolve its committed scaled spear hit');
 
 function createHarness() {
   const map = createDemoMap();

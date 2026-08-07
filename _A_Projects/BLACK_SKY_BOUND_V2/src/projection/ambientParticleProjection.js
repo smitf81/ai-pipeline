@@ -8,6 +8,9 @@ import {
 import { RENDER_BUDGETS } from '../data/renderBudgets.js';
 import { SmokeSourceKind } from '../data/smokeSources.js';
 
+const SEEDED_VALUE_CACHE = new Map();
+const MAX_SEEDED_VALUE_CACHE_ENTRIES = 8192;
+
 export function buildAmbientParticleProjection({
   lights = [],
   fogSmoke = [],
@@ -16,36 +19,45 @@ export function buildAmbientParticleProjection({
   renderTime = 0
 } = {}) {
   const particles = [];
+  const jobs = [];
   for (const light of lights) {
     const kind = resolveLightAmbientParticleKind(light);
     if (light.enabled === false || !kind) continue;
-    appendParticles(particles, light, kind, renderTime, positionForAmbientKind(kind));
+    jobs.push(createJob(light, kind, positionForAmbientKind(kind)));
   }
   for (const hazard of groundHazards) {
     if (hazard.sourceKind !== 'napalm_pool') continue;
-    appendParticles(particles, hazard, AmbientParticleKind.NAPALM_EMBER, renderTime, emberPosition);
+    jobs.push(createJob(hazard, AmbientParticleKind.NAPALM_EMBER, emberPosition));
   }
   for (const source of fogSmoke) {
     if (source.sourceKind === SmokeSourceKind.DRAGON_SMOKE_PLUME) {
-      appendParticles(particles, source, AmbientParticleKind.SMOKE_TRAIL_MOTE, renderTime, smokeTrailPosition);
+      jobs.push(createJob(source, AmbientParticleKind.SMOKE_TRAIL_MOTE, smokeTrailPosition));
     }
     if (source.sourceKind === SmokeSourceKind.NAPALM_SMOULDER || source.sourceKind === SmokeSourceKind.SMOULDER_PATCH_WISP) {
-      appendParticles(particles, source, AmbientParticleKind.ASH_FLECK, renderTime, ashPosition);
+      jobs.push(createJob(source, AmbientParticleKind.ASH_FLECK, ashPosition));
     }
   }
   for (const object of scenery) {
     const kind = object.render?.ambientParticles?.kind
       ?? (object.type === SceneObjectType.TREE ? AmbientParticleKind.LEAF_DRIFT : null);
     if (!kind) continue;
-    appendParticles(particles, object, kind, renderTime, leafPosition);
+    jobs.push(createJob(object, kind, leafPosition));
   }
-  particles.sort((a, b) => (b.renderPriority ?? 0) - (a.renderPriority ?? 0));
-  return particles.slice(0, RENDER_BUDGETS.ambientParticles.maxActive);
+  jobs.sort((a, b) => b.priority - a.priority);
+  for (const job of jobs) {
+    appendParticles(particles, job.source, job.kind, renderTime, job.positionFor, RENDER_BUDGETS.ambientParticles.maxActive);
+    if (particles.length >= RENDER_BUDGETS.ambientParticles.maxActive) break;
+  }
+  return particles;
 }
 
-function appendParticles(particles, source, kind, renderTime, positionFor) {
+function createJob(source, kind, positionFor) {
+  return { source, kind, positionFor, priority: getAmbientParticleRecipe(kind).renderPriority ?? 0 };
+}
+
+function appendParticles(particles, source, kind, renderTime, positionFor, maxCount) {
   const recipe = getAmbientParticleRecipe(kind);
-  for (let index = 0; index < recipe.count; index += 1) {
+  for (let index = 0; index < recipe.count && particles.length < maxCount; index += 1) {
     const cycle = recipe.cycleSeconds * (0.84 + seeded01(source.id, kind, index, 'cycle') * 0.32);
     const phase = fract((renderTime + seeded01(source.id, kind, index, 'phase') * cycle) / cycle);
     const position = positionFor(source, recipe, phase, index, kind);
@@ -166,12 +178,17 @@ function seededSigned(...parts) {
 
 function seeded01(...parts) {
   const text = parts.join(':');
+  const cached = SEEDED_VALUE_CACHE.get(text);
+  if (cached !== undefined) return cached;
   let hash = 2166136261;
   for (let i = 0; i < text.length; i += 1) {
     hash ^= text.charCodeAt(i);
     hash = Math.imul(hash, 16777619);
   }
-  return (hash >>> 0) / 4294967295;
+  const value = (hash >>> 0) / 4294967295;
+  if (SEEDED_VALUE_CACHE.size >= MAX_SEEDED_VALUE_CACHE_ENTRIES) SEEDED_VALUE_CACHE.clear();
+  SEEDED_VALUE_CACHE.set(text, value);
+  return value;
 }
 
 function fract(value) {

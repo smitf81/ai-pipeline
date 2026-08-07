@@ -3,7 +3,7 @@ import { EventType } from '../constants/eventTypes.js';
 import { getComponent } from '../ecs/world.js';
 import { emitEvent } from '../ecs/events.js';
 import { query } from '../ecs/query.js';
-import { resolveHitSlowForTarget, resolveIncomingDamageAmount } from '../data/combatBalance.js';
+import { COMBAT_BALANCE, resolveHitSlowForTarget, resolveIncomingDamageAmount } from '../data/combatBalance.js';
 import { resolveDirectionalGuardDamage } from './raiderGuardState.js';
 import { areFactionsHostile } from '../constants/factions.js';
 
@@ -61,7 +61,19 @@ export function healthSystem({ game, dt } = {}) {
   const deltaMs = delta * 1000;
   for (const entity of query(game.world, [ComponentType.Health])) {
     const health = getComponent(game.world, entity, ComponentType.Health);
-    const delayBeforeMs = health.recoveryDelayRemainingMs ?? 0;
+    const isPlayer = !!getComponent(game.world, entity, ComponentType.PlayerControlled);
+    const directPursuerCount = isPlayer ? countDirectPursuers(game.world, entity) : 0;
+    const pursuitBlocksRecovery = isPlayer
+      && health.hp < health.maxHp
+      && directPursuerCount > 0
+      && COMBAT_BALANCE.playerRecovery.directPursuitBlocksRegeneration;
+    let delayBeforeMs = health.recoveryDelayRemainingMs ?? 0;
+    if (pursuitBlocksRecovery && COMBAT_BALANCE.playerRecovery.delayRestartsWhileDirectlyPursued) {
+      delayBeforeMs = Math.max(delayBeforeMs, health.regenDelayMs ?? 0);
+      health.safeRecoveryElapsedMs = 0;
+    }
+    health.directPursuerCount = directPursuerCount;
+    health.recoveryBlockedByThreat = pursuitBlocksRecovery;
     health.hitPulseRemainingMs = Math.max(0, (health.hitPulseRemainingMs ?? 0) - deltaMs);
     health.recoveryDelayRemainingMs = Math.max(0, delayBeforeMs - deltaMs);
     const regenSeconds = delayBeforeMs > 0 ? Math.max(0, delta - delayBeforeMs / 1000) : delta;
@@ -73,8 +85,7 @@ export function healthSystem({ game, dt } = {}) {
       health.pressure = resolveHealthPressure(health);
       continue;
     }
-    const isPlayer = !!getComponent(game.world, entity, ComponentType.PlayerControlled);
-    if (isPlayer && health.regenEnabled && health.recoveryDelayRemainingMs <= 0 && regenSeconds > 0 && health.hp < health.maxHp) {
+    if (isPlayer && health.regenEnabled && !pursuitBlocksRecovery && health.recoveryDelayRemainingMs <= 0 && regenSeconds > 0 && health.hp < health.maxHp) {
       health.safeRecoveryElapsedMs = (health.safeRecoveryElapsedMs ?? 0) + regenSeconds * 1000;
       const rampMultiplier = resolveRegenRampMultiplier(health);
       const activityMultiplier = resolveRegenActivityMultiplier(game.world, entity, health);
@@ -139,6 +150,19 @@ function resolveRegenActivityMultiplier(world, entity, health) {
   if (stamina?.sprinting) multiplier *= Math.max(0, Math.min(1, health.regenSprintingMultiplier ?? 1));
   if (action?.active) multiplier *= Math.max(0, Math.min(1, health.regenActionMultiplier ?? 1));
   return multiplier;
+}
+
+function countDirectPursuers(world, player) {
+  let count = 0;
+  for (const entity of query(world, [ComponentType.EnemyPressureAI, ComponentType.Health, ComponentType.Team])) {
+    const ai = getComponent(world, entity, ComponentType.EnemyPressureAI);
+    const health = getComponent(world, entity, ComponentType.Health);
+    if (ai?.disabled === true || health?.alive !== true) continue;
+    if (ai.targetId !== player && ai.pendingAttackTargetId !== player) continue;
+    if (!areFactionsHostile(getTeamId(world, entity), getTeamId(world, player))) continue;
+    count += 1;
+  }
+  return count;
 }
 
 function getTeamId(world, entity) {

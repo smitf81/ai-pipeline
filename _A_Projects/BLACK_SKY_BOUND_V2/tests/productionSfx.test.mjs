@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assert, equal } from './assert.mjs';
@@ -8,9 +8,10 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const targets = [
   {
     cueId: 'player.bite.snap',
-    fileCount: 2,
+    fileCount: 3,
     channels: 1,
-    duration: [0.38, 0.5]
+    duration: [0.47, 0.49],
+    firstSignalMaxMs: 40
   },
   {
     cueId: 'combat.enemy.hit.flesh',
@@ -19,10 +20,50 @@ const targets = [
     duration: [0.42, 0.58]
   },
   {
+    cueId: 'enemy.raider.warn',
+    fileCount: 5,
+    channels: 1,
+    duration: [0.45, 0.55],
+    firstSignalMaxMs: 5,
+    bus: 'enemies'
+  },
+  {
+    cueId: 'player.heartbeat',
+    fileCount: 1,
+    channels: 1,
+    duration: [8.22, 8.24],
+    bus: 'player',
+    loop: true
+  },
+  {
     cueId: 'world.mama_wyvern.distant_roar',
     fileCount: 1,
     channels: 2,
-    duration: [5.0, 5.4]
+    duration: [5.0, 5.4],
+    firstSignalMaxMs: 50,
+    bus: 'enemies'
+  },
+  {
+    cueId: 'world.mama_wyvern.flyover_roar',
+    fileCount: 1,
+    channels: 2,
+    duration: [3.0, 3.1],
+    bus: 'enemies'
+  },
+  {
+    cueId: 'world.mama_wyvern.napalm_projection',
+    fileCount: 1,
+    channels: 2,
+    duration: [2.2, 2.3],
+    firstSignalMaxMs: 100,
+    bus: 'combat'
+  },
+  {
+    cueId: 'world.mama_wyvern.inferno_aftermath',
+    fileCount: 1,
+    channels: 2,
+    duration: [17.9, 18.1],
+    bus: 'ambience'
   }
 ];
 
@@ -31,6 +72,8 @@ for (const target of targets) {
   equal(cue.source, 'file', `${target.cueId} should use decoded file playback`);
   equal(cue.required, true, `${target.cueId} should fail visibly when its production asset is unavailable`);
   equal(cue.procedural, null, `${target.cueId} should use only its authored production file`);
+  if (target.bus) equal(cue.bus, target.bus, `${target.cueId} should route through its visible pause-menu mix category`);
+  if (target.loop) equal(cue.loop, true, `${target.cueId} should retain its single-voice loop contract`);
   equal(cue.files.length, target.fileCount, `${target.cueId} should expose the intended variation count`);
 
   for (const runtimeFile of cue.files) {
@@ -46,7 +89,7 @@ for (const target of targets) {
     assert(runtime.peak > 0.5 && runtime.peak < 0.95, `${runtimeFile} should be audible with sensible peak headroom`);
     assert(runtime.clippedSampleCount === 0, `${runtimeFile} should contain no clipped samples`);
     assert(runtime.dcOffset < 0.002, `${runtimeFile} should have negligible DC offset`);
-    assert(runtime.firstSignalMs < 20, `${runtimeFile} should start promptly`);
+    assert(runtime.firstSignalMs < (target.firstSignalMaxMs ?? 20), `${runtimeFile} should start within its authored attack envelope`);
 
     const stem = basename(runtimeFile, '.wav');
     const masterPath = join(root, 'assets', 'audio', 'masters', `${stem}_master.wav`);
@@ -63,7 +106,7 @@ const analysisPath = join(root, 'artifacts', 'production-sfx-v1', 'audio-analysi
 const analysis = JSON.parse(readFileSync(analysisPath, 'utf8'));
 equal(analysis.contract, 'black-sky-bound.production-sfx-generation.v1', 'audio analysis should identify the production render contract');
 equal(analysis.externalComponents.length, 0, 'production SFX should contain no externally sourced components');
-equal(analysis.assets.length, 5, 'analysis should cover every production runtime file');
+equal(analysis.assets.length, 3, 'legacy generator analysis should cover its remaining flesh-impact and Mama-roar assets');
 equal(analysis.mamaRoarExploration.candidateCount, 3, 'Mama roar exploration should preserve three authored candidates');
 equal(
   analysis.mamaRoarExploration.selectedCandidateId,
@@ -80,10 +123,78 @@ assert(
   'every Mama candidate should preserve all eight authored stems'
 );
 
+const heartbeatSourceRoot = join(root, 'assets', 'audio', 'sources', 'player_heartbeat_v1');
+const heartbeatLicence = readFileSync(join(heartbeatSourceRoot, 'SOURCE_AND_LICENSE.md'), 'utf8');
+assert(heartbeatLicence.includes('Pixabay'), 'heartbeat source notes should identify Pixabay');
+assert(heartbeatLicence.includes('Pixabay Content License'), 'heartbeat source notes should retain the licence');
+assert(existsSync(join(root, 'assets', 'audio', 'projects', 'player_heartbeat_v1.aup3')), 'editable Audacity heartbeat project should exist');
+assert(existsSync(join(heartbeatSourceRoot, 'originals')), 'unaltered heartbeat source directory should be retained');
+assert(existsSync(join(heartbeatSourceRoot, 'processed_stems')), 'heartbeat processed stems should be retained');
+
+const raiderSourceRoot = join(root, 'assets', 'audio', 'sources', 'raider_warning_v1');
+const raiderLicence = readFileSync(join(raiderSourceRoot, 'SOURCE_AND_LICENSE.md'), 'utf8');
+assert(raiderLicence.includes('Pixabay'), 'raider warning source notes should identify Pixabay');
+assert(raiderLicence.includes('Pixabay Content License'), 'raider warning source notes should retain the licence');
+assert(existsSync(join(raiderSourceRoot, 'audacity_session', 'raider_warning_v1.lof')), 'portable Audacity raider-warning session should exist');
+assert(existsSync(join(raiderSourceRoot, 'originals')), 'unaltered raider vocal sources should be retained');
+assert(existsSync(join(raiderSourceRoot, 'processed_stems')), 'raider warning processed stems should be retained');
+
+const biteSourceRoot = join(root, 'assets', 'audio', 'sources', 'player_bite_v2');
+const biteLicence = readFileSync(join(biteSourceRoot, 'SOURCE_AND_LICENSE.md'), 'utf8');
+assert(biteLicence.includes('Pixabay'), 'player bite source notes should identify Pixabay');
+assert(biteLicence.includes('Pixabay Content License'), 'player bite source notes should retain the licence');
+equal(
+  [...readFileSync(join(biteSourceRoot, 'audacity_session', 'player_bite_v2.lof'), 'utf8').matchAll(/^file /gm)].length,
+  12,
+  'portable Audacity bite session should open nine aligned stems and three reference mixes'
+);
+equal(
+  readdirSync(join(biteSourceRoot, 'originals')).length,
+  3,
+  'all three unaltered bite source recordings should be retained'
+);
+equal(
+  readdirSync(join(biteSourceRoot, 'processed_stems')).filter((name) => name.endsWith('.wav')).length,
+  9,
+  'three aligned production layers should be retained for each bite variant'
+);
+
+const biteAnalysis = JSON.parse(readFileSync(join(biteSourceRoot, 'PRODUCTION_ANALYSIS.json'), 'utf8'));
+equal(biteAnalysis.contract, 'black-sky-bound.player-bite-production.v2', 'bite analysis should identify its production contract');
+equal(biteAnalysis.syntheticLayersInProductionAssets, 0, 'the replacement bite palette should contain no generated sound layers');
+equal(biteAnalysis.sources.length, 3, 'bite provenance should cover every retained real recording');
+equal(biteAnalysis.variants.length, 3, 'bite analysis should cover all three production variants');
+equal(
+  readdirSync(join(biteSourceRoot, 'legacy_procedural')).filter((name) => name.endsWith('.wav')).length,
+  2,
+  'the two rejected procedural bite files should remain available for honest before/after comparison'
+);
+assert(
+  biteAnalysis.sources.every((source) => source.provider === 'Pixabay' && source.license === 'Pixabay Content License'),
+  'every bite source should retain provider and licence metadata'
+);
+assert(
+  biteAnalysis.variants.every((variant) => variant.contactSeconds >= 0.18 && variant.contactSeconds <= 0.215),
+  'every bite jaw closure should remain aligned with animation contact'
+);
+equal(new Set(biteAnalysis.variants.map((variant) => variant.runtimeFile)).size, 3, 'each bite variant should own a distinct runtime file');
+equal(new Set(biteAnalysis.variants.map((variant) => variant.runtimeSha256)).size, 3, 'every bite variation should contain materially distinct audio');
+
+const legacyGeneratorSource = readFileSync(join(root, 'tools', 'audio', 'generate_production_sfx.py'), 'utf8');
+const biteGeneratorSource = readFileSync(join(root, 'tools', 'audio', 'generate_player_bite_v2.py'), 'utf8');
+assert(!legacyGeneratorSource.includes('make_bite'), 'legacy procedural generator must not retain a callable bite renderer');
+assert(!legacyGeneratorSource.includes('player_bite_snap'), 'legacy procedural generator must not overwrite source-based bite assets');
+assert(biteGeneratorSource.includes('player_bite_snap'), 'the source-based bite generator should own the production files');
+
 const directorSource = readFileSync(join(root, 'src', 'audio', 'audioDirector.js'), 'utf8');
+const fileVoiceSource = readFileSync(join(root, 'src', 'audio', 'audioFileVoice.js'), 'utf8');
+const buildSource = readFileSync(join(root, 'tools', 'buildPlaytest.mjs'), 'utf8');
 assert(directorSource.includes("cue.source === 'file'"), 'AudioDirector should route file cues through the buffer path');
+assert(fileVoiceSource.includes('source.loop = loop'), 'decoded file playback should loop production buffers for file-backed body cues');
 assert(directorSource.includes('recordPlaybackError'), 'required file playback failures should be explicit in runtime diagnostics');
 assert(!directorSource.includes('file_fallback_to_placeholder'), 'production file cues must not silently fall back to synthesis');
+assert(buildSource.includes("filter((cue) => cue.source === 'file')"), 'packaged playtests should derive production audio from the canonical sound manifest');
+assert(!buildSource.includes("'enemy_hit_flesh_01.wav',"), 'packaged playtests should not retain a hand-maintained audio allowlist');
 
 function inspectPcmWav(path) {
   const buffer = readFileSync(path);

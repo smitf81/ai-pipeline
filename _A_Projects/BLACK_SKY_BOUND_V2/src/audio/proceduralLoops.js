@@ -5,7 +5,6 @@ import {
 
 export function buildProceduralLoop(context, cue, outputGain) {
   const profile = cue?.procedural ?? {};
-  if (profile.type === 'organicHeartbeatLoop') return createOrganicHeartbeatLoop(context, outputGain);
   if (profile.type === 'breathCycleLoop') return createBreathCycleLoop(context, outputGain, profile.mode);
   return createForestNightLoop(context, outputGain);
 }
@@ -81,44 +80,5 @@ function createBreathCycleLoop(context, outputGain, mode = 'calm') {
     mode: strained ? 'strained_airway_buffer_loop' : 'calm_airway_buffer_loop',
     tonal: false,
     nodes: [source, highpass, lowpass]
-  };
-}
-
-function createOrganicHeartbeatLoop(context, outputGain) {
-  const durationSeconds = 6.4;
-  const beatTimes = [0.42, 0.74, 1.55, 1.86, 2.79, 3.11, 4.08, 4.39, 5.34, 5.67];
-  const noise = createSeededNoise(557);
-  const source = createGeneratedLoopSource(context, durationSeconds, (time) => {
-    let sample = 0;
-    for (let index = 0; index < beatTimes.length; index += 1) {
-      const age = time - beatTimes[index];
-      if (age < 0 || age > 0.24) continue;
-      const isSecondThump = index % 2 === 1;
-      const frequency = isSecondThump ? 48 : 39;
-      const decay = isSecondThump ? 28 : 20;
-      const body = Math.sin(age * Math.PI * 2 * frequency) * Math.exp(-age * decay);
-      const chest = Math.sin(age * Math.PI * 2 * frequency * 0.52) * Math.exp(-age * 15);
-      sample += body * (isSecondThump ? 0.34 : 0.62) + chest * 0.2;
-    }
-    return sample * 0.48 + noise() * Math.min(0.018, Math.abs(sample) * 0.025);
-  });
-  const lowpass = context.createBiquadFilter();
-  const bodyResonance = context.createBiquadFilter();
-  lowpass.type = 'lowpass';
-  lowpass.frequency.value = 165;
-  lowpass.Q.value = 0.55;
-  bodyResonance.type = 'peaking';
-  bodyResonance.frequency.value = 58;
-  bodyResonance.Q.value = 0.8;
-  bodyResonance.gain.value = 3.5;
-  source.connect(lowpass);
-  lowpass.connect(bodyResonance);
-  bodyResonance.connect(outputGain);
-  source.start();
-  return {
-    source: 'procedural_sfx',
-    mode: 'irregular_organic_double_thump_buffer_loop',
-    tonal: false,
-    nodes: [source, lowpass, bodyResonance]
   };
 }

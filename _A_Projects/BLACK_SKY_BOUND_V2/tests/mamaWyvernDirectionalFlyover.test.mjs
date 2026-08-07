@@ -54,7 +54,7 @@ for (const heading of proofHeadings) {
     state: harness.state,
     game: harness.game,
     map: harness.map,
-    dt: MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds + MAMA_WYVERN_WORLD_EVENT.timing.flyoverSeconds * 0.52
+    dt: MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds + MAMA_WYVERN_WORLD_EVENT.timing.flyoverSeconds * 0.7
   });
 
   const event = harness.game.worldEvents.activeEvent;

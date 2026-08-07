@@ -14,16 +14,29 @@ export function buildProjectileProjection(droplets, tileSize) {
       previousWorldY: visual.previousY * tileSize,
       groundWorldX: visual.groundX * tileSize,
       groundWorldY: visual.groundY * tileSize,
+      socketWorldX: visual.socketX * tileSize,
+      socketWorldY: visual.socketY * tileSize,
+      heightMeters: visual.heightMeters,
+      previousHeightMeters: visual.previousHeightMeters,
+      mouthHeightMeters: visual.mouthHeightMeters,
       radius: Math.max(0.8, (droplet.radius ?? 0.05) * tileSize),
       glowRadius: Math.max(2, (droplet.glowRadius ?? 0.11) * tileSize),
       colour: droplet.colour ?? 'rgba(238,76,24,0.9)',
       coreColour: droplet.coreColour ?? 'rgba(255,210,100,0.94)',
+      rimColour: droplet.rimColour ?? 'rgba(255,172,72,0.72)',
+      smokeColour: droplet.smokeColour ?? 'rgba(39,31,29,0.34)',
       shadowColour: droplet.shadowColour ?? 'rgba(95,30,10,0.42)',
       age: droplet.age ?? 0,
       lifetime: visual.duration,
       life01: visual.life01,
       drop01: visual.drop01,
-      stretch: 1.05 + visual.life01 * 0.35
+      attachment01: visual.attachment01,
+      flight01: visual.flight01,
+      separated: visual.separated,
+      stage: visual.stage,
+      secondary: droplet.secondary === true,
+      seed: droplet.seed ?? 0,
+      stretch: visual.separated ? 1.18 + visual.flight01 * 0.72 : 1.08 + visual.attachment01 * 1.25
     };
   });
 }

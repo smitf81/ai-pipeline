@@ -20,6 +20,7 @@ export function createTutorialRuntime() {
     queue: [],
     nextSequence: 1,
     temporarilyDismissedCueIds: new Set(),
+    completedRunCueIds: new Set(),
     seenEvents: new WeakSet(),
     gameplayActiveRealSeconds: 0,
     lastPlayerX: null,
@@ -54,7 +55,7 @@ export function updateTutorialRuntime({ state, input, realDt = 0, gameplayDt = 0
 export function requestTutorialCue(runtime, state, cueId, context = {}, persistProfile = null) {
   const cue = getTutorialCue(cueId);
   if (!runtime || !cue || state.playerProfile?.settings?.tutorialPrompts === false) return false;
-  if (profileCompleted(state.playerProfile, cueId) || runtime.temporarilyDismissedCueIds.has(cueId)) return false;
+  if (profileCompleted(state.playerProfile, cueId) || runtime.completedRunCueIds.has(cueId) || runtime.temporarilyDismissedCueIds.has(cueId)) return false;
   if (!requiredAbilitiesAvailable(state.game, cue.requiredAbilities)) return false;
   if (cue.blockedBy.some((blockedId) => profileCompleted(state.playerProfile, blockedId))) return false;
   if (runtime.activeCue?.id === cueId || runtime.queue.some((entry) => entry.id === cueId)) return false;
@@ -110,6 +111,7 @@ function processSemanticEvents(runtime, state, persistProfile) {
     } else if (event.type === EventType.ENEMY_ATTACK_RESOLVED) {
       resolveIncomingAttackCue(runtime, state, payload, persistProfile);
     } else if (event.type === EventType.SMOKE_PURSUIT_BROKEN && payload.target === state.game.dragonId) {
+      registerSmokePursuitBreak(runtime, state, payload, persistProfile);
       requestTutorialCue(runtime, state, TutorialCueId.SMOKE_VEIL, {
         enemyId: payload.enemy,
         reason: payload.reason,
@@ -146,7 +148,6 @@ function applyAcceptedAction(runtime, state, payload, persistProfile) {
     if (active.progress.comboAccepted >= 3) completeCue(runtime, state, 'combat_combo_accepted', persistProfile);
   } else if (active.id === TutorialCueId.SMOKE_ESCAPE && payload.inputAction === InputActionId.SMOKE) {
     active.progress.smokeAccepted = true;
-    completeCue(runtime, state, 'smoke_escape_accepted', persistProfile);
   } else if (active.id === TutorialCueId.FIRST_DODGE && payload.inputAction === InputActionId.DODGE) {
     active.progress.dodgeAccepted = true;
     completeCue(runtime, state, 'dodge_accepted', persistProfile);
@@ -186,13 +187,13 @@ function activateNextCue(runtime, state, persistProfile) {
   sortAndBoundQueue(runtime);
   const entry = runtime.queue.shift();
   const cue = getTutorialCue(entry.id);
-  if (!cue || profileCompleted(state.playerProfile, cue.id)) return activateNextCue(runtime, state, persistProfile);
+  if (!cue || profileCompleted(state.playerProfile, cue.id) || runtime.completedRunCueIds.has(cue.id)) return activateNextCue(runtime, state, persistProfile);
   const active = entry.resume ?? createActiveCue(cue, entry.context);
   active.phase = 'entering';
   active.context = { ...active.context, ...entry.context };
   runtime.activeCue = active;
   runtime.activatedCount += 1;
-  replaceProfile(state, markTutorialCueShown(state.playerProfile, cue.id), persistProfile);
+  if (cue.persistenceScope !== 'run') replaceProfile(state, markTutorialCueShown(state.playerProfile, cue.id), persistProfile);
   requestTutorialSlowTime(state, cue);
 }
 
@@ -216,11 +217,20 @@ function createActiveCue(cue, context) {
       movementDistance: 0,
       comboAccepted: 0,
       smokeAccepted: false,
+      pursuitBroken: false,
       dodgeAccepted: false,
       chargeAccepted: false,
       attackResolved: false
     }
   };
+}
+
+function registerSmokePursuitBreak(runtime, state, payload, persistProfile) {
+  const active = runtime.activeCue;
+  if (active?.id !== TutorialCueId.SMOKE_ESCAPE || active.phase === 'exiting') return;
+  active.progress.pursuitBroken = true;
+  active.context.brokenEnemyId = payload.enemy ?? null;
+  completeCue(runtime, state, 'smoke_pursuit_broken_run_now', persistProfile);
 }
 
 function tickActiveCue(runtime, state, input, realDt, gameplayDt, persistProfile) {
@@ -265,8 +275,10 @@ function completeCue(runtime, state, reason, persistProfile) {
   active.exitElapsed = 0;
   active.exitReason = reason;
   runtime.completedCount += 1;
+  runtime.completedRunCueIds.add(active.id);
   runtime.lastCompletionReason = reason;
-  replaceProfile(state, markTutorialCueCompleted(state.playerProfile, active.id), persistProfile);
+  const cue = getTutorialCue(active.id);
+  if (cue?.persistenceScope !== 'run') replaceProfile(state, markTutorialCueCompleted(state.playerProfile, active.id), persistProfile);
   releaseTutorialSlowTime(state, reason);
   return true;
 }
@@ -300,6 +312,7 @@ function requiredAbilitiesAvailable(game, requiredAbilities) {
 }
 
 function profileCompleted(profile, cueId) {
+  if (getTutorialCue(cueId)?.persistenceScope === 'run') return false;
   return normalizePlayerProfile(profile).tutorial.completedCueIds.includes(cueId);
 }
 

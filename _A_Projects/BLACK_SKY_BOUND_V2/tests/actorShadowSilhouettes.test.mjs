@@ -42,6 +42,7 @@ assert(wyvernBlocker.shadowSilhouettePrimitiveCount >= 8, 'wyvern shadow blocker
 assert(wyvernPackets.length >= 8, 'nearby validation light should project wyvern silhouette SDF packets');
 assert(wyvernPackets.every((packet) => packet.blockerSource === 'renderer_neutral_actor_visual_projection'), 'wyvern packets should preserve actor projection provenance');
 assert(wyvernPackets.every((packet) => packet.staticBlocker === false), 'wyvern shadow packets should be marked dynamic');
-assert(wyvernPackets.every((packet) => packet.silhouettePrimitive?.contract === 'visual_actor_shadow_silhouette.v1'), 'wyvern packets should carry the actor silhouette contract');
+assert(wyvernPackets.every((packet) => packet.silhouettePrimitive?.contract === 'black-sky-bound.shadow-shape-profile.v1'), 'wyvern packets should carry the shared shadow-shape profile contract');
+equal(wyvernBlocker.shadowShapeProfileId, 'creature', 'wyvern blockers should use the creature shadow family');
 equal(projection.occlusionShadows.actorShadowBlockers, actorBlockers.length, 'shadow projection should count actor-sourced blockers');
 assert(projection.occlusionShadows.actorShadowFieldPacketCount >= wyvernPackets.length, 'shadow projection should count actor-sourced SDF packets');

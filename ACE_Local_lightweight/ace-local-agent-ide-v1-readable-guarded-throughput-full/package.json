@@ -1,0 +1,12 @@
+{
+  "name": "ace-local-agent-ide-v1",
+  "version": "0.1.0",
+  "description": "Workspace-constrained local multi-agent IDE shell for ACE-style coding loops.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

@@ -25,6 +25,9 @@ import { staminaSystem } from '../systems/staminaSystem.js';
 import { dodgeSystem } from '../systems/dodgeSystem.js';
 import { worldEventSystem } from '../systems/worldEventSystem.js';
 import { chargeCounterSystem } from '../systems/chargeCounterSystem.js';
+import { arenaWaveSystem } from '../systems/arenaWaveSystem.js';
+import { bodyContactRigSystem } from '../systems/bodyContactRigSystem.js';
+import { raiderPhysicalMotionSystem } from '../systems/raiderPhysicalMotionSystem.js';
 
 export const ACTION_SYSTEMS = Object.freeze([
   timerSystem,
@@ -37,17 +40,20 @@ export const ACTION_SYSTEMS = Object.freeze([
   dodgeSystem,
   chargeCounterSystem,
   actorSeparationSystem,
-  enemyAttackSystem,
   healthSystem,
   proceduralActionSystem,
   wyvernActionImpulseSystem,
   wyvernProjectionSystem,
+  raiderPhysicalMotionSystem,
   humanoidProjectionSystem,
   predatorProjectionSystem,
+  bodyContactRigSystem,
+  enemyAttackSystem,
   smokeSystem,
   wyvernAttackContactSystem,
   deathLifecycleSystem,
   unitSpawnerSystem,
+  arenaWaveSystem,
   impactResponseSystem,
   torchLifecycleSystem,
   napalmDripSystem,

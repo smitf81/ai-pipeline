@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
   BSB_V2_AUTHORING_CONTRACT,
+  BSB_V2_DEMO_ARENA_CONTRACT,
   BSB_V2_MAP_MANIFEST_CONTRACT,
   BSB_V2_MAP_MANIFEST_PATH,
   BSB_V2_PROJECT_WORKSPACE_CONTRACT,
@@ -12,6 +13,7 @@ import {
   applyBsbV2UndergrowthOperation,
   buildBsbV2RuntimeMap,
   createDefaultBsbV2AuthoringDocument,
+  createCrownOfCindersBsbV2AuthoringDocument,
   createSecondApproachBsbV2AuthoringDocument,
   describeBsbV2AuthoringRecord,
   filterBsbV2AuthoringRecords,
@@ -43,6 +45,13 @@ import {
   resolveBsbV2MapCanvasLayout,
   zoomBsbV2MapViewport
 } from '../public/bsb-v2-map-viewport.js';
+import {
+  BSB_V2_TRANSITION_SEQUENCE_CONTRACT,
+  BSB_V2_TRANSITION_SEQUENCE_INTENT_PROPOSAL_CONTRACT,
+  applyBsbV2TransitionSequenceOperation,
+  normalizeBsbV2TransitionSequenceIntentProposal,
+  parseBsbV2TransitionSequenceCommand
+} from '../public/bsb-v2-scene-sequence-authoring.js';
 
 const base = createDefaultBsbV2AuthoringDocument();
 assert.equal(base.contract, BSB_V2_AUTHORING_CONTRACT);
@@ -97,7 +106,13 @@ assert.throws(
 
 const secondBase = createSecondApproachBsbV2AuthoringDocument();
 assert.equal(secondBase.mapId, 'axiom_second_approach');
+assert.deepEqual(secondBase.spawn, { x: 24, y: 31, rotation: -Math.PI / 2 }, 'second region should begin at the south edge facing north');
 assert.equal(secondBase.transitions.escapeZone, null, 'second placeholder region should currently terminate rather than chaining forever');
+const arenaBase = validateBsbV2AuthoringDocument(createCrownOfCindersBsbV2AuthoringDocument());
+assert.equal(arenaBase.arena.contract, BSB_V2_DEMO_ARENA_CONTRACT, 'demo arena should be canonical Axiom-authored intent');
+assert.equal(arenaBase.arena.waves.length, 5, 'demo arena should own a finite five-wave progression');
+assert.deepEqual(arenaBase.arena.initialUnlockedAbilityIds, ['move', 'bite_claw'], 'playtesters should begin with only movement and close combat');
+assert.deepEqual(arenaBase.arena.waves.slice(0, 4).map((wave) => wave.rewardAbilityId), ['dodge', 'body_lunge', 'smoke_burst', 'charge_counter'], 'each cleared wave should awaken one new instinct');
 
 const painted = applyBsbV2AuthoringTool(base, 'terrain:water', 10, 10, { brushRadius: 2 });
 assert.equal(painted.tiles[10][10], 'water');
@@ -277,10 +292,11 @@ const manifestSource = JSON.parse(await readFile(
   'utf8'
 ));
 const library = resolveBsbV2MapLibrary(manifestSource);
-assert.equal(library.maps.length, 2, 'AXIOM map forge should read the multi-region BSB manifest');
+assert.equal(library.maps.length, 3, 'AXIOM map forge should read campaign regions plus the bounded demo arena');
 assert.equal(library.maps[0].authoringPath, 'data/bsb-v2/maps/first_escape.authoring.json');
 assert.equal(library.maps[0].nextMapId, 'ash_road_threshold');
 assert.equal(library.maps[1].authoringPath, 'data/bsb-v2/maps/second_approach.authoring.json');
+assert.equal(library.maps[2].authoringPath, 'data/bsb-v2/maps/crown_of_cinders.authoring.json');
 const publication = resolveBsbV2MapPublication(manifestSource, spawnerPlaced);
 assert.equal(manifestSource.contract, BSB_V2_MAP_MANIFEST_CONTRACT);
 assert.equal(BSB_V2_MAP_MANIFEST_PATH, 'data/maps/manifest.json');
@@ -302,6 +318,9 @@ assert.equal(secondPublication.catalogueMapId, 'ash_road_threshold');
 assert.equal(secondPublication.runtimeMapId, 'axiom_second_approach');
 assert.equal(secondPublication.runtimePath, '/data/maps/axiom-second-approach.runtime-map.json');
 assert.equal(secondPublication.authoringPath, 'data/bsb-v2/maps/second_approach.authoring.json');
+const arenaPublication = resolveBsbV2MapPublication(manifestSource, arenaBase);
+assert.equal(arenaPublication.catalogueMapId, 'crown_of_cinders_demo');
+assert.equal(arenaPublication.runtimePath, '/data/maps/axiom-crown-of-cinders.runtime-map.json');
 
 assert.throws(() => validateBsbV2AuthoringDocument({ ...base, contract: 'wrong' }), /bsb_authoring_contract_invalid/);
 assert.throws(() => applyBsbV2AuthoringTool(base, 'unknown', 1, 1), /bsb_authoring_tool_unknown/);
@@ -329,6 +348,102 @@ assert.throws(
     maps: [{ ...manifestSource.maps[0], nextMapId: 'missing' }, manifestSource.maps[1]]
   }),
   /bsb_map_manifest_next_missing:first_flightless_night:missing/
+);
+
+const authoredFirstMap = validateBsbV2AuthoringDocument(JSON.parse(await readFile(
+  new URL('../data/bsb-v2/maps/first_escape.authoring.json', import.meta.url),
+  'utf8'
+)));
+assert.equal(authoredFirstMap.transitions.escapeZone.departureSequenceId, 'smoke_instinct_departure', 'source transition should identify its departure scene');
+assert.equal(authoredFirstMap.sceneSequences[0].contract, BSB_V2_TRANSITION_SEQUENCE_CONTRACT, 'scene sequence should retain its dedicated authoring contract');
+assert.deepEqual(
+  authoredFirstMap.sceneSequences[0].actorTracks.map((track) => track.actorId),
+  ['raider:34:8:2200', 'raider:39:11:2201'],
+  'scene must bind stable authored raiders rather than inferred runtime neighbours'
+);
+assert.equal(authoredFirstMap.sceneSequences[0].camera.zoom, 3.25, 'landing impact should tighten the authored camera without breaking northward orientation');
+assert.equal(authoredFirstMap.sceneSequences[0].actorTracks[0].path[0].y, 9.75, 'the first scene raider should begin behind the player and emerge into the tightened frame');
+assert.equal(authoredFirstMap.sceneSequences[0].smoke.coverageThreshold, 0.995, 'outgoing smoke should reach an effectively opaque handoff');
+const bakedFirstMap = JSON.parse(await readFile(
+  new URL('../../../../_A_Projects/BLACK_SKY_BOUND_V2/data/maps/axiom-first-escape.runtime-map.json', import.meta.url),
+  'utf8'
+));
+assert.deepEqual(buildBsbV2RuntimeMap(authoredFirstMap), bakedFirstMap, 'opening runtime map must be an exact bake of AXIOM source');
+const authoredSecondMap = validateBsbV2AuthoringDocument(JSON.parse(await readFile(
+  new URL('../data/bsb-v2/maps/second_approach.authoring.json', import.meta.url),
+  'utf8'
+)));
+const bakedSecondMap = JSON.parse(await readFile(
+  new URL('../../../../_A_Projects/BLACK_SKY_BOUND_V2/data/maps/axiom-second-approach.runtime-map.json', import.meta.url),
+  'utf8'
+));
+assert.deepEqual(buildBsbV2RuntimeMap(authoredSecondMap), bakedSecondMap, 'second-region runtime map must be an exact bake of AXIOM source');
+const authoredArenaMap = validateBsbV2AuthoringDocument(JSON.parse(await readFile(
+  new URL('../data/bsb-v2/maps/crown_of_cinders.authoring.json', import.meta.url),
+  'utf8'
+)));
+const bakedArenaMap = JSON.parse(await readFile(
+  new URL('../../../../_A_Projects/BLACK_SKY_BOUND_V2/data/maps/axiom-crown-of-cinders.runtime-map.json', import.meta.url),
+  'utf8'
+));
+assert.deepEqual(buildBsbV2RuntimeMap(authoredArenaMap), bakedArenaMap, 'public demo runtime map must be an exact bake of AXIOM arena source');
+assert.equal(authoredArenaMap.unitSpawners.length, 15, 'arena authors should see every wave spawner in Map Forge');
+assert.deepEqual(authoredSecondMap.spawn, { x: 24, y: 31, rotation: -Math.PI / 2 }, 'arrival authoring should preserve south-edge position and north facing');
+assert.deepEqual(
+  authoredSecondMap.unitPlacements.slice(0, 5).map(({ x, y }) => ({ x, y })),
+  [{ x: 20, y: 24 }, { x: 22, y: 23 }, { x: 24, y: 22 }, { x: 26, y: 23 }, { x: 28, y: 24 }],
+  'authored smoke-screen raiders should form a northward pursuit line ahead of the arrival'
+);
+const tunedSequence = applyBsbV2TransitionSequenceOperation(authoredFirstMap, {
+  op: 'set_phase_duration',
+  sequenceId: 'smoke_instinct_departure',
+  phaseId: 'smoke_cover',
+  durationSeconds: 1.55
+});
+assert.equal(tunedSequence.afterRevision, authoredFirstMap.revision + 1, 'semantic sequence tuning should be one authoring revision');
+assert.equal(tunedSequence.document.sceneSequences[0].phases[2].durationSeconds, 1.55, 'semantic operation should update only the selected phase timing');
+const tunedRuntime = buildBsbV2RuntimeMap(tunedSequence.document);
+assert.equal(tunedRuntime.sceneSequences[0].phases[2].durationSeconds, 1.55, 'runtime bake should carry authored sequence timing exactly');
+assert.equal(
+  parseBsbV2TransitionSequenceCommand('can you change the smoke variable in the scene transition - mama lands to 1.55 seconds please'),
+  null,
+  'indirect natural language should cross the model inference seam instead of depending on a magic parser phrase'
+);
+const inferredSmokeProposal = normalizeBsbV2TransitionSequenceIntentProposal({
+  operation: {
+    op: 'set_phase_duration',
+    sequenceId: 'smoke_instinct_departure',
+    phaseId: 'smoke_cover',
+    durationSeconds: 1.55
+  },
+  confidence: 0.94,
+  reason: 'The user refers to the smoke timing in the Mama lands transition.'
+});
+assert.equal(inferredSmokeProposal.contract, BSB_V2_TRANSITION_SEQUENCE_INTENT_PROPOSAL_CONTRACT);
+assert.equal(inferredSmokeProposal.classification, 'projection', 'model interpretation must remain a proposal until canonical apply');
+assert.deepEqual(inferredSmokeProposal.operation, {
+  op: 'set_phase_duration',
+  sequenceId: 'smoke_instinct_departure',
+  phaseId: 'smoke_cover',
+  durationSeconds: 1.55
+});
+assert.equal(
+  parseBsbV2TransitionSequenceCommand('set the landing impact duration to 0.8 seconds')?.parameters?.phaseId,
+  'impact',
+  'impact wording should remain distinct from smoke timing'
+);
+assert.equal(
+  parseBsbV2TransitionSequenceCommand('change the raiders charging time to 1.8 seconds')?.parameters?.phaseId,
+  'raider_charge',
+  'charging aliases should resolve to the authored raider-charge phase'
+);
+assert.throws(
+  () => validateBsbV2AuthoringDocument({
+    ...authoredFirstMap,
+    unitPlacements: authoredFirstMap.unitPlacements.filter((entry) => entry.id !== 'raider:34:8:2200')
+  }),
+  /bsb_transition_sequence_actor_missing/,
+  'authoring validation should fail loudly if an authored scene actor disappears'
 );
 
 console.log('bsb-v2-map-authoring.test.mjs passed');

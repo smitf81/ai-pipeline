@@ -1,3 +1,53 @@
+export const IlluminationState = Object.freeze({
+  DORMANT: 'dormant',
+  NEARBY_STATIC: 'nearby_static',
+  ACTIVE_DYNAMIC: 'active_dynamic',
+  CRITICAL: 'critical'
+});
+
+export function buildVisibleLightProjection(lights, camera, tileSize, options = {}) {
+  const inputs = Array.isArray(lights) ? lights : [];
+  const candidates = [];
+  let dormantCount = 0;
+  for (const input of inputs) {
+    const light = anchorTransientSceneLight(input, camera, tileSize);
+    if (!lightInputActive(light) || !lightIntersectsCamera(light, camera, tileSize, options.cullPaddingTiles ?? 0)) {
+      dormantCount += 1;
+      continue;
+    }
+    const illuminationState = resolveIlluminationState(light, options.criticalEntityId);
+    candidates.push({
+      light,
+      illuminationState,
+      shadowPriority: resolveShadowPriority(light, illuminationState, camera, tileSize),
+      distanceSq: distanceToCameraSq(light, camera, tileSize)
+    });
+  }
+  candidates.sort(compareLightCandidates);
+  const maxActive = Math.max(1, options.maxActive ?? 32);
+  const selected = candidates.slice(0, maxActive);
+  const projected = buildLightProjection(selected.map((candidate) => ({
+    ...candidate.light,
+    illuminationState: candidate.illuminationState,
+    shadowPriority: candidate.shadowPriority,
+    castsShadows: resolveShadowEligibility(candidate.light, candidate.illuminationState)
+  })), tileSize);
+  return {
+    lights: projected,
+    diagnostics: {
+      policy: options.cullingPolicy ?? 'expanded_camera_influence_bounds_before_projection_v1',
+      statePolicy: options.statePolicy ?? 'dormant_nearby_static_active_dynamic_critical_v1',
+      inputCount: inputs.length,
+      dormantCount,
+      budgetDroppedCount: Math.max(0, candidates.length - selected.length),
+      projectedCount: projected.length,
+      nearbyStaticCount: projected.filter((light) => light.illuminationState === IlluminationState.NEARBY_STATIC).length,
+      activeDynamicCount: projected.filter((light) => light.illuminationState === IlluminationState.ACTIVE_DYNAMIC).length,
+      criticalCount: projected.filter((light) => light.illuminationState === IlluminationState.CRITICAL).length
+    }
+  };
+}
+
 export function buildLightProjection(lights, tileSize) {
   return lights.map((light) => {
     const flicker = resolveLightFlicker(light);
@@ -50,7 +100,9 @@ export function buildLightProjection(lights, tileSize) {
       smokeSourceKind: light.smokeSourceKind ?? null,
       sceneLight: !!light.sceneLight,
       sourcePolicy: light.sourcePolicy ?? null,
+      illuminationState: light.illuminationState ?? IlluminationState.ACTIVE_DYNAMIC,
       shadowPriority: finite(light.shadowPriority, 0),
+      castsShadows: light.castsShadows !== false,
       direction: normalizeDirection(light.direction),
       shadow: buildShadowProjection(light),
       cloudOcclusion: buildCloudOcclusionProjection(light, tileSize),
@@ -60,9 +112,94 @@ export function buildLightProjection(lights, tileSize) {
       burnoffSeconds: finite(light.burnoffSeconds, null),
       afterimageIntensity: clamp01(light.afterimageIntensity ?? 0),
       influenceAlphaScale: clampRange(light.influenceAlphaScale ?? 1, 0, 2),
-      stormEvent: cloneData(light.stormEvent)
+      stormEvent: cloneData(light.stormEvent),
+      scheduledOrigin: cloneData(light.scheduledOrigin),
+      visualAnchorPolicy: light.visualAnchorPolicy ?? null
     };
   });
+}
+
+function anchorTransientSceneLight(light, camera, tileSize) {
+  if (!camera || !/lightning/i.test(String(light?.sourceKind ?? light?.id ?? ''))) return light;
+  const eventIndex = finite(light.stormEvent?.eventIndex, 0);
+  const flashIndex = finite(light.stormEvent?.flashIndex, 0);
+  const phase = hash01(eventIndex * 17 + flashIndex * 31 + 7);
+  const distanceTiles = 3.5 + hash01(eventIndex * 23 + flashIndex * 11 + 19) * 3.5;
+  const angle = phase * Math.PI * 2;
+  return {
+    ...light,
+    x: Number(camera.x) / tileSize + Math.cos(angle) * distanceTiles,
+    y: Number(camera.y) / tileSize + Math.sin(angle) * distanceTiles,
+    scheduledOrigin: { x: light.x, y: light.y },
+    visualAnchorPolicy: 'camera_local_high_cloud_strike_v1'
+  };
+}
+
+function lightInputActive(light) {
+  return light?.enabled !== false
+    && Number(light?.x) === Number(light?.x)
+    && Number(light?.y) === Number(light?.y)
+    && Math.max(Number(light?.revealStrength ?? light?.intensity ?? 0), Number(light?.effectiveIntensity ?? 0)) > 0
+    && lightInfluenceRadiusTiles(light) > 0;
+}
+
+function lightIntersectsCamera(light, camera, tileSize, paddingTiles) {
+  if (!camera) return true;
+  const zoom = Math.max(0.001, Number(camera.zoom) || 1);
+  const radius = (lightInfluenceRadiusTiles(light) + Math.max(0, paddingTiles)) * tileSize * 1.04;
+  const worldX = Number(light.x) * tileSize;
+  const worldY = Number(light.y) * tileSize;
+  if (typeof camera.visibleWorldBounds === 'function') {
+    const bounds = camera.visibleWorldBounds(radius);
+    return worldX >= bounds.left && worldX <= bounds.right && worldY >= bounds.top && worldY <= bounds.bottom;
+  }
+  const halfWidth = (Number(camera.viewportW) || 1280) * 0.5 / zoom;
+  const halfHeight = (Number(camera.viewportH) || 720) * 0.5 / zoom;
+  return worldX + radius >= camera.x - halfWidth && worldX - radius <= camera.x + halfWidth
+    && worldY + radius >= camera.y - halfHeight && worldY - radius <= camera.y + halfHeight;
+}
+
+function lightInfluenceRadiusTiles(light) {
+  return Math.max(0, Number(light?.revealRadius ?? 0), Number(light?.glowRadius ?? 0), Number(light?.radius ?? 0));
+}
+
+function resolveIlluminationState(light, criticalEntityId) {
+  const sourceKind = String(light?.sourceKind ?? '');
+  const anchorType = String(light?.sourceAnchor?.type ?? '');
+  const critical = light?.critical === true || (criticalEntityId != null && light?.sourceEntity === criticalEntityId)
+    || anchorType === 'world_event' || /moonlight|lightning|inferno|burning_tree_fire/.test(sourceKind);
+  if (critical) return IlluminationState.CRITICAL;
+  const dynamic = anchorType === 'world_entity' || (Number(light?.flickerAmount) || 0) > 0
+    || /napalm|dropped|projectile/.test(sourceKind);
+  return dynamic ? IlluminationState.ACTIVE_DYNAMIC : IlluminationState.NEARBY_STATIC;
+}
+
+function resolveShadowEligibility(light, state) {
+  if (light?.castsShadows === false) return false;
+  if (state === IlluminationState.CRITICAL) return true;
+  const radius = lightInfluenceRadiusTiles(light);
+  const strength = Math.max(Number(light?.revealStrength ?? 0), Number(light?.intensity ?? 0));
+  return radius >= 3.5 && strength >= 0.3 && !/smoulder|ember|spark/.test(String(light?.sourceKind ?? ''));
+}
+
+function resolveShadowPriority(light, state, camera, tileSize) {
+  const explicit = Number(light?.shadowPriority);
+  const base = Number.isFinite(explicit) ? explicit : state === IlluminationState.CRITICAL ? 220 : state === IlluminationState.ACTIVE_DYNAMIC ? 80 : 40;
+  const distanceTiles = Math.sqrt(distanceToCameraSq(light, camera, tileSize)) / Math.max(1, tileSize);
+  return base - Math.min(30, distanceTiles * 0.2);
+}
+
+function distanceToCameraSq(light, camera, tileSize) {
+  const dx = Number(light?.x ?? 0) * tileSize - Number(camera?.x ?? 0);
+  const dy = Number(light?.y ?? 0) * tileSize - Number(camera?.y ?? 0);
+  return dx * dx + dy * dy;
+}
+
+function compareLightCandidates(a, b) {
+  const stateRank = { critical: 3, active_dynamic: 2, nearby_static: 1 };
+  return (stateRank[b.illuminationState] ?? 0) - (stateRank[a.illuminationState] ?? 0)
+    || b.shadowPriority - a.shadowPriority
+    || a.distanceSq - b.distanceSq;
 }
 
 function buildShadowProjection(light) {
@@ -169,6 +306,11 @@ function finite(value, fallback) {
 
 function cloneData(value) {
   return value ? JSON.parse(JSON.stringify(value)) : null;
+}
+
+function hash01(value) {
+  const hash = Math.sin((Number(value) + 1) * 12.9898) * 43758.5453;
+  return hash - Math.floor(hash);
 }
 
 function clamp01(value) {

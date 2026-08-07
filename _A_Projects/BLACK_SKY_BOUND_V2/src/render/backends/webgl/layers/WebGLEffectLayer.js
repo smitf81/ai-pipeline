@@ -6,8 +6,9 @@ import { appendSmokeBurstPop, appendSmokePursuitBreak } from '../SmokePursuitBre
 const WEBGL_EFFECT_MODE = 'webgl_effects_particles_v0';
 
 export class WebGLEffectLayer {
-  constructor() {
-    this.id = 'effects';
+  constructor({ id = 'effects', stage = 'all' } = {}) {
+    this.id = id;
+    this.stage = stage;
     this.mode = WEBGL_EFFECT_MODE;
     this.status = 'inactive';
     this.objectCount = 0;
@@ -35,9 +36,14 @@ export class WebGLEffectLayer {
     this.bloodEffectCount = 0;
     this.bloodPrimitiveCount = 0;
     this.lightSpaceGateActive = lightSpaceGateActive(context);
-    const projectilePackets = projection.projectiles ?? [];
-    const liveEffectPackets = projection.effects ?? [];
-    const particlePackets = projection.particles ?? [];
+    const preIllumination = this.stage === 'pre_illumination_materials';
+    const postIllumination = this.stage === 'post_illumination_effects';
+    const projectilePackets = preIllumination ? [] : projection.projectiles ?? [];
+    const liveEffectPackets = preIllumination ? [] : projection.effects ?? [];
+    const particlePackets = (projection.particles ?? []).filter((particle) => {
+      const materialParticle = particle.visualRole === 'leaf_drift';
+      return preIllumination ? materialParticle : postIllumination ? !materialParticle : true;
+    });
     this.projectileCount = projectilePackets.length;
     this.liveEffectCount = liveEffectPackets.length;
     this.particleCount = particlePackets.length;
@@ -62,6 +68,7 @@ export class WebGLEffectLayer {
     return {
       mode: this.mode,
       effectMode: WEBGL_EFFECT_MODE,
+      illuminationStage: this.stage,
       sourceCount: this.sourceCount,
       primitiveCount: this.primitiveCount,
       projectileCount: this.projectileCount,

@@ -8,9 +8,14 @@ import {
   resolveRuntimeMapRequest
 } from '../src/world/runtimeMapLoader.js';
 import { Faction } from '../src/constants/factions.js';
+import { ComponentType } from '../src/constants/componentTypes.js';
+import { getComponent } from '../src/ecs/world.js';
+import { createInitialGameState } from '../src/game/createGame.js';
+import { CreatureRecipeId } from '../src/data/creatures/creatureRecipes.js';
 
 const payload = JSON.parse(JSON.stringify(createDemoMap()));
 payload.title = 'AXIOM Runtime Map';
+payload.spawn.rotation = -Math.PI / 2;
 payload.unitPlacements = [{ id: 'husk-a', type: 'husk', team: 'enemy', x: 12, y: 12 }];
 payload.unitSpawners = [{
   id: 'wolf-den-a',
@@ -35,6 +40,7 @@ payload.transitions = {
 const normalized = normalizeRuntimeMap(payload);
 equal(normalized.contract, 'black-sky-bound.runtime-map.v0', 'loader should preserve the runtime contract');
 equal(normalized.title, 'AXIOM Runtime Map', 'loader should preserve runtime metadata');
+equal(normalized.spawn.rotation, -Math.PI / 2, 'loader should preserve an authored north-facing arrival');
 equal(normalized.unitPlacements.length, 1, 'loader should preserve direct unit placements');
 equal(normalized.unitSpawners[0].hitPoints, 64, 'loader should preserve baked spawner fixture health');
 equal(normalized.unitSpawners[0].fixtureRadiusTiles, 0.7, 'loader should preserve baked spawner fixture radius');
@@ -44,16 +50,19 @@ equal(normalized.transitions.escapeZone.arrivalSequenceId, 'smoke_instinct_awake
 equal(normalized.sceneObjects.length, payload.sceneObjects.length, 'loader should normalize baked scene objects');
 equal(Object.isFrozen(normalized), true, 'loaded runtime maps should be immutable');
 equal(Object.isFrozen(normalized.tiles), true, 'loaded runtime map tiles should be immutable');
+const northFacingGame = createInitialGameState(normalized);
+equal(getComponent(northFacingGame.world, northFacingGame.dragonId, ComponentType.Transform).rotation, -Math.PI / 2, 'runtime game creation should apply the authored arrival facing');
 
 const factionDefaultsPayload = JSON.parse(JSON.stringify(payload));
 factionDefaultsPayload.unitPlacements = [
-  { id: 'raider-default', type: 'raider', x: 10, y: 10 },
+  { id: 'raider-default', type: 'raider', x: 10, y: 10, creature: { recipeId: CreatureRecipeId.RAIDER_SCAVENGER, seed: 445 } },
   { id: 'husk-default', type: 'husk', x: 11, y: 10 },
   { id: 'wolf-default', type: 'werewolf', x: 12, y: 10 },
   { id: 'legacy-enemy', type: 'raider', team: 'enemy', x: 13, y: 10 }
 ];
 const factionDefaults = normalizeRuntimeMap(factionDefaultsPayload);
 equal(factionDefaults.unitPlacements[0].team, Faction.RAIDERS, 'runtime raider placements should use actor faction defaults');
+equal(factionDefaults.unitPlacements[0].creature.seed, 445, 'runtime raider placements should preserve recipe seed data');
 equal(factionDefaults.unitPlacements[1].team, Faction.HUSKS, 'runtime husk placements should use actor faction defaults');
 equal(factionDefaults.unitPlacements[2].team, Faction.WOLVES, 'runtime werewolf placements should use actor faction defaults');
 equal(factionDefaults.unitPlacements[3].team, Faction.ENEMY, 'explicit legacy enemy teams should remain compatible');

@@ -79,16 +79,17 @@ function startPendingMamaEvent(game, map) {
     lightningSync: request.lightningSync === true,
     lightningQueued: false,
     infernoDeployed: false,
+    napalmAudioPlayed: false,
     startedAt: state.elapsed
   };
   state.activeEvent = event;
   state.lastHeadingRadians = headingRadians;
-  state.audio = {
-    sequence: state.audio.sequence + 1,
-    eventType: MAMA_WYVERN_WORLD_EVENT.audio.warningEventType,
-    cueId: MAMA_WYVERN_WORLD_EVENT.audio.cueId,
-    sourceEventId: event.id
-  };
+  publishMamaAudio(
+    state,
+    MAMA_WYVERN_WORLD_EVENT.audio.warningEventType,
+    MAMA_WYVERN_WORLD_EVENT.audio.warningCueId,
+    event.id
+  );
   if (request.source === 'scheduled_world_event') state.diagnostics.scheduledTriggerCount += 1;
   state.eventIndex += 1;
   state.nextEventAt = state.elapsed + mamaWorldEventIntervalSeconds(state.eventIndex);
@@ -116,6 +117,12 @@ function updateActiveMamaEvent(appState, game, map, delta) {
     bindFlyoverPathToActiveCamera(appState, game, map, event);
     event.phase = MamaWyvernEventPhase.FLYOVER;
     event.phaseElapsed -= MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds;
+    publishMamaAudio(
+      worldEvents,
+      MAMA_WYVERN_WORLD_EVENT.audio.flyoverEventType,
+      MAMA_WYVERN_WORLD_EVENT.audio.flyoverCueId,
+      event.id
+    );
   }
   if (event.phase === MamaWyvernEventPhase.FLYOVER) {
     updateMamaFlyoverPose(
@@ -124,11 +131,27 @@ function updateActiveMamaEvent(appState, game, map, delta) {
       MAMA_WYVERN_WORLD_EVENT
     );
     if (event.progress >= 0.42) queueSynchronizedLightning(game, event);
+    if (event.kind === MamaWyvernEventKind.INFERNO && !event.napalmAudioPlayed
+      && event.progress >= MAMA_WYVERN_WORLD_EVENT.breath.startProgress) {
+      publishMamaAudio(
+        worldEvents,
+        MAMA_WYVERN_WORLD_EVENT.audio.napalmEventType,
+        MAMA_WYVERN_WORLD_EVENT.audio.napalmCueId,
+        event.id
+      );
+      event.napalmAudioPlayed = true;
+    }
     if (event.kind === MamaWyvernEventKind.INFERNO && !event.infernoDeployed
       && event.progress >= MAMA_WYVERN_WORLD_EVENT.timing.infernoDeployProgress) {
       worldEvents.fireWalls.push(createInfernoWall(event, map, worldEvents.fireWalls.length));
       worldEvents.diagnostics.fireWallCount += 1;
       event.infernoDeployed = true;
+      publishMamaAudio(
+        worldEvents,
+        MAMA_WYVERN_WORLD_EVENT.audio.aftermathEventType,
+        MAMA_WYVERN_WORLD_EVENT.audio.aftermathCueId,
+        event.id
+      );
     }
     if (event.phaseElapsed < MAMA_WYVERN_WORLD_EVENT.timing.flyoverSeconds) return;
     event.phase = MamaWyvernEventPhase.AFTERMATH;
@@ -140,6 +163,21 @@ function updateActiveMamaEvent(appState, game, map, delta) {
     worldEvents.completedCount += 1;
     worldEvents.activeEvent = null;
   }
+}
+
+function publishMamaAudio(worldEvents, eventType, cueId, sourceEventId) {
+  const audio = worldEvents.audio ?? { sequence: 0, events: [] };
+  const receipt = {
+    sequence: audio.sequence + 1,
+    eventType,
+    cueId,
+    sourceEventId
+  };
+  worldEvents.audio = {
+    ...receipt,
+    events: [...(audio.events ?? []), receipt].slice(-12)
+  };
+  return receipt;
 }
 
 function bindFlyoverPathToActiveCamera(appState, game, map, event) {

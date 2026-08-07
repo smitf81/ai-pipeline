@@ -31,11 +31,13 @@ export const SOUND_CUES = Object.freeze({
   }),
   'player.heartbeat': cue({
     id: 'player.heartbeat',
+    files: [`${productionAssetRoot}/player_heartbeat_01.wav`],
+    source: 'file',
+    required: true,
     bus: 'player',
     volume: 0.62,
     loop: true,
-    maxVoices: 1,
-    procedural: { type: 'organicHeartbeatLoop', rateHz: 1.55 }
+    maxVoices: 1
   }),
   'player.hit.light': cue({
     id: 'player.hit.light',
@@ -111,12 +113,16 @@ export const SOUND_CUES = Object.freeze({
   }),
   'player.bite.snap': cue({
     id: 'player.bite.snap',
-    files: [`${productionAssetRoot}/player_bite_snap_01.wav`, `${productionAssetRoot}/player_bite_snap_02.wav`],
+    files: [
+      `${productionAssetRoot}/player_bite_snap_01.wav`,
+      `${productionAssetRoot}/player_bite_snap_02.wav`,
+      `${productionAssetRoot}/player_bite_snap_03.wav`
+    ],
     source: 'file',
     required: true,
     bus: 'combat',
     volume: 0.66,
-    pitchRandom: [0.96, 1.035],
+    pitchRandom: [0.985, 1.015],
     cooldownMs: 105,
     maxVoices: 2
   }),
@@ -151,12 +157,20 @@ export const SOUND_CUES = Object.freeze({
   }),
   'enemy.raider.warn': cue({
     id: 'enemy.raider.warn',
+    files: [
+      `${productionAssetRoot}/enemy_raider_warning_01.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_02.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_03.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_04.wav`,
+      `${productionAssetRoot}/enemy_raider_warning_05.wav`
+    ],
+    source: 'file',
+    required: true,
     bus: 'enemies',
     volume: 0.7,
-    pitchRandom: [0.93, 1.06],
+    pitchRandom: [0.985, 1.015],
     cooldownMs: 360,
-    maxVoices: 3,
-    procedural: { type: 'warningBark', frequencyHz: 280, durationMs: 240 }
+    maxVoices: 3
   }),
   'enemy.raider.distant_shout': cue({
     id: 'enemy.raider.distant_shout',
@@ -196,13 +210,46 @@ export const SOUND_CUES = Object.freeze({
   }),
   'world.mama_wyvern.distant_roar': cue({
     id: 'world.mama_wyvern.distant_roar',
-    files: [`${productionAssetRoot}/mama_wyvern_distant_roar_01.wav`],
+    files: [`${productionAssetRoot}/mama_wyvern_distant_roar_02.wav`],
+    source: 'file',
+    required: true,
+    bus: 'enemies',
+    volume: 0.7,
+    pitchRandom: [0.985, 1.01],
+    cooldownMs: 1200,
+    maxVoices: 1
+  }),
+  'world.mama_wyvern.flyover_roar': cue({
+    id: 'world.mama_wyvern.flyover_roar',
+    files: [`${productionAssetRoot}/mama_wyvern_flyover_roar_01.wav`],
+    source: 'file',
+    required: true,
+    bus: 'enemies',
+    volume: 1,
+    pitchRandom: [0.985, 1.01],
+    cooldownMs: 1200,
+    maxVoices: 1
+  }),
+  'world.mama_wyvern.napalm_projection': cue({
+    id: 'world.mama_wyvern.napalm_projection',
+    files: [`${productionAssetRoot}/mama_wyvern_napalm_projection_01.wav`],
+    source: 'file',
+    required: true,
+    bus: 'combat',
+    volume: 0.96,
+    pitchRandom: [0.98, 1.015],
+    cooldownMs: 900,
+    maxVoices: 1
+  }),
+  'world.mama_wyvern.inferno_aftermath': cue({
+    id: 'world.mama_wyvern.inferno_aftermath',
+    files: [`${productionAssetRoot}/mama_wyvern_inferno_aftermath_01.wav`],
     source: 'file',
     required: true,
     bus: 'ambience',
-    volume: 0.84,
-    pitchRandom: [0.97, 1.015],
-    cooldownMs: 1200,
+    volume: 0.58,
+    pitchRandom: [0.995, 1.005],
+    cooldownMs: 1600,
     maxVoices: 1
   }),
   'ui.pause.breath_stop': cue({

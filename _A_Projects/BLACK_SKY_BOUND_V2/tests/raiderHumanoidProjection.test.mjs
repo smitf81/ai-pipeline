@@ -2,6 +2,7 @@ import { assert, equal } from './assert.mjs';
 import { ComponentType } from '../src/constants/componentTypes.js';
 import { EntityKind } from '../src/constants/entityKinds.js';
 import { ACTORS } from '../src/data/actors.js';
+import { CreatureRecipeId, getCreatureRecipe } from '../src/data/creatures/creatureRecipes.js';
 import { setCreatureTuningValue } from '../src/data/creatures/creatureTuning.js';
 import { HumanoidProjectionId, getHumanoidProjectionProfile } from '../src/data/humanoids/raiderHumanoid.js';
 import { getComponent } from '../src/ecs/world.js';
@@ -16,17 +17,21 @@ import { humanoidProjectionSystem } from '../src/systems/humanoidProjectionSyste
 import { createTuningState, selectTuningEntity } from '../src/tuning/tuningRuntime.js';
 import { createDemoMap } from '../src/world/map.js';
 
-equal(ACTORS[EntityKind.RAIDER].silhouette, 'humanoid', 'raider actor definition should declare humanoid silhouette');
-equal(ACTORS[EntityKind.RAIDER].humanoidProjection, HumanoidProjectionId.RAIDER_TOP_DOWN_STICK, 'raider should use top-down stick humanoid profile');
-assert(ACTORS[EntityKind.RAIDER].lightEmitter, 'raider should still carry a torch emitter');
+const raiderRecipe = getCreatureRecipe(CreatureRecipeId.RAIDER_SCAVENGER);
+equal(ACTORS[EntityKind.RAIDER].defaultCreatureRecipeId, raiderRecipe.identity.id, 'raider actor identity should select the canonical creature recipe');
+equal(raiderRecipe.surface.silhouette, 'humanoid', 'raider recipe should declare the humanoid silhouette');
+equal(raiderRecipe.bodyPlan.profileId, HumanoidProjectionId.RAIDER_TOP_DOWN_STICK, 'raider recipe should use the articulated humanoid pose profile');
+assert(raiderRecipe.lighting.lightEmitterId, 'raider recipe should still require a torch emitter');
 
 const map = createDemoMap();
 const game = createInitialGameState(map);
 const raiderId = spawnActor(game.world, EntityKind.RAIDER, 12.5, 10.5);
 const humanoid = getComponent(game.world, raiderId, ComponentType.HumanoidProjection);
 const light = getComponent(game.world, raiderId, ComponentType.LightEmitter);
+const creature = getComponent(game.world, raiderId, ComponentType.CreatureRecipe);
 assert(humanoid, 'spawned raider should receive HumanoidProjection component');
 assert(light, 'spawned raider should receive LightEmitter component');
+equal(creature.recipeId, CreatureRecipeId.RAIDER_SCAVENGER, 'spawned raider should receive the resolved creature-recipe component');
 
 humanoidProjectionSystem({ game, dt: 1 / 60 });
 assert(humanoid.points.head && humanoid.points.leftHand && humanoid.points.rightFoot, 'humanoid projection should solve head, hands, and feet');

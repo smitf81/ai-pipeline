@@ -2,6 +2,9 @@ import { ComponentType } from '../constants/componentTypes.js';
 import { getComponent } from '../ecs/world.js';
 import { query } from '../ecs/query.js';
 import { moveEntityRaw } from './movementSystem.js';
+import { areFactionsHostile } from '../constants/factions.js';
+import { COMBAT_BALANCE } from '../data/combatBalance.js';
+import { collisionShapesIntersect } from '../physics/collisionShapes.js';
 
 export const ACTOR_SEPARATION_BUCKET_SIZE = 2.5;
 export const ACTOR_SEPARATION_PADDING = 0.16;
@@ -18,12 +21,14 @@ export function actorSeparationSystem({ game, map, dt }) {
       index,
       transform: getComponent(game.world, entity, ComponentType.Transform),
       collider: getComponent(game.world, entity, ComponentType.Collider),
+      bodyContactRig: getComponent(game.world, entity, ComponentType.BodyContactRig),
       mass: separationMass(game.world, entity)
     }));
   const buckets = buildBuckets(actors);
   const displacement = new Map(actors.map((actor) => [actor.entity, { x: 0, y: 0 }]));
   let pairChecks = 0;
   let overlapsResolved = 0;
+  let hostilePlayerContacts = 0;
 
   if (delta > 0) {
     for (const actor of actors) {
@@ -37,7 +42,7 @@ export function actorSeparationSystem({ game, map, dt }) {
             if (other.index <= actor.index) continue;
             neighbours += 1;
             pairChecks += 1;
-            resolvePair(actor, other, displacement, delta);
+            if (resolvePair(game.world, actor, other, displacement, delta)) hostilePlayerContacts += 1;
             if (pairOverlaps(actor, other)) overlapsResolved += 1;
             if (neighbours >= MAX_NEIGHBOURS_PER_ACTOR) break;
           }
@@ -63,16 +68,18 @@ export function actorSeparationSystem({ game, map, dt }) {
     maxBucketOccupancy: Math.max(0, ...[...buckets.values()].map((bucket) => bucket.length)),
     pairChecks,
     overlapsResolved,
+    hostilePlayerContacts,
     neighbourCap: MAX_NEIGHBOURS_PER_ACTOR
   };
 }
 
-function resolvePair(actor, other, displacement, dt) {
+function resolvePair(world, actor, other, displacement, dt) {
   const dx = other.transform.x - actor.transform.x;
   const dy = other.transform.y - actor.transform.y;
   const distance = Math.hypot(dx, dy);
-  const desiredDistance = actor.collider.radius + other.collider.radius + ACTOR_SEPARATION_PADDING;
-  if (distance >= desiredDistance) return;
+  const desiredDistance = bodyReach(actor) + bodyReach(other) + ACTOR_SEPARATION_PADDING;
+  if (distance >= desiredDistance) return false;
+  const pressuredPlayer = applyHostileBodyContactPressure(world, actor.entity, other.entity);
   const direction = distance > 0.0001 ? { x: dx / distance, y: dy / distance } : deterministicPairDirection(actor.entity, other.entity);
   const correction = Math.min((desiredDistance - distance) * SEPARATION_RESPONSE * dt, MAX_SEPARATION_SPEED * dt);
   const inverseActorMass = 1 / actor.mass;
@@ -86,11 +93,40 @@ function resolvePair(actor, other, displacement, dt) {
   actorPush.y -= direction.y * correction * actorShare;
   otherPush.x += direction.x * correction * otherShare;
   otherPush.y += direction.y * correction * otherShare;
+  return pressuredPlayer;
+}
+
+function applyHostileBodyContactPressure(world, first, second) {
+  const profile = COMBAT_BALANCE.hostileBodyContact;
+  if (!profile.enabled) return false;
+  const firstTeam = getComponent(world, first, ComponentType.Team)?.id;
+  const secondTeam = getComponent(world, second, ComponentType.Team)?.id;
+  if (!areFactionsHostile(firstTeam, secondTeam)) return false;
+  return applyToPlayer(first, second) || applyToPlayer(second, first);
+
+  function applyToPlayer(target, source) {
+    if (!getComponent(world, target, ComponentType.PlayerControlled)) return false;
+    const status = getComponent(world, target, ComponentType.StatusEffects);
+    if (!status) return false;
+    status.movementSlowTimer = Math.max(status.movementSlowTimer ?? 0, profile.durationSeconds);
+    status.movementSlowMultiplier = Math.min(status.movementSlowMultiplier ?? 1, profile.movementMultiplier);
+    status.movementSlowSource = source;
+    return true;
+  }
 }
 
 function pairOverlaps(actor, other) {
+  if (actor.bodyContactRig?.broadPhase && other.bodyContactRig?.broadPhase) {
+    return collisionShapesIntersect(actor.bodyContactRig.broadPhase, other.bodyContactRig.broadPhase);
+  }
   return Math.hypot(other.transform.x - actor.transform.x, other.transform.y - actor.transform.y)
     < actor.collider.radius + other.collider.radius + ACTOR_SEPARATION_PADDING;
+}
+
+function bodyReach(actor) {
+  const shape = actor.bodyContactRig?.broadPhase;
+  if (shape?.kind === 'capsule') return shape.radius + Math.hypot(shape.bx - shape.ax, shape.by - shape.ay) * 0.5;
+  return actor.collider.radius;
 }
 
 function buildBuckets(actors) {

@@ -9,6 +9,7 @@ import { getWyvernActionProfile } from '../data/creatures/groundedWyvernMotionPr
 import { VisualRecipeId } from '../data/visualRecipes.js';
 import { spawnVisualRecipe } from '../game/spawn.js';
 import { applyImpactToReceiver } from './impactResponseState.js';
+import { collisionShapesIntersect } from '../physics/collisionShapes.js';
 
 export function wyvernAttackContactSystem({ game }) {
   for (const source of query(game.world, [ComponentType.ActionState, ComponentType.ProceduralPose, ComponentType.AttackSet, ComponentType.Team])) {
@@ -21,14 +22,19 @@ export function wyvernAttackContactSystem({ game }) {
     if (!profile || !ability) continue;
     for (const target of aliveEnemyEntities(game, source)) {
       if (target === source || actionState.resolvedContacts.includes(target)) continue;
-      if (!entityIntersectsAttackContact(game.world, target, pose.attackContact)) continue;
+      if (!entityIntersectsAttackContact(game.world, target, pose.attackContact, source)) continue;
       resolveWyvernImpact(game, source, target, pose.attackContact, profile, ability);
       actionState.resolvedContacts.push(target);
     }
   }
 }
 
-export function entityIntersectsAttackContact(world, entity, contact) {
+export function entityIntersectsAttackContact(world, entity, contact, sourceEntity = contact?.sourceEntity) {
+  const targetRig = getComponent(world, entity, ComponentType.BodyContactRig);
+  const sourceRig = sourceEntity ? getComponent(world, sourceEntity, ComponentType.BodyContactRig) : null;
+  if (sourceRig?.attackVolumes?.length && targetRig?.hurtVolumes?.length) {
+    return sourceRig.attackVolumes.some((attack) => targetRig.hurtVolumes.some((hurt) => collisionShapesIntersect(attack, hurt)));
+  }
   const transform = getComponent(world, entity, ComponentType.Transform);
   const collider = getComponent(world, entity, ComponentType.Collider);
   if (!transform || !contact?.active) return false;
