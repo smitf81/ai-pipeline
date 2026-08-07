@@ -1,5 +1,7 @@
-export function startDecodedFileVoice(director, cue, outputGain, pitch, sequence, loop = false) {
-  const selected = director.assets.select(cue, sequence);
+export function startDecodedFileVoice(director, cue, outputGain, pitch, sequence, loop = false, options = {}) {
+  const selected = options.environment === true
+    ? director.assets.selectEnvironment(cue, sequence)
+    : director.assets.select(cue, sequence);
   if (!selected?.file || selected.entry?.status !== 'ready' || !selected.entry.buffer) {
     const status = selected?.entry?.status ?? 'not_registered';
     director.recordPlaybackError(cue, selected?.file ?? null, `required_asset_${status}`);
@@ -15,13 +17,16 @@ export function startDecodedFileVoice(director, cue, outputGain, pitch, sequence
   }
   source.loop = loop;
   source.connect(outputGain);
-  source.start(context.currentTime);
+  const duration = selected.entry.buffer.duration;
+  const offset = loop && duration > 0 ? Math.max(0, Number(options.offsetSeconds) || 0) % duration : 0;
+  source.start(context.currentTime, offset);
   return {
     source: 'file',
     file: selected.file,
     mode: loop ? 'decoded_file_buffer_loop' : null,
     tonal: false,
     durationMs: selected.entry.buffer.duration * 1000 / Math.max(0.01, pitch),
-    nodes: [source]
+    nodes: [source],
+    sourceNode: source
   };
 }

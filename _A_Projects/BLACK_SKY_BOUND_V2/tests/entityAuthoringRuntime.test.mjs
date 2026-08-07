@@ -65,7 +65,7 @@ const focusField = raider.fields.find((entry) => entry.path === 'visibilityFocus
 assert(focusField, 'Entity Studio should receive provider-owned camera focus controls');
 assert(openingAudio, 'Entity Studio should receive the provider-owned opening audio target');
 equal(openingAudio.targetClass, 'runtime_profile', 'opening audio should remain a runtime profile rather than masquerading as an entity');
-assert(openingAudio.capabilities.some((capability) => capability.id === 'listener_relative_3d' && capability.status === 'not_connected'), 'audio provider should report the real positional-audio boundary');
+assert(openingAudio.capabilities.some((capability) => capability.id === 'listener_relative_3d' && capability.status === 'ready'), 'audio provider should report the connected listener-relative spatial path');
 
 const cameraBeforeSession = { ...app.state.camera };
 const cameraFocusBeforeSession = JSON.stringify(app.state.game.cameraVisibilityFocus);

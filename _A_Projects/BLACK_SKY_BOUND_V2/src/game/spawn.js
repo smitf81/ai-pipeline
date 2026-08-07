@@ -18,6 +18,7 @@ import { getLocomotionProfile } from '../data/locomotionProfiles.js';
 import { getBodyStateProfile } from '../data/bodyStateFeedback.js';
 import { getCreatureRecipe, resolveCreatureRecipeInstance } from '../data/creatures/creatureRecipes.js';
 import { createRaiderPhysicalMotionIntent } from '../components/raiderPhysicalMotionComponents.js';
+import { AudioSpatialProfileId } from '../data/audio/spatialAudioProfiles.js';
 
 export function spawnActor(world, type, x, y, team = null, options = {}) {
   const actorDef = ACTORS[type];
@@ -38,6 +39,8 @@ export function spawnActor(world, type, x, y, team = null, options = {}) {
   const isPlayerDragon = teamId === Faction.PLAYER && type === EntityKind.YOUNG_DRAGON;
   addComponent(world, entity, ComponentType.Kind, Components.kind(type, def.label));
   addComponent(world, entity, ComponentType.Transform, Components.transform(x, y));
+  if (isPlayerDragon) addComponent(world, entity, ComponentType.AudioListener, Components.audioListener());
+  addComponent(world, entity, ComponentType.AudioEmitter, Components.audioEmitter(resolveActorAudioEmitter(type, def, options.audioEmitter)));
   addComponent(world, entity, ComponentType.Motion, Components.motion(def.speed));
   const locomotionProfile = getLocomotionProfile(def.locomotionProfileId);
   addComponent(world, entity, ComponentType.Stamina, Components.stamina(locomotionProfile));
@@ -108,6 +111,18 @@ export function spawnActor(world, type, x, y, team = null, options = {}) {
   return entity;
 }
 
+function resolveActorAudioEmitter(type, def, override = null) {
+  const fallbackHeight = type === EntityKind.WEREWOLF ? 0.82 : type === EntityKind.YOUNG_DRAGON ? 0.48 : 1.42;
+  return {
+    emitterId: 'voice',
+    profileId: AudioSpatialProfileId.CREATURE_VOICE,
+    anchor: type === EntityKind.WEREWOLF ? 'mouth' : 'head',
+    anchorHeightMeters: fallbackHeight,
+    cueRoles: { ...(def.audioCueIds ?? {}), ...(override?.cueRoles ?? {}) },
+    ...override
+  };
+}
+
 function buildRecipeActorDefinition(actorDef, recipe, instance) {
   const primaryRole = recipe.surface.primaryMaterialRole;
   const primaryMaterial = recipe.surface.materialRoles[primaryRole];
@@ -126,7 +141,8 @@ function buildRecipeActorDefinition(actorDef, recipe, instance) {
     locomotionProfileId: recipe.locomotion.profileId,
     attackProfileIds: recipe.attacks.map((entry) => entry.profileId),
     physics: recipe.physical.physics,
-    ai: recipe.behaviour.parameters
+    ai: recipe.behaviour.parameters,
+    audioCueIds: { ...recipe.audio.cues }
   };
 }
 

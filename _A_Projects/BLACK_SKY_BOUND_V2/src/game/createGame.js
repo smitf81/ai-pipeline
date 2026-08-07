@@ -54,6 +54,7 @@ export function createInitialGameState(map, options = {}) {
     }
     const entity = spawnActor(world, placement.type, placement.x + 0.5, placement.y + 0.5, placement.team, {
       creature: placement.creature,
+      audioEmitter: placement.audioEmitter,
       sourceId: placement.id,
       sourceKind: 'authored_placement_id'
     });
@@ -89,6 +90,7 @@ export function createInitialGameState(map, options = {}) {
     sceneLights: createSceneLights(arena ? [SceneLightId.MOONLIGHT, SceneLightId.STORM_LIGHTNING] : undefined),
     worldEvents: createMamaWyvernWorldEventState(),
     spatialHazards: [],
+    audioListenerEntityId: dragonId,
     lighting: { enabled: true, profileId: LightingProfileId.EARLY_NIGHT },
     smokeField: { enabled: true, profileId: SmokeFieldProfileId.LOW_NIGHT_SMOKE },
     creatureTuning: normalizeCreatureTuning(options.creatureTuning).tuning,

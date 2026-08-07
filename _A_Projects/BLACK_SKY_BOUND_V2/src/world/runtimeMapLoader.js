@@ -175,9 +175,25 @@ function normalizeUnitPlacements(entries, width, height, compatibilityTeam = nul
       team,
       x: point.x,
       y: point.y,
+      ...(entry.audioEmitter ? { audioEmitter: normalizeAudioEmitterBlock(entry.audioEmitter, `unit:${index}`) } : {}),
       ...(creature ? { creature } : {})
     };
   });
+}
+
+function normalizeAudioEmitterBlock(value, label) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`runtime_map_audio_emitter_invalid:${label}`);
+  if (Object.hasOwn(value, 'x') || Object.hasOwn(value, 'y') || Object.hasOwn(value, 'z') || Object.hasOwn(value, 'position')) {
+    throw new Error(`runtime_map_audio_emitter_duplicate_position:${label}`);
+  }
+  const result = { ...value };
+  for (const field of ['anchorHeightMeters', 'referenceDistanceMeters', 'maxDistanceMeters', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain', 'dopplerScale', 'priority']) {
+    if (result[field] == null) continue;
+    const numeric = Number(result[field]);
+    if (!Number.isFinite(numeric)) throw new Error(`runtime_map_audio_emitter_number_invalid:${label}:${field}`);
+    result[field] = numeric;
+  }
+  return result;
 }
 
 function normalizeRuntimeTransitions(source) {

@@ -78,7 +78,7 @@ try {
 }
 await page.waitForFunction(() => {
   const status = window.BsbV2MapAuthoring.status();
-  return status.mapLibrary?.maps?.length === 2 && status.activeCatalogueMapId === 'first_flightless_night';
+  return status.mapLibrary?.maps?.length === 3 && status.activeCatalogueMapId === 'first_flightless_night';
 });
 
 await page.locator('.bsb-v2-tool[onclick*="terrain:water"]').click();
@@ -100,9 +100,18 @@ await changeInspectorValue(page, 'limit', '11');
 await changeInspectorValue(page, 'spawnRadiusTiles', '1.75');
 await changeInspectorValue(page, 'hitPoints', '64');
 await changeInspectorValue(page, 'fixtureRadiusTiles', '0.7');
+await page.locator('#bsb-v2-audio-emitter-inspector > summary').click();
+await page.locator('#bsb-v2-audio-anchor').fill('mouth');
+await page.locator('#bsb-v2-audio-anchor').press('Tab');
+await changeAudioEmitterValue(page, 'referenceDistanceMeters', '2.4');
+await changeAudioEmitterValue(page, 'maxDistanceMeters', '52');
+await changeAudioEmitterValue(page, 'rolloffFactor', '1.05');
+await changeAudioEmitterValue(page, 'dopplerScale', '0.7');
+await changeAudioEmitterValue(page, 'priority', '74');
 await page.waitForFunction(() => {
   const selected = window.BsbV2MapAuthoring.status().selectedRecordData;
-  return selected?.type === 'werewolf' && selected?.team === 'wolves' && selected?.hitPoints === 64;
+  return selected?.type === 'werewolf' && selected?.team === 'wolves' && selected?.hitPoints === 64
+    && selected?.audioEmitter?.anchor === 'mouth' && selected?.audioEmitter?.maxDistanceMeters === 52;
 });
 await page.evaluate(() => window.BsbV2MapAuthoring.setTool('marker:player'));
 await clickMapTile(page, 8, 15);
@@ -205,6 +214,7 @@ proof = {
     sceneObjectCount: runtimeState.sceneObjects.length,
     treeAt1210: runtimeState.sceneObjects.some((entry) => entry.type === 'tree' && entry.tileX === 12 && entry.tileY === 10),
     rendererActiveBackend: runtimeState.renderLayerStats?.rendererActiveBackend ?? null
+    ,editedSpawner: runtimeState.unitSpawners.find((entry) => entry.x === 14 && entry.y === 10) || null
   },
   secondAuthoring: {
     status: secondAuthoringState.status,
@@ -236,7 +246,7 @@ await writeFile(stateFile, `${JSON.stringify(proof, null, 2)}\n`);
 }
 
 if (proof.authoring.contract !== 'axiom.bsb-map-authoring.v0') throw new Error('authoring_contract_missing');
-if (proof.authoring.mapLibraryCount !== 2) throw new Error('map_library_not_loaded');
+if (proof.authoring.mapLibraryCount !== 3) throw new Error('map_library_not_loaded');
 if (proof.authoring.activeCatalogueMapId !== 'first_flightless_night') throw new Error('first_region_not_active_initially');
 if (proof.authoring.authoringPath !== 'data/bsb-v2/maps/first_escape.authoring.json') throw new Error('first_region_authoring_path_wrong');
 if (proof.authoring.transition?.nextMapPath !== '/data/maps/axiom-second-approach.runtime-map.json') throw new Error('first_region_transition_missing');
@@ -245,14 +255,16 @@ if (!proof.authoring.treeAt1210) throw new Error('scene_object_authoring_not_per
 if (proof.authoring.editedSpawner?.type !== 'werewolf') throw new Error('spawner_payload_type_edit_not_persisted');
 if (proof.authoring.editedSpawner?.team !== 'wolves') throw new Error('spawner_payload_team_edit_not_persisted');
 if (proof.authoring.editedSpawner?.hitPoints !== 64) throw new Error('spawner_health_edit_not_persisted');
+if (proof.authoring.editedSpawner?.audioEmitter?.anchor !== 'mouth' || proof.authoring.editedSpawner?.audioEmitter?.maxDistanceMeters !== 52) throw new Error('spawner_audio_emitter_edit_not_persisted');
 if (proof.authoring.spawn.x !== 8 || proof.authoring.spawn.y !== 15) throw new Error('player_spawn_authoring_not_persisted');
 if (!proof.authoring.saveReceipt?.afterHash || !proof.authoring.bakeReceipt?.afterHash) throw new Error('file_receipts_missing');
 if (proof.runtime.runtimeMap?.contract !== 'black-sky-bound.runtime-map.v0') throw new Error('runtime_map_contract_not_loaded');
 if (proof.runtime.runtimeMap?.source !== '/data/maps/axiom-first-escape.runtime-map.json') throw new Error('baked_runtime_source_not_loaded');
 if (proof.runtime.runtimeMap?.immutable !== true) throw new Error('baked_runtime_map_not_immutable');
 if (!proof.runtime.treeAt1210) throw new Error('baked_scene_object_not_visible_to_runtime');
+if (proof.runtime.editedSpawner?.audioEmitter?.anchor !== 'mouth' || proof.runtime.editedSpawner?.audioEmitter?.maxDistanceMeters !== 52) throw new Error('baked_audio_emitter_override_not_loaded');
 if (proof.runtime.player?.x < 8 || proof.runtime.player?.x > 9) throw new Error('baked_player_spawn_not_loaded');
-if (proof.runtime.rendererActiveBackend !== 'webgl') throw new Error('bsb_webgl_runtime_not_active');
+if (proof.runtime.rendererActiveBackend !== 'webgl3d') throw new Error('bsb_webgl3d_runtime_not_active');
 if (proof.secondAuthoring.activeCatalogueMapId !== 'ash_road_threshold') throw new Error('second_region_not_active');
 if (proof.secondAuthoring.authoringPath !== 'data/bsb-v2/maps/second_approach.authoring.json') throw new Error('second_region_authoring_path_wrong');
 if (proof.secondAuthoring.mapId !== 'axiom_second_approach') throw new Error('second_region_document_wrong');
@@ -262,7 +274,7 @@ if (!proof.secondAuthoring.saveReceipt?.afterHash || !proof.secondAuthoring.bake
 if (proof.secondRuntime.runtimeMap?.source !== '/data/maps/axiom-second-approach.runtime-map.json') throw new Error('second_baked_runtime_source_not_loaded');
 if (proof.secondRuntime.runtimeMap?.id !== 'axiom_second_approach') throw new Error('second_baked_runtime_id_wrong');
 if (!proof.secondRuntime.boulderAt1517) throw new Error('second_baked_scene_object_not_visible_to_runtime');
-if (proof.secondRuntime.rendererActiveBackend !== 'webgl') throw new Error('second_bsb_webgl_runtime_not_active');
+if (proof.secondRuntime.rendererActiveBackend !== 'webgl3d') throw new Error('second_bsb_webgl3d_runtime_not_active');
 if (proof.browserProof.appConsoleIssues.length || proof.browserProof.pageErrors.length || proof.browserProof.unclassifiedHttpFailures.length) {
   throw new Error('browser_runtime_issues_detected');
 }
@@ -306,6 +318,12 @@ async function changeInspectorValue(page, field, value) {
   await locator.dispatchEvent('change');
 }
 
+async function changeAudioEmitterValue(page, field, value) {
+  const locator = page.locator(`#bsb-v2-audio-${field}`);
+  await locator.fill(value);
+  await locator.dispatchEvent('change');
+}
+
 async function waitForRuntimeFrame(page, pathFragment = 'axiom-first-escape.runtime-map.json') {
   const deadline = Date.now() + 20000;
   while (Date.now() < deadline) {
@@ -328,6 +346,8 @@ function isResourceConsoleIssue(issue) {
 
 function isExpectedBackgroundHttpFailure(failure) {
   if (failure.url === 'http://localhost:1234/v1/models' && failure.error === 'net::ERR_CONNECTION_REFUSED') return true;
+  if (failure.url === 'http://127.0.0.1:11434/api/tags' && failure.error === 'net::ERR_CONNECTION_REFUSED') return true;
+  if (failure.url === 'http://127.0.0.1:4242/call' && failure.error === 'net::ERR_CONNECTION_REFUSED') return true;
   return failure.url === 'http://localhost:3007/mcp/call'
     && failure.status === 500
     && failure.postData?.tool === 'fs_ls'

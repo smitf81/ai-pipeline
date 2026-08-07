@@ -17,11 +17,14 @@ export const AUDIO_USER_MIX_DEFAULTS = Object.freeze({
 export const AUDIO_TUNING_SCHEMA_VERSION = 'bsb.audioTuning.v0';
 
 export const OPENING_AUDIO_TUNING_FIELDS = Object.freeze([
-  audioField('openingPerspective.sealedCutoffHz', 'Shell transmission', 'Sealed cutoff', 240, 4200, 20, 'Hz'),
-  audioField('openingPerspective.sealedExteriorGain', 'Shell transmission', 'Exterior level', 0.1, 1, 0.01, 'gain'),
+  audioField('openingPerspective.sealedCutoffHz', 'Egg enclosure', 'Closed cutoff', 240, 4200, 20, 'Hz'),
+  audioField('openingPerspective.crackedCutoffHz', 'Egg enclosure', 'Cracked cutoff', 600, 9000, 20, 'Hz'),
+  audioField('openingPerspective.sealedExteriorGain', 'Egg enclosure', 'Closed transmission', 0.1, 1, 0.01, 'gain'),
+  audioField('openingPerspective.crackedExteriorGain', 'Egg enclosure', 'Cracked transmission', 0.1, 1, 0.01, 'gain'),
   audioField('openingPerspective.maxMuffleIntensity', 'Shell transmission', 'Maximum muffle', 0.5, 1, 0.01, 'ratio'),
   audioField('openingPerspective.shellOpeningLeakWeight', 'Exposure curve', 'Crack light leakage', 0.1, 0.8, 0.01, 'ratio'),
   audioField('openingPerspective.emergenceExposureRate', 'Exposure curve', 'Emergence exposure', 0.5, 2, 0.01, 'rate')
+  ,audioField('openingPerspective.transitionSeconds', 'Egg enclosure', 'Transition time', 0.02, 1, 0.01, 's')
 ]);
 
 const OPENING_AUDIO_FIELD_BY_PATH = new Map(OPENING_AUDIO_TUNING_FIELDS.map((item) => [item.path, item]));
@@ -80,13 +83,16 @@ export const AUDIO_TUNING = Object.freeze({
     })
   }),
   openingPerspective: Object.freeze({
-    mode: 'authored_distance_non_positional_shell_transmission',
-    listenerRelativeAttenuation: false,
+    mode: 'transform_owned_world_spatial_audio',
+    listenerRelativeAttenuation: true,
     sealedCutoffHz: 560,
+    crackedCutoffHz: 2600,
     sealedExteriorGain: 0.46,
+    crackedExteriorGain: 0.72,
     maxMuffleIntensity: 0.92,
     shellOpeningLeakWeight: 0.32,
-    emergenceExposureRate: 1.15
+    emergenceExposureRate: 1.15,
+    transitionSeconds: 0.12
   }),
   proximity: Object.freeze({
     warningRangeTiles: 13,

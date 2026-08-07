@@ -71,6 +71,7 @@ export function buildRaidEmitterSceneObjects({
         radiusScale: 0.82,
         emissionScale: 0.84
       },
+      audioEmitter: fireAudioEmitter(-0.16, -0.18),
       render: {
         kind: 'fire_arrow',
         scaleRead: 'embedded_fire_arrow_v0',
@@ -126,6 +127,7 @@ export function buildRaidEmitterSceneObjects({
         radiusScale: 0.8,
         emissionScale: 0.82
       },
+      audioEmitter: fireAudioEmitter(0.14, -0.17),
       render: {
         kind: 'fire_arrow',
         scaleRead: 'embedded_fire_arrow_v0',
@@ -181,6 +183,7 @@ export function buildRaidEmitterSceneObjects({
         radiusScale: 0.84,
         emissionScale: 0.88
       },
+      audioEmitter: fireAudioEmitter(0.02, -0.22),
       render: {
         kind: 'fire_arrow',
         scaleRead: 'embedded_fire_arrow_v0',
@@ -236,6 +239,7 @@ export function buildRaidEmitterSceneObjects({
         radiusScale: 1.05,
         emissionScale: 0.96
       },
+      audioEmitter: fireAudioEmitter(0.03, -0.28),
       render: {
         kind: 'fire_arrow_cluster',
         scaleRead: 'embedded_fire_arrow_cluster_v0',
@@ -290,6 +294,7 @@ export function buildRaidEmitterSceneObjects({
         radiusScale: 0.96,
         emissionScale: 0.92
       },
+      audioEmitter: fireAudioEmitter(-0.02, -0.08),
       render: {
         kind: 'smouldering_fern',
         scaleRead: 'charred_fern_low_emitter_v0',
@@ -340,6 +345,7 @@ export function buildRaidEmitterSceneObjects({
         radiusScale: 1.12,
         emissionScale: 1.04
       },
+      audioEmitter: fireAudioEmitter(0.04, -0.1),
       render: {
         kind: 'smouldering_bramble',
         scaleRead: 'charred_bramble_emitter_v0',
@@ -351,5 +357,20 @@ export function buildRaidEmitterSceneObjects({
         baseShadow: 'rgba(0,0,0,0.2)'
       }
     })
+  });
+}
+
+function fireAudioEmitter(anchorOffsetX, anchorOffsetY) {
+  return Object.freeze({
+    contract: 'black-sky-bound.audio-emitter.v1',
+    emitterId: 'fire',
+    profileId: 'smoulder_fire_spatial_v1',
+    cueRoles: Object.freeze({ loop: 'world.fire.smoulder_loop' }),
+    anchor: 'transform',
+    anchorOffsetX,
+    anchorOffsetY,
+    anchorHeightMeters: 0.35,
+    shape: 'point',
+    enabled: true
   });
 }

@@ -288,7 +288,7 @@ export function createEntityAuthoringRuntime(app, options = {}) {
         profileId: resolved.profileId
       },
       fields: resolved.manifest.map((field) => ({ ...field, value: getProfileValue(resolved.profile, field.path) })),
-      runtimeProjection: buildRuntimeProjection(actor, resolved, app.state.map, app.state.game.cameraVisibilityFocus)
+      runtimeProjection: buildRuntimeProjection(actor, resolved, app.state.map, app.state.game.cameraVisibilityFocus, app.audio?.getDebugState?.().audioPerspective)
     };
   }
 
@@ -303,7 +303,7 @@ export function createEntityAuthoringRuntime(app, options = {}) {
       targetClass: 'runtime_profile',
       providerId: 'bsb.opening-audio-perspective-tuning',
       runtimeIdentity: { id: 'opening-perspective', authoredId: 'opening-perspective', kind: 'audio_perspective', team: null },
-      label: 'Opening · inside egg audio',
+      label: 'World audio · listener & egg enclosure',
       profileId: 'opening_audio_perspective_v1',
       recipeId: null,
       variantSignature: null,
@@ -317,8 +317,10 @@ export function createEntityAuthoringRuntime(app, options = {}) {
       capabilities: [
         { id: 'shell_transmission', status: 'ready' },
         { id: 'exposure_curve', status: 'ready' },
-        { id: 'authored_distance', status: 'runtime_projected' },
-        { id: 'listener_relative_3d', status: 'not_connected' }
+        { id: 'transform_owned_emitters', status: 'ready' },
+        { id: 'listener_relative_3d', status: 'ready' },
+        { id: 'hrtf_inverse_falloff', status: 'ready' },
+        { id: 'doppler_projection', status: 'ready' }
       ],
       fieldManifest: {
         contract: ENTITY_AUTHORING_FIELD_MANIFEST_CONTRACT,
@@ -443,9 +445,11 @@ export function attachEntityAuthoringWindowBridge(runtime, host = globalThis) {
   return () => host.removeEventListener?.('message', onMessage);
 }
 
-function buildRuntimeProjection(actor, resolved, map, cameraVisibilityFocus) {
+function buildRuntimeProjection(actor, resolved, map, cameraVisibilityFocus, audioPerspective = null) {
   const terrain = map?.tiles?.[Math.floor(actor.y)]?.[Math.floor(actor.x)] ?? null;
   const occlusionDensity = nearbyOcclusionDensity(map, actor.x, actor.y);
+  const audioEmitter = Object.values(audioPerspective?.emitters ?? {})
+    .find((entry) => entry.sourceRef?.ownerId === actor.id || entry.sourceRef?.ownerId === actor.authoredId) ?? null;
   return {
     motionState: actor.humanoidProjection?.motionState ?? actor.wyvernProjection?.motionState ?? actor.predatorProjection?.motionState ?? 'idle',
     animationState: actor.humanoidProjection?.animationState ?? actor.predatorProjection?.animationState ?? null,
@@ -454,6 +458,7 @@ function buildRuntimeProjection(actor, resolved, map, cameraVisibilityFocus) {
     poseActivation: actor.raiderPhysicalMotion?.poseActivation ?? null,
     visualBounds: resolved.visualBounds,
     profileKind: resolved.kind,
+    audioEmitter,
     cameraVisibilityFocus: {
       active: cameraVisibilityFocus?.enabled !== false && cameraVisibilityFocus?.targetEntityId === actor.id,
       targetSource: cameraVisibilityFocus?.targetEntityId === actor.id ? cameraVisibilityFocus.source : null,

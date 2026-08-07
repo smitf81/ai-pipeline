@@ -30,11 +30,11 @@ export function worldEventSystem({ state = null, game, map, dt }) {
   const treeFire = updateTreeFireStates(game.sceneObjects, worldEvents.fireWalls, delta);
   worldEvents.diagnostics.treeIgnitionCount += treeFire.ignitedCount;
   worldEvents.diagnostics.activeBurningTreeCount = treeFire.burningCount;
-  if (!worldEvents.activeEvent) startPendingMamaEvent(game, map);
+  if (!worldEvents.activeEvent) startPendingMamaEvent(state, game, map);
   game.spatialHazards = buildSpatialHazardViews(worldEvents.fireWalls);
 }
 
-function startPendingMamaEvent(game, map) {
+function startPendingMamaEvent(appState, game, map) {
   const state = game.worldEvents;
   const request = state.manualQueue.shift() ?? scheduledRequest(state);
   if (!request) return;
@@ -81,7 +81,10 @@ function startPendingMamaEvent(game, map) {
     infernoDeployed: false,
     napalmAudioPlayed: false,
     startedAt: state.elapsed
+    ,audioEmitter: { ...MAMA_WYVERN_WORLD_EVENT.audio.emitter }
   };
+  bindFlyoverPathToActiveCamera(appState, game, map, event);
+  updateMamaFlyoverPose(event, 0, MAMA_WYVERN_WORLD_EVENT);
   state.activeEvent = event;
   state.lastHeadingRadians = headingRadians;
   publishMamaAudio(
@@ -114,7 +117,6 @@ function updateActiveMamaEvent(appState, game, map, delta) {
   event.phaseElapsed += delta;
   if (event.phase === MamaWyvernEventPhase.WARNING) {
     if (event.phaseElapsed < MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds) return;
-    bindFlyoverPathToActiveCamera(appState, game, map, event);
     event.phase = MamaWyvernEventPhase.FLYOVER;
     event.phaseElapsed -= MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds;
     publishMamaAudio(
@@ -171,7 +173,8 @@ function publishMamaAudio(worldEvents, eventType, cueId, sourceEventId) {
     sequence: audio.sequence + 1,
     eventType,
     cueId,
-    sourceEventId
+    sourceEventId,
+    sourceRef: { ownerKind: 'worldEvent', ownerId: sourceEventId, emitterId: 'voice' }
   };
   worldEvents.audio = {
     ...receipt,

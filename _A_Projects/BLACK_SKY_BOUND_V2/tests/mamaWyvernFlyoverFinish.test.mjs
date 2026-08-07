@@ -27,6 +27,8 @@ assert(game.sceneObjects[0] !== map.sceneObjects[0], 'runtime scene objects shou
 
 queueMamaWyvernWorldEvent(game.worldEvents, MamaWyvernEventKind.FLYOVER, { angle: 0.2, source: 'camera_scope_test' });
 worldEventSystem({ game, map, dt: 0 });
+const warningCenter = { x: game.worldEvents.activeEvent.centerX, y: game.worldEvents.activeEvent.centerY };
+const warningSource = { x: game.worldEvents.activeEvent.worldX, y: game.worldEvents.activeEvent.worldY };
 const playerTransform = getComponent(game.world, game.dragonId, ComponentType.Transform);
 playerTransform.x = 19;
 playerTransform.y = 14;
@@ -37,8 +39,11 @@ worldEventSystem({
 });
 const activeFlyover = game.worldEvents.activeEvent;
 equal(activeFlyover.crossingAnchorPolicy, MAMA_WYVERN_WORLD_EVENT.shadow.crossingPolicy, 'ordinary flyovers should use the live-player crossing policy');
-const crossingDistance = Math.hypot(activeFlyover.centerX - playerTransform.x, activeFlyover.centerY - playerTransform.y);
-assert(Math.abs(crossingDistance - MAMA_WYVERN_WORLD_EVENT.shadow.cameraPeripheryOffsetTiles) < 0.05, 'flyover should re-anchor beside the live player when the warning ends');
+equal(activeFlyover.centerX, warningCenter.x, 'a world-owned flyover should not retarget its trajectory when the player moves during the warning');
+equal(activeFlyover.centerY, warningCenter.y, 'a world-owned flyover should retain its trigger-time crossing anchor');
+assert(Math.hypot(activeFlyover.worldX - warningSource.x, activeFlyover.worldY - warningSource.y) > 0.5, 'Mama audio and visuals should move together along the already-authored trajectory');
+playerTransform.x = warningCenter.x;
+playerTransform.y = warningCenter.y;
 
 wyvernProjectionSystem({ game, dt: 1 / 60 });
 syncGameViews(game);

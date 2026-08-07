@@ -794,6 +794,32 @@
   padding: 0;
 }
 
+.bsb-v2-audio-emitter {
+  grid-column: 1 / -1;
+  margin-top: 3px;
+  border-color: rgba(112, 193, 132, .22);
+  background: rgba(7, 13, 12, .42);
+}
+
+.bsb-v2-audio-emitter > summary {
+  color: #9ed6aa;
+}
+
+.bsb-v2-audio-emitter > summary small {
+  margin-left: 6px;
+  color: var(--text2);
+  font-weight: 400;
+}
+
+.bsb-v2-audio-emitter > .bsb-v2-inspector-grid {
+  margin-top: 8px;
+}
+
+.bsb-v2-audio-emitter .bsb-v2-muted {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+}
+
 .bsb-v2-tree-dna-head {
   grid-column: 1 / -1;
   display: flex;

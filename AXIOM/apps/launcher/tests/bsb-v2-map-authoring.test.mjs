@@ -198,7 +198,13 @@ const editedSpawner = patchBsbV2AuthoringRecord(editedObject, 'spawner', editedO
   limit: 11,
   spawnRadiusTiles: 1.75,
   hitPoints: 64,
-  fixtureRadiusTiles: 0.7
+  fixtureRadiusTiles: 0.7,
+  audioEmitter: {
+    emitterId: 'voice', profileId: 'creature_voice_spatial_v1', anchor: 'mouth', enabled: true,
+    anchorHeightMeters: 0.82, referenceDistanceMeters: 2.4, maxDistanceMeters: 52,
+    rolloffFactor: 1.05, coneInnerAngle: 210, coneOuterAngle: 300,
+    coneOuterGain: 0.38, dopplerScale: 0.7, priority: 74
+  }
 });
 assert.equal(editedSpawner.unitSpawners.at(-1).type, 'werewolf');
 assert.equal(editedSpawner.unitSpawners.at(-1).team, 'wolves');
@@ -209,6 +215,7 @@ assert.equal(editedSpawner.unitSpawners.at(-1).limit, 11);
 assert.equal(editedSpawner.unitSpawners.at(-1).spawnRadiusTiles, 1.75);
 assert.equal(editedSpawner.unitSpawners.at(-1).hitPoints, 64);
 assert.equal(editedSpawner.unitSpawners.at(-1).fixtureRadiusTiles, 0.7);
+assert.equal(editedSpawner.unitSpawners.at(-1).audioEmitter.anchor, 'mouth', 'spawner instances should persist nested emitter overrides');
 const editedRuntime = buildBsbV2RuntimeMap(editedSpawner);
 assert.equal(editedRuntime.sceneObjects.at(-1).visualWidthTiles, 2.4, 'object inspector edits should bake into runtime scene object records');
 assert.equal(editedRuntime.sceneObjects.at(-1).tree.contract, BSB_V2_TREE_DNA_CONTRACT, 'runtime bake should preserve Tree DNA and omit generated mesh data');
@@ -216,6 +223,10 @@ assert.equal(editedRuntime.unitSpawners.at(-1).type, 'werewolf', 'spawner payloa
 assert.equal(editedRuntime.unitSpawners.at(-1).team, 'wolves', 'spawner payload team should bake into runtime spawner records');
 assert.equal(editedRuntime.unitSpawners.at(-1).hitPoints, 64, 'spawner fixture health should bake into runtime spawner records');
 assert.equal(editedRuntime.unitSpawners.at(-1).fixtureRadiusTiles, 0.7, 'spawner fixture radius should bake into runtime spawner records');
+assert.deepEqual(editedRuntime.unitSpawners.at(-1).audioEmitter, editedSpawner.unitSpawners.at(-1).audioEmitter, 'audio emitter overrides should survive AXIOM edit to runtime bake without copied coordinates');
+assert.throws(() => patchBsbV2AuthoringRecord(editedSpawner, 'spawner', editedSpawner.unitSpawners.at(-1).id, {
+  audioEmitter: { profileId: 'creature_voice_spatial_v1', position: { x: 4, y: 2 } }
+}), /audio_emitter_duplicate_position/, 'AXIOM should reject audio coordinates that duplicate owner Transform truth');
 
 const migratedLegacyTeams = validateBsbV2AuthoringDocument({
   ...base,

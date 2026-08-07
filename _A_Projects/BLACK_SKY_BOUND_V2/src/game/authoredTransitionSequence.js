@@ -163,6 +163,7 @@ function materializeActorBinding(game, binding) {
   const placement = binding.placement;
   const entity = spawnActor(game.world, placement.type, placement.x + 0.5, placement.y + 0.5, placement.team, {
     creature: placement.creature,
+    audioEmitter: placement.audioEmitter,
     sourceId: placement.id ?? binding.actorId,
     sourceKind: 'authored_transition_actor_id'
   });

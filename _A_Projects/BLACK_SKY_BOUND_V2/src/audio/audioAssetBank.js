@@ -4,13 +4,15 @@ export class AudioAssetBank {
     this.fetchImpl = options.fetchImpl ?? resolveFetch();
     this.entries = new Map();
     this.requiredFiles = new Set();
+    this.pointDirectFiles = new Set();
     this.preloadPromise = Promise.resolve([]);
   }
 
   preloadCues(cues = {}) {
     const fileCues = Object.values(cues).filter((cue) => cue?.source === 'file');
-    const files = [...new Set(fileCues.flatMap((cue) => cue.files ?? []))];
+    const files = [...new Set(fileCues.flatMap((cue) => [...(cue.files ?? []), ...(cue.environmentFiles ?? [])]))];
     for (const cue of fileCues) {
+      if (cue.spatialization === 'point_mono') for (const file of cue.files ?? []) this.pointDirectFiles.add(file);
       if (!cue.required) continue;
       for (const file of cue.files ?? []) this.requiredFiles.add(file);
     }
@@ -45,6 +47,9 @@ export class AudioAssetBank {
       if (!response?.ok) throw new Error(`http_${response?.status ?? 'unknown'}`);
       const encoded = await response.arrayBuffer();
       const buffer = await this.context.decodeAudioData(encoded.slice(0));
+      if (this.pointDirectFiles.has(entry.file) && buffer.numberOfChannels !== 1) {
+        throw new Error(`point_direct_requires_mono:${buffer.numberOfChannels}`);
+      }
       entry.status = 'ready';
       entry.buffer = buffer;
       entry.durationSeconds = Number(buffer.duration.toFixed(4));
@@ -67,6 +72,14 @@ export class AudioAssetBank {
 
   select(cue, sequence = 0) {
     const files = cue?.files ?? [];
+    if (!files.length) return null;
+    const index = Math.abs(Math.trunc(sequence)) % files.length;
+    const file = files[index];
+    return { file, entry: this.get(file) };
+  }
+
+  selectEnvironment(cue, sequence = 0) {
+    const files = cue?.environmentFiles ?? [];
     if (!files.length) return null;
     const index = Math.abs(Math.trunc(sequence)) % files.length;
     const file = files[index];

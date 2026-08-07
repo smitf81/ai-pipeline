@@ -60,6 +60,7 @@ export const OPENING_SEQUENCE = Object.freeze({
       anchor: { kind: 'movement_edge', stage: 1, delaySeconds: 0.38 },
       intensity: 0.58,
       perspective: 'deeply_muffled_outside_storm'
+      ,sourceRef: { ownerKind: 'openingEvent', ownerId: 'opening-storm', emitterId: 'thunder' }
     }),
     openingSound({
       id: 'husk_beyond_shell',
@@ -67,6 +68,7 @@ export const OPENING_SEQUENCE = Object.freeze({
       anchor: { kind: 'movement_edge', stage: 2, delaySeconds: 0.34 },
       intensity: 0.44,
       perspective: 'deeply_muffled_nearby_threat'
+      ,sourceRef: { ownerKind: 'actor', ownerId: 'husk:28:34:1859', emitterId: 'voice' }
     }),
     openingSound({
       id: 'werewolf_far_ridge',
@@ -74,6 +76,7 @@ export const OPENING_SEQUENCE = Object.freeze({
       anchor: { kind: 'movement_edge', stage: 4, delaySeconds: 0.28 },
       intensity: 0.5,
       perspective: 'muffled_distant_predator'
+      ,sourceRef: { ownerKind: 'actor', ownerId: 'werewolf:1', emitterId: 'voice' }
     }),
     openingSound({
       id: 'raider_alarm_at_break',
@@ -81,6 +84,7 @@ export const OPENING_SEQUENCE = Object.freeze({
       anchor: { kind: 'shell_break', delaySeconds: 0.42 },
       intensity: 0.6,
       perspective: 'partially_exposed_human_alarm'
+      ,sourceRef: { ownerKind: 'actor', ownerId: 'raider:38:30:2305', emitterId: 'voice' }
     }),
     openingSound({
       id: 'mama_answering_roar',
@@ -88,6 +92,7 @@ export const OPENING_SEQUENCE = Object.freeze({
       anchor: { kind: 'shell_break', delaySeconds: 1.5 },
       intensity: 1,
       perspective: 'massive_roar_through_opening_shell'
+      ,sourceRef: { ownerKind: 'openingEvent', ownerId: 'opening-mama-answer', emitterId: 'voice' }
     }),
     openingSound({
       id: 'husk_now_exposed',
@@ -95,6 +100,7 @@ export const OPENING_SEQUENCE = Object.freeze({
       anchor: { kind: 'shell_break', delaySeconds: 5.05 },
       intensity: 0.62,
       perspective: 'exposed_nearby_threat'
+      ,sourceRef: { ownerKind: 'actor', ownerId: 'husk:28:34:1859', emitterId: 'voice' }
     })
   ])
 });

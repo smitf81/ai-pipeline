@@ -30,42 +30,42 @@ const targets = [
   {
     cueId: 'enemy.raider.distant_shout',
     fileCount: 2,
-    channels: 2,
+    channels: 1,
     duration: [1.57, 1.59],
     bus: 'enemies'
   },
   {
     cueId: 'opening.exterior.raider_through_shell',
     fileCount: 2,
-    channels: 2,
+    channels: 1,
     duration: [1.57, 1.59],
     bus: 'enemies'
   },
   {
     cueId: 'enemy.husk.distant_gargle',
     fileCount: 2,
-    channels: 2,
+    channels: 1,
     duration: [1.71, 1.73],
     bus: 'enemies'
   },
   {
     cueId: 'opening.exterior.husk_through_shell',
     fileCount: 2,
-    channels: 2,
+    channels: 1,
     duration: [1.71, 1.73],
     bus: 'enemies'
   },
   {
     cueId: 'enemy.werewolf.distant_howl',
     fileCount: 2,
-    channels: 2,
+    channels: 1,
     duration: [6.99, 7.01],
     bus: 'enemies'
   },
   {
     cueId: 'opening.exterior.werewolf_through_shell',
     fileCount: 2,
-    channels: 2,
+    channels: 1,
     duration: [6.99, 7.01],
     firstSignalMaxMs: 80,
     bus: 'enemies'
@@ -73,14 +73,14 @@ const targets = [
   {
     cueId: 'world.storm.thunder',
     fileCount: 2,
-    channels: 2,
+    channels: 1,
     duration: [7.19, 7.21],
     bus: 'ambience'
   },
   {
     cueId: 'opening.exterior.thunder_through_shell',
     fileCount: 2,
-    channels: 2,
+    channels: 1,
     duration: [7.19, 7.21],
     bus: 'ambience'
   },
@@ -95,7 +95,7 @@ const targets = [
   {
     cueId: 'world.mama_wyvern.distant_roar',
     fileCount: 1,
-    channels: 2,
+    channels: 1,
     duration: [5.0, 5.4],
     firstSignalMaxMs: 50,
     bus: 'enemies'
@@ -103,14 +103,14 @@ const targets = [
   {
     cueId: 'world.mama_wyvern.flyover_roar',
     fileCount: 1,
-    channels: 2,
+    channels: 1,
     duration: [3.0, 3.1],
     bus: 'enemies'
   },
   {
     cueId: 'world.mama_wyvern.napalm_projection',
     fileCount: 1,
-    channels: 2,
+    channels: 1,
     duration: [2.2, 2.3],
     firstSignalMaxMs: 100,
     bus: 'combat'

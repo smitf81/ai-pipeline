@@ -30,6 +30,7 @@ export function unitSpawnerSystem({ game, dt }) {
       const point = spawnPoint(spawner, originIndex);
       const entityId = spawnActor(game.world, spawner.type, point.x, point.y, spawner.team, {
         creature: spawner.creature,
+        audioEmitter: spawner.audioEmitter,
         sourceId: `${spawner.id}:${originIndex}`,
         sourceKind: 'unit_spawner_ordinal'
       });

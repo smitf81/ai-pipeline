@@ -12,6 +12,7 @@
     "build:playtest": "node tools/buildPlaytest.mjs",
     "launch:built": "node tools/launchBuiltPlaytest.mjs",
     "smoke:mama-flyover": "node tests/playtest/mamaWyvernFlyover.smoke.mjs",
+    "smoke:spatial-audio": "node tests/playtest/spatialAudioFoundation.playtest.mjs",
     "smoke:wyvern-visual": "node tests/playtest/webgl3dWyvernRigDiagnostic.playtest.mjs",
     "smoke:raider-visual": "node tests/playtest/webgl3dRaiderVisual.playtest.mjs",
     "smoke:raider-motion-greybox": "node tests/playtest/raiderPhysicalMotionGreybox.playtest.mjs",

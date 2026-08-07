@@ -1,0 +1,185 @@
+{
+  "contract": "black-sky-bound.spatial-direct-assets.v1",
+  "direct": [
+    {
+      "file": "enemy_hit_flesh_direct_mono_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\production\\enemy_hit_flesh_01.wav"
+      ]
+    },
+    {
+      "file": "enemy_hit_flesh_direct_mono_02.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\production\\enemy_hit_flesh_02.wav"
+      ]
+    },
+    {
+      "file": "enemy_raider_warning_direct_mono_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\production\\enemy_raider_warning_01.wav"
+      ]
+    },
+    {
+      "file": "enemy_raider_warning_direct_mono_02.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\production\\enemy_raider_warning_02.wav"
+      ]
+    },
+    {
+      "file": "enemy_raider_warning_direct_mono_03.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\production\\enemy_raider_warning_03.wav"
+      ]
+    },
+    {
+      "file": "enemy_raider_warning_direct_mono_04.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\production\\enemy_raider_warning_04.wav"
+      ]
+    },
+    {
+      "file": "enemy_raider_warning_direct_mono_05.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\production\\enemy_raider_warning_05.wav"
+      ]
+    },
+    {
+      "file": "mama_wyvern_distant_roar_direct_mono_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_distant_roar_02__roar_body.wav"
+      ]
+    },
+    {
+      "file": "mama_wyvern_flyover_roar_direct_mono_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_flyover_roar_01__close_roar.wav",
+        "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_flyover_roar_01__chest_body.wav"
+      ]
+    },
+    {
+      "file": "mama_wyvern_napalm_direct_mono_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_napalm_projection_01__pressure_hiss.wav",
+        "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_napalm_projection_01__throat_load.wav"
+      ]
+    },
+    {
+      "file": "storm_thunder_direct_mono_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\opening_exterior_v1\\processed_stems\\normal\\thunder_01\\01_recorded_identity.wav"
+      ]
+    },
+    {
+      "file": "storm_thunder_direct_mono_02.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\opening_exterior_v1\\processed_stems\\normal\\thunder_02\\01_recorded_identity.wav"
+      ]
+    },
+    {
+      "file": "werewolf_voice_direct_mono_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\opening_exterior_v1\\processed_stems\\normal\\werewolf_01\\01_recorded_identity.wav"
+      ]
+    },
+    {
+      "file": "werewolf_voice_direct_mono_02.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\opening_exterior_v1\\processed_stems\\normal\\werewolf_02\\01_recorded_identity.wav"
+      ]
+    },
+    {
+      "file": "husk_voice_direct_mono_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\opening_exterior_v1\\processed_stems\\normal\\husk_01\\01_recorded_identity.wav"
+      ]
+    },
+    {
+      "file": "husk_voice_direct_mono_02.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\opening_exterior_v1\\processed_stems\\normal\\husk_02\\01_recorded_identity.wav"
+      ]
+    },
+    {
+      "file": "raider_voice_direct_mono_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\opening_exterior_v1\\processed_stems\\normal\\raider_01\\01_recorded_identity.wav"
+      ]
+    },
+    {
+      "file": "raider_voice_direct_mono_02.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\opening_exterior_v1\\processed_stems\\normal\\raider_02\\01_recorded_identity.wav"
+      ]
+    },
+    {
+      "file": "smoulder_fire_direct_mono_loop_01.wav",
+      "channels": 1,
+      "sampleRate": 48000,
+      "sources": [
+        "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_inferno_aftermath_01__sparse_crackle.wav"
+      ]
+    }
+  ],
+  "environmentReturns": [
+    {
+      "file": "mama_wyvern_distant_roar_environment_return_01.wav",
+      "channels": 2,
+      "sampleRate": 48000,
+      "source": "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_distant_roar_02__forest_tail.wav"
+    },
+    {
+      "file": "mama_wyvern_flyover_environment_return_01.wav",
+      "channels": 2,
+      "sampleRate": 48000,
+      "source": "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_flyover_roar_01__air_wake.wav"
+    },
+    {
+      "file": "mama_wyvern_napalm_environment_return_01.wav",
+      "channels": 2,
+      "sampleRate": 48000,
+      "source": "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_napalm_projection_01__delayed_ignition.wav"
+    },
+    {
+      "file": "smoulder_fire_environment_return_01.wav",
+      "channels": 2,
+      "sampleRate": 48000,
+      "source": "assets\\audio\\sources\\mama_sampled_v1\\processed_stems\\mama_wyvern_inferno_aftermath_01__residual_fire.wav"
+    }
+  ]
+}

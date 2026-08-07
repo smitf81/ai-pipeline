@@ -24,7 +24,8 @@ assert.match(studioSource, /entity-studio-camera-focus/);
 assert.match(studioSource, /Camera focus ·/);
 assert.match(studioSource, /runtime_profile/);
 assert.match(studioSource, /entity-studio-audio-perspective/);
-assert.match(studioSource, /3D falloff not active/);
+assert.match(studioSource, /transform-owned emitters/);
+assert.match(studioSource, /live HRTF voices/);
 assert.match(studioSource, /function isRuntimeTarget/);
 assert.match(mapSource, /list\(\) \{[\s\S]*filter\(isBsbV2GeologyRecord\)/);
 

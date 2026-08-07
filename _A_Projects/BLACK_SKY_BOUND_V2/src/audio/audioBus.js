@@ -47,13 +47,71 @@ export class AudioBusGraph {
     return this.context.resume().then(() => true, () => false);
   }
 
-  createVoiceGain(busId, initialGain = 1) {
+  createVoiceGain(busId, initialGain = 1, options = {}) {
     if (!this.context) return null;
     const bus = this.busGains.get(busId) ?? this.busGains.get('ui');
     const gain = this.context.createGain();
     gain.gain.value = Math.max(0, Number(initialGain) || 0);
-    gain.connect(bus);
+    if (options.connect !== false) gain.connect(bus);
     return gain;
+  }
+
+  createSpatialVoiceChain(busId, profile, enclosure = {}) {
+    if (!this.context) return null;
+    const voiceGain = this.createVoiceGain(busId, 0, { connect: false });
+    const enclosureFilter = this.context.createBiquadFilter();
+    enclosureFilter.type = 'lowpass';
+    enclosureFilter.frequency.value = Math.max(20, Number(enclosure.cutoffHz) || this.tuning.bodyState.muffle.maxCutoffHz);
+    enclosureFilter.Q.value = 0.0001;
+    const transmissionGain = this.context.createGain();
+    transmissionGain.gain.value = Math.max(0, Number(enclosure.gain) || 0);
+    const panner = this.context.createPanner();
+    panner.panningModel = profile.panningModel ?? 'HRTF';
+    panner.distanceModel = profile.distanceModel ?? 'inverse';
+    panner.refDistance = profile.referenceDistanceMeters ?? 1;
+    panner.maxDistance = profile.maxDistanceMeters ?? 10000;
+    panner.rolloffFactor = profile.rolloffFactor ?? 1;
+    panner.coneInnerAngle = profile.coneInnerAngle ?? 360;
+    panner.coneOuterAngle = profile.coneOuterAngle ?? 360;
+    panner.coneOuterGain = profile.coneOuterGain ?? 1;
+    voiceGain.connect(enclosureFilter);
+    enclosureFilter.connect(transmissionGain);
+    transmissionGain.connect(panner);
+    panner.connect(this.busGains.get(busId) ?? this.busGains.get('ui'));
+    return { voiceGain, enclosureFilter, transmissionGain, panner };
+  }
+
+  createTransmissionVoiceChain(busId, enclosure = {}) {
+    if (!this.context) return null;
+    const voiceGain = this.createVoiceGain(busId, 0, { connect: false });
+    const enclosureFilter = this.context.createBiquadFilter();
+    enclosureFilter.type = 'lowpass';
+    enclosureFilter.frequency.value = Math.max(20, Number(enclosure.cutoffHz) || this.tuning.bodyState.muffle.maxCutoffHz);
+    enclosureFilter.Q.value = 0.0001;
+    const transmissionGain = this.context.createGain();
+    transmissionGain.gain.value = Math.max(0, Number(enclosure.gain) || 0);
+    voiceGain.connect(enclosureFilter);
+    enclosureFilter.connect(transmissionGain);
+    transmissionGain.connect(this.busGains.get(busId) ?? this.busGains.get('ui'));
+    return { voiceGain, enclosureFilter, transmissionGain };
+  }
+
+  updateListener(listener, rampSeconds = 0.02) {
+    const target = this.context?.listener;
+    if (!target || !listener) return false;
+    const now = this.context.currentTime;
+    setSignedAudioParam(target.positionX, now, listener.position.x, rampSeconds);
+    setSignedAudioParam(target.positionY, now, listener.position.y, rampSeconds);
+    setSignedAudioParam(target.positionZ, now, listener.position.z, rampSeconds);
+    setSignedAudioParam(target.forwardX, now, listener.forward.x, rampSeconds);
+    setSignedAudioParam(target.forwardY, now, listener.forward.y, rampSeconds);
+    setSignedAudioParam(target.forwardZ, now, listener.forward.z, rampSeconds);
+    setSignedAudioParam(target.upX, now, listener.up.x, rampSeconds);
+    setSignedAudioParam(target.upY, now, listener.up.y, rampSeconds);
+    setSignedAudioParam(target.upZ, now, listener.up.z, rampSeconds);
+    if (!target.positionX && target.setPosition) target.setPosition(listener.position.x, listener.position.y, listener.position.z);
+    if (!target.forwardX && target.setOrientation) target.setOrientation(listener.forward.x, listener.forward.y, listener.forward.z, listener.up.x, listener.up.y, listener.up.z);
+    return true;
   }
 
   setBusGain(busId, value, rampSeconds = 0.08) {
@@ -150,6 +208,15 @@ export function setAudioParam(param, now, value, rampSeconds = 0.04) {
   } else {
     param.value = target;
   }
+}
+
+export function setSignedAudioParam(param, now, value, rampSeconds = 0.04) {
+  if (!param) return;
+  const target = Number.isFinite(Number(value)) ? Number(value) : 0;
+  const start = Math.max(0, Number(now) || 0);
+  if (param.cancelScheduledValues) param.cancelScheduledValues(start);
+  if (param.setTargetAtTime && rampSeconds > 0) param.setTargetAtTime(target, start, Math.max(0.001, rampSeconds));
+  else param.value = target;
 }
 
 function clamp01(value) {
