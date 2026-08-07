@@ -1,10 +1,12 @@
 import { CONFIG } from '../config.js';
 import { createApp } from '../app.js';
 import { renderGameToText } from '../debug/runtimeText.js';
+import { loadAudioTuningFromServer } from '../tuning/audioTuningClient.js';
 import { loadCreatureTuningFromServer } from '../tuning/creatureTuningClient.js';
 import { loadStandaloneRuntimeMap, logRuntimeMapLoad } from '../world/runtimeMapBootstrap.js';
 import { applyWorldEventDebugQuery } from '../game/worldEventControls.js';
 import { createEmptyCreatureTuning } from '../data/creatures/creatureTuning.js';
+import { createEmptyAudioTuning } from '../data/audio/audioTuning.js';
 import { attachEntityAuthoringWindowBridge, createEntityAuthoringRuntime } from '../tuning/entityAuthoringRuntime.js';
 
 const canvas = document.getElementById('game');
@@ -21,16 +23,23 @@ export async function bootBrowserApp(canvas) {
     return null;
   }
   const bundledPlaytest = import.meta.env?.PROD === true;
-  const loaded = bundledPlaytest
-    ? { ok: true, tuning: createEmptyCreatureTuning(), source: 'bundled_defaults' }
-    : await loadCreatureTuningFromServer();
+  const [loaded, loadedAudio] = bundledPlaytest
+    ? [
+        { ok: true, tuning: createEmptyCreatureTuning(), source: 'bundled_defaults' },
+        { ok: true, tuning: createEmptyAudioTuning(), source: 'bundled_defaults' }
+      ]
+    : await Promise.all([loadCreatureTuningFromServer(), loadAudioTuningFromServer()]);
   const app = createApp(canvas, {
     map: runtimeResult.map,
     runtimeMapLoad: runtimeResult.load,
     creatureTuning: loaded.tuning,
+    audioTuning: loadedAudio.tuning,
     tuningSource: loaded.source,
     tuningLoadStatus: loaded.ok ? 'loaded' : 'blocked',
     tuningLoadError: loaded.ok ? null : loaded.reason,
+    audioTuningSource: loadedAudio.source,
+    audioTuningLoadStatus: loadedAudio.ok ? 'loaded' : 'blocked',
+    audioTuningLoadError: loadedAudio.ok ? null : loadedAudio.reason,
     openingEnabled: !queryFlag(search, 'skipHatch'),
     openingSource: queryFlag(search, 'skipHatch') ? 'debug_query_skip_hatch' : 'fresh_launch'
   });

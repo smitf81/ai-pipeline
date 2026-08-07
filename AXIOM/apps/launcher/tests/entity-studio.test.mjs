@@ -22,6 +22,10 @@ assert.match(studioSource, /runtimeRefresh: 'baked_and_loaded'/);
 assert.match(studioSource, /No editable manifest exists/);
 assert.match(studioSource, /entity-studio-camera-focus/);
 assert.match(studioSource, /Camera focus ·/);
+assert.match(studioSource, /runtime_profile/);
+assert.match(studioSource, /entity-studio-audio-perspective/);
+assert.match(studioSource, /3D falloff not active/);
+assert.match(studioSource, /function isRuntimeTarget/);
 assert.match(mapSource, /list\(\) \{[\s\S]*filter\(isBsbV2GeologyRecord\)/);
 
 assert.match(serverSource, /name: "axiom_entity_tuning_propose"/);

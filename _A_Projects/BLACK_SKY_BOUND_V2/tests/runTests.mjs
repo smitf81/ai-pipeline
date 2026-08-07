@@ -13,6 +13,7 @@ import './staminaDodgeSprint.test.mjs';
 import './chargeCounter.test.mjs';
 import './bodyStateFeedback.test.mjs';
 import './audioDirector.test.mjs';
+import './audioTuning.test.mjs';
 import './proceduralAudio.test.mjs';
 import './productionSfx.test.mjs';
 import './deathLifecycle.test.mjs';

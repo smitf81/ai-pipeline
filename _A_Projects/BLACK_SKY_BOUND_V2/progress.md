@@ -5958,3 +5958,31 @@ Next audio ownership:
 
 - The dedicated hatchling first cry remains next. It must be a newborn baby-wyvern identity and must not reuse or pitch-shift the Mama roar.
 - Egg rock/crack/break production replacements follow separately, then the opening mix/transition pass and remaining combat palette.
+
+## 2026-08-07 - Opening audio perspective authoring v1
+
+Current request and boundary:
+
+- Make the through-egg perspective tunable from AXIOM before balancing the next production vocal, especially shell thickness, muffling and perceived exterior distance.
+- Confirmed the existing opening path is non-positional: its distance is authored into source assets and event intensity. There are no listener/source positions or Web Audio `PannerNode` emitters, so true 3D attenuation is explicitly a later slice.
+
+Canonical implementation:
+
+- Added a dedicated BSB audio override schema and five-field opening manifest: sealed cutoff, sealed exterior gain, maximum muffle, crack-light leakage and emergence exposure rate.
+- Separated opening shell cutoff from the health-muffle floor, added real exterior gain scaling for authored opening soundscape events, and published effective cutoff/gain plus the non-positional boundary in Audio Director diagnostics.
+- Added validated `GET`/`PUT /api/tuning/audio-overrides`, a separate `tuning/audio-overrides.json` owner and browser boot loading without borrowing creature tuning.
+- Added one BSB runtime-profile provider to AXIOM Entity Studio. Candidate creation, Preview, revert, Apply and receipt/readback use the existing governed runtime bridge; selecting the profile restarts the real opening for audition.
+- Repaired audio unlock readiness so `unlocked` becomes true only after the AudioContext resumes and every required production preload settles. This prevents required loops from entering the player while their decoded asset is still in `loading` state.
+
+Evidence and validation:
+
+- The real AXIOM Entity Studio proof changed the sealed cutoff from 560 Hz to 520 Hz, previewed it in a restarted opening, drove four egg-opening inputs and observed three exterior shell cues. The bus consumed 520 Hz; the storm cue consumed 0.46 exterior gain at 0.92 muffle.
+- Apply persisted through `tuning/audio-overrides.json`, returned verified readback, and an iframe reload read 520 Hz from the canonical target. The proof restored every protected source file and reported zero unexpected console, page, HTTP or request failures.
+- AXIOM visibly labels the target `authored distance · non-positional` and `3D falloff not active`. Runtime diagnostics report `listenerRelativeAttenuation: false` and `spatialEmitterCount: 0`; no false spatial authoring claim was introduced.
+- Focused schema, Audio Director, unlock-lifecycle, Entity Authoring and AXIOM static tests pass. Full BSB and AXIOM suites, the exact-root launcher test, line-of-code gate, curated build and `git diff --check` pass.
+- Design, field ranges, ownership and the current attenuation boundary are recorded in `docs/OPENING_AUDIO_PERSPECTIVE_AUTHORING_V1.md`. Browser evidence is in `AXIOM/apps/launcher/output/playwright/entity-studio/`.
+
+Next audio ownership:
+
+- Baby Wyvern First Cry v1 is active again. It must start from a normal, reusable newborn hatchling vocal and derive any through-shell opening variation from it; it must not reuse or pitch-shift Mama's roar.
+- Spatial Audio Emitter Foundation v1 follows as a separate infrastructure slice for listener/source coordinates, reference distance, rolloff and panning.

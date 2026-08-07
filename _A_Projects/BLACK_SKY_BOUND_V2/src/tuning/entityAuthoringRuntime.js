@@ -1,7 +1,15 @@
 import { normalizeCreatureTuning, setCreatureTuningValue } from '../data/creatures/creatureTuning.js';
+import {
+  getOpeningAudioTuningFields,
+  getResolvedAudioTuningValue,
+  normalizeAudioTuning,
+  resolveAudioTuning,
+  setAudioTuningValue
+} from '../data/audio/audioTuning.js';
 import { CONFIG } from '../config.js';
-import { releaseOpeningSequence } from '../game/openingSequence.js';
+import { createOpeningSequenceState, releaseOpeningSequence } from '../game/openingSequence.js';
 import { getProfileValue } from './profileValues.js';
+import { saveAudioTuningToServer } from './audioTuningClient.js';
 import { saveCreatureTuningToServer } from './creatureTuningClient.js';
 import {
   ENTITY_AUTHORING_APPLY_RECEIPT_CONTRACT,
@@ -19,15 +27,17 @@ import { setCameraVisibilityFocusTarget } from '../game/cameraVisibilityFocus.js
 
 export function createEntityAuthoringRuntime(app, options = {}) {
   const persist = options.persist ?? saveCreatureTuningToServer;
+  const persistAudio = options.persistAudio ?? saveAudioTuningToServer;
   const writable = options.writable !== false;
   let canonicalTuning = normalizedClone(app?.state?.game?.creatureTuning);
+  let canonicalAudioTuning = normalizedAudioClone(app?.state?.audioTuning);
   let candidate = null;
   let lastReceipt = null;
   let authoringSession = null;
   let sequence = 0;
 
   function listTargets() {
-    return (app?.state?.game?.actors ?? []).map(buildTarget).filter(Boolean);
+    return [buildAudioTarget(), ...(app?.state?.game?.actors ?? []).map(buildTarget).filter(Boolean)].filter(Boolean);
   }
 
   function getTarget(targetId) {
@@ -41,9 +51,12 @@ export function createEntityAuthoringRuntime(app, options = {}) {
     if (target.writeStatus !== 'ready') return failure(`entity_authoring_target_${target.writeStatus}`, { targetId: target.targetId });
     const field = target.fields.find((entry) => entry.path === request.path);
     if (!field) return failure('entity_authoring_field_unknown', { targetId: target.targetId, path: request.path });
-    const result = setCreatureTuningValue(canonicalTuning, target.profileId, field.path, request.value);
+    const audioDomain = target.targetClass === 'runtime_profile';
+    const result = audioDomain
+      ? setAudioTuningValue(canonicalAudioTuning, field.path, request.value)
+      : setCreatureTuningValue(canonicalTuning, target.profileId, field.path, request.value);
     if (!result.ok) return failure(result.reason, { targetId: target.targetId, path: field.path });
-    const baseHash = hashEntityAuthoringState(canonicalTuning);
+    const baseHash = hashEntityAuthoringState(audioDomain ? canonicalAudioTuning : canonicalTuning);
     candidate = {
       contract: ENTITY_AUTHORING_CANDIDATE_CONTRACT,
       classification: 'non_committed_entity_authoring_candidate',
@@ -51,6 +64,7 @@ export function createEntityAuthoringRuntime(app, options = {}) {
       providerId: target.providerId,
       targetId: target.targetId,
       targetClass: target.targetClass,
+      tuningDomain: audioDomain ? 'audio' : 'creature',
       profileId: target.profileId,
       baseHash,
       status: 'candidate',
@@ -67,8 +81,14 @@ export function createEntityAuthoringRuntime(app, options = {}) {
   function previewCandidate(candidateId = candidate?.candidateId) {
     const blocked = validateCandidate(candidateId);
     if (blocked) return blocked;
-    app.state.game.creatureTuning = normalizedClone(candidate.resolvedTuning);
-    refreshCreatureRigForTuning(app.state);
+    if (candidate.tuningDomain === 'audio') {
+      app.state.audioTuning = normalizedAudioClone(candidate.resolvedTuning);
+      app.audio.setTuning(app.state.audioTuning);
+      restartOpeningAudioPreview();
+    } else {
+      app.state.game.creatureTuning = normalizedClone(candidate.resolvedTuning);
+      refreshCreatureRigForTuning(app.state);
+    }
     candidate.status = 'previewing';
     return { ok: true, candidate: publicCandidate(candidate), target: getTarget(candidate.targetId) };
   }
@@ -86,13 +106,23 @@ export function createEntityAuthoringRuntime(app, options = {}) {
     if (blocked) return blocked;
     if (!writable) return rejectCandidate('entity_authoring_persistence_unavailable');
     candidate.status = 'applying';
-    const beforeHash = hashEntityAuthoringState(canonicalTuning);
-    const saved = await persist(candidate.resolvedTuning);
+    const audioDomain = candidate.tuningDomain === 'audio';
+    const canonical = audioDomain ? canonicalAudioTuning : canonicalTuning;
+    const beforeHash = hashEntityAuthoringState(canonical);
+    const saved = await (audioDomain ? persistAudio : persist)(candidate.resolvedTuning);
     if (!saved?.ok) return rejectCandidate(saved?.reason ?? 'entity_authoring_persist_failed');
-    canonicalTuning = normalizedClone(saved.tuning ?? candidate.resolvedTuning);
-    app.state.game.creatureTuning = normalizedClone(canonicalTuning);
-    refreshCreatureRigForTuning(app.state);
-    const afterHash = hashEntityAuthoringState(canonicalTuning);
+    if (audioDomain) {
+      canonicalAudioTuning = normalizedAudioClone(saved.tuning ?? candidate.resolvedTuning);
+      app.state.audioTuning = normalizedAudioClone(canonicalAudioTuning);
+      app.audio.setTuning(app.state.audioTuning);
+      restartOpeningAudioPreview();
+    } else {
+      canonicalTuning = normalizedClone(saved.tuning ?? candidate.resolvedTuning);
+      app.state.game.creatureTuning = normalizedClone(canonicalTuning);
+      refreshCreatureRigForTuning(app.state);
+    }
+    const appliedCanonical = audioDomain ? canonicalAudioTuning : canonicalTuning;
+    const afterHash = hashEntityAuthoringState(appliedCanonical);
     lastReceipt = {
       contract: ENTITY_AUTHORING_APPLY_RECEIPT_CONTRACT,
       classification: 'applied_entity_authoring_change',
@@ -102,9 +132,9 @@ export function createEntityAuthoringRuntime(app, options = {}) {
       targetId: candidate.targetId,
       beforeHash,
       afterHash,
-      persistedDestination: 'tuning/creature-overrides.json',
+      persistedDestination: audioDomain ? 'tuning/audio-overrides.json' : 'tuning/creature-overrides.json',
       runtimeRefresh: 'complete',
-      readBack: { status: afterHash === hashEntityAuthoringState(saved.tuning ?? canonicalTuning) ? 'verified' : 'mismatch' },
+      readBack: { status: afterHash === hashEntityAuthoringState(saved.tuning ?? appliedCanonical) ? 'verified' : 'mismatch' },
       source: candidate.source,
       appliedAt: new Date().toISOString()
     };
@@ -121,12 +151,22 @@ export function createEntityAuthoringRuntime(app, options = {}) {
     return { ok: true, source, canonicalHash: hashEntityAuthoringState(canonicalTuning) };
   }
 
+  function replaceCanonicalAudioTuning(tuning, source = 'external_sync') {
+    canonicalAudioTuning = normalizedAudioClone(tuning);
+    if (!candidate || candidate.status !== 'previewing' || candidate.tuningDomain !== 'audio') {
+      app.state.audioTuning = normalizedAudioClone(canonicalAudioTuning);
+      app.audio.setTuning(app.state.audioTuning);
+    }
+    return { ok: true, source, canonicalHash: hashEntityAuthoringState(canonicalAudioTuning) };
+  }
+
   function snapshot() {
     return {
       contract: 'axiom.entity-authoring-runtime.v0',
       classification: 'runtime_projection',
       writable,
       canonicalHash: hashEntityAuthoringState(canonicalTuning),
+      audioCanonicalHash: hashEntityAuthoringState(canonicalAudioTuning),
       targets: listTargets(),
       candidate: publicCandidate(candidate),
       lastReceipt: clone(lastReceipt),
@@ -135,6 +175,7 @@ export function createEntityAuthoringRuntime(app, options = {}) {
   }
 
   function beginSession(targetId = null) {
+    const target = targetId ? getTarget(targetId) : null;
     if (!authoringSession) {
       authoringSession = {
         paused: Boolean(app.state.paused),
@@ -146,9 +187,10 @@ export function createEntityAuthoringRuntime(app, options = {}) {
       };
       options.onSessionChange?.({ active: true });
     }
-    app.state.paused = true;
-    if (app.state.tuning) app.state.tuning.active = true;
-    if (app.state.opening) releaseOpeningSequence(app.state.opening);
+    const audioProfile = target?.targetClass === 'runtime_profile';
+    app.state.paused = !audioProfile;
+    if (app.state.tuning) app.state.tuning.active = !audioProfile;
+    if (!audioProfile && app.state.opening) releaseOpeningSequence(app.state.opening);
     if (targetId) return focusTarget(targetId);
     return { ok: true, session: { active: true, focusedTargetId: null } };
   }
@@ -156,6 +198,20 @@ export function createEntityAuthoringRuntime(app, options = {}) {
   function focusTarget(targetId) {
     const target = getTarget(targetId);
     if (!target) return failure('entity_authoring_target_unknown', { targetId });
+    if (target.targetClass === 'runtime_profile') {
+      if (!authoringSession) return beginSession(targetId);
+      authoringSession.focusedTargetId = targetId;
+      app.state.paused = false;
+      if (app.state.tuning) app.state.tuning.active = false;
+      restartOpeningAudioPreview();
+      app.audio.unlock();
+      return {
+        ok: true,
+        session: { active: true, focusedTargetId: targetId },
+        audition: { status: 'opening_restarted', requiresRuntimeAudioUnlock: app.audio.getDebugState().unlocked !== true },
+        target: getTarget(targetId)
+      };
+    }
     const actor = (app?.state?.game?.actors ?? []).find((entry) => `actor:${entry.id}` === targetId);
     if (!actor || !Number.isFinite(actor.x) || !Number.isFinite(actor.y)) {
       return failure('entity_authoring_target_not_focusable', { targetId });
@@ -181,6 +237,7 @@ export function createEntityAuthoringRuntime(app, options = {}) {
     app.state.paused = authoringSession.paused;
     if (app.state.tuning) app.state.tuning.active = authoringSession.tuningActive;
     if (authoringSession.opening) app.state.opening = authoringSession.opening;
+    app.audio.resetOpeningObservation();
     if (authoringSession.cameraVisibilityFocus) app.state.game.cameraVisibilityFocus = clone(authoringSession.cameraVisibilityFocus);
     authoringSession = null;
     options.onSessionChange?.({ active: false });
@@ -235,9 +292,56 @@ export function createEntityAuthoringRuntime(app, options = {}) {
     };
   }
 
+  function buildAudioTarget() {
+    if (!app?.audio?.getDebugState || !app?.state?.audioTuning) return null;
+    const resolved = resolveAudioTuning(app.state.audioTuning);
+    const runtime = app.audio.getDebugState().audioPerspective;
+    return {
+      contract: ENTITY_AUTHORING_TARGET_CONTRACT,
+      classification: 'canonical_target_projection',
+      targetId: 'audio:opening-perspective',
+      targetClass: 'runtime_profile',
+      providerId: 'bsb.opening-audio-perspective-tuning',
+      runtimeIdentity: { id: 'opening-perspective', authoredId: 'opening-perspective', kind: 'audio_perspective', team: null },
+      label: 'Opening · inside egg audio',
+      profileId: 'opening_audio_perspective_v1',
+      recipeId: null,
+      variantSignature: null,
+      canonicalSource: {
+        owner: 'Black Sky Bound audio tuning resolver/API',
+        path: 'tuning/audio-overrides.json',
+        supplementalRecipePath: 'src/data/audio/audioTuning.js',
+        hash: hashEntityAuthoringState(canonicalAudioTuning)
+      },
+      writeStatus: 'ready',
+      capabilities: [
+        { id: 'shell_transmission', status: 'ready' },
+        { id: 'exposure_curve', status: 'ready' },
+        { id: 'authored_distance', status: 'runtime_projected' },
+        { id: 'listener_relative_3d', status: 'not_connected' }
+      ],
+      fieldManifest: {
+        contract: ENTITY_AUTHORING_FIELD_MANIFEST_CONTRACT,
+        providerId: 'bsb.opening-audio-perspective-tuning',
+        profileId: 'opening_audio_perspective_v1'
+      },
+      fields: getOpeningAudioTuningFields().map((field) => ({
+        ...field,
+        value: getResolvedAudioTuningValue(app.state.audioTuning, field.path)
+      })),
+      runtimeProjection: {
+        profileKind: 'opening_audio_perspective',
+        motionState: 'live_mix',
+        audioPerspective: runtime,
+        resolvedTuning: { ...resolved.openingPerspective }
+      }
+    };
+  }
+
   function validateCandidate(candidateId) {
     if (!candidate || candidate.candidateId !== candidateId) return failure('entity_authoring_candidate_unknown');
-    if (candidate.baseHash !== hashEntityAuthoringState(canonicalTuning)) return rejectCandidate('entity_authoring_candidate_stale');
+    const canonical = candidate.tuningDomain === 'audio' ? canonicalAudioTuning : canonicalTuning;
+    if (candidate.baseHash !== hashEntityAuthoringState(canonical)) return rejectCandidate('entity_authoring_candidate_stale');
     return null;
   }
 
@@ -253,10 +357,45 @@ export function createEntityAuthoringRuntime(app, options = {}) {
 
   function restoreCanonicalProjection() {
     app.state.game.creatureTuning = normalizedClone(canonicalTuning);
+    app.state.audioTuning = normalizedAudioClone(canonicalAudioTuning);
+    app.audio.setTuning(app.state.audioTuning);
     refreshCreatureRigForTuning(app.state);
   }
 
-  return { listTargets, getTarget, createCandidate, previewCandidate, revertCandidate, applyCandidate, replaceCanonicalTuning, beginSession, focusTarget, endSession, snapshot, dispatch };
+  function restartOpeningAudioPreview() {
+    const anchor = authoringSession?.opening?.egg ?? app.state.opening?.egg ?? {};
+    app.state.opening = createOpeningSequenceState({
+      enabled: true,
+      source: 'axiom_opening_audio_preview',
+      eggMapId: anchor.mapId,
+      eggTileX: anchor.tileX,
+      eggTileY: anchor.tileY,
+      eggWorldX: anchor.worldX,
+      eggWorldY: anchor.worldY,
+      eggRotation: anchor.rotation,
+      eggExitAngle: anchor.exitAngle,
+      exitDistanceTiles: anchor.exitDistanceTiles,
+      exitDistanceWorld: anchor.exitDistanceWorld,
+      tileSize: CONFIG.tileSize
+    });
+    app.audio.resetOpeningObservation();
+  }
+
+  return {
+    listTargets,
+    getTarget,
+    createCandidate,
+    previewCandidate,
+    revertCandidate,
+    applyCandidate,
+    replaceCanonicalTuning,
+    replaceCanonicalAudioTuning,
+    beginSession,
+    focusTarget,
+    endSession,
+    snapshot,
+    dispatch
+  };
 }
 
 export function attachEntityAuthoringWindowBridge(runtime, host = globalThis) {
@@ -357,6 +496,10 @@ function normalizeSource(source) {
 
 function normalizedClone(value) {
   return clone(normalizeCreatureTuning(value).tuning);
+}
+
+function normalizedAudioClone(value) {
+  return clone(normalizeAudioTuning(value).tuning);
 }
 
 function clone(value) {

@@ -49,6 +49,12 @@ try {
     equal(response.headers.get('cache-control'), 'no-store', `${asset} should never be hidden by stale browser cache`);
   }
 
+  const audioTuningResponse = await fetch(`${launchedUrl}api/tuning/audio-overrides`);
+  equal(audioTuningResponse.status, 200, 'exact-root launcher should expose the canonical audio tuning API');
+  equal(audioTuningResponse.headers.get('cache-control'), 'no-store', 'audio tuning readback should never be cached');
+  const audioTuning = await audioTuningResponse.json();
+  equal(audioTuning.schemaVersion, 'bsb.audioTuning.v0', 'audio tuning API should expose its versioned persistence contract');
+
   const reuser = startLauncher(activePort);
   const reused = await waitForExit(reuser, 10_000);
   equal(reused.code, 0, 'a second launcher for the same checkout should exit cleanly');

@@ -63,6 +63,31 @@ equal(decodedHeartbeatSource.connectedTo, decodedHeartbeatOutput, 'decoded heart
 equal(decodedHeartbeatSource.startedAt, 3.5, 'decoded heartbeat should begin at the current audio-context time');
 equal(decodedHeartbeatVoice.mode, 'decoded_file_buffer_loop', 'decoded heartbeat diagnostics should identify the loop playback mode');
 
+let finishDeferredPreload;
+const deferredPreload = new Promise((resolve) => { finishDeferredPreload = resolve; });
+const parameter = () => ({ value: 0, cancelScheduledValues() {}, setTargetAtTime(value) { this.value = value; } });
+const node = () => ({ gain: parameter(), frequency: parameter(), Q: parameter(), connect() {}, disconnect() {} });
+const delayedAssetBank = {
+  preloadCues: () => deferredPreload,
+  snapshot: () => ({ requiredReady: false, loadingCount: 1, errorCount: 0 }),
+  select: () => null
+};
+const delayedDirector = createAudioDirector({
+  context: {
+    currentTime: 0,
+    destination: {},
+    createGain: node,
+    createBiquadFilter: node,
+    resume: () => Promise.resolve()
+  },
+  assetBank: delayedAssetBank
+});
+const delayedUnlock = delayedDirector.unlock();
+equal(delayedDirector.unlocked, false, 'required file loops must remain locked while decoded assets are loading');
+finishDeferredPreload([]);
+await delayedUnlock;
+equal(delayedDirector.unlocked, true, 'audio should unlock only after required preload work settles');
+
 const stamina = getComponent(harness.game.world, harness.game.dragonId, ComponentType.Stamina);
 stamina.current = 2;
 stamina.state = 'exhausted';

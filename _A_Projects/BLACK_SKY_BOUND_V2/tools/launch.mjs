@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { handleCreatureTuningApi } from './tuningApi.mjs';
+import { handleAudioTuningApi, handleCreatureTuningApi } from './tuningApi.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -93,6 +93,7 @@ async function serveFile(req, res) {
     return;
   }
   if (await handleCreatureTuningApi(req, res, rootDir)) return;
+  if (await handleAudioTuningApi(req, res, rootDir)) return;
   const filePath = resolveRequestPath(req.url || '/');
   if (!filePath) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
