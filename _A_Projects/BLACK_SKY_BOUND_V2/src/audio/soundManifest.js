@@ -130,6 +130,22 @@ export const SOUND_CUES = Object.freeze({
     cooldownMs: 105,
     maxVoices: 2
   }),
+  'player.voice.first_cry': cue({
+    id: 'player.voice.first_cry',
+    files: [
+      `${productionAssetRoot}/baby_wyvern_first_cry_01.wav`,
+      `${productionAssetRoot}/baby_wyvern_first_cry_02.wav`
+    ],
+    source: 'file',
+    required: true,
+    bus: 'player',
+    volume: 0.84,
+    pitchRandom: [0.985, 1.015],
+    cooldownMs: 1800,
+    maxVoices: 1,
+    spatialization: 'point_mono',
+    profileId: 'creature_voice_spatial_v1'
+  }),
   'player.lunge.body': cue({
     id: 'player.lunge.body',
     bus: 'combat',

@@ -8,11 +8,14 @@ import {
 import {
   OPENING_SEQUENCE,
   OpeningAudioCueId,
+  OpeningSoundscapeCueId,
   OpeningSequencePhase
 } from '../data/openingSequence.js';
 
 export function createOpeningSequenceState(options = {}) {
   const enabled = options.enabled !== false;
+  const playerEntityId = String(options.playerEntityId ?? '').trim();
+  if (enabled && !playerEntityId) throw new Error('opening_player_audio_owner_missing');
   const required = OPENING_SEQUENCE.requiredMovementEdges;
   return {
     contract: OPENING_SEQUENCE.contract,
@@ -48,6 +51,7 @@ export function createOpeningSequenceState(options = {}) {
       reason: null,
       events: [],
       soundscapeFired: [],
+      playerSourceRef: playerEntityId ? { ownerKind: 'actor', ownerId: playerEntityId, emitterId: 'voice' } : null,
       emitters: createOpeningAudioEmitters(options)
     },
     diagnostics: {
@@ -175,6 +179,12 @@ function advanceAutomaticPhase(opening) {
   if (opening.phase === OpeningSequencePhase.OPENING) {
     opening.openingProgress = 1;
     opening.phase = OpeningSequencePhase.EMERGING;
+    queueOpeningAudio(opening, OpeningSoundscapeCueId.HATCHLING_FIRST_CRY, 'hatchling_first_cry_on_emergence', {
+      intensity: 1,
+      soundscapeId: 'hatchling_first_cry',
+      perspective: 'newborn_voice_inside_opening_shell',
+      sourceRef: opening.audio.playerSourceRef
+    });
     return true;
   }
   if (opening.phase === OpeningSequencePhase.EMERGING) {
@@ -295,10 +305,6 @@ function createOpeningAudioEmitters(options) {
       sourceRef: { ownerKind: 'openingEvent', ownerId: 'opening-storm', emitterId: 'thunder' },
       profileId: 'storm_spatial_v1', emitterId: 'thunder', x: x - 36, y: y - 24, anchorHeightMeters: 7
     },
-    'opening-mama-answer': {
-      sourceRef: { ownerKind: 'openingEvent', ownerId: 'opening-mama-answer', emitterId: 'voice' },
-      profileId: 'mama_voice_spatial_v1', emitterId: 'voice', x: x + 56, y: y - 42, anchorHeightMeters: 9.2
-    }
   };
 }
 

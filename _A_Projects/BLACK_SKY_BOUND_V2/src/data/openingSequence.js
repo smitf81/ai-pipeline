@@ -22,7 +22,7 @@ export const OpeningSoundscapeCueId = Object.freeze({
   WEREWOLF_THROUGH_SHELL: 'opening.exterior.werewolf_through_shell',
   HUSK_GARGLE: 'enemy.husk.distant_gargle',
   HUSK_THROUGH_SHELL: 'opening.exterior.husk_through_shell',
-  MAMA_ROAR: 'world.mama_wyvern.distant_roar'
+  HATCHLING_FIRST_CRY: 'player.voice.first_cry'
 });
 
 export const OPENING_SEQUENCE = Object.freeze({
@@ -85,14 +85,6 @@ export const OPENING_SEQUENCE = Object.freeze({
       intensity: 0.6,
       perspective: 'partially_exposed_human_alarm'
       ,sourceRef: { ownerKind: 'actor', ownerId: 'raider:38:30:2305', emitterId: 'voice' }
-    }),
-    openingSound({
-      id: 'mama_answering_roar',
-      cueId: OpeningSoundscapeCueId.MAMA_ROAR,
-      anchor: { kind: 'shell_break', delaySeconds: 1.5 },
-      intensity: 1,
-      perspective: 'massive_roar_through_opening_shell'
-      ,sourceRef: { ownerKind: 'openingEvent', ownerId: 'opening-mama-answer', emitterId: 'voice' }
     }),
     openingSound({
       id: 'husk_now_exposed',

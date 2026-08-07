@@ -6015,3 +6015,31 @@ Next audio ownership:
 
 - Baby Wyvern First Cry v1 resumes through the new emitter/enclosure contract: author the normal newborn vocal first, then let live shell transmission produce the opening perspective.
 - Segmented/nearest-point area emitters for the inferno wall remain explicitly deferred; its cue is classified `area` rather than disguised as a point source.
+
+## 2026-08-07 - Baby Wyvern First Cry v1
+
+Canonical repair:
+
+- Removed the opening `mama_answering_roar` event and its opening-only Mama emitter. Mama's actual later world-event roles remain intact.
+- Added `player.voice.first_cry` as a required two-file mono point cue and declared it on the player actor's `firstCry` emitter role.
+- The `OPENING -> EMERGING` transition now publishes the first cry once with the exact `game.dragonId` actor source ref. Enabled opening state fails loudly when that owner is missing.
+- The normal cue receives live egg transmission and HRTF spatialization. No baked through-shell vocal or centred/procedural fallback exists.
+
+Production assets:
+
+- Downloaded and retained Tiny Croc Chirp plus a gecko recording from Pixabay; reused the verified Pixabay crocodile-hiss source for a short breath edge.
+- Authored two 1.85-second performances from distinct windows: strained breath, dominant tiny-croc distress contour and restrained gecko throat/chest body.
+- Added deterministic generator, exact hashes/windows/process notes, 24-bit masters, 16-bit runtime WAVs, aligned stems, Audacity LOF/reference mixes, Mama-vs-hatchling A/B reel and waveform/spectrum sheet.
+- Production contains zero synthesized, Mama, generic-dragon or baked egg-filter layers.
+
+Validation:
+
+- Full BSB unit/contract/integration suite passes, including exact player ownership, live-enclosure routing, mono production asset shape and absence of an opening Mama substitute.
+- Real Chromium opening proof passed the six movement edges, captured the first cry at emergence from `young_dragon_1`, observed a 0.163 m positioned voice and live 3005 Hz / 0.727 shell transmission, rotated both variants, and reported zero audio/console/page/request/HTTP errors.
+- Retained-source regeneration is deterministic across both runtime WAVs and both 24-bit masters. The curated playtest build and launcher identity contract also pass.
+- The inspected emergence screenshot and browser report are in `artifacts/baby-wyvern-first-cry-v1/`.
+
+Next audio ownership:
+
+- Egg Shell Interaction Palette v1: recorded mineral/membrane rock, crack and crown-break assets, preserving the opening sequence as timing owner and the egg as the sound source.
+- Opening Mix and Transition v1 follows for final balance across exterior threats, shell movement, first cry, later Mama presence, heartbeat and ambience.

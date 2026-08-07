@@ -1,0 +1,143 @@
+{
+  "contract": "black-sky-bound.baby-wyvern-first-cry-production.v1",
+  "sampleRate": 48000,
+  "generator": "tools/audio/generate_baby_wyvern_first_cry_v1.py",
+  "designIntent": "A newborn, effortful reptilian first lung-call: brief strained air, tiny-croc distress contour, and quiet irregular throat body; vulnerable rather than dominant.",
+  "runtimeCueId": "player.voice.first_cry",
+  "runtimeOwnership": "player actor voice emitter; opening phase owns timing; live egg enclosure owns perspective",
+  "syntheticLayersInProductionAssets": 0,
+  "mamaSourceLayers": 0,
+  "bakedEggPerspectiveLayers": 0,
+  "sources": [
+    {
+      "id": "croc_chirp",
+      "role": "newborn reptile distress contour",
+      "file": "assets/audio/sources/baby_wyvern_first_cry_v1/originals/tiny-croc-chirp-40638.mp3",
+      "sha256": "0aaea4a550a8d09114cbc1618201a114c55c2610c8931d95f297faf942f325ef",
+      "durationSeconds": 4.488,
+      "provider": "Pixabay",
+      "artist": "iwanPlays (Freesound)",
+      "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-tiny-croc-chirp-40638/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "id": "gecko",
+      "role": "irregular reptile throat and chest texture",
+      "file": "assets/audio/sources/baby_wyvern_first_cry_v1/originals/gecko-371354.mp3",
+      "sha256": "e8874f63610e942f3d3bfaf42971251ef3dd764bfaa95de36990d6668768d9bf",
+      "durationSeconds": 24.0588,
+      "provider": "Pixabay",
+      "artist": "u_xg7ssi08yr",
+      "pageUrl": "https://pixabay.com/sound-effects/nature-gecko-371354/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "id": "croc_hiss",
+      "role": "short strained breath edge",
+      "file": "assets/audio/sources/baby_wyvern_first_cry_v1/originals/crocodile-hissing-372480.mp3",
+      "sha256": "8a1b5fff49549b03567ad698b2a9f4a0065dc0a8b3a8fd9f87c81d3f01ac1116",
+      "durationSeconds": 2.1159,
+      "provider": "Pixabay",
+      "artist": "DRAGON-STUDIO",
+      "pageUrl": "https://pixabay.com/sound-effects/nature-crocodile-hissing-372480/",
+      "license": "Pixabay Content License"
+    }
+  ],
+  "variants": [
+    {
+      "durationSeconds": 1.85,
+      "channels": 1,
+      "peakDbfs": -3.6,
+      "rmsDbfs": -19.129,
+      "dcOffset": 4.43e-06,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 92.458,
+      "id": "baby_wyvern_first_cry_01",
+      "runtimeFile": "assets/audio/production/baby_wyvern_first_cry_01.wav",
+      "runtimeSha256": "dc0b07da886d9e8ac11fb85d08dd2b6f4932c5b33e5827ec1f347c7232bf4e17",
+      "masterFile": "assets/audio/masters/baby_wyvern_first_cry_01_master.wav",
+      "masterSha256": "29782ecd6fcc06879da04c97da9d771f853f58ef576c72cf17099ab38b0a3e8b",
+      "stemFiles": [
+        "assets/audio/sources/baby_wyvern_first_cry_v1/processed_stems/variant_01/01_strained_breath_edge.wav",
+        "assets/audio/sources/baby_wyvern_first_cry_v1/processed_stems/variant_01/02_tiny_croc_distress_contour.wav",
+        "assets/audio/sources/baby_wyvern_first_cry_v1/processed_stems/variant_01/03_gecko_throat_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "croc_hiss",
+          "startSeconds": 0.4,
+          "endSeconds": 1.36,
+          "rate": 0.92
+        },
+        {
+          "sourceId": "croc_chirp",
+          "startSeconds": 0.34,
+          "endSeconds": 1.58,
+          "rate": 0.9
+        },
+        {
+          "sourceId": "gecko",
+          "startSeconds": 8.78,
+          "endSeconds": 10.28,
+          "rate": 0.8
+        }
+      ],
+      "process": [
+        "short real crocodile hiss shaped as a strained pre-cry breath edge",
+        "tiny-croc distress contour retained as the dominant newborn identity",
+        "separate gecko recording supplies restrained irregular throat/chest body",
+        "68 Hz high-pass, 9.1 kHz low-pass, mild saturation, 10/90 ms fades, -3.6 dBFS peak",
+        "no oscillator, generated noise, Mama source, generic dragon roar, or baked egg filter"
+      ]
+    },
+    {
+      "durationSeconds": 1.85,
+      "channels": 1,
+      "peakDbfs": -3.6,
+      "rmsDbfs": -21.003,
+      "dcOffset": 8.79e-06,
+      "clippedSampleCount": 0,
+      "firstSignalMs": 59.104,
+      "id": "baby_wyvern_first_cry_02",
+      "runtimeFile": "assets/audio/production/baby_wyvern_first_cry_02.wav",
+      "runtimeSha256": "b075432c3b63bb099b0e0d20593fd137d2396646fb1a5fa699c82634708a73ff",
+      "masterFile": "assets/audio/masters/baby_wyvern_first_cry_02_master.wav",
+      "masterSha256": "b852a08308763fd0b583cefadad71cd20d10c4ddf324d4ef7e00aa0c68282f53",
+      "stemFiles": [
+        "assets/audio/sources/baby_wyvern_first_cry_v1/processed_stems/variant_02/01_strained_breath_edge.wav",
+        "assets/audio/sources/baby_wyvern_first_cry_v1/processed_stems/variant_02/02_tiny_croc_distress_contour.wav",
+        "assets/audio/sources/baby_wyvern_first_cry_v1/processed_stems/variant_02/03_gecko_throat_body.wav"
+      ],
+      "sourceSegments": [
+        {
+          "sourceId": "croc_hiss",
+          "startSeconds": 0.68,
+          "endSeconds": 1.72,
+          "rate": 0.87
+        },
+        {
+          "sourceId": "croc_chirp",
+          "startSeconds": 2.17,
+          "endSeconds": 3.82,
+          "rate": 0.95
+        },
+        {
+          "sourceId": "gecko",
+          "startSeconds": 12.58,
+          "endSeconds": 13.92,
+          "rate": 0.84
+        }
+      ],
+      "process": [
+        "short real crocodile hiss shaped as a strained pre-cry breath edge",
+        "tiny-croc distress contour retained as the dominant newborn identity",
+        "separate gecko recording supplies restrained irregular throat/chest body",
+        "68 Hz high-pass, 9.1 kHz low-pass, mild saturation, 10/90 ms fades, -3.6 dBFS peak",
+        "no oscillator, generated noise, Mama source, generic dragon roar, or baked egg filter"
+      ]
+    }
+  ],
+  "audacitySession": "assets/audio/sources/baby_wyvern_first_cry_v1/audacity_session/baby_wyvern_first_cry_v1.lof",
+  "comparisonReel": "artifacts/baby-wyvern-first-cry-v1/mama-vs-hatchling-comparison-reel.wav",
+  "contactSheet": "artifacts/baby-wyvern-first-cry-v1/waveform-spectral-contact-sheet.png"
+}

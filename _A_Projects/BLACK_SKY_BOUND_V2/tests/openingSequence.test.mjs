@@ -21,6 +21,7 @@ const opening = createOpeningSequenceState({
   eggTileY: 53.5,
   eggWorldX: 1296,
   eggWorldY: 1712,
+  playerEntityId: 'player:test',
   tileSize: 32
 });
 const input = createInputHarness();
@@ -63,13 +64,16 @@ assert(
 updateOpeningSequence({ opening, input, realDt: OPENING_SEQUENCE.timing.openingSeconds * 0.55 });
 assert(opening.openingProgress > 0.5 && opening.phase === OpeningSequencePhase.OPENING, 'shell opening should remain visible for a substantial beat');
 assert(
-  opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.RAIDER_THROUGH_SHELL)
-    && opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.MAMA_ROAR),
-  'shell opening should reveal the raider alarm before Mama answers through the widening crown'
+  opening.audio.events.some((event) => event.cueId === OpeningSoundscapeCueId.RAIDER_THROUGH_SHELL),
+  'shell opening should reveal the raider alarm through the widening crown'
 );
 updateOpeningSequence({ opening, input, realDt: OPENING_SEQUENCE.timing.openingSeconds });
 equal(opening.phase, OpeningSequencePhase.EMERGING, 'shell opening should hand off to body emergence');
 assert(opening.emergenceProgress > 0, 'large deterministic steps should carry overflow into emergence');
+const firstCry = opening.audio.events.find((event) => event.cueId === OpeningSoundscapeCueId.HATCHLING_FIRST_CRY);
+assert(firstCry, 'body emergence should publish the dedicated hatchling first cry');
+equal(firstCry.sourceRef.ownerId, 'player:test', 'first cry should resolve from the exact player actor owner');
+equal(opening.audio.events.some((event) => event.cueId === 'world.mama_wyvern.distant_roar'), false, 'opening release must not substitute Mama for the hatchling voice');
 updateOpeningSequence({ opening, input, realDt: OPENING_SEQUENCE.timing.emergenceSeconds * 0.45 });
 assert(opening.emergenceProgress > 0.5 && opening.egressProgress > 0, 'emergence should progressively move the hatchling beyond the egg anchor');
 equal(opening.audio.events.filter((event) => event.cueId === OpeningSoundscapeCueId.HUSK_THROUGH_SHELL).length, 1, 'the trapped husk beat should use one opening-only shell derivative');
@@ -92,7 +96,8 @@ const reducedState = {
   opening: createOpeningSequenceState({
     eggMapId: 'first_flightless_night',
     eggWorldX: 1296,
-    eggWorldY: 1712
+    eggWorldY: 1712,
+    playerEntityId: 'player:reduced-motion'
   }),
   playerProfile: { settings: { reducedMotion: true } }
 };
@@ -133,7 +138,7 @@ equal(buildOpeningSequenceProjection(reducedState).egg.visible, false, 'persiste
 
 const game = createInitialGameState(createDemoMap());
 const poseState = {
-  opening: createOpeningSequenceState(),
+  opening: createOpeningSequenceState({ playerEntityId: game.dragonId }),
   game
 };
 poseState.opening.promptVisible = true;
