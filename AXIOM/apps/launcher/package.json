@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "test": "node tests/project-management.test.mjs && node tests/bsb-v2-map-authoring.test.mjs && node tests/bsb-v2-geology-authoring.test.mjs && node tests/bsb-v2-undergrowth-brush.test.mjs && node tests/ux-shell.test.mjs && node tests/project-diary.test.mjs && node tests/entity-studio.test.mjs",
+    "test:model-stream": "node tests/model-stream.test.mjs",
+    "test:mapforge-receipts": "node tests/mapforge-receipts.test.mjs",
     "test:bsb-v2-authoring": "node tests/bsb-v2-map-authoring.playtest.mjs",
     "test:undergrowth-brush": "node tests/bsb-v2-undergrowth-brush.playtest.mjs",
     "test:bsb-authoring-goal": "node tests/bsb-authoring-goal.playtest.mjs",
