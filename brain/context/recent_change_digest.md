@@ -1,9 +1,19 @@
 # Recent Change Digest
 
-Status: updated 2026-08-03
+Status: updated 2026-08-25
 
 This file is an operational context artefact for the ACE planner.
 Use it as recent-change context, not as canonical truth.
+
+## 2026-08-25 AXIOM Temporal Executive experiment reconciliation
+
+- The canonical live desktop workspace is `C:\Users\felix\Desktop\Automated_AI_Pipeline` on `main`. `AXIOM Launcher.lnk` targets `AXIOM\apps\launcher\AXIOM Launcher.cmd`, and launcher health confirms that same launcher root at runtime.
+- Trial 1's provider-stream repair was promoted as one shared `model-stream.js` runtime. It replaces three duplicated readers and preserves split JSON/SSE frames across Ollama, OpenAI-compatible, and Anthropic streams.
+- Trial 2's MapForge repair was promoted as one shared `mapforge-apply-verification.js` owner. Tree, undergrowth, and geology receipts now require canonical revision/readback evidence and return explicit false outcomes for mismatch or non-application.
+- Frozen browser graders moved from 0/3 to 3/3 for model streaming and from 2/8 to 8/8 for MapForge receipts. A cold restart through the exact desktop launcher target produced a new bridge process and repeated both passes with no console or page errors.
+- The recovery worktree at `Documents\Codex\2026-07-21\...\integration\ai-pipeline` is 27 commits behind `main` with no commits ahead. Its newer-timestamped launcher server is functionally older and omits the live level-design, capability-acquisition, runtime-identity, and traversal-audit paths; it was not promoted.
+- `origin/refactor` is a pre-July divergent snapshot and is superseded by the live main lineage. No branch was merged, deleted, reset, or rewritten during reconciliation.
+- The launcher unit chain passes all changed-code and adjacent tests. The only broad-chain failure is the pre-existing BSB V2 authoring/runtime-map revision drift (authoring revision 2848 versus baked revision 2528), outside the files changed here.
 
 ## 2026-08-03 AXIOM / Black Sky Bound Entity Studio Foundation v0
 

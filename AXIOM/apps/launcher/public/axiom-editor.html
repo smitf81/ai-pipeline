@@ -3650,6 +3650,8 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="./model-stream.js"></script>
+  <script src="./mapforge-apply-verification.js"></script>
   <script>
     const EventBus = (() => {
       const subs = {};
@@ -16943,115 +16945,8 @@ ${listeners}
     // Patches ModelBus to add .stream() for token-by-token SSE output
     // Works with Ollama (native /api/chat stream), LM Studio, and Anthropic
     (function patchModelBusStream() {
-      const orig = ModelBus;
-
-      ModelBus.stream = async function (messages, opts = {}, onChunk) {
-        const cur = ModelBus.getCurrent();
-        if (!cur) throw new Error('No model selected');
-        const ep = cur.endpoint;
-
-        // ── Anthropic streaming ──
-        if (ep.type === 'anthropic') {
-          const r = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'anthropic-version': '2023-06-01',
-              'anthropic-beta': 'messages-2023-06-01',
-              'x-api-key': opts.apiKey || '',
-            },
-            body: JSON.stringify({
-              model: cur.model || 'claude-sonnet-4-20250514',
-              max_tokens: opts.max_tokens || 2048,
-              stream: true,
-              system: opts.system || '',
-              messages,
-            }),
-          });
-          if (!r.ok) throw new Error(await r.text());
-          const reader = r.body.getReader();
-          const dec = new TextDecoder();
-          let full = '';
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            for (const line of dec.decode(value, { stream: true }).split('\n')) {
-              if (!line.startsWith('data: ')) continue;
-              const raw = line.slice(6);
-              if (raw === '[DONE]') continue;
-              try {
-                const j = JSON.parse(raw);
-                const delta = j.delta?.text || j.choices?.[0]?.delta?.content || '';
-                if (delta) { full += delta; if (onChunk) onChunk(delta, full); }
-              } catch (_) { }
-            }
-          }
-          return full;
-        }
-
-        // ── Ollama native /api/chat stream ──
-        if (ep.type === 'ollama-native') {
-          const r = await fetch(`${ep.url}/api/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: cur.model,
-              messages: opts.system ? [{ role: 'system', content: opts.system }, ...messages] : messages,
-              stream: true,
-              options: { num_ctx: 4096 },
-            }),
-          });
-          if (!r.ok) throw new Error(await r.text());
-          const reader = r.body.getReader();
-          const dec = new TextDecoder();
-          let full = '';
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            for (const line of dec.decode(value, { stream: true }).split('\n').filter(Boolean)) {
-              try {
-                const j = JSON.parse(line);
-                const delta = j.message?.content || '';
-                if (delta) { full += delta; if (onChunk) onChunk(delta, full); }
-                if (j.done) break;
-              } catch (_) { }
-            }
-          }
-          return full;
-        }
-
-        // ── OpenAI-compat (LM Studio etc) ──
-        const sys = opts.system ? [{ role: 'system', content: opts.system }] : [];
-        const r = await fetch(`${ep.url}/chat/completions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: cur.model,
-            messages: [...sys, ...messages],
-            max_tokens: opts.max_tokens || 2048,
-            stream: true,
-          }),
-        });
-        if (!r.ok) throw new Error(await r.text());
-        const reader = r.body.getReader();
-        const dec = new TextDecoder();
-        let full = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          for (const line of dec.decode(value, { stream: true }).split('\n')) {
-            if (!line.startsWith('data: ')) continue;
-            const raw = line.slice(6);
-            if (raw === '[DONE]') continue;
-            try {
-              const j = JSON.parse(raw);
-              const delta = j.choices?.[0]?.delta?.content || '';
-              if (delta) { full += delta; if (onChunk) onChunk(delta, full); }
-            } catch (_) { }
-          }
-        }
-        return full;
-      };
+      if (!window.AxiomModelStream?.install) throw new Error('AXIOM model streaming runtime unavailable');
+      window.AxiomModelStream.install(ModelBus);
     })();
 
     // ── SSE BRIDGE CLIENT ──────────────────────────────────────────────────────────
@@ -17206,6 +17101,23 @@ ${listeners}
         } catch (_) { }
       }
 
+      function createVerifiedMapForgeReceipt(result, family, actionType) {
+        const verifier = window.MapForgeApplyVerification;
+        if (verifier?.contract !== 'axiom.mapforge-apply-verification.v1') {
+          throw new Error('mapforge_apply_verification_contract_missing');
+        }
+        const verification = verifier.verifyCanonicalReadback(result, family);
+        return {
+          ...result,
+          applied: verification.ok,
+          ok: verification.ok,
+          reason: verification.reason,
+          verification,
+          actionType,
+          appliedAt: new Date().toISOString()
+        };
+      }
+
 
       async function applyClientAction(action) {
         if (!action || !action.type) return null;
@@ -17259,16 +17171,9 @@ ${listeners}
           }
           try {
             const result = await treeApi.applyOperation(action.payload || {});
-            const receipt = {
-              ...result,
-              applied: result?.applied === true,
-              ok: result?.ok !== false,
-              actionType: action.type,
-              appliedAt: new Date().toISOString()
-            };
+            const receipt = createVerifiedMapForgeReceipt(result, 'tree', action.type);
             appendFeed(receipt.ok ? 'mcp_client_apply' : 'mcp_client_apply_failed', receipt);
             cliPrint(receipt.ok ? 'ok' : 'err', `MCP tree operation ${receipt.operation || action.payload?.op || 'unknown'} → revision ${receipt.afterRevision ?? 'unchanged'}`);
-            if (receipt.ok) notify('ok', `Tree ${receipt.operation || action.payload?.op || 'operation'} applied`);
             post('mcp_event', { type: 'client_apply_receipt', receipt });
             return receipt;
           } catch (error) {
@@ -17303,13 +17208,7 @@ ${listeners}
           }
           try {
             const result = await undergrowthApi.applyOperation(action.payload || {});
-            const receipt = {
-              ...result,
-              applied: result?.applied === true,
-              ok: result?.ok !== false,
-              actionType: action.type,
-              appliedAt: new Date().toISOString()
-            };
+            const receipt = createVerifiedMapForgeReceipt(result, 'undergrowth', action.type);
             appendFeed(receipt.ok ? 'mcp_client_apply' : 'mcp_client_apply_failed', receipt);
             cliPrint(receipt.ok ? 'ok' : 'err', `MCP undergrowth operation ${receipt.operation || action.payload?.op || 'unknown'} → revision ${receipt.afterRevision ?? 'unchanged'}`);
             if (receipt.ok) notify('ok', `Undergrowth ${receipt.operation || action.payload?.op || 'operation'} applied`);
@@ -17347,13 +17246,7 @@ ${listeners}
           }
           try {
             const result = await geologyApi.applyOperation(action.payload || {});
-            const receipt = {
-              ...result,
-              applied: result?.applied === true,
-              ok: result?.ok !== false,
-              actionType: action.type,
-              appliedAt: new Date().toISOString()
-            };
+            const receipt = createVerifiedMapForgeReceipt(result, 'geology', action.type);
             appendFeed(receipt.ok ? 'mcp_client_apply' : 'mcp_client_apply_failed', receipt);
             cliPrint(receipt.ok ? 'ok' : 'err', `MCP geology operation ${receipt.operation || action.payload?.op || 'unknown'} â†’ revision ${receipt.afterRevision ?? 'unchanged'}`);
             if (receipt.ok) notify('ok', `Geology ${receipt.operation || action.payload?.op || 'operation'} applied`);
@@ -17513,6 +17406,10 @@ ${listeners}
             objectId: receipt.objectId,
             clientApplyReceipt: receipt
           };
+          if (receipt.ok === false) {
+            payload.ok = false;
+            payload.error = receipt.reason || 'client_apply_failed';
+          }
         }
         return payload;
       }
